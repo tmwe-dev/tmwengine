@@ -9,6 +9,8 @@ import CRMLayout from "./components/layout/CRMLayout";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
+import Attivita from "./pages/Attivita";
+import Campagne from "./pages/Campagne";
 
 const queryClient = new QueryClient();
 
@@ -30,10 +32,10 @@ const App = () => (
             <Route index element={<Rubrica />} />
           </Route>
           <Route path="/attivita" element={<CRMLayout />}>
-            <Route index element={<div className="p-6">Attività - Prossimamente</div>} />
+            <Route index element={<Attivita />} />
           </Route>
           <Route path="/campagne" element={<CRMLayout />}>
-            <Route index element={<div className="p-6">Campagne - Prossimamente</div>} />
+            <Route index element={<Campagne />} />
           </Route>
           <Route path="/email" element={<CRMLayout />}>
             <Route index element={<div className="p-6">Email - Prossimamente</div>} />

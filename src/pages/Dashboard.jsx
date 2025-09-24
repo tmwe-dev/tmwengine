@@ -45,41 +45,31 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simula caricamento dati dashboard
     const loadDashboardData = async () => {
       try {
-        // Qui andrebbero le chiamate API reali
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        // Qui andrebbero le chiamate API reali per caricare i dati
+        // Per ora lasciamo gli stati vuoti senza mock data
         setDashboardData({
           attivita: {
-            aperte: 15,
-            inCorso: 8,
-            completate: 42,
-            inScadenza: 5
+            aperte: 0,
+            inCorso: 0,
+            completate: 0,
+            inScadenza: 0
           },
           rubrica: {
-            totale: 1250,
-            nuoviUltimaSett: 18
+            totale: 0,
+            nuoviUltimaSett: 0
           },
           email: {
-            inviateOggi: 85,
-            ricevuteOggi: 23,
-            bucketAI: {
-              'Vendite': 12,
-              'Supporto': 8,
-              'Marketing': 3
-            },
-            gruppiAI: {
-              'Richieste Preventivo': 7,
-              'Reclami': 4,
-              'Info Prodotti': 5
-            }
+            inviateOggi: 0,
+            ricevuteOggi: 0,
+            bucketAI: {},
+            gruppiAI: {}
           },
           campagne: {
-            attive: 3,
-            inviateDaOggi: 85,
-            maxEmailGiorno: 200
+            attive: 0,
+            inviateDaOggi: 0,
+            maxEmailGiorno: 0
           }
         });
       } catch (error) {

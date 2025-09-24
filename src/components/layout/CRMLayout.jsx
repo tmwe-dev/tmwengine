@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Users, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-const CRMLayout = () => {
+const CRMLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
 
@@ -104,7 +104,7 @@ const CRMLayout = () => {
         {/* Main Content */}
         <main className="flex-1 overflow-auto bg-background">
           <div className="p-6">
-            <Outlet />
+            {children}
           </div>
         </main>
       </div>

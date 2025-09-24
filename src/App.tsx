@@ -23,24 +23,12 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<CRMLayout />}>
-            <Route index element={<Dashboard />} />
-          </Route>
-          <Route path="/settings" element={<CRMLayout />}>
-            <Route index element={<Settings />} />
-          </Route>
-          <Route path="/rubrica" element={<CRMLayout />}>
-            <Route index element={<Rubrica />} />
-          </Route>
-          <Route path="/attivita" element={<CRMLayout />}>
-            <Route index element={<Attivita />} />
-          </Route>
-          <Route path="/campagne" element={<CRMLayout />}>
-            <Route index element={<Campagne />} />
-          </Route>
-          <Route path="/email" element={<CRMLayout />}>
-            <Route index element={<Email />} />
-          </Route>
+          <Route path="/dashboard" element={<CRMLayout><Dashboard /></CRMLayout>} />
+          <Route path="/settings" element={<CRMLayout><Settings /></CRMLayout>} />
+          <Route path="/rubrica" element={<CRMLayout><Rubrica /></CRMLayout>} />
+          <Route path="/attivita" element={<CRMLayout><Attivita /></CRMLayout>} />
+          <Route path="/campagne" element={<CRMLayout><Campagne /></CRMLayout>} />
+          <Route path="/email" element={<CRMLayout><Email /></CRMLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

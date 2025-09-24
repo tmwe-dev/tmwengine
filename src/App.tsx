@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import Rubrica from "./pages/Rubrica";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const App = () => (
             <Route index element={<Settings />} />
           </Route>
           <Route path="/rubrica" element={<CRMLayout />}>
-            <Route index element={<div className="p-6">Rubrica - Prossimamente</div>} />
+            <Route index element={<Rubrica />} />
           </Route>
           <Route path="/attivita" element={<CRMLayout />}>
             <Route index element={<div className="p-6">Attività - Prossimamente</div>} />

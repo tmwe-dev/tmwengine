@@ -2,95 +2,167 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* ===== DESIGN SYSTEM CRM PLATFORM =====
+Definisce lo stile grafico uniforme per tutta la piattaforma
+Colori, tipografia, spaziature e stili consistenti
+Tutti i colori DEVONO essere HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* === COLORI BASE === */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --surface: 240 10% 3.9%;
+    --surface-secondary: 240 3.7% 15.9%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* === COLORI SEMANTICI === */
+    --primary: 220 91% 55%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 220 91% 50%;
+    --primary-muted: 220 91% 55% / 0.1;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --secondary-hover: 240 5% 84%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 240 10% 3.9%;
+    --warning-muted: 48 96% 53% / 0.1;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* === COLORI INTERFACCIA === */
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --card-border: 240 3.7% 15.9%;
 
-    --radius: 0.5rem;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 220 91% 55%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    /* === COLORI SIDEBAR === */
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 5% 64.9%;
+    --sidebar-primary: 220 91% 55%;
     --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 220 91% 55%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* === GEOMETRIA === */
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    /* === SPAZIATURE === */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
 
-    --sidebar-border: 220 13% 91%;
+    /* === TIPOGRAFIA === */
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 30px;
+    --font-size-4xl: 36px;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* === OMBRE === */
+    --shadow-sm: 0 1px 2px 0 hsl(240 3.7% 15.9% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(240 3.7% 15.9% / 0.1), 0 2px 4px -2px hsl(240 3.7% 15.9% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(240 3.7% 15.9% / 0.1), 0 4px 6px -4px hsl(240 3.7% 15.9% / 0.05);
+    --shadow-glow: 0 0 20px hsl(220 91% 55% / 0.3);
+
+    /* === TRANSIZIONI === */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Nel tema scuro manteniamo gli stessi valori poiché già ottimizzati per dark */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --surface: 240 10% 3.9%;
+    --surface-secondary: 240 3.7% 15.9%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --primary: 220 91% 55%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 220 91% 50%;
+    --primary-muted: 220 91% 55% / 0.1;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-hover: 240 3.7% 25%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --warning: 48 96% 53%;
+    --warning-foreground: 240 10% 3.9%;
+    --warning-muted: 48 96% 53% / 0.1;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --card-border: 240 3.7% 15.9%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 220 91% 55%;
+
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 5% 64.9%;
+    --sidebar-primary: 220 91% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 220 91% 55%;
   }
 }
 
@@ -100,6 +172,69 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-normal antialiased;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+  }
+
+  /* === TIPOGRAFIA GLOBALE === */
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+    line-height: var(--line-height-tight);
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+    line-height: var(--line-height-tight);
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+    line-height: var(--line-height-tight);
+  }
+
+  h4 {
+    @apply text-lg font-medium;
+    line-height: var(--line-height-normal);
+  }
+
+  h5 {
+    @apply text-base font-medium;
+    line-height: var(--line-height-normal);
+  }
+
+  h6 {
+    @apply text-sm font-medium;
+    line-height: var(--line-height-normal);
+  }
+
+  p {
+    @apply text-base;
+    line-height: var(--line-height-normal);
+  }
+
+  .text-muted {
+    @apply text-muted-foreground;
+  }
+
+  .text-emphasis {
+    @apply font-semibold text-foreground;
+  }
+
+  /* === LAYOUT SPACING === */
+  .section-spacing {
+    @apply space-y-6;
+  }
+
+  .card-spacing {
+    @apply space-y-4;
+  }
+
+  .item-spacing {
+    @apply space-y-3;
+  }
+
+  .element-spacing {
+    @apply space-y-2;
   }
 }

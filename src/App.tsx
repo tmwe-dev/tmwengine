@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
 import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
+import Email from "./pages/Email";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,7 @@ const App = () => (
             <Route index element={<Campagne />} />
           </Route>
           <Route path="/email" element={<CRMLayout />}>
-            <Route index element={<div className="p-6">Email - Prossimamente</div>} />
+            <Route index element={<Email />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

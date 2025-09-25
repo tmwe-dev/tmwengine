@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          memoria_completa: boolean | null
+          riassunto_contesto: string | null
           system_prompt_id: string | null
           titolo: string | null
           updated_at: string
@@ -25,6 +27,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          memoria_completa?: boolean | null
+          riassunto_contesto?: string | null
           system_prompt_id?: string | null
           titolo?: string | null
           updated_at?: string
@@ -32,6 +36,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          memoria_completa?: boolean | null
+          riassunto_contesto?: string | null
           system_prompt_id?: string | null
           titolo?: string | null
           updated_at?: string
@@ -54,6 +60,9 @@ export type Database = {
           id: string
           model: string | null
           role: string
+          tempo_risposta_ms: number | null
+          token_input: number | null
+          token_output: number | null
           tokens_used: number | null
         }
         Insert: {
@@ -63,6 +72,9 @@ export type Database = {
           id?: string
           model?: string | null
           role: string
+          tempo_risposta_ms?: number | null
+          token_input?: number | null
+          token_output?: number | null
           tokens_used?: number | null
         }
         Update: {
@@ -72,6 +84,9 @@ export type Database = {
           id?: string
           model?: string | null
           role?: string
+          tempo_risposta_ms?: number | null
+          token_input?: number | null
+          token_output?: number | null
           tokens_used?: number | null
         }
         Relationships: [
@@ -111,6 +126,47 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_usage_stats: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          data_utilizzo: string
+          id: string
+          numero_messaggi: number
+          tempo_totale_ms: number
+          token_totali_input: number
+          token_totali_output: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          data_utilizzo?: string
+          id?: string
+          numero_messaggi?: number
+          tempo_totale_ms?: number
+          token_totali_input?: number
+          token_totali_output?: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          data_utilizzo?: string
+          id?: string
+          numero_messaggi?: number
+          tempo_totale_ms?: number
+          token_totali_input?: number
+          token_totali_output?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_usage_stats_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       config_ai: {
         Row: {
           api_key: string
@@ -148,8 +204,13 @@ export type Database = {
           id: string
           lingua_predefinita: string
           max_email_giorno: number
+          max_token_conversazione: number | null
+          memoria_messaggi: number | null
+          memoria_ore: number | null
+          mostra_statistiche: boolean | null
           timezone_fuso: string
           updated_at: string
+          usa_riassunto: boolean | null
         }
         Insert: {
           created_at?: string
@@ -157,8 +218,13 @@ export type Database = {
           id?: string
           lingua_predefinita?: string
           max_email_giorno?: number
+          max_token_conversazione?: number | null
+          memoria_messaggi?: number | null
+          memoria_ore?: number | null
+          mostra_statistiche?: boolean | null
           timezone_fuso?: string
           updated_at?: string
+          usa_riassunto?: boolean | null
         }
         Update: {
           created_at?: string
@@ -166,8 +232,13 @@ export type Database = {
           id?: string
           lingua_predefinita?: string
           max_email_giorno?: number
+          max_token_conversazione?: number | null
+          memoria_messaggi?: number | null
+          memoria_ore?: number | null
+          mostra_statistiche?: boolean | null
           timezone_fuso?: string
           updated_at?: string
+          usa_riassunto?: boolean | null
         }
         Relationships: []
       }

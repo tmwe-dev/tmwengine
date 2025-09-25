@@ -85,13 +85,25 @@ serve(async (req) => {
       console.log('Headers count:', headers.length);
       console.log('Data rows count:', dataRows.length);
 
-      // Create header mapping for field matching
+      // Create header mapping for field matching - handle duplicate headers
       const headerMap: { [key: string]: number } = {};
+      const headerOccurrences: { [key: string]: number } = {};
+      
       headers.forEach((header: string, index: number) => {
-        headerMap[header.toLowerCase()] = index;
+        const cleanHeader = header.toLowerCase().trim();
+        
+        // Handle duplicate headers by numbering them
+        if (headerOccurrences[cleanHeader]) {
+          headerOccurrences[cleanHeader]++;
+          headerMap[`${cleanHeader}_${headerOccurrences[cleanHeader]}`] = index;
+        } else {
+          headerOccurrences[cleanHeader] = 1;
+          headerMap[cleanHeader] = index;
+        }
       });
 
       console.log('Header mapping created with', Object.keys(headerMap).length, 'fields');
+      console.log('Header mapping sample:', Object.keys(headerMap).slice(0, 10));
 
       // Helper function to get value by header name
       const getValue = (values: string[], headerName: string): string | null => {

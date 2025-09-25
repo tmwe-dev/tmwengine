@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Search,
-  MessageSquare
+  MessageSquare,
+  FileUp
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -26,6 +27,7 @@ const CRMLayout = ({ children }) => {
     { name: 'Campagne', href: '/campagne', icon: BarChart3 },
     { name: 'Email', href: '/email', icon: Mail },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
+    { name: 'Import Templates', href: '/import-templates', icon: FileUp },
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 

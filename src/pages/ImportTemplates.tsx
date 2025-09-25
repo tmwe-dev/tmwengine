@@ -546,7 +546,7 @@ export default function ImportTemplates() {
                               onClick={() => viewImportRecords(log)}
                             >
                               <Users className="h-4 w-4" />
-                              Visualizza
+                              Gestisci
                             </Button>
                           )}
                           {log.trasferiti_rubrica && (

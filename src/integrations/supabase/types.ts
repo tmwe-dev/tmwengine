@@ -538,7 +538,9 @@ export type Database = {
     }
     Functions: {
       get_temp_table_data: {
-        Args: { table_name: string }
+        Args:
+          | { page_limit?: number; page_offset?: number; table_name: string }
+          | { table_name: string }
         Returns: Json
       }
     }

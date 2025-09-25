@@ -48,6 +48,14 @@ export default function ImportTemplates() {
   const [viewingRecords, setViewingRecords] = useState<ImportedContact[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportLog | null>(null);
   const [loadingRecords, setLoadingRecords] = useState(false);
+  const [showRecordsDialog, setShowRecordsDialog] = useState(false);
+  const [currentRecordIndex, setCurrentRecordIndex] = useState(0);
+  const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
+  const [importingSelected, setImportingSelected] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [hasMoreRecords, setHasMoreRecords] = useState(false);
+  const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
   
   // Form per nuovo template email
   const [newTemplate, setNewTemplate] = useState({
@@ -247,31 +255,66 @@ export default function ImportTemplates() {
     }
   };
 
-  const viewImportRecords = async (importLog: ImportLog) => {
+  const loadRecordsPage = async (importLog: ImportLog, page: number = 0, append: boolean = false) => {
     if (!importLog.nome_tabella_temporanea) {
       toast.error('Tabella temporanea non disponibile');
       return;
     }
 
-    setSelectedImport(importLog);
-    setLoadingRecords(true);
+    const pageSize = 500;
+    const offset = page * pageSize;
+    
+    if (!append) {
+      setLoadingRecords(true);
+    } else {
+      setLoadingMoreRecords(true);
+    }
 
     try {
       const { data, error } = await supabase
         .rpc('get_temp_table_data', { 
-          table_name: importLog.nome_tabella_temporanea 
+          table_name: importLog.nome_tabella_temporanea,
+          page_limit: pageSize,
+          page_offset: offset
         });
 
       if (error) throw error;
       
-      // Parse the JSON response to array of contacts
-      const contacts = Array.isArray(data) ? data : (data ? JSON.parse(data as string) : []);
-      setViewingRecords(contacts);
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const dataObj = data as { [key: string]: any };
+        const contacts = Array.isArray(dataObj.data) ? dataObj.data : 
+          (dataObj.data ? JSON.parse(dataObj.data as string) : []);
+        
+        if (append) {
+          setViewingRecords(prev => [...prev, ...contacts]);
+        } else {
+          setViewingRecords(contacts);
+          setTotalRecords(dataObj.total_count || 0);
+          setShowRecordsDialog(true);
+          setCurrentRecordIndex(0);
+          setSelectedRecords(new Set());
+        }
+        
+        setCurrentPage(page);
+        setHasMoreRecords(dataObj.has_more || false);
+      }
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
       toast.error('Errore nel caricamento dei record importati');
     } finally {
       setLoadingRecords(false);
+      setLoadingMoreRecords(false);
+    }
+  };
+
+  const viewImportRecords = async (importLog: ImportLog) => {
+    setSelectedImport(importLog);
+    await loadRecordsPage(importLog, 0, false);
+  };
+
+  const loadMoreRecords = async () => {
+    if (selectedImport && hasMoreRecords && !loadingMoreRecords) {
+      await loadRecordsPage(selectedImport, currentPage + 1, true);
     }
   };
 
@@ -573,14 +616,22 @@ export default function ImportTemplates() {
       </Tabs>
 
       {/* Dialog per visualizzare i record importati */}
-      <Dialog open={!!selectedImport} onOpenChange={(open) => !open && setSelectedImport(null)}>
+      <Dialog open={showRecordsDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowRecordsDialog(false);
+          setSelectedImport(null);
+          setViewingRecords([]);
+          setCurrentPage(0);
+          setSelectedRecords(new Set());
+        }
+      }}>
         <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Record Importati - {selectedImport?.file_name}
             </DialogTitle>
             <DialogDescription>
-              Visualizza e gestisci i {viewingRecords.length} contatti importati da questo file.
+              Visualizza e gestisci {viewingRecords.length} di {totalRecords} contatti importati da questo file.
             </DialogDescription>
           </DialogHeader>
           
@@ -620,14 +671,29 @@ export default function ImportTemplates() {
               
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  Totale record: {viewingRecords.length}
+                  Caricati: {viewingRecords.length} di {totalRecords} record totali
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setSelectedImport(null)}>
+                  {hasMoreRecords && (
+                    <Button 
+                      variant="outline" 
+                      onClick={loadMoreRecords} 
+                      disabled={loadingMoreRecords}
+                    >
+                      {loadingMoreRecords ? 'Caricamento...' : 'Carica Altri 500'}
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => {
+                    setShowRecordsDialog(false);
+                    setSelectedImport(null);
+                    setViewingRecords([]);
+                    setCurrentPage(0);
+                    setSelectedRecords(new Set());
+                  }}>
                     Chiudi
                   </Button>
-                  <Button>
-                    Trasferisci Selezionati
+                  <Button disabled={selectedRecords.size === 0 || importingSelected}>
+                    {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
                   </Button>
                 </div>
               </div>

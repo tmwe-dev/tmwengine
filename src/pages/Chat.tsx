@@ -2,28 +2,60 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, Bot, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 const Chat = () => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
 
+    const userMessage: Message = {
+      id: Math.random().toString(36),
+      role: 'user',
+      content: prompt,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
     try {
-      // TODO: Implementare chiamata API per ChatGPT
-      console.log('Prompt inviato:', prompt);
-      
-      // Simulazione chiamata API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const { data, error } = await supabase.functions.invoke('chat-with-openai', {
+        body: { prompt }
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        id: Math.random().toString(36),
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
       setPrompt('');
     } catch (error) {
       console.error('Errore invio prompt:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile inviare il messaggio. Riprova.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -71,18 +103,44 @@ const Chat = () => {
         </CardContent>
       </Card>
 
-      <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cronologia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center py-8">
-              Le conversazioni appariranno qui...
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {messages.length > 0 && (
+        <div className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Conversazione</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex items-start gap-3 ${
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  {message.role === 'assistant' && (
+                    <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                  )}
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-xs opacity-70 mt-2">
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                  {message.role === 'user' && (
+                    <User className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

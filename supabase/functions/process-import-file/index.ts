@@ -64,11 +64,24 @@ serve(async (req) => {
       console.log('First line raw:', JSON.stringify(firstLine));
       console.log('First line length:', firstLine.length);
 
-      // Force TAB separator detection
-      const separator = '\t';
-      const headers = firstLine.split(separator);
+      // Auto-detect separator
+      let separator = '\t';
+      const testSeparators = [';', '\t', ','];
+      let maxColumns = 0;
       
-      console.log('Headers count after TAB split:', headers.length);
+      for (const testSep of testSeparators) {
+        const testHeaders = firstLine.split(testSep);
+        console.log(`Testing separator "${testSep}": ${testHeaders.length} columns`);
+        if (testHeaders.length > maxColumns) {
+          maxColumns = testHeaders.length;
+          separator = testSep;
+        }
+      }
+      
+      const headers = firstLine.split(separator).map(h => h.replace(/["\r\n]/g, '').trim());
+      
+      console.log(`Selected separator: "${separator}"`);
+      console.log('Headers count after split:', headers.length);
       console.log('First 10 headers:', headers.slice(0, 10));
       
       if (headers.length < 10) {

@@ -255,6 +255,9 @@ export default function ImportTemplates() {
 
     setSelectedImport(importLog);
     setLoadingRecords(true);
+    setShowRecordsDialog(true);
+    setCurrentRecordIndex(0);
+    setSelectedRecords(new Set());
 
     try {
       const { data, error } = await supabase

@@ -310,92 +310,87 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          attivo: boolean
+          contenuto: string
+          created_at: string
+          id: string
+          nome: string
+          oggetto: string
+          placeholder_disponibili: Json | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          contenuto: string
+          created_at?: string
+          id?: string
+          nome: string
+          oggetto: string
+          placeholder_disponibili?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          contenuto?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          oggetto?: string
+          placeholder_disponibili?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       import_logs: {
         Row: {
           completed_at: string | null
+          contatti_selezionati: number | null
           created_at: string
           errori: Json | null
           file_name: string
           file_path: string
           id: string
+          nome_tabella_temporanea: string | null
           righe_errori: number | null
           righe_importate: number | null
           righe_totali: number | null
           stato: string
-          template_id: string | null
+          trasferiti_rubrica: boolean | null
           utente_id: string | null
         }
         Insert: {
           completed_at?: string | null
+          contatti_selezionati?: number | null
           created_at?: string
           errori?: Json | null
           file_name: string
           file_path: string
           id?: string
+          nome_tabella_temporanea?: string | null
           righe_errori?: number | null
           righe_importate?: number | null
           righe_totali?: number | null
           stato?: string
-          template_id?: string | null
+          trasferiti_rubrica?: boolean | null
           utente_id?: string | null
         }
         Update: {
           completed_at?: string | null
+          contatti_selezionati?: number | null
           created_at?: string
           errori?: Json | null
           file_name?: string
           file_path?: string
           id?: string
+          nome_tabella_temporanea?: string | null
           righe_errori?: number | null
           righe_importate?: number | null
           righe_totali?: number | null
           stato?: string
-          template_id?: string | null
+          trasferiti_rubrica?: boolean | null
           utente_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "import_logs_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      templates: {
-        Row: {
-          attivo: boolean
-          created_at: string
-          descrizione: string | null
-          file_path: string | null
-          id: string
-          mapping_colonne: Json
-          nome: string
-          tipo: string
-          updated_at: string
-        }
-        Insert: {
-          attivo?: boolean
-          created_at?: string
-          descrizione?: string | null
-          file_path?: string | null
-          id?: string
-          mapping_colonne: Json
-          nome: string
-          tipo?: string
-          updated_at?: string
-        }
-        Update: {
-          attivo?: boolean
-          created_at?: string
-          descrizione?: string | null
-          file_path?: string | null
-          id?: string
-          mapping_colonne?: Json
-          nome?: string
-          tipo?: string
-          updated_at?: string
         }
         Relationships: []
       }

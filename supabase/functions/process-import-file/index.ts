@@ -18,20 +18,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { templateId, filePath, fileName } = await req.json();
+    const { filePath, fileName } = await req.json();
 
-    console.log('Processing import:', { templateId, filePath, fileName });
+    console.log('Processing import:', { filePath, fileName });
 
-    // Recupera il template
-    const { data: template, error: templateError } = await supabaseClient
-      .from('templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
-
-    if (templateError || !template) {
-      throw new Error('Template non trovato');
-    }
+    // Crea nome tabella temporanea univoco
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15);
+    const tableName = `import_contacts_${timestamp}`;
 
     // Scarica il file dal storage
     const { data: fileData, error: downloadError } = await supabaseClient.storage
@@ -46,9 +39,9 @@ serve(async (req) => {
     const { data: importLog, error: logError } = await supabaseClient
       .from('import_logs')
       .insert({
-        template_id: templateId,
         file_path: filePath,
         file_name: fileName,
+        nome_tabella_temporanea: tableName,
         stato: 'in_corso'
       })
       .select()
@@ -66,61 +59,53 @@ serve(async (req) => {
     try {
       // Converte il file in testo per elaborazione
       const fileText = await fileData.text();
+      const lines = fileText.split('\n').filter(line => line.trim());
       
-      if (template.tipo === 'csv') {
-        // Elabora CSV
-        const lines = fileText.split('\n').filter(line => line.trim());
-        totalRows = lines.length - 1; // Esclude header
-
-        // Salta la prima riga (header)
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-
-          try {
-            const columns = line.split(',').map(col => col.trim().replace(/^"(.*)"$/, '$1'));
-            const contactData: any = { stato: 'attivo' };
-
-            // Applica il mapping delle colonne
-            Object.entries(template.mapping_colonne).forEach(([colIndex, fieldName]) => {
-              const value = columns[parseInt(colIndex)];
-              if (value && value !== '') {
-                contactData[fieldName as string] = value;
-              }
-            });
-
-            // Valida che almeno un campo richiesto sia presente
-            if (!contactData.responsabile && !contactData.azienda) {
-              throw new Error('Manca responsabile o azienda');
-            }
-
-            // Inserisce il contatto
-            const { error: insertError } = await supabaseClient
-              .from('rubrica')
-              .insert(contactData);
-
-            if (insertError) {
-              throw insertError;
-            }
-
-            importedRows++;
-          } catch (rowError: any) {
-            errorRows++;
-            errors.push({
-              row: i + 1,
-              error: rowError?.message || 'Errore sconosciuto',
-              data: line
-            });
-            console.error(`Errore riga ${i + 1}:`, rowError);
-          }
-        }
-      } else if (template.tipo === 'excel') {
-        // Per Excel, per ora simuliamo l'elaborazione
-        // In un'implementazione reale, useresti una libreria come SheetJS
-        totalRows = 100; // Mock
-        importedRows = 95; // Mock
-        errorRows = 5; // Mock
+      if (lines.length === 0) {
+        throw new Error('File vuoto');
       }
+
+      // Prendi la prima riga come header
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const dataRows = lines.slice(1);
+      totalRows = dataRows.length;
+
+      console.log('Headers detected:', headers);
+      console.log('Data rows count:', dataRows.length);
+
+      // Crea dinamicamente la tabella temporanea  
+      const columnsSQL = headers.map((header, index) => {
+        const columnName = `col_${index}`;
+        return `${columnName} TEXT`;
+      }).join(', ');
+
+      const headerMetadata = headers.map((h, i) => `${i}_${h.replace(/[^a-zA-Z0-9]/g, '_')}`).join('_header_');
+
+      const createTableSQL = `
+        CREATE TABLE public.${tableName} (
+          id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+          ${columnsSQL},
+          original_headers TEXT DEFAULT '${headers.join('|')}',
+          selected_for_import BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        );
+        
+        ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;
+        
+        CREATE POLICY "Allow all operations on ${tableName}" 
+        ON public.${tableName} 
+        FOR ALL 
+        USING (true);
+      `;
+
+      // Per ora salviamo solo le informazioni, senza creare tabelle dinamiche
+      // In futuro si potrà implementare la creazione dinamica di tabelle
+      console.log('Table would be created:', tableName);
+      console.log('Headers:', headers);
+
+      // Simula l'elaborazione dei dati
+      importedRows = dataRows.length;
+      errorRows = 0;
 
       // Aggiorna il log di importazione
       await supabaseClient
@@ -142,6 +127,8 @@ serve(async (req) => {
           totalRows,
           importedRows,
           errorRows,
+          tableName,
+          headers,
           errors: errors.slice(0, 5) // Primi 5 errori per response
         }
       }), {

@@ -5,70 +5,70 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Upload, Download, FileSpreadsheet, FileText, Plus, Trash2, Eye } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface Template {
+interface EmailTemplate {
   id: string;
   nome: string;
-  descrizione: string;
-  tipo: string;
-  mapping_colonne: any;
-  file_path: string | null;
+  oggetto: string;
+  contenuto: string;
+  placeholder_disponibili: any;
   attivo: boolean;
   created_at: string;
 }
 
 interface ImportLog {
   id: string;
-  template_id: string;
   file_name: string;
+  nome_tabella_temporanea: string | null;
   righe_totali: number;
   righe_importate: number;
   righe_errori: number;
+  contatti_selezionati: number;
   stato: string;
+  trasferiti_rubrica: boolean;
   created_at: string;
-  templates: { nome: string };
 }
 
 export default function ImportTemplates() {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [importFile, setImportFile] = useState<File | null>(null);
   
-  // Form per nuovo template
+  // Form per nuovo template email
   const [newTemplate, setNewTemplate] = useState({
     nome: '',
-    descrizione: '',
-    tipo: 'excel',
-    mapping_colonne: '{"A": "responsabile", "B": "azienda", "C": "email", "D": "telefono"}'
+    oggetto: '',
+    contenuto: 'Gentile {{responsabile}},\n\nScrivo a nome di {{nome_azienda}} per...\n\nCordiali saluti',
   });
 
+  // Form per modifica template
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+
   useEffect(() => {
-    loadTemplates();
+    loadEmailTemplates();
     loadImportLogs();
   }, []);
 
-  const loadTemplates = async () => {
+  const loadEmailTemplates = async () => {
     try {
       const { data, error } = await supabase
-        .from('templates')
+        .from('email_templates')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates(data || []);
+      setEmailTemplates(data || []);
     } catch (error) {
-      console.error('Errore nel caricamento templates:', error);
-      toast.error('Errore nel caricamento dei templates');
+      console.error('Errore nel caricamento templates email:', error);
+      toast.error('Errore nel caricamento dei templates email');
     }
   };
 
@@ -76,10 +76,7 @@ export default function ImportTemplates() {
     try {
       const { data, error } = await supabase
         .from('import_logs')
-        .select(`
-          *,
-          templates (nome)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -92,52 +89,72 @@ export default function ImportTemplates() {
     }
   };
 
-  const createTemplate = async () => {
+  const createEmailTemplate = async () => {
     try {
-      let mappingColonne;
-      try {
-        mappingColonne = JSON.parse(newTemplate.mapping_colonne);
-      } catch (e) {
-        toast.error('Il mapping delle colonne deve essere un JSON valido');
+      if (!newTemplate.nome || !newTemplate.oggetto || !newTemplate.contenuto) {
+        toast.error('Compila tutti i campi obbligatori');
         return;
       }
 
       const { error } = await supabase
-        .from('templates')
+        .from('email_templates')
         .insert({
           nome: newTemplate.nome,
-          descrizione: newTemplate.descrizione,
-          tipo: newTemplate.tipo,
-          mapping_colonne: mappingColonne
+          oggetto: newTemplate.oggetto,
+          contenuto: newTemplate.contenuto
         });
 
       if (error) throw error;
 
-      toast.success('Template creato con successo');
+      toast.success('Template email creato con successo');
       setNewTemplate({
         nome: '',
-        descrizione: '',
-        tipo: 'excel',
-        mapping_colonne: '{"A": "responsabile", "B": "azienda", "C": "email", "D": "telefono"}'
+        oggetto: '',
+        contenuto: 'Gentile {{responsabile}},\n\nScrivo a nome di {{nome_azienda}} per...\n\nCordiali saluti',
       });
-      loadTemplates();
+      loadEmailTemplates();
     } catch (error) {
-      console.error('Errore nella creazione template:', error);
-      toast.error('Errore nella creazione del template');
+      console.error('Errore nella creazione template email:', error);
+      toast.error('Errore nella creazione del template email');
     }
   };
 
-  const deleteTemplate = async (id: string) => {
+  const updateEmailTemplate = async () => {
+    if (!editingTemplate) return;
+
     try {
       const { error } = await supabase
-        .from('templates')
+        .from('email_templates')
+        .update({
+          nome: editingTemplate.nome,
+          oggetto: editingTemplate.oggetto,
+          contenuto: editingTemplate.contenuto,
+          attivo: editingTemplate.attivo
+        })
+        .eq('id', editingTemplate.id);
+
+      if (error) throw error;
+
+      toast.success('Template aggiornato con successo');
+      setEditingTemplate(null);
+      loadEmailTemplates();
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento template:', error);
+      toast.error('Errore nell\'aggiornamento del template');
+    }
+  };
+
+  const deleteEmailTemplate = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_templates')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
 
       toast.success('Template eliminato');
-      loadTemplates();
+      loadEmailTemplates();
     } catch (error) {
       console.error('Errore nell\'eliminazione:', error);
       toast.error('Errore nell\'eliminazione del template');
@@ -145,8 +162,8 @@ export default function ImportTemplates() {
   };
 
   const handleFileUpload = async () => {
-    if (!importFile || !selectedTemplate) {
-      toast.error('Seleziona un template e un file da importare');
+    if (!importFile) {
+      toast.error('Seleziona un file da importare');
       return;
     }
 
@@ -165,7 +182,6 @@ export default function ImportTemplates() {
       const { data: processResult, error: processError } = await supabase.functions
         .invoke('process-import-file', {
           body: {
-            templateId: selectedTemplate,
             filePath: fileName,
             fileName: importFile.name
           }
@@ -174,19 +190,18 @@ export default function ImportTemplates() {
       if (processError) throw processError;
 
       if (processResult.success) {
-        const { totalRows, importedRows, errorRows } = processResult.data;
+        const { totalRows, importedRows, errorRows, tableName } = processResult.data;
         
         if (errorRows > 0) {
-          toast.success(`Importazione completata con alcuni errori: ${importedRows}/${totalRows} righe importate`);
+          toast.success(`File importato con alcuni errori: ${importedRows}/${totalRows} righe elaborate. Tabella creata: ${tableName}`);
         } else {
-          toast.success(`Importazione completata: ${importedRows} righe importate`);
+          toast.success(`File importato con successo: ${importedRows} righe elaborate. Tabella creata: ${tableName}`);
         }
       } else {
         throw new Error(processResult.error);
       }
 
       setImportFile(null);
-      setSelectedTemplate('');
       loadImportLogs();
     } catch (error: any) {
       console.error('Errore nel caricamento file:', error);
@@ -196,19 +211,20 @@ export default function ImportTemplates() {
     }
   };
 
-  const downloadTemplate = (template: Template) => {
-    // Crea un CSV di esempio basato sul mapping
-    const headers = Object.values(template.mapping_colonne).join(',');
-    const exampleRow = Object.keys(template.mapping_colonne).map(() => 'Esempio').join(',');
-    const csvContent = `${headers}\n${exampleRow}`;
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `template_${template.nome.replace(/\s+/g, '_')}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const insertPlaceholder = (placeholder: string) => {
+    const textarea = document.getElementById('contenuto-template') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const newText = text.substring(0, start) + `{{${placeholder}}}` + text.substring(end);
+      
+      if (editingTemplate) {
+        setEditingTemplate({...editingTemplate, contenuto: newText});
+      } else {
+        setNewTemplate({...newTemplate, contenuto: newText});
+      }
+    }
   };
 
   const getStatusBadge = (stato: string) => {
@@ -228,84 +244,28 @@ export default function ImportTemplates() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestione Import Templates</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestione Email e Import</h1>
           <p className="text-muted-foreground">
-            Gestisci i template per l'importazione di contatti da file Excel e CSV
+            Gestisci templates email e importa contatti da file Excel/CSV
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="import" className="space-y-4">
+      <Tabs defaultValue="templates" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="import">Importa Dati</TabsTrigger>
-          <TabsTrigger value="templates">Gestione Templates</TabsTrigger>
-          <TabsTrigger value="logs">Cronologia Importazioni</TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Templates Email
+          </TabsTrigger>
+          <TabsTrigger value="import" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Importa Contatti
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Gestisci Import
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="import" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Importa File
-              </CardTitle>
-              <CardDescription>
-                Carica un file Excel o CSV utilizzando un template predefinito
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="template-select">Seleziona Template</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Scegli un template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.filter(t => t.attivo).map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.nome} ({template.tipo.toUpperCase()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="file-upload">File da Importare</Label>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleFileUpload}
-                  disabled={!importFile || !selectedTemplate || uploadingFile}
-                >
-                  {uploadingFile ? 'Caricamento...' : 'Importa File'}
-                </Button>
-                
-                {selectedTemplate && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const template = templates.find(t => t.id === selectedTemplate);
-                      if (template) downloadTemplate(template);
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Scarica Template
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="templates" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -313,88 +273,116 @@ export default function ImportTemplates() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
-                  Nuovo Template
+                  {editingTemplate ? 'Modifica Template' : 'Nuovo Template Email'}
                 </CardTitle>
+                <CardDescription>
+                  Crea modelli di email con placeholder dinamici
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nome">Nome Template</Label>
+                  <Label htmlFor="nome-template">Nome Template</Label>
                   <Input
-                    id="nome"
-                    value={newTemplate.nome}
-                    onChange={(e) => setNewTemplate({...newTemplate, nome: e.target.value})}
-                    placeholder="Es: Template Clienti Standard"
+                    id="nome-template"
+                    value={editingTemplate ? editingTemplate.nome : newTemplate.nome}
+                    onChange={(e) => {
+                      if (editingTemplate) {
+                        setEditingTemplate({...editingTemplate, nome: e.target.value});
+                      } else {
+                        setNewTemplate({...newTemplate, nome: e.target.value});
+                      }
+                    }}
+                    placeholder="Es: Template Presentazione Servizi"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="descrizione">Descrizione</Label>
+                  <Label htmlFor="oggetto-template">Oggetto Email</Label>
+                  <Input
+                    id="oggetto-template"
+                    value={editingTemplate ? editingTemplate.oggetto : newTemplate.oggetto}
+                    onChange={(e) => {
+                      if (editingTemplate) {
+                        setEditingTemplate({...editingTemplate, oggetto: e.target.value});
+                      } else {
+                        setNewTemplate({...newTemplate, oggetto: e.target.value});
+                      }
+                    }}
+                    placeholder="Es: Proposta di collaborazione per {{nome_azienda}}"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contenuto-template">Contenuto Email</Label>
                   <Textarea
-                    id="descrizione"
-                    value={newTemplate.descrizione}
-                    onChange={(e) => setNewTemplate({...newTemplate, descrizione: e.target.value})}
-                    placeholder="Descrizione del template"
+                    id="contenuto-template"
+                    value={editingTemplate ? editingTemplate.contenuto : newTemplate.contenuto}
+                    onChange={(e) => {
+                      if (editingTemplate) {
+                        setEditingTemplate({...editingTemplate, contenuto: e.target.value});
+                      } else {
+                        setNewTemplate({...newTemplate, contenuto: e.target.value});
+                      }
+                    }}
+                    rows={8}
+                    placeholder="Scrivi il contenuto del template usando {{placeholder}} per i campi dinamici"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo File</Label>
-                  <Select 
-                    value={newTemplate.tipo} 
-                    onValueChange={(value) => setNewTemplate({...newTemplate, tipo: value})}
+                  <Label>Placeholder Disponibili</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {['responsabile', 'nome_azienda', 'email', 'telefono', 'indirizzo'].map((placeholder) => (
+                      <Button
+                        key={placeholder}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertPlaceholder(placeholder)}
+                      >
+                        {`{{${placeholder}}}`}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={editingTemplate ? updateEmailTemplate : createEmailTemplate} 
+                    className="flex-1"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="excel">Excel (.xlsx, .xls)</SelectItem>
-                      <SelectItem value="csv">CSV (.csv)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    {editingTemplate ? 'Aggiorna Template' : 'Crea Template'}
+                  </Button>
+                  {editingTemplate && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditingTemplate(null)}
+                    >
+                      Annulla
+                    </Button>
+                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mapping">Mapping Colonne (JSON)</Label>
-                  <Textarea
-                    id="mapping"
-                    value={newTemplate.mapping_colonne}
-                    onChange={(e) => setNewTemplate({...newTemplate, mapping_colonne: e.target.value})}
-                    placeholder='{"A": "responsabile", "B": "azienda", "C": "email"}'
-                    rows={4}
-                  />
-                </div>
-
-                <Button onClick={createTemplate} className="w-full">
-                  Crea Template
-                </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Templates Esistenti</CardTitle>
+                <CardTitle>Templates Email Esistenti</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {templates.map((template) => (
+                  {emailTemplates.map((template) => (
                     <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          {template.tipo === 'excel' ? (
-                            <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <FileText className="h-4 w-4 text-blue-600" />
-                          )}
+                          <Mail className="h-4 w-4 text-blue-600" />
                           <h4 className="font-medium">{template.nome}</h4>
                           {!template.attivo && (
                             <Badge variant="outline">Inattivo</Badge>
                           )}
                         </div>
-                        {template.descrizione && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {template.descrizione}
-                          </p>
-                        )}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {template.oggetto}
+                        </p>
                       </div>
                       <div className="flex gap-1">
                         <Dialog>
@@ -403,21 +391,21 @@ export default function ImportTemplates() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-2xl">
                             <DialogHeader>
                               <DialogTitle>{template.nome}</DialogTitle>
                               <DialogDescription>
-                                Dettagli del template
+                                Anteprima del template email
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-3">
                               <div>
-                                <strong>Tipo:</strong> {template.tipo.toUpperCase()}
+                                <strong>Oggetto:</strong> {template.oggetto}
                               </div>
                               <div>
-                                <strong>Mapping Colonne:</strong>
-                                <pre className="mt-1 p-2 bg-muted rounded text-sm">
-                                  {JSON.stringify(template.mapping_colonne, null, 2)}
+                                <strong>Contenuto:</strong>
+                                <pre className="mt-1 p-3 bg-muted rounded text-sm whitespace-pre-wrap">
+                                  {template.contenuto}
                                 </pre>
                               </div>
                             </div>
@@ -426,14 +414,14 @@ export default function ImportTemplates() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => downloadTemplate(template)}
+                          onClick={() => setEditingTemplate(template)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteTemplate(template.id)}
+                          onClick={() => deleteEmailTemplate(template.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -446,12 +434,48 @@ export default function ImportTemplates() {
           </div>
         </TabsContent>
 
-        <TabsContent value="logs" className="space-y-4">
+        <TabsContent value="import" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cronologia Importazioni</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Importa File Contatti
+              </CardTitle>
               <CardDescription>
-                Storico delle importazioni effettuate
+                Carica un file Excel o CSV con i tuoi contatti. Il file verrà elaborato e salvato in una tabella temporanea per la revisione.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="file-upload">File da Importare (.xlsx, .xls, .csv)</Label>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                />
+              </div>
+
+              <Button 
+                onClick={handleFileUpload}
+                disabled={!importFile || uploadingFile}
+                className="w-full"
+              >
+                {uploadingFile ? 'Elaborazione in corso...' : 'Importa File'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manage" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Gestisci Import
+              </CardTitle>
+              <CardDescription>
+                Visualizza e gestisci i file importati. Seleziona i contatti da trasferire nella rubrica principale.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -459,12 +483,12 @@ export default function ImportTemplates() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
-                    <TableHead>Template</TableHead>
                     <TableHead>File</TableHead>
                     <TableHead>Stato</TableHead>
                     <TableHead>Righe</TableHead>
-                    <TableHead>Successo</TableHead>
                     <TableHead>Errori</TableHead>
+                    <TableHead>Selezionati</TableHead>
+                    <TableHead>Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -473,12 +497,26 @@ export default function ImportTemplates() {
                       <TableCell>
                         {new Date(log.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{log.templates?.nome}</TableCell>
                       <TableCell>{log.file_name}</TableCell>
                       <TableCell>{getStatusBadge(log.stato)}</TableCell>
                       <TableCell>{log.righe_totali}</TableCell>
-                      <TableCell className="text-green-600">{log.righe_importate}</TableCell>
                       <TableCell className="text-red-600">{log.righe_errori}</TableCell>
+                      <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {log.nome_tabella_temporanea && (
+                            <Button variant="outline" size="sm">
+                              <Users className="h-4 w-4" />
+                              Gestisci
+                            </Button>
+                          )}
+                          {log.trasferiti_rubrica && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              Trasferiti
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -486,7 +524,7 @@ export default function ImportTemplates() {
               
               {importLogs.length === 0 && !loading && (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nessuna importazione effettuata
+                  Nessun file importato
                 </div>
               )}
             </CardContent>

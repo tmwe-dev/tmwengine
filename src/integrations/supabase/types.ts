@@ -394,6 +394,144 @@ export type Database = {
         }
         Relationships: []
       }
+      rubrica: {
+        Row: {
+          alias: string | null
+          archiviata: boolean | null
+          azienda: string | null
+          cellulare: string | null
+          citta: string | null
+          client_code: string | null
+          company_alias: string | null
+          completed: boolean | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          has_actions: boolean | null
+          id: string
+          indirizzo: string | null
+          last_contact: string | null
+          meta_air_freight: boolean | null
+          meta_client: boolean | null
+          meta_contact_required_email: boolean | null
+          meta_exclient: boolean | null
+          meta_express: boolean | null
+          meta_exworks: boolean | null
+          meta_hight_value_customer: boolean | null
+          meta_interested: boolean | null
+          meta_presentation: boolean | null
+          meta_reception_required_email: boolean | null
+          meta_rejected: boolean | null
+          meta_sea_freight: boolean | null
+          meta_tutorial: boolean | null
+          meta_wca: boolean | null
+          next_contact_date: string | null
+          nome: string | null
+          note: string | null
+          origine: string | null
+          paese: string | null
+          position: string | null
+          responsabile: string | null
+          scheduled_contact: string | null
+          stato: string | null
+          tags: string[] | null
+          telefono: string | null
+          title: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          alias?: string | null
+          archiviata?: boolean | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          responsabile?: string | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          alias?: string | null
+          archiviata?: boolean | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          responsabile?: string | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -105,9 +105,18 @@ serve(async (req) => {
       console.log('Header mapping created with', Object.keys(headerMap).length, 'fields');
       console.log('Header mapping sample:', Object.keys(headerMap).slice(0, 10));
 
-      // Helper function to get value by header name
-      const getValue = (values: string[], headerName: string): string | null => {
-        const index = headerMap[headerName.toLowerCase()];
+      // Helper function to get value by header name and section
+      const getValue = (values: string[], headerName: string, section: 'contact' | 'company' = 'contact'): string | null => {
+        let index: number | undefined;
+        
+        if (section === 'company') {
+          // For company section, look for the second occurrence of duplicate headers
+          index = headerMap[`${headerName.toLowerCase()}_2`] || headerMap[headerName.toLowerCase()];
+        } else {
+          // For contact section, use the first occurrence
+          index = headerMap[headerName.toLowerCase()];
+        }
+        
         if (index !== undefined && values[index]) {
           const val = values[index].trim();
           return val === 'NULL' || val === '' ? null : val;
@@ -117,7 +126,7 @@ serve(async (req) => {
 
       // Helper function to get boolean value
       const getBoolValue = (values: string[], headerName: string): boolean => {
-        const val = getValue(values, headerName);
+        const val = getValue(values, headerName, 'contact');
         return val === '1' || val === 'true' || val === 'TRUE';
       };
 
@@ -134,30 +143,30 @@ serve(async (req) => {
             console.log(`Row ${i + 1} values:`, values.slice(0, 10)); // Log first 10 values for debugging
           }
           
-          // Map CSV fields to our permanent table structure using header names
+          // Map CSV fields to our permanent table structure using correct sections
           const contactData: any = {
             import_log_id: importLog.id,
             row_number: i + 1,
             
-            // Map fields using header names - handle both original and company sections
-            original_id: getValue(values, 'id'),
-            commercial_anagrafiche_id: getValue(values, 'commercial_anagrafiche_id'),
-            name: getValue(values, 'name'),
-            alias: getValue(values, 'alias'),
-            company_alias: getValue(values, 'company_alias'),
-            position: getValue(values, 'position'),
-            title: getValue(values, 'title'),
-            phone: getValue(values, 'phone'),
-            cell: getValue(values, 'cell'),
-            email: getValue(values, 'email'),
-            country: getValue(values, 'country'),
-            note: getValue(values, 'note'),
-            stato: getValue(values, 'stato') || 'A',
-            created_by: getValue(values, 'created_by'),
-            agent_id: getValue(values, 'agent_id'),
+            // Contact fields (first section)
+            original_id: getValue(values, 'id', 'contact'),
+            commercial_anagrafiche_id: getValue(values, 'commercial_anagrafiche_id', 'contact'),
+            name: getValue(values, 'name', 'contact'),
+            alias: getValue(values, 'alias', 'contact'),
+            company_alias: getValue(values, 'company_alias', 'contact'),
+            position: getValue(values, 'position', 'contact'),
+            title: getValue(values, 'title', 'contact'),
+            phone: getValue(values, 'phone', 'contact'),
+            cell: getValue(values, 'cell', 'contact'),
+            email: getValue(values, 'email', 'contact'),
+            country: getValue(values, 'country', 'contact'),
+            note: getValue(values, 'note', 'contact'),
+            stato: getValue(values, 'stato', 'contact') || 'A',
+            created_by: getValue(values, 'created_by', 'contact'),
+            agent_id: getValue(values, 'agent_id', 'contact'),
             completed: getBoolValue(values, 'completed'),
-            origin: getValue(values, 'origin'),
-            client_code: getValue(values, 'client_code'),
+            origin: getValue(values, 'origin', 'contact'),
+            client_code: getValue(values, 'client_code', 'contact'),
             
             // Meta flags
             meta_client: getBoolValue(values, 'meta_client'),
@@ -177,11 +186,11 @@ serve(async (req) => {
             archiviata: getBoolValue(values, 'archiviata'),
             has_actions: getBoolValue(values, 'has_actions'),
             
-            // Company data - look for company name field
-            company_name: getValue(values, 'name') || null, // Use the second 'name' field for company
-            address: getValue(values, 'address'),
-            city: getValue(values, 'city'),
-            zip_code: getValue(values, 'zip_code')
+            // Company data (second section)
+            company_name: getValue(values, 'name', 'company'),
+            address: getValue(values, 'address', 'company'),
+            city: getValue(values, 'city', 'company'),
+            zip_code: getValue(values, 'zip_code', 'company')
           };
 
           // Handle date fields with proper parsing

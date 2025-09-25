@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMemoryControls } from '@/components/chat/ChatMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Message {
   id: string;
@@ -380,15 +381,149 @@ const Chat = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-          <MessageSquare className="h-8 w-8 text-primary" />
-          Chat AI
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Inserisci il tuo prompt per interagire con l'intelligenza artificiale
-        </p>
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+            <MessageSquare className="h-8 w-8 text-primary" />
+            Chat AI
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Inserisci il tuo prompt per interagire con l'intelligenza artificiale
+          </p>
+        </div>
+        
+        {/* Settings Icon */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gestione Chat AI</DialogTitle>
+            </DialogHeader>
+            
+            <Tabs defaultValue="prompts" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="prompts">🤖 System Prompts</TabsTrigger>
+                <TabsTrigger value="controls">⚙️ Controlli Memoria</TabsTrigger>
+                <TabsTrigger value="stats">📊 Statistiche</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="prompts" className="space-y-6">
+                {/* System Prompt Configuration */}
+                <Card>
+                  <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          System Prompt Management
+                          <span className="text-sm text-muted-foreground ml-auto">
+                            {isSystemPromptOpen ? 'Chiudi' : 'Gestisci'}
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-6">
+                        {/* System Prompts Esistenti */}
+                        <div>
+                          <h4 className="font-medium mb-3">System Prompts Esistenti</h4>
+                          <div className="space-y-3">
+                            {systemPrompts.map((prompt) => (
+                              <div
+                                key={prompt.id}
+                                className={`p-3 border rounded-lg break-words overflow-hidden whitespace-pre-wrap ${
+                                  prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 overflow-hidden">
+                                    <div className="font-medium flex items-center gap-2">
+                                      {prompt.nome}
+                                      {prompt.attivo && (
+                                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                                          ATTIVO
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden whitespace-pre-wrap">
+                                      {prompt.contenuto}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {!prompt.attivo && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => activateSystemPrompt(prompt.id)}
+                                      >
+                                        Attiva
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => deleteSystemPrompt(prompt.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Crea Nuovo System Prompt */}
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-3">Crea Nuovo System Prompt</h4>
+                          <div className="space-y-3">
+                            <Input
+                              placeholder="Nome del system prompt..."
+                              value={newSystemPromptName}
+                              onChange={(e) => setNewSystemPromptName(e.target.value)}
+                            />
+                            <Textarea
+                              placeholder="Contenuto del system prompt..."
+                              value={newSystemPromptContent}
+                              onChange={(e) => setNewSystemPromptContent(e.target.value)}
+                              rows={3}
+                            />
+                            <Button onClick={createSystemPrompt} className="w-full">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Crea System Prompt
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="controls">
+                <ChatMemoryControls
+                  conversationId={currentConversationId}
+                  memoriaCompleta={currentConversation?.memoria_completa || false}
+                  onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                />
+              </TabsContent>
+
+              <TabsContent value="stats">
+                <ConversationStats
+                  conversationId={currentConversationId}
+                  currentTokenUsage={lastResponseStats?.tokens}
+                  responseTime={lastResponseStats?.responseTime}
+                  modelUsed={lastResponseStats?.model}
+                />
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Sidebar Conversazioni */}
@@ -432,233 +567,115 @@ const Chat = () => {
 
         {/* Area Chat Principale */}
         <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="chat">💬 Chat</TabsTrigger>
-              <TabsTrigger value="controls">⚙️ Controlli Memoria</TabsTrigger>
-              <TabsTrigger value="stats">📊 Statistiche</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="chat" className="space-y-6">
-              {/* System Prompt Configuration */}
-              <Card>
-                <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                      <CardTitle className="flex items-center gap-2">
-                        <Settings className="h-5 w-5" />
-                        System Prompt Management
-                        <span className="text-sm text-muted-foreground ml-auto">
-                          {isSystemPromptOpen ? 'Chiudi' : 'Gestisci'}
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-6">
-                      {/* System Prompts Esistenti */}
-                      <div>
-                        <h4 className="font-medium mb-3">System Prompts Esistenti</h4>
-                        <div className="space-y-3">
-                          {systemPrompts.map((prompt) => (
-                            <div
-                              key={prompt.id}
-                              className={`p-3 border rounded-lg break-words overflow-hidden whitespace-pre-wrap ${
-                                prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 overflow-hidden">
-                                  <div className="font-medium flex items-center gap-2">
-                                    {prompt.nome}
-                                    {prompt.attivo && (
-                                      <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                                        ATTIVO
-                                      </span>
-                                    )}
-                                  </div>
-                                   <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden whitespace-pre-wrap">
-                                     {prompt.contenuto}
-                                   </p>
-                                </div>
-                                <div className="flex gap-2">
-                                  {!prompt.attivo && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => activateSystemPrompt(prompt.id)}
-                                    >
-                                      Attiva
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => deleteSystemPrompt(prompt.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Crea Nuovo System Prompt */}
-                      <div className="border-t pt-4">
-                        <h4 className="font-medium mb-3">Crea Nuovo System Prompt</h4>
-                        <div className="space-y-3">
-                          <Input
-                            placeholder="Nome del system prompt..."
-                            value={newSystemPromptName}
-                            onChange={(e) => setNewSystemPromptName(e.target.value)}
-                          />
-                          <Textarea
-                            placeholder="Contenuto del system prompt..."
-                            value={newSystemPromptContent}
-                            onChange={(e) => setNewSystemPromptContent(e.target.value)}
-                            rows={3}
-                          />
-                          <Button onClick={createSystemPrompt} className="w-full">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Crea System Prompt
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Collapsible>
-              </Card>
-
-              {/* Area Input */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}</span>
-                    {lastResponseStats && (
-                      <div className="flex gap-2 text-xs">
-                        <span className="bg-primary/10 px-2 py-1 rounded">
-                          {lastResponseStats.tokens} token
-                        </span>
-                        <span className="bg-secondary px-2 py-1 rounded">
-                          {lastResponseStats.responseTime}ms
-                        </span>
-                        <span className="bg-muted px-2 py-1 rounded">
-                          {lastResponseStats.memoryMode} memory
-                        </span>
-                      </div>
+          {/* Messaggi della Conversazione */}
+          {currentConversationId && messages.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Conversazione</span>
+                  {currentConversation?.memoria_completa && (
+                    <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded">
+                      🧠 Memoria Completa Attiva
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-start gap-3 ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    {message.role === 'assistant' && (
+                      <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <Textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Inserisci qui il tuo messaggio..."
-                        className="min-h-[120px] resize-none"
-                        disabled={isLoading}
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end">
-                      <Button 
-                        type="submit" 
-                        disabled={!prompt.trim() || isLoading}
-                        className="flex items-center gap-2"
-                      >
-                        <Send className="h-4 w-4" />
-                        {isLoading ? 'Invio...' : 'Invia Messaggio'}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* Messaggi della Conversazione */}
-              {currentConversationId && messages.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Conversazione</span>
-                      {currentConversation?.memoria_completa && (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded">
-                          🧠 Memoria Completa Attiva
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4 max-h-96 overflow-y-auto">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex items-start gap-3 ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        {message.role === 'assistant' && (
-                          <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                        )}
-                        <div
-                          className={`max-w-[80%] p-3 rounded-lg ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <div className="text-xs opacity-70 mt-2 flex justify-between">
-                            <span>{new Date(message.created_at).toLocaleTimeString()}</span>
-                            <div className="flex gap-2">
-                              {message.model && (
-                                <span className="text-xs">{message.model}</span>
-                              )}
-                              {message.tokens_used && (
-                                <span className="text-xs">{message.tokens_used}t</span>
-                              )}
-                            </div>
-                          </div>
+                    <div
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div className="text-xs opacity-70 mt-2 flex justify-between">
+                        <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                        <div className="flex gap-2">
+                          {message.model && (
+                            <span className="text-xs">{message.model}</span>
+                          )}
+                          {message.tokens_used && (
+                            <span className="text-xs">{message.tokens_used}t</span>
+                          )}
                         </div>
-                        {message.role === 'user' && (
-                          <User className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                        )}
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
+                    </div>
+                    {message.role === 'user' && (
+                      <User className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
-              {!currentConversationId && (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Seleziona una conversazione esistente o iniziane una nuova per iniziare a chattare.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+          {!currentConversationId && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Seleziona una conversazione esistente o iniziane una nuova per iniziare a chattare.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-            <TabsContent value="controls">
-              <ChatMemoryControls
-                conversationId={currentConversationId}
-                memoriaCompleta={currentConversation?.memoria_completa || false}
-                onMemoriaCompletaChange={handleMemoriaCompletaChange}
-              />
-            </TabsContent>
-
-            <TabsContent value="stats">
-              <ConversationStats
-                conversationId={currentConversationId}
-                currentTokenUsage={lastResponseStats?.tokens}
-                responseTime={lastResponseStats?.responseTime}
-                modelUsed={lastResponseStats?.model}
-              />
-            </TabsContent>
-          </Tabs>
+          {/* Area Input */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}</span>
+                {lastResponseStats && (
+                  <div className="flex gap-2 text-xs">
+                    <span className="bg-primary/10 px-2 py-1 rounded">
+                      {lastResponseStats.tokens} token
+                    </span>
+                    <span className="bg-secondary px-2 py-1 rounded">
+                      {lastResponseStats.responseTime}ms
+                    </span>
+                    <span className="bg-muted px-2 py-1 rounded">
+                      {lastResponseStats.memoryMode} memory
+                    </span>
+                  </div>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Inserisci qui il tuo messaggio..."
+                    className="min-h-[120px] resize-none"
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={!prompt.trim() || isLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isLoading ? 'Invio...' : 'Invia Messaggio'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

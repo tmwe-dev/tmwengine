@@ -804,28 +804,32 @@ export default function ImportTemplates() {
           ) : viewingRecords.length > 0 ? (
             <div className="space-y-4">
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {Object.keys(viewingRecords[0] || {}).map((key) => (
-                        <TableHead key={key} className="min-w-[120px]">
-                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {viewingRecords.map((record, index) => (
-                      <TableRow key={index}>
-                        {Object.entries(record).map(([key, value]) => (
-                          <TableCell key={key} className="max-w-[200px] truncate">
-                            {value?.toString() || '-'}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       {Object.keys(viewingRecords[0] || {})
+                         .filter(key => key !== 'id' && key !== 'import_log_id')
+                         .map((key) => (
+                         <TableHead key={key} className="min-w-[120px]">
+                           {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                         </TableHead>
+                       ))}
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {viewingRecords.map((record, index) => (
+                       <TableRow key={index}>
+                         {Object.entries(record)
+                           .filter(([key]) => key !== 'id' && key !== 'import_log_id')
+                           .map(([key, value]) => (
+                           <TableCell key={key} className="max-w-[200px] truncate">
+                             {value?.toString() || '-'}
+                           </TableCell>
+                         ))}
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
               </div>
               
               <div className="flex justify-between items-center pt-4 border-t">

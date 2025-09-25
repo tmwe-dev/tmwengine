@@ -10,7 +10,8 @@ import {
   Home,
   Menu,
   X,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -24,6 +25,7 @@ const CRMLayout = ({ children }) => {
     { name: 'Attività', href: '/attivita', icon: Calendar },
     { name: 'Campagne', href: '/campagne', icon: BarChart3 },
     { name: 'Email', href: '/email', icon: Mail },
+    { name: 'Chat AI', href: '/chat', icon: MessageSquare },
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 

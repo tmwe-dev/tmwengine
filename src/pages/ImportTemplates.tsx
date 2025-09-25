@@ -35,12 +35,19 @@ interface ImportLog {
   created_at: string;
 }
 
+interface ImportedContact {
+  [key: string]: any;
+}
+
 export default function ImportTemplates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [viewingRecords, setViewingRecords] = useState<ImportedContact[]>([]);
+  const [selectedImport, setSelectedImport] = useState<ImportLog | null>(null);
+  const [loadingRecords, setLoadingRecords] = useState(false);
   
   // Form per nuovo template email
   const [newTemplate, setNewTemplate] = useState({
@@ -237,6 +244,31 @@ export default function ImportTemplates() {
         return <Badge variant="outline">In corso</Badge>;
       default:
         return <Badge variant="outline">{stato}</Badge>;
+    }
+  };
+
+  const viewImportRecords = async (importLog: ImportLog) => {
+    if (!importLog.nome_tabella_temporanea) {
+      toast.error('Tabella temporanea non disponibile');
+      return;
+    }
+
+    setSelectedImport(importLog);
+    setLoadingRecords(true);
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_temp_table_data', { 
+          table_name: importLog.nome_tabella_temporanea 
+        });
+
+      if (error) throw error;
+      setViewingRecords(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento record:', error);
+      toast.error('Errore nel caricamento dei record importati');
+    } finally {
+      setLoadingRecords(false);
     }
   };
 

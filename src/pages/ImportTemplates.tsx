@@ -337,6 +337,7 @@ export default function ImportTemplates() {
     }
   };
 
+
   const importSelectedRecords = async () => {
     if (!selectedRecords.size || importingSelected) return;
 
@@ -351,22 +352,22 @@ export default function ImportTemplates() {
         try {
           // Map record fields to rubrica structure
           const rubricaData = {
-            nome: record.name || record.nome || '',
+            nome: record.name || '',
             alias: record.alias || '',
-            azienda: record.company_alias || record.azienda || '',
+            azienda: record.company_alias || record.company_name || '',
             position: record.position || '',
             title: record.title || '',
-            telefono: record.phone || record.telefono || '',
-            cellulare: record.cell || record.cellulare || '',
+            telefono: record.phone || '',
+            cellulare: record.cell || '',
             email: record.email || '',
-            paese: record.country || record.paese || '',
-            indirizzo: record.Address || record.indirizzo || '',
-            citta: record.city || record.citta || '',
+            paese: record.country || '',
+            indirizzo: record.address || '',
+            citta: record.city || '',
             zip_code: record.zip_code || '',
             note: record.note || '',
-            origine: record.origin || record.origine || '',
+            origine: record.origin || '',
             client_code: record.client_code || '',
-            responsabile: record.created_by || record.responsabile || '',
+            responsabile: record.created_by || '',
             stato: record.stato || 'A',
             // Meta flags
             meta_client: record.meta_client || false,
@@ -377,17 +378,17 @@ export default function ImportTemplates() {
             meta_reception_required_email: record.meta_reception_required_email || false,
             meta_contact_required_email: record.meta_contact_required_email || false,
             meta_presentation: record.meta_presentation || false,
-            meta_exworks: record.meta_EXWORKS || record.meta_exworks || false,
+            meta_exworks: record.meta_exworks || false,
             meta_hight_value_customer: record.meta_hight_value_customer || false,
             meta_tutorial: record.meta_tutorial || false,
             meta_rejected: record.meta_rejected || false,
-            meta_wca: record.meta_WCA || record.meta_wca || false,
+            meta_wca: record.meta_wca || false,
             meta_exclient: record.meta_exclient || false,
             completed: record.completed || false,
             archiviata: record.archiviata || false,
             has_actions: record.has_actions || false,
             // Date fields
-            last_contact: record.last || null,
+            last_contact: record.last_contact || null,
             scheduled_contact: record.scheduled_contact || null,
             next_contact_date: record.next_contact_date || null
           };
@@ -401,6 +402,11 @@ export default function ImportTemplates() {
             errorCount++;
           } else {
             successCount++;
+            // Mark as imported in the imported_contacts table
+            await supabase
+              .from('imported_contacts')
+              .update({ is_imported_to_rubrica: true })
+              .eq('id', record.id);
           }
         } catch (error) {
           console.error('Errore elaborazione record:', error);

@@ -394,6 +394,164 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_contacts: {
+        Row: {
+          address: string | null
+          agent_id: string | null
+          alias: string | null
+          archiviata: boolean | null
+          cell: string | null
+          city: string | null
+          client_code: string | null
+          commercial_anagrafiche_id: string | null
+          company_alias: string | null
+          company_name: string | null
+          completed: boolean | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          has_actions: boolean | null
+          id: string
+          import_log_id: string
+          is_imported_to_rubrica: boolean | null
+          last_contact: string | null
+          meta_air_freight: boolean | null
+          meta_client: boolean | null
+          meta_contact_required_email: boolean | null
+          meta_exclient: boolean | null
+          meta_express: boolean | null
+          meta_exworks: boolean | null
+          meta_hight_value_customer: boolean | null
+          meta_interested: boolean | null
+          meta_presentation: boolean | null
+          meta_reception_required_email: boolean | null
+          meta_rejected: boolean | null
+          meta_sea_freight: boolean | null
+          meta_tutorial: boolean | null
+          meta_wca: boolean | null
+          name: string | null
+          next_contact_date: string | null
+          note: string | null
+          origin: string | null
+          original_id: string | null
+          phone: string | null
+          position: string | null
+          row_number: number | null
+          scheduled_contact: string | null
+          stato: string | null
+          title: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          agent_id?: string | null
+          alias?: string | null
+          archiviata?: boolean | null
+          cell?: string | null
+          city?: string | null
+          client_code?: string | null
+          commercial_anagrafiche_id?: string | null
+          company_alias?: string | null
+          company_name?: string | null
+          completed?: boolean | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          import_log_id: string
+          is_imported_to_rubrica?: boolean | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          name?: string | null
+          next_contact_date?: string | null
+          note?: string | null
+          origin?: string | null
+          original_id?: string | null
+          phone?: string | null
+          position?: string | null
+          row_number?: number | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          agent_id?: string | null
+          alias?: string | null
+          archiviata?: boolean | null
+          cell?: string | null
+          city?: string | null
+          client_code?: string | null
+          commercial_anagrafiche_id?: string | null
+          company_alias?: string | null
+          company_name?: string | null
+          completed?: boolean | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          import_log_id?: string
+          is_imported_to_rubrica?: boolean | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          name?: string | null
+          next_contact_date?: string | null
+          note?: string | null
+          origin?: string | null
+          original_id?: string | null
+          phone?: string | null
+          position?: string | null
+          row_number?: number | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_contacts_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rubrica: {
         Row: {
           alias: string | null

@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, systemPrompt } = await req.json();
+    const { prompt, systemPrompt, conversationId } = await req.json();
 
     if (!prompt) {
       throw new Error('Prompt è richiesto');
@@ -60,10 +60,13 @@ serve(async (req) => {
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
+    const tokensUsed = data.usage?.total_tokens || 0;
 
     return new Response(JSON.stringify({ 
       response: aiResponse,
-      model: aiConfig.modello 
+      model: aiConfig.modello,
+      tokens_used: tokensUsed,
+      conversation_id: conversationId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

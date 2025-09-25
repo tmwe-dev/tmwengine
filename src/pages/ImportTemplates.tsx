@@ -539,16 +539,17 @@ export default function ImportTemplates() {
                       <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {log.nome_tabella_temporanea && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => viewImportRecords(log)}
-                            >
-                              <Users className="h-4 w-4" />
-                              Gestisci
-                            </Button>
-                          )}
+                           {log.nome_tabella_temporanea && (
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => viewImportRecords(log)}
+                               disabled={loadingRecords}
+                             >
+                               <Users className="h-4 w-4" />
+                               {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                             </Button>
+                           )}
                           {log.trasferiti_rubrica && (
                             <Badge variant="secondary" className="bg-green-100 text-green-800">
                               Trasferiti

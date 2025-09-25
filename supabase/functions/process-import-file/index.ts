@@ -117,12 +117,17 @@ serve(async (req) => {
         try {
           const values = row.split(separator).map((v: string) => v.trim().replace(/"/g, ''));
           
+          console.log(`Processing row ${i + 1}, values count: ${values.length}`);
+          if (i < 3) {
+            console.log(`Row ${i + 1} values:`, values.slice(0, 10)); // Log first 10 values for debugging
+          }
+          
           // Map CSV fields to our permanent table structure using header names
           const contactData: any = {
             import_log_id: importLog.id,
             row_number: i + 1,
             
-            // Map fields using header names
+            // Map fields using header names - handle both original and company sections
             original_id: getValue(values, 'id'),
             commercial_anagrafiche_id: getValue(values, 'commercial_anagrafiche_id'),
             name: getValue(values, 'name'),
@@ -151,19 +156,18 @@ serve(async (req) => {
             meta_reception_required_email: getBoolValue(values, 'meta_reception_required_email'),
             meta_contact_required_email: getBoolValue(values, 'meta_contact_required_email'),
             meta_presentation: getBoolValue(values, 'meta_presentation'),
-            meta_exworks: getBoolValue(values, 'meta_EXWORKS'),
+            meta_exworks: getBoolValue(values, 'meta_exworks'),
             meta_hight_value_customer: getBoolValue(values, 'meta_hight_value_customer'),
             meta_tutorial: getBoolValue(values, 'meta_tutorial'),
             meta_rejected: getBoolValue(values, 'meta_rejected'),
-            meta_wca: getBoolValue(values, 'meta_WCA'),
+            meta_wca: getBoolValue(values, 'meta_wca'),
             meta_exclient: getBoolValue(values, 'meta_exclient'),
             archiviata: getBoolValue(values, 'archiviata'),
             has_actions: getBoolValue(values, 'has_actions'),
             
-            // Company data from second section (there seem to be duplicate headers)
-            // Look for the second occurrence of some fields
-            company_name: getValue(values, 'company_alias') || headers.filter(h => h.toLowerCase().includes('name')).map(h => getValue(values, h)).find(v => v) || null,
-            address: getValue(values, 'Address') || getValue(values, 'address'),
+            // Company data - look for company name field
+            company_name: getValue(values, 'name') || null, // Use the second 'name' field for company
+            address: getValue(values, 'address'),
             city: getValue(values, 'city'),
             zip_code: getValue(values, 'zip_code')
           };

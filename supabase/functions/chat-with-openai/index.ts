@@ -204,6 +204,62 @@ serve(async (req) => {
             }
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "insert_activity",
+          description: "Crea una nuova attività (task, appuntamento, telefonata)",
+          parameters: {
+            type: "object",
+            properties: {
+              titolo: { type: "string", description: "Titolo/descrizione dell'attività" },
+              tipo: { type: "string", description: "Tipo di attività (task, appuntamento, telefonata)" },
+              priorita: { type: "string", description: "Priorità (bassa, media, alta, urgente)" },
+              stato: { type: "string", description: "Stato iniziale (da_fare, in_corso, completata)" },
+              scadenza: { type: "string", description: "Data e ora di scadenza (ISO format)" },
+              rubrica_id: { type: "string", description: "ID del contatto collegato" },
+              note: { type: "string", description: "Note aggiuntive" }
+            },
+            required: ["titolo"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_record",
+          description: "Aggiorna un record esistente in qualsiasi tabella",
+          parameters: {
+            type: "object",
+            properties: {
+              table: { type: "string", description: "Nome della tabella" },
+              id: { type: "string", description: "ID del record da aggiornare" },
+              updates: { type: "object", description: "Campi da aggiornare" }
+            },
+            required: ["table", "id", "updates"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "insert_contact",
+          description: "Aggiunge un nuovo contatto al CRM",
+          parameters: {
+            type: "object",
+            properties: {
+              responsabile: { type: "string", description: "Nome del responsabile/contatto" },
+              azienda: { type: "string", description: "Nome dell'azienda" },
+              email: { type: "string", description: "Indirizzo email" },
+              telefono: { type: "string", description: "Numero di telefono" },
+              tag: { type: "string", description: "Tag/categoria del contatto" },
+              note: { type: "string", description: "Note aggiuntive" },
+              stato: { type: "string", description: "Stato del contatto (attivo, inattivo)" }
+            },
+            required: []
+          }
+        }
       }
     ];
 

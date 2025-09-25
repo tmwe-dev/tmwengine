@@ -47,6 +47,18 @@ serve(async (req) => {
         result = await getActivities(supabaseClient, parameters);
         break;
       
+      case 'insert_activity':
+        result = await insertActivity(supabaseClient, parameters);
+        break;
+      
+      case 'update_record':
+        result = await updateRecord(supabaseClient, parameters);
+        break;
+      
+      case 'insert_contact':
+        result = await insertContact(supabaseClient, parameters);
+        break;
+      
       default:
         throw new Error(`Tool sconosciuto: ${tool_name}`);
     }
@@ -213,4 +225,108 @@ async function getActivities(supabase: any, params: any) {
   if (error) throw error;
   
   return { activities: data, count: data?.length || 0 };
+}
+
+// Inserisce una nuova attività 
+async function insertActivity(supabase: any, params: any) {
+  const { 
+    titolo, 
+    descrizione, 
+    tipo = 'task', 
+    priorita = 'media', 
+    stato = 'da_fare', 
+    scadenza, 
+    rubrica_id, 
+    note 
+  } = params;
+
+  if (!titolo) {
+    throw new Error('Il titolo è obbligatorio per creare un\'attività');
+  }
+
+  const activityData: any = {
+    descrizione: titolo, // Campo descrizione nella tabella attivita
+    tipo,
+    priorita,
+    stato
+  };
+
+  if (scadenza) activityData.scadenza = scadenza;
+  if (rubrica_id) activityData.rubrica_id = rubrica_id;
+  if (note) activityData.note = note;
+
+  const { data, error } = await supabase
+    .from('attivita')
+    .insert(activityData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Errore nell\'inserimento attività:', error);
+    throw error;
+  }
+
+  return { success: true, data, message: 'Attività creata con successo' };
+}
+
+// Aggiorna un record esistente
+async function updateRecord(supabase: any, params: any) {
+  const { table, id, updates } = params;
+
+  if (!table || !id || !updates) {
+    throw new Error('Tabella, ID e aggiornamenti sono obbligatori');
+  }
+
+  const { data, error } = await supabase
+    .from(table)
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Errore nell'aggiornamento ${table}:`, error);
+    throw error;
+  }
+
+  return { success: true, data, message: `Record aggiornato con successo nella tabella ${table}` };
+}
+
+// Inserisce un nuovo contatto
+async function insertContact(supabase: any, params: any) {
+  const { 
+    responsabile, 
+    azienda, 
+    email, 
+    telefono, 
+    tag, 
+    note,
+    stato = 'attivo'
+  } = params;
+
+  if (!responsabile && !azienda) {
+    throw new Error('È richiesto almeno il nome del responsabile o dell\'azienda');
+  }
+
+  const contactData: any = { stato };
+
+  if (responsabile) contactData.responsabile = responsabile;
+  if (azienda) contactData.azienda = azienda;
+  if (email) contactData.email = email;
+  if (telefono) contactData.telefono = telefono;
+  if (tag) contactData.tag = tag;
+  if (note) contactData.note = note;
+
+  const { data, error } = await supabase
+    .from('rubrica')
+    .insert(contactData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Errore nell\'inserimento contatto:', error);
+    throw error;
+  }
+
+  return { success: true, data, message: 'Contatto creato con successo' };
 }

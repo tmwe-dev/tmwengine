@@ -263,7 +263,10 @@ export default function ImportTemplates() {
         });
 
       if (error) throw error;
-      setViewingRecords(data || []);
+      
+      // Parse the JSON response to array of contacts
+      const contacts = Array.isArray(data) ? data : (data ? JSON.parse(data as string) : []);
+      setViewingRecords(contacts);
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
       toast.error('Errore nel caricamento dei record importati');
@@ -537,9 +540,13 @@ export default function ImportTemplates() {
                       <TableCell>
                         <div className="flex gap-1">
                           {log.nome_tabella_temporanea && (
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => viewImportRecords(log)}
+                            >
                               <Users className="h-4 w-4" />
-                              Gestisci
+                              Visualizza
                             </Button>
                           )}
                           {log.trasferiti_rubrica && (
@@ -563,6 +570,74 @@ export default function ImportTemplates() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog per visualizzare i record importati */}
+      <Dialog open={!!selectedImport} onOpenChange={(open) => !open && setSelectedImport(null)}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Record Importati - {selectedImport?.file_name}
+            </DialogTitle>
+            <DialogDescription>
+              Visualizza e gestisci i {viewingRecords.length} contatti importati da questo file.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingRecords ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p>Caricamento record...</p>
+              </div>
+            </div>
+          ) : viewingRecords.length > 0 ? (
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(viewingRecords[0] || {}).map((key) => (
+                        <TableHead key={key} className="min-w-[120px]">
+                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {viewingRecords.map((record, index) => (
+                      <TableRow key={index}>
+                        {Object.entries(record).map(([key, value]) => (
+                          <TableCell key={key} className="max-w-[200px] truncate">
+                            {value?.toString() || '-'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="flex justify-between items-center pt-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Totale record: {viewingRecords.length}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setSelectedImport(null)}>
+                    Chiudi
+                  </Button>
+                  <Button>
+                    Trasferisci Selezionati
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

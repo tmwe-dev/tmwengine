@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Message {
   id: string;
@@ -17,7 +18,26 @@ const Chat = () => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [systemPrompt, setSystemPrompt] = useState('Sei un assistente AI utile e amichevole che risponde in italiano.');
+  const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const { toast } = useToast();
+
+  // Carica il system prompt salvato
+  useEffect(() => {
+    const savedSystemPrompt = localStorage.getItem('chatSystemPrompt');
+    if (savedSystemPrompt) {
+      setSystemPrompt(savedSystemPrompt);
+    }
+  }, []);
+
+  // Salva il system prompt
+  const saveSystemPrompt = () => {
+    localStorage.setItem('chatSystemPrompt', systemPrompt);
+    toast({
+      title: "System Prompt Salvato",
+      description: "Le istruzioni per ChatGPT sono state aggiornate.",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +55,7 @@ const Chat = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('chat-with-openai', {
-        body: { prompt }
+        body: { prompt, systemPrompt }
       });
 
       if (error) throw error;
@@ -72,6 +92,45 @@ const Chat = () => {
           Inserisci il tuo prompt per interagire con l'intelligenza artificiale
         </p>
       </div>
+
+      {/* System Prompt Configuration */}
+      <Card className="mb-6">
+        <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                System Prompt (Istruzioni per ChatGPT)
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {isSystemPromptOpen ? 'Chiudi' : 'Modifica'}
+                </span>
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div>
+                <Textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  placeholder="Inserisci le istruzioni per ChatGPT..."
+                  className="min-h-[100px] resize-none"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Queste istruzioni determinano come ChatGPT si comporterà durante la conversazione.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={saveSystemPrompt} className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Salva System Prompt
+                </Button>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       <Card>
         <CardHeader>

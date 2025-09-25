@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, systemPrompt } = await req.json();
 
     if (!prompt) {
       throw new Error('Prompt è richiesto');
@@ -44,7 +44,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: aiConfig.modello,
         messages: [
-          { role: 'system', content: 'Sei un assistente AI utile e amichevole che risponde in italiano.' },
+          { role: 'system', content: systemPrompt || 'Sei un assistente AI utile e amichevole che risponde in italiano.' },
           { role: 'user', content: prompt }
         ],
         max_tokens: 1000,

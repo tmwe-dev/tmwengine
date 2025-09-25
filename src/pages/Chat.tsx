@@ -463,12 +463,12 @@ const Chat = () => {
                           {systemPrompts.map((prompt) => (
                             <div
                               key={prompt.id}
-                              className={`p-3 border rounded-lg ${
+                              className={`p-3 border rounded-lg break-words overflow-hidden whitespace-pre-wrap ${
                                 prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1">
+                                <div className="flex-1 overflow-hidden">
                                   <div className="font-medium flex items-center gap-2">
                                     {prompt.nome}
                                     {prompt.attivo && (
@@ -477,9 +477,9 @@ const Chat = () => {
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-sm text-muted-foreground mt-1 truncate">
-                                    {prompt.contenuto}
-                                  </p>
+                                   <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden whitespace-pre-wrap">
+                                     {prompt.contenuto}
+                                   </p>
                                 </div>
                                 <div className="flex gap-2">
                                   {!prompt.attivo && (

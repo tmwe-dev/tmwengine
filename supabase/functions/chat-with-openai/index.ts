@@ -129,6 +129,84 @@ serve(async (req) => {
 
     console.log(`Using ${useFullMemory ? 'full' : 'limited'} memory. Messages in context: ${messages.length}`);
 
+    // Definisci gli strumenti CRM disponibili per ChatGPT
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "count_records",
+          description: "Conta i record in una tabella del CRM con filtri opzionali. Utile per rispondere a domande come 'quanti contatti abbiamo?' o 'quante campagne attive ci sono?'",
+          parameters: {
+            type: "object",
+            properties: {
+              table: {
+                type: "string",
+                enum: ["rubrica", "campagne", "attivita", "email", "allegati", "interazioni"],
+                description: "Nome della tabella da interrogare (rubrica=contatti, campagne=campagne marketing, attivita=task e appuntamenti, email=messaggi email, allegati=file, interazioni=log interazioni)"
+              },
+              filters: {
+                type: "object",
+                description: "Filtri opzionali da applicare. Esempi: {stato: 'attiva'} per campagne attive, {priorita: 'alta'} per attività prioritarie"
+              }
+            },
+            required: ["table"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_statistics",
+          description: "Ottieni statistiche generali complete del CRM: totale contatti, campagne, attività, email, campagne attive, attività in scadenza nei prossimi 7 giorni",
+          parameters: { type: "object", properties: {} }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "search_contacts",
+          description: "Cerca contatti specifici per nome, azienda o email. Utile per trovare informazioni su clienti specifici",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Termine di ricerca (nome, azienda, email)" },
+              limit: { type: "number", description: "Numero massimo di risultati (default: 10)" }
+            },
+            required: ["query"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_campaign_status",
+          description: "Ottieni informazioni sulle campagne: tutte le campagne o dettagli di una campagna specifica",
+          parameters: {
+            type: "object",
+            properties: {
+              campaign_id: { type: "string", description: "ID campagna specifica (opzionale - se omesso restituisce tutte le campagne)" }
+            }
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_activities",
+          description: "Ottieni lista delle attività filtrate per stato, priorità o assegnatario",
+          parameters: {
+            type: "object",
+            properties: {
+              status: { type: "string", description: "Filtra per stato (es: 'in_corso', 'completata', 'programmata')" },
+              priority: { type: "string", description: "Filtra per priorità (es: 'alta', 'media', 'bassa')" },
+              assignee: { type: "string", description: "Filtra per assegnatario" },
+              limit: { type: "number", description: "Numero massimo di risultati (default: 10)" }
+            }
+          }
+        }
+      }
+    ];
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -140,6 +218,8 @@ serve(async (req) => {
         messages: messages,
         max_tokens: 1000,
         temperature: 0.7,
+        tools: tools,
+        tool_choice: "auto"
       }),
     });
 
@@ -150,7 +230,74 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    const choice = data.choices[0];
+    let aiResponse = choice.message.content;
+    
+    // Gestisci le chiamate agli strumenti
+    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+      const toolResults = [];
+      
+      for (const toolCall of choice.message.tool_calls) {
+        try {
+          console.log(`Chiamando strumento: ${toolCall.function.name}`, toolCall.function.arguments);
+          
+          const toolResponse = await fetch(`${supabaseUrl}/functions/v1/crm-tools`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tool_name: toolCall.function.name,
+              parameters: JSON.parse(toolCall.function.arguments)
+            })
+          });
+          
+          const toolData = await toolResponse.json();
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: toolCall.function.name,
+            content: JSON.stringify(toolData.data)
+          });
+        } catch (error) {
+          console.error(`Errore chiamata strumento ${toolCall.function.name}:`, error);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool", 
+            name: toolCall.function.name,
+            content: JSON.stringify({ error: "Errore nell'esecuzione dello strumento" })
+          });
+        }
+      }
+      
+      // Fai una seconda chiamata con i risultati degli strumenti
+      const followUpMessages = [
+        ...messages,
+        choice.message,
+        ...toolResults
+      ];
+      
+      const followUpResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiConfig.api_key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: aiConfig.modello,
+          messages: followUpMessages,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      });
+      
+      if (followUpResponse.ok) {
+        const followUpData = await followUpResponse.json();
+        aiResponse = followUpData.choices[0].message.content;
+      }
+    }
+    
     const tokensUsed = data.usage?.total_tokens || 0;
     const tokensInput = data.usage?.prompt_tokens || 0;
     const tokensOutput = data.usage?.completion_tokens || 0;

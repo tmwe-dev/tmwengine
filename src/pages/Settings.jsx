@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Key, 
   Mail, 
@@ -27,9 +28,11 @@ const Settings = () => {
   const { toast } = useToast();
   const [showSecrets, setShowSecrets] = useState({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Stati per le configurazioni
   const [emailConfig, setEmailConfig] = useState({
+    id: null,
     provider: '',
     apiKey: '',
     webhookSecret: '',
@@ -40,6 +43,7 @@ const Settings = () => {
   });
 
   const [aiConfig, setAiConfig] = useState({
+    id: null,
     provider: '',
     modello: '',
     apiKey: '',
@@ -47,11 +51,81 @@ const Settings = () => {
   });
 
   const [generalConfig, setGeneralConfig] = useState({
+    id: null,
     maxEmailGiorno: 100,
     timezoneFuso: 'Europe/Rome',
     linguaPredefinita: 'it',
     formatoData: 'DD/MM/YYYY'
   });
+
+  // Carica le configurazioni esistenti
+  useEffect(() => {
+    loadConfigurations();
+  }, []);
+
+  const loadConfigurations = async () => {
+    try {
+      // Carica configurazione AI
+      const { data: aiData } = await supabase
+        .from('config_ai')
+        .select('*')
+        .maybeSingle();
+
+      if (aiData) {
+        setAiConfig({
+          id: aiData.id,
+          provider: aiData.provider,
+          modello: aiData.modello,
+          apiKey: aiData.api_key,
+          attivo: aiData.attivo
+        });
+      }
+
+      // Carica configurazione email
+      const { data: emailData } = await supabase
+        .from('email_provider')
+        .select('*, email_provider_credenziali(*)')
+        .maybeSingle();
+
+      if (emailData) {
+        setEmailConfig({
+          id: emailData.id,
+          provider: emailData.provider,
+          dominioInvio: emailData.dominio_invio || '',
+          inboundRoute: emailData.inbound_route || '',
+          outboundEndpoint: emailData.outbound_endpoint || '',
+          apiKey: emailData.email_provider_credenziali?.[0]?.api_key || '',
+          webhookSecret: emailData.email_provider_credenziali?.[0]?.webhook_secret || '',
+          attivo: emailData.attivo
+        });
+      }
+
+      // Carica configurazione generale
+      const { data: generalData } = await supabase
+        .from('config_generale')
+        .select('*')
+        .maybeSingle();
+
+      if (generalData) {
+        setGeneralConfig({
+          id: generalData.id,
+          maxEmailGiorno: generalData.max_email_giorno,
+          timezoneFuso: generalData.timezone_fuso,
+          linguaPredefinita: generalData.lingua_predefinita,
+          formatoData: generalData.formato_data
+        });
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento configurazioni:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le configurazioni",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleShowSecret = (field) => {
     setShowSecrets(prev => ({ ...prev, [field]: !prev[field] }));
@@ -60,16 +134,84 @@ const Settings = () => {
   const handleSaveEmailConfig = async () => {
     setSaving(true);
     try {
-      // Qui andrebbe la logica per salvare nel database
-      console.log('Salvataggio configurazione email:', emailConfig);
-      
-      crmUtils.handleSuccess(
-        'Configurazione email salvata con successo',
-        null,
-        toast
-      );
+      if (!emailConfig.provider || !emailConfig.apiKey) {
+        toast({
+          title: "Errore",
+          description: "Provider e API Key sono obbligatori",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let emailProviderId = emailConfig.id;
+
+      if (emailConfig.id) {
+        // Aggiorna configurazione esistente
+        const { error: providerError } = await supabase
+          .from('email_provider')
+          .update({
+            provider: emailConfig.provider,
+            dominio_invio: emailConfig.dominioInvio,
+            inbound_route: emailConfig.inboundRoute,
+            outbound_endpoint: emailConfig.outboundEndpoint,
+            attivo: emailConfig.attivo
+          })
+          .eq('id', emailConfig.id);
+
+        if (providerError) throw providerError;
+
+        // Aggiorna credenziali
+        const { error: credError } = await supabase
+          .from('email_provider_credenziali')
+          .upsert({
+            provider_id: emailConfig.id,
+            api_key: emailConfig.apiKey,
+            webhook_secret: emailConfig.webhookSecret
+          });
+
+        if (credError) throw credError;
+      } else {
+        // Crea nuova configurazione
+        const { data: providerData, error: providerError } = await supabase
+          .from('email_provider')
+          .insert({
+            provider: emailConfig.provider,
+            dominio_invio: emailConfig.dominioInvio,
+            inbound_route: emailConfig.inboundRoute,
+            outbound_endpoint: emailConfig.outboundEndpoint,
+            attivo: emailConfig.attivo
+          })
+          .select()
+          .single();
+
+        if (providerError) throw providerError;
+        emailProviderId = providerData.id;
+
+        // Crea credenziali
+        const { error: credError } = await supabase
+          .from('email_provider_credenziali')
+          .insert({
+            provider_id: emailProviderId,
+            api_key: emailConfig.apiKey,
+            webhook_secret: emailConfig.webhookSecret
+          });
+
+        if (credError) throw credError;
+
+        setEmailConfig(prev => ({ ...prev, id: emailProviderId }));
+      }
+
+      toast({
+        title: "Successo",
+        description: "Configurazione email salvata con successo",
+      });
     } catch (error) {
-      crmUtils.handleError(error, null, toast);
+      console.error('Errore salvataggio email config:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare la configurazione email",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -78,16 +220,56 @@ const Settings = () => {
   const handleSaveAiConfig = async () => {
     setSaving(true);
     try {
-      // Qui andrebbe la logica per salvare nel database
-      console.log('Salvataggio configurazione AI:', aiConfig);
-      
-      crmUtils.handleSuccess(
-        'Configurazione AI salvata con successo',
-        null,
-        toast
-      );
+      if (!aiConfig.provider || !aiConfig.modello || !aiConfig.apiKey) {
+        toast({
+          title: "Errore",
+          description: "Provider, modello e API Key sono obbligatori",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (aiConfig.id) {
+        // Aggiorna configurazione esistente
+        const { error } = await supabase
+          .from('config_ai')
+          .update({
+            provider: aiConfig.provider,
+            modello: aiConfig.modello,
+            api_key: aiConfig.apiKey,
+            attivo: aiConfig.attivo
+          })
+          .eq('id', aiConfig.id);
+
+        if (error) throw error;
+      } else {
+        // Crea nuova configurazione
+        const { data, error } = await supabase
+          .from('config_ai')
+          .insert({
+            provider: aiConfig.provider,
+            modello: aiConfig.modello,
+            api_key: aiConfig.apiKey,
+            attivo: aiConfig.attivo
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setAiConfig(prev => ({ ...prev, id: data.id }));
+      }
+
+      toast({
+        title: "Successo",
+        description: "Configurazione AI salvata con successo",
+      });
     } catch (error) {
-      crmUtils.handleError(error, null, toast);
+      console.error('Errore salvataggio AI config:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare la configurazione AI",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -96,16 +278,47 @@ const Settings = () => {
   const handleSaveGeneralConfig = async () => {
     setSaving(true);
     try {
-      // Qui andrebbe la logica per salvare nel database
-      console.log('Salvataggio configurazione generale:', generalConfig);
-      
-      crmUtils.handleSuccess(
-        'Configurazioni generali salvate con successo',
-        null,
-        toast
-      );
+      if (generalConfig.id) {
+        // Aggiorna configurazione esistente
+        const { error } = await supabase
+          .from('config_generale')
+          .update({
+            max_email_giorno: generalConfig.maxEmailGiorno,
+            timezone_fuso: generalConfig.timezoneFuso,
+            lingua_predefinita: generalConfig.linguaPredefinita,
+            formato_data: generalConfig.formatoData
+          })
+          .eq('id', generalConfig.id);
+
+        if (error) throw error;
+      } else {
+        // Crea nuova configurazione
+        const { data, error } = await supabase
+          .from('config_generale')
+          .insert({
+            max_email_giorno: generalConfig.maxEmailGiorno,
+            timezone_fuso: generalConfig.timezoneFuso,
+            lingua_predefinita: generalConfig.linguaPredefinita,
+            formato_data: generalConfig.formatoData
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setGeneralConfig(prev => ({ ...prev, id: data.id }));
+      }
+
+      toast({
+        title: "Successo",
+        description: "Configurazioni generali salvate con successo",
+      });
     } catch (error) {
-      crmUtils.handleError(error, null, toast);
+      console.error('Errore salvataggio config generale:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare le configurazioni generali",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -135,6 +348,23 @@ const Settings = () => {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <SettingsIcon className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Impostazioni CRM</h1>
+            <p className="text-muted-foreground">Caricamento configurazioni...</p>
+          </div>
+        </div>
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      config_ai: {
+        Row: {
+          api_key: string
+          attivo: boolean
+          created_at: string
+          id: string
+          modello: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          modello: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          modello?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      config_generale: {
+        Row: {
+          created_at: string
+          formato_data: string
+          id: string
+          lingua_predefinita: string
+          max_email_giorno: number
+          timezone_fuso: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          formato_data?: string
+          id?: string
+          lingua_predefinita?: string
+          max_email_giorno?: number
+          timezone_fuso?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          formato_data?: string
+          id?: string
+          lingua_predefinita?: string
+          max_email_giorno?: number
+          timezone_fuso?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_provider: {
+        Row: {
+          attivo: boolean
+          created_at: string
+          dominio_invio: string | null
+          id: string
+          inbound_route: string | null
+          outbound_endpoint: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          created_at?: string
+          dominio_invio?: string | null
+          id?: string
+          inbound_route?: string | null
+          outbound_endpoint?: string | null
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          created_at?: string
+          dominio_invio?: string | null
+          id?: string
+          inbound_route?: string | null
+          outbound_endpoint?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_provider_credenziali: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          provider_id: string
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          provider_id: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          provider_id?: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_provider_credenziali_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

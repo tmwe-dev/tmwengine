@@ -537,6 +537,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_temp_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
       get_temp_table_data: {
         Args:
           | { page_limit?: number; page_offset?: number; table_name: string }

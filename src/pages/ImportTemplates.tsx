@@ -261,6 +261,25 @@ export default function ImportTemplates() {
       return;
     }
 
+    // First check if table exists
+    try {
+      const { data: tableExists, error: checkError } = await supabase
+        .rpc('check_temp_table_exists', { 
+          table_name: importLog.nome_tabella_temporanea 
+        });
+
+      if (checkError) throw checkError;
+      
+      if (!tableExists) {
+        toast.error('La tabella temporanea non esiste più. I dati potrebbero essere stati eliminati.');
+        return;
+      }
+    } catch (error) {
+      console.error('Errore nel controllo esistenza tabella:', error);
+      toast.error('Errore nel controllo della tabella temporanea');
+      return;
+    }
+
     const pageSize = 500;
     const offset = page * pageSize;
     

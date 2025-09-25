@@ -529,6 +529,9 @@ const Settings = () => {
                       <SelectItem value="chatgpt">OpenAI ChatGPT</SelectItem>
                       <SelectItem value="claude">Anthropic Claude</SelectItem>
                       <SelectItem value="gemini">Google Gemini</SelectItem>
+                      <SelectItem value="mistral">Mistral AI</SelectItem>
+                      <SelectItem value="perplexity">Perplexity</SelectItem>
+                      <SelectItem value="cohere">Cohere</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -544,20 +547,61 @@ const Settings = () => {
                     <SelectContent>
                       {aiConfig.provider === 'chatgpt' && (
                         <>
+                          <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
+                          <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
+                          <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
+                          <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
+                          <SelectItem value="gpt-4.1-mini-2025-04-14">GPT-4.1 Mini</SelectItem>
+                          <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
+                          <SelectItem value="o4-mini-2025-04-16">O4 Mini (Reasoning)</SelectItem>
+                          <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                          <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                          <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
                           <SelectItem value="gpt-4">GPT-4</SelectItem>
                           <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
                         </>
                       )}
                       {aiConfig.provider === 'claude' && (
                         <>
-                          <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
+                          <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1 (Latest)</SelectItem>
+                          <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
+                          <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
+                          <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
+                          <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
+                          <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
                           <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
+                          <SelectItem value="claude-3-haiku">Claude 3 Haiku</SelectItem>
                         </>
                       )}
                       {aiConfig.provider === 'gemini' && (
                         <>
+                          <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</SelectItem>
+                          <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                          <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
                           <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
                           <SelectItem value="gemini-pro-vision">Gemini Pro Vision</SelectItem>
+                        </>
+                      )}
+                      {aiConfig.provider === 'mistral' && (
+                        <>
+                          <SelectItem value="mistral-large-2411">Mistral Large (Latest)</SelectItem>
+                          <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
+                          <SelectItem value="codestral-2405">Codestral</SelectItem>
+                          <SelectItem value="mixtral-8x7b">Mixtral 8x7B</SelectItem>
+                        </>
+                      )}
+                      {aiConfig.provider === 'perplexity' && (
+                        <>
+                          <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large (Online)</SelectItem>
+                          <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small (Online)</SelectItem>
+                          <SelectItem value="llama-3.1-sonar-huge-128k-online">Llama 3.1 Sonar Huge (Online)</SelectItem>
+                        </>
+                      )}
+                      {aiConfig.provider === 'cohere' && (
+                        <>
+                          <SelectItem value="command-r-plus">Command R+</SelectItem>
+                          <SelectItem value="command-r">Command R</SelectItem>
+                          <SelectItem value="command">Command</SelectItem>
                         </>
                       )}
                     </SelectContent>

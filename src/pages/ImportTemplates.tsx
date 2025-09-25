@@ -257,30 +257,7 @@ export default function ImportTemplates() {
   };
 
   const loadRecordsPage = async (importLog: ImportLog, page: number = 0, append: boolean = false) => {
-    if (!importLog.nome_tabella_temporanea) {
-      toast.error('Tabella temporanea non disponibile');
-      return;
-    }
-
-    // First check if table exists
-    try {
-      const { data: tableExists, error: checkError } = await supabase
-        .rpc('check_temp_table_exists', { 
-          table_name: importLog.nome_tabella_temporanea 
-        });
-
-      if (checkError) throw checkError;
-      
-      if (!tableExists) {
-        toast.error('La tabella temporanea non esiste più. I dati potrebbero essere stati eliminati.');
-        return;
-      }
-    } catch (error) {
-      console.error('Errore nel controllo esistenza tabella:', error);
-      toast.error('Errore nel controllo della tabella temporanea');
-      return;
-    }
-
+    console.log('loadRecordsPage chiamato:', { importLog: importLog.id, page, append });
     const pageSize = 500;
     const offset = page * pageSize;
     
@@ -291,33 +268,37 @@ export default function ImportTemplates() {
     }
 
     try {
-      const { data, error } = await supabase
-        .rpc('get_temp_table_data', { 
-          table_name: importLog.nome_tabella_temporanea,
-          page_limit: pageSize,
-          page_offset: offset
-        });
-
-      if (error) throw error;
+      console.log('Caricamento record da imported_contacts per import_log_id:', importLog.id);
       
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const dataObj = data as { [key: string]: any };
-        const contacts = Array.isArray(dataObj.data) ? dataObj.data : 
-          (dataObj.data ? JSON.parse(dataObj.data as string) : []);
-        
-        if (append) {
-          setViewingRecords(prev => [...prev, ...contacts]);
-        } else {
-          setViewingRecords(contacts);
-          setTotalRecords(dataObj.total_count || 0);
-          setShowRecordsDialog(true);
-          setCurrentRecordIndex(0);
-          setSelectedRecords(new Set());
-        }
-        
-        setCurrentPage(page);
-        setHasMoreRecords(dataObj.has_more || false);
+      // Use the permanent imported_contacts table instead of temp tables
+      const { data, error, count } = await supabase
+        .from('imported_contacts')
+        .select('*', { count: 'exact' })
+        .eq('import_log_id', importLog.id)
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        console.error('Errore query imported_contacts:', error);
+        throw error;
       }
+      
+      console.log('Record caricati:', data?.length, 'di', count);
+      const contacts = data || [];
+      
+      if (append) {
+        setViewingRecords(prev => [...prev, ...contacts]);
+      } else {
+        setViewingRecords(contacts);
+        setTotalRecords(count || 0);
+        setShowRecordsDialog(true);
+        setCurrentRecordIndex(0);
+        setSelectedRecords(new Set());
+        console.log('Dialog aperto con', contacts.length, 'record');
+      }
+      
+      setCurrentPage(page);
+      setHasMoreRecords((count || 0) > offset + pageSize);
+      
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
       toast.error('Errore nel caricamento dei record importati');
@@ -328,6 +309,7 @@ export default function ImportTemplates() {
   };
 
   const viewImportRecords = async (importLog: ImportLog) => {
+    console.log('viewImportRecords chiamato con:', importLog);
     setSelectedImport(importLog);
     await loadRecordsPage(importLog, 0, false);
   };

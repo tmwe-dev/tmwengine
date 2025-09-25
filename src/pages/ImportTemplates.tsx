@@ -52,8 +52,8 @@ export default function ImportTemplates() {
   const [currentRecordIndex, setCurrentRecordIndex] = useState(0);
   const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
   const [importingSelected, setImportingSelected] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [hasMoreRecords, setHasMoreRecords] = useState(false);
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
   
@@ -315,6 +315,107 @@ export default function ImportTemplates() {
   const loadMoreRecords = async () => {
     if (selectedImport && hasMoreRecords && !loadingMoreRecords) {
       await loadRecordsPage(selectedImport, currentPage + 1, true);
+    }
+  };
+
+  const importSelectedRecords = async () => {
+    if (!selectedRecords.size || importingSelected) return;
+
+    setImportingSelected(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      const selectedData = viewingRecords.filter((_, index) => selectedRecords.has(index));
+      
+      for (const record of selectedData) {
+        try {
+          // Map record fields to rubrica structure
+          const rubricaData = {
+            nome: record.name || record.nome || '',
+            alias: record.alias || '',
+            azienda: record.company_alias || record.azienda || '',
+            position: record.position || '',
+            title: record.title || '',
+            telefono: record.phone || record.telefono || '',
+            cellulare: record.cell || record.cellulare || '',
+            email: record.email || '',
+            paese: record.country || record.paese || '',
+            indirizzo: record.Address || record.indirizzo || '',
+            citta: record.city || record.citta || '',
+            zip_code: record.zip_code || '',
+            note: record.note || '',
+            origine: record.origin || record.origine || '',
+            client_code: record.client_code || '',
+            responsabile: record.created_by || record.responsabile || '',
+            stato: record.stato || 'A',
+            // Meta flags
+            meta_client: record.meta_client || false,
+            meta_express: record.meta_express || false,
+            meta_sea_freight: record.meta_sea_freight || false,
+            meta_air_freight: record.meta_air_freight || false,
+            meta_interested: record.meta_interested || false,
+            meta_reception_required_email: record.meta_reception_required_email || false,
+            meta_contact_required_email: record.meta_contact_required_email || false,
+            meta_presentation: record.meta_presentation || false,
+            meta_exworks: record.meta_EXWORKS || record.meta_exworks || false,
+            meta_hight_value_customer: record.meta_hight_value_customer || false,
+            meta_tutorial: record.meta_tutorial || false,
+            meta_rejected: record.meta_rejected || false,
+            meta_wca: record.meta_WCA || record.meta_wca || false,
+            meta_exclient: record.meta_exclient || false,
+            completed: record.completed || false,
+            archiviata: record.archiviata || false,
+            has_actions: record.has_actions || false,
+            // Date fields
+            last_contact: record.last || null,
+            scheduled_contact: record.scheduled_contact || null,
+            next_contact_date: record.next_contact_date || null
+          };
+
+          const { error } = await supabase
+            .from('rubrica')
+            .insert(rubricaData);
+
+          if (error) {
+            console.error('Errore inserimento record:', error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (error) {
+          console.error('Errore elaborazione record:', error);
+          errorCount++;
+        }
+      }
+
+      // Update import log
+      if (selectedImport) {
+        await supabase
+          .from('import_logs')
+          .update({
+            trasferiti_rubrica: true,
+            contatti_selezionati: selectedRecords.size
+          })
+          .eq('id', selectedImport.id);
+      }
+
+      toast.success(`Importati ${successCount} contatti${errorCount > 0 ? `. ${errorCount} errori.` : ''}`);
+      
+      // Refresh import logs
+      await loadImportLogs();
+      
+      // Close dialog
+      setShowRecordsDialog(false);
+      setSelectedImport(null);
+      setViewingRecords([]);
+      setSelectedRecords(new Set());
+      
+    } catch (error) {
+      console.error('Errore importazione:', error);
+      toast.error('Errore durante l\'importazione');
+    } finally {
+      setImportingSelected(false);
     }
   };
 
@@ -692,7 +793,10 @@ export default function ImportTemplates() {
                   }}>
                     Chiudi
                   </Button>
-                  <Button disabled={selectedRecords.size === 0 || importingSelected}>
+                  <Button 
+                    disabled={selectedRecords.size === 0 || importingSelected}
+                    onClick={importSelectedRecords}
+                  >
                     {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
                   </Button>
                 </div>

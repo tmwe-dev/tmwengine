@@ -25,6 +25,7 @@ interface EmailTemplate {
 interface ImportLog {
   id: string;
   file_name: string;
+  file_path: string;
   nome_tabella_temporanea: string | null;
   righe_totali: number;
   righe_importate: number;
@@ -334,6 +335,50 @@ export default function ImportTemplates() {
   const loadMoreRecords = async () => {
     if (selectedImport && hasMoreRecords && !loadingMoreRecords) {
       await loadRecordsPage(selectedImport, currentPage + 1, true);
+    }
+  };
+
+  const deleteImportFile = async (importLog: ImportLog) => {
+    const confirmDelete = confirm(`Sei sicuro di voler eliminare il file "${importLog.file_name}" e tutti i suoi dati importati? Questa azione non può essere annullata.`);
+    
+    if (!confirmDelete) return;
+
+    try {
+      // First delete all imported contacts for this import
+      const { error: contactsError } = await supabase
+        .from('imported_contacts')
+        .delete()
+        .eq('import_log_id', importLog.id);
+
+      if (contactsError) {
+        throw new Error(`Errore nell'eliminazione dei contatti: ${contactsError.message}`);
+      }
+
+      // Delete the file from storage if it exists
+      if (importLog.file_path) {
+        await supabase.storage
+          .from('import-files')
+          .remove([importLog.file_path]);
+      }
+
+      // Finally delete the import log
+      const { error: logError } = await supabase
+        .from('import_logs')
+        .delete()
+        .eq('id', importLog.id);
+
+      if (logError) {
+        throw new Error(`Errore nell'eliminazione del log: ${logError.message}`);
+      }
+
+      toast.success('File e dati eliminati con successo');
+      
+      // Refresh the import logs
+      await loadImportLogs();
+      
+    } catch (error) {
+      console.error('Errore nell\'eliminazione:', error);
+      toast.error('Errore durante l\'eliminazione del file');
     }
   };
 
@@ -708,22 +753,28 @@ export default function ImportTemplates() {
                       <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                           {log.nome_tabella_temporanea && (
-                             <Button 
-                               variant="outline" 
-                               size="sm"
-                               onClick={() => viewImportRecords(log)}
-                               disabled={loadingRecords}
-                             >
-                               <Users className="h-4 w-4" />
-                               {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
-                             </Button>
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => viewImportRecords(log)}
+                             disabled={loadingRecords}
+                           >
+                             <Users className="h-4 w-4" />
+                             {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                           </Button>
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => deleteImportFile(log)}
+                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                           {log.trasferiti_rubrica && (
+                             <Badge variant="secondary" className="bg-green-100 text-green-800">
+                               Trasferiti
+                             </Badge>
                            )}
-                          {log.trasferiti_rubrica && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              Trasferiti
-                            </Badge>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>

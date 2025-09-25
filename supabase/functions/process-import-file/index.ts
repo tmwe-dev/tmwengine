@@ -60,17 +60,29 @@ serve(async (req) => {
         throw new Error('File vuoto');
       }
 
-      // Detect separator (tab or comma)
+      // Detect separator - prioritize TAB detection
       const firstLine = lines[0];
-      const separator = firstLine.includes('\t') ? '\t' : ',';
-      console.log('Detected separator:', separator === '\t' ? 'TAB' : 'COMMA');
-
-      // Prendi la prima riga come header
-      const headers = firstLine.split(separator).map((h: string) => h.trim().replace(/"/g, ''));
+      let separator = '\t'; // Default to TAB
+      let headers: string[];
+      
+      // Try TAB first
+      const tabHeaders = firstLine.split('\t').map((h: string) => h.trim().replace(/"/g, ''));
+      if (tabHeaders.length > 1) {
+        separator = '\t';
+        headers = tabHeaders;
+        console.log('Detected separator: TAB');
+      } else {
+        // Fall back to comma
+        separator = ',';
+        headers = firstLine.split(',').map((h: string) => h.trim().replace(/"/g, ''));
+        console.log('Detected separator: COMMA');
+      }
+      
       const dataRows = lines.slice(1);
       totalRows = dataRows.length;
 
       console.log('Headers detected:', headers);
+      console.log('Headers count:', headers.length);
       console.log('Data rows count:', dataRows.length);
 
       // Create header mapping for field matching
@@ -79,7 +91,7 @@ serve(async (req) => {
         headerMap[header.toLowerCase()] = index;
       });
 
-      console.log('Header mapping:', headerMap);
+      console.log('Header mapping created with', Object.keys(headerMap).length, 'fields');
 
       // Helper function to get value by header name
       const getValue = (values: string[], headerName: string): string | null => {

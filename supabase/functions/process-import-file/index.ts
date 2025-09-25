@@ -88,63 +88,113 @@ serve(async (req) => {
       // Processa e salva ogni riga nella tabella permanent imported_contacts
       const contactsToInsert = [];
       
-      for (let i = 0; i < Math.min(dataRows.length, 10); i++) { // Process only first 10 for debugging
+      // Mappa i campi basandoci sulle specifiche dettagliate
+      const getFieldIndex = (headerName: string, isSecondOccurrence = false): number => {
+        const indexes: number[] = [];
+        headers.forEach((header, index) => {
+          if (header.toLowerCase().trim() === headerName.toLowerCase()) {
+            indexes.push(index);
+          }
+        });
+        const result = isSecondOccurrence && indexes.length > 1 ? indexes[1] : indexes[0];
+        return result !== undefined ? result : -1; // Return -1 if not found
+      };
+
+      const getFieldValue = (fieldName: string, values: string[], isSecondOccurrence = false): string | null => {
+        const index = getFieldIndex(fieldName, isSecondOccurrence);
+        return index >= 0 && index < values.length ? (values[index] || null) : null;
+      };
+
+      const getBooleanValue = (value: string | null) => {
+        if (!value || value === 'NULL' || value === '') return false;
+        return value === '1' || value.toLowerCase() === 'true';
+      };
+
+      const parseDate = (dateValue: string | null) => {
+        if (!dateValue || dateValue === 'NULL' || dateValue === '########') return null;
+        
+        try {
+          // Formato DD/MM/YY
+          if (dateValue.includes('/')) {
+            const parts = dateValue.split(' ')[0].split('/');
+            if (parts.length === 3) {
+              const [day, month, year] = parts;
+              const fullYear = year.length === 2 ? `20${year}` : year;
+              return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+          }
+          // Altri formati già supportati
+          return dateValue;
+        } catch {
+          return null;
+        }
+      };
+      
+      for (let i = 0; i < Math.min(dataRows.length, 100); i++) { // Processa più righe per test completo
         const row = dataRows[i];
         try {
           const values = row.split(separator);
           
           console.log(`Row ${i + 1} - fields count: ${values.length}`);
-          console.log(`Row ${i + 1} - first 10 values:`, values.slice(0, 10));
           
-          // Basic mapping based on the known structure
+          // Sezione CONTATTI (prime colonne)
           const contactData: any = {
             import_log_id: importLog.id,
             row_number: i + 1,
             
-            // Map based on header positions from your example
-            original_id: values[0] || null,
-            commercial_anagrafiche_id: values[1] || null,
-            name: values[2] || null,
-            alias: values[3] || null,
-            company_alias: values[4] || null,
-            position: values[5] || null,
-            title: values[6] || null,
-            phone: values[7] || null,
-            cell: values[8] || null,
-            email: values[9] || null,
-            country: values[10] || null,
-            note: values[11] || null,
-            stato: values[12] || 'A',
-            created_by: values[13] || null,
-            agent_id: values[16] || null,
-            completed: values[17] === '1' || values[17] === 'true',
-            origin: values[21] || null,
-            client_code: values[22] || null,
+            // Identificatori
+            original_id: getFieldValue('id', values),
+            commercial_anagrafiche_id: getFieldValue('commercial_anagrafiche_id', values),
             
-            // Meta flags (positions 23-37)
-            meta_client: values[23] === '1',
-            meta_express: values[24] === '1',
-            meta_sea_freight: values[25] === '1',
-            meta_air_freight: values[26] === '1',
-            meta_interested: values[27] === '1',
-            meta_reception_required_email: values[28] === '1',
-            meta_contact_required_email: values[29] === '1',
-            meta_presentation: values[30] === '1',
-            meta_exworks: values[31] === '1',
-            meta_hight_value_customer: values[32] === '1',
-            meta_tutorial: values[33] === '1',
-            meta_rejected: values[34] === '1',
-            meta_wca: values[35] === '1',
-            meta_exclient: values[36] === '1',
-            archiviata: values[37] === '1',
-            has_actions: values[38] === '1',
+            // Dati contatto
+            name: getFieldValue('name', values),
+            alias: getFieldValue('alias', values),
+            company_alias: getFieldValue('company_alias', values),
+            position: getFieldValue('position', values),
+            title: getFieldValue('title', values),
+            phone: getFieldValue('phone', values),
+            cell: getFieldValue('cell', values),
+            email: getFieldValue('email', values),
+            country: getFieldValue('country', values),
+            note: getFieldValue('note', values),
             
-            // Company data from the second part (around position 39+)
-            company_name: values[40] || null,
-            address: values[42] || null,
-            city: values[45] || null,
-            zip_code: values[44] || null
+            // Stati e metadati
+            stato: getFieldValue('stato', values) || 'A',
+            created_by: getFieldValue('created_by', values),
+            agent_id: getFieldValue('agent_id', values),
+            completed: getBooleanValue(getFieldValue('completed', values)),
+            origin: getFieldValue('origin', values),
+            client_code: getFieldValue('client_code', values),
+            
+            // Meta flags booleani
+            meta_client: getBooleanValue(getFieldValue('meta_client', values)),
+            meta_express: getBooleanValue(getFieldValue('meta_express', values)),
+            meta_sea_freight: getBooleanValue(getFieldValue('meta_sea_freight', values)),
+            meta_air_freight: getBooleanValue(getFieldValue('meta_air_freight', values)),
+            meta_interested: getBooleanValue(getFieldValue('meta_interested', values)),
+            meta_reception_required_email: getBooleanValue(getFieldValue('meta_reception_required_email', values)),
+            meta_contact_required_email: getBooleanValue(getFieldValue('meta_contact_required_email', values)),
+            meta_presentation: getBooleanValue(getFieldValue('meta_presentation', values)),
+            meta_exworks: getBooleanValue(getFieldValue('meta_exworks', values)),
+            meta_hight_value_customer: getBooleanValue(getFieldValue('meta_hight_value_customer', values)),
+            meta_tutorial: getBooleanValue(getFieldValue('meta_tutorial', values)),
+            meta_rejected: getBooleanValue(getFieldValue('meta_rejected', values)),
+            meta_wca: getBooleanValue(getFieldValue('meta_wca', values)),
+            meta_exclient: getBooleanValue(getFieldValue('meta_exclient', values)),
+            archiviata: getBooleanValue(getFieldValue('archiviata', values)),
+            has_actions: getBooleanValue(getFieldValue('has_actions', values)),
+            
+            // Sezione AZIENDA (seconda occorrenza dei campi)
+            company_name: getFieldValue('name', values, true), // Nome completo azienda dalla seconda occorrenza
+            address: getFieldValue('address', values),
+            city: getFieldValue('city', values),
+            zip_code: getFieldValue('zip_code', values)
           };
+
+          // Parse date fields
+          contactData.last_contact = parseDate(getFieldValue('last', values));
+          contactData.scheduled_contact = parseDate(getFieldValue('scheduled_contact', values));
+          contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
 
           // Handle date fields if they exist
           if (values[18] && values[18] !== 'NULL') {

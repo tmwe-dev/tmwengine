@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import CRMLayout from '@/components/layout/CRMLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -189,7 +188,7 @@ export default function ImportTemplates() {
       setImportFile(null);
       setSelectedTemplate('');
       loadImportLogs();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore nel caricamento file:', error);
       toast.error(`Errore nel caricamento del file: ${error.message}`);
     } finally {
@@ -226,276 +225,274 @@ export default function ImportTemplates() {
   };
 
   return (
-    <CRMLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gestione Import Templates</h1>
-            <p className="text-muted-foreground">
-              Gestisci i template per l'importazione di contatti da file Excel e CSV
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Gestione Import Templates</h1>
+          <p className="text-muted-foreground">
+            Gestisci i template per l'importazione di contatti da file Excel e CSV
+          </p>
         </div>
+      </div>
 
-        <Tabs defaultValue="import" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="import">Importa Dati</TabsTrigger>
-            <TabsTrigger value="templates">Gestione Templates</TabsTrigger>
-            <TabsTrigger value="logs">Cronologia Importazioni</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="import" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="import">Importa Dati</TabsTrigger>
+          <TabsTrigger value="templates">Gestione Templates</TabsTrigger>
+          <TabsTrigger value="logs">Cronologia Importazioni</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="import" className="space-y-4">
+        <TabsContent value="import" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Importa File
+              </CardTitle>
+              <CardDescription>
+                Carica un file Excel o CSV utilizzando un template predefinito
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="template-select">Seleziona Template</Label>
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Scegli un template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.filter(t => t.attivo).map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.nome} ({template.tipo.toUpperCase()})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="file-upload">File da Importare</Label>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleFileUpload}
+                  disabled={!importFile || !selectedTemplate || uploadingFile}
+                >
+                  {uploadingFile ? 'Caricamento...' : 'Importa File'}
+                </Button>
+                
+                {selectedTemplate && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const template = templates.find(t => t.id === selectedTemplate);
+                      if (template) downloadTemplate(template);
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Scarica Template
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  Importa File
+                  <Plus className="h-5 w-5" />
+                  Nuovo Template
                 </CardTitle>
-                <CardDescription>
-                  Carica un file Excel o CSV utilizzando un template predefinito
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="template-select">Seleziona Template</Label>
-                    <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Scegli un template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.filter(t => t.attivo).map((template) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.nome} ({template.tipo.toUpperCase()})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="file-upload">File da Importare</Label>
-                    <Input
-                      id="file-upload"
-                      type="file"
-                      accept=".xlsx,.xls,.csv"
-                      onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome Template</Label>
+                  <Input
+                    id="nome"
+                    value={newTemplate.nome}
+                    onChange={(e) => setNewTemplate({...newTemplate, nome: e.target.value})}
+                    placeholder="Es: Template Clienti Standard"
+                  />
                 </div>
 
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleFileUpload}
-                    disabled={!importFile || !selectedTemplate || uploadingFile}
+                <div className="space-y-2">
+                  <Label htmlFor="descrizione">Descrizione</Label>
+                  <Textarea
+                    id="descrizione"
+                    value={newTemplate.descrizione}
+                    onChange={(e) => setNewTemplate({...newTemplate, descrizione: e.target.value})}
+                    placeholder="Descrizione del template"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipo">Tipo File</Label>
+                  <Select 
+                    value={newTemplate.tipo} 
+                    onValueChange={(value) => setNewTemplate({...newTemplate, tipo: value})}
                   >
-                    {uploadingFile ? 'Caricamento...' : 'Importa File'}
-                  </Button>
-                  
-                  {selectedTemplate && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const template = templates.find(t => t.id === selectedTemplate);
-                        if (template) downloadTemplate(template);
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Scarica Template
-                    </Button>
-                  )}
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="excel">Excel (.xlsx, .xls)</SelectItem>
+                      <SelectItem value="csv">CSV (.csv)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mapping">Mapping Colonne (JSON)</Label>
+                  <Textarea
+                    id="mapping"
+                    value={newTemplate.mapping_colonne}
+                    onChange={(e) => setNewTemplate({...newTemplate, mapping_colonne: e.target.value})}
+                    placeholder='{"A": "responsabile", "B": "azienda", "C": "email"}'
+                    rows={4}
+                  />
+                </div>
+
+                <Button onClick={createTemplate} className="w-full">
+                  Crea Template
+                </Button>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="templates" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    Nuovo Template
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Template</Label>
-                    <Input
-                      id="nome"
-                      value={newTemplate.nome}
-                      onChange={(e) => setNewTemplate({...newTemplate, nome: e.target.value})}
-                      placeholder="Es: Template Clienti Standard"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="descrizione">Descrizione</Label>
-                    <Textarea
-                      id="descrizione"
-                      value={newTemplate.descrizione}
-                      onChange={(e) => setNewTemplate({...newTemplate, descrizione: e.target.value})}
-                      placeholder="Descrizione del template"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tipo">Tipo File</Label>
-                    <Select 
-                      value={newTemplate.tipo} 
-                      onValueChange={(value) => setNewTemplate({...newTemplate, tipo: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="excel">Excel (.xlsx, .xls)</SelectItem>
-                        <SelectItem value="csv">CSV (.csv)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="mapping">Mapping Colonne (JSON)</Label>
-                    <Textarea
-                      id="mapping"
-                      value={newTemplate.mapping_colonne}
-                      onChange={(e) => setNewTemplate({...newTemplate, mapping_colonne: e.target.value})}
-                      placeholder='{"A": "responsabile", "B": "azienda", "C": "email"}'
-                      rows={4}
-                    />
-                  </div>
-
-                  <Button onClick={createTemplate} className="w-full">
-                    Crea Template
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Templates Esistenti</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {templates.map((template) => (
-                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {template.tipo === 'excel' ? (
-                              <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <FileText className="h-4 w-4 text-blue-600" />
-                            )}
-                            <h4 className="font-medium">{template.nome}</h4>
-                            {!template.attivo && (
-                              <Badge variant="outline">Inattivo</Badge>
-                            )}
-                          </div>
-                          {template.descrizione && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {template.descrizione}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-1">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>{template.nome}</DialogTitle>
-                                <DialogDescription>
-                                  Dettagli del template
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-3">
-                                <div>
-                                  <strong>Tipo:</strong> {template.tipo.toUpperCase()}
-                                </div>
-                                <div>
-                                  <strong>Mapping Colonne:</strong>
-                                  <pre className="mt-1 p-2 bg-muted rounded text-sm">
-                                    {JSON.stringify(template.mapping_colonne, null, 2)}
-                                  </pre>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => downloadTemplate(template)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteTemplate(template.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="logs" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Cronologia Importazioni</CardTitle>
-                <CardDescription>
-                  Storico delle importazioni effettuate
-                </CardDescription>
+                <CardTitle>Templates Esistenti</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Template</TableHead>
-                      <TableHead>File</TableHead>
-                      <TableHead>Stato</TableHead>
-                      <TableHead>Righe</TableHead>
-                      <TableHead>Successo</TableHead>
-                      <TableHead>Errori</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {importLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          {new Date(log.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{log.templates?.nome}</TableCell>
-                        <TableCell>{log.file_name}</TableCell>
-                        <TableCell>{getStatusBadge(log.stato)}</TableCell>
-                        <TableCell>{log.righe_totali}</TableCell>
-                        <TableCell className="text-green-600">{log.righe_importate}</TableCell>
-                        <TableCell className="text-red-600">{log.righe_errori}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                
-                {importLogs.length === 0 && !loading && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nessuna importazione effettuata
-                  </div>
-                )}
+                <div className="space-y-3">
+                  {templates.map((template) => (
+                    <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {template.tipo === 'excel' ? (
+                            <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-blue-600" />
+                          )}
+                          <h4 className="font-medium">{template.nome}</h4>
+                          {!template.attivo && (
+                            <Badge variant="outline">Inattivo</Badge>
+                          )}
+                        </div>
+                        {template.descrizione && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {template.descrizione}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{template.nome}</DialogTitle>
+                              <DialogDescription>
+                                Dettagli del template
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-3">
+                              <div>
+                                <strong>Tipo:</strong> {template.tipo.toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>Mapping Colonne:</strong>
+                                <pre className="mt-1 p-2 bg-muted rounded text-sm">
+                                  {JSON.stringify(template.mapping_colonne, null, 2)}
+                                </pre>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => downloadTemplate(template)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTemplate(template.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </CRMLayout>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="logs" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cronologia Importazioni</CardTitle>
+              <CardDescription>
+                Storico delle importazioni effettuate
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Template</TableHead>
+                    <TableHead>File</TableHead>
+                    <TableHead>Stato</TableHead>
+                    <TableHead>Righe</TableHead>
+                    <TableHead>Successo</TableHead>
+                    <TableHead>Errori</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        {new Date(log.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{log.templates?.nome}</TableCell>
+                      <TableCell>{log.file_name}</TableCell>
+                      <TableCell>{getStatusBadge(log.stato)}</TableCell>
+                      <TableCell>{log.righe_totali}</TableCell>
+                      <TableCell className="text-green-600">{log.righe_importate}</TableCell>
+                      <TableCell className="text-red-600">{log.righe_errori}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {importLogs.length === 0 && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nessuna importazione effettuata
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

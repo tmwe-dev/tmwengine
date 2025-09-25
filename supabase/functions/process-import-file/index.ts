@@ -60,13 +60,42 @@ serve(async (req) => {
         throw new Error('File vuoto');
       }
 
+      // Detect separator (tab or comma)
+      const firstLine = lines[0];
+      const separator = firstLine.includes('\t') ? '\t' : ',';
+      console.log('Detected separator:', separator === '\t' ? 'TAB' : 'COMMA');
+
       // Prendi la prima riga come header
-      const headers = lines[0].split(',').map((h: string) => h.trim().replace(/"/g, ''));
+      const headers = firstLine.split(separator).map((h: string) => h.trim().replace(/"/g, ''));
       const dataRows = lines.slice(1);
       totalRows = dataRows.length;
 
       console.log('Headers detected:', headers);
       console.log('Data rows count:', dataRows.length);
+
+      // Create header mapping for field matching
+      const headerMap: { [key: string]: number } = {};
+      headers.forEach((header: string, index: number) => {
+        headerMap[header.toLowerCase()] = index;
+      });
+
+      console.log('Header mapping:', headerMap);
+
+      // Helper function to get value by header name
+      const getValue = (values: string[], headerName: string): string | null => {
+        const index = headerMap[headerName.toLowerCase()];
+        if (index !== undefined && values[index]) {
+          const val = values[index].trim();
+          return val === 'NULL' || val === '' ? null : val;
+        }
+        return null;
+      };
+
+      // Helper function to get boolean value
+      const getBoolValue = (values: string[], headerName: string): boolean => {
+        const val = getValue(values, headerName);
+        return val === '1' || val === 'true' || val === 'TRUE';
+      };
 
       // Processa e salva ogni riga nella tabella permanent imported_contacts
       const contactsToInsert = [];
@@ -74,59 +103,102 @@ serve(async (req) => {
       for (let i = 0; i < dataRows.length; i++) {
         const row = dataRows[i];
         try {
-          const values = row.split(',').map((v: string) => v.trim().replace(/"/g, ''));
+          const values = row.split(separator).map((v: string) => v.trim().replace(/"/g, ''));
           
-          // Map dynamic CSV fields to our permanent table structure
+          // Map CSV fields to our permanent table structure using header names
           const contactData: any = {
             import_log_id: importLog.id,
             row_number: i + 1,
-            // Dynamic mapping based on common field names
-            original_id: values[0] || null,
-            commercial_anagrafiche_id: values[1] || null,
-            name: values[2] || null,
-            alias: values[3] || null,
-            company_alias: values[4] || null,
-            position: values[5] || null,
-            title: values[6] || null,
-            phone: values[7] || null,
-            cell: values[8] || null,
-            email: values[9] || null,
-            country: values[10] || null,
-            note: values[11] || null,
-            stato: values[12] || 'A',
-            created_by: values[13] || null,
-            agent_id: values[15] || null,
-            completed: values[17] === 'true' || values[17] === '1',
-            origin: values[21] || null,
-            client_code: values[22] || null,
+            
+            // Map fields using header names
+            original_id: getValue(values, 'id'),
+            commercial_anagrafiche_id: getValue(values, 'commercial_anagrafiche_id'),
+            name: getValue(values, 'name'),
+            alias: getValue(values, 'alias'),
+            company_alias: getValue(values, 'company_alias'),
+            position: getValue(values, 'position'),
+            title: getValue(values, 'title'),
+            phone: getValue(values, 'phone'),
+            cell: getValue(values, 'cell'),
+            email: getValue(values, 'email'),
+            country: getValue(values, 'country'),
+            note: getValue(values, 'note'),
+            stato: getValue(values, 'stato') || 'A',
+            created_by: getValue(values, 'created_by'),
+            agent_id: getValue(values, 'agent_id'),
+            completed: getBoolValue(values, 'completed'),
+            origin: getValue(values, 'origin'),
+            client_code: getValue(values, 'client_code'),
+            
             // Meta flags
-            meta_client: values[23] === 'true' || values[23] === '1',
-            meta_express: values[24] === 'true' || values[24] === '1',
-            meta_sea_freight: values[25] === 'true' || values[25] === '1',
-            meta_air_freight: values[26] === 'true' || values[26] === '1',
-            meta_interested: values[27] === 'true' || values[27] === '1',
-            meta_reception_required_email: values[28] === 'true' || values[28] === '1',
-            meta_contact_required_email: values[29] === 'true' || values[29] === '1',
-            meta_presentation: values[30] === 'true' || values[30] === '1',
-            meta_exworks: values[31] === 'true' || values[31] === '1',
-            meta_hight_value_customer: values[32] === 'true' || values[32] === '1',
-            meta_tutorial: values[33] === 'true' || values[33] === '1',
-            meta_rejected: values[34] === 'true' || values[34] === '1',
-            meta_wca: values[35] === 'true' || values[35] === '1',
-            meta_exclient: values[36] === 'true' || values[36] === '1',
-            archiviata: values[37] === 'true' || values[37] === '1',
-            has_actions: values[38] === 'true' || values[38] === '1',
-            // Company data (from second part of CSV)
-            company_name: values[40] || null,
-            address: values[42] || null,
-            city: values[45] || null,
-            zip_code: values[44] || null
+            meta_client: getBoolValue(values, 'meta_client'),
+            meta_express: getBoolValue(values, 'meta_express'),
+            meta_sea_freight: getBoolValue(values, 'meta_sea_freight'),
+            meta_air_freight: getBoolValue(values, 'meta_air_freight'),
+            meta_interested: getBoolValue(values, 'meta_interested'),
+            meta_reception_required_email: getBoolValue(values, 'meta_reception_required_email'),
+            meta_contact_required_email: getBoolValue(values, 'meta_contact_required_email'),
+            meta_presentation: getBoolValue(values, 'meta_presentation'),
+            meta_exworks: getBoolValue(values, 'meta_EXWORKS'),
+            meta_hight_value_customer: getBoolValue(values, 'meta_hight_value_customer'),
+            meta_tutorial: getBoolValue(values, 'meta_tutorial'),
+            meta_rejected: getBoolValue(values, 'meta_rejected'),
+            meta_wca: getBoolValue(values, 'meta_WCA'),
+            meta_exclient: getBoolValue(values, 'meta_exclient'),
+            archiviata: getBoolValue(values, 'archiviata'),
+            has_actions: getBoolValue(values, 'has_actions'),
+            
+            // Company data from second section (there seem to be duplicate headers)
+            // Look for the second occurrence of some fields
+            company_name: getValue(values, 'company_alias') || headers.filter(h => h.toLowerCase().includes('name')).map(h => getValue(values, h)).find(v => v) || null,
+            address: getValue(values, 'Address') || getValue(values, 'address'),
+            city: getValue(values, 'city'),
+            zip_code: getValue(values, 'zip_code')
           };
 
-          // Handle date fields safely
-          if (values[18]) contactData.last_contact = values[18];
-          if (values[19]) contactData.scheduled_contact = values[19];
-          if (values[20]) contactData.next_contact_date = values[20];
+          // Handle date fields with proper parsing
+          const lastDate = getValue(values, 'last');
+          if (lastDate && lastDate !== 'NULL') {
+            try {
+              // Try to parse the date (format: DD/MM/YY HH:mm or similar)
+              const dateParts = lastDate.split(' ')[0].split('/');
+              if (dateParts.length === 3) {
+                const [day, month, year] = dateParts;
+                const fullYear = year.length === 2 ? `20${year}` : year;
+                contactData.last_contact = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } catch (dateError) {
+              console.log('Date parsing error for last:', lastDate, dateError);
+            }
+          }
+
+          const scheduledDate = getValue(values, 'scheduled_contact');
+          if (scheduledDate && scheduledDate !== 'NULL') {
+            try {
+              const dateParts = scheduledDate.split(' ')[0].split('/');
+              if (dateParts.length === 3) {
+                const [day, month, year] = dateParts;
+                const fullYear = year.length === 2 ? `20${year}` : year;
+                contactData.scheduled_contact = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } catch (dateError) {
+              console.log('Date parsing error for scheduled_contact:', scheduledDate, dateError);
+            }
+          }
+
+          const nextContactDate = getValue(values, 'next_contact_date');
+          if (nextContactDate && nextContactDate !== 'NULL') {
+            try {
+              const dateParts = nextContactDate.split(' ')[0].split('/');
+              if (dateParts.length === 3) {
+                const [day, month, year] = dateParts;
+                const fullYear = year.length === 2 ? `20${year}` : year;
+                contactData.next_contact_date = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } catch (dateError) {
+              console.log('Date parsing error for next_contact_date:', nextContactDate, dateError);
+            }
+          }
 
           contactsToInsert.push(contactData);
           importedRows++;
@@ -137,10 +209,14 @@ serve(async (req) => {
         }
       }
 
+      console.log(`Prepared ${contactsToInsert.length} contacts for insert`);
+
       // Insert contacts in batches to avoid timeouts
       const batchSize = 1000;
       for (let i = 0; i < contactsToInsert.length; i += batchSize) {
         const batch = contactsToInsert.slice(i, i + batchSize);
+        console.log(`Inserting batch ${Math.floor(i/batchSize) + 1}, records ${i + 1} to ${Math.min(i + batchSize, contactsToInsert.length)}`);
+        
         const { error: insertError } = await supabaseClient
           .from('imported_contacts')
           .insert(batch);
@@ -150,6 +226,8 @@ serve(async (req) => {
           throw new Error(`Errore nell'inserimento batch: ${insertError.message}`);
         }
       }
+
+      console.log('All batches inserted successfully');
 
       // Aggiorna il log di importazione
       await supabaseClient

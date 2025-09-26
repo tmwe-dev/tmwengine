@@ -1700,43 +1700,62 @@ export default function ImportTemplates() {
            ) : filteredRecords.length > 0 ? (
             <div className="space-y-4 flex flex-col min-h-0 flex-1">
                <div className="flex-1 border rounded-md max-h-96 overflow-hidden flex flex-col">
-                 <div className="border-b bg-white dark:bg-gray-950 sticky top-0 z-20">
-                   <Table>
-                     <TableHeader>
-                       <TableRow>
-                         <TableHead className="w-12 bg-background border-b">
-                           <Checkbox
-                             checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                             onCheckedChange={toggleSelectAll}
-                             aria-label="Seleziona tutti"
-                            />
-                          </TableHead>
-                          <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
-                          {(() => {
-                            const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                            const visibleCols = getVisibleColumns(allColumns);
-                            return visibleCols.map((key) => (
-                               <TableHead 
-                                 key={key} 
-                                 className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
-                                   key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                   key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                   key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                                   key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                   'min-w-[120px]'
-                                 }`}
-                                 onClick={() => handleColumnSort(key)}
-                               >
-                                 <div className="flex items-center gap-1">
-                                   <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                   {getSortIcon(key)}
-                                 </div>
-                               </TableHead>
-                            ));
-                          })()}
-                       </TableRow>
-                     </TableHeader>
-                   </Table>
+                 <div className="border-b bg-white dark:bg-gray-950 sticky top-0 z-20 overflow-hidden">
+                   <div 
+                     className="overflow-auto scrollbar-none"
+                     ref={(el) => {
+                       if (el) {
+                         const bodyScroll = el.parentElement?.nextElementSibling?.querySelector('.overflow-auto');
+                         if (bodyScroll) {
+                           const syncScroll = () => {
+                             bodyScroll.scrollLeft = el.scrollLeft;
+                           };
+                           const syncScrollReverse = () => {
+                             el.scrollLeft = bodyScroll.scrollLeft;
+                           };
+                           el.addEventListener('scroll', syncScroll);
+                           bodyScroll.addEventListener('scroll', syncScrollReverse);
+                         }
+                       }
+                     }}
+                   >
+                     <Table>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead className="w-12 bg-background border-b">
+                             <Checkbox
+                               checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                               onCheckedChange={toggleSelectAll}
+                               aria-label="Seleziona tutti"
+                              />
+                            </TableHead>
+                            <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
+                            {(() => {
+                              const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                              const visibleCols = getVisibleColumns(allColumns);
+                              return visibleCols.map((key) => (
+                                 <TableHead 
+                                   key={key} 
+                                   className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
+                                     key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                     key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                     key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                     key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                     'min-w-[120px]'
+                                   }`}
+                                   onClick={() => handleColumnSort(key)}
+                                 >
+                                   <div className="flex items-center gap-1">
+                                     <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                     {getSortIcon(key)}
+                                   </div>
+                                 </TableHead>
+                              ));
+                            })()}
+                         </TableRow>
+                       </TableHeader>
+                     </Table>
+                   </div>
                  </div>
                  <div className="overflow-auto flex-1">
                    <Table>

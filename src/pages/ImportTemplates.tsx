@@ -1677,27 +1677,27 @@ export default function ImportTemplates() {
                  <Table>
                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>
-                       <TableHead className="w-12 bg-background border-b">
-                         <Checkbox
-                           checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                           onCheckedChange={toggleSelectAll}
-                           aria-label="Seleziona tutti"
-                          />
-                        </TableHead>
-                        <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
+                        <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
+                          <Checkbox
+                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Seleziona tutti"
+                           />
+                         </TableHead>
+                        <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]">#</TableHead>
                         {(() => {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
                           return visibleCols.map((key) => (
-                             <TableHead 
-                               key={key} 
-                               className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
-                                 key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                 key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                 key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                                 key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                 'min-w-[120px]'
-                               }`}
+                              <TableHead 
+                                key={key} 
+                                className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
+                                  key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                  key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                  key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                  key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                  'min-w-[120px]'
+                                }`}
                                onClick={() => handleColumnSort(key)}
                              >
                                <div className="flex items-center gap-1">
@@ -1714,23 +1714,23 @@ export default function ImportTemplates() {
                         const actualIndex = currentPage * recordsPerPage + viewIndex;
                         return (
                         <TableRow key={viewIndex}>
-                          <TableCell className="w-12">
-                            <Checkbox
-                              checked={selectedRecords.has(actualIndex)}
-                              onCheckedChange={() => toggleRecordSelection(actualIndex)}
-                              aria-label={`Seleziona record ${actualIndex + 1}`}
-                             />
-                           </TableCell>
-                           <TableCell className="w-16 text-center text-muted-foreground">
-                             {actualIndex + 1}
-                           </TableCell>
+                            <TableCell className="w-12 px-4 py-[10px]">
+                              <Checkbox
+                               checked={selectedRecords.has(actualIndex)}
+                               onCheckedChange={() => toggleRecordSelection(actualIndex)}
+                               aria-label={`Seleziona record ${actualIndex + 1}`}
+                              />
+                            </TableCell>
+                            <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
+                              {actualIndex + 1}
+                            </TableCell>
                           {(() => {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);
                             return visibleCols.map((key) => (
                                 <TableCell 
                                   key={key} 
-                                  className={`truncate transition-colors ${
+                                  className={`truncate transition-colors px-4 py-[10px] ${
                                     key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
                                     key === 'stato' ? 'w-16 max-w-[60px]' :
                                     key === 'agent_id' ? 'w-22 max-w-[84px]' :

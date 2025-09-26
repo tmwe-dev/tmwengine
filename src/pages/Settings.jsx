@@ -428,6 +428,16 @@ const Settings = () => {
   const handleSyncEmails = async () => {
     setSaving(true);
     try {
+      // Verifica che la configurazione sia salvata
+      if (!emailConfig.id) {
+        toast({
+          title: "Errore",
+          description: "Salva prima la configurazione email",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Sincronizzazione",
         description: "Sincronizzazione email in corso...",
@@ -435,14 +445,29 @@ const Settings = () => {
 
       console.log('🚀 Calling email-imap-sync function with provider_id:', emailConfig.id);
 
-      const response = await supabase.functions.invoke('email-imap-sync', {
-        body: {
+      // Test diretto con fetch per vedere l'errore completo
+      const response = await fetch(`https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/email-imap-sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno?.env?.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A'}`
+        },
+        body: JSON.stringify({
           provider_id: emailConfig.id,
           tipo_sync: 'manuale'
-        }
+        })
       });
 
-      console.log('📡 Function response:', response);
+      console.log('📡 Response status:', response.status);
+      const responseText = await response.text();
+      console.log('📡 Response body:', responseText);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseText}`);
+      }
+
+      const result = JSON.parse(responseText);
+      console.log('✅ Sync result:', result);
 
       if (response.error) {
         console.error('❌ Function error:', response.error);

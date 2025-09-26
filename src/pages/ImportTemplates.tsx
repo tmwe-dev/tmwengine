@@ -713,6 +713,38 @@ export default function ImportTemplates() {
     
     return result;
   };
+  
+  // Function to delete a single imported contact
+  const deleteImportedContact = async (contactId: string, index: number) => {
+    try {
+      const { error } = await supabase
+        .from('imported_contacts')
+        .delete()
+        .eq('id', contactId);
+        
+      if (error) throw error;
+      
+      // Remove from local state
+      const newAllRecords = allRecords.filter(record => record.id !== contactId);
+      setAllRecords(newAllRecords);
+      
+      // Update selected records if necessary
+      const newSelectedRecords = new Set<number>();
+      selectedRecords.forEach(selectedIndex => {
+        if (selectedIndex < index) {
+          newSelectedRecords.add(selectedIndex);
+        } else if (selectedIndex > index) {
+          newSelectedRecords.add(selectedIndex - 1);
+        }
+      });
+      setSelectedRecords(newSelectedRecords);
+      
+      toast.success('Record eliminato con successo');
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del record:', error);
+      toast.error('Errore nell\'eliminazione del record');
+    }
+  };
 
   const compareValues = (a: any, b: any, direction: 'asc' | 'desc'): number => {
     // Gestione valori null/undefined
@@ -1707,8 +1739,9 @@ export default function ImportTemplates() {
                                  {getSortIcon(key)}
                                </div>
                              </TableHead>
-                          ));
-                        })()}
+                           ));
+                         })()}
+                         <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
                      </TableRow>
                    </TableHeader>
                    <TableBody>
@@ -1787,9 +1820,29 @@ export default function ImportTemplates() {
                                      formatCellValue(record[key], key)
                                    )}
                                 </TableCell>
-                            ));
-                          })()}
-                        </TableRow>
+                             ));
+                           })()}
+                           <TableCell className="w-16 px-4 py-[10px] text-center">
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       deleteImportedContact(record.id, actualIndex);
+                                     }}
+                                     className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
+                                   >
+                                     <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
+                                   </button>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>Elimina record</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                           </TableCell>
+                         </TableRow>
                         );
                       })}
                    </TableBody>

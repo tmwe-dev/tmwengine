@@ -54,6 +54,88 @@ const formatCellValue = (value: any, fieldKey?: string): string => {
   
   return String(value);
 };
+
+// Function to get country flag emoji
+const getCountryFlag = (countryName: string): string => {
+  if (!countryName) return '';
+  
+  const countryFlags: { [key: string]: string } = {
+    'italy': '🇮🇹',
+    'italia': '🇮🇹',
+    'france': '🇫🇷',
+    'francia': '🇫🇷',
+    'germany': '🇩🇪',
+    'germania': '🇩🇪',
+    'spain': '🇪🇸',
+    'spagna': '🇪🇸',
+    'united kingdom': '🇬🇧',
+    'uk': '🇬🇧',
+    'regno unito': '🇬🇧',
+    'united states': '🇺🇸',
+    'usa': '🇺🇸',
+    'stati uniti': '🇺🇸',
+    'china': '🇨🇳',
+    'cina': '🇨🇳',
+    'japan': '🇯🇵',
+    'giappone': '🇯🇵',
+    'netherlands': '🇳🇱',
+    'olanda': '🇳🇱',
+    'paesi bassi': '🇳🇱',
+    'belgium': '🇧🇪',
+    'belgio': '🇧🇪',
+    'switzerland': '🇨🇭',
+    'svizzera': '🇨🇭',
+    'austria': '🇦🇹',
+    'poland': '🇵🇱',
+    'polonia': '🇵🇱',
+    'portugal': '🇵🇹',
+    'portogallo': '🇵🇹',
+    'greece': '🇬🇷',
+    'grecia': '🇬🇷',
+    'turkey': '🇹🇷',
+    'turchia': '🇹🇷',
+    'russia': '🇷🇺',
+    'russian federation': '🇷🇺',
+    'canada': '🇨🇦',
+    'australia': '🇦🇺',
+    'brazil': '🇧🇷',
+    'brasile': '🇧🇷',
+    'india': '🇮🇳',
+    'south korea': '🇰🇷',
+    'corea del sud': '🇰🇷',
+    'mexico': '🇲🇽',
+    'messico': '🇲🇽',
+    'argentina': '🇦🇷',
+    'sweden': '🇸🇪',
+    'svezia': '🇸🇪',
+    'norway': '🇳🇴',
+    'norvegia': '🇳🇴',
+    'denmark': '🇩🇰',
+    'danimarca': '🇩🇰',
+    'finland': '🇫🇮',
+    'finlandia': '🇫🇮',
+    'ireland': '🇮🇪',
+    'irlanda': '🇮🇪',
+    'czech republic': '🇨🇿',
+    'repubblica ceca': '🇨🇿',
+    'hungary': '🇭🇺',
+    'ungheria': '🇭🇺',
+    'romania': '🇷🇴',
+    'slovenia': '🇸🇮',
+    'croatia': '🇭🇷',
+    'croazia': '🇭🇷',
+    'slovakia': '🇸🇰',
+    'slovacchia': '🇸🇰',
+    'lithuania': '🇱🇹',
+    'lituania': '🇱🇹',
+    'latvia': '🇱🇻',
+    'lettonia': '🇱🇻',
+    'estonia': '🇪🇪'
+  };
+  
+  const normalizedCountry = countryName.toLowerCase().trim();
+  return countryFlags[normalizedCountry] || '🌍';
+};
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -1519,10 +1601,17 @@ export default function ImportTemplates() {
                                      addFilter(key, record[key]);
                                    }
                                  }}
-                                 title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
-                               >
-                                 {formatCellValue(record[key], key)}
-                               </TableCell>
+                                  title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                                >
+                                  {key === 'country' ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-base">{getCountryFlag(record[key])}</span>
+                                      <span>{formatCellValue(record[key], key)}</span>
+                                    </div>
+                                  ) : (
+                                    formatCellValue(record[key], key)
+                                  )}
+                                </TableCell>
                             ));
                           })()}
                        </TableRow>

@@ -149,7 +149,7 @@ serve(async (req) => {
         }
       };
       
-      for (let i = 0; i < Math.min(dataRows.length, 100); i++) { // Processa più righe per test completo
+      for (let i = 0; i < dataRows.length; i++) {
         const row = dataRows[i];
         try {
           const values = row.split(separator);

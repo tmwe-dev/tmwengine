@@ -193,104 +193,89 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       </div>
 
-      {/* Sezione Informazioni Aggiuntive */}
+      {/* Sezione Informazioni Aggiuntive - tutti i campi rimanenti */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-primary" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {record.stato !== undefined && (
-            <FieldRenderer 
-              field="stato" 
-              value={record.stato} 
-              formatCellValue={formatCellValue}
-            />
-          )}
+        <div className="flex items-start gap-4">
+          <Database className="h-5 w-5 text-primary mt-5" />
           
-          {record.agent_id !== undefined && (
-            <FieldRenderer 
-              field="agent_id" 
-              value={record.agent_id} 
-              formatCellValue={formatCellValue}
-            />
-          )}
-          
-          {record.client_code !== undefined && (
-            <FieldRenderer 
-              field="client_code" 
-              value={record.client_code} 
-              formatCellValue={formatCellValue}
-            />
-          )}
-        </div>
-        
-        {/* Note - larghezza piena */}
-        {record.note !== undefined && (
-          <div className="w-full">
-            <FieldRenderer 
-              field="note" 
-              value={record.note} 
-              formatCellValue={formatCellValue}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+            {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
+            {Object.keys(record)
+              .filter(key => ![
+                'id', 'import_log_id', 'company_name', 'company_alias', 'origin',
+                'name', 'title', 'alias', 'position', 'email', 'phone', 'cell',
+                'country', 'city', 'zip_code', 'address', 'last_contact',
+                'next_contact_date', 'scheduled_contact'
+              ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
+              .map(field => (
+                <FieldRenderer 
+                  key={field}
+                  field={field} 
+                  value={record[field]} 
+                  formatCellValue={formatCellValue}
+                />
+              ))}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {record.last_contact !== undefined && (
-              <FieldRenderer 
-                field="last_contact" 
-                value={record.last_contact} 
-                formatCellValue={formatCellValue}
-              />
-            )}
+          <div className="flex items-start gap-4">
+            <Clock className="h-5 w-5 text-primary mt-5" />
             
-            {record.next_contact_date !== undefined && (
-              <FieldRenderer 
-                field="next_contact_date" 
-                value={record.next_contact_date} 
-                formatCellValue={formatCellValue}
-              />
-            )}
-            
-            {record.scheduled_contact !== undefined && (
-              <FieldRenderer 
-                field="scheduled_contact" 
-                value={record.scheduled_contact} 
-                formatCellValue={formatCellValue}
-              />
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+              {record.last_contact !== undefined && (
+                <FieldRenderer 
+                  field="last_contact" 
+                  value={record.last_contact} 
+                  formatCellValue={formatCellValue}
+                />
+              )}
+              
+              {record.next_contact_date !== undefined && (
+                <FieldRenderer 
+                  field="next_contact_date" 
+                  value={record.next_contact_date} 
+                  formatCellValue={formatCellValue}
+                />
+              )}
+              
+              {record.scheduled_contact !== undefined && (
+                <FieldRenderer 
+                  field="scheduled_contact" 
+                  value={record.scheduled_contact} 
+                  formatCellValue={formatCellValue}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Sezione Meta Flags */}
-      {Object.keys(record).some(key => key.startsWith('meta_') && record[key]) && (
+      {/* Sezione Meta Flags - mostra tutti i meta flags */}
+      {Object.keys(record).some(key => key.startsWith('meta_')) && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center">
+          <div className="flex items-start gap-4">
+            <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center mt-5">
               <div className="h-2 w-2 bg-white rounded-full"></div>
             </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(record)
-              .filter(key => key.startsWith('meta_') && record[key])
-              .map(key => (
-                <div key={key} className="flex-none">
-                  <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    {key.replace('meta_', '').replace(/_/g, ' ')}
+            
+            <div className="flex flex-wrap gap-2 flex-1">
+              {Object.keys(record)
+                .filter(key => key.startsWith('meta_'))
+                .map(key => (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{key.replace('meta_', '').replace(/_/g, ' ')}:</span>
+                    <div className={`px-2 py-1 rounded-full text-xs ${
+                      record[key] ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {record[key] ? 'Sì' : 'No'}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
         </div>
       )}

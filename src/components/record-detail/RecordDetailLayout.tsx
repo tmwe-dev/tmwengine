@@ -212,7 +212,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   <div className="text-sm font-medium text-blue-600 mb-1">
                     {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </div>
-                  <div className="text-sm text-blue-500">
+                  <div className="text-sm text-foreground">
                     {formatCellValue(record[field], field)}
                   </div>
                 </div>
@@ -273,7 +273,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                       {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </div>
                     <div className={`text-sm font-medium ${
-                      record[key] ? 'text-blue-500' : 'text-blue-300'
+                      record[key] ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
                       {record[key] ? 'Sì' : 'No'}
                     </div>

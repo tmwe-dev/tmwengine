@@ -433,6 +433,8 @@ const Settings = () => {
         description: "Sincronizzazione email in corso...",
       });
 
+      console.log('🚀 Calling email-imap-sync function with provider_id:', emailConfig.id);
+
       const response = await supabase.functions.invoke('email-imap-sync', {
         body: {
           provider_id: emailConfig.id,
@@ -440,20 +442,25 @@ const Settings = () => {
         }
       });
 
+      console.log('📡 Function response:', response);
+
       if (response.error) {
-        throw new Error(response.error.message);
+        console.error('❌ Function error:', response.error);
+        throw new Error(response.error.message || 'Errore nella funzione edge');
       }
 
       const result = response.data;
+      console.log('✅ Sync result:', result);
+      
       toast({
         title: "Successo",
-        description: `Sincronizzate ${result.messaggi_nuovi} nuove email, aggiornate ${result.messaggi_aggiornati}`,
+        description: `Sincronizzate ${result.messaggi_nuovi || 0} nuove email, aggiornate ${result.messaggi_aggiornati || 0}`,
       });
     } catch (error) {
       console.error('Errore sincronizzazione:', error);
       toast({
         title: "Errore",
-        description: "Impossibile sincronizzare le email",
+        description: `Errore sincronizzazione: ${error.message}`,
         variant: "destructive",
       });
     } finally {

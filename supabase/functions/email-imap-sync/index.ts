@@ -35,9 +35,24 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { provider_id, tipo_sync = 'manuale' }: SyncRequest = await req.json();
+    // Leggi il body della richiesta
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Formato richiesta non valido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { provider_id, tipo_sync = 'manuale' }: SyncRequest = requestBody;
+
+    console.log('📬 Sync request:', { provider_id, tipo_sync });
 
     if (!provider_id) {
+      console.error('❌ Missing provider_id');
       return new Response(
         JSON.stringify({ error: 'provider_id è obbligatorio' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

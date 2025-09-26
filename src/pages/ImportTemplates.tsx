@@ -2018,7 +2018,7 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-1 bg-muted/50 rounded-md min-h-[12px] flex items-center w-full">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
                           <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>

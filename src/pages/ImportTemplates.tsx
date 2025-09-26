@@ -1795,38 +1795,70 @@ export default function ImportTemplates() {
                  </Table>
                </div>
                
-               <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
-                <div className="text-sm text-muted-foreground">
-                  Caricati: {viewingRecords.length} di {totalRecords} record totali
-                  {activeFilters.length > 0 && (
-                    <span className="ml-2 text-blue-600">
-                      • {filteredRecords.length} filtrati
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <div className="text-sm text-muted-foreground">
-                    Mostrando {viewingRecords.length} di {filteredRecords.length} record
-                  </div>
-                  <Button variant="outline" onClick={() => {
-                     setShowRecordsDialog(false);
-                     setSelectedImport(null);
-                     setViewingRecords([]);
-                     setFilteredRecords([]);
-                     setCurrentPage(0);
-                     setSelectedRecords(new Set());
-                     setActiveFilters([]);
-                   }}>
-                     Chiudi
-                   </Button>
-                   <Button 
-                     disabled={selectedRecords.size === 0 || importingSelected}
-                     onClick={importSelectedRecords}
-                   >
-                     {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
-                   </Button>
-                </div>
-              </div>
+                <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
+                 <div className="text-sm text-muted-foreground">
+                   Caricati: {viewingRecords.length} di {totalRecords} record totali
+                   {activeFilters.length > 0 && (
+                     <span className="ml-2 text-blue-600">
+                       • {filteredRecords.length} filtrati
+                     </span>
+                   )}
+                 </div>
+                 
+                 {/* Pagination Controls - Center */}
+                 {Math.ceil(filteredRecords.length / recordsPerPage) > 1 && (
+                   <div className="flex justify-center items-center gap-4">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                       disabled={currentPage <= 0}
+                       className="flex items-center gap-2"
+                     >
+                       <ChevronLeft className="h-4 w-4" />
+                       Precedente
+                     </Button>
+                     
+                     <span className="text-sm text-muted-foreground">
+                       Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                     </span>
+                     
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                       disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                       className="flex items-center gap-2"
+                     >
+                       Successivo
+                       <ChevronRight className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 )}
+                 
+                 <div className="flex gap-2">
+                   <div className="text-sm text-muted-foreground">
+                     Mostrando {viewingRecords.length} di {filteredRecords.length} record
+                   </div>
+                   <Button variant="outline" onClick={() => {
+                      setShowRecordsDialog(false);
+                      setSelectedImport(null);
+                      setViewingRecords([]);
+                      setFilteredRecords([]);
+                      setCurrentPage(0);
+                      setSelectedRecords(new Set());
+                      setActiveFilters([]);
+                    }}>
+                      Chiudi
+                    </Button>
+                    <Button 
+                      disabled={selectedRecords.size === 0 || importingSelected}
+                      onClick={importSelectedRecords}
+                    >
+                      {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
+                    </Button>
+                 </div>
+               </div>
             </div>
           ) : (
             <div className="text-center py-8">

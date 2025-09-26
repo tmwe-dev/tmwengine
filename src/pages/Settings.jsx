@@ -468,14 +468,6 @@ const Settings = () => {
 
       const result = JSON.parse(responseText);
       console.log('✅ Sync result:', result);
-
-      if (response.error) {
-        console.error('❌ Function error:', response.error);
-        throw new Error(response.error.message || 'Errore nella funzione edge');
-      }
-
-      const result = response.data;
-      console.log('✅ Sync result:', result);
       
       toast({
         title: "Successo",

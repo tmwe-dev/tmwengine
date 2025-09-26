@@ -115,8 +115,8 @@ export default function ImportTemplates() {
   // Stato per controllare la visibilità delle colonne
   const [visibleColumns, setVisibleColumns] = useState({
     company: true,
-    details: true, 
-    metadata: true
+    details: false, 
+    metadata: false
   });
   
   // Stato per la visualizzazione del record singolo
@@ -1203,7 +1203,7 @@ export default function ImportTemplates() {
           setActiveFilters([]);
         }
       }}>
-        <DialogContent className="max-w-full max-h-[80vh] overflow-y-auto mx-4">
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               Record Importati - {selectedImport?.file_name}
@@ -1311,9 +1311,9 @@ export default function ImportTemplates() {
                 <p>Caricamento record...</p>
               </div>
             </div>
-          ) : filteredRecords.length > 0 ? (
-            <div className="space-y-4">
-              <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+           ) : filteredRecords.length > 0 ? (
+            <div className="space-y-4 flex flex-col min-h-0 flex-1">
+              <div className="overflow-auto flex-1 border rounded-md">
                  <Table>
                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>
@@ -1373,9 +1373,9 @@ export default function ImportTemplates() {
                      ))}
                    </TableBody>
                  </Table>
-              </div>
-              
-              <div className="flex justify-between items-center pt-4 border-t">
+               </div>
+               
+               <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
                 <div className="text-sm text-muted-foreground">
                   Caricati: {viewingRecords.length} di {totalRecords} record totali
                   {activeFilters.length > 0 && (
@@ -1424,7 +1424,7 @@ export default function ImportTemplates() {
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Dettaglio Contatto</span>
@@ -1459,8 +1459,8 @@ export default function ImportTemplates() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedRecord && (
-            <div className="space-y-6">
+           {selectedRecord && (
+            <div className="space-y-6 overflow-auto flex-1 pr-2">
               {/* Sezione DEFAULT - Informazioni Prioritarie */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-primary flex items-center gap-2">

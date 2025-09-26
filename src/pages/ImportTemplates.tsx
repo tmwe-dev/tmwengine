@@ -1735,15 +1735,17 @@ export default function ImportTemplates() {
                      </TableRow>
                    </TableHeader>
                    <TableBody>
-                     {filteredRecords.map((record, index) => (
-                       <TableRow key={index}>
-                         <TableCell className="w-12">
-                           <Checkbox
-                             checked={selectedRecords.has(index)}
-                             onCheckedChange={() => toggleRecordSelection(index)}
-                             aria-label={`Seleziona record ${index + 1}`}
-                           />
-                         </TableCell>
+                      {viewingRecords.map((record, viewIndex) => {
+                        const actualIndex = currentPage * recordsPerPage + viewIndex;
+                        return (
+                        <TableRow key={viewIndex}>
+                          <TableCell className="w-12">
+                            <Checkbox
+                              checked={selectedRecords.has(actualIndex)}
+                              onCheckedChange={() => toggleRecordSelection(actualIndex)}
+                              aria-label={`Seleziona record ${actualIndex + 1}`}
+                            />
+                          </TableCell>
                           {(() => {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);
@@ -1762,7 +1764,7 @@ export default function ImportTemplates() {
                                   }`}
                                  onClick={() => {
                                    if (key === 'name') {
-                                     openRecordDetail(record, index);
+                                     openRecordDetail(record, actualIndex);
                                    } else {
                                      addFilter(key, record[key]);
                                    }
@@ -1780,8 +1782,9 @@ export default function ImportTemplates() {
                                 </TableCell>
                             ));
                           })()}
-                       </TableRow>
-                     ))}
+                        </TableRow>
+                        );
+                      })}
                    </TableBody>
                  </Table>
                </div>

@@ -503,29 +503,60 @@ export default function ImportTemplates() {
     setFilteredRecords(viewingRecords);
   };
   
-  // Organizzazione delle colonne in gruppi logici
+  // Define DEFAULT always visible columns (priority for contact selection)
+  const getDefaultColumns = () => [
+    'company_name', 'company_alias', 'alias',
+    'name', 'position', 'title',
+    'email',
+    'phone', 'cell', // one of these will be shown based on availability
+    'city',
+    'stato', 'country', 'origin', 'agent_id',
+    'last_contact', 'next_contact_date'
+  ];
+
+  // Define column groups for toggle visibility
   const getColumnGroups = (columns: string[]) => {
-    const companyColumns = ['original_id', 'commercial_anagrafiche_id', 'name', 'alias', 'company_name', 'company_alias', 'title', 'position', 'address', 'city', 'zip_code', 'country', 'phone', 'cell', 'email'];
-    const detailColumns = ['stato', 'note', 'last_contact', 'scheduled_contact', 'next_contact_date', 'client_code', 'origin', 'created_by', 'agent_id', 'has_actions', 'completed', 'archiviata'];
-    const metaColumns = columns.filter(col => col.startsWith('meta_') || col.includes('created_at') || col.includes('updated_at') || col.includes('row_number'));
+    const defaultCols = getDefaultColumns();
     
     return {
-      company: columns.filter(col => companyColumns.includes(col)),
-      details: columns.filter(col => detailColumns.includes(col) && !col.startsWith('meta_')),
-      metadata: columns.filter(col => metaColumns.includes(col) || (!companyColumns.includes(col) && !detailColumns.includes(col) && col !== 'id' && col !== 'import_log_id'))
+      company: ['address', 'zip_code'], // Additional company & contact fields
+      details: columns.filter(col => [
+        'client_code', 'source', 'tag', 'note', 'priority', 'budget', 'lead_score',
+        'completed', 'archiviata', 'has_actions', 'created_by', 'scheduled_contact'
+      ].includes(col)),
+      metadata: columns.filter(col => 
+        col.startsWith('meta_') || 
+        col.includes('created_at') || 
+        col.includes('updated_at') || 
+        col.includes('row_number') ||
+        col.includes('original_id') ||
+        col.includes('commercial_anagrafiche_id') ||
+        (!defaultCols.includes(col) && 
+         !['address', 'zip_code', 'client_code', 'source', 'tag', 'note', 'priority', 
+           'budget', 'lead_score', 'completed', 'archiviata', 'has_actions', 'created_by', 
+           'scheduled_contact', 'id', 'import_log_id'].includes(col))
+      )
     };
   };
   
-  // Funzione per ottenere le colonne visibili
+  // Get visible columns: DEFAULT + toggle states
   const getVisibleColumns = (allColumns: string[]) => {
+    const defaultCols = getDefaultColumns().filter(col => allColumns.includes(col));
     const groups = getColumnGroups(allColumns);
-    let visibleCols: string[] = [];
+    let additionalCols: string[] = [];
     
-    if (visibleColumns.company) visibleCols = [...visibleCols, ...groups.company];
-    if (visibleColumns.details) visibleCols = [...visibleCols, ...groups.details];
-    if (visibleColumns.metadata) visibleCols = [...visibleCols, ...groups.metadata];
+    if (visibleColumns.company) additionalCols = [...additionalCols, ...groups.company];
+    if (visibleColumns.details) additionalCols = [...additionalCols, ...groups.details];
+    if (visibleColumns.metadata) additionalCols = [...additionalCols, ...groups.metadata];
     
-    return visibleCols;
+    // Combine DEFAULT + additional columns, ensure phone OR cell (prefer phone)
+    const finalCols = [...defaultCols];
+    if (finalCols.includes('phone') && finalCols.includes('cell') && allColumns.includes('phone')) {
+      const cellIndex = finalCols.indexOf('cell');
+      if (cellIndex > -1) finalCols.splice(cellIndex, 1);
+    }
+    
+    return [...new Set([...finalCols, ...additionalCols])].filter(col => allColumns.includes(col));
   };
 
   const getStatusBadge = (stato: string) => {

@@ -504,29 +504,45 @@ export default function ImportTemplates() {
     setFilteredRecords(result);
   };
 
-  // Funzioni per gestire l'ordinamento
+  // Funzioni per gestire l'ordinamento gerarchico/raggruppato
   const applySorting = (records: ImportedContact[], sorting: typeof sortConfig) => {
     if (!sorting.primary) return records;
     
-    return [...records].sort((a, b) => {
-      // Ordinamento primario
-      const primaryResult = compareValues(
-        a[sorting.primary!.column], 
-        b[sorting.primary!.column], 
-        sorting.primary!.direction
+    // Se c'è solo ordinamento primario, ordina normalmente
+    if (!sorting.secondary) {
+      return [...records].sort((a, b) => 
+        compareValues(a[sorting.primary!.column], b[sorting.primary!.column], sorting.primary!.direction)
       );
-      
-      // Se i valori primari sono uguali e c'è un ordinamento secondario
-      if (primaryResult === 0 && sorting.secondary) {
-        return compareValues(
-          a[sorting.secondary.column], 
-          b[sorting.secondary.column], 
-          sorting.secondary.direction
-        );
+    }
+    
+    // Ordinamento gerarchico: raggruppa per colonna primaria, ordina gruppi, poi ordina all'interno
+    const groups = new Map<string, ImportedContact[]>();
+    
+    // Raggruppa i record per il valore della colonna primaria
+    records.forEach(record => {
+      const primaryValue = String(record[sorting.primary!.column] || '').toLowerCase();
+      if (!groups.has(primaryValue)) {
+        groups.set(primaryValue, []);
       }
-      
-      return primaryResult;
+      groups.get(primaryValue)!.push(record);
     });
+    
+    // Ordina le chiavi dei gruppi (ordinamento primario)
+    const sortedGroupKeys = Array.from(groups.keys()).sort((a, b) => {
+      return compareValues(a, b, sorting.primary!.direction);
+    });
+    
+    // Per ogni gruppo, ordina i record interni per la colonna secondaria
+    const result: ImportedContact[] = [];
+    sortedGroupKeys.forEach(groupKey => {
+      const groupRecords = groups.get(groupKey)!;
+      const sortedGroupRecords = groupRecords.sort((a, b) => 
+        compareValues(a[sorting.secondary!.column], b[sorting.secondary!.column], sorting.secondary!.direction)
+      );
+      result.push(...sortedGroupRecords);
+    });
+    
+    return result;
   };
 
   const compareValues = (a: any, b: any, direction: 'asc' | 'desc'): number => {

@@ -1198,162 +1198,52 @@ export default function ImportTemplates() {
             </div>
           ) : filteredRecords.length > 0 ? (
             <div className="space-y-4">
-              {/* Header con selezione generale */}
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Checkbox
-                  checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                  onCheckedChange={toggleSelectAll}
-                  aria-label="Seleziona tutti"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {selectedRecords.size} di {filteredRecords.length} selezionati
-                </span>
-              </div>
-              
-              {/* Lista card con layout ibrido */}
-              <div className="max-h-[60vh] overflow-y-auto space-y-3">
-                {filteredRecords.map((record, index) => {
-                  // Separa i campi in categorie
-                  const allFields = Object.entries(record).filter(([key]) => key !== 'id' && key !== 'import_log_id');
-                  
-                  // Campi essenziali (sempre visibili a sinistra)
-                  const essentialFields = allFields.filter(([key]) => 
-                    key.toLowerCase().includes('name') || 
-                    key.toLowerCase().includes('azienda') || 
-                    key.toLowerCase().includes('company') ||
-                    key.toLowerCase().includes('telefono') ||
-                    key.toLowerCase().includes('phone') ||
-                    key.toLowerCase().includes('email') ||
-                    key.toLowerCase().includes('indirizzo') ||
-                    key.toLowerCase().includes('address')
-                  );
-                  
-                  // Campi principali (primo tab)
-                  const mainFields = allFields.filter(([key]) => 
-                    !essentialFields.some(([essKey]) => essKey === key) &&
-                    !key.toLowerCase().includes('meta') &&
-                    !key.toLowerCase().includes('id') &&
-                    !key.toLowerCase().includes('created') &&
-                    !key.toLowerCase().includes('updated') &&
-                    !key.toLowerCase().includes('source') &&
-                    !key.toLowerCase().includes('import')
-                  );
-                  
-                  // Campi meta (secondo tab)
-                  const metaFields = allFields.filter(([key]) => 
-                    !essentialFields.some(([essKey]) => essKey === key) &&
-                    !mainFields.some(([mainKey]) => mainKey === key)
-                  );
-                  
-                  return (
-                    <Card key={index} className="border shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
-                          {/* Colonna sinistra - Dati essenziali */}
-                          <div className="w-80 flex-shrink-0 space-y-2">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Checkbox
-                                checked={selectedRecords.has(index)}
-                                onCheckedChange={() => toggleRecordSelection(index)}
-                                aria-label={`Seleziona record ${index + 1}`}
-                              />
-                              <Badge variant="outline" className="text-xs">
-                                #{index + 1}
-                              </Badge>
-                            </div>
-                            
-                            {essentialFields.length > 0 ? (
-                              <div className="space-y-2">
-                                {essentialFields.map(([key, value]) => (
-                                  <div key={key} className="group">
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </div>
-                                    <div 
-                                      className="text-sm p-2 rounded bg-muted/30 cursor-pointer hover:bg-accent/50 transition-colors"
-                                      onClick={() => addFilter(key, value)}
-                                      title="Clicca per filtrare per questo valore"
-                                    >
-                                      {formatCellValue(value, key)}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-muted-foreground italic">
-                                Nessun dato essenziale rilevato
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Colonna destra - Tabs con altri dati */}
-                          <div className="flex-1">
-                            <Tabs defaultValue="main" className="w-full">
-                              <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="main">
-                                  Dettagli ({mainFields.length})
-                                </TabsTrigger>
-                                <TabsTrigger value="meta">
-                                  Metadati ({metaFields.length})
-                                </TabsTrigger>
-                              </TabsList>
-                              
-                              <TabsContent value="main" className="mt-3">
-                                {mainFields.length > 0 ? (
-                                  <div className="grid grid-cols-2 gap-3">
-                                    {mainFields.map(([key, value]) => (
-                                      <div key={key} className="group">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                        </div>
-                                        <div 
-                                          className="text-sm p-2 rounded bg-muted/30 cursor-pointer hover:bg-accent/50 transition-colors"
-                                          onClick={() => addFilter(key, value)}
-                                          title="Clicca per filtrare per questo valore"
-                                        >
-                                          {formatCellValue(value, key)}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-sm text-muted-foreground italic text-center py-4">
-                                    Nessun dettaglio aggiuntivo
-                                  </div>
-                                )}
-                              </TabsContent>
-                              
-                              <TabsContent value="meta" className="mt-3">
-                                {metaFields.length > 0 ? (
-                                  <div className="grid grid-cols-2 gap-3">
-                                    {metaFields.map(([key, value]) => (
-                                      <div key={key} className="group">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                        </div>
-                                        <div 
-                                          className="text-sm p-2 rounded bg-muted/30 cursor-pointer hover:bg-accent/50 transition-colors font-mono"
-                                          onClick={() => addFilter(key, value)}
-                                          title="Clicca per filtrare per questo valore"
-                                        >
-                                          {formatCellValue(value, key)}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="text-sm text-muted-foreground italic text-center py-4">
-                                    Nessun metadato disponibile
-                                  </div>
-                                )}
-                              </TabsContent>
-                            </Tabs>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
+                 <Table>
+                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                     <TableRow>
+                       <TableHead className="w-12 bg-background">
+                         <Checkbox
+                           checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                           onCheckedChange={toggleSelectAll}
+                           aria-label="Seleziona tutti"
+                         />
+                       </TableHead>
+                       {Object.keys(filteredRecords[0] || {})
+                         .filter(key => key !== 'id' && key !== 'import_log_id')
+                         .map((key) => (
+                         <TableHead key={key} className="min-w-[120px] bg-background">
+                           {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                         </TableHead>
+                       ))}
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredRecords.map((record, index) => (
+                       <TableRow key={index}>
+                         <TableCell className="w-12">
+                           <Checkbox
+                             checked={selectedRecords.has(index)}
+                             onCheckedChange={() => toggleRecordSelection(index)}
+                             aria-label={`Seleziona record ${index + 1}`}
+                           />
+                         </TableCell>
+                         {Object.entries(record)
+                           .filter(([key]) => key !== 'id' && key !== 'import_log_id')
+                           .map(([key, value]) => (
+                           <TableCell 
+                             key={key} 
+                             className="max-w-[200px] truncate cursor-pointer hover:bg-accent/50 transition-colors"
+                             onClick={() => addFilter(key, value)}
+                             title="Clicca per filtrare per questo valore"
+                           >
+                             {formatCellValue(value, key)}
+                           </TableCell>
+                         ))}
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
               </div>
               
               <div className="flex justify-between items-center pt-4 border-t">

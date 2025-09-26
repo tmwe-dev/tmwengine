@@ -84,17 +84,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
           
-          {/* Position sopra Origin */}
           <div className="flex-1"></div>
-          {record.position !== undefined && (
-            <div className="min-w-[140px]">
-              <FieldRenderer 
-                field="position" 
-                value={record.position} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
           
           {/* Origin */}
           {record.origin !== undefined && (

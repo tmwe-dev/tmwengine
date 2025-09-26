@@ -97,9 +97,11 @@ serve(async (req) => {
         console.log('First data row fields count:', firstDataRow.length);
         console.log('First 5 fields of first row:', firstDataRow.slice(0, 5));
       }
-
-      // Processa e salva ogni riga nella tabella permanent imported_contacts
+      
+      // Processa e salva ogni riga nella tabella permanent imported_contacts in batch
       const contactsToInsert = [];
+      const batchSize = 1000; // Processa 1000 record alla volta
+      let processedRows = 0;
       
       // Mappa i campi basandoci sulle specifiche dettagliate
       const getFieldIndex = (headerName: string, isSecondOccurrence = false): number => {
@@ -149,6 +151,16 @@ serve(async (req) => {
         }
       };
       
+      // Aggiorna il log con progresso iniziale
+      await supabaseClient
+        .from('import_logs')
+        .update({
+          righe_totali: totalRows,
+          stato: 'elaborazione'
+        })
+        .eq('id', importLog.id);
+      
+      // Processa tutte le righe in batch
       for (let i = 0; i < dataRows.length; i++) {
         const row = dataRows[i];
         try {
@@ -215,22 +227,38 @@ serve(async (req) => {
           contactData.scheduled_contact = parseDate(getFieldValue('scheduled_contact', values));
           contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
 
-          // Handle date fields if they exist
-          if (values[18] && values[18] !== 'NULL') {
-            try {
-              const dateParts = values[18].split('/');
-              if (dateParts.length === 3) {
-                const [day, month, year] = dateParts;
-                const fullYear = year.length === 2 ? `20${year}` : year;
-                contactData.last_contact = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-              }
-            } catch (dateError) {
-              console.log('Date parsing error for last:', values[18], dateError);
-            }
-          }
-
           contactsToInsert.push(contactData);
           importedRows++;
+          processedRows++;
+          
+          // Salva batch quando raggiunge la dimensione o è l'ultimo record
+          if (contactsToInsert.length >= batchSize || i === dataRows.length - 1) {
+            console.log(`Inserimento batch di ${contactsToInsert.length} contatti`);
+            
+            const { error: insertError } = await supabaseClient
+              .from('imported_contacts')
+              .insert(contactsToInsert);
+
+            if (insertError) {
+              console.error('Insert error:', insertError);
+              throw new Error(`Errore nell'inserimento batch: ${insertError.message}`);
+            }
+            
+            // Aggiorna il progresso nel log
+            await supabaseClient
+              .from('import_logs')
+              .update({
+                righe_importate: processedRows,
+                stato: 'elaborazione'
+              })
+              .eq('id', importLog.id);
+            
+            console.log(`Batch salvato. Progresso: ${processedRows}/${totalRows}`);
+            
+            // Svuota il batch per il prossimo giro
+            contactsToInsert.length = 0;
+          }
+          
         } catch (rowError: any) {
           console.error(`Error processing row ${i + 1}:`, rowError);
           errors.push({ row: i + 1, error: rowError.message });
@@ -238,21 +266,7 @@ serve(async (req) => {
         }
       }
 
-      console.log(`Prepared ${contactsToInsert.length} contacts for insert`);
-
-      // Insert contacts
-      if (contactsToInsert.length > 0) {
-        const { error: insertError } = await supabaseClient
-          .from('imported_contacts')
-          .insert(contactsToInsert);
-
-        if (insertError) {
-          console.error('Insert error:', insertError);
-          throw new Error(`Errore nell'inserimento: ${insertError.message}`);
-        }
-      }
-
-      console.log('Records inserted successfully');
+      console.log(`Importazione completata. Record elaborati: ${processedRows}`);
 
       // Aggiorna il log di importazione
       await supabaseClient

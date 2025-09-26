@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -57,6 +58,21 @@ export default function ImportTemplates() {
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMoreRecords, setHasMoreRecords] = useState(false);
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
+  
+  // Stato per progress dell'importazione
+  const [importProgress, setImportProgress] = useState<{
+    currentImportId: string | null;
+    totalRows: number;
+    processedRows: number;
+    isProcessing: boolean;
+    startTime: number;
+  }>({
+    currentImportId: null,
+    totalRows: 0,
+    processedRows: 0,
+    isProcessing: false,
+    startTime: 0
+  });
   
   // Form per nuovo template email
   const [newTemplate, setNewTemplate] = useState({
@@ -194,6 +210,15 @@ export default function ImportTemplates() {
 
       if (uploadError) throw uploadError;
 
+      // Avvia il processo di importazione
+      setImportProgress({
+        currentImportId: null,
+        totalRows: 0,
+        processedRows: 0,
+        isProcessing: true,
+        startTime: Date.now()
+      });
+
       // Chiama l'edge function per elaborare il file
       const { data: processResult, error: processError } = await supabase.functions
         .invoke('process-import-file', {
@@ -206,12 +231,20 @@ export default function ImportTemplates() {
       if (processError) throw processError;
 
       if (processResult.success) {
-        const { totalRows, importedRows, errorRows, tableName } = processResult.data;
+        const { totalRows, importedRows, errorRows, importLogId } = processResult.data;
+        
+        setImportProgress({
+          currentImportId: importLogId,
+          totalRows,
+          processedRows: importedRows,
+          isProcessing: false,
+          startTime: 0
+        });
         
         if (errorRows > 0) {
-          toast.success(`File importato con alcuni errori: ${importedRows}/${totalRows} righe elaborate. Tabella creata: ${tableName}`);
+          toast.success(`File importato con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
         } else {
-          toast.success(`File importato con successo: ${importedRows} righe elaborate. Tabella creata: ${tableName}`);
+          toast.success(`File importato con successo: ${importedRows} righe elaborate.`);
         }
       } else {
         throw new Error(processResult.error);
@@ -222,10 +255,53 @@ export default function ImportTemplates() {
     } catch (error: any) {
       console.error('Errore nel caricamento file:', error);
       toast.error(`Errore nel caricamento del file: ${error.message}`);
+      setImportProgress({
+        currentImportId: null,
+        totalRows: 0,
+        processedRows: 0,
+        isProcessing: false,
+        startTime: 0
+      });
     } finally {
       setUploadingFile(false);
     }
   };
+
+  // Polling per il progresso dell'importazione
+  useEffect(() => {
+    if (!importProgress.currentImportId || !importProgress.isProcessing) return;
+
+    const checkProgress = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('import_logs')
+          .select('righe_totali, righe_importate, stato')
+          .eq('id', importProgress.currentImportId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setImportProgress(prev => ({
+            ...prev,
+            totalRows: data.righe_totali || 0,
+            processedRows: data.righe_importate || 0,
+            isProcessing: data.stato === 'elaborazione'
+          }));
+
+          // Se completato, ferma il polling
+          if (data.stato !== 'elaborazione') {
+            setImportProgress(prev => ({ ...prev, isProcessing: false }));
+          }
+        }
+      } catch (error) {
+        console.error('Errore nel controllo progresso:', error);
+      }
+    };
+
+    const interval = setInterval(checkProgress, 1000); // Controlla ogni secondo
+    return () => clearInterval(interval);
+  }, [importProgress.currentImportId, importProgress.isProcessing]);
 
   const insertPlaceholder = (placeholder: string) => {
     const textarea = document.getElementById('contenuto-template') as HTMLTextAreaElement;
@@ -687,12 +763,43 @@ export default function ImportTemplates() {
                 />
               </div>
 
+              {/* Progress Indicator */}
+              {importProgress.isProcessing && (
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <Clock className="h-4 w-4 animate-spin" />
+                        <span className="font-medium">Importazione in corso...</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progresso</span>
+                          <span>{importProgress.processedRows} / {importProgress.totalRows}</span>
+                        </div>
+                        <Progress 
+                          value={importProgress.totalRows > 0 ? (importProgress.processedRows / importProgress.totalRows) * 100 : 0} 
+                          className="h-2"
+                        />
+                      </div>
+                      
+                      {importProgress.startTime > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          Tempo trascorso: {Math.floor((Date.now() - importProgress.startTime) / 1000)}s
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Button 
                 onClick={handleFileUpload}
-                disabled={!importFile || uploadingFile}
+                disabled={!importFile || uploadingFile || importProgress.isProcessing}
                 className="w-full"
               >
-                {uploadingFile ? 'Elaborazione in corso...' : 'Importa File'}
+                {uploadingFile || importProgress.isProcessing ? 'Elaborazione in corso...' : 'Importa File'}
               </Button>
             </CardContent>
           </Card>

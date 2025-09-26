@@ -236,10 +236,6 @@ export default function ImportTemplates() {
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
   
-  // Refs for synchronized scrolling
-  const headerRef = React.useRef<HTMLDivElement>(null);
-  const bodyRef = React.useRef<HTMLDivElement>(null);
-  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -341,19 +337,6 @@ export default function ImportTemplates() {
   useEffect(() => {
     setCurrentPage(0);
   }, [searchQuery, originFilter, countryFilter, activeFilters, recordsPerPage]);
-
-  // Synchronized scrolling
-  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (headerRef.current) {
-      headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  };
-
-  const handleHeaderScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (bodyRef.current) {
-      bodyRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  };
 
   const loadEmailTemplates = async () => {
     try {
@@ -1716,44 +1699,43 @@ export default function ImportTemplates() {
             </div>
            ) : filteredRecords.length > 0 ? (
             <div className="space-y-4 flex flex-col min-h-0 flex-1">
-              <div className="border rounded-md overflow-hidden">
-                <div className="h-96 overflow-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                      <TableRow>
-                        <TableHead className="w-12 bg-background border-b">
-                          <Checkbox
-                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                            onCheckedChange={toggleSelectAll}
-                            aria-label="Seleziona tutti"
-                           />
-                         </TableHead>
-                         <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
-                         {(() => {
-                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                           const visibleCols = getVisibleColumns(allColumns);
-                           return visibleCols.map((key) => (
-                              <TableHead 
-                                key={key} 
-                                className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
-                                  key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                                  key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                  'min-w-[120px]'
-                                }`}
-                                onClick={() => handleColumnSort(key)}
-                              >
-                                <div className="flex items-center gap-1">
-                                  <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                  {getSortIcon(key)}
-                                </div>
-                              </TableHead>
-                           ));
-                         })()}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+              <div className="overflow-auto flex-1 border rounded-md">
+                 <Table>
+                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                     <TableRow>
+                       <TableHead className="w-12 bg-background border-b">
+                         <Checkbox
+                           checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                           onCheckedChange={toggleSelectAll}
+                           aria-label="Seleziona tutti"
+                          />
+                        </TableHead>
+                        <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
+                        {(() => {
+                          const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                          const visibleCols = getVisibleColumns(allColumns);
+                          return visibleCols.map((key) => (
+                             <TableHead 
+                               key={key} 
+                               className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
+                                 key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                 key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                 'min-w-[120px]'
+                               }`}
+                               onClick={() => handleColumnSort(key)}
+                             >
+                               <div className="flex items-center gap-1">
+                                 <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                 {getSortIcon(key)}
+                               </div>
+                             </TableHead>
+                          ));
+                        })()}
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
                       {viewingRecords.map((record, viewIndex) => {
                         const actualIndex = currentPage * recordsPerPage + viewIndex;
                         return (

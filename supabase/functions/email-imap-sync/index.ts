@@ -26,38 +26,76 @@ interface SyncRequest {
   count_batch_current?: number; // Batch corrente durante il conteggio (default 1)
 }
 
-// Funzione per connessione IMAP con gestione corretta delle porte
-async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.TcpConn> {
-  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta}`);
-  
-  // Timeout di 10 secondi per la connessione
-  let connectPromise;
-  
-  // REGOLA: Porta 993 = sempre SSL, Porta 143 = TCP (poi STARTTLS se necessario)
-  if (config.imap_porta === 993) {
-    console.log('🔐 Using SSL/TLS connection for port 993 (with cert bypass)');
-    connectPromise = Deno.connectTls({
-      hostname: config.imap_server,
-      port: config.imap_porta,
-      // Bypass certificato non valido
-      caCerts: [],
-    });
-  } else {
-    console.log('📝 Using plain TCP connection for port 143');
-    connectPromise = Deno.connect({
-      hostname: config.imap_server,
-      port: config.imap_porta,
-    });
+// Funzione per testare tutte le combinazioni di connessione IMAP
+async function tryAllConnectionMethods(config: IMAPConfig): Promise<{ conn: Deno.TlsConn | Deno.TcpConn, method: string }> {
+  const connectionMethods = [
+    {
+      name: "SSL/TLS porta 993 (bypass cert)",
+      test: () => Deno.connectTls({
+        hostname: config.imap_server,
+        port: 993,
+        caCerts: [],
+      })
+    },
+    {
+      name: "TCP normale porta 143",
+      test: () => Deno.connect({
+        hostname: config.imap_server,
+        port: 143,
+      })
+    },
+    {
+      name: "TCP normale porta 993",
+      test: () => Deno.connect({
+        hostname: config.imap_server,
+        port: 993,
+      })
+    },
+    {
+      name: "SSL/TLS porta 143",
+      test: () => Deno.connectTls({
+        hostname: config.imap_server,
+        port: 143,
+        caCerts: [],
+      })
+    },
+    {
+      name: "SSL/TLS porta 993 (con cert)",
+      test: () => Deno.connectTls({
+        hostname: config.imap_server,
+        port: 993,
+      })
+    }
+  ];
+
+  for (const method of connectionMethods) {
+    try {
+      console.log(`🔄 Trying: ${method.name}`);
+      
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 8000);
+      });
+      
+      const conn = await Promise.race([method.test(), timeoutPromise]);
+      console.log(`✅ SUCCESS with: ${method.name}`);
+      
+      return { conn, method: method.name };
+      
+    } catch (error: any) {
+      console.log(`❌ FAILED ${method.name}: ${error.message}`);
+      continue;
+    }
   }
   
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
-  });
-  
-  const conn = await Promise.race([connectPromise, timeoutPromise]);
-  console.log(`✅ Connected successfully to ${config.imap_server}:${config.imap_porta}`);
-  
-  return conn;
+  throw new Error(`Tutte le modalità di connessione fallite per ${config.imap_server}`);
+}
+
+// Funzione wrapper per connessione IMAP
+async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.TcpConn> {
+  console.log(`🔗 Trying all connection methods for ${config.imap_server}`);
+  const result = await tryAllConnectionMethods(config);
+  console.log(`🎯 Using successful method: ${result.method}`);
+  return result.conn;
 }
 
 // Funzione per leggere risposta IMAP con timeout

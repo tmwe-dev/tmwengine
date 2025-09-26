@@ -330,19 +330,19 @@ const EmailSyncTab = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg border">
+            <div className="text-center p-4 rounded-lg border">
               <div className="text-2xl font-bold text-blue-600">
                 {syncStats.emailSulServer}
               </div>
               <div className="text-sm text-blue-600">Email sul server</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg border">
+            <div className="text-center p-4 rounded-lg border">
               <div className="text-2xl font-bold text-green-600">
                 {syncStats.emailGiaSincronizzate}
               </div>
               <div className="text-sm text-green-600">Già sincronizzate</div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg border">
+            <div className="text-center p-4 rounded-lg border">
               <div className="text-2xl font-bold text-orange-600">
                 {syncStats.emailDaScaricare}
               </div>

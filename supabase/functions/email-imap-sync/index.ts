@@ -183,100 +183,31 @@ serve(async (req) => {
       console.log('✅ Server greeting:', previewGreeting);
 
       if (preview_only) {
-        // Conteggio email a pacchetti per evitare timeout
+        // Modalità preview semplificata - conta solo email già sincronizzate
         try {
-          // LOGIN
-          const previewLoginCmd = `A001 LOGIN ${config.email_username} ${config.email_password}`;
-          console.log('🔐 Authenticating for batched count...');
-          const previewLoginResp = await sendIMAPCommand(previewConn, previewLoginCmd);
-          console.log('🔐 Login response:', previewLoginResp);
+          const alreadySynced = await supabase
+            .from('email_messages')
+            .select('id', { count: 'exact' })
+            .eq('provider_id', provider_id);
 
-          // SELECT INBOX
-          const previewSelectCmd = `A002 SELECT ${config.cartella_inbox}`;
-          const previewSelectResp = await sendIMAPCommand(previewConn, previewSelectCmd);
-          console.log('📂 Select response:', previewSelectResp);
-
-          // Estrai il numero totale di email
-          const previewExistsMatch = previewSelectResp.match(/\* (\d+) EXISTS/);
-          const totalEmailsOnServer = previewExistsMatch ? parseInt(previewExistsMatch[1]) : 0;
+          const syncedCount = alreadySynced.count || 0;
           
-          console.log(`📊 Total emails found: ${totalEmailsOnServer}`);
+          // Chiudi connessione subito
+          previewConn.close();
 
-          // Calcola informazioni sui batch per il conteggio
-          const totalCountBatches = Math.ceil(totalEmailsOnServer / count_batch_size);
-          const currentBatchStart = (count_batch_current - 1) * count_batch_size + 1;
-          const currentBatchEnd = Math.min(count_batch_current * count_batch_size, totalEmailsOnServer);
-          const emailsInCurrentBatch = currentBatchEnd - currentBatchStart + 1;
-          const hasMoreCountBatches = count_batch_current < totalCountBatches;
-
-          // Se stiamo processando solo un batch del conteggio
-          if (totalEmailsOnServer > count_batch_size && count_batch_current <= totalCountBatches) {
-            console.log(`📦 Count batch ${count_batch_current}/${totalCountBatches}: emails ${currentBatchStart}-${currentBatchEnd}`);
-            
-            // Conta email già sincronizzate solo per questo batch range
-            const alreadySynced = await supabase
-              .from('email_messages')
-              .select('id', { count: 'exact' })
-              .eq('provider_id', provider_id);
-
-            const totalSyncedCount = alreadySynced.count || 0;
-
-            // Chiudi connessione
-            await sendIMAPCommand(previewConn, 'A003 LOGOUT');
-            previewConn.close();
-
-            return new Response(
-              JSON.stringify({
-                success: true,
-                preview: true,
-                count_batch_info: {
-                  current_batch: count_batch_current,
-                  total_batches: totalCountBatches,
-                  batch_start: currentBatchStart,
-                  batch_end: currentBatchEnd,
-                  emails_in_batch: emailsInCurrentBatch,
-                  has_more_count_batches: hasMoreCountBatches,
-                  next_count_batch: hasMoreCountBatches ? count_batch_current + 1 : null
-                },
-                email_sul_server: totalEmailsOnServer,
-                email_gia_sincronizzate: totalSyncedCount,
-                email_da_scaricare: Math.max(0, totalEmailsOnServer - totalSyncedCount),
-                server: config.imap_server,
-                username: config.email_username,
-                partial_count: hasMoreCountBatches
-              }),
-              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          } else {
-            // Conteggio finale completo
-            const alreadySynced = await supabase
-              .from('email_messages')
-              .select('id', { count: 'exact' })
-              .eq('provider_id', provider_id);
-
-            const syncedCount = alreadySynced.count || 0;
-            const toDownload = Math.max(0, totalEmailsOnServer - syncedCount);
-
-            console.log(`📊 Final count: ${totalEmailsOnServer} on server, ${syncedCount} synced, ${toDownload} to download`);
-
-            // Chiudi connessione
-            await sendIMAPCommand(previewConn, 'A003 LOGOUT');
-            previewConn.close();
-
-            return new Response(
-              JSON.stringify({
-                success: true,
-                preview: true,
-                email_sul_server: totalEmailsOnServer,
-                email_gia_sincronizzate: syncedCount,
-                email_da_scaricare: toDownload,
-                server: config.imap_server,
-                username: config.email_username,
-                count_completed: true
-              }),
-              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
+          return new Response(
+            JSON.stringify({
+              success: true,
+              preview: true,
+              email_sul_server: "Sconosciuto",
+              email_gia_sincronizzate: syncedCount,
+              email_da_scaricare: "Verrà determinato durante l'importazione",
+              server: config.imap_server,
+              username: config.email_username,
+              ready_for_sync: true
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
 
         } catch (previewImapError: any) {
           console.error('❌ IMAP Error details:', {

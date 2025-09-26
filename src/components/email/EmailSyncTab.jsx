@@ -48,20 +48,13 @@ const DestinationFolder = ({ isReceiving }) => {
   return (
     <div className={`relative transition-all duration-300 ${isReceiving ? 'scale-110' : 'scale-100'}`}>
       <FolderOpen 
-        className={`h-16 w-16 transition-colors duration-300 ${
-          isReceiving ? 'text-green-500' : 'text-gray-400'
-        }`}
+        className={`h-12 w-12 ${isReceiving ? 'text-green-500' : 'text-gray-400'}`}
         style={{
-          filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
+          filter: isReceiving ? 'drop-shadow(0 0 10px rgba(34, 197, 94, 0.5))' : 'none'
         }}
       />
       {isReceiving && (
-        <div className="absolute -top-2 -right-2">
-          <div className="animate-ping absolute inline-flex h-6 w-6 rounded-full opacity-75"></div>
-          <div className="relative inline-flex rounded-full h-6 w-6 items-center justify-center">
-            <CheckCircle2 className="h-4 w-4 text-white" />
-          </div>
-        </div>
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
       )}
     </div>
   );
@@ -69,46 +62,38 @@ const DestinationFolder = ({ isReceiving }) => {
 
 const EmailSyncTab = () => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [syncProgress, setSyncProgress] = useState(0);
+  const [provider, setProvider] = useState(null);
   const [syncStats, setSyncStats] = useState({
     emailSulServer: 0,
     emailGiaSincronizzate: 0,
     emailDaScaricare: 0
   });
-  const [syncInProgress, setSyncInProgress] = useState(false);
-  const [currentEmail, setCurrentEmail] = useState(0);
-  const [totalEmails, setTotalEmails] = useState(0);
-  const [flyingPapers, setFlyingPapers] = useState([]);
-  const [provider, setProvider] = useState(null);
-  const [currentBatch, setCurrentBatch] = useState({ start: 1, size: 500 });
+  const [currentBatch, setCurrentBatch] = useState(1);
+  const [totalProcessed, setTotalProcessed] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState('');
-  const [batchInfo, setBatchInfo] = useState(null);
-  const [countBatches, setCountBatches] = useState([]);
-  const [countInProgress, setCountInProgress] = useState(false);
+  const [syncInProgress, setSyncInProgress] = useState(false);
+  const [syncedCount, setSyncedCount] = useState(0);
+  const [flyingPapers, setFlyingPapers] = useState([]);
   const intervalRef = useRef(null);
 
   useEffect(() => {
     loadProvider();
     loadSyncStats();
-    
-    // Cleanup on unmount
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
   }, []);
 
   const loadProvider = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('email_provider')
-        .select('*')
+        .select(`*, email_provider_credenziali (*)`)
         .eq('tipo_provider', 'smtp_imap')
         .eq('attivo', true)
-        .single();
+        .maybeSingle();
+
+      if (error) throw error;
       setProvider(data);
     } catch (error) {
       console.error('Error loading provider:', error);
@@ -116,22 +101,26 @@ const EmailSyncTab = () => {
   };
 
   const loadSyncStats = async () => {
+    if (!provider?.id) return;
+    
     try {
-      const { data: emailData, count } = await supabase
+      const { data, error } = await supabase
         .from('email_messages')
-        .select('*', { count: 'exact' });
+        .select('id', { count: 'exact' })
+        .eq('provider_id', provider.id);
+
+      if (error) throw error;
       
       setSyncStats(prev => ({
         ...prev,
-        emailGiaSincronizzate: count || 0,
-        emailDaScaricare: Math.max(0, prev.emailSulServer - (count || 0))
+        emailGiaSincronizzate: data.length || 0
       }));
     } catch (error) {
       console.error('Error loading sync stats:', error);
     }
   };
 
-  const loadServerPreview = async (countBatchCurrent = 1) => {
+  const loadServerPreview = async () => {
     if (!provider?.id) {
       toast({
         title: "Errore",
@@ -141,21 +130,15 @@ const EmailSyncTab = () => {
       return;
     }
 
-    if (countBatchCurrent === 1) {
-      setIsPreviewLoading(true);
-      setCountInProgress(true);
-      setCountBatches([]);
-      setSyncStatus('Avvio conteggio email...');
-    }
+    setIsPreviewLoading(true);
+    setSyncStatus('Verifica configurazione server...');
 
     try {
       const response = await supabase.functions.invoke('email-imap-sync', {
         body: {
           provider_id: provider.id,
           tipo_sync: 'manuale',
-          preview_only: true,
-          count_batch_size: 500,
-          count_batch_current: countBatchCurrent
+          preview_only: true
         }
       });
 
@@ -165,164 +148,133 @@ const EmailSyncTab = () => {
 
       const result = response.data;
       
-      // Aggiungi questo batch ai conteggi
-      if (result.count_batch_info) {
-        setCountBatches(prev => [...prev, {
-          batch: countBatchCurrent,
-          emails: result.count_batch_info.emails_in_batch,
-          start: result.count_batch_info.batch_start,
-          end: result.count_batch_info.batch_end
-        }]);
-        
-        setSyncStatus(`Contato batch ${countBatchCurrent}/${result.count_batch_info.total_batches}: ${result.count_batch_info.emails_in_batch} email`);
-
-        // Se ci sono altri batch da contare, continua automaticamente
-        if (result.count_batch_info.has_more_count_batches) {
-          setTimeout(() => loadServerPreview(countBatchCurrent + 1), 500);
-          return;
-        }
-      }
-
-      // Conteggio completato
-      setCountInProgress(false);
       setSyncStats({
-        emailSulServer: result.email_sul_server || 0,
+        emailSulServer: result.email_sul_server,
         emailGiaSincronizzate: result.email_gia_sincronizzate || 0,
-        emailDaScaricare: result.email_da_scaricare || 0
+        emailDaScaricare: result.email_da_scaricare
       });
 
-      setSyncStatus(`Conteggio completato: ${result.email_sul_server} email totali`);
+      setSyncStatus(`Pronto per sincronizzazione. ${result.email_gia_sincronizzate} email già presenti nel database.`);
 
       toast({
-        title: "Conteggio completato",
-        description: `${result.email_sul_server} email trovate sul server`,
+        title: "Verifica completata",
+        description: `Server configurato correttamente. ${result.email_gia_sincronizzate} email già sincronizzate.`,
       });
     } catch (error) {
       console.error('Error loading server preview:', error);
-      setCountInProgress(false);
+      setSyncStatus(`Errore: ${error.message}`);
       toast({
-        title: "Errore Preview",
+        title: "Errore",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      if (countBatchCurrent === 1 || !countInProgress) {
-        setIsPreviewLoading(false);
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const startDirectSync = async (startFrom = 1) => {
+    if (!provider?.id) {
+      toast({
+        title: "Errore", 
+        description: "Configurazione provider non trovata",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncInProgress(true);
+    setSyncStatus(`Avvio sincronizzazione da email ${startFrom}...`);
+    
+    try {
+      const response = await supabase.functions.invoke('email-imap-sync', {
+        body: {
+          provider_id: provider.id,
+          tipo_sync: 'manuale',
+          preview_only: false,
+          batch_size: 500,
+          start_from: startFrom
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
       }
+
+      const result = response.data;
+      
+      // Aggiorna statistiche
+      const newProcessed = totalProcessed + (result.messaggi_nuovi || 0);
+      setTotalProcessed(newProcessed);
+      setCurrentBatch(Math.ceil(startFrom / 500));
+      
+      // Mostra animazione per le email processate
+      if (result.messaggi_nuovi > 0) {
+        for (let i = 0; i < Math.min(result.messaggi_nuovi, 10); i++) {
+          setTimeout(() => {
+            const id = Date.now() + i;
+            setFlyingPapers(prev => [...prev, {
+              id,
+              delay: i * 100,
+              active: true
+            }]);
+
+            setTimeout(() => {
+              setFlyingPapers(prev => prev.filter(p => p.id !== id));
+            }, 1200);
+          }, i * 200);
+        }
+      }
+
+      setSyncStatus(`Batch ${currentBatch} completato: ${result.messaggi_nuovi} nuove email, ${result.messaggi_aggiornati} aggiornate`);
+
+      // Se ci sono altri batch da processare
+      if (result.batch_info?.has_more_batches) {
+        toast({
+          title: `Batch ${currentBatch} completato`,
+          description: `${result.messaggi_nuovi} email sincronizzate. Continuare con il prossimo batch?`,
+          action: (
+            <Button 
+              size="sm" 
+              onClick={() => startDirectSync(result.batch_info.next_batch_start)}
+            >
+              Continua
+            </Button>
+          ),
+        });
+      } else {
+        // Sincronizzazione completata
+        setSyncStatus(`Sincronizzazione completata! ${newProcessed} email totali processate.`);
+        toast({
+          title: "Sincronizzazione completata",
+          description: `${newProcessed} email totali processate`,
+        });
+        loadSyncStats(); // Ricarica le statistiche finali
+      }
+
+    } catch (error) {
+      console.error('Error during sync:', error);
+      setSyncStatus(`Errore: ${error.message}`);
+      toast({
+        title: "Errore sincronizzazione",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+      setSyncInProgress(false);
     }
   };
 
   const handlePreviewEmails = async () => {
-    if (!provider) {
-      toast({
-        title: "Errore",
-        description: "Configura prima il provider email",
-        variant: "destructive",
-      });
-      return;
-    }
-
     await loadServerPreview();
   };
 
-  const startSyncAnimation = (totalCount) => {
-    setTotalEmails(totalCount);
-    setCurrentEmail(0);
-    setSyncProgress(0);
-    setSyncInProgress(true);
-    setFlyingPapers([]);
-
-    // Simula il progresso email per email
-    intervalRef.current = setInterval(() => {
-      setCurrentEmail(prev => {
-        const next = prev + 1;
-        const progress = (next / totalCount) * 100;
-        setSyncProgress(progress);
-
-        // Aggiungi animazione foglio volante
-        if (next <= totalCount) {
-          setFlyingPapers(prev => [...prev, {
-            id: next,
-            delay: 0,
-            active: true
-          }]);
-
-          // Rimuovi il foglio dopo l'animazione
-          setTimeout(() => {
-            setFlyingPapers(prev => prev.filter(p => p.id !== next));
-          }, 1200);
-        }
-
-        if (next >= totalCount) {
-          clearInterval(intervalRef.current);
-          setSyncInProgress(false);
-          loadSyncStats(); // Ricarica le statistiche
-        }
-
-        return next;
-      });
-    }, 300); // 300ms per email
-  };
-
-  const handleStartSync = async () => {
-    if (!provider) {
-      toast({
-        title: "Errore",
-        description: "Configura prima il provider email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (syncStats.emailDaScaricare === 0) {
-      toast({
-        title: "Info",
-        description: "Nessuna email da sincronizzare",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // Avvia animazione
-    startSyncAnimation(syncStats.emailDaScaricare);
-
-    try {
-      const response = await fetch(`https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/email-imap-sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A`
-        },
-        body: JSON.stringify({
-          provider_id: provider.id,
-          tipo_sync: 'manuale'
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast({
-          title: "Sincronizzazione completata",
-          description: `${result.messaggi_nuovi} email sincronizzate`,
-        });
-      } else {
-        throw new Error('Errore sincronizzazione');
-      }
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Errore durante la sincronizzazione",
-        variant: "destructive",
-      });
-      // Ferma animazione in caso di errore
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      setSyncInProgress(false);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleStartDirectSync = () => {
+    setTotalProcessed(0);
+    setCurrentBatch(1);
+    startDirectSync(1);
   };
 
   return (
@@ -369,7 +321,7 @@ const EmailSyncTab = () => {
         </CardContent>
       </Card>
 
-      {/* Preview e statistiche */}
+      {/* Statistiche veloci */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -377,212 +329,111 @@ const EmailSyncTab = () => {
             Statistiche Email
           </CardTitle>
           <CardDescription>
-            Controlla quante email sono disponibili per la sincronizzazione
+            Email già sincronizzate nel database
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-lg border">
-              <div className="text-2xl font-bold text-blue-600">
-                {syncStats.emailSulServer}
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Mail className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="text-sm text-blue-600">Email sul server</div>
+              <div>
+                <p className="text-2xl font-bold">{syncStats.emailGiaSincronizzate}</p>
+                <p className="text-sm text-muted-foreground">Email sincronizzate</p>
+              </div>
             </div>
-            <div className="text-center p-4 rounded-lg border">
-              <div className="text-2xl font-bold text-green-600">
-                {syncStats.emailGiaSincronizzate}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Download className="h-6 w-6 text-green-600" />
               </div>
-              <div className="text-sm text-green-600">Già sincronizzate</div>
-            </div>
-            <div className="text-center p-4 rounded-lg border">
-              <div className="text-2xl font-bold text-orange-600">
-                {syncStats.emailDaScaricare}
+              <div>
+                <p className="text-2xl font-bold">{totalProcessed}</p>
+                <p className="text-sm text-muted-foreground">Elaborate questa sessione</p>
               </div>
-              <div className="text-sm text-orange-600">Da scaricare</div>
             </div>
           </div>
 
-          {/* Visualizzazione conteggio a pacchetti con monete */}
-          {(countInProgress || countBatches.length > 0) && (
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h4 className="font-medium">Conteggio Email a Pacchetti</h4>
-              
-              <div className="flex flex-wrap gap-2">
-                {countBatches.map((batch, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 border rounded">
-                    <img src={coinEuro} alt="Euro coin" className="w-6 h-6" />
-                    <div className="text-xs">
-                      <div>Batch {batch.batch}</div>
-                      <div>{batch.emails} email</div>
-                      <div className="text-muted-foreground">{batch.start}-{batch.end}</div>
-                    </div>
-                  </div>
-                ))}
-                
-                {countInProgress && (
-                  <div className="flex items-center gap-2 p-2 border border-dashed rounded">
-                    <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
-                    <div className="text-xs text-muted-foreground">Conteggio...</div>
-                  </div>
-                )}
-              </div>
-              
-              {syncStatus && (
-                <div className="text-sm text-muted-foreground">
-                  {syncStatus}
-                </div>
-              )}
-            </div>
-          )}
-
-          <Button 
-            onClick={() => handlePreviewEmails()}
-            disabled={!provider || isPreviewLoading || countInProgress}
-            variant="outline"
-            className="w-full"
-          >
-            {isPreviewLoading || countInProgress ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            {isPreviewLoading || countInProgress ? 'Conteggio email...' : 'Controlla email sul server'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Animazione sincronizzazione stile Windows 95 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className={`h-5 w-5 ${syncInProgress ? 'animate-spin' : ''}`} />
-            Sincronizzazione Email
-          </CardTitle>
-          <CardDescription>
-            Scarica le email dal server IMAP con animazioni retrò
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Area animazione Windows 95 */}
-          <div className="relative border-2 border-gray-300 rounded-lg p-8 min-h-40 overflow-hidden">
-            <div className="absolute inset-0"></div>
-            
-            {/* Fogli volanti */}
-            <div className="relative z-10">
-              <div className="flex justify-between items-center h-32">
-                {/* Sorgente email */}
-                <div className="text-center">
-                  <Server className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-                  <p className="text-xs text-gray-600">Server IMAP</p>
-                  {provider && (
-                    <p className="text-xs text-gray-500">{provider.imap_server}</p>
-                  )}
-                </div>
-
-                {/* Area di volo dei fogli */}
-                <div className="flex-1 relative h-full mx-8">
-                  {flyingPapers.map(paper => (
-                    <FlyingPaper 
-                      key={paper.id} 
-                      isActive={paper.active} 
-                      delay={paper.delay}
-                    />
-                  ))}
-                </div>
-
-                {/* Cartella destinazione */}
-                <div className="text-center">
-                  <DestinationFolder isReceiving={syncInProgress} />
-                  <p className="text-xs text-gray-600 mt-2">Database</p>
-                  <p className="text-xs text-gray-500">Supabase</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Contatori stile Windows 95 */}
-            {syncInProgress && (
-              <div className="absolute bottom-4 left-4 border border-gray-400 shadow-lg rounded p-2">
-                <div className="text-xs text-gray-700">
-                  Email: {currentEmail} / {totalEmails}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Barra di progresso */}
-          {syncInProgress && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progresso sincronizzazione</span>
-                <span>{Math.round(syncProgress)}%</span>
-              </div>
-              <Progress value={syncProgress} className="h-3" />
-              <p className="text-xs text-gray-500 text-center">
-                Sincronizzazione email {currentEmail} di {totalEmails}...
-              </p>
-            </div>
-          )}
-
-          {/* Pulsanti di controllo */}
-          <div className="flex gap-4">
+          <div className="flex gap-2 mt-4">
             <Button 
-              onClick={handleStartSync}
-              disabled={!provider || isLoading || syncInProgress || syncStats.emailDaScaricare === 0}
-              className="flex-1"
+              onClick={handlePreviewEmails}
+              disabled={!provider || isPreviewLoading}
+              variant="outline"
             >
-              {syncInProgress ? (
-                <Pause className="h-4 w-4 mr-2" />
+              {isPreviewLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Verifica Server
+            </Button>
+            
+            <Button 
+              onClick={handleStartDirectSync}
+              disabled={!provider || isSyncing}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isSyncing ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Play className="h-4 w-4 mr-2" />
               )}
-              {syncInProgress ? 'Sincronizzazione in corso...' : 'Avvia Sincronizzazione'}
+              Inizia Importazione
             </Button>
           </div>
-
-          {/* Status e progresso in tempo reale */}
-          {(syncInProgress || syncStatus) && (
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h4 className="font-medium">Stato Sincronizzazione</h4>
-              
-              {/* Status corrente */}
-              <div className="text-sm text-muted-foreground">
-                {syncStatus || 'In attesa...'}
-              </div>
-              
-              {/* Info batch corrente */}
-              {batchInfo && (
-                <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2">
-                  <div>Batch: {currentBatch.start}-{currentBatch.start + currentBatch.size - 1}</div>
-                  <div>Totale server: {batchInfo.total_on_server}</div>
-                  <div>Processate: {batchInfo.processed}</div>
-                  <div>Prossimo batch: {batchInfo.next_batch_start || 'N/A'}</div>
-                </div>
-              )}
-              
-              {/* Barra di progresso */}
-              {syncInProgress && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progresso batch corrente</span>
-                    <span>{Math.round(syncProgress)}%</span>
-                  </div>
-                  <Progress value={syncProgress} className="w-full" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {syncStats.emailDaScaricare === 0 && syncStats.emailSulServer > 0 && (
-            <div className="text-center p-4 border border-green-200 rounded-lg">
-              <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <p className="text-green-700 font-medium">Tutte le email sono sincronizzate!</p>
-              <p className="text-sm text-green-600">
-                {syncStats.emailGiaSincronizzate} email presenti nel database
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
+
+      {/* Stato sincronizzazione */}
+      {(syncStatus || isSyncing) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Stato Sincronizzazione
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm">{syncStatus}</p>
+              
+              {isSyncing && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Batch corrente: {currentBatch}</span>
+                    <span>Email elaborate: {totalProcessed}</span>
+                  </div>
+                  <Progress value={33} className="h-2" />
+                </div>
+              )}
+
+              {/* Animazione trasferimento email */}
+              <div className="relative h-16 flex items-center justify-between bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center gap-4">
+                  <Server className="h-8 w-8 text-blue-500" />
+                  <span className="text-sm font-medium">Server IMAP</span>
+                </div>
+                
+                {/* Area animazione fogli volanti */}
+                <div className="relative flex-1 mx-8">
+                  {flyingPapers.map((paper) => (
+                    <FlyingPaper 
+                      key={paper.id} 
+                      isActive={paper.active} 
+                      delay={paper.delay} 
+                    />
+                  ))}
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium">Database</span>
+                  <DestinationFolder isReceiving={syncInProgress} />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

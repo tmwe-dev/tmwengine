@@ -193,7 +193,7 @@ const EmailSyncTab = () => {
           provider_id: provider.id,
           tipo_sync: 'manuale',
           preview_only: false,
-          batch_size: 500,
+          batch_size: 1,
           start_from: startFrom
         }
       });
@@ -207,7 +207,7 @@ const EmailSyncTab = () => {
       // Aggiorna statistiche
       const newProcessed = totalProcessed + (result.messaggi_nuovi || 0);
       setTotalProcessed(newProcessed);
-      setCurrentBatch(Math.ceil(startFrom / 500));
+      setCurrentBatch(startFrom);
       
       // Mostra animazione per le email processate
       if (result.messaggi_nuovi > 0) {
@@ -227,13 +227,13 @@ const EmailSyncTab = () => {
         }
       }
 
-      setSyncStatus(`Batch ${currentBatch} completato: ${result.messaggi_nuovi} nuove email, ${result.messaggi_aggiornati} aggiornate`);
+      setSyncStatus(`Email ${currentBatch} completata: ${result.messaggi_nuovi ? 'nuova' : 'già presente'}, ${result.messaggi_aggiornati} aggiornate`);
 
-      // Se ci sono altri batch da processare
+      // Se ci sono altre email da processare
       if (result.batch_info?.has_more_batches) {
         toast({
-          title: `Batch ${currentBatch} completato`,
-          description: `${result.messaggi_nuovi} email sincronizzate. Continuare con il prossimo batch?`,
+          title: `Email ${currentBatch} completata`,
+          description: `Continuare con la prossima email?`,
           action: (
             <Button 
               size="sm" 
@@ -400,7 +400,7 @@ const EmailSyncTab = () => {
               {isSyncing && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>Batch corrente: {currentBatch}</span>
+                    <span>Email corrente: {currentBatch}</span>
                     <span>Email elaborate: {totalProcessed}</span>
                   </div>
                   <Progress value={33} className="h-2" />

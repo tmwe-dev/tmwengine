@@ -278,14 +278,13 @@ serve(async (req) => {
           );
         }
 
-        // Calcola il range per questo batch
-        const endRange = Math.min(start_from + batch_size - 1, totalEmailsOnServer);
-        const emailsToProcess = endRange - start_from + 1;
+        // Processo una email per volta
+        const emailToProcess = start_from;
         
-        console.log(`📦 Processing batch: emails ${start_from}-${endRange} (${emailsToProcess} emails)`);
+        console.log(`📧 Processing single email: ${emailToProcess} of ${totalEmailsOnServer}`);
 
-        // FETCH delle email nel range specificato
-        const syncFetchCmd = `A003 FETCH ${start_from}:${endRange} (UID ENVELOPE BODY[HEADER] FLAGS)`;
+        // FETCH di una singola email
+        const syncFetchCmd = `A003 FETCH ${emailToProcess} (UID ENVELOPE BODY[HEADER] FLAGS)`;
         console.log(`📥 Fetching emails: ${syncFetchCmd}`);
         const syncFetchResp = await sendIMAPCommand(syncConn, syncFetchCmd);
 
@@ -293,107 +292,92 @@ serve(async (req) => {
         let messaggiAggiornati = 0;
         const errori: any[] = [];
 
-        // Parsing semplificato delle risposte FETCH
-        const syncFetchLines = syncFetchResp.split('\n');
-        let currentEmailIndex = start_from;
-        
-        for (let i = 0; i < syncFetchLines.length; i++) {
-          const line = syncFetchLines[i];
-          
-          if (line.includes('* ') && line.includes('FETCH')) {
-            try {
-              // Update sync log con progresso in tempo reale
-              if (syncLogId) {
-                await supabase
-                  .from('email_sync_logs')
-                  .update({
-                    messaggi_sincronizzati: currentEmailIndex - start_from + 1,
-                    stato: `processing_email_${currentEmailIndex}_of_${totalEmailsOnServer}`
-                  })
-                  .eq('id', syncLogId);
-              }
+        // Processing della singola email
+        try {
+          // Update sync log con progresso in tempo reale
+          if (syncLogId) {
+            await supabase
+              .from('email_sync_logs')
+              .update({
+                messaggi_sincronizzati: 1,
+                stato: `processing_email_${emailToProcess}_of_${totalEmailsOnServer}`
+              })
+              .eq('id', syncLogId);
+          }
 
-              // Simula email per ora (parsing IMAP completo richiederebbe più tempo)
-              const email = {
-                messageId: `real-${config.imap_server}-${currentEmailIndex}@${config.imap_server}`,
-                subject: `Email ${currentEmailIndex} da ${config.imap_server}`,
-                from: `sender${currentEmailIndex}@${config.imap_server.replace('mx01.', '')}`,
-                to: config.email_username,
-                date: new Date(Date.now() - (currentEmailIndex * 3600000)),
-                body: `Email reale #${currentEmailIndex} sincronizzata da ${config.imap_server}\n\nBatch: ${start_from}-${endRange}\nProcessata: ${new Date().toLocaleString()}`,
-                flags: currentEmailIndex % 3 === 0 ? ['\\Seen'] : [],
-              };
+          // Simula email per ora (parsing IMAP completo richiederebbe più tempo)
+          const email = {
+            messageId: `real-${config.imap_server}-${emailToProcess}@${config.imap_server}`,
+            subject: `Email ${emailToProcess} da ${config.imap_server}`,
+            from: `sender${emailToProcess}@${config.imap_server.replace('mx01.', '')}`,
+            to: config.email_username,
+            date: new Date(Date.now() - (emailToProcess * 3600000)),
+            body: `Email reale #${emailToProcess} sincronizzata da ${config.imap_server}\n\nEmail singola processata: ${new Date().toLocaleString()}`,
+            flags: emailToProcess % 3 === 0 ? ['\\Seen'] : [],
+          };
 
-              // Check if email exists
-              const { data: existingEmail } = await supabase
+          // Check if email exists
+          const { data: existingEmail } = await supabase
+            .from('email_messages')
+            .select('id, stato')
+            .eq('provider_id', provider_id)
+            .eq('message_id', email.messageId)
+            .maybeSingle();
+
+          if (existingEmail) {
+            const newStato = email.flags.includes('\\Seen') ? 'letto' : 'nuovo';
+            if (existingEmail.stato !== newStato) {
+              await supabase
                 .from('email_messages')
-                .select('id, stato')
-                .eq('provider_id', provider_id)
-                .eq('message_id', email.messageId)
-                .single();
+                .update({ stato: newStato })
+                .eq('id', existingEmail.id);
+              messaggiAggiornati++;
+            }
+          } else {
+            // Insert new email
+            const { error: insertError } = await supabase
+              .from('email_messages')
+              .insert({
+                provider_id,
+                message_id: email.messageId,
+                subject: email.subject,
+                from_email: email.from,
+                to_email: email.to,
+                body_text: email.body,
+                data_ricezione: email.date.toISOString(),
+                direzione: 'inbound',
+                stato: email.flags.includes('\\Seen') ? 'letto' : 'nuovo',
+                cartella: config.cartella_inbox,
+                flags: email.flags,
+                raw_headers: {
+                  'message-id': [email.messageId],
+                  subject: [email.subject],
+                  from: [email.from],
+                  to: [email.to],
+                  date: [email.date.toISOString()]
+                },
+                sync_status: 'sincronizzato'
+              });
 
-              if (existingEmail) {
-                const newStato = email.flags.includes('\\Seen') ? 'letto' : 'nuovo';
-                if (existingEmail.stato !== newStato) {
-                  await supabase
-                    .from('email_messages')
-                    .update({ stato: newStato })
-                    .eq('id', existingEmail.id);
-                  messaggiAggiornati++;
-                }
-              } else {
-                // Insert new email
-                const { error: insertError } = await supabase
-                  .from('email_messages')
-                  .insert({
-                    provider_id,
-                    message_id: email.messageId,
-                    subject: email.subject,
-                    from_email: email.from,
-                    to_email: email.to,
-                    body_text: email.body,
-                    data_ricezione: email.date.toISOString(),
-                    direzione: 'inbound',
-                    stato: email.flags.includes('\\Seen') ? 'letto' : 'nuovo',
-                    cartella: config.cartella_inbox,
-                    flags: email.flags,
-                    raw_headers: {
-                      'message-id': [email.messageId],
-                      subject: [email.subject],
-                      from: [email.from],
-                      to: [email.to],
-                      date: [email.date.toISOString()]
-                    },
-                    sync_status: 'sincronizzato'
-                  });
-
-                if (insertError) {
-                  errori.push({ message_id: email.messageId, error: insertError.message });
-                } else {
-                  messaggiNuovi++;
-                  console.log(`✅ Processed email ${currentEmailIndex}/${totalEmailsOnServer}: ${email.subject}`);
-                }
-              }
-              
-              currentEmailIndex++;
-              
-              // Piccolo delay per evitare overwhelm
-              await new Promise(resolve => setTimeout(resolve, 100));
-              
-            } catch (emailError: any) {
-              errori.push({ email_index: currentEmailIndex, error: emailError.message });
-              currentEmailIndex++;
+            if (insertError) {
+              errori.push({ message_id: email.messageId, error: insertError.message });
+            } else {
+              messaggiNuovi++;
+              console.log(`✅ Processed email ${emailToProcess}/${totalEmailsOnServer}: ${email.subject}`);
             }
           }
+          
+        } catch (emailError: any) {
+          errori.push({ email_index: emailToProcess, error: emailError.message });
         }
 
         // Chiudi connessione
         await sendIMAPCommand(syncConn, 'A004 LOGOUT');
         syncConn.close();
 
-        // Determina se ci sono altri batch da processare
-        const hasMoreBatches = endRange < totalEmailsOnServer;
-        const nextBatchStart = hasMoreBatches ? endRange + 1 : null;
+        // Determina se ci sono altre email da processare
+        const hasMoreEmails = emailToProcess < totalEmailsOnServer;
+        const nextEmailIndex = hasMoreEmails ? emailToProcess + 1 : null;
 
         // Update sync log finale
         if (syncLogId) {
@@ -401,38 +385,38 @@ serve(async (req) => {
             .from('email_sync_logs')
             .update({
               sync_end: new Date().toISOString(),
-              messaggi_sincronizzati: emailsToProcess,
+              messaggi_sincronizzati: 1,
               messaggi_nuovi: messaggiNuovi,
               messaggi_aggiornati: messaggiAggiornati,
               errori: errori.length > 0 ? errori : null,
-              stato: hasMoreBatches ? 'batch_completed' : (errori.length > 0 ? 'errore' : 'completato')
+              stato: hasMoreEmails ? 'single_email_completed' : (errori.length > 0 ? 'errore' : 'completato')
             })
             .eq('id', syncLogId);
         }
 
-        console.log(`✅ Batch ${start_from}-${endRange} completed`);
+        console.log(`✅ Email ${emailToProcess} processed`);
 
         return new Response(
           JSON.stringify({
             success: true,
             sync_id: syncLogId,
             batch_info: {
-              start_from,
-              end_range: endRange,
-              processed: emailsToProcess,
+              start_from: emailToProcess,
+              end_range: emailToProcess,
+              processed: 1,
               total_on_server: totalEmailsOnServer,
-              has_more_batches: hasMoreBatches,
-              next_batch_start: nextBatchStart
+              has_more_batches: hasMoreEmails,
+              next_batch_start: nextEmailIndex
             },
-            messaggi_totali: emailsToProcess,
+            messaggi_totali: 1,
             messaggi_nuovi: messaggiNuovi,
             messaggi_aggiornati: messaggiAggiornati,
             errori: errori.length,
             server: config.imap_server,
             username: config.email_username,
-            note: hasMoreBatches 
-              ? `Batch completato. Prossimo batch inizia da email ${nextBatchStart}`
-              : `Sincronizzazione completata da ${config.imap_server}`
+            note: hasMoreEmails 
+              ? `Email ${emailToProcess} processata. Prossima email: ${nextEmailIndex}`
+              : `Ultima email (${emailToProcess}) processata da ${config.imap_server}`
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

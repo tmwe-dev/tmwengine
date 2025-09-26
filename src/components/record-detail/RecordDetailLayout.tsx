@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -11,9 +14,110 @@ interface RecordDetailLayoutProps {
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportToRubrica = async () => {
+    setIsImporting(true);
+    try {
+      // Map imported_contacts fields to rubrica fields
+      const rubricaData = {
+        nome: record.name,
+        azienda: record.company_name,
+        alias: record.alias,
+        company_alias: record.company_alias,
+        responsabile: record.name,
+        title: record.title,
+        position: record.position,
+        email: record.email,
+        telefono: record.phone,
+        cellulare: record.cell,
+        indirizzo: record.address,
+        citta: record.city,
+        paese: record.country,
+        zip_code: record.zip_code,
+        origine: record.origin,
+        client_code: record.client_code,
+        note: record.note,
+        stato: record.stato,
+        created_by: record.created_by,
+        last_contact: record.last_contact,
+        next_contact_date: record.next_contact_date,
+        scheduled_contact: record.scheduled_contact,
+        completed: record.completed,
+        archiviata: record.archiviata,
+        has_actions: record.has_actions,
+        meta_client: record.meta_client,
+        meta_exclient: record.meta_exclient,
+        meta_express: record.meta_express,
+        meta_sea_freight: record.meta_sea_freight,
+        meta_air_freight: record.meta_air_freight,
+        meta_interested: record.meta_interested,
+        meta_reception_required_email: record.meta_reception_required_email,
+        meta_contact_required_email: record.meta_contact_required_email,
+        meta_presentation: record.meta_presentation,
+        meta_tutorial: record.meta_tutorial,
+        meta_wca: record.meta_wca,
+        meta_rejected: record.meta_rejected,
+        meta_exworks: record.meta_exworks,
+        meta_hight_value_customer: record.meta_hight_value_customer
+      };
+
+      // Remove undefined values
+      Object.keys(rubricaData).forEach(key => {
+        if (rubricaData[key] === undefined) {
+          delete rubricaData[key];
+        }
+      });
+
+      const { error } = await supabase
+        .from('rubrica')
+        .insert([rubricaData]);
+
+      if (error) {
+        throw error;
+      }
+
+      // Update the imported_contacts record to mark as imported
+      if (record.id) {
+        await supabase
+          .from('imported_contacts')
+          .update({ is_imported_to_rubrica: true })
+          .eq('id', record.id);
+      }
+
+      toast({
+        title: "Contatto importato",
+        description: "Il contatto è stato aggiunto alla rubrica con successo.",
+      });
+
+    } catch (error) {
+      console.error('Error importing to rubrica:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'importazione del contatto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+  
   
   return (
     <div className="space-y-6">
+      {/* Pulsante Importa in Rubrica */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={handleImportToRubrica}
+          disabled={isImporting || record.is_imported_to_rubrica}
+          className="flex items-center gap-2"
+          variant={record.is_imported_to_rubrica ? "outline" : "default"}
+        >
+          <UserPlus className="h-4 w-4" />
+          {isImporting ? "Importando..." : 
+           record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+        </Button>
+      </div>
       {/* Sezione Date Sistema - in alto sotto i selettori */}
       {(record.created_at !== undefined || record.updated_at !== undefined) && (
         <div className="space-y-4">

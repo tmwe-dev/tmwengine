@@ -1558,9 +1558,12 @@ export default function ImportTemplates() {
               {/* Records per page */}
               <div className="w-36">
                 <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
-                <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                  console.log('Changing records per page to:', value);
+                  setRecordsPerPage(Number(value));
+                }}>
                   <SelectTrigger id="records-per-page">
-                    <SelectValue />
+                    <SelectValue placeholder={`${recordsPerPage} record`} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="25">25</SelectItem>

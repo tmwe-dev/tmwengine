@@ -555,7 +555,7 @@ const Settings = () => {
       <div className="w-full">
         <Tabs defaultValue="email" className="w-full space-y-6">
           <div className="w-full border-b">
-            <TabsList className="grid w-full grid-cols-5 h-auto p-1 bg-muted rounded-lg">
+            <TabsList className="flex w-full h-auto p-1 bg-muted rounded-lg space-x-2">
               <TabsTrigger value="email" className="flex items-center gap-2 py-3">
                 <Mail className="h-4 w-4" />
                 Email Provider

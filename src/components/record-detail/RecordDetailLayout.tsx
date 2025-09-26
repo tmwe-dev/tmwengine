@@ -1,7 +1,7 @@
 import React from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
-import { Users, Building, MapPin, Mail, Phone, Database, Clock } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock } from 'lucide-react';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -11,78 +11,79 @@ interface RecordDetailLayoutProps {
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   return (
     <div className="space-y-6">
-      {/* Sezione Company - Layout flessibile */}
+      {/* Sezione Informazioni Azienda */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-          <Building className="h-5 w-5" />
-          Informazioni Azienda
-        </h3>
-        
-        <div className="flex flex-wrap gap-3">
-          {/* Company Name - prende tutto lo spazio disponibile */}
-          {record.company_name !== undefined && (
-            <div className="flex-1 min-w-[300px]">
-              <FieldRenderer 
-                field="company_name" 
-                value={record.company_name} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Informazioni Azienda
+          </h3>
           
-          {/* Company Alias - larghezza automatica */}
-          {record.company_alias !== undefined && (
-            <div className="flex-none w-auto min-w-[200px]">
-              <FieldRenderer 
-                field="company_alias" 
-                value={record.company_alias} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+          {/* Company fields allineati a destra */}
+          <div className="flex gap-4 items-end">
+            {record.company_name !== undefined && (
+              <div className="min-w-[300px]">
+                <FieldRenderer 
+                  field="company_name" 
+                  value={record.company_name} 
+                  formatCellValue={formatCellValue}
+                />
+              </div>
+            )}
+            
+            {record.company_alias !== undefined && (
+              <div className="min-w-[200px]">
+                <FieldRenderer 
+                  field="company_alias" 
+                  value={record.company_alias} 
+                  formatCellValue={formatCellValue}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Sezione Contact - Layout flessibile */}
+      {/* Sezione Informazioni Contatto */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Informazioni Contatto
-        </h3>
-        
-        <div className="flex flex-wrap gap-3">
-          {/* Name - larghezza flessibile */}
-          {record.name !== undefined && (
-            <div className="flex-auto min-w-[200px] max-w-[300px]">
-              <FieldRenderer 
-                field="name" 
-                value={record.name} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Informazioni Contatto
+          </h3>
           
-          {/* Title - si adatta al contenuto */}
-          {record.title !== undefined && (
-            <div className="flex-auto min-w-[150px] max-w-[250px]">
-              <FieldRenderer 
-                field="title" 
-                value={record.title} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
-          
-          {/* Alias - larghezza compatta */}
-          {record.alias !== undefined && (
-            <div className="flex-auto min-w-[120px] max-w-[200px]">
-              <FieldRenderer 
-                field="alias" 
-                value={record.alias} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+          {/* Name, Title, Alias allineati a destra */}
+          <div className="flex gap-4 items-end">
+            {record.name !== undefined && (
+              <div className="min-w-[180px]">
+                <FieldRenderer 
+                  field="name" 
+                  value={record.name} 
+                  formatCellValue={formatCellValue}
+                />
+              </div>
+            )}
+            
+            {record.title !== undefined && (
+              <div className="min-w-[160px]">
+                <FieldRenderer 
+                  field="title" 
+                  value={record.title} 
+                  formatCellValue={formatCellValue}
+                />
+              </div>
+            )}
+            
+            {record.alias !== undefined && (
+              <div className="min-w-[140px]">
+                <FieldRenderer 
+                  field="alias" 
+                  value={record.alias} 
+                  formatCellValue={formatCellValue}
+                />
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Position - riga separata, larghezza piena */}
@@ -97,92 +98,89 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         )}
       </div>
 
-      {/* Sezione Contatti - Layout flessibile */}
+      {/* Sezione Contatti */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Contatti
-        </h3>
-        
-        <div className="flex flex-wrap gap-3">
-          {/* Email - prende spazio principale */}
-          {record.email !== undefined && (
-            <div className="flex-1 min-w-[250px]">
-              <FieldRenderer 
-                field="email" 
-                value={record.email} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Contatti
+          </h3>
           
-          {/* Phone - larghezza contenuto */}
-          {record.phone !== undefined && (
-            <div className="flex-none min-w-[150px]">
-              <FieldRenderer 
-                field="phone" 
-                value={record.phone} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
-          
-          {/* Cell - larghezza contenuto */}
-          {record.cell !== undefined && (
-            <div className="flex-none min-w-[150px]">
-              <FieldRenderer 
-                field="cell" 
-                value={record.cell} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+          {/* Icone e campi contatti allineati a destra */}
+          <div className="flex gap-4 items-end">
+            {record.email !== undefined && (
+              <div className="min-w-[250px] flex items-end gap-2">
+                <Mail className="h-5 w-5 text-blue-500 mb-3" />
+                <FieldRenderer 
+                  field="email" 
+                  value={record.email} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              </div>
+            )}
+            
+            {record.phone !== undefined && (
+              <div className="min-w-[150px] flex items-end gap-2">
+                <Phone className="h-5 w-5 text-green-500 mb-3" />
+                <FieldRenderer 
+                  field="phone" 
+                  value={record.phone} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              </div>
+            )}
+            
+            {record.cell !== undefined && (
+              <div className="min-w-[150px] flex items-end gap-2">
+                <Phone className="h-5 w-5 text-orange-500 mb-3" />
+                <FieldRenderer 
+                  field="cell" 
+                  value={record.cell} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Sezione Ubicazione - Layout flessibile */}
+      {/* Sezione Ubicazione */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
           <MapPin className="h-5 w-5" />
           Ubicazione
         </h3>
         
-        <div className="flex flex-wrap gap-3">
-          {/* Country - compatto */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {record.country !== undefined && (
-            <div className="flex-none min-w-[120px] max-w-[180px]">
-              <FieldRenderer 
-                field="country" 
-                value={record.country} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="country" 
+              value={record.country} 
+              formatCellValue={formatCellValue}
+            />
           )}
           
-          {/* City - si espande */}
           {record.city !== undefined && (
-            <div className="flex-auto min-w-[150px] max-w-[250px]">
-              <FieldRenderer 
-                field="city" 
-                value={record.city} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="city" 
+              value={record.city} 
+              formatCellValue={formatCellValue}
+            />
           )}
           
-          {/* Origin - compatto */}
           {record.origin !== undefined && (
-            <div className="flex-none min-w-[120px] max-w-[180px]">
-              <FieldRenderer 
-                field="origin" 
-                value={record.origin} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="origin" 
+              value={record.origin} 
+              formatCellValue={formatCellValue}
+            />
           )}
         </div>
         
-        {/* Address - riga separata, larghezza piena */}
+        {/* Address - riga separata */}
         {record.address !== undefined && (
           <div className="w-full">
             <FieldRenderer 
@@ -193,57 +191,47 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </div>
         )}
         
-        <div className="flex flex-wrap gap-3">
-          {/* ZIP Code */}
-          {record.zip_code !== undefined && (
-            <div className="flex-none min-w-[100px] max-w-[150px]">
-              <FieldRenderer 
-                field="zip_code" 
-                value={record.zip_code} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
-        </div>
+        {record.zip_code !== undefined && (
+          <div className="w-40">
+            <FieldRenderer 
+              field="zip_code" 
+              value={record.zip_code} 
+              formatCellValue={formatCellValue}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Sezione Metadata - Layout dinamico */}
+      {/* Sezione Informazioni Aggiuntive */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
           <Database className="h-5 w-5" />
           Informazioni Aggiuntive
         </h3>
         
-        <div className="flex flex-wrap gap-3">
-          {/* Stato e Agent ID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {record.stato !== undefined && (
-            <div className="flex-none min-w-[100px] max-w-[150px]">
-              <FieldRenderer 
-                field="stato" 
-                value={record.stato} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="stato" 
+              value={record.stato} 
+              formatCellValue={formatCellValue}
+            />
           )}
           
           {record.agent_id !== undefined && (
-            <div className="flex-none min-w-[120px] max-w-[180px]">
-              <FieldRenderer 
-                field="agent_id" 
-                value={record.agent_id} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="agent_id" 
+              value={record.agent_id} 
+              formatCellValue={formatCellValue}
+            />
           )}
           
           {record.client_code !== undefined && (
-            <div className="flex-none min-w-[120px] max-w-[200px]">
-              <FieldRenderer 
-                field="client_code" 
-                value={record.client_code} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
+            <FieldRenderer 
+              field="client_code" 
+              value={record.client_code} 
+              formatCellValue={formatCellValue}
+            />
           )}
         </div>
         
@@ -259,7 +247,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         )}
       </div>
 
-      {/* Sezione Date - Layout flessibile */}
+      {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
@@ -267,41 +255,35 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             Date e Programmazioni
           </h3>
           
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {record.last_contact !== undefined && (
-              <div className="flex-auto min-w-[150px] max-w-[250px]">
-                <FieldRenderer 
-                  field="last_contact" 
-                  value={record.last_contact} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
+              <FieldRenderer 
+                field="last_contact" 
+                value={record.last_contact} 
+                formatCellValue={formatCellValue}
+              />
             )}
             
             {record.next_contact_date !== undefined && (
-              <div className="flex-auto min-w-[150px] max-w-[250px]">
-                <FieldRenderer 
-                  field="next_contact_date" 
-                  value={record.next_contact_date} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
+              <FieldRenderer 
+                field="next_contact_date" 
+                value={record.next_contact_date} 
+                formatCellValue={formatCellValue}
+              />
             )}
             
             {record.scheduled_contact !== undefined && (
-              <div className="flex-auto min-w-[150px] max-w-[250px]">
-                <FieldRenderer 
-                  field="scheduled_contact" 
-                  value={record.scheduled_contact} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
+              <FieldRenderer 
+                field="scheduled_contact" 
+                value={record.scheduled_contact} 
+                formatCellValue={formatCellValue}
+              />
             )}
           </div>
         </div>
       )}
 
-      {/* Sezione Meta Flags - Layout compatto */}
+      {/* Sezione Meta Flags */}
       {Object.keys(record).some(key => key.startsWith('meta_') && record[key]) && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-primary">Meta Flags</h3>

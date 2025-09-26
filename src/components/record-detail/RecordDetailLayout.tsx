@@ -271,20 +271,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       </div>
 
-      {/* Pulsante Importa in Rubrica */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleImportToRubrica}
-          disabled={isImporting || record.is_imported_to_rubrica}
-          className="flex items-center gap-2"
-          variant={record.is_imported_to_rubrica ? "outline" : "default"}
-        >
-          <UserPlus className="h-4 w-4" />
-          {isImporting ? "Importando..." : 
-           record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-        </Button>
-      </div>
-
       {/* Sezione Ubicazione */}
       {(record.city !== undefined || record.zip_code !== undefined || record.address !== undefined) && (
         <div className="space-y-4">
@@ -372,6 +358,21 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   />
                 </div>
               )}
+              
+              {/* Pulsante Importa in Rubrica */}
+              <div className="min-w-[200px] flex justify-end">
+                <Button 
+                  onClick={handleImportToRubrica}
+                  disabled={isImporting || record.is_imported_to_rubrica}
+                  className="flex items-center gap-2"
+                  variant={record.is_imported_to_rubrica ? "outline" : "default"}
+                  size="sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  {isImporting ? "Importando..." : 
+                   record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

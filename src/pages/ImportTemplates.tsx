@@ -310,12 +310,12 @@ export default function ImportTemplates() {
     }
     
     // Apply origin filter
-    if (originFilter) {
+    if (originFilter && originFilter !== '__all__') {
       result = result.filter(record => record.origin === originFilter);
     }
     
     // Apply country filter  
-    if (countryFilter) {
+    if (countryFilter && countryFilter !== '__all__') {
       result = result.filter(record => record.country === countryFilter);
     }
     
@@ -1518,7 +1518,7 @@ export default function ImportTemplates() {
                     <SelectValue placeholder="Tutte le origini" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutte le origini</SelectItem>
+                    <SelectItem value="__all__">Tutte le origini</SelectItem>
                     {getUniqueValues('origin').map((origin) => (
                       <SelectItem key={origin} value={String(origin)}>
                         {String(origin)}
@@ -1536,7 +1536,7 @@ export default function ImportTemplates() {
                     <SelectValue placeholder="Tutti i paesi" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tutti i paesi</SelectItem>
+                    <SelectItem value="__all__">Tutti i paesi</SelectItem>
                     {getUniqueValues('country').map((country) => (
                       <SelectItem key={country} value={String(country)}>
                         {getCountryFlag(String(country))} {String(country)}

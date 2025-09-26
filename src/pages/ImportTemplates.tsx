@@ -1113,7 +1113,7 @@ export default function ImportTemplates() {
                   <Badge 
                     key={`${filter.field}-${filter.value}-${index}`}
                     variant="outline" 
-                    className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 cursor-pointer flex items-center gap-1"
+                    className="text-blue-600 border-blue-200 bg-transparent hover:bg-blue-50/20 cursor-pointer flex items-center gap-1"
                     onClick={() => removeFilter(filter)}
                   >
                     <span className="capitalize">

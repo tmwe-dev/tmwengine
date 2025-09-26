@@ -13,76 +13,67 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
     <div className="space-y-6">
       {/* Sezione Informazioni Azienda */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Building className="h-5 w-5" />
-          </h3>
+        <div className="flex items-end gap-4">
+          <Building className="h-5 w-5 text-primary mb-3" />
           
-          {/* Company fields allineati a destra */}
-          <div className="flex gap-4 items-end">
-            {record.company_name !== undefined && (
-              <div className="min-w-[300px]">
-                <FieldRenderer 
-                  field="company_name" 
-                  value={record.company_name} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-            
-            {record.company_alias !== undefined && (
-              <div className="min-w-[200px]">
-                <FieldRenderer 
-                  field="company_alias" 
-                  value={record.company_alias} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-          </div>
+          {/* Company fields allineati subito a destra dell'icona */}
+          {record.company_name !== undefined && (
+            <div className="flex-1 min-w-[300px]">
+              <FieldRenderer 
+                field="company_name" 
+                value={record.company_name} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {record.company_alias !== undefined && (
+            <div className="min-w-[200px]">
+              <FieldRenderer 
+                field="company_alias" 
+                value={record.company_alias} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Sezione Informazioni Contatto */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Informazioni Contatto
-          </h3>
+        <div className="flex items-end gap-4">
+          <Users className="h-5 w-5 text-primary mb-3" />
           
-          {/* Name, Title, Alias allineati a destra */}
-          <div className="flex gap-4 items-end">
-            {record.name !== undefined && (
-              <div className="min-w-[180px]">
-                <FieldRenderer 
-                  field="name" 
-                  value={record.name} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-            
-            {record.title !== undefined && (
-              <div className="min-w-[160px]">
-                <FieldRenderer 
-                  field="title" 
-                  value={record.title} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-            
-            {record.alias !== undefined && (
-              <div className="min-w-[140px]">
-                <FieldRenderer 
-                  field="alias" 
-                  value={record.alias} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-          </div>
+          {/* Name, Title, Alias allineati subito a destra dell'icona */}
+          {record.name !== undefined && (
+            <div className="flex-1 min-w-[180px]">
+              <FieldRenderer 
+                field="name" 
+                value={record.name} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {record.title !== undefined && (
+            <div className="min-w-[160px]">
+              <FieldRenderer 
+                field="title" 
+                value={record.title} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {record.alias !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="alias" 
+                value={record.alias} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
         </div>
         
         {/* Position - riga separata, larghezza piena */}
@@ -99,59 +90,53 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Contatti */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Contatti
-          </h3>
+        <div className="flex items-end gap-4">
+          <Mail className="h-5 w-5 text-primary mb-3" />
           
-          {/* Icone e campi contatti allineati a destra */}
-          <div className="flex gap-4 items-end">
-            {record.email !== undefined && (
-              <div className="min-w-[250px] flex items-end gap-2">
-                <Mail className="h-5 w-5 text-blue-500 mb-3" />
-                <FieldRenderer 
-                  field="email" 
-                  value={record.email} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-            
-            {record.phone !== undefined && (
-              <div className="min-w-[150px] flex items-end gap-2">
-                <Phone className="h-5 w-5 text-green-500 mb-3" />
-                <FieldRenderer 
-                  field="phone" 
-                  value={record.phone} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-            
-            {record.cell !== undefined && (
-              <div className="min-w-[150px] flex items-end gap-2">
-                <Phone className="h-5 w-5 text-orange-500 mb-3" />
-                <FieldRenderer 
-                  field="cell" 
-                  value={record.cell} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-          </div>
+          {/* Campi contatti con icone subito a destra dell'icona principale */}
+          {record.email !== undefined && (
+            <div className="flex-1 min-w-[250px] flex items-end gap-2">
+              <Mail className="h-4 w-4 text-blue-500 mb-3" />
+              <FieldRenderer 
+                field="email" 
+                value={record.email} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
+              />
+            </div>
+          )}
+          
+          {record.phone !== undefined && (
+            <div className="min-w-[150px] flex items-end gap-2">
+              <Phone className="h-4 w-4 text-green-500 mb-3" />
+              <FieldRenderer 
+                field="phone" 
+                value={record.phone} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
+              />
+            </div>
+          )}
+          
+          {record.cell !== undefined && (
+            <div className="min-w-[150px] flex items-end gap-2">
+              <Phone className="h-4 w-4 text-orange-500 mb-3" />
+              <FieldRenderer 
+                field="cell" 
+                value={record.cell} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Sezione Ubicazione */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          Ubicazione
-        </h3>
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" />
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {record.country !== undefined && (
@@ -203,10 +188,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Informazioni Aggiuntive */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          Informazioni Aggiuntive
-        </h3>
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5 text-primary" />
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {record.stato !== undefined && (
@@ -249,10 +233,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Date e Programmazioni
-          </h3>
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {record.last_contact !== undefined && (
@@ -285,7 +268,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Sezione Meta Flags */}
       {Object.keys(record).some(key => key.startsWith('meta_') && record[key]) && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-primary">Meta Flags</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className="h-2 w-2 bg-white rounded-full"></div>
+            </div>
+          </div>
           
           <div className="flex flex-wrap gap-2">
             {Object.keys(record)

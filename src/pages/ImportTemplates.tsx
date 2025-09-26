@@ -1708,8 +1708,9 @@ export default function ImportTemplates() {
                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
                            onCheckedChange={toggleSelectAll}
                            aria-label="Seleziona tutti"
-                         />
-                       </TableHead>
+                          />
+                        </TableHead>
+                        <TableHead className="w-16 text-center">#</TableHead>
                         {(() => {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
@@ -1744,8 +1745,11 @@ export default function ImportTemplates() {
                               checked={selectedRecords.has(actualIndex)}
                               onCheckedChange={() => toggleRecordSelection(actualIndex)}
                               aria-label={`Seleziona record ${actualIndex + 1}`}
-                            />
-                          </TableCell>
+                             />
+                           </TableCell>
+                           <TableCell className="w-16 text-center text-muted-foreground">
+                             {actualIndex + 1}
+                           </TableCell>
                           {(() => {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);

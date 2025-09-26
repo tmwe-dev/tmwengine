@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -173,6 +173,7 @@ const getCountryFlag = (countryName: string): string => {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EmailTemplate {
   id: string;
@@ -1749,14 +1750,40 @@ export default function ImportTemplates() {
                                  }}
                                   title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
                                 >
-                                  {key === 'country' ? (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-base">{getCountryFlag(record[key])}</span>
-                                      <span>{formatCellValue(record[key], key)}</span>
-                                    </div>
-                                  ) : (
-                                    formatCellValue(record[key], key)
-                                  )}
+                                   {key === 'country' ? (
+                                     <div className="flex items-center gap-1">
+                                       <span className="text-base">{getCountryFlag(record[key])}</span>
+                                       <span>{formatCellValue(record[key], key)}</span>
+                                     </div>
+                                   ) : key === 'email' && record[key] ? (
+                                     <TooltipProvider>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 cursor-pointer">
+                                             <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                           </div>
+                                         </TooltipTrigger>
+                                         <TooltipContent>
+                                           <p>{formatCellValue(record[key], key)}</p>
+                                         </TooltipContent>
+                                       </Tooltip>
+                                     </TooltipProvider>
+                                   ) : (key === 'phone' || key === 'cell') && record[key] ? (
+                                     <TooltipProvider>
+                                       <Tooltip>
+                                         <TooltipTrigger asChild>
+                                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 cursor-pointer">
+                                             <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                           </div>
+                                         </TooltipTrigger>
+                                         <TooltipContent>
+                                           <p>{formatCellValue(record[key], key)}</p>
+                                         </TooltipContent>
+                                       </Tooltip>
+                                     </TooltipProvider>
+                                   ) : (
+                                     formatCellValue(record[key], key)
+                                   )}
                                 </TableCell>
                             ));
                           })()}

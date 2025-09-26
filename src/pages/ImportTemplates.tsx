@@ -1198,11 +1198,11 @@ export default function ImportTemplates() {
             </div>
           ) : filteredRecords.length > 0 ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
                  <Table>
-                   <TableHeader>
+                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>
-                       <TableHead className="w-12">
+                       <TableHead className="w-12 bg-background">
                          <Checkbox
                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
                            onCheckedChange={toggleSelectAll}
@@ -1212,7 +1212,7 @@ export default function ImportTemplates() {
                        {Object.keys(filteredRecords[0] || {})
                          .filter(key => key !== 'id' && key !== 'import_log_id')
                          .map((key) => (
-                         <TableHead key={key} className="min-w-[120px]">
+                         <TableHead key={key} className="min-w-[120px] bg-background">
                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                          </TableHead>
                        ))}

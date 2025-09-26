@@ -208,6 +208,9 @@ interface FilterTag {
   displayValue: string;
 }
 
+  // Stato per la sincronizzazione dello scroll orizzontale
+  const [scrollLeft, setScrollLeft] = useState(0);
+
 export default function ImportTemplates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -1703,21 +1706,8 @@ export default function ImportTemplates() {
                  <div className="border-b bg-white dark:bg-gray-950 sticky top-0 z-20 overflow-hidden">
                    <div 
                      className="overflow-auto scrollbar-none"
-                     ref={(el) => {
-                       if (el) {
-                         const bodyScroll = el.parentElement?.nextElementSibling?.querySelector('.overflow-auto');
-                         if (bodyScroll) {
-                           const syncScroll = () => {
-                             bodyScroll.scrollLeft = el.scrollLeft;
-                           };
-                           const syncScrollReverse = () => {
-                             el.scrollLeft = bodyScroll.scrollLeft;
-                           };
-                           el.addEventListener('scroll', syncScroll);
-                           bodyScroll.addEventListener('scroll', syncScrollReverse);
-                         }
-                       }
-                     }}
+                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                     onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
                    >
                      <Table>
                        <TableHeader>
@@ -1757,7 +1747,13 @@ export default function ImportTemplates() {
                      </Table>
                    </div>
                  </div>
-                 <div className="overflow-auto flex-1">
+                 <div 
+                   className="overflow-auto flex-1"
+                   ref={(el) => {
+                     if (el) el.scrollLeft = scrollLeft;
+                   }}
+                   onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+                 >
                    <Table>
                      <TableBody>
                       {viewingRecords.map((record, viewIndex) => {

@@ -1072,6 +1072,54 @@ export default function ImportTemplates() {
     }
   };
 
+  // Mapping sigle paese a nomi completi
+  const getCountryFullName = (countryCode: string): string => {
+    const countryNames: { [key: string]: string } = {
+      'US': 'Stati Uniti',
+      'IT': 'Italia',
+      'DE': 'Germania',
+      'FR': 'Francia',
+      'ES': 'Spagna',
+      'GB': 'Regno Unito',
+      'UK': 'Regno Unito',
+      'CN': 'Cina',
+      'JP': 'Giappone',
+      'CA': 'Canada',
+      'AU': 'Australia',
+      'BR': 'Brasile',
+      'IN': 'India',
+      'RU': 'Russia',
+      'NL': 'Paesi Bassi',
+      'BE': 'Belgio',
+      'CH': 'Svizzera',
+      'AT': 'Austria',
+      'PL': 'Polonia',
+      'PT': 'Portogallo',
+      'GR': 'Grecia',
+      'TR': 'Turchia',
+      'KR': 'Corea del Sud',
+      'MX': 'Messico',
+      'AR': 'Argentina',
+      'SE': 'Svezia',
+      'NO': 'Norvegia',
+      'DK': 'Danimarca',
+      'FI': 'Finlandia',
+      'IE': 'Irlanda',
+      'HR': 'Croazia',
+      'CZ': 'Repubblica Ceca',
+      'HU': 'Ungheria',
+      'RO': 'Romania',
+      'BG': 'Bulgaria',
+      'SI': 'Slovenia',
+      'SK': 'Slovacchia',
+      'EE': 'Estonia',
+      'LV': 'Lettonia',
+      'LT': 'Lituania'
+    };
+    
+    return countryNames[countryCode.toUpperCase()] || countryCode;
+  };
+
   // Get unique values for filter dropdowns
   const getUniqueValues = (field: string) => {
     const values = [...new Set(allRecords.map(record => record[field]))]
@@ -1665,11 +1713,11 @@ export default function ImportTemplates() {
                     <SelectTrigger id="country-filter">
                       <SelectValue placeholder="Tutti i paesi" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 z-50">
                       <SelectItem value="__all__">Tutti i paesi</SelectItem>
                       {getUniqueValues('country').map((country) => (
                         <SelectItem key={country} value={String(country)}>
-                          {getCountryFlag(String(country))} {String(country)}
+                          {getCountryFullName(String(country))}
                         </SelectItem>
                       ))}
                     </SelectContent>

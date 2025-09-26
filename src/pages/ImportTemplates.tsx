@@ -1461,177 +1461,27 @@ export default function ImportTemplates() {
 
           {selectedRecord && (
             <div className="space-y-6">
-               {/* Sezione DEFAULT - Informazioni Prioritarie */}
-               <div className="space-y-4">
-                 <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                   <Users className="h-5 w-5" />
-                   Informazioni Principali
-                 </h3>
-                 
-                 {/* Layout Ergonomico - Row 1: Company Name (largo) + Company Alias (medio) */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.company_name !== undefined && (
-                     <div className="col-span-8 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Company Name</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm font-medium">
-                           {formatCellValue(selectedRecord.company_name, 'company_name') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.company_alias !== undefined && (
-                     <div className="col-span-4 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Company Alias</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.company_alias, 'company_alias') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Layout Ergonomico - Row 2: Alias (medio) + Name (largo) */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.alias !== undefined && (
-                     <div className="col-span-5 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Alias</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.alias, 'alias') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.name !== undefined && (
-                     <div className="col-span-7 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm font-medium">
-                           {formatCellValue(selectedRecord.name, 'name') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Layout Ergonomico - Row 3: Position (largo) + Title (medio) */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.position !== undefined && (
-                     <div className="col-span-8 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Position</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.position, 'position') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.title !== undefined && (
-                     <div className="col-span-4 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Title</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.title, 'title') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Layout Ergonomico - Row 4: Email (largo) + Phone (stretto) */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.email !== undefined && (
-                     <div className="col-span-9 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.email, 'email') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.phone !== undefined && (
-                     <div className="col-span-3 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.phone, 'phone') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Layout Ergonomico - Row 5: City (medio) + Cell (stretto) + Stato (molto stretto) + Country (molto stretto) */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.city !== undefined && (
-                     <div className="col-span-6 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">City</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.city, 'city') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.cell !== undefined && (
-                     <div className="col-span-3 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Cell</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.cell, 'cell') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.stato !== undefined && (
-                     <div className="col-span-2 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Stato</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.stato, 'stato') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.country !== undefined && (
-                     <div className="col-span-1 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Country</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.country, 'country') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Layout Ergonomico - Row 6: Origin (stretto) + Agent Id (stretto) + spazio restante */}
-                 <div className="grid grid-cols-12 gap-4">
-                   {selectedRecord.origin !== undefined && (
-                     <div className="col-span-3 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Origin</Label>
-                       <div className="p-3 bg-field-brick backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-brick/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.origin, 'origin') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                   {selectedRecord.agent_id !== undefined && (
-                     <div className="col-span-3 space-y-1">
-                       <Label className="text-sm font-medium text-muted-foreground">Agent Id</Label>
-                       <div className="p-3 bg-field-lilac backdrop-blur-sm rounded-lg min-h-[48px] flex items-center border border-field-lilac/20">
-                         <span className="text-sm">
-                           {formatCellValue(selectedRecord.agent_id, 'agent_id') || '(vuoto)'}
-                         </span>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-               </div>
+              {/* Sezione DEFAULT - Informazioni Prioritarie */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Informazioni Principali
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getDefaultColumns().filter(col => selectedRecord[col] !== undefined).map((field) => (
+                    <div key={field} className="space-y-1">
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                        <span className="text-sm">
+                          {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <Separator />
 

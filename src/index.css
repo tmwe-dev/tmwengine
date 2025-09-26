@@ -108,16 +108,6 @@ Tutti i colori DEVONO essere HSL.
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
     --transition-slow: 350ms ease;
-
-    /* === COLORI CAMPO ERGONOMICI === */
-    --field-brick: 15 85% 60%;
-    --field-brick-light: 15 85% 95%;
-    --field-lilac: 280 60% 70%;
-    --field-lilac-light: 280 60% 95%;
-    
-    /* === GRADIENTI CAMPO === */
-    --field-gradient-brick: linear-gradient(135deg, hsl(var(--field-brick) / 0.05), hsl(var(--field-brick) / 0.02));
-    --field-gradient-lilac: linear-gradient(135deg, hsl(var(--field-lilac) / 0.05), hsl(var(--field-lilac) / 0.02));
   }
 
   .dark {

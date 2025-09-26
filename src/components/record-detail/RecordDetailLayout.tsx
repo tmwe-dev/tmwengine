@@ -46,7 +46,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
           {record.name !== undefined && (
-            <div className="flex-1 min-w-[180px]">
+            <div className="max-w-[200px] min-w-[180px]">
               <FieldRenderer 
                 field="name" 
                 value={record.name} 

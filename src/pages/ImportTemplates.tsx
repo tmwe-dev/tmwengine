@@ -1699,7 +1699,7 @@ export default function ImportTemplates() {
             </div>
            ) : filteredRecords.length > 0 ? (
             <div className="space-y-4 flex flex-col min-h-0 flex-1">
-               <div className="overflow-auto flex-1 border rounded-md h-96">
+               <div className="overflow-auto flex-1 border rounded-md max-h-96">
                  <Table>
                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>

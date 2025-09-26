@@ -336,7 +336,7 @@ export default function ImportTemplates() {
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, activeFilters]);
+  }, [searchQuery, originFilter, countryFilter, activeFilters, recordsPerPage]);
 
   const loadEmailTemplates = async () => {
     try {

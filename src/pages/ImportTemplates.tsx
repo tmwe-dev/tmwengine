@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -84,6 +84,12 @@ interface ImportedContact {
   [key: string]: any;
 }
 
+interface FilterTag {
+  field: string;
+  value: any;
+  displayValue: string;
+}
+
 export default function ImportTemplates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -91,6 +97,7 @@ export default function ImportTemplates() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [viewingRecords, setViewingRecords] = useState<ImportedContact[]>([]);
+  const [filteredRecords, setFilteredRecords] = useState<ImportedContact[]>([]);
   const [selectedImport, setSelectedImport] = useState<ImportLog | null>(null);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [showRecordsDialog, setShowRecordsDialog] = useState(false);
@@ -101,6 +108,7 @@ export default function ImportTemplates() {
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMoreRecords, setHasMoreRecords] = useState(false);
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   
   // Stato per progress dell'importazione
   const [importProgress, setImportProgress] = useState<{
@@ -131,6 +139,12 @@ export default function ImportTemplates() {
     loadEmailTemplates();
     loadImportLogs();
   }, []);
+
+  // Aggiorna i filtri quando cambiano i record visualizzati
+  useEffect(() => {
+    const filtered = applyFilters(viewingRecords, activeFilters);
+    setFilteredRecords(filtered);
+  }, [viewingRecords, activeFilters]);
 
   const loadEmailTemplates = async () => {
     try {
@@ -436,6 +450,51 @@ export default function ImportTemplates() {
     }
   };
 
+  // Funzioni per gestire i filtri
+  const applyFilters = (records: ImportedContact[], filters: FilterTag[]) => {
+    if (filters.length === 0) return records;
+    
+    return records.filter(record => {
+      return filters.every(filter => {
+        const recordValue = record[filter.field];
+        return recordValue === filter.value;
+      });
+    });
+  };
+
+  const addFilter = (field: string, value: any) => {
+    const formattedValue = formatCellValue(value, field);
+    const displayValue = formattedValue || '(vuoto)';
+    
+    // Non aggiungere lo stesso filtro se già esiste
+    const existingFilter = activeFilters.find(f => f.field === field && f.value === value);
+    if (existingFilter) return;
+    
+    const newFilter: FilterTag = { field, value, displayValue };
+    const newFilters = [...activeFilters, newFilter];
+    setActiveFilters(newFilters);
+    
+    // Applica i filtri ai record correnti
+    const filtered = applyFilters(viewingRecords, newFilters);
+    setFilteredRecords(filtered);
+  };
+
+  const removeFilter = (filterToRemove: FilterTag) => {
+    const newFilters = activeFilters.filter(f => 
+      !(f.field === filterToRemove.field && f.value === filterToRemove.value)
+    );
+    setActiveFilters(newFilters);
+    
+    // Riapplica i filtri rimanenti
+    const filtered = applyFilters(viewingRecords, newFilters);
+    setFilteredRecords(filtered);
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters([]);
+    setFilteredRecords(viewingRecords);
+  };
+
   const getStatusBadge = (stato: string) => {
     switch (stato) {
       case 'completato':
@@ -486,12 +545,15 @@ export default function ImportTemplates() {
       
       if (append) {
         setViewingRecords(prev => [...prev, ...contacts]);
+        setFilteredRecords(prev => [...prev, ...contacts]);
       } else {
         setViewingRecords(contacts);
+        setFilteredRecords(contacts);
         setTotalRecords(count || 0);
         setShowRecordsDialog(true);
         setCurrentRecordIndex(0);
         setSelectedRecords(new Set());
+        setActiveFilters([]);
         console.log('Dialog aperto con', contacts.length, 'record');
       }
       
@@ -1026,8 +1088,10 @@ export default function ImportTemplates() {
           setShowRecordsDialog(false);
           setSelectedImport(null);
           setViewingRecords([]);
+          setFilteredRecords([]);
           setCurrentPage(0);
           setSelectedRecords(new Set());
+          setActiveFilters([]);
         }
       }}>
         <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
@@ -1036,9 +1100,42 @@ export default function ImportTemplates() {
               Record Importati - {selectedImport?.file_name}
             </DialogTitle>
             <DialogDescription>
-              Visualizza e gestisci {viewingRecords.length} di {totalRecords} contatti importati da questo file.
+              Visualizza e gestisci {filteredRecords.length} di {viewingRecords.length} contatti importati da questo file.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Area filtri attivi */}
+          {activeFilters.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium">Filtri attivi:</span>
+                {activeFilters.map((filter, index) => (
+                  <Badge 
+                    key={`${filter.field}-${filter.value}-${index}`}
+                    variant="outline" 
+                    className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 cursor-pointer flex items-center gap-1"
+                    onClick={() => removeFilter(filter)}
+                  >
+                    <span className="capitalize">
+                      {filter.field.replace(/_/g, ' ')}: {filter.displayValue}
+                    </span>
+                    <X className="h-3 w-3" />
+                  </Badge>
+                ))}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Rimuovi tutti
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {filteredRecords.length} record corrispondenti
+              </div>
+            </div>
+          )}
           
           {loadingRecords ? (
             <div className="flex items-center justify-center py-8">
@@ -1047,13 +1144,13 @@ export default function ImportTemplates() {
                 <p>Caricamento record...</p>
               </div>
             </div>
-          ) : viewingRecords.length > 0 ? (
+          ) : filteredRecords.length > 0 ? (
             <div className="space-y-4">
               <div className="overflow-x-auto">
                  <Table>
                    <TableHeader>
                      <TableRow>
-                       {Object.keys(viewingRecords[0] || {})
+                       {Object.keys(filteredRecords[0] || {})
                          .filter(key => key !== 'id' && key !== 'import_log_id')
                          .map((key) => (
                          <TableHead key={key} className="min-w-[120px]">
@@ -1063,14 +1160,19 @@ export default function ImportTemplates() {
                      </TableRow>
                    </TableHeader>
                    <TableBody>
-                     {viewingRecords.map((record, index) => (
+                     {filteredRecords.map((record, index) => (
                        <TableRow key={index}>
                          {Object.entries(record)
                            .filter(([key]) => key !== 'id' && key !== 'import_log_id')
                            .map(([key, value]) => (
-                            <TableCell key={key} className="max-w-[200px] truncate">
-                              {formatCellValue(value, key)}
-                            </TableCell>
+                           <TableCell 
+                             key={key} 
+                             className="max-w-[200px] truncate cursor-pointer hover:bg-accent/50 transition-colors"
+                             onClick={() => addFilter(key, value)}
+                             title="Clicca per filtrare per questo valore"
+                           >
+                             {formatCellValue(value, key)}
+                           </TableCell>
                          ))}
                        </TableRow>
                      ))}
@@ -1081,6 +1183,11 @@ export default function ImportTemplates() {
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   Caricati: {viewingRecords.length} di {totalRecords} record totali
+                  {activeFilters.length > 0 && (
+                    <span className="ml-2 text-blue-600">
+                      • {filteredRecords.length} filtrati
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {hasMoreRecords && (
@@ -1092,21 +1199,23 @@ export default function ImportTemplates() {
                       {loadingMoreRecords ? 'Caricamento...' : 'Carica Altri 500'}
                     </Button>
                   )}
-                  <Button variant="outline" onClick={() => {
-                    setShowRecordsDialog(false);
-                    setSelectedImport(null);
-                    setViewingRecords([]);
-                    setCurrentPage(0);
-                    setSelectedRecords(new Set());
-                  }}>
-                    Chiudi
-                  </Button>
-                  <Button 
-                    disabled={selectedRecords.size === 0 || importingSelected}
-                    onClick={importSelectedRecords}
-                  >
-                    {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
-                  </Button>
+                   <Button variant="outline" onClick={() => {
+                     setShowRecordsDialog(false);
+                     setSelectedImport(null);
+                     setViewingRecords([]);
+                     setFilteredRecords([]);
+                     setCurrentPage(0);
+                     setSelectedRecords(new Set());
+                     setActiveFilters([]);
+                   }}>
+                     Chiudi
+                   </Button>
+                   <Button 
+                     disabled={selectedRecords.size === 0 || importingSelected}
+                     onClick={importSelectedRecords}
+                   >
+                     {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
+                   </Button>
                 </div>
               </div>
             </div>

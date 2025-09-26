@@ -26,22 +26,36 @@ interface SyncRequest {
   count_batch_current?: number; // Batch corrente durante il conteggio (default 1)
 }
 
-// Funzione per connessione IMAP nativa
+// Funzione per connessione IMAP nativa con timeout
 async function connectToIMAP(config: IMAPConfig): Promise<Deno.TcpConn> {
   console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta}`);
   
-  const conn = await Deno.connect({
+  // Timeout di 10 secondi per la connessione
+  const connectPromise = Deno.connect({
     hostname: config.imap_server,
     port: config.imap_porta,
   });
   
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
+  });
+  
+  const conn = await Promise.race([connectPromise, timeoutPromise]);
+  console.log(`✅ Connected successfully to ${config.imap_server}`);
+  
   return conn;
 }
 
-// Funzione per leggere risposta IMAP
+// Funzione per leggere risposta IMAP con timeout
 async function readIMAPResponse(conn: Deno.TcpConn): Promise<string> {
   const buffer = new Uint8Array(4096);
-  const n = await conn.read(buffer);
+  
+  const readPromise = conn.read(buffer);
+  const timeoutPromise = new Promise<null>((_, reject) => {
+    setTimeout(() => reject(new Error('Read timeout after 30 seconds')), 30000);
+  });
+  
+  const n = await Promise.race([readPromise, timeoutPromise]);
   if (n === null) return '';
   return new TextDecoder().decode(buffer.subarray(0, n));
 }
@@ -155,6 +169,13 @@ serve(async (req) => {
     try {
       // Connessione IMAP reale per preview
       console.log('📂 Connecting to real IMAP server for preview...');
+      console.log('🔧 Connection details:', {
+        server: config.imap_server,
+        port: config.imap_porta,
+        security: config.imap_sicurezza,
+        username: config.email_username.substring(0, 3) + '***'
+      });
+      
       const previewConn = await connectToIMAP(config);
       
       // Leggi greeting del server
@@ -258,9 +279,28 @@ serve(async (req) => {
           }
 
         } catch (previewImapError: any) {
-          console.error('❌ IMAP Error:', previewImapError);
-          previewConn.close();
-          throw new Error(`IMAP connection failed: ${previewImapError.message}`);
+          console.error('❌ IMAP Error details:', {
+            message: previewImapError.message,
+            name: previewImapError.name,
+            stack: previewImapError.stack?.substring(0, 500)
+          });
+          
+          try {
+            previewConn.close();
+          } catch (closeError) {
+            console.error('⚠️ Error closing connection:', closeError);
+          }
+          
+          // Restituisci errore più specifico
+          if (previewImapError.message.includes('timeout')) {
+            throw new Error(`Connessione IMAP timeout: il server ${config.imap_server}:${config.imap_porta} non risponde entro 10 secondi`);
+          } else if (previewImapError.message.includes('ECONNREFUSED')) {
+            throw new Error(`Connessione rifiutata: il server ${config.imap_server}:${config.imap_porta} non è raggiungibile`);
+          } else if (previewImapError.message.includes('ENOTFOUND')) {
+            throw new Error(`Server non trovato: ${config.imap_server} non esiste`);
+          } else {
+            throw new Error(`Errore connessione IMAP: ${previewImapError.message}`);
+          }
         }
       }
 

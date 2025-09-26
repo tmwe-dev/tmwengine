@@ -10,6 +10,17 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock } from 'lucide-react';
+
+// Utility function to format empty values
+const formatCellValue = (value: any): string => {
+  if (value === null || value === undefined || value === '' || value === false || value === '-') {
+    return '';
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Sì' : '';
+  }
+  return String(value);
+};
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -1025,9 +1036,9 @@ export default function ImportTemplates() {
                          {Object.entries(record)
                            .filter(([key]) => key !== 'id' && key !== 'import_log_id')
                            .map(([key, value]) => (
-                           <TableCell key={key} className="max-w-[200px] truncate">
-                             {value?.toString() || '-'}
-                           </TableCell>
+                            <TableCell key={key} className="max-w-[200px] truncate">
+                              {formatCellValue(value)}
+                            </TableCell>
                          ))}
                        </TableRow>
                      ))}

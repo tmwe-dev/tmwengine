@@ -1492,17 +1492,79 @@ export default function ImportTemplates() {
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
-            <DialogTitle>
-              Record Importati - {selectedImport?.file_name}
-            </DialogTitle>
-            <DialogDescription>
-              Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
-            </DialogDescription>
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1">
+                <DialogTitle>
+                  Record Importati - {selectedImport?.file_name}
+                </DialogTitle>
+                <DialogDescription>
+                  Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
+                </DialogDescription>
+              </div>
+              
+              {/* Filter Controls - Top Right */}
+              <div className="flex gap-4 items-end">
+                {/* Origin filter */}
+                <div className="w-48">
+                  <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                  <Select value={originFilter} onValueChange={setOriginFilter}>
+                    <SelectTrigger id="origin-filter">
+                      <SelectValue placeholder="Tutte le origini" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Tutte le origini</SelectItem>
+                      {getUniqueValues('origin').map((origin) => (
+                        <SelectItem key={origin} value={String(origin)}>
+                          {String(origin)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Country filter */}
+                <div className="w-48">
+                  <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                  <Select value={countryFilter} onValueChange={setCountryFilter}>
+                    <SelectTrigger id="country-filter">
+                      <SelectValue placeholder="Tutti i paesi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                      {getUniqueValues('country').map((country) => (
+                        <SelectItem key={country} value={String(country)}>
+                          {getCountryFlag(String(country))} {String(country)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Records per page */}
+                <div className="w-36">
+                  <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
+                  <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                    console.log('Changing records per page to:', value);
+                    setRecordsPerPage(Number(value));
+                  }}>
+                    <SelectTrigger id="records-per-page">
+                      <SelectValue placeholder={`${recordsPerPage} record`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="250">250</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           </DialogHeader>
 
-          {/* Search and Filter Controls */}
+          {/* Search Field - Below Header */}
           <div className="space-y-4 p-4 border-b bg-muted/20">
-            {/* Search and filters row */}
             <div className="flex gap-4 items-end">
               {/* Search field */}
               <div className="flex-1">
@@ -1517,62 +1579,6 @@ export default function ImportTemplates() {
                     className="pl-10"
                   />
                 </div>
-              </div>
-              
-              {/* Origin filter */}
-              <div className="w-48">
-                <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
-                <Select value={originFilter} onValueChange={setOriginFilter}>
-                  <SelectTrigger id="origin-filter">
-                    <SelectValue placeholder="Tutte le origini" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Tutte le origini</SelectItem>
-                    {getUniqueValues('origin').map((origin) => (
-                      <SelectItem key={origin} value={String(origin)}>
-                        {String(origin)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Country filter */}
-              <div className="w-48">
-                <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
-                <Select value={countryFilter} onValueChange={setCountryFilter}>
-                  <SelectTrigger id="country-filter">
-                    <SelectValue placeholder="Tutti i paesi" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                    {getUniqueValues('country').map((country) => (
-                      <SelectItem key={country} value={String(country)}>
-                        {getCountryFlag(String(country))} {String(country)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Records per page */}
-              <div className="w-36">
-                <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
-                <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                  console.log('Changing records per page to:', value);
-                  setRecordsPerPage(Number(value));
-                }}>
-                  <SelectTrigger id="records-per-page">
-                    <SelectValue placeholder={`${recordsPerPage} record`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="250">250</SelectItem>
-                    <SelectItem value="500">500</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             

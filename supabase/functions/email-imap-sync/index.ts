@@ -30,40 +30,31 @@ interface SyncRequest {
 async function tryAllConnectionMethods(config: IMAPConfig): Promise<{ conn: Deno.TlsConn | Deno.TcpConn, method: string }> {
   const connectionMethods = [
     {
-      name: "SSL/TLS porta 993 (bypass cert)",
-      test: () => Deno.connectTls({
-        hostname: config.imap_server,
-        port: 993,
-        caCerts: [],
-      })
-    },
-    {
-      name: "TCP normale porta 143",
+      name: "TCP normale porta 143 (IMAP standard)",
       test: () => Deno.connect({
         hostname: config.imap_server,
         port: 143,
       })
     },
     {
-      name: "TCP normale porta 993",
+      name: "TCP normale porta 993 (prova senza SSL)",
       test: () => Deno.connect({
         hostname: config.imap_server,
         port: 993,
       })
     },
     {
-      name: "SSL/TLS porta 143",
-      test: () => Deno.connectTls({
+      name: "TCP normale porta 587 (SMTP ma proviamo)",
+      test: () => Deno.connect({
         hostname: config.imap_server,
-        port: 143,
-        caCerts: [],
+        port: 587,
       })
     },
     {
-      name: "SSL/TLS porta 993 (con cert)",
-      test: () => Deno.connectTls({
+      name: "TCP normale porta 25 (SMTP standard)",
+      test: () => Deno.connect({
         hostname: config.imap_server,
-        port: 993,
+        port: 25,
       })
     }
   ];

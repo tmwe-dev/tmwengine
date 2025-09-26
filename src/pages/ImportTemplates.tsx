@@ -1203,7 +1203,7 @@ export default function ImportTemplates() {
           setActiveFilters([]);
         }
       }}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-full max-h-[80vh] overflow-y-auto mx-4">
           <DialogHeader>
             <DialogTitle>
               Record Importati - {selectedImport?.file_name}

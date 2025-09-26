@@ -1009,18 +1009,27 @@ export default function ImportTemplates() {
     try {
       console.log('Caricamento tutti i record da imported_contacts per import_log_id:', importLog.id);
       
-      // Load all records without pagination
-      const { data, error, count } = await supabase
+      // Prima ottieni il count totale
+      const { count } = await supabase
         .from('imported_contacts')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('import_log_id', importLog.id);
+      
+      console.log('Totale record nel database:', count);
+      
+      // Carica tutti i record usando range per superare il limite di 1000
+      const { data, error } = await supabase
+        .from('imported_contacts')
+        .select('*')
+        .eq('import_log_id', importLog.id)
+        .range(0, (count || 0) - 1); // Carica tutti i record da 0 al totale-1
 
       if (error) {
         console.error('Errore query imported_contacts:', error);
         throw error;
       }
       
-      console.log('Record caricati:', data?.length, 'di', count);
+      console.log('Record effettivamente caricati:', data?.length, 'di', count);
       const contacts = data || [];
       
       setAllRecords(contacts);

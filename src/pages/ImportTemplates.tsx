@@ -1697,111 +1697,101 @@ export default function ImportTemplates() {
                 <p>Caricamento record...</p>
               </div>
             </div>
-            ) : filteredRecords.length > 0 ? (
-             <div className="space-y-4 flex flex-col min-h-0 flex-1">
-               {/* Container with fixed height and sticky header */}
-               <div className="flex-1 border rounded-md h-[600px] flex flex-col overflow-hidden">
-                  {/* Sticky Header */}
-                  <div className="sticky top-0 z-10 bg-background border-b shadow-sm flex-shrink-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12 bg-background">
+           ) : filteredRecords.length > 0 ? (
+            <div className="space-y-4 flex flex-col min-h-0 flex-1">
+              <div className="overflow-auto flex-1 border rounded-md">
+                 <Table>
+                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                     <TableRow>
+                       <TableHead className="w-12 bg-background border-b">
+                         <Checkbox
+                           checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                           onCheckedChange={toggleSelectAll}
+                           aria-label="Seleziona tutti"
+                          />
+                        </TableHead>
+                        <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
+                        {(() => {
+                          const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                          const visibleCols = getVisibleColumns(allColumns);
+                          return visibleCols.map((key) => (
+                             <TableHead 
+                               key={key} 
+                               className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
+                                 key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                 key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                 'min-w-[120px]'
+                               }`}
+                               onClick={() => handleColumnSort(key)}
+                             >
+                               <div className="flex items-center gap-1">
+                                 <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                 {getSortIcon(key)}
+                               </div>
+                             </TableHead>
+                          ));
+                        })()}
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                      {viewingRecords.map((record, viewIndex) => {
+                        const actualIndex = currentPage * recordsPerPage + viewIndex;
+                        return (
+                        <TableRow key={viewIndex}>
+                          <TableCell className="w-12">
                             <Checkbox
-                              checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                              onCheckedChange={toggleSelectAll}
-                              aria-label="Seleziona tutti"
+                              checked={selectedRecords.has(actualIndex)}
+                              onCheckedChange={() => toggleRecordSelection(actualIndex)}
+                              aria-label={`Seleziona record ${actualIndex + 1}`}
                              />
-                           </TableHead>
-                           <TableHead className="w-16 text-center bg-background">#</TableHead>
-                           {(() => {
-                             const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                             const visibleCols = getVisibleColumns(allColumns);
-                             return visibleCols.map((key) => (
-                                <TableHead 
+                           </TableCell>
+                           <TableCell className="w-16 text-center text-muted-foreground">
+                             {actualIndex + 1}
+                           </TableCell>
+                          {(() => {
+                            const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
+                            const visibleCols = getVisibleColumns(allColumns);
+                            return visibleCols.map((key) => (
+                                <TableCell 
                                   key={key} 
-                                  className={`bg-background cursor-pointer hover:bg-accent/50 ${
-                                    key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                    key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                    key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                                    key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                    'min-w-[120px]'
+                                  className={`truncate transition-colors ${
+                                    key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
+                                    key === 'stato' ? 'w-16 max-w-[60px]' :
+                                    key === 'agent_id' ? 'w-22 max-w-[84px]' :
+                                    'max-w-[200px]'
+                                  } ${
+                                    key === 'name' 
+                                      ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
+                                      : 'cursor-pointer hover:bg-accent/50'
                                   }`}
-                                  onClick={() => handleColumnSort(key)}
+                                 onClick={() => {
+                                   if (key === 'name') {
+                                     openRecordDetail(record, actualIndex);
+                                   } else {
+                                     addFilter(key, record[key]);
+                                   }
+                                 }}
+                                  title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
                                 >
-                                  <div className="flex items-center gap-1">
-                                    <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                    {getSortIcon(key)}
-                                  </div>
-                                </TableHead>
-                             ));
-                           })()}
+                                  {key === 'country' ? (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-base">{getCountryFlag(record[key])}</span>
+                                      <span>{formatCellValue(record[key], key)}</span>
+                                    </div>
+                                  ) : (
+                                    formatCellValue(record[key], key)
+                                  )}
+                                </TableCell>
+                            ));
+                          })()}
                         </TableRow>
-                      </TableHeader>
-                    </Table>
-                  </div>
-                  
-                  {/* Scrollable Body */}
-                  <div className="flex-1 overflow-auto">
-                    <Table>
-                      <TableBody>
-                         {viewingRecords.map((record, viewIndex) => {
-                           const actualIndex = currentPage * recordsPerPage + viewIndex;
-                           return (
-                           <TableRow key={viewIndex}>
-                             <TableCell className="w-12">
-                               <Checkbox
-                                 checked={selectedRecords.has(actualIndex)}
-                                 onCheckedChange={() => toggleRecordSelection(actualIndex)}
-                                 aria-label={`Seleziona record ${actualIndex + 1}`}
-                                />
-                              </TableCell>
-                              <TableCell className="w-16 text-center text-muted-foreground">
-                                {actualIndex + 1}
-                              </TableCell>
-                             {(() => {
-                               const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
-                               const visibleCols = getVisibleColumns(allColumns);
-                               return visibleCols.map((key) => (
-                                   <TableCell 
-                                     key={key} 
-                                     className={`truncate transition-colors ${
-                                       key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
-                                       key === 'stato' ? 'w-16 max-w-[60px]' :
-                                       key === 'agent_id' ? 'w-22 max-w-[84px]' :
-                                       'max-w-[200px]'
-                                     } ${
-                                       key === 'name' 
-                                         ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
-                                         : 'cursor-pointer hover:bg-accent/50'
-                                     }`}
-                                    onClick={() => {
-                                      if (key === 'name') {
-                                        openRecordDetail(record, actualIndex);
-                                      } else {
-                                        addFilter(key, record[key]);
-                                      }
-                                    }}
-                                     title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
-                                   >
-                                     {key === 'country' ? (
-                                       <div className="flex items-center gap-1">
-                                         <span className="text-base">{getCountryFlag(record[key])}</span>
-                                         <span>{formatCellValue(record[key], key)}</span>
-                                       </div>
-                                     ) : (
-                                       formatCellValue(record[key], key)
-                                     )}
-                                   </TableCell>
-                               ));
-                             })()}
-                           </TableRow>
-                           );
-                         })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
+                        );
+                      })}
+                   </TableBody>
+                 </Table>
+               </div>
                
                <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
                 <div className="text-sm text-muted-foreground">

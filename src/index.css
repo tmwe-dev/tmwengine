@@ -175,15 +175,25 @@ Tutti i colori DEVONO essere HSL.
     @apply bg-background text-foreground font-normal antialiased;
     font-size: var(--font-size-base);
     line-height: var(--line-height-normal);
-    /* Disable only browser swipe navigation, not internal scrolling */
+    /* Disable swipe navigation */
     overscroll-behavior-x: none;
     overscroll-behavior-y: auto;
+    touch-action: pan-y pinch-zoom;
+    /* Prevent horizontal scrolling bounce */
+    -webkit-overflow-scrolling: touch;
   }
 
   html {
-    /* Disable browser swipe navigation globally */
+    /* Disable swipe navigation globally */
     overscroll-behavior-x: none;
     overscroll-behavior-y: auto;
+    /* Prevent pinch zoom and double-tap zoom */
+    touch-action: pan-y pinch-zoom;
+  }
+
+  /* Additional prevention for specific elements */
+  * {
+    overscroll-behavior-x: none;
   }
 
   /* === TIPOGRAFIA GLOBALE === */

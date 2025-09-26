@@ -19,87 +19,52 @@ import ImportTemplates from "./pages/ImportTemplates";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Global swipe navigation prevention (only browser navigation, not internal scrolling)
+  // Global swipe navigation prevention
   useEffect(() => {
-    const preventBrowserNavigation = (e: WheelEvent) => {
-      // Only prevent if it's a strong horizontal gesture near the edges
-      // and we're at the scroll boundary
-      const isNearLeftEdge = e.clientX < 50;
-      const isNearRightEdge = e.clientX > window.innerWidth - 50;
-      const isHorizontalGesture = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 3;
-      const isStrongGesture = Math.abs(e.deltaX) > 80;
-      
-      if ((isNearLeftEdge || isNearRightEdge) && isHorizontalGesture && isStrongGesture) {
-        // Check if we're at the scroll boundary
-        const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
-        const scrollWidth = document.documentElement.scrollWidth;
-        const clientWidth = document.documentElement.clientWidth;
+    const preventDefault = (e: Event) => {
+      e.preventDefault();
+    };
+
+    const preventSwipeNavigation = (e: WheelEvent) => {
+      // Prevent horizontal scrolling that triggers browser navigation
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+      }
+    };
+
+    const preventTouchNavigation = (e: TouchEvent) => {
+      // Prevent swipe navigation on touch devices
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const startX = touch.clientX;
+        const startY = touch.clientY;
         
-        // Prevent only if we're at the scroll boundary and gesture could trigger navigation
-        if ((scrollLeft <= 0 && e.deltaX < 0 && isNearLeftEdge) || 
-            (scrollLeft + clientWidth >= scrollWidth && e.deltaX > 0 && isNearRightEdge)) {
+        // If it's a horizontal swipe near the edge, prevent it
+        if (startX < 50 || startX > window.innerWidth - 50) {
           e.preventDefault();
         }
       }
     };
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-      }
+    // Add event listeners to prevent swipe navigation
+    window.addEventListener('wheel', preventSwipeNavigation, { passive: false });
+    window.addEventListener('touchstart', preventTouchNavigation, { passive: false });
+    window.addEventListener('touchmove', preventDefault, { passive: false });
+    
+    // Prevent browser navigation via history API
+    const preventPopstate = () => {
+      // This doesn't prevent the event but ensures we handle it properly
+      // The CSS overscroll-behavior-x: none should handle most cases
     };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        const currentX = touch.clientX;
-        
-        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 3;
-        const isStrongSwipe = Math.abs(deltaX) > 100;
-        const isFastSwipe = (Date.now() - touchStartTime) < 300;
-        
-        // Only prevent if:
-        // 1. Started very close to edge (< 20px)
-        // 2. Current position is still very close to edge (< 30px) 
-        // 3. It's a strong horizontal swipe
-        // 4. We're at scroll boundary
-        const startedAtEdge = touchStartX < 20 || touchStartX > window.innerWidth - 20;
-        const stillAtEdge = currentX < 30 || currentX > window.innerWidth - 30;
-        
-        if (startedAtEdge && stillAtEdge && isHorizontalSwipe && isStrongSwipe && isFastSwipe) {
-          // Additional check: only prevent if we're at document scroll boundary
-          const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
-          const scrollWidth = document.documentElement.scrollWidth;
-          const clientWidth = document.documentElement.clientWidth;
-          
-          const atLeftBoundary = scrollLeft <= 0 && deltaX > 0;
-          const atRightBoundary = scrollLeft + clientWidth >= scrollWidth && deltaX < 0;
-          
-          if (atLeftBoundary || atRightBoundary) {
-            e.preventDefault();
-          }
-        }
-      }
-    };
-
-    // Add event listeners with more specific targeting
-    window.addEventListener('wheel', preventBrowserNavigation, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    
+    window.addEventListener('popstate', preventPopstate);
 
     // Cleanup event listeners
     return () => {
-      window.removeEventListener('wheel', preventBrowserNavigation);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('wheel', preventSwipeNavigation);
+      window.removeEventListener('touchstart', preventTouchNavigation);
+      window.removeEventListener('touchmove', preventDefault);
+      window.removeEventListener('popstate', preventPopstate);
     };
   }, []);
 

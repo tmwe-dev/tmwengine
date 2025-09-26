@@ -170,10 +170,6 @@ const EmailSyncTab = () => {
     } finally {
       setIsPreviewLoading(false);
     }
-      }));
-    } catch (error) {
-      console.error('Error loading sync stats:', error);
-    }
   };
 
   const handlePreviewEmails = async () => {

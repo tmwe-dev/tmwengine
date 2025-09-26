@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -511,6 +512,28 @@ export default function ImportTemplates() {
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Completato con errori</Badge>;
       default:
         return <Badge variant="outline">{stato}</Badge>;
+    }
+  };
+
+  // Funzioni per gestire la selezione dei record
+  const toggleRecordSelection = (index: number) => {
+    const newSelected = new Set(selectedRecords);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedRecords(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRecords.size === filteredRecords.length) {
+      // Se tutti sono selezionati, deseleziona tutti
+      setSelectedRecords(new Set());
+    } else {
+      // Altrimenti seleziona tutti i record filtrati
+      const allIndexes = new Set(filteredRecords.map((_, index) => index));
+      setSelectedRecords(allIndexes);
     }
   };
 
@@ -1103,6 +1126,35 @@ export default function ImportTemplates() {
               Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{viewingRecords.length}</span> contatti importati da questo file.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Controlli di navigazione */}
+          <div className="flex justify-center items-center gap-4 py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentRecordIndex(Math.max(0, currentRecordIndex - 1))}
+              disabled={currentRecordIndex <= 0}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Precedente
+            </Button>
+            
+            <span className="text-sm text-muted-foreground">
+              Record {currentRecordIndex + 1} di {filteredRecords.length}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentRecordIndex(Math.min(filteredRecords.length - 1, currentRecordIndex + 1))}
+              disabled={currentRecordIndex >= filteredRecords.length - 1}
+              className="flex items-center gap-2"
+            >
+              Successivo
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (
@@ -1150,6 +1202,13 @@ export default function ImportTemplates() {
                  <Table>
                    <TableHeader>
                      <TableRow>
+                       <TableHead className="w-12">
+                         <Checkbox
+                           checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
+                           onCheckedChange={toggleSelectAll}
+                           aria-label="Seleziona tutti"
+                         />
+                       </TableHead>
                        {Object.keys(filteredRecords[0] || {})
                          .filter(key => key !== 'id' && key !== 'import_log_id')
                          .map((key) => (
@@ -1162,6 +1221,13 @@ export default function ImportTemplates() {
                    <TableBody>
                      {filteredRecords.map((record, index) => (
                        <TableRow key={index}>
+                         <TableCell className="w-12">
+                           <Checkbox
+                             checked={selectedRecords.has(index)}
+                             onCheckedChange={() => toggleRecordSelection(index)}
+                             aria-label={`Seleziona record ${index + 1}`}
+                           />
+                         </TableCell>
                          {Object.entries(record)
                            .filter(([key]) => key !== 'id' && key !== 'import_log_id')
                            .map(([key, value]) => (

@@ -1424,7 +1424,7 @@ export default function ImportTemplates() {
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
-        <DialogContent className="max-w-full max-h-[90vh] overflow-y-auto mx-4">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Dettaglio Contatto</span>
@@ -1467,16 +1467,16 @@ export default function ImportTemplates() {
                   <Users className="h-5 w-5" />
                   Informazioni Principali
                 </h3>
-                <div className="grid gap-4">
+                <div className="space-y-4 w-full">
                   {/* Prima riga: Company Name (largo) + Company Alias (medio) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {['company_name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="md:col-span-2 space-y-1">
+                      <div key={field} className="lg:col-span-2 space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1487,8 +1487,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1497,26 +1497,26 @@ export default function ImportTemplates() {
                   </div>
                   
                   {/* Seconda riga: Alias (medio) + Name (largo) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {['alias'].filter(col => selectedRecord[col] !== undefined).map((field) => (
                       <div key={field} className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
                       </div>
                     ))}
                     {['name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="md:col-span-2 space-y-1">
+                      <div key={field} className="lg:col-span-2 space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1525,14 +1525,14 @@ export default function ImportTemplates() {
                   </div>
                   
                   {/* Terza riga: Position (largo) + Title (medio) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {['position'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="md:col-span-2 space-y-1">
+                      <div key={field} className="lg:col-span-2 space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1543,8 +1543,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1553,14 +1553,14 @@ export default function ImportTemplates() {
                   </div>
                   
                   {/* Quarta riga: Email (largo) + Phone (stretto) */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {['email'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="md:col-span-3 space-y-1">
+                      <div key={field} className="sm:col-span-2 space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1571,8 +1571,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1580,15 +1580,15 @@ export default function ImportTemplates() {
                     ))}
                   </div>
                   
-                  {/* Quinta riga: City (medio) + Cell (stretto) + Stato (stretto) + Country (stretto) */}
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                  {/* Quinta riga: City (medio) + Cell, Stato, Country (stretti) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {['city'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="md:col-span-2 space-y-1">
+                      <div key={field} className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1599,8 +1599,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1611,8 +1611,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1623,8 +1623,8 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1632,15 +1632,15 @@ export default function ImportTemplates() {
                     ))}
                   </div>
                   
-                  {/* Sesta riga: Origin (stretto) + Agent Id (stretto) + spazio vuoto per allineamento */}
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                  {/* Sesta riga: Origin + Agent Id */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {['origin'].filter(col => selectedRecord[col] !== undefined).map((field) => (
                       <div key={field} className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
@@ -1651,15 +1651,13 @@ export default function ImportTemplates() {
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center w-full">
+                          <span className="text-sm break-words">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>
                       </div>
                     ))}
-                    {/* Spazio vuoto per allineamento */}
-                    <div className="md:col-span-4"></div>
                   </div>
                 </div>
               </div>

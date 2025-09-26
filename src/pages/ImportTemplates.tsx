@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -42,6 +44,7 @@ interface ImportedContact {
 }
 
 export default function ImportTemplates() {
+  const navigate = useNavigate();
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,7 @@ export default function ImportTemplates() {
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMoreRecords, setHasMoreRecords] = useState(false);
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState(50);
   
   // Stato per progress dell'importazione
   const [importProgress, setImportProgress] = useState<{
@@ -413,9 +417,8 @@ export default function ImportTemplates() {
   };
 
   const loadRecordsPage = async (importLog: ImportLog, page: number = 0, append: boolean = false) => {
-    console.log('loadRecordsPage chiamato:', { importLog: importLog.id, page, append });
-    const pageSize = 500;
-    const offset = page * pageSize;
+    console.log('loadRecordsPage chiamato:', { importLog: importLog.id, page, append, recordsPerPage });
+    const offset = page * recordsPerPage;
     
     if (!append) {
       setLoadingRecords(true);
@@ -431,7 +434,8 @@ export default function ImportTemplates() {
         .from('imported_contacts')
         .select('*', { count: 'exact' })
         .eq('import_log_id', importLog.id)
-        .range(offset, offset + pageSize - 1);
+        .order('row_number', { ascending: true })
+        .range(offset, offset + recordsPerPage - 1);
 
       if (error) {
         console.error('Errore query imported_contacts:', error);
@@ -453,7 +457,7 @@ export default function ImportTemplates() {
       }
       
       setCurrentPage(page);
-      setHasMoreRecords((count || 0) > offset + pageSize);
+      setHasMoreRecords((count || 0) > offset + recordsPerPage);
       
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
@@ -474,6 +478,24 @@ export default function ImportTemplates() {
     if (selectedImport && hasMoreRecords && !loadingMoreRecords) {
       await loadRecordsPage(selectedImport, currentPage + 1, true);
     }
+  };
+
+  const goToPage = async (page: number) => {
+    if (selectedImport) {
+      await loadRecordsPage(selectedImport, page, false);
+    }
+  };
+
+  const changeRecordsPerPage = async (newSize: number) => {
+    setRecordsPerPage(newSize);
+    setCurrentPage(0);
+    if (selectedImport) {
+      await loadRecordsPage(selectedImport, 0, false);
+    }
+  };
+
+  const openRecordDetail = (record: ImportedContact) => {
+    navigate(`/record/${record.id}?importLogId=${selectedImport?.id}`);
   };
 
   const deleteImportFile = async (importLog: ImportLog) => {
@@ -987,13 +1009,13 @@ export default function ImportTemplates() {
           setSelectedRecords(new Set());
         }
       }}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Record Importati - {selectedImport?.file_name}
             </DialogTitle>
             <DialogDescription>
-              Visualizza e gestisci {viewingRecords.length} di {totalRecords} contatti importati da questo file.
+              Gestisci {totalRecords} contatti importati da questo file.
             </DialogDescription>
           </DialogHeader>
           
@@ -1005,50 +1027,142 @@ export default function ImportTemplates() {
               </div>
             </div>
           ) : viewingRecords.length > 0 ? (
-            <div className="space-y-4">
-              <div className="overflow-x-auto">
-                 <Table>
-                   <TableHeader>
-                     <TableRow>
-                       {Object.keys(viewingRecords[0] || {})
-                         .filter(key => key !== 'id' && key !== 'import_log_id')
-                         .map((key) => (
-                         <TableHead key={key} className="min-w-[120px]">
-                           {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                         </TableHead>
-                       ))}
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                     {viewingRecords.map((record, index) => (
-                       <TableRow key={index}>
-                         {Object.entries(record)
-                           .filter(([key]) => key !== 'id' && key !== 'import_log_id')
-                           .map(([key, value]) => (
-                           <TableCell key={key} className="max-w-[200px] truncate">
-                             {value?.toString() || '-'}
-                           </TableCell>
-                         ))}
-                       </TableRow>
-                     ))}
-                   </TableBody>
-                 </Table>
+            <div className="flex flex-col h-full space-y-4">
+              {/* Controlli di impaginazione superiori */}
+              <div className="flex items-center justify-between border-b pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="records-per-page">Record per pagina:</Label>
+                    <Select
+                      value={recordsPerPage.toString()}
+                      onValueChange={(value) => changeRecordsPerPage(Number(value))}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="200">200</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    Pagina {currentPage + 1} di {Math.ceil(totalRecords / recordsPerPage)} 
+                    ({(currentPage * recordsPerPage) + 1}-{Math.min((currentPage + 1) * recordsPerPage, totalRecords)} di {totalRecords})
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Precedente
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={!hasMoreRecords}
+                  >
+                    Successivo
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tabella record */}
+              <div className="flex-1 overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRecords(new Set(Array.from({ length: viewingRecords.length }, (_, i) => i)));
+                            } else {
+                              setSelectedRecords(new Set());
+                            }
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead className="min-w-[80px]">Azioni</TableHead>
+                      {Object.keys(viewingRecords[0] || {})
+                        .filter(key => key !== 'id' && key !== 'import_log_id')
+                        .map((key) => (
+                        <TableHead key={key} className="min-w-[120px] sticky top-0 bg-white">
+                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {viewingRecords.map((record, index) => (
+                      <TableRow 
+                        key={`${record.id}-${index}`}
+                        className={selectedRecords.has(index) ? 'bg-blue-50' : ''}
+                      >
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedRecords.has(index)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedRecords);
+                              if (e.target.checked) {
+                                newSelected.add(index);
+                              } else {
+                                newSelected.delete(index);
+                              }
+                              setSelectedRecords(newSelected);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openRecordDetail(record)}
+                            className="flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Dettaglio
+                          </Button>
+                        </TableCell>
+                        {Object.entries(record)
+                          .filter(([key]) => key !== 'id' && key !== 'import_log_id')
+                          .map(([key, value]) => (
+                          <TableCell key={key} className="max-w-[200px] truncate">
+                            {typeof value === 'boolean' ? (
+                              <Badge variant={value ? 'default' : 'secondary'}>
+                                {value ? 'Sì' : 'No'}
+                              </Badge>
+                            ) : (
+                              value?.toString() || '-'
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
               
+              {/* Controlli inferiori */}
               <div className="flex justify-between items-center pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  Caricati: {viewingRecords.length} di {totalRecords} record totali
+                  {selectedRecords.size} di {viewingRecords.length} record selezionati
                 </div>
                 <div className="flex gap-2">
-                  {hasMoreRecords && (
-                    <Button 
-                      variant="outline" 
-                      onClick={loadMoreRecords} 
-                      disabled={loadingMoreRecords}
-                    >
-                      {loadingMoreRecords ? 'Caricamento...' : 'Carica Altri 500'}
-                    </Button>
-                  )}
                   <Button variant="outline" onClick={() => {
                     setShowRecordsDialog(false);
                     setSelectedImport(null);

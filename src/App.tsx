@@ -14,6 +14,7 @@ import Campagne from "./pages/Campagne";
 import Email from "./pages/Email";
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
+import RecordDetail from "./pages/RecordDetail";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/email" element={<CRMLayout><Email /></CRMLayout>} />
           <Route path="/chat" element={<CRMLayout><Chat /></CRMLayout>} />
           <Route path="/import-templates" element={<CRMLayout><ImportTemplates /></CRMLayout>} />
+          <Route path="/record/:recordId" element={<CRMLayout><RecordDetail /></CRMLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

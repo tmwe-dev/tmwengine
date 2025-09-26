@@ -111,6 +111,13 @@ export default function ImportTemplates() {
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   
+  // Stato per controllare la visibilità delle colonne
+  const [visibleColumns, setVisibleColumns] = useState({
+    company: true,
+    details: true, 
+    metadata: true
+  });
+  
   // Stato per progress dell'importazione
   const [importProgress, setImportProgress] = useState<{
     currentImportId: string | null;
@@ -494,6 +501,31 @@ export default function ImportTemplates() {
   const clearAllFilters = () => {
     setActiveFilters([]);
     setFilteredRecords(viewingRecords);
+  };
+  
+  // Organizzazione delle colonne in gruppi logici
+  const getColumnGroups = (columns: string[]) => {
+    const companyColumns = ['original_id', 'commercial_anagrafiche_id', 'name', 'alias', 'company_name', 'company_alias', 'title', 'position', 'address', 'city', 'zip_code', 'country', 'phone', 'cell', 'email'];
+    const detailColumns = ['stato', 'note', 'last_contact', 'scheduled_contact', 'next_contact_date', 'client_code', 'origin', 'created_by', 'agent_id', 'has_actions', 'completed', 'archiviata'];
+    const metaColumns = columns.filter(col => col.startsWith('meta_') || col.includes('created_at') || col.includes('updated_at') || col.includes('row_number'));
+    
+    return {
+      company: columns.filter(col => companyColumns.includes(col)),
+      details: columns.filter(col => detailColumns.includes(col) && !col.startsWith('meta_')),
+      metadata: columns.filter(col => metaColumns.includes(col) || (!companyColumns.includes(col) && !detailColumns.includes(col) && col !== 'id' && col !== 'import_log_id'))
+    };
+  };
+  
+  // Funzione per ottenere le colonne visibili
+  const getVisibleColumns = (allColumns: string[]) => {
+    const groups = getColumnGroups(allColumns);
+    let visibleCols: string[] = [];
+    
+    if (visibleColumns.company) visibleCols = [...visibleCols, ...groups.company];
+    if (visibleColumns.details) visibleCols = [...visibleCols, ...groups.details];
+    if (visibleColumns.metadata) visibleCols = [...visibleCols, ...groups.metadata];
+    
+    return visibleCols;
   };
 
   const getStatusBadge = (stato: string) => {
@@ -1127,6 +1159,35 @@ export default function ImportTemplates() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Controlli visibilità colonne */}
+          <div className="flex justify-center items-center gap-2 py-4 border-b">
+            <span className="text-sm font-medium mr-4">Visualizza colonne:</span>
+            <Button
+              size="sm"
+              variant={visibleColumns.company ? "default" : "outline"}
+              onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
+              className="text-xs"
+            >
+              Azienda & Contatti
+            </Button>
+            <Button
+              size="sm"
+              variant={visibleColumns.details ? "default" : "outline"}
+              onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+              className="text-xs"
+            >
+              Dettagli Commerciali
+            </Button>
+            <Button
+              size="sm"
+              variant={visibleColumns.metadata ? "default" : "outline"}
+              onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+              className="text-xs"
+            >
+              Metadata & Sistema
+            </Button>
+          </div>
+
           {/* Controlli di navigazione */}
           <div className="flex justify-center items-center gap-4 py-4">
             <Button
@@ -1209,13 +1270,15 @@ export default function ImportTemplates() {
                            aria-label="Seleziona tutti"
                          />
                        </TableHead>
-                       {Object.keys(filteredRecords[0] || {})
-                         .filter(key => key !== 'id' && key !== 'import_log_id')
-                         .map((key) => (
-                         <TableHead key={key} className="min-w-[120px] bg-background">
-                           {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                         </TableHead>
-                       ))}
+                        {(() => {
+                          const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                          const visibleCols = getVisibleColumns(allColumns);
+                          return visibleCols.map((key) => (
+                            <TableHead key={key} className="min-w-[120px] bg-background">
+                              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </TableHead>
+                          ));
+                        })()}
                      </TableRow>
                    </TableHeader>
                    <TableBody>
@@ -1228,18 +1291,20 @@ export default function ImportTemplates() {
                              aria-label={`Seleziona record ${index + 1}`}
                            />
                          </TableCell>
-                         {Object.entries(record)
-                           .filter(([key]) => key !== 'id' && key !== 'import_log_id')
-                           .map(([key, value]) => (
-                           <TableCell 
-                             key={key} 
-                             className="max-w-[200px] truncate cursor-pointer hover:bg-accent/50 transition-colors"
-                             onClick={() => addFilter(key, value)}
-                             title="Clicca per filtrare per questo valore"
-                           >
-                             {formatCellValue(value, key)}
-                           </TableCell>
-                         ))}
+                          {(() => {
+                            const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
+                            const visibleCols = getVisibleColumns(allColumns);
+                            return visibleCols.map((key) => (
+                              <TableCell 
+                                key={key} 
+                                className="max-w-[200px] truncate cursor-pointer hover:bg-accent/50 transition-colors"
+                                onClick={() => addFilter(key, record[key])}
+                                title="Clicca per filtrare per questo valore"
+                              >
+                                {formatCellValue(record[key], key)}
+                              </TableCell>
+                            ));
+                          })()}
                        </TableRow>
                      ))}
                    </TableBody>

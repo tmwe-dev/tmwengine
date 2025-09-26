@@ -177,22 +177,11 @@ Tutti i colori DEVONO essere HSL.
     line-height: var(--line-height-normal);
     /* Disable swipe navigation */
     overscroll-behavior-x: none;
-    overscroll-behavior-y: auto;
     touch-action: pan-y pinch-zoom;
-    /* Prevent horizontal scrolling bounce */
-    -webkit-overflow-scrolling: touch;
   }
 
   html {
     /* Disable swipe navigation globally */
-    overscroll-behavior-x: none;
-    overscroll-behavior-y: auto;
-    /* Prevent pinch zoom and double-tap zoom */
-    touch-action: pan-y pinch-zoom;
-  }
-
-  /* Additional prevention for specific elements */
-  * {
     overscroll-behavior-x: none;
   }
 

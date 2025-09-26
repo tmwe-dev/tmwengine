@@ -26,32 +26,32 @@ interface SyncRequest {
   count_batch_current?: number; // Batch corrente durante il conteggio (default 1)
 }
 
-// Funzione per connessione IMAP con gestione SSL appropriata
+// Funzione per connessione IMAP con gestione corretta delle porte
 async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.TcpConn> {
-  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta} security: ${config.imap_sicurezza}`);
+  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta}`);
   
-  // Timeout di 15 secondi per la connessione
+  // Timeout di 10 secondi per la connessione
   let connectPromise;
   
-  // Se imap_sicurezza è "none", usa sempre TCP normale anche sulla porta 993
-  if (config.imap_sicurezza === 'none') {
-    console.log('📝 Using plain TCP connection (no SSL)');
+  // REGOLA: Porta 993 = sempre SSL, Porta 143 = TCP (poi STARTTLS se necessario)
+  if (config.imap_porta === 993) {
+    console.log('🔐 Using SSL/TLS connection for port 993 (with cert bypass)');
+    connectPromise = Deno.connectTls({
+      hostname: config.imap_server,
+      port: config.imap_porta,
+      // Bypass certificato non valido
+      caCerts: [],
+    });
+  } else {
+    console.log('📝 Using plain TCP connection for port 143');
     connectPromise = Deno.connect({
       hostname: config.imap_server,
       port: config.imap_porta,
     });
-  } else {
-    // Se imap_sicurezza è "ssl" o "tls", usa SSL ma ignora certificati non validi
-    console.log('🔐 Using SSL/TLS connection (ignoring cert validation)');
-    connectPromise = Deno.connectTls({
-      hostname: config.imap_server,
-      port: config.imap_porta,
-      caCerts: [], // Ignora certificati CA
-    });
   }
   
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Connection timeout after 15 seconds')), 15000);
+    setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
   });
   
   const conn = await Promise.race([connectPromise, timeoutPromise]);

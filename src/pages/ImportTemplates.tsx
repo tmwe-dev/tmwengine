@@ -1467,19 +1467,200 @@ export default function ImportTemplates() {
                   <Users className="h-5 w-5" />
                   Informazioni Principali
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getDefaultColumns().filter(col => selectedRecord[col] !== undefined).map((field) => (
-                    <div key={field} className="space-y-1">
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
-                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                        <span className="text-sm">
-                          {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
-                        </span>
+                <div className="grid gap-4">
+                  {/* Prima riga: Company Name (largo) + Company Alias (medio) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['company_name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="md:col-span-2 space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                    {['company_alias'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Seconda riga: Alias (medio) + Name (largo) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['alias'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="md:col-span-2 space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Terza riga: Position (largo) + Title (medio) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['position'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="md:col-span-2 space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['title'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Quarta riga: Email (largo) + Phone (stretto) */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {['email'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="md:col-span-3 space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['phone'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Quinta riga: City (medio) + Cell (stretto) + Stato (stretto) + Country (stretto) */}
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    {['city'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="md:col-span-2 space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['cell'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['stato'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['country'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Sesta riga: Origin (stretto) + Agent Id (stretto) + spazio vuoto per allineamento */}
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    {['origin'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {['agent_id'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Spazio vuoto per allineamento */}
+                    <div className="md:col-span-4"></div>
+                  </div>
                 </div>
               </div>
 

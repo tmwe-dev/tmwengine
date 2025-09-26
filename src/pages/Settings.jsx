@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EmailSyncTab from '@/components/email/EmailSyncTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,14 @@ import {
   EyeOff,
   Save,
   AlertTriangle,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  RefreshCw,
+  Download,
+  FileText,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  FolderOpen
 } from 'lucide-react';
 
 const Settings = () => {
@@ -545,10 +553,14 @@ const Settings = () => {
       </Alert>
 
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Provider
+          </TabsTrigger>
+          <TabsTrigger value="sync" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Sincronizzazione
           </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-2">
             <Bot className="h-4 w-4" />
@@ -866,6 +878,11 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab Sincronizzazione Email */}
+        <TabsContent value="sync">
+          <EmailSyncTab />
         </TabsContent>
 
         {/* Configurazione AI */}

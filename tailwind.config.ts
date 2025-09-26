@@ -81,6 +81,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+
+        // === COLORI CAMPI ERGONOMICI ===
+        "field-brick": "hsl(var(--field-brick))",
+        "field-brick-light": "hsl(var(--field-brick-light))",
+        "field-lilac": "hsl(var(--field-lilac))",
+        "field-lilac-light": "hsl(var(--field-lilac-light))",
       },
 
       // === SPAZIATURE ===
@@ -138,6 +144,12 @@ export default {
         'fast': 'var(--transition-fast)',
         'normal': 'var(--transition-normal)',
         'slow': 'var(--transition-slow)',
+      },
+
+      // === GRADIENTI ===
+      backgroundImage: {
+        'field-brick': 'var(--field-gradient-brick)',
+        'field-lilac': 'var(--field-gradient-lilac)',
       },
 
       // === ANIMAZIONI ===

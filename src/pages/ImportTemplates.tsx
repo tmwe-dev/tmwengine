@@ -855,7 +855,7 @@ export default function ImportTemplates() {
         (!defaultCols.includes(col) && 
          !['address', 'zip_code', 'client_code', 'source', 'tag', 'note', 'priority', 
            'budget', 'lead_score', 'completed', 'archiviata', 'has_actions', 'created_by', 
-           'scheduled_contact', 'id', 'import_log_id'].includes(col))
+           'scheduled_contact', 'id', 'import_log_id', 'is_imported_to_rubrica'].includes(col))
       )
     };
   };
@@ -1082,10 +1082,10 @@ export default function ImportTemplates() {
             errorCount++;
           } else {
             successCount++;
-            // Mark as imported in the imported_contacts table
+            // Delete the record from imported_contacts table
             await supabase
               .from('imported_contacts')
-              .update({ is_imported_to_rubrica: true })
+              .delete()
               .eq('id', record.id);
           }
         } catch (error) {

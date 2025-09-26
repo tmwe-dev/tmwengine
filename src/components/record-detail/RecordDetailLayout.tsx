@@ -360,11 +360,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               )}
               
               {/* Pulsante Importa in Rubrica */}
-              <div className="min-w-[200px] flex justify-end">
+              <div className="min-w-[200px] flex items-end">
                 <Button 
                   onClick={handleImportToRubrica}
                   disabled={isImporting || record.is_imported_to_rubrica}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 mt-5"
                   variant={record.is_imported_to_rubrica ? "outline" : "default"}
                   size="sm"
                 >

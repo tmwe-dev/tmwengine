@@ -16,7 +16,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-end gap-4">
           <Building className="h-5 w-5 text-primary mb-3" />
           
-          {/* Company fields allineati subito a destra dell'icona */}
+          {/* Company fields + Origin allineati subito a destra dell'icona */}
           {record.company_name !== undefined && (
             <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 
@@ -32,6 +32,18 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               <FieldRenderer 
                 field="company_alias" 
                 value={record.company_alias} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {/* Origin spostato qui, allineato a destra */}
+          <div className="flex-1"></div>
+          {record.origin !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="origin" 
+                value={record.origin} 
                 formatCellValue={formatCellValue}
               />
             </div>
@@ -133,7 +145,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <MapPin className="h-5 w-5 text-primary" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {record.country !== undefined && (
             <FieldRenderer 
               field="country" 
@@ -146,14 +158,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             <FieldRenderer 
               field="city" 
               value={record.city} 
-              formatCellValue={formatCellValue}
-            />
-          )}
-          
-          {record.origin !== undefined && (
-            <FieldRenderer 
-              field="origin" 
-              value={record.origin} 
               formatCellValue={formatCellValue}
             />
           )}

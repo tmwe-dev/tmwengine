@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,21 +8,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ContactForm } from '@/components/rubrica/ContactForm';
 import { ContactFilters } from '@/components/rubrica/ContactFilters';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Contact {
   id: string;
-  responsabile: string;
+  nome: string;
   azienda?: string;
   email?: string;
   telefono?: string;
+  cellulare?: string;
   indirizzo?: string;
-  cap?: string;
+  zip_code?: string;
   citta?: string;
-  provincia_stato?: string;
-  nazione?: string;
+  paese?: string;
   note?: string;
-  tag?: string[];
-  data_creazione: string;
+  tags?: string[];
+  responsabile?: string;
+  alias?: string;
+  position?: string;
+  title?: string;
+  created_at: string;
 }
 
 export default function Rubrica() {
@@ -31,63 +37,124 @@ export default function Rubrica() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     tag: '',
     citta: '',
     nazione: ''
   });
-  const { toast } = useToast();
+
+  // Carica i contatti dal database
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('rubrica')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        toast.error('Errore nel caricamento dei contatti');
+        console.error('Error loading contacts:', error);
+        return;
+      }
+
+      setContacts(data || []);
+    } catch (error) {
+      toast.error('Errore nel caricamento dei contatti');
+      console.error('Error loading contacts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = contact.responsabile.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchableText = `${contact.nome || ''} ${contact.responsabile || ''} ${contact.azienda || ''} ${contact.email || ''}`.toLowerCase();
+    const matchesSearch = searchableText.includes(searchTerm.toLowerCase());
 
     const matchesFilters = 
-      (!filters.tag || contact.tag?.includes(filters.tag)) &&
+      (!filters.tag || contact.tags?.includes(filters.tag)) &&
       (!filters.citta || contact.citta?.toLowerCase().includes(filters.citta.toLowerCase())) &&
-      (!filters.nazione || contact.nazione?.toLowerCase().includes(filters.nazione.toLowerCase()));
+      (!filters.nazione || contact.paese?.toLowerCase().includes(filters.nazione.toLowerCase()));
 
     return matchesSearch && matchesFilters;
   });
 
-  const handleAddContact = (contactData: Omit<Contact, 'id' | 'data_creazione'>) => {
-    const newContact: Contact = {
-      ...contactData,
-      id: Math.random().toString(36).substr(2, 9),
-      data_creazione: new Date().toISOString()
-    };
-    
-    setContacts(prev => [newContact, ...prev]);
-    setIsFormOpen(false);
-    toast({
-      title: "Contatto aggiunto",
-      description: "Il contatto è stato aggiunto con successo alla rubrica."
-    });
+  const handleAddContact = async (contactData: Omit<Contact, 'id' | 'created_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('rubrica')
+        .insert([contactData])
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Errore nell\'aggiunta del contatto');
+        console.error('Error adding contact:', error);
+        return;
+      }
+
+      setContacts(prev => [data, ...prev]);
+      setIsFormOpen(false);
+      toast.success('Contatto aggiunto con successo');
+    } catch (error) {
+      toast.error('Errore nell\'aggiunta del contatto');
+      console.error('Error adding contact:', error);
+    }
   };
 
-  const handleEditContact = (contactData: Omit<Contact, 'id' | 'data_creazione'>) => {
+  const handleEditContact = async (contactData: Omit<Contact, 'id' | 'created_at'>) => {
     if (!selectedContact) return;
 
-    setContacts(prev => prev.map(contact => 
-      contact.id === selectedContact.id 
-        ? { ...contact, ...contactData }
-        : contact
-    ));
-    setSelectedContact(null);
-    setIsFormOpen(false);
-    toast({
-      title: "Contatto modificato",
-      description: "Le modifiche sono state salvate con successo."
-    });
+    try {
+      const { data, error } = await supabase
+        .from('rubrica')
+        .update(contactData)
+        .eq('id', selectedContact.id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Errore nella modifica del contatto');
+        console.error('Error updating contact:', error);
+        return;
+      }
+
+      setContacts(prev => prev.map(contact => 
+        contact.id === selectedContact.id ? data : contact
+      ));
+      setSelectedContact(null);
+      setIsFormOpen(false);
+      toast.success('Contatto modificato con successo');
+    } catch (error) {
+      toast.error('Errore nella modifica del contatto');
+      console.error('Error updating contact:', error);
+    }
   };
 
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(contact => contact.id !== contactId));
-    toast({
-      title: "Contatto eliminato",
-      description: "Il contatto è stato rimosso dalla rubrica."
-    });
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('rubrica')
+        .delete()
+        .eq('id', contactId);
+
+      if (error) {
+        toast.error('Errore nell\'eliminazione del contatto');
+        console.error('Error deleting contact:', error);
+        return;
+      }
+
+      setContacts(prev => prev.filter(contact => contact.id !== contactId));
+      toast.success('Contatto eliminato con successo');
+    } catch (error) {
+      toast.error('Errore nell\'eliminazione del contatto');
+      console.error('Error deleting contact:', error);
+    }
   };
 
   const openEditForm = (contact: Contact) => {
@@ -125,7 +192,15 @@ export default function Rubrica() {
               </DialogTitle>
             </DialogHeader>
             <ContactForm
-              contact={selectedContact}
+              contact={selectedContact ? {
+                ...selectedContact, 
+                data_creazione: selectedContact.created_at,
+                tag: selectedContact.tags || [],
+                responsabile: selectedContact.responsabile || selectedContact.nome || '',
+                nazione: selectedContact.paese,
+                provincia_stato: '',
+                cap: selectedContact.zip_code
+              } : null}
               onSubmit={selectedContact ? handleEditContact : handleAddContact}
               onCancel={() => setIsFormOpen(false)}
             />
@@ -217,7 +292,12 @@ export default function Rubrica() {
       </div>
 
       {/* Contacts List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContacts.length === 0 ? (
           <Card className="col-span-full border-card shadow-soft">
             <CardContent className="p-12 text-center">
@@ -253,7 +333,7 @@ export default function Rubrica() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <CardTitle className="text-heading-4 font-semibold text-text-primary">
-                      {contact.responsabile}
+                      {contact.nome || contact.responsabile}
                     </CardTitle>
                     {contact.azienda && (
                       <p className="text-body text-text-secondary flex items-center gap-2 mt-1">
@@ -298,28 +378,28 @@ export default function Rubrica() {
                   </div>
                 )}
                 
-                {(contact.citta || contact.nazione) && (
+                {(contact.citta || contact.paese) && (
                   <div className="flex items-center gap-2 text-body text-text-secondary">
                     <MapPin className="h-4 w-4" />
                     <span>
-                      {[contact.citta, contact.provincia_stato, contact.nazione]
+                      {[contact.citta, contact.paese]
                         .filter(Boolean)
                         .join(', ')}
                     </span>
                   </div>
                 )}
                 
-                {contact.tag && contact.tag.length > 0 && (
+                {contact.tags && contact.tags.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <Tag className="h-4 w-4 text-text-secondary" />
-                    {contact.tag.slice(0, 3).map((tag, index) => (
+                    {contact.tags.slice(0, 3).map((tag, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
-                    {contact.tag.length > 3 && (
+                    {contact.tags.length > 3 && (
                       <Badge variant="outline" className="text-xs">
-                        +{contact.tag.length - 3}
+                        +{contact.tags.length - 3}
                       </Badge>
                     )}
                   </div>
@@ -335,6 +415,7 @@ export default function Rubrica() {
           ))
         )}
       </div>
+      )}
     </div>
   );
 }

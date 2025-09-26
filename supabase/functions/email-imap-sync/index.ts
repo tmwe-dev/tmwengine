@@ -141,35 +141,64 @@ serve(async (req) => {
     }
 
     try {
-      // Per ora usiamo una simulazione realistica basata sui dati di configurazione
-      // In futuro implementeremo la connessione IMAP nativa completa
-      console.log('📂 Simulating IMAP connection with real config...');
+      // Connessione IMAP reale
+      console.log('📂 Connecting to real IMAP server...');
+      const conn = await connectToIMAP(config);
+      
+      // Leggi greeting del server
+      const greeting = await readIMAPResponse(conn);
+      console.log('✅ Server greeting:', greeting);
 
       if (preview_only) {
-        // Simula conteggio email sul server
-        const totalEmailsOnServer = Math.floor(Math.random() * 200) + 50; // 50-250 email
-        const alreadySynced = await supabase
-          .from('email_messages')
-          .select('id', { count: 'exact' })
-          .eq('provider_id', provider_id);
+        // Autenticazione per conteggio email reali
+        try {
+          // LOGIN
+          const loginCmd = `A001 LOGIN ${config.email_username} ${config.email_password}`;
+          console.log('🔐 Authenticating...');
+          const loginResp = await sendIMAPCommand(conn, loginCmd);
+          console.log('🔐 Login response:', loginResp);
 
-        const syncedCount = alreadySynced.count || 0;
-        const toDownload = Math.max(0, totalEmailsOnServer - syncedCount);
+          // SELECT INBOX
+          const selectCmd = `A002 SELECT ${config.cartella_inbox}`;
+          const selectResp = await sendIMAPCommand(conn, selectCmd);
+          console.log('📂 Select response:', selectResp);
 
-        console.log(`📊 Preview: ${totalEmailsOnServer} on server, ${syncedCount} synced, ${toDownload} to download`);
+          // Estrai il numero di email dalla risposta
+          const existsMatch = selectResp.match(/\* (\d+) EXISTS/);
+          const totalEmailsOnServer = existsMatch ? parseInt(existsMatch[1]) : 0;
 
-        return new Response(
-          JSON.stringify({
-            success: true,
-            preview: true,
-            email_sul_server: totalEmailsOnServer,
-            email_gia_sincronizzate: syncedCount,
-            email_da_scaricare: toDownload,
-            server: config.imap_server,
-            username: config.email_username
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+          // Conta email già sincronizzate
+          const alreadySynced = await supabase
+            .from('email_messages')
+            .select('id', { count: 'exact' })
+            .eq('provider_id', provider_id);
+
+          const syncedCount = alreadySynced.count || 0;
+          const toDownload = Math.max(0, totalEmailsOnServer - syncedCount);
+
+          console.log(`📊 Real count: ${totalEmailsOnServer} on server, ${syncedCount} synced, ${toDownload} to download`);
+
+          // Chiudi connessione
+          await sendIMAPCommand(conn, 'A003 LOGOUT');
+          conn.close();
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              preview: true,
+              email_sul_server: totalEmailsOnServer,
+              email_gia_sincronizzate: syncedCount,
+              email_da_scaricare: toDownload,
+              server: config.imap_server,
+              username: config.email_username
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (imapError: any) {
+          console.error('❌ IMAP Error:', imapError);
+          conn.close();
+          throw new Error(`IMAP connection failed: ${imapError.message}`);
+        }
       }
 
       // Simulazione realistica del download

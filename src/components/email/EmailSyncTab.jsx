@@ -117,7 +117,59 @@ const EmailSyncTab = () => {
       
       setSyncStats(prev => ({
         ...prev,
-        emailGiaSincronizzate: count || 0
+        emailGiaSincronizzate: count || 0,
+        emailDaScaricare: Math.max(0, prev.emailSulServer - (count || 0))
+      }));
+    } catch (error) {
+      console.error('Error loading sync stats:', error);
+    }
+  };
+
+  const loadServerPreview = async () => {
+    if (!provider?.id) {
+      toast({
+        title: "Errore",
+        description: "Configurazione provider non trovata",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    try {
+      const response = await supabase.functions.invoke('email-imap-sync', {
+        body: {
+          provider_id: provider.id,
+          tipo_sync: 'manuale',
+          preview_only: true
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+      setSyncStats({
+        emailSulServer: result.email_sul_server || 0,
+        emailGiaSincronizzate: result.email_gia_sincronizzate || 0,
+        emailDaScaricare: result.email_da_scaricare || 0
+      });
+
+      toast({
+        title: "Preview completato",
+        description: `${result.email_sul_server} email trovate sul server`,
+      });
+    } catch (error) {
+      console.error('Error loading server preview:', error);
+      toast({
+        title: "Errore Preview",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreviewLoading(false);
+    }
       }));
     } catch (error) {
       console.error('Error loading sync stats:', error);
@@ -134,38 +186,7 @@ const EmailSyncTab = () => {
       return;
     }
 
-    setIsPreviewLoading(true);
-    try {
-      const response = await fetch(`https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/email-imap-sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A`
-        },
-        body: JSON.stringify({
-          provider_id: provider.id,
-          preview_only: true
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setSyncStats({
-          emailSulServer: result.email_sul_server,
-          emailGiaSincronizzate: result.email_gia_sincronizzate,
-          emailDaScaricare: result.email_da_scaricare
-        });
-        toast({
-          title: "Preview completato",
-          description: `${result.email_da_scaricare} email da scaricare`,
-        });
-      } else {
-        throw new Error('Errore preview');
-      }
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile ottenere preview email",
+    await loadServerPreview();
         variant: "destructive",
       });
     } finally {

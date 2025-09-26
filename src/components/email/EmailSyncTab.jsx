@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import coinEuro from '@/assets/coin-euro.png';
 import { 
   RefreshCw, 
   Download, 
@@ -84,6 +85,8 @@ const EmailSyncTab = () => {
   const [currentBatch, setCurrentBatch] = useState({ start: 1, size: 500 });
   const [syncStatus, setSyncStatus] = useState('');
   const [batchInfo, setBatchInfo] = useState(null);
+  const [countBatches, setCountBatches] = useState([]);
+  const [countInProgress, setCountInProgress] = useState(false);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -128,7 +131,7 @@ const EmailSyncTab = () => {
     }
   };
 
-  const loadServerPreview = async () => {
+  const loadServerPreview = async (countBatchCurrent = 1) => {
     if (!provider?.id) {
       toast({
         title: "Errore",
@@ -138,13 +141,21 @@ const EmailSyncTab = () => {
       return;
     }
 
-    setIsPreviewLoading(true);
+    if (countBatchCurrent === 1) {
+      setIsPreviewLoading(true);
+      setCountInProgress(true);
+      setCountBatches([]);
+      setSyncStatus('Avvio conteggio email...');
+    }
+
     try {
       const response = await supabase.functions.invoke('email-imap-sync', {
         body: {
           provider_id: provider.id,
           tipo_sync: 'manuale',
-          preview_only: true
+          preview_only: true,
+          count_batch_size: 500,
+          count_batch_current: countBatchCurrent
         }
       });
 
@@ -153,25 +164,51 @@ const EmailSyncTab = () => {
       }
 
       const result = response.data;
+      
+      // Aggiungi questo batch ai conteggi
+      if (result.count_batch_info) {
+        setCountBatches(prev => [...prev, {
+          batch: countBatchCurrent,
+          emails: result.count_batch_info.emails_in_batch,
+          start: result.count_batch_info.batch_start,
+          end: result.count_batch_info.batch_end
+        }]);
+        
+        setSyncStatus(`Contato batch ${countBatchCurrent}/${result.count_batch_info.total_batches}: ${result.count_batch_info.emails_in_batch} email`);
+
+        // Se ci sono altri batch da contare, continua automaticamente
+        if (result.count_batch_info.has_more_count_batches) {
+          setTimeout(() => loadServerPreview(countBatchCurrent + 1), 500);
+          return;
+        }
+      }
+
+      // Conteggio completato
+      setCountInProgress(false);
       setSyncStats({
         emailSulServer: result.email_sul_server || 0,
         emailGiaSincronizzate: result.email_gia_sincronizzate || 0,
         emailDaScaricare: result.email_da_scaricare || 0
       });
 
+      setSyncStatus(`Conteggio completato: ${result.email_sul_server} email totali`);
+
       toast({
-        title: "Preview completato",
+        title: "Conteggio completato",
         description: `${result.email_sul_server} email trovate sul server`,
       });
     } catch (error) {
       console.error('Error loading server preview:', error);
+      setCountInProgress(false);
       toast({
         title: "Errore Preview",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setIsPreviewLoading(false);
+      if (countBatchCurrent === 1 || !countInProgress) {
+        setIsPreviewLoading(false);
+      }
     }
   };
 
@@ -365,18 +402,51 @@ const EmailSyncTab = () => {
             </div>
           </div>
 
+          {/* Visualizzazione conteggio a pacchetti con monete */}
+          {(countInProgress || countBatches.length > 0) && (
+            <div className="space-y-4 p-4 border rounded-lg">
+              <h4 className="font-medium">Conteggio Email a Pacchetti</h4>
+              
+              <div className="flex flex-wrap gap-2">
+                {countBatches.map((batch, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                    <img src={coinEuro} alt="Euro coin" className="w-6 h-6" />
+                    <div className="text-xs">
+                      <div>Batch {batch.batch}</div>
+                      <div>{batch.emails} email</div>
+                      <div className="text-muted-foreground">{batch.start}-{batch.end}</div>
+                    </div>
+                  </div>
+                ))}
+                
+                {countInProgress && (
+                  <div className="flex items-center gap-2 p-2 border border-dashed rounded">
+                    <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                    <div className="text-xs text-muted-foreground">Conteggio...</div>
+                  </div>
+                )}
+              </div>
+              
+              {syncStatus && (
+                <div className="text-sm text-muted-foreground">
+                  {syncStatus}
+                </div>
+              )}
+            </div>
+          )}
+
           <Button 
-            onClick={handlePreviewEmails}
-            disabled={!provider || isPreviewLoading}
+            onClick={() => handlePreviewEmails()}
+            disabled={!provider || isPreviewLoading || countInProgress}
             variant="outline"
             className="w-full"
           >
-            {isPreviewLoading ? (
+            {isPreviewLoading || countInProgress ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            {isPreviewLoading ? 'Controllo email...' : 'Controlla email sul server'}
+            {isPreviewLoading || countInProgress ? 'Conteggio email...' : 'Controlla email sul server'}
           </Button>
         </CardContent>
       </Card>

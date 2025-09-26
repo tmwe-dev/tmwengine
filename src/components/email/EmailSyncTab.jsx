@@ -81,6 +81,9 @@ const EmailSyncTab = () => {
   const [totalEmails, setTotalEmails] = useState(0);
   const [flyingPapers, setFlyingPapers] = useState([]);
   const [provider, setProvider] = useState(null);
+  const [currentBatch, setCurrentBatch] = useState({ start: 1, size: 500 });
+  const [syncStatus, setSyncStatus] = useState('');
+  const [batchInfo, setBatchInfo] = useState(null);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -465,6 +468,39 @@ const EmailSyncTab = () => {
               {syncInProgress ? 'Sincronizzazione in corso...' : 'Avvia Sincronizzazione'}
             </Button>
           </div>
+
+          {/* Status e progresso in tempo reale */}
+          {(syncInProgress || syncStatus) && (
+            <div className="space-y-4 p-4 border rounded-lg">
+              <h4 className="font-medium">Stato Sincronizzazione</h4>
+              
+              {/* Status corrente */}
+              <div className="text-sm text-muted-foreground">
+                {syncStatus || 'In attesa...'}
+              </div>
+              
+              {/* Info batch corrente */}
+              {batchInfo && (
+                <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2">
+                  <div>Batch: {currentBatch.start}-{currentBatch.start + currentBatch.size - 1}</div>
+                  <div>Totale server: {batchInfo.total_on_server}</div>
+                  <div>Processate: {batchInfo.processed}</div>
+                  <div>Prossimo batch: {batchInfo.next_batch_start || 'N/A'}</div>
+                </div>
+              )}
+              
+              {/* Barra di progresso */}
+              {syncInProgress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progresso batch corrente</span>
+                    <span>{Math.round(syncProgress)}%</span>
+                  </div>
+                  <Progress value={syncProgress} className="w-full" />
+                </div>
+              )}
+            </div>
+          )}
 
           {syncStats.emailDaScaricare === 0 && syncStats.emailSulServer > 0 && (
             <div className="text-center p-4 border border-green-200 rounded-lg">

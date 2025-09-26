@@ -151,8 +151,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
         
         <div className="flex items-start gap-4">
-          <MapPin className="h-5 w-5 text-primary mt-5" />
-          
           {record.country !== undefined && (
             <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 

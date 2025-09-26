@@ -1695,9 +1695,9 @@ export default function ImportTemplates() {
                                  className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
                                    key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
                                    key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                   key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                   key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
                                    key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                   (key === 'email' || key === 'phone' || key === 'cell') ? 'w-12 min-w-[48px] max-w-[48px]' :
+                                   (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
                                    'min-w-[120px]'
                                  }`}
                                onClick={() => handleColumnSort(key)}
@@ -1734,9 +1734,9 @@ export default function ImportTemplates() {
                                   key={key} 
                                   className={`truncate transition-colors px-4 py-[10px] ${
                                     key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
-                                    key === 'stato' ? 'w-16 max-w-[60px]' :
+                                    key === 'stato' ? 'w-20 max-w-[80px] text-center' :
                                     key === 'agent_id' ? 'w-22 max-w-[84px]' :
-                                    (key === 'email' || key === 'phone' || key === 'cell') ? 'w-12 max-w-[48px]' :
+                                    (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 max-w-[80px] text-center' :
                                     'max-w-[200px]'
                                   } ${
                                     key === 'name' 

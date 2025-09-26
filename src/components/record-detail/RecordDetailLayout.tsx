@@ -16,66 +16,93 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  // Function to get country flag emoji
-  const getCountryFlag = (country: string) => {
-    if (!country) return '🏳️';
+  // Function to get country code for flag
+  const getCountryCode = (country: string) => {
+    if (!country) return 'UN'; // United Nations flag as default
     
-    const countryFlags: { [key: string]: string } = {
-      'italy': '🇮🇹',
-      'italia': '🇮🇹',
-      'united states': '🇺🇸',
-      'usa': '🇺🇸',
-      'germany': '🇩🇪',
-      'germania': '🇩🇪',
-      'france': '🇫🇷',
-      'francia': '🇫🇷',
-      'spain': '🇪🇸',
-      'spagna': '🇪🇸',
-      'united kingdom': '🇬🇧',
-      'uk': '🇬🇧',
-      'regno unito': '🇬🇧',
-      'china': '🇨🇳',
-      'cina': '🇨🇳',
-      'japan': '🇯🇵',
-      'giappone': '🇯🇵',
-      'canada': '🇨🇦',
-      'australia': '🇦🇺',
-      'brazil': '🇧🇷',
-      'brasile': '🇧🇷',
-      'india': '🇮🇳',
-      'russia': '🇷🇺',
-      'netherlands': '🇳🇱',
-      'olanda': '🇳🇱',
-      'belgium': '🇧🇪',
-      'belgio': '🇧🇪',
-      'switzerland': '🇨🇭',
-      'svizzera': '🇨🇭',
-      'austria': '🇦🇹',
-      'poland': '🇵🇱',
-      'polonia': '🇵🇱',
-      'portugal': '🇵🇹',
-      'portogallo': '🇵🇹',
-      'greece': '🇬🇷',
-      'grecia': '🇬🇷',
-      'turkey': '🇹🇷',
-      'turchia': '🇹🇷',
-      'south korea': '🇰🇷',
-      'corea del sud': '🇰🇷',
-      'mexico': '🇲🇽',
-      'messico': '🇲🇽',
-      'argentina': '🇦🇷',
-      'sweden': '🇸🇪',
-      'svezia': '🇸🇪',
-      'norway': '🇳🇴',
-      'norvegia': '🇳🇴',
-      'denmark': '🇩🇰',
-      'danimarca': '🇩🇰',
-      'finland': '🇫🇮',
-      'finlandia': '🇫🇮'
+    const countryMap: { [key: string]: string } = {
+      'italy': 'IT',
+      'italia': 'IT',
+      'united states': 'US',
+      'usa': 'US',
+      'america': 'US',
+      'stati uniti': 'US',
+      'germany': 'DE',
+      'germania': 'DE',
+      'france': 'FR',
+      'francia': 'FR',
+      'spain': 'ES',
+      'spagna': 'ES',
+      'united kingdom': 'GB',
+      'uk': 'GB',
+      'regno unito': 'GB',
+      'england': 'GB',
+      'inghilterra': 'GB',
+      'china': 'CN',
+      'cina': 'CN',
+      'japan': 'JP',
+      'giappone': 'JP',
+      'canada': 'CA',
+      'australia': 'AU',
+      'brazil': 'BR',
+      'brasile': 'BR',
+      'india': 'IN',
+      'russia': 'RU',
+      'russian federation': 'RU',
+      'federazione russa': 'RU',
+      'netherlands': 'NL',
+      'olanda': 'NL',
+      'paesi bassi': 'NL',
+      'belgium': 'BE',
+      'belgio': 'BE',
+      'switzerland': 'CH',
+      'svizzera': 'CH',
+      'austria': 'AT',
+      'poland': 'PL',
+      'polonia': 'PL',
+      'portugal': 'PT',
+      'portogallo': 'PT',
+      'greece': 'GR',
+      'grecia': 'GR',
+      'turkey': 'TR',
+      'turchia': 'TR',
+      'south korea': 'KR',
+      'korea': 'KR',
+      'corea del sud': 'KR',
+      'corea': 'KR',
+      'mexico': 'MX',
+      'messico': 'MX',
+      'argentina': 'AR',
+      'sweden': 'SE',
+      'svezia': 'SE',
+      'norway': 'NO',
+      'norvegia': 'NO',
+      'denmark': 'DK',
+      'danimarca': 'DK',
+      'finland': 'FI',
+      'finlandia': 'FI',
+      'ireland': 'IE',
+      'irlanda': 'IE',
+      'croatia': 'HR',
+      'croazia': 'HR',
+      'czech republic': 'CZ',
+      'repubblica ceca': 'CZ',
+      'hungary': 'HU',
+      'ungheria': 'HU',
+      'romania': 'RO',
+      'bulgaria': 'BG',
+      'slovenia': 'SI',
+      'slovakia': 'SK',
+      'slovacchia': 'SK',
+      'estonia': 'EE',
+      'latvia': 'LV',
+      'lettonia': 'LV',
+      'lithuania': 'LT',
+      'lituania': 'LT'
     };
     
     const lowerCountry = country.toLowerCase().trim();
-    return countryFlags[lowerCountry] || '🌍';
+    return countryMap[lowerCountry] || 'UN';
   };
 
   const handleImportToRubrica = async () => {
@@ -170,7 +197,15 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Header con bandiera, country e città */}
       <div className="flex justify-end">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <span style={{ paddingRight: '5px' }}>{getCountryFlag(record.country)}</span>
+          <img 
+            src={`https://flagcdn.com/w40/${getCountryCode(record.country).toLowerCase()}.png`}
+            alt={`${record.country} flag`}
+            className="w-[26px] h-[20px] object-cover"
+            style={{ paddingRight: '5px' }}
+            onError={(e) => {
+              e.currentTarget.src = 'https://flagcdn.com/w40/un.png';
+            }}
+          />
           <span>{record.country || "N/A"}</span>
           <span>•</span>
           <span>{record.city || "N/A"}</span>

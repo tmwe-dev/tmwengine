@@ -242,35 +242,163 @@ export type Database = {
         }
         Relationships: []
       }
+      email_messages: {
+        Row: {
+          attachments: Json | null
+          bcc_email: string | null
+          body_html: string | null
+          body_text: string | null
+          cartella: string | null
+          cc_email: string | null
+          created_at: string
+          data_invio: string | null
+          data_ricezione: string
+          direzione: string
+          email_references: string | null
+          flags: Json | null
+          from_email: string
+          id: string
+          in_reply_to: string | null
+          message_hash: string | null
+          message_id: string
+          provider_id: string
+          raw_headers: Json | null
+          stato: string
+          subject: string | null
+          sync_status: string | null
+          thread_id: string | null
+          to_email: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          bcc_email?: string | null
+          body_html?: string | null
+          body_text?: string | null
+          cartella?: string | null
+          cc_email?: string | null
+          created_at?: string
+          data_invio?: string | null
+          data_ricezione: string
+          direzione: string
+          email_references?: string | null
+          flags?: Json | null
+          from_email: string
+          id?: string
+          in_reply_to?: string | null
+          message_hash?: string | null
+          message_id: string
+          provider_id: string
+          raw_headers?: Json | null
+          stato?: string
+          subject?: string | null
+          sync_status?: string | null
+          thread_id?: string | null
+          to_email: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          bcc_email?: string | null
+          body_html?: string | null
+          body_text?: string | null
+          cartella?: string | null
+          cc_email?: string | null
+          created_at?: string
+          data_invio?: string | null
+          data_ricezione?: string
+          direzione?: string
+          email_references?: string | null
+          flags?: Json | null
+          from_email?: string
+          id?: string
+          in_reply_to?: string | null
+          message_hash?: string | null
+          message_id?: string
+          provider_id?: string
+          raw_headers?: Json | null
+          stato?: string
+          subject?: string | null
+          sync_status?: string | null
+          thread_id?: string | null
+          to_email?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_provider: {
         Row: {
           attivo: boolean
+          cartella_inbox: string | null
+          cartella_sent: string | null
           created_at: string
           dominio_invio: string | null
+          email_username: string | null
           id: string
+          imap_porta: number | null
+          imap_server: string | null
+          imap_sicurezza: string | null
           inbound_route: string | null
+          intervallo_sync_minuti: number | null
+          max_email_sync: number | null
           outbound_endpoint: string | null
           provider: string
+          smtp_porta: number | null
+          smtp_server: string | null
+          smtp_sicurezza: string | null
+          tipo_provider: string | null
           updated_at: string
         }
         Insert: {
           attivo?: boolean
+          cartella_inbox?: string | null
+          cartella_sent?: string | null
           created_at?: string
           dominio_invio?: string | null
+          email_username?: string | null
           id?: string
+          imap_porta?: number | null
+          imap_server?: string | null
+          imap_sicurezza?: string | null
           inbound_route?: string | null
+          intervallo_sync_minuti?: number | null
+          max_email_sync?: number | null
           outbound_endpoint?: string | null
           provider: string
+          smtp_porta?: number | null
+          smtp_server?: string | null
+          smtp_sicurezza?: string | null
+          tipo_provider?: string | null
           updated_at?: string
         }
         Update: {
           attivo?: boolean
+          cartella_inbox?: string | null
+          cartella_sent?: string | null
           created_at?: string
           dominio_invio?: string | null
+          email_username?: string | null
           id?: string
+          imap_porta?: number | null
+          imap_server?: string | null
+          imap_sicurezza?: string | null
           inbound_route?: string | null
+          intervallo_sync_minuti?: number | null
+          max_email_sync?: number | null
           outbound_endpoint?: string | null
           provider?: string
+          smtp_porta?: number | null
+          smtp_server?: string | null
+          smtp_sicurezza?: string | null
+          tipo_provider?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -279,7 +407,10 @@ export type Database = {
         Row: {
           api_key: string
           created_at: string
+          email_password: string | null
           id: string
+          oauth_refresh_token: string | null
+          oauth_token: string | null
           provider_id: string
           updated_at: string
           webhook_secret: string | null
@@ -287,7 +418,10 @@ export type Database = {
         Insert: {
           api_key: string
           created_at?: string
+          email_password?: string | null
           id?: string
+          oauth_refresh_token?: string | null
+          oauth_token?: string | null
           provider_id: string
           updated_at?: string
           webhook_secret?: string | null
@@ -295,7 +429,10 @@ export type Database = {
         Update: {
           api_key?: string
           created_at?: string
+          email_password?: string | null
           id?: string
+          oauth_refresh_token?: string | null
+          oauth_token?: string | null
           provider_id?: string
           updated_at?: string
           webhook_secret?: string | null
@@ -303,6 +440,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "email_provider_credenziali_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sync_logs: {
+        Row: {
+          created_at: string
+          errori: Json | null
+          id: string
+          messaggi_aggiornati: number | null
+          messaggi_nuovi: number | null
+          messaggi_sincronizzati: number | null
+          provider_id: string
+          stato: string
+          sync_end: string | null
+          sync_start: string
+          tipo_sync: string
+        }
+        Insert: {
+          created_at?: string
+          errori?: Json | null
+          id?: string
+          messaggi_aggiornati?: number | null
+          messaggi_nuovi?: number | null
+          messaggi_sincronizzati?: number | null
+          provider_id: string
+          stato?: string
+          sync_end?: string | null
+          sync_start?: string
+          tipo_sync: string
+        }
+        Update: {
+          created_at?: string
+          errori?: Json | null
+          id?: string
+          messaggi_aggiornati?: number | null
+          messaggi_nuovi?: number | null
+          messaggi_sincronizzati?: number | null
+          provider_id?: string
+          stato?: string
+          sync_end?: string | null
+          sync_start?: string
+          tipo_sync?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_logs_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "email_provider"

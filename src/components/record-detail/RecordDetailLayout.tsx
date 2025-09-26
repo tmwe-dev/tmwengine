@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -9,6 +9,8 @@ interface RecordDetailLayoutProps {
 }
 
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
+  const [showLocationDetails, setShowLocationDetails] = useState(false);
+  
   return (
     <div className="space-y-6">
       {/* Sezione Date Sistema - in alto sotto i selettori */}
@@ -73,6 +75,17 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               <FieldRenderer 
                 field="company_alias" 
                 value={record.company_alias} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {/* Country sopra Origin */}
+          {record.country !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="country" 
+                value={record.country} 
                 formatCellValue={formatCellValue}
               />
             </div>
@@ -174,49 +187,55 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       </div>
 
       {/* Sezione Ubicazione */}
-      <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          {record.country !== undefined && (
-            <div className="max-w-[200px] min-w-[200px]">
-              <FieldRenderer 
-                field="country" 
-                value={record.country} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+      {(record.city !== undefined || record.zip_code !== undefined || record.address !== undefined) && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <button 
+              onClick={() => setShowLocationDetails(!showLocationDetails)}
+              className="h-5 w-5 text-primary mt-1 hover:text-primary/80 transition-colors"
+            >
+              {showLocationDetails ? <ChevronDown /> : <ChevronRight />}
+            </button>
+            <span className="text-sm font-medium text-muted-foreground mt-1">
+              Dettagli Ubicazione
+            </span>
+          </div>
           
-          {record.city !== undefined && (
-            <div className="max-w-[200px] min-w-[200px]">
-              <FieldRenderer 
-                field="city" 
-                value={record.city} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
-          
-          {record.zip_code !== undefined && (
-            <div className="max-w-[200px] min-w-[100px]">
-              <FieldRenderer 
-                field="zip_code" 
-                value={record.zip_code} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
-          
-          {record.address !== undefined && (
-            <div className="max-w-[200px] min-w-[200px]">
-              <FieldRenderer 
-                field="address" 
-                value={record.address} 
-                formatCellValue={formatCellValue}
-              />
+          {showLocationDetails && (
+            <div className="flex items-start gap-4 ml-9">
+              {record.city !== undefined && (
+                <div className="max-w-[200px] min-w-[200px]">
+                  <FieldRenderer 
+                    field="city" 
+                    value={record.city} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
+              )}
+              
+              {record.zip_code !== undefined && (
+                <div className="max-w-[200px] min-w-[100px]">
+                  <FieldRenderer 
+                    field="zip_code" 
+                    value={record.zip_code} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
+              )}
+              
+              {record.address !== undefined && (
+                <div className="max-w-[200px] min-w-[200px]">
+                  <FieldRenderer 
+                    field="address" 
+                    value={record.address} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
@@ -262,9 +281,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
             {Object.keys(record)
               .filter(key => ![
-                'id', 'import_log_id', 'company_name', 'company_alias', 'origin',
+                'id', 'import_log_id', 'company_name', 'company_alias', 'origin', 'country',
                 'name', 'title', 'alias', 'position', 'email', 'phone', 'cell',
-                'country', 'city', 'zip_code', 'address', 'last_contact',
+                'city', 'zip_code', 'address', 'last_contact',
                 'next_contact_date', 'scheduled_contact', 'created_at', 'updated_at'
               ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
               .map(field => (

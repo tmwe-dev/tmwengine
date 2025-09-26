@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
+import countriesData from '@/data/countries.json';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -1072,52 +1073,15 @@ export default function ImportTemplates() {
     }
   };
 
-  // Mapping sigle paese a nomi completi
+  // Mapping sigle paese a nomi completi usando i dati JSON
   const getCountryFullName = (countryCode: string): string => {
-    const countryNames: { [key: string]: string } = {
-      'US': 'Stati Uniti',
-      'IT': 'Italia',
-      'DE': 'Germania',
-      'FR': 'Francia',
-      'ES': 'Spagna',
-      'GB': 'Regno Unito',
-      'UK': 'Regno Unito',
-      'CN': 'Cina',
-      'JP': 'Giappone',
-      'CA': 'Canada',
-      'AU': 'Australia',
-      'BR': 'Brasile',
-      'IN': 'India',
-      'RU': 'Russia',
-      'NL': 'Paesi Bassi',
-      'BE': 'Belgio',
-      'CH': 'Svizzera',
-      'AT': 'Austria',
-      'PL': 'Polonia',
-      'PT': 'Portogallo',
-      'GR': 'Grecia',
-      'TR': 'Turchia',
-      'KR': 'Corea del Sud',
-      'MX': 'Messico',
-      'AR': 'Argentina',
-      'SE': 'Svezia',
-      'NO': 'Norvegia',
-      'DK': 'Danimarca',
-      'FI': 'Finlandia',
-      'IE': 'Irlanda',
-      'HR': 'Croazia',
-      'CZ': 'Repubblica Ceca',
-      'HU': 'Ungheria',
-      'RO': 'Romania',
-      'BG': 'Bulgaria',
-      'SI': 'Slovenia',
-      'SK': 'Slovacchia',
-      'EE': 'Estonia',
-      'LV': 'Lettonia',
-      'LT': 'Lituania'
-    };
+    if (!countryCode) return '';
     
-    return countryNames[countryCode.toUpperCase()] || countryCode;
+    const country = countriesData.find(c => 
+      c.code.toLowerCase() === countryCode.toLowerCase()
+    );
+    
+    return country ? country.name : countryCode;
   };
 
   // Get unique values for filter dropdowns

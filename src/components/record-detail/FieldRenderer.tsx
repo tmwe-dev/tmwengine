@@ -25,7 +25,7 @@ export function FieldRenderer({
       </Label>
       <div className={`p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center ${valueClassName}`}>
         <span className="text-sm break-words">
-          {formatCellValue(value, field) || '(vuoto)'}
+          {formatCellValue(value, field)}
         </span>
       </div>
     </div>

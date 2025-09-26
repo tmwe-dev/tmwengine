@@ -145,21 +145,25 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <MapPin className="h-5 w-5 text-primary" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex gap-4">
           {record.country !== undefined && (
-            <FieldRenderer 
-              field="country" 
-              value={record.country} 
-              formatCellValue={formatCellValue}
-            />
+            <div className="max-w-[200px] min-w-[200px]">
+              <FieldRenderer 
+                field="country" 
+                value={record.country} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
           )}
           
           {record.city !== undefined && (
-            <FieldRenderer 
-              field="city" 
-              value={record.city} 
-              formatCellValue={formatCellValue}
-            />
+            <div className="max-w-[200px] min-w-[200px]">
+              <FieldRenderer 
+                field="city" 
+                value={record.city} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
           )}
         </div>
         

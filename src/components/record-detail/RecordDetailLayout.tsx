@@ -70,56 +70,17 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
           
-          {/* Origin + Email/Phone/Cell allineati a destra */}
+          {/* Origin spostato qui, allineato a destra */}
           <div className="flex-1"></div>
-          <div className="flex flex-col gap-3 items-end">
-            {record.origin !== undefined && (
-              <div className="min-w-[140px]">
-                <FieldRenderer 
-                  field="origin" 
-                  value={record.origin} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-            
-            {/* Email/Phone/Cell incolonnati sotto origin */}
-            {record.email !== undefined && (
-              <div className="min-w-[250px] flex items-start gap-2 justify-end">
-                <Mail className="h-4 w-4 text-blue-500 mt-5" />
-                <FieldRenderer 
-                  field="email" 
-                  value={record.email} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-            
-            {record.phone !== undefined && (
-              <div className="min-w-[150px] flex items-start gap-2 justify-end">
-                <Phone className="h-4 w-4 text-green-500 mt-5" />
-                <FieldRenderer 
-                  field="phone" 
-                  value={record.phone} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-            
-            {record.cell !== undefined && (
-              <div className="min-w-[150px] flex items-start gap-2 justify-end">
-                <Phone className="h-4 w-4 text-orange-500 mt-5" />
-                <FieldRenderer 
-                  field="cell" 
-                  value={record.cell} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              </div>
-            )}
-          </div>
+          {record.origin !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="origin" 
+                value={record.origin} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -161,18 +122,55 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       </div>
 
-      {/* Sezione Position */}
+      {/* Sezione Position + Contatti */}
       <div className="space-y-4">
         <div className="flex items-start gap-4">
           <Mail className="h-5 w-5 text-primary mt-5" />
           
-          {/* Solo Position */}
+          {/* Position allineato con email */}
           {record.position !== undefined && (
             <div className="max-w-[200px]">
               <FieldRenderer 
                 field="position" 
                 value={record.position} 
                 formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {/* Campi contatti con icone */}
+          {record.email !== undefined && (
+            <div className="flex-1 min-w-[250px] flex items-start gap-2">
+              <Mail className="h-4 w-4 text-blue-500 mt-5" />
+              <FieldRenderer 
+                field="email" 
+                value={record.email} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
+              />
+            </div>
+          )}
+          
+          {record.phone !== undefined && (
+            <div className="min-w-[150px] flex items-start gap-2">
+              <Phone className="h-4 w-4 text-green-500 mt-5" />
+              <FieldRenderer 
+                field="phone" 
+                value={record.phone} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
+              />
+            </div>
+          )}
+          
+          {record.cell !== undefined && (
+            <div className="min-w-[150px] flex items-start gap-2">
+              <Phone className="h-4 w-4 text-orange-500 mt-5" />
+              <FieldRenderer 
+                field="cell" 
+                value={record.cell} 
+                formatCellValue={formatCellValue}
+                className="flex-1"
               />
             </div>
           )}

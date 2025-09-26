@@ -18,7 +18,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {/* Company fields allineati subito a destra dell'icona */}
           {record.company_name !== undefined && (
-            <div className="flex-1 min-w-[300px]">
+            <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 
                 field="company_name" 
                 value={record.company_name} 
@@ -76,9 +76,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           )}
         </div>
         
-        {/* Position - riga separata, larghezza piena */}
+        {/* Position - larghezza limitata */}
         {record.position !== undefined && (
-          <div className="w-full">
+          <div className="max-w-[200px]">
             <FieldRenderer 
               field="position" 
               value={record.position} 
@@ -164,9 +164,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           )}
         </div>
         
-        {/* Address - riga separata */}
+        {/* Address - larghezza limitata */}
         {record.address !== undefined && (
-          <div className="w-full">
+          <div className="max-w-[200px]">
             <FieldRenderer 
               field="address" 
               value={record.address} 

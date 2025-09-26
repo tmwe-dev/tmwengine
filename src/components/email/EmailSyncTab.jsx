@@ -56,8 +56,8 @@ const DestinationFolder = ({ isReceiving }) => {
       />
       {isReceiving && (
         <div className="absolute -top-2 -right-2">
-          <div className="animate-ping absolute inline-flex h-6 w-6 rounded-full bg-green-400 opacity-75"></div>
-          <div className="relative inline-flex rounded-full h-6 w-6 bg-green-500 items-center justify-center">
+          <div className="animate-ping absolute inline-flex h-6 w-6 rounded-full opacity-75"></div>
+          <div className="relative inline-flex rounded-full h-6 w-6 items-center justify-center">
             <CheckCircle2 className="h-4 w-4 text-white" />
           </div>
         </div>
@@ -296,7 +296,7 @@ const EmailSyncTab = () => {
                   {provider.email_username} → {provider.imap_server}:{provider.imap_porta}
                 </p>
               </div>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Badge variant="outline" className="text-green-700">
                 Connesso
               </Badge>
             </div>
@@ -309,7 +309,7 @@ const EmailSyncTab = () => {
                   Configura il provider email nel tab "Email Provider"
                 </p>
               </div>
-              <Badge variant="outline" className="bg-orange-50 text-orange-700">
+              <Badge variant="outline" className="text-orange-700">
                 Non configurato
               </Badge>
             </div>
@@ -379,7 +379,7 @@ const EmailSyncTab = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Area animazione Windows 95 */}
-          <div className="relative bg-gray-100 border-2 border-gray-300 rounded-lg p-8 min-h-40 overflow-hidden">
+          <div className="relative border-2 border-gray-300 rounded-lg p-8 min-h-40 overflow-hidden">
             <div className="absolute inset-0"></div>
             
             {/* Fogli volanti */}
@@ -416,7 +416,7 @@ const EmailSyncTab = () => {
 
             {/* Contatori stile Windows 95 */}
             {syncInProgress && (
-              <div className="absolute bottom-4 left-4 bg-white border border-gray-400 shadow-lg rounded p-2">
+              <div className="absolute bottom-4 left-4 border border-gray-400 shadow-lg rounded p-2">
                 <div className="text-xs text-gray-700">
                   Email: {currentEmail} / {totalEmails}
                 </div>
@@ -455,7 +455,7 @@ const EmailSyncTab = () => {
           </div>
 
           {syncStats.emailDaScaricare === 0 && syncStats.emailSulServer > 0 && (
-            <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-center p-4 border border-green-200 rounded-lg">
               <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
               <p className="text-green-700 font-medium">Tutte le email sono sincronizzate!</p>
               <p className="text-sm text-green-600">

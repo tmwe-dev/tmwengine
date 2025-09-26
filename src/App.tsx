@@ -19,52 +19,68 @@ import ImportTemplates from "./pages/ImportTemplates";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Global swipe navigation prevention
+  // Global swipe navigation prevention (only browser navigation, not internal scrolling)
   useEffect(() => {
-    const preventDefault = (e: Event) => {
-      e.preventDefault();
-    };
-
-    const preventSwipeNavigation = (e: WheelEvent) => {
-      // Prevent horizontal scrolling that triggers browser navigation
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        e.preventDefault();
-      }
-    };
-
-    const preventTouchNavigation = (e: TouchEvent) => {
-      // Prevent swipe navigation on touch devices
-      if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const startX = touch.clientX;
-        const startY = touch.clientY;
+    const preventBrowserNavigation = (e: WheelEvent) => {
+      // Only prevent if it's a strong horizontal gesture near the edges
+      // and the page can't scroll horizontally anymore
+      const isNearLeftEdge = e.clientX < 100;
+      const isNearRightEdge = e.clientX > window.innerWidth - 100;
+      const isHorizontalGesture = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2;
+      const isStrongGesture = Math.abs(e.deltaX) > 50;
+      
+      if ((isNearLeftEdge || isNearRightEdge) && isHorizontalGesture && isStrongGesture) {
+        // Check if we're at the scroll boundary
+        const element = e.target as Element;
+        const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
+        const scrollWidth = document.documentElement.scrollWidth;
+        const clientWidth = document.documentElement.clientWidth;
         
-        // If it's a horizontal swipe near the edge, prevent it
-        if (startX < 50 || startX > window.innerWidth - 50) {
+        // Prevent only if we're at the scroll boundary
+        if ((scrollLeft <= 0 && e.deltaX < 0) || (scrollLeft + clientWidth >= scrollWidth && e.deltaX > 0)) {
           e.preventDefault();
         }
       }
     };
 
-    // Add event listeners to prevent swipe navigation
-    window.addEventListener('wheel', preventSwipeNavigation, { passive: false });
-    window.addEventListener('touchstart', preventTouchNavigation, { passive: false });
-    window.addEventListener('touchmove', preventDefault, { passive: false });
-    
-    // Prevent browser navigation via history API
-    const preventPopstate = () => {
-      // This doesn't prevent the event but ensures we handle it properly
-      // The CSS overscroll-behavior-x: none should handle most cases
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
     };
-    
-    window.addEventListener('popstate', preventPopstate);
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 2;
+        const isNearEdge = touchStartX < 50 || touchStartX > window.innerWidth - 50;
+        const isSwipeGesture = Math.abs(deltaX) > 50;
+        
+        // Only prevent edge swipes that could trigger browser navigation
+        if (isHorizontalSwipe && isNearEdge && isSwipeGesture) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    // Add event listeners with passive: false only for specific cases
+    window.addEventListener('wheel', preventBrowserNavigation, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     // Cleanup event listeners
     return () => {
-      window.removeEventListener('wheel', preventSwipeNavigation);
-      window.removeEventListener('touchstart', preventTouchNavigation);
-      window.removeEventListener('touchmove', preventDefault);
-      window.removeEventListener('popstate', preventPopstate);
+      window.removeEventListener('wheel', preventBrowserNavigation);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 

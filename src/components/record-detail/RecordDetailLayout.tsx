@@ -317,6 +317,16 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   />
                 </div>
               )}
+              
+              {record.country !== undefined && (
+                <div className="max-w-[200px] min-w-[150px]">
+                  <FieldRenderer 
+                    field="country" 
+                    value={record.country} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

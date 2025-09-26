@@ -194,18 +194,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   
   return (
     <div className="space-y-6">
-      {/* Header con bandiera, country e città */}
+      {/* Header con country e città */}
       <div className="flex justify-end">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <img 
-            src={`https://cdn.jsdelivr.net/npm/country-flag-emoji-json@2.0.0/dist/images/${getCountryCode(record.country).toLowerCase()}.svg`}
-            alt={`${record.country} flag`}
-            className="w-[26px] h-[20px] object-cover"
-            style={{ paddingRight: '5px' }}
-            onError={(e) => {
-              e.currentTarget.src = `https://purecatamphetamine.github.io/country-flag-icons/3x2/${getCountryCode(record.country).toUpperCase()}.svg`;
-            }}
-          />
           <span>{record.country || "N/A"}</span>
           <span>•</span>
           <span>{record.city || "N/A"}</span>

@@ -1805,9 +1805,6 @@ export default function ImportTemplates() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <div className="text-sm text-muted-foreground">
-                    Mostrando {viewingRecords.length} di {filteredRecords.length} record
-                  </div>
                   <Button variant="outline" onClick={() => {
                      setShowRecordsDialog(false);
                      setSelectedImport(null);

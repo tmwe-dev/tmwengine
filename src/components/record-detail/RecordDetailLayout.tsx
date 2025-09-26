@@ -10,6 +10,7 @@ interface RecordDetailLayoutProps {
 
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   const [showLocationDetails, setShowLocationDetails] = useState(false);
+  const [showSystemDetails, setShowSystemDetails] = useState(false);
   
   return (
     <div className="space-y-6">
@@ -278,6 +279,40 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       )}
 
+      {/* Sezione Informazioni Sistema */}
+      {(record.original_id !== undefined || record.commercial_anagrafiche_id !== undefined || record.stato !== undefined || record.agent_id !== undefined || record.completed !== undefined || record.archiviata !== undefined || record.has_actions !== undefined || record.row_number !== undefined || record.is_imported_to_rubrica !== undefined) && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <button 
+              onClick={() => setShowSystemDetails(!showSystemDetails)}
+              className="h-5 w-5 text-primary mt-1 hover:text-primary/80 transition-colors"
+            >
+              {showSystemDetails ? <ChevronDown /> : <ChevronRight />}
+            </button>
+            <span className="text-sm font-medium text-muted-foreground mt-1">
+              Informazioni Sistema
+            </span>
+          </div>
+          
+          {showSystemDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 ml-9">
+              {['original_id', 'commercial_anagrafiche_id', 'stato', 'agent_id', 'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica']
+                .filter(key => record[key] !== undefined && record[key] !== null && record[key] !== '')
+                .map(field => (
+                  <div key={field} className="text-left">
+                    <div className="text-sm font-medium text-blue-600 mb-1">
+                      {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </div>
+                    <div className="text-sm text-foreground">
+                      {formatCellValue(record[field], field)}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sezione Informazioni Aggiuntive - tutti i campi rimanenti */}
       <div className="space-y-4">
         <div className="flex items-start gap-4">
@@ -290,7 +325,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 'id', 'import_log_id', 'company_name', 'company_alias', 'origin', 'country',
                 'name', 'title', 'alias', 'position', 'email', 'phone', 'cell',
                 'city', 'zip_code', 'address', 'last_contact',
-                'next_contact_date', 'scheduled_contact', 'created_at', 'updated_at'
+                'next_contact_date', 'scheduled_contact', 'created_at', 'updated_at',
+                'original_id', 'commercial_anagrafiche_id', 'stato', 'agent_id', 
+                'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica'
               ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
               .map(field => (
                 <div key={field} className="text-left">

@@ -1196,13 +1196,13 @@ export default function ImportTemplates() {
                 <p>Caricamento record...</p>
               </div>
             </div>
-           ) : filteredRecords.length > 0 ? (
+          ) : filteredRecords.length > 0 ? (
             <div className="space-y-4">
-              <div className="max-h-[60vh] overflow-auto border border-border rounded-lg">
+              <div className="overflow-x-auto">
                  <Table>
-                   <TableHeader className="sticky top-0 z-10">
-                     <TableRow className="bg-background border-b shadow-sm">
-                       <TableHead className="w-12 bg-background">
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead className="w-12">
                          <Checkbox
                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
                            onCheckedChange={toggleSelectAll}
@@ -1212,7 +1212,7 @@ export default function ImportTemplates() {
                        {Object.keys(filteredRecords[0] || {})
                          .filter(key => key !== 'id' && key !== 'import_log_id')
                          .map((key) => (
-                         <TableHead key={key} className="min-w-[120px] bg-background">
+                         <TableHead key={key} className="min-w-[120px]">
                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                          </TableHead>
                        ))}

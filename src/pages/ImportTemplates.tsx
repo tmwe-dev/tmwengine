@@ -236,6 +236,10 @@ export default function ImportTemplates() {
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
   
+  // Refs for synchronized scrolling
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -337,6 +341,19 @@ export default function ImportTemplates() {
   useEffect(() => {
     setCurrentPage(0);
   }, [searchQuery, originFilter, countryFilter, activeFilters, recordsPerPage]);
+
+  // Synchronized scrolling
+  const handleBodyScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (headerRef.current) {
+      headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const handleHeaderScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
   const loadEmailTemplates = async () => {
     try {
@@ -1700,7 +1717,7 @@ export default function ImportTemplates() {
            ) : filteredRecords.length > 0 ? (
             <div className="space-y-4 flex flex-col min-h-0 flex-1">
               {/* Fixed Header */}
-              <div className="border rounded-t-md border-b-0">
+              <div ref={headerRef} className="border rounded-t-md border-b-0 overflow-auto" onScroll={handleHeaderScroll}>
                 <Table>
                   <TableHeader className="bg-background">
                     <TableRow>
@@ -1740,7 +1757,7 @@ export default function ImportTemplates() {
               </div>
               
               {/* Scrollable Body */}
-              <div className="overflow-auto flex-1 border border-t-0 rounded-b-md">
+              <div ref={bodyRef} className="overflow-auto flex-1 border border-t-0 rounded-b-md" onScroll={handleBodyScroll}>
                  <Table>
                    <TableBody>
                       {viewingRecords.map((record, viewIndex) => {

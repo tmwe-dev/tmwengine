@@ -84,29 +84,28 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
           
-          {/* Position e Origin allineati a destra */}
+          {/* Position sopra Origin */}
           <div className="flex-1"></div>
-          <div className="space-y-2">
-            {record.position !== undefined && (
-              <div className="min-w-[140px]">
-                <FieldRenderer 
-                  field="position" 
-                  value={record.position} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-            
-            {record.origin !== undefined && (
-              <div className="min-w-[140px]">
-                <FieldRenderer 
-                  field="origin" 
-                  value={record.origin} 
-                  formatCellValue={formatCellValue}
-                />
-              </div>
-            )}
-          </div>
+          {record.position !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="position" 
+                value={record.position} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {/* Origin */}
+          {record.origin !== undefined && (
+            <div className="min-w-[140px]">
+              <FieldRenderer 
+                field="origin" 
+                value={record.origin} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
         </div>
       </div>
 

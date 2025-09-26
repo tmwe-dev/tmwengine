@@ -1987,7 +1987,6 @@ export default function ImportTemplates() {
               </div>
             </DialogTitle>
             <DialogDescription>
-              Visualizza tutti i dettagli del contatto selezionato organizzati per sezioni
             </DialogDescription>
           </DialogHeader>
 

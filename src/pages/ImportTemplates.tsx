@@ -1692,13 +1692,14 @@ export default function ImportTemplates() {
                           return visibleCols.map((key) => (
                               <TableHead 
                                 key={key} 
-                                className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
-                                  key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                  key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                                  key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                  'min-w-[120px]'
-                                }`}
+                                 className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
+                                   key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                   key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                   key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                   key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                   (key === 'email' || key === 'phone' || key === 'cell') ? 'w-12 min-w-[48px] max-w-[48px]' :
+                                   'min-w-[120px]'
+                                 }`}
                                onClick={() => handleColumnSort(key)}
                              >
                                <div className="flex items-center gap-1">
@@ -1735,6 +1736,7 @@ export default function ImportTemplates() {
                                     key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
                                     key === 'stato' ? 'w-16 max-w-[60px]' :
                                     key === 'agent_id' ? 'w-22 max-w-[84px]' :
+                                    (key === 'email' || key === 'phone' || key === 'cell') ? 'w-12 max-w-[48px]' :
                                     'max-w-[200px]'
                                   } ${
                                     key === 'name' 
@@ -1759,8 +1761,8 @@ export default function ImportTemplates() {
                                      <TooltipProvider>
                                        <Tooltip>
                                          <TooltipTrigger asChild>
-                                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 cursor-pointer">
-                                             <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                           <div className="flex items-center justify-center cursor-pointer">
+                                             <Mail className="h-4 w-4 text-blue-500" />
                                            </div>
                                          </TooltipTrigger>
                                          <TooltipContent>
@@ -1772,8 +1774,8 @@ export default function ImportTemplates() {
                                      <TooltipProvider>
                                        <Tooltip>
                                          <TooltipTrigger asChild>
-                                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 cursor-pointer">
-                                             <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                           <div className="flex items-center justify-center cursor-pointer">
+                                             <Phone className="h-4 w-4 text-blue-500" />
                                            </div>
                                          </TooltipTrigger>
                                          <TooltipContent>

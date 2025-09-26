@@ -536,7 +536,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
         <SettingsIcon className="h-8 w-8 text-primary" />
         <div>
@@ -552,8 +552,9 @@ const Settings = () => {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+      <div className="w-full">
+        <Tabs defaultValue="email" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Provider
@@ -1149,7 +1150,8 @@ const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 };

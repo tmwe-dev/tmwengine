@@ -13,8 +13,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
     <div className="space-y-6">
       {/* Sezione Informazioni Azienda */}
       <div className="space-y-4">
-        <div className="flex items-end gap-4">
-          <Building className="h-5 w-5 text-primary mb-3" />
+        <div className="flex items-start gap-4">
+          <Building className="h-5 w-5 text-primary mt-5" />
           
           {/* Company fields + Origin allineati subito a destra dell'icona */}
           {record.company_name !== undefined && (
@@ -53,8 +53,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Informazioni Contatto */}
       <div className="space-y-4">
-        <div className="flex items-end gap-4">
-          <Users className="h-5 w-5 text-primary mb-3" />
+        <div className="flex items-start gap-4">
+          <Users className="h-5 w-5 text-primary mt-5" />
           
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
           {record.name !== undefined && (
@@ -87,9 +87,14 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
         </div>
-        
-        {/* Position insieme ai campi contatti */}
-        <div className="flex items-end gap-4">
+      </div>
+
+      {/* Sezione Position + Contatti */}
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
+          <Mail className="h-5 w-5 text-primary mt-5" />
+          
+          {/* Position allineato con email */}
           {record.position !== undefined && (
             <div className="max-w-[200px]">
               <FieldRenderer 
@@ -102,8 +107,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {/* Campi contatti con icone */}
           {record.email !== undefined && (
-            <div className="flex-1 min-w-[250px] flex items-end gap-2">
-              <Mail className="h-4 w-4 text-blue-500 mb-3" />
+            <div className="flex-1 min-w-[250px] flex items-start gap-2">
+              <Mail className="h-4 w-4 text-blue-500 mt-5" />
               <FieldRenderer 
                 field="email" 
                 value={record.email} 
@@ -114,8 +119,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           )}
           
           {record.phone !== undefined && (
-            <div className="min-w-[150px] flex items-end gap-2">
-              <Phone className="h-4 w-4 text-green-500 mb-3" />
+            <div className="min-w-[150px] flex items-start gap-2">
+              <Phone className="h-4 w-4 text-green-500 mt-5" />
               <FieldRenderer 
                 field="phone" 
                 value={record.phone} 
@@ -126,8 +131,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           )}
           
           {record.cell !== undefined && (
-            <div className="min-w-[150px] flex items-end gap-2">
-              <Phone className="h-4 w-4 text-orange-500 mb-3" />
+            <div className="min-w-[150px] flex items-start gap-2">
+              <Phone className="h-4 w-4 text-orange-500 mt-5" />
               <FieldRenderer 
                 field="cell" 
                 value={record.cell} 
@@ -141,11 +146,13 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Ubicazione */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-primary" />
+        <div className="flex items-start gap-4">
+          <MapPin className="h-5 w-5 text-primary mt-5" />
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex items-start gap-4">
+          <MapPin className="h-5 w-5 text-primary mt-5" />
+          
           {record.country !== undefined && (
             <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 

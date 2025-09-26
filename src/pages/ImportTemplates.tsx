@@ -2029,8 +2029,8 @@ export default function ImportTemplates() {
                   
                   {/* Seconda riga: Alias (medio) + Name (largo) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {['alias'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="space-y-1">
+                    {['name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="lg:col-span-2 space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
@@ -2041,8 +2041,8 @@ export default function ImportTemplates() {
                         </div>
                       </div>
                     ))}
-                    {['name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="lg:col-span-2 space-y-1">
+                    {['alias'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>

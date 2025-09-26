@@ -11,6 +11,39 @@ interface RecordDetailLayoutProps {
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   return (
     <div className="space-y-6">
+      {/* Sezione Date Sistema - in alto sotto i selettori */}
+      {(record.created_at !== undefined || record.updated_at !== undefined) && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <Clock className="h-5 w-5 text-primary mt-5" />
+            
+            <div className="flex gap-4">
+              {record.created_at !== undefined && (
+                <div className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Created At
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record.created_at, 'created_at')}
+                  </div>
+                </div>
+              )}
+              
+              {record.updated_at !== undefined && (
+                <div className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Updated At
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record.updated_at, 'updated_at')}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sezione Informazioni Azienda */}
       <div className="space-y-4">
         <div className="flex items-start gap-4">
@@ -147,10 +180,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Sezione Ubicazione */}
       <div className="space-y-4">
         <div className="flex items-start gap-4">
-          <MapPin className="h-5 w-5 text-primary mt-5" />
-        </div>
-        
-        <div className="flex items-start gap-4">
           {record.country !== undefined && (
             <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 
@@ -193,34 +222,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       </div>
 
-      {/* Sezione Informazioni Aggiuntive - tutti i campi rimanenti */}
-      <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Database className="h-5 w-5 text-primary mt-5" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-            {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
-            {Object.keys(record)
-              .filter(key => ![
-                'id', 'import_log_id', 'company_name', 'company_alias', 'origin',
-                'name', 'title', 'alias', 'position', 'email', 'phone', 'cell',
-                'country', 'city', 'zip_code', 'address', 'last_contact',
-                'next_contact_date', 'scheduled_contact'
-              ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
-              .map(field => (
-                <div key={field} className="text-left">
-                  <div className="text-sm font-medium text-blue-600 mb-1">
-                    {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </div>
-                  <div className="text-sm text-foreground">
-                    {formatCellValue(record[field], field)}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      </div>
-
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
         <div className="space-y-4">
@@ -256,7 +257,35 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       )}
 
-      {/* Sezione Meta Flags - organizzata per colonne specifiche */}
+      {/* Sezione Informazioni Aggiuntive - tutti i campi rimanenti */}
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
+          <Database className="h-5 w-5 text-primary mt-5" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+            {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
+            {Object.keys(record)
+              .filter(key => ![
+                'id', 'import_log_id', 'company_name', 'company_alias', 'origin',
+                'name', 'title', 'alias', 'position', 'email', 'phone', 'cell',
+                'country', 'city', 'zip_code', 'address', 'last_contact',
+                'next_contact_date', 'scheduled_contact', 'created_at', 'updated_at'
+              ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
+              .map(field => (
+                <div key={field} className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record[field], field)}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sezione Meta Flags - organizzata per colonne specifiche e spostata in fondo */}
       {Object.keys(record).some(key => key.startsWith('meta_')) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">

@@ -124,19 +124,16 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Position + Contatti */}
       <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Mail className="h-5 w-5 text-primary mt-5" />
-          
-          {/* Position allineato con email */}
-          {record.position !== undefined && (
-            <div className="max-w-[200px]">
-              <FieldRenderer 
-                field="position" 
-                value={record.position} 
-                formatCellValue={formatCellValue}
-              />
-            </div>
-          )}
+        {/* Position senza bordo e etichetta, solo testo in alto a sinistra */}
+        {record.position !== undefined && (
+          <div className="text-left">
+            <span className="text-sm text-foreground">
+              {formatCellValue(record.position, 'position')}
+            </span>
+          </div>
+        )}
+        
+        <div className="flex items-start gap-4">{/* Nessuna icona per la sezione */}
           
           {/* Campi contatti con icone */}
           {record.email !== undefined && (

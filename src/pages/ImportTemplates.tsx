@@ -326,8 +326,17 @@ export default function ImportTemplates() {
     result = applySorting(result, sortConfig);
     
     setFilteredRecords(result);
-    setViewingRecords(result.slice(0, recordsPerPage));
-  }, [allRecords, searchQuery, originFilter, countryFilter, recordsPerPage, activeFilters, sortConfig]);
+    
+    // Calculate current page items
+    const startIndex = currentPage * recordsPerPage;
+    const endIndex = startIndex + recordsPerPage;
+    setViewingRecords(result.slice(startIndex, endIndex));
+  }, [allRecords, searchQuery, originFilter, countryFilter, recordsPerPage, activeFilters, sortConfig, currentPage]);
+
+  // Reset current page when filters change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchQuery, originFilter, countryFilter, activeFilters]);
 
   const loadEmailTemplates = async () => {
     try {

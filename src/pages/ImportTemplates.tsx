@@ -1327,9 +1327,9 @@ export default function ImportTemplates() {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
                           return visibleCols.map((key) => (
-                            <TableHead key={key} className="min-w-[120px] bg-background">
-                              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </TableHead>
+                             <TableHead key={key} className={`bg-background ${key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 'min-w-[120px]'}`}>
+                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                             </TableHead>
                           ));
                         })()}
                      </TableRow>
@@ -1348,13 +1348,15 @@ export default function ImportTemplates() {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);
                             return visibleCols.map((key) => (
-                               <TableCell 
-                                 key={key} 
-                                 className={`max-w-[200px] truncate transition-colors ${
-                                   key === 'name' 
-                                     ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
-                                     : 'cursor-pointer hover:bg-accent/50'
-                                 }`}
+                                <TableCell 
+                                  key={key} 
+                                  className={`truncate transition-colors ${
+                                    key === 'country' ? 'w-20 max-w-[80px]' : 'max-w-[200px]'
+                                  } ${
+                                    key === 'name' 
+                                      ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
+                                      : 'cursor-pointer hover:bg-accent/50'
+                                  }`}
                                  onClick={() => {
                                    if (key === 'name') {
                                      openRecordDetail(record, index);

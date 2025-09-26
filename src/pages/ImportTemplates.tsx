@@ -1330,6 +1330,8 @@ export default function ImportTemplates() {
                              <TableHead key={key} className={`bg-background ${
                                key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
                                key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                               key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                               key === 'agent_id' ? 'w-20 min-w-[70px] max-w-[70px]' :
                                'min-w-[120px]'
                              }`}>
                                {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -1355,7 +1357,10 @@ export default function ImportTemplates() {
                                 <TableCell 
                                   key={key} 
                                   className={`truncate transition-colors ${
-                                    key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 'max-w-[200px]'
+                                    key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
+                                    key === 'stato' ? 'w-16 max-w-[60px]' :
+                                    key === 'agent_id' ? 'w-20 max-w-[70px]' :
+                                    'max-w-[200px]'
                                   } ${
                                     key === 'name' 
                                       ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 

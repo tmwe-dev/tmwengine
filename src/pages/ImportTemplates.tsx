@@ -2027,10 +2027,10 @@ export default function ImportTemplates() {
                     ))}
                   </div>
                   
-                  {/* Seconda riga: Alias (medio) + Name (largo) */}
+                  {/* Seconda riga: Name (medio) + Alias (medio) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {['name'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="lg:col-span-2 space-y-1">
+                      <div key={field} className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>

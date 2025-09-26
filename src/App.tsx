@@ -11,7 +11,7 @@ import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
 import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
-import EmailSincronizzate from "./pages/EmailSincronizzate";
+import Email from "./pages/Email";
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
 
@@ -30,7 +30,7 @@ const App = () => (
           <Route path="/rubrica" element={<CRMLayout><Rubrica /></CRMLayout>} />
           <Route path="/attivita" element={<CRMLayout><Attivita /></CRMLayout>} />
           <Route path="/campagne" element={<CRMLayout><Campagne /></CRMLayout>} />
-          <Route path="/email" element={<CRMLayout><EmailSincronizzate /></CRMLayout>} />
+          <Route path="/email" element={<CRMLayout><Email /></CRMLayout>} />
           <Route path="/chat" element={<CRMLayout><Chat /></CRMLayout>} />
           <Route path="/import-templates" element={<CRMLayout><ImportTemplates /></CRMLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import EmailSyncTab from '@/components/email/EmailSyncTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,14 +21,7 @@ import {
   EyeOff,
   Save,
   AlertTriangle,
-  Settings as SettingsIcon,
-  RefreshCw,
-  Download,
-  FileText,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  FolderOpen
+  Settings as SettingsIcon
 } from 'lucide-react';
 
 const Settings = () => {
@@ -42,25 +34,11 @@ const Settings = () => {
   const [emailConfig, setEmailConfig] = useState({
     id: null,
     provider: '',
-    tipoProvider: 'api',
     apiKey: '',
     webhookSecret: '',
     inboundRoute: '',
     outboundEndpoint: '',
     dominioInvio: '',
-    // Configurazioni SMTP/IMAP
-    smtpServer: '',
-    smtpPorta: 587,
-    smtpSicurezza: 'tls',
-    imapServer: '',
-    imapPorta: 993,
-    imapSicurezza: 'ssl',
-    emailUsername: '',
-    emailPassword: '',
-    intervalloSyncMinuti: 5,
-    cartellaInbox: 'INBOX',
-    cartellaSent: 'Sent',
-    maxEmailSync: 50,
     attivo: false
   });
 
@@ -113,26 +91,11 @@ const Settings = () => {
         setEmailConfig({
           id: emailData.id,
           provider: emailData.provider,
-          tipoProvider: emailData.tipo_provider || 'api',
           dominioInvio: emailData.dominio_invio || '',
           inboundRoute: emailData.inbound_route || '',
           outboundEndpoint: emailData.outbound_endpoint || '',
-          // Configurazioni SMTP/IMAP
-          smtpServer: emailData.smtp_server || '',
-          smtpPorta: emailData.smtp_porta || 587,
-          smtpSicurezza: emailData.smtp_sicurezza || 'tls',
-          imapServer: emailData.imap_server || '',
-          imapPorta: emailData.imap_porta || 993,
-          imapSicurezza: emailData.imap_sicurezza || 'ssl',
-          emailUsername: emailData.email_username || '',
-          intervalloSyncMinuti: emailData.intervallo_sync_minuti || 5,
-          cartellaInbox: emailData.cartella_inbox || 'INBOX',
-          cartellaSent: emailData.cartella_sent || 'Sent',
-          maxEmailSync: emailData.max_email_sync || 50,
-          // Credenziali
           apiKey: emailData.email_provider_credenziali?.[0]?.api_key || '',
           webhookSecret: emailData.email_provider_credenziali?.[0]?.webhook_secret || '',
-          emailPassword: emailData.email_provider_credenziali?.[0]?.email_password || '',
           attivo: emailData.attivo
         });
       }
@@ -171,29 +134,10 @@ const Settings = () => {
   const handleSaveEmailConfig = async () => {
     setSaving(true);
     try {
-      // Validazione basata sul tipo di provider
-      if (!emailConfig.provider) {
+      if (!emailConfig.provider || !emailConfig.apiKey) {
         toast({
           title: "Errore",
-          description: "Provider è obbligatorio",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (emailConfig.tipoProvider === 'api' && !emailConfig.apiKey) {
-        toast({
-          title: "Errore",
-          description: "API Key è obbligatoria per provider API",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (emailConfig.tipoProvider === 'smtp_imap' && (!emailConfig.emailUsername || !emailConfig.emailPassword)) {
-        toast({
-          title: "Errore",
-          description: "Username e password sono obbligatori per SMTP/IMAP",
+          description: "Provider e API Key sono obbligatori",
           variant: "destructive",
         });
         return;
@@ -207,21 +151,9 @@ const Settings = () => {
           .from('email_provider')
           .update({
             provider: emailConfig.provider,
-            tipo_provider: emailConfig.tipoProvider,
             dominio_invio: emailConfig.dominioInvio,
             inbound_route: emailConfig.inboundRoute,
             outbound_endpoint: emailConfig.outboundEndpoint,
-            smtp_server: emailConfig.smtpServer,
-            smtp_porta: emailConfig.smtpPorta,
-            smtp_sicurezza: emailConfig.smtpSicurezza,
-            imap_server: emailConfig.imapServer,
-            imap_porta: emailConfig.imapPorta,
-            imap_sicurezza: emailConfig.imapSicurezza,
-            email_username: emailConfig.emailUsername,
-            intervallo_sync_minuti: emailConfig.intervalloSyncMinuti,
-            cartella_inbox: emailConfig.cartellaInbox,
-            cartella_sent: emailConfig.cartellaSent,
-            max_email_sync: emailConfig.maxEmailSync,
             attivo: emailConfig.attivo
           })
           .eq('id', emailConfig.id);
@@ -234,8 +166,7 @@ const Settings = () => {
           .upsert({
             provider_id: emailConfig.id,
             api_key: emailConfig.apiKey,
-            webhook_secret: emailConfig.webhookSecret,
-            email_password: emailConfig.emailPassword
+            webhook_secret: emailConfig.webhookSecret
           });
 
         if (credError) throw credError;
@@ -245,21 +176,9 @@ const Settings = () => {
           .from('email_provider')
           .insert({
             provider: emailConfig.provider,
-            tipo_provider: emailConfig.tipoProvider,
             dominio_invio: emailConfig.dominioInvio,
             inbound_route: emailConfig.inboundRoute,
             outbound_endpoint: emailConfig.outboundEndpoint,
-            smtp_server: emailConfig.smtpServer,
-            smtp_porta: emailConfig.smtpPorta,
-            smtp_sicurezza: emailConfig.smtpSicurezza,
-            imap_server: emailConfig.imapServer,
-            imap_porta: emailConfig.imapPorta,
-            imap_sicurezza: emailConfig.imapSicurezza,
-            email_username: emailConfig.emailUsername,
-            intervallo_sync_minuti: emailConfig.intervalloSyncMinuti,
-            cartella_inbox: emailConfig.cartellaInbox,
-            cartella_sent: emailConfig.cartellaSent,
-            max_email_sync: emailConfig.maxEmailSync,
             attivo: emailConfig.attivo
           })
           .select()
@@ -274,8 +193,7 @@ const Settings = () => {
           .insert({
             provider_id: emailProviderId,
             api_key: emailConfig.apiKey,
-            webhook_secret: emailConfig.webhookSecret,
-            email_password: emailConfig.emailPassword
+            webhook_secret: emailConfig.webhookSecret
           });
 
         if (credError) throw credError;
@@ -406,93 +324,6 @@ const Settings = () => {
     }
   };
 
-  const handleTestConnection = async () => {
-    setSaving(true);
-    try {
-      toast({
-        title: "Test Connessione",
-        description: "Test della connessione email in corso...",
-      });
-
-      // Simula test di connessione (in futuro potresti creare una edge function dedicata)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      toast({
-        title: "Successo",
-        description: "Connessione email testata con successo",
-      });
-    } catch (error) {
-      console.error('Errore test connessione:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile testare la connessione email",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSyncEmails = async () => {
-    setSaving(true);
-    try {
-      // Verifica che la configurazione sia salvata
-      if (!emailConfig.id) {
-        toast({
-          title: "Errore",
-          description: "Salva prima la configurazione email",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Sincronizzazione",
-        description: "Sincronizzazione email in corso...",
-      });
-
-      console.log('🚀 Calling email-imap-sync function with provider_id:', emailConfig.id);
-
-      // Test diretto con fetch per vedere l'errore completo
-      const response = await fetch(`https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/email-imap-sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A`
-        },
-        body: JSON.stringify({
-          provider_id: emailConfig.id,
-          tipo_sync: 'manuale'
-        })
-      });
-
-      console.log('📡 Response status:', response.status);
-      const responseText = await response.text();
-      console.log('📡 Response body:', responseText);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${responseText}`);
-      }
-
-      const result = JSON.parse(responseText);
-      console.log('✅ Sync result:', result);
-      
-      toast({
-        title: "Successo",
-        description: `Sincronizzate ${result.messaggi_nuovi || 0} nuove email, aggiornate ${result.messaggi_aggiornati || 0}`,
-      });
-    } catch (error) {
-      console.error('Errore sincronizzazione:', error);
-      toast({
-        title: "Errore",
-        description: `Errore sincronizzazione: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const renderSecretField = (label, value, field, onChange, placeholder) => (
     <div className="space-y-2">
       <Label htmlFor={field}>{label}</Label>
@@ -536,7 +367,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <SettingsIcon className="h-8 w-8 text-primary" />
         <div>
@@ -552,32 +383,25 @@ const Settings = () => {
         </AlertDescription>
       </Alert>
 
-      <div className="w-full">
-        <Tabs defaultValue="email" className="w-full space-y-6">
-          <div className="w-full border-b">
-            <TabsList className="flex w-full h-auto p-1 bg-muted rounded-lg space-x-2">
-              <TabsTrigger value="email" className="flex items-center gap-2 py-3">
-                <Mail className="h-4 w-4" />
-                Email Provider
-              </TabsTrigger>
-              <TabsTrigger value="sync" className="flex items-center gap-2 py-3">
-                <RefreshCw className="h-4 w-4" />
-                Sincronizzazione
-              </TabsTrigger>
-              <TabsTrigger value="ai" className="flex items-center gap-2 py-3">
-                <Bot className="h-4 w-4" />
-                AI & Classificazione
-              </TabsTrigger>
-              <TabsTrigger value="general" className="flex items-center gap-2 py-3">
-                <Database className="h-4 w-4" />
-                Generale
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-2 py-3">
-                <Key className="h-4 w-4" />
-                Sicurezza
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      <Tabs defaultValue="email" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="email" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Email Provider
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            AI & Classificazione
+          </TabsTrigger>
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Generale
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            Sicurezza
+          </TabsTrigger>
+        </TabsList>
 
         {/* Configurazione Email Provider */}
         <TabsContent value="email">
@@ -592,50 +416,23 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-6">
-                {/* Tipo di Provider */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoProvider">Tipo Provider</Label>
-                    <Select value={emailConfig.tipoProvider} onValueChange={(value) => 
-                      setEmailConfig(prev => ({ ...prev, tipoProvider: value }))
-                    }>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="api">Provider API (SendGrid, Mailgun, etc.)</SelectItem>
-                        <SelectItem value="smtp_imap">SMTP/IMAP Tradizionale</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="emailProvider">Provider Email</Label>
-                    <Select value={emailConfig.provider} onValueChange={(value) => 
-                      setEmailConfig(prev => ({ ...prev, provider: value }))
-                    }>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {emailConfig.tipoProvider === 'api' ? (
-                          <>
-                            <SelectItem value="sendgrid">SendGrid</SelectItem>
-                            <SelectItem value="mailgun">Mailgun</SelectItem>
-                            <SelectItem value="ses">Amazon SES</SelectItem>
-                            <SelectItem value="resend">Resend</SelectItem>
-                          </>
-                        ) : (
-                          <>
-                            <SelectItem value="gmail">Gmail</SelectItem>
-                            <SelectItem value="outlook">Outlook/Hotmail</SelectItem>
-                            <SelectItem value="custom">Server Personalizzato</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="emailProvider">Provider Email</Label>
+                  <Select value={emailConfig.provider} onValueChange={(value) => 
+                    setEmailConfig(prev => ({ ...prev, provider: value }))
+                  }>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sendgrid">SendGrid</SelectItem>
+                      <SelectItem value="mailgun">Mailgun</SelectItem>
+                      <SelectItem value="ses">Amazon SES</SelectItem>
+                      <SelectItem value="resend">Resend</SelectItem>
+                      <SelectItem value="custom">SMTP Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -647,202 +444,45 @@ const Settings = () => {
                     placeholder="crm.tuodominio.com"
                   />
                 </div>
-
-                {/* Configurazioni specifiche per tipo di provider */}
-                {emailConfig.tipoProvider === 'api' ? (
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-foreground">Configurazione API</h4>
-                    
-                    {renderSecretField(
-                      "API Key",
-                      emailConfig.apiKey,
-                      "emailApiKey",
-                      (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
-                      "Inserisci la tua API key del provider email"
-                    )}
-
-                    {renderSecretField(
-                      "Webhook Secret",
-                      emailConfig.webhookSecret,
-                      "webhookSecret",
-                      (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
-                      "Secret per validazione webhook inbound"
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="inboundRoute">Route Inbound Email</Label>
-                        <Input
-                          id="inboundRoute"
-                          value={emailConfig.inboundRoute}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, inboundRoute: e.target.value }))}
-                          placeholder="/api/email/inbound"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="outboundEndpoint">Endpoint Outbound</Label>
-                        <Input
-                          id="outboundEndpoint"
-                          value={emailConfig.outboundEndpoint}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, outboundEndpoint: e.target.value }))}
-                          placeholder="https://api.provider.com/send"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-foreground">Configurazione SMTP/IMAP</h4>
-                    
-                    {/* Credenziali */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="emailUsername">Username Email</Label>
-                        <Input
-                          id="emailUsername"
-                          value={emailConfig.emailUsername}
-                          onChange={(e) => setEmailConfig(prev => ({ ...prev, emailUsername: e.target.value }))}
-                          placeholder="tuo@mx01.vmteca.net"
-                        />
-                      </div>
-
-                      {renderSecretField(
-                        "Password Email",
-                        emailConfig.emailPassword,
-                        "emailPassword",
-                        (value) => setEmailConfig(prev => ({ ...prev, emailPassword: value })),
-                        "Password del tuo account email"
-                      )}
-                    </div>
-
-                    {/* Configurazione SMTP */}
-                    <div className="space-y-4">
-                      <h5 className="text-sm font-medium text-muted-foreground">Server SMTP (Invio)</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="smtpServer">Server SMTP</Label>
-                          <Input
-                            id="smtpServer"
-                            value={emailConfig.smtpServer}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpServer: e.target.value }))}
-                            placeholder="mx01.vmteca.net"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="smtpPorta">Porta SMTP</Label>
-                          <Input
-                            id="smtpPorta"
-                            type="number"
-                            value={emailConfig.smtpPorta}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, smtpPorta: parseInt(e.target.value) || 587 }))}
-                            placeholder="587"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="smtpSicurezza">Sicurezza SMTP</Label>
-                          <Select value={emailConfig.smtpSicurezza} onValueChange={(value) => 
-                            setEmailConfig(prev => ({ ...prev, smtpSicurezza: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Nessuna</SelectItem>
-                              <SelectItem value="tls">TLS</SelectItem>
-                              <SelectItem value="ssl">SSL</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Configurazione IMAP */}
-                    <div className="space-y-4">
-                      <h5 className="text-sm font-medium text-muted-foreground">Server IMAP (Ricezione)</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="imapServer">Server IMAP</Label>
-                          <Input
-                            id="imapServer"
-                            value={emailConfig.imapServer}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, imapServer: e.target.value }))}
-                            placeholder="mx01.vmteca.net"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="imapPorta">Porta IMAP</Label>
-                          <Input
-                            id="imapPorta"
-                            type="number"
-                            value={emailConfig.imapPorta}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, imapPorta: parseInt(e.target.value) || 993 }))}
-                            placeholder="993"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="imapSicurezza">Sicurezza IMAP</Label>
-                          <Select value={emailConfig.imapSicurezza} onValueChange={(value) => 
-                            setEmailConfig(prev => ({ ...prev, imapSicurezza: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Nessuna</SelectItem>
-                              <SelectItem value="tls">TLS</SelectItem>
-                              <SelectItem value="ssl">SSL</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Configurazioni avanzate */}
-                    <div className="space-y-4">
-                      <h5 className="text-sm font-medium text-muted-foreground">Configurazioni Avanzate</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="intervalloSync">Intervallo Sync (minuti)</Label>
-                          <Input
-                            id="intervalloSync"
-                            type="number"
-                            value={emailConfig.intervalloSyncMinuti}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, intervalloSyncMinuti: parseInt(e.target.value) || 5 }))}
-                            placeholder="5"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="cartellaInbox">Cartella Inbox</Label>
-                          <Input
-                            id="cartellaInbox"
-                            value={emailConfig.cartellaInbox}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, cartellaInbox: e.target.value }))}
-                            placeholder="INBOX"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="maxEmailSync">Max Email per Sync</Label>
-                          <Input
-                            id="maxEmailSync"
-                            type="number"
-                            value={emailConfig.maxEmailSync}
-                            onChange={(e) => setEmailConfig(prev => ({ ...prev, maxEmailSync: parseInt(e.target.value) || 50 }))}
-                            placeholder="50"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
+              <div className="grid grid-cols-1 gap-4">
+                {renderSecretField(
+                  "API Key",
+                  emailConfig.apiKey,
+                  "emailApiKey",
+                  (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
+                  "Inserisci la tua API key del provider email"
+                )}
+
+                {renderSecretField(
+                  "Webhook Secret",
+                  emailConfig.webhookSecret,
+                  "webhookSecret",
+                  (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
+                  "Secret per validazione webhook inbound"
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="inboundRoute">Route Inbound Email</Label>
+                  <Input
+                    id="inboundRoute"
+                    value={emailConfig.inboundRoute}
+                    onChange={(e) => setEmailConfig(prev => ({ ...prev, inboundRoute: e.target.value }))}
+                    placeholder="/api/email/inbound"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="outboundEndpoint">Endpoint Outbound</Label>
+                  <Input
+                    id="outboundEndpoint"
+                    value={emailConfig.outboundEndpoint}
+                    onChange={(e) => setEmailConfig(prev => ({ ...prev, outboundEndpoint: e.target.value }))}
+                    placeholder="https://api.provider.com/send"
+                  />
+                </div>
+              </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -854,38 +494,13 @@ const Settings = () => {
                   <Label htmlFor="emailAttivo">Provider email attivo</Label>
                 </div>
 
-                <div className="flex gap-2">
-                  {emailConfig.tipoProvider === 'smtp_imap' && emailConfig.id && (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleTestConnection()}
-                        disabled={saving}
-                      >
-                        🔗 Testa Connessione
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleSyncEmails()}
-                        disabled={saving}
-                      >
-                        📧 Sincronizza Email
-                      </Button>
-                    </>
-                  )}
-                  <Button onClick={handleSaveEmailConfig} disabled={saving}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? 'Salvataggio...' : 'Salva Configurazione'}
-                  </Button>
-                </div>
+                <Button onClick={handleSaveEmailConfig} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Salvataggio...' : 'Salva Configurazione'}
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Tab Sincronizzazione Email */}
-        <TabsContent value="sync">
-          <EmailSyncTab />
         </TabsContent>
 
         {/* Configurazione AI */}
@@ -1152,8 +767,7 @@ const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
     </div>
   );
 };

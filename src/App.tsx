@@ -23,21 +23,21 @@ const App = () => {
   useEffect(() => {
     const preventBrowserNavigation = (e: WheelEvent) => {
       // Only prevent if it's a strong horizontal gesture near the edges
-      // and the page can't scroll horizontally anymore
-      const isNearLeftEdge = e.clientX < 100;
-      const isNearRightEdge = e.clientX > window.innerWidth - 100;
-      const isHorizontalGesture = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 2;
-      const isStrongGesture = Math.abs(e.deltaX) > 50;
+      // and we're at the scroll boundary
+      const isNearLeftEdge = e.clientX < 50;
+      const isNearRightEdge = e.clientX > window.innerWidth - 50;
+      const isHorizontalGesture = Math.abs(e.deltaX) > Math.abs(e.deltaY) * 3;
+      const isStrongGesture = Math.abs(e.deltaX) > 80;
       
       if ((isNearLeftEdge || isNearRightEdge) && isHorizontalGesture && isStrongGesture) {
         // Check if we're at the scroll boundary
-        const element = e.target as Element;
         const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
         const scrollWidth = document.documentElement.scrollWidth;
         const clientWidth = document.documentElement.clientWidth;
         
-        // Prevent only if we're at the scroll boundary
-        if ((scrollLeft <= 0 && e.deltaX < 0) || (scrollLeft + clientWidth >= scrollWidth && e.deltaX > 0)) {
+        // Prevent only if we're at the scroll boundary and gesture could trigger navigation
+        if ((scrollLeft <= 0 && e.deltaX < 0 && isNearLeftEdge) || 
+            (scrollLeft + clientWidth >= scrollWidth && e.deltaX > 0 && isNearRightEdge)) {
           e.preventDefault();
         }
       }
@@ -60,18 +60,37 @@ const App = () => {
         const touch = e.touches[0];
         const deltaX = touch.clientX - touchStartX;
         const deltaY = touch.clientY - touchStartY;
-        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 2;
-        const isNearEdge = touchStartX < 50 || touchStartX > window.innerWidth - 50;
-        const isSwipeGesture = Math.abs(deltaX) > 50;
+        const currentX = touch.clientX;
         
-        // Only prevent edge swipes that could trigger browser navigation
-        if (isHorizontalSwipe && isNearEdge && isSwipeGesture) {
-          e.preventDefault();
+        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 3;
+        const isStrongSwipe = Math.abs(deltaX) > 100;
+        const isFastSwipe = (Date.now() - touchStartTime) < 300;
+        
+        // Only prevent if:
+        // 1. Started very close to edge (< 20px)
+        // 2. Current position is still very close to edge (< 30px) 
+        // 3. It's a strong horizontal swipe
+        // 4. We're at scroll boundary
+        const startedAtEdge = touchStartX < 20 || touchStartX > window.innerWidth - 20;
+        const stillAtEdge = currentX < 30 || currentX > window.innerWidth - 30;
+        
+        if (startedAtEdge && stillAtEdge && isHorizontalSwipe && isStrongSwipe && isFastSwipe) {
+          // Additional check: only prevent if we're at document scroll boundary
+          const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
+          const scrollWidth = document.documentElement.scrollWidth;
+          const clientWidth = document.documentElement.clientWidth;
+          
+          const atLeftBoundary = scrollLeft <= 0 && deltaX > 0;
+          const atRightBoundary = scrollLeft + clientWidth >= scrollWidth && deltaX < 0;
+          
+          if (atLeftBoundary || atRightBoundary) {
+            e.preventDefault();
+          }
         }
       }
     };
 
-    // Add event listeners with passive: false only for specific cases
+    // Add event listeners with more specific targeting
     window.addEventListener('wheel', preventBrowserNavigation, { passive: false });
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });

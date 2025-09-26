@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -56,6 +56,7 @@ const formatCellValue = (value: any, fieldKey?: string): string => {
 };
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 interface EmailTemplate {
   id: string;
@@ -117,6 +118,11 @@ export default function ImportTemplates() {
     details: true, 
     metadata: true
   });
+  
+  // Stato per la visualizzazione del record singolo
+  const [showRecordDetail, setShowRecordDetail] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ImportedContact | null>(null);
+  const [selectedRecordIndex, setSelectedRecordIndex] = useState(0);
   
   // Stato per progress dell'importazione
   const [importProgress, setImportProgress] = useState<{
@@ -485,6 +491,23 @@ export default function ImportTemplates() {
     // Applica i filtri ai record correnti
     const filtered = applyFilters(viewingRecords, newFilters);
     setFilteredRecords(filtered);
+  };
+
+  // Funzione per aprire il dettaglio del record (non applica filtri)
+  const openRecordDetail = (record: ImportedContact, index: number) => {
+    setSelectedRecord(record);
+    setSelectedRecordIndex(index);
+    setShowRecordDetail(true);
+  };
+
+  // Navigazione nel dettaglio record
+  const navigateRecord = (direction: 'prev' | 'next') => {
+    const newIndex = direction === 'prev' 
+      ? Math.max(0, selectedRecordIndex - 1)
+      : Math.min(filteredRecords.length - 1, selectedRecordIndex + 1);
+    
+    setSelectedRecordIndex(newIndex);
+    setSelectedRecord(filteredRecords[newIndex]);
   };
 
   const removeFilter = (filterToRemove: FilterTag) => {
@@ -1326,14 +1349,24 @@ export default function ImportTemplates() {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);
                             return visibleCols.map((key) => (
-                              <TableCell 
-                                key={key} 
-                                className="max-w-[200px] truncate cursor-pointer hover:bg-accent/50 transition-colors"
-                                onClick={() => addFilter(key, record[key])}
-                                title="Clicca per filtrare per questo valore"
-                              >
-                                {formatCellValue(record[key], key)}
-                              </TableCell>
+                               <TableCell 
+                                 key={key} 
+                                 className={`max-w-[200px] truncate transition-colors ${
+                                   key === 'name' 
+                                     ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
+                                     : 'cursor-pointer hover:bg-accent/50'
+                                 }`}
+                                 onClick={() => {
+                                   if (key === 'name') {
+                                     openRecordDetail(record, index);
+                                   } else {
+                                     addFilter(key, record[key]);
+                                   }
+                                 }}
+                                 title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                               >
+                                 {formatCellValue(record[key], key)}
+                               </TableCell>
                             ));
                           })()}
                        </TableRow>
@@ -1384,6 +1417,151 @@ export default function ImportTemplates() {
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per dettaglio record singolo */}
+      <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Dettaglio Contatto</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateRecord('prev')}
+                  disabled={selectedRecordIndex <= 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Precedente
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-3">
+                  {selectedRecordIndex + 1} di {filteredRecords.length}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateRecord('next')}
+                  disabled={selectedRecordIndex >= filteredRecords.length - 1}
+                >
+                  Successivo
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogTitle>
+            <DialogDescription>
+              Visualizza tutti i dettagli del contatto selezionato organizzati per sezioni
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRecord && (
+            <div className="space-y-6">
+              {/* Sezione DEFAULT - Informazioni Prioritarie */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Informazioni Principali
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getDefaultColumns().filter(col => selectedRecord[col] !== undefined).map((field) => (
+                    <div key={field} className="space-y-1">
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                        <span className="text-sm">
+                          {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Sezione Azienda & Contatti */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Azienda & Contatti
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['address', 'zip_code'].filter(col => selectedRecord[col] !== undefined).map((field) => (
+                    <div key={field} className="space-y-1">
+                      <Label className="text-sm font-medium text-muted-foreground">
+                        {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                        <span className="text-sm">
+                          {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Sezione Dettagli Commerciali */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5" />
+                  Dettagli Commerciali
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(() => {
+                    const allColumns = Object.keys(selectedRecord);
+                    const groups = getColumnGroups(allColumns);
+                    return groups.details.filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Sezione Metadata & Sistema */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Metadata & Sistema
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(() => {
+                    const allColumns = Object.keys(selectedRecord);
+                    const groups = getColumnGroups(allColumns);
+                    return groups.metadata.filter(col => selectedRecord[col] !== undefined).map((field) => (
+                      <div key={field} className="space-y-1">
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
+                          <span className="text-sm">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

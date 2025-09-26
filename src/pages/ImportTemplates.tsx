@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -227,6 +228,14 @@ export default function ImportTemplates() {
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   
+  // New search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [originFilter, setOriginFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [recordsPerPage, setRecordsPerPage] = useState(50);
+  const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
+  const [loadingAllRecords, setLoadingAllRecords] = useState(false);
+  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -278,12 +287,47 @@ export default function ImportTemplates() {
     loadImportLogs();
   }, []);
 
-  // Aggiorna i filtri e l'ordinamento quando cambiano i record visualizzati
+  // Apply search and filters to records
   useEffect(() => {
-    let result = applyFilters(viewingRecords, activeFilters);
+    let result = [...allRecords];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(record => {
+        const searchFields = [
+          record.company_name,
+          record.company_alias,
+          record.name,
+          record.alias,
+          record.citta
+        ];
+        
+        return searchFields.some(field => 
+          field && String(field).toLowerCase().includes(query)
+        );
+      });
+    }
+    
+    // Apply origin filter
+    if (originFilter) {
+      result = result.filter(record => record.origin === originFilter);
+    }
+    
+    // Apply country filter  
+    if (countryFilter) {
+      result = result.filter(record => record.country === countryFilter);
+    }
+    
+    // Apply legacy filters
+    result = applyFilters(result, activeFilters);
+    
+    // Apply sorting
     result = applySorting(result, sortConfig);
+    
     setFilteredRecords(result);
-  }, [viewingRecords, activeFilters, sortConfig]);
+    setViewingRecords(result.slice(0, recordsPerPage));
+  }, [allRecords, searchQuery, originFilter, countryFilter, recordsPerPage, activeFilters, sortConfig]);
 
   const loadEmailTemplates = async () => {
     try {
@@ -868,26 +912,18 @@ export default function ImportTemplates() {
     }
   };
 
-  const loadRecordsPage = async (importLog: ImportLog, page: number = 0, append: boolean = false) => {
-    console.log('loadRecordsPage chiamato:', { importLog: importLog.id, page, append });
-    const pageSize = 500;
-    const offset = page * pageSize;
-    
-    if (!append) {
-      setLoadingRecords(true);
-    } else {
-      setLoadingMoreRecords(true);
-    }
+  const loadAllRecords = async (importLog: ImportLog) => {
+    setLoadingAllRecords(true);
+    setSelectedImport(importLog);
 
     try {
-      console.log('Caricamento record da imported_contacts per import_log_id:', importLog.id);
+      console.log('Caricamento tutti i record da imported_contacts per import_log_id:', importLog.id);
       
-      // Use the permanent imported_contacts table instead of temp tables
+      // Load all records without pagination
       const { data, error, count } = await supabase
         .from('imported_contacts')
         .select('*', { count: 'exact' })
-        .eq('import_log_id', importLog.id)
-        .range(offset, offset + pageSize - 1);
+        .eq('import_log_id', importLog.id);
 
       if (error) {
         console.error('Errore query imported_contacts:', error);
@@ -897,50 +933,35 @@ export default function ImportTemplates() {
       console.log('Record caricati:', data?.length, 'di', count);
       const contacts = data || [];
       
-      if (append) {
-        setViewingRecords(prev => [...prev, ...contacts]);
-        // Applica filtri e ordinamento ai nuovi record
-        const allRecords = [...viewingRecords, ...contacts];
-        let result = applyFilters(allRecords, activeFilters);
-        result = applySorting(result, sortConfig);
-        setFilteredRecords(result);
-      } else {
-        setViewingRecords(contacts);
-        // Applica filtri e ordinamento
-        let result = applyFilters(contacts, activeFilters);
-        result = applySorting(result, sortConfig);
-        setFilteredRecords(result);
-        setTotalRecords(count || 0);
-        setShowRecordsDialog(true);
-        setCurrentRecordIndex(0);
-        setSelectedRecords(new Set());
-        setActiveFilters([]);
-        setSortConfig({ primary: null, secondary: null });
-        console.log('Dialog aperto con', contacts.length, 'record');
-      }
+      setAllRecords(contacts);
+      setTotalRecords(count || 0);
+      setShowRecordsDialog(true);
       
-      setCurrentPage(page);
-      setHasMoreRecords((count || 0) > offset + pageSize);
-      
+      // Reset filters and pagination
+      setSearchQuery('');
+      setOriginFilter('');
+      setCountryFilter('');
+      setSelectedRecords(new Set());
+      setCurrentPage(0);
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
-      toast.error('Errore nel caricamento dei record importati');
+      toast.error('Errore nel caricamento dei record');
+      setAllRecords([]);
     } finally {
-      setLoadingRecords(false);
-      setLoadingMoreRecords(false);
+      setLoadingAllRecords(false);
     }
   };
 
-  const viewImportRecords = async (importLog: ImportLog) => {
-    console.log('viewImportRecords chiamato con:', importLog);
-    setSelectedImport(importLog);
-    await loadRecordsPage(importLog, 0, false);
+  // Get unique values for filter dropdowns
+  const getUniqueValues = (field: string) => {
+    const values = [...new Set(allRecords.map(record => record[field]))]
+      .filter(value => value && String(value).trim() !== '')
+      .sort();
+    return values;
   };
 
-  const loadMoreRecords = async () => {
-    if (selectedImport && hasMoreRecords && !loadingMoreRecords) {
-      await loadRecordsPage(selectedImport, currentPage + 1, true);
-    }
+  const viewImportRecords = (importLog: ImportLog) => {
+    loadAllRecords(importLog);
   };
 
   const deleteImportFile = async (importLog: ImportLog) => {
@@ -1407,10 +1428,10 @@ export default function ImportTemplates() {
                               variant="outline" 
                               size="sm"
                               onClick={() => viewImportRecords(log)}
-                              disabled={loadingRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
+                              disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
                             >
                               <Users className="h-4 w-4" />
-                              {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                              {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
                             </Button>
                             
                             <Button 
@@ -1449,11 +1470,15 @@ export default function ImportTemplates() {
         if (!open) {
           setShowRecordsDialog(false);
           setSelectedImport(null);
+          setAllRecords([]);
           setViewingRecords([]);
           setFilteredRecords([]);
           setCurrentPage(0);
           setSelectedRecords(new Set());
           setActiveFilters([]);
+          setSearchQuery('');
+          setOriginFilter('');
+          setCountryFilter('');
         }
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
@@ -1462,9 +1487,105 @@ export default function ImportTemplates() {
               Record Importati - {selectedImport?.file_name}
             </DialogTitle>
             <DialogDescription>
-              Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{viewingRecords.length}</span> contatti importati da questo file.
+              Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Search and Filter Controls */}
+          <div className="space-y-4 p-4 border-b bg-muted/20">
+            {/* Search and filters row */}
+            <div className="flex gap-4 items-end">
+              {/* Search field */}
+              <div className="flex-1">
+                <Label htmlFor="search" className="text-sm font-medium">Cerca</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Cerca per nome azienda, alias, nome, città..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              {/* Origin filter */}
+              <div className="w-48">
+                <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                <Select value={originFilter} onValueChange={setOriginFilter}>
+                  <SelectTrigger id="origin-filter">
+                    <SelectValue placeholder="Tutte le origini" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tutte le origini</SelectItem>
+                    {getUniqueValues('origin').map((origin) => (
+                      <SelectItem key={origin} value={String(origin)}>
+                        {String(origin)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Country filter */}
+              <div className="w-48">
+                <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                  <SelectTrigger id="country-filter">
+                    <SelectValue placeholder="Tutti i paesi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tutti i paesi</SelectItem>
+                    {getUniqueValues('country').map((country) => (
+                      <SelectItem key={country} value={String(country)}>
+                        {getCountryFlag(String(country))} {String(country)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Records per page */}
+              <div className="w-36">
+                <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
+                <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                  <SelectTrigger id="records-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="250">250</SelectItem>
+                    <SelectItem value="500">500</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Clear filters */}
+            {(searchQuery || originFilter || countryFilter) && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setOriginFilter('');
+                    setCountryFilter('');
+                  }}
+                  className="text-xs"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Pulisci filtri
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {filteredRecords.length} record trovati
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Controlli visibilità colonne */}
           <div className="flex justify-center items-center gap-2 py-4 border-b">
@@ -1557,7 +1678,7 @@ export default function ImportTemplates() {
             </div>
           )}
           
-          {loadingRecords ? (
+          {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
@@ -1663,16 +1784,10 @@ export default function ImportTemplates() {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  {hasMoreRecords && (
-                    <Button 
-                      variant="outline" 
-                      onClick={loadMoreRecords} 
-                      disabled={loadingMoreRecords}
-                    >
-                      {loadingMoreRecords ? 'Caricamento...' : 'Carica Altri 500'}
-                    </Button>
-                  )}
-                   <Button variant="outline" onClick={() => {
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {viewingRecords.length} di {filteredRecords.length} record
+                  </div>
+                  <Button variant="outline" onClick={() => {
                      setShowRecordsDialog(false);
                      setSelectedImport(null);
                      setViewingRecords([]);

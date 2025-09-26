@@ -380,7 +380,7 @@ const EmailSyncTab = () => {
         <CardContent className="space-y-6">
           {/* Area animazione Windows 95 */}
           <div className="relative bg-gray-100 border-2 border-gray-300 rounded-lg p-8 min-h-40 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200"></div>
+            <div className="absolute inset-0"></div>
             
             {/* Fogli volanti */}
             <div className="relative z-10">

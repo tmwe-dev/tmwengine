@@ -1502,8 +1502,22 @@ export default function ImportTemplates() {
                 </DialogDescription>
               </div>
               
-              {/* Filter Controls - Top Right */}
+              {/* Search and Filter Controls - Top Right */}
               <div className="flex gap-4 items-end">
+                {/* Search field */}
+                <div className="w-64">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      placeholder="Cerca per nome azienda, alias, nome, città..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
                 {/* Origin filter */}
                 <div className="w-48">
                   <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
@@ -1563,27 +1577,9 @@ export default function ImportTemplates() {
             </div>
           </DialogHeader>
 
-          {/* Search Field - Below Header */}
-          <div className="space-y-4 p-4 border-b bg-muted/20">
-            <div className="flex gap-4 items-end">
-              {/* Search field */}
-              <div className="flex-1">
-                <Label htmlFor="search" className="text-sm font-medium">Cerca</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Cerca per nome azienda, alias, nome, città..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Clear filters */}
-            {(searchQuery || originFilter || countryFilter) && (
+          {/* Clear filters section */}
+          {(searchQuery || originFilter || countryFilter) && (
+            <div className="p-4 border-b bg-muted/20">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -1602,8 +1598,8 @@ export default function ImportTemplates() {
                   {filteredRecords.length} record trovati
                 </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Controlli visibilità colonne */}
           <div className="flex justify-center items-center gap-2 py-4 border-b">

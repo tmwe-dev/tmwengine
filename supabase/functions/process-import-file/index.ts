@@ -46,7 +46,6 @@ serve(async (req) => {
       throw new Error('Errore nella creazione del log');
     }
 
-    let importedRows = 0;
     let errorRows = 0;
     let totalRows = 0;
     const errors: any[] = [];
@@ -228,7 +227,6 @@ serve(async (req) => {
           contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
 
           contactsToInsert.push(contactData);
-          importedRows++;
           processedRows++;
           
           // Salva batch quando raggiunge la dimensione o è l'ultimo record
@@ -268,12 +266,12 @@ serve(async (req) => {
 
       console.log(`Importazione completata. Record elaborati: ${processedRows}`);
 
-      // Aggiorna il log di importazione
+      // Aggiorna il log di importazione finale
       await supabaseClient
         .from('import_logs')
         .update({
           righe_totali: totalRows,
-          righe_importate: importedRows,
+          righe_importate: processedRows, // Usa processedRows invece di importedRows
           righe_errori: errorRows,
           stato: errorRows === 0 ? 'completato' : 'completato_con_errori',
           errori: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
@@ -286,7 +284,7 @@ serve(async (req) => {
         data: {
           importLogId: importLog.id,
           totalRows,
-          importedRows,
+          importedRows: processedRows, // Usa processedRows invece di importedRows
           errorRows,
           headers: headers.slice(0, 10),
           errors: errors.slice(0, 5)

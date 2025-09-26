@@ -1467,19 +1467,55 @@ export default function ImportTemplates() {
                   <Users className="h-5 w-5" />
                   Informazioni Principali
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getDefaultColumns().filter(col => selectedRecord[col] !== undefined).map((field) => (
-                    <div key={field} className="space-y-1">
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Label>
-                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                        <span className="text-sm">
-                          {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
-                        </span>
+                <div className="grid grid-cols-12 gap-3">
+                  {getDefaultColumns().filter(col => selectedRecord[col] !== undefined).map((field) => {
+                    // Definisci la larghezza del campo basata sul contenuto
+                    const getFieldWidth = (fieldName: string) => {
+                      switch (fieldName) {
+                        case 'company_name':
+                        case 'email':
+                        case 'position':
+                          return 'col-span-8'; // Campi larghi
+                        case 'name':
+                        case 'alias':
+                        case 'city':
+                          return 'col-span-6'; // Campi medi
+                        case 'country':
+                        case 'stato':
+                        case 'phone':
+                        case 'cell':
+                        case 'agent_id':
+                        case 'origin':
+                          return 'col-span-4'; // Campi stretti
+                        default:
+                          return 'col-span-6'; // Default medio
+                      }
+                    };
+
+                    // Gradiente basato sul tipo di campo
+                    const getFieldGradient = (fieldName: string) => {
+                      if (['company_name', 'name', 'email'].includes(fieldName)) {
+                        return 'bg-field-gradient-primary border border-brick-muted/20';
+                      } else if (['phone', 'cell', 'country', 'stato'].includes(fieldName)) {
+                        return 'bg-lilac-gradient border border-lilac-muted/20';
+                      } else {
+                        return 'bg-field-gradient-secondary border border-brick-muted/10';
+                      }
+                    };
+
+                    return (
+                      <div key={field} className={`space-y-1 ${getFieldWidth(field)}`}>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <div className={`p-3 rounded-lg min-h-[44px] flex items-center backdrop-blur-sm transition-all duration-300 hover:shadow-md ${getFieldGradient(field)}`}>
+                          <span className="text-sm font-medium">
+                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1491,14 +1527,14 @@ export default function ImportTemplates() {
                   <Building className="h-5 w-5" />
                   Azienda & Contatti
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-12 gap-3">
                   {['address', 'zip_code'].filter(col => selectedRecord[col] !== undefined).map((field) => (
-                    <div key={field} className="space-y-1">
+                    <div key={field} className={`space-y-1 ${field === 'address' ? 'col-span-8' : 'col-span-4'}`}>
                       <Label className="text-sm font-medium text-muted-foreground">
                         {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </Label>
-                      <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                        <span className="text-sm">
+                      <div className="p-3 bg-brick-gradient border border-brick-muted/20 rounded-lg min-h-[44px] flex items-center backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                        <span className="text-sm font-medium">
                           {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                         </span>
                       </div>
@@ -1515,22 +1551,30 @@ export default function ImportTemplates() {
                   <FileSpreadsheet className="h-5 w-5" />
                   Dettagli Commerciali
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-12 gap-3">
                   {(() => {
                     const allColumns = Object.keys(selectedRecord);
                     const groups = getColumnGroups(allColumns);
-                    return groups.details.filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="space-y-1">
-                        <Label className="text-sm font-medium text-muted-foreground">
-                          {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
-                            {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
-                          </span>
+                    return groups.details.filter(col => selectedRecord[col] !== undefined).map((field) => {
+                      const getFieldWidth = (fieldName: string) => {
+                        if (['notes', 'source', 'tag'].includes(fieldName)) return 'col-span-6';
+                        if (['priority', 'budget', 'lead_score'].includes(fieldName)) return 'col-span-4';
+                        return 'col-span-4';
+                      };
+
+                      return (
+                        <div key={field} className={`space-y-1 ${getFieldWidth(field)}`}>
+                          <Label className="text-sm font-medium text-muted-foreground">
+                            {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Label>
+                          <div className="p-3 bg-lilac-gradient border border-lilac-muted/20 rounded-lg min-h-[44px] flex items-center backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                            <span className="text-sm font-medium">
+                              {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
               </div>
@@ -1543,17 +1587,17 @@ export default function ImportTemplates() {
                   <Database className="h-5 w-5" />
                   Metadata & Sistema
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-12 gap-3">
                   {(() => {
                     const allColumns = Object.keys(selectedRecord);
                     const groups = getColumnGroups(allColumns);
                     return groups.metadata.filter(col => selectedRecord[col] !== undefined).map((field) => (
-                      <div key={field} className="space-y-1">
+                      <div key={field} className="space-y-1 col-span-4">
                         <Label className="text-sm font-medium text-muted-foreground">
                           {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </Label>
-                        <div className="p-2 bg-muted/50 rounded-md min-h-[40px] flex items-center">
-                          <span className="text-sm">
+                        <div className="p-3 bg-field-gradient-secondary border border-brick-muted/10 rounded-lg min-h-[44px] flex items-center backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                          <span className="text-xs font-mono text-muted-foreground">
                             {formatCellValue(selectedRecord[field], field) || '(vuoto)'}
                           </span>
                         </div>

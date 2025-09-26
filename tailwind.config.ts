@@ -81,6 +81,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+
+        // === NUOVE TONALITÀ BRICK & LILAC ===
+        brick: {
+          DEFAULT: "hsl(var(--brick))",
+          light: "hsl(var(--brick-light))",
+          muted: "hsl(var(--brick-muted))",
+        },
+        lilac: {
+          DEFAULT: "hsl(var(--lilac))",
+          light: "hsl(var(--lilac-light))",
+          muted: "hsl(var(--lilac-muted))",
+        },
       },
 
       // === SPAZIATURE ===
@@ -138,6 +150,14 @@ export default {
         'fast': 'var(--transition-fast)',
         'normal': 'var(--transition-normal)',
         'slow': 'var(--transition-slow)',
+      },
+
+      // === GRADIENTI CAMPI ===
+      backgroundImage: {
+        'field-gradient-primary': 'var(--field-gradient-primary)',
+        'field-gradient-secondary': 'var(--field-gradient-secondary)',
+        'brick-gradient': 'var(--brick-gradient)',
+        'lilac-gradient': 'var(--lilac-gradient)',
       },
 
       // === ANIMAZIONI ===

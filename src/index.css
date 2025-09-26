@@ -104,6 +104,20 @@ Tutti i colori DEVONO essere HSL.
     --shadow-lg: 0 10px 15px -3px hsl(240 3.7% 15.9% / 0.1), 0 4px 6px -4px hsl(240 3.7% 15.9% / 0.05);
     --shadow-glow: 0 0 20px hsl(220 91% 55% / 0.3);
 
+    /* === NUOVE TONALITÀ BRICK & LILAC === */
+    --brick: 15 75% 45%;
+    --brick-light: 15 65% 55%;
+    --brick-muted: 15 75% 45% / 0.1;
+    --brick-gradient: linear-gradient(135deg, hsl(15 75% 45% / 0.15), hsl(15 65% 55% / 0.05));
+    
+    --lilac: 285 60% 70%;
+    --lilac-light: 285 50% 80%;
+    --lilac-muted: 285 60% 70% / 0.1;
+    --lilac-gradient: linear-gradient(135deg, hsl(285 60% 70% / 0.15), hsl(285 50% 80% / 0.05));
+    
+    --field-gradient-primary: linear-gradient(135deg, hsl(15 75% 45% / 0.08), hsl(285 60% 70% / 0.08));
+    --field-gradient-secondary: linear-gradient(135deg, hsl(15 65% 55% / 0.05), hsl(285 50% 80% / 0.05));
+
     /* === TRANSIZIONI === */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;

@@ -210,17 +210,8 @@ export default function ImportTemplates() {
 
       if (uploadError) throw uploadError;
 
-      // Avvia il processo di importazione
-      setImportProgress({
-        currentImportId: null,
-        totalRows: 0,
-        processedRows: 0,
-        isProcessing: true,
-        startTime: Date.now()
-      });
-
-      // Chiama l'edge function per elaborare il file
-      const { data: processResult, error: processError } = await supabase.functions
+      // Phase 1: Save file to database
+      const { data: saveResult, error: saveError } = await supabase.functions
         .invoke('process-import-file', {
           body: {
             filePath: fileName,
@@ -228,26 +219,54 @@ export default function ImportTemplates() {
           }
         });
 
-      if (processError) throw processError;
+      if (saveError) throw saveError;
 
-      if (processResult.success) {
-        const { totalRows, importedRows, errorRows, importLogId } = processResult.data;
+      if (saveResult.success) {
+        const { importLogId, totalRows, separator } = saveResult.data;
         
+        toast.success(`File salvato: ${totalRows} righe rilevate. Avvio elaborazione...`);
+        
+        // Phase 2: Process the saved file
         setImportProgress({
           currentImportId: importLogId,
           totalRows,
-          processedRows: importedRows,
-          isProcessing: false,
-          startTime: 0
+          processedRows: 0,
+          isProcessing: true,
+          startTime: Date.now()
         });
-        
-        if (errorRows > 0) {
-          toast.success(`File importato con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
-        } else {
-          toast.success(`File importato con successo: ${importedRows} righe elaborate.`);
+
+        // Start processing the saved file
+        const { data: processResult, error: processError } = await supabase.functions
+          .invoke('process-saved-file', {
+            body: {
+              importLogId
+            }
+          });
+
+        if (processError) {
+          console.error('Processing error:', processError);
+          // Don't throw here, let the polling handle the status
+        }
+
+        if (processResult?.success) {
+          const { importedRows, errorRows } = processResult.data;
+          
+          setImportProgress({
+            currentImportId: importLogId,
+            totalRows,
+            processedRows: importedRows,
+            isProcessing: false,
+            startTime: 0
+          });
+          
+          if (errorRows > 0) {
+            toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
+          } else {
+            toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`);
+          }
         }
       } else {
-        throw new Error(processResult.error);
+        throw new Error(saveResult.error);
       }
 
       setImportFile(null);
@@ -277,7 +296,7 @@ export default function ImportTemplates() {
           .from('import_logs')
           .select('righe_totali, righe_importate, stato')
           .eq('id', importProgress.currentImportId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
@@ -289,9 +308,10 @@ export default function ImportTemplates() {
             isProcessing: data.stato === 'elaborazione'
           }));
 
-          // Se completato, ferma il polling
+          // Se completato, ferma il polling e ricarica i log
           if (data.stato !== 'elaborazione') {
             setImportProgress(prev => ({ ...prev, isProcessing: false }));
+            loadImportLogs();
           }
         }
       } catch (error) {
@@ -299,9 +319,63 @@ export default function ImportTemplates() {
       }
     };
 
-    const interval = setInterval(checkProgress, 1000); // Controlla ogni secondo
+    const interval = setInterval(checkProgress, 1000);
     return () => clearInterval(interval);
   }, [importProgress.currentImportId, importProgress.isProcessing]);
+
+  // Function to manually process a saved file
+  const processFile = async (importLogId: string) => {
+    try {
+      setImportProgress({
+        currentImportId: importLogId,
+        totalRows: 0,
+        processedRows: 0,
+        isProcessing: true,
+        startTime: Date.now()
+      });
+
+      const { data: processResult, error: processError } = await supabase.functions
+        .invoke('process-saved-file', {
+          body: {
+            importLogId
+          }
+        });
+
+      if (processError) throw processError;
+
+      if (processResult.success) {
+        const { totalRows, importedRows, errorRows } = processResult.data;
+        
+        setImportProgress({
+          currentImportId: importLogId,
+          totalRows,
+          processedRows: importedRows,
+          isProcessing: false,
+          startTime: 0
+        });
+        
+        if (errorRows > 0) {
+          toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
+        } else {
+          toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`);
+        }
+        
+        loadImportLogs();
+      } else {
+        throw new Error(processResult.error);
+      }
+    } catch (error: any) {
+      console.error('Errore nell\'elaborazione:', error);
+      toast.error(`Errore nell'elaborazione: ${error.message}`);
+      setImportProgress({
+        currentImportId: null,
+        totalRows: 0,
+        processedRows: 0,
+        isProcessing: false,
+        startTime: 0
+      });
+    }
+  };
 
   const insertPlaceholder = (placeholder: string) => {
     const textarea = document.getElementById('contenuto-template') as HTMLTextAreaElement;
@@ -326,7 +400,13 @@ export default function ImportTemplates() {
       case 'errore':
         return <Badge variant="destructive">Errore</Badge>;
       case 'in_corso':
-        return <Badge variant="outline">In corso</Badge>;
+      case 'elaborazione':
+        return <Badge variant="outline">In elaborazione</Badge>;
+      case 'file_salvato':
+      case 'pronto_per_elaborazione':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Pronto per elaborazione</Badge>;
+      case 'completato_con_errori':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Completato con errori</Badge>;
       default:
         return <Badge variant="outline">{stato}</Badge>;
     }
@@ -841,30 +921,46 @@ export default function ImportTemplates() {
                       <TableCell className="text-red-600">{log.righe_errori}</TableCell>
                       <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                           <Button 
-                             variant="outline" 
-                             size="sm"
-                             onClick={() => viewImportRecords(log)}
-                             disabled={loadingRecords}
-                           >
-                             <Users className="h-4 w-4" />
-                             {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
-                           </Button>
-                           <Button 
-                             variant="outline" 
-                             size="sm"
-                             onClick={() => deleteImportFile(log)}
-                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                           {log.trasferiti_rubrica && (
-                             <Badge variant="secondary" className="bg-green-100 text-green-800">
-                               Trasferiti
-                             </Badge>
-                           )}
-                        </div>
+                         <div className="flex gap-1">
+                            {/* Pulsante per processare file salvati */}
+                            {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                onClick={() => processFile(log.id)}
+                                disabled={importProgress.isProcessing}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Upload className="h-4 w-4 mr-1" />
+                                Elabora
+                              </Button>
+                            )}
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => viewImportRecords(log)}
+                              disabled={loadingRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
+                            >
+                              <Users className="h-4 w-4" />
+                              {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => deleteImportFile(log)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            
+                            {log.trasferiti_rubrica && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                Trasferiti
+                              </Badge>
+                            )}
+                         </div>
                       </TableCell>
                     </TableRow>
                   ))}

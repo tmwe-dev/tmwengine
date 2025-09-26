@@ -343,6 +343,59 @@ export type Database = {
         }
         Relationships: []
       }
+      file_imports: {
+        Row: {
+          created_at: string
+          file_content: string
+          file_name: string
+          file_path: string
+          file_size: number
+          headers_detected: Json | null
+          id: string
+          import_log_id: string | null
+          separator_detected: string | null
+          stato: string
+          total_rows: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_content: string
+          file_name: string
+          file_path: string
+          file_size: number
+          headers_detected?: Json | null
+          id?: string
+          import_log_id?: string | null
+          separator_detected?: string | null
+          stato?: string
+          total_rows?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_content?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          headers_detected?: Json | null
+          id?: string
+          import_log_id?: string | null
+          separator_detected?: string | null
+          stato?: string
+          total_rows?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_imports_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_logs: {
         Row: {
           completed_at: string | null

@@ -78,8 +78,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { importLogId } = await req.json();
-    console.log('Processing saved file for import log:', importLogId);
+    const { importLogId, maxProcessingTime: customTimeout = 100000, batchSize: customBatchSize = 100 } = await req.json();
+    console.log('Processing saved file for import log:', importLogId, 'timeout:', customTimeout, 'batch:', customBatchSize);
 
     // Check if processing is already in progress
     const { data: existingLog } = await supabaseClient
@@ -136,8 +136,8 @@ serve(async (req) => {
     let processedRows = existingLog?.righe_importate || 0;
     let errorRows = 0;
     const errors: any[] = [];
-    const batchSize = 100; // Reduced batch size to avoid timeout
-    const maxProcessingTime = 100000; // 100 seconds max
+    const batchSize = customBatchSize; // Use custom batch size from request
+    const maxProcessingTime = customTimeout; // Use custom timeout from request
     const startTime = Date.now();
 
     // Helper functions

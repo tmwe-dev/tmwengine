@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone } from 'lucide-react';
+import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -247,6 +248,8 @@ export default function ImportTemplates() {
     secondary: null
   });
   
+  // Stato per il monitoraggio dell'importazione
+  const [monitoringImportId, setMonitoringImportId] = useState<string | null>(null);
   // Stato per controllare la visibilità delle colonne
   const [visibleColumns, setVisibleColumns] = useState({
     company: true,
@@ -577,6 +580,9 @@ export default function ImportTemplates() {
   // Function to manually process a saved file
   const processFile = async (importLogId: string) => {
     try {
+      // Attiva il monitor dell'importazione
+      setMonitoringImportId(importLogId);
+      
       setImportProgress({
         currentImportId: importLogId,
         totalRows: 0,
@@ -1546,6 +1552,17 @@ export default function ImportTemplates() {
               )}
             </CardContent>
           </Card>
+          
+          {/* Monitor progresso importazione */}
+          {monitoringImportId && (
+            <ImportProgressMonitor
+              importLogId={monitoringImportId}
+              onComplete={() => {
+                loadImportLogs(); // Ricarica la lista
+                setMonitoringImportId(null); // Nascondi il monitor
+              }}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

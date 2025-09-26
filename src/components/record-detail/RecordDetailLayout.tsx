@@ -243,29 +243,35 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <div className="flex items-start gap-4">
             <Clock className="h-5 w-5 text-primary mt-5" />
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+            <div className="flex gap-4">
               {record.last_contact !== undefined && (
-                <FieldRenderer 
-                  field="last_contact" 
-                  value={record.last_contact} 
-                  formatCellValue={formatCellValue}
-                />
+                <div className="min-w-[150px] max-w-[150px]">
+                  <FieldRenderer 
+                    field="last_contact" 
+                    value={record.last_contact} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
               )}
               
               {record.next_contact_date !== undefined && (
-                <FieldRenderer 
-                  field="next_contact_date" 
-                  value={record.next_contact_date} 
-                  formatCellValue={formatCellValue}
-                />
+                <div className="min-w-[150px] max-w-[150px]">
+                  <FieldRenderer 
+                    field="next_contact_date" 
+                    value={record.next_contact_date} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
               )}
               
               {record.scheduled_contact !== undefined && (
-                <FieldRenderer 
-                  field="scheduled_contact" 
-                  value={record.scheduled_contact} 
-                  formatCellValue={formatCellValue}
-                />
+                <div className="min-w-[150px] max-w-[150px]">
+                  <FieldRenderer 
+                    field="scheduled_contact" 
+                    value={record.scheduled_contact} 
+                    formatCellValue={formatCellValue}
+                  />
+                </div>
               )}
             </div>
           </div>

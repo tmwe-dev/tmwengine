@@ -198,7 +198,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-start gap-4">
           <Database className="h-5 w-5 text-primary mt-5" />
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
             {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
             {Object.keys(record)
               .filter(key => ![
@@ -208,12 +208,14 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 'next_contact_date', 'scheduled_contact'
               ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
               .map(field => (
-                <FieldRenderer 
-                  key={field}
-                  field={field} 
-                  value={record[field]} 
-                  formatCellValue={formatCellValue}
-                />
+                <div key={field} className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </div>
+                  <div className="text-sm text-blue-500">
+                    {formatCellValue(record[field], field)}
+                  </div>
+                </div>
               ))}
           </div>
         </div>
@@ -254,22 +256,24 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       )}
 
-      {/* Sezione Meta Flags - mostra tutti i meta flags */}
+      {/* Sezione Meta Flags - stile semplice senza sfondo */}
       {Object.keys(record).some(key => key.startsWith('meta_')) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
-            <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center mt-5">
+            <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center mt-1">
               <div className="h-2 w-2 bg-white rounded-full"></div>
             </div>
             
-            <div className="flex flex-wrap gap-2 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
               {Object.keys(record)
                 .filter(key => key.startsWith('meta_'))
                 .map(key => (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{key.replace('meta_', '').replace(/_/g, ' ')}:</span>
-                    <div className={`px-2 py-1 rounded-full text-xs ${
-                      record[key] ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  <div key={key} className="text-left">
+                    <div className="text-sm font-medium text-blue-600 mb-1">
+                      {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </div>
+                    <div className={`text-sm font-medium ${
+                      record[key] ? 'text-blue-500' : 'text-blue-300'
                     }`}>
                       {record[key] ? 'Sì' : 'No'}
                     </div>

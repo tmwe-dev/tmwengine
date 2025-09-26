@@ -105,6 +105,15 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   
   return (
     <div className="space-y-6">
+      {/* Header con bandiera, country e città */}
+      <div className="flex justify-end">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <span>🏳️</span>
+          <span>{record.country || "N/A"}</span>
+          <span>•</span>
+          <span>{record.city || "N/A"}</span>
+        </div>
+      </div>
       {/* Sezione Date Sistema - in alto sotto i selettori */}
       {(record.created_at !== undefined || record.updated_at !== undefined) && (
         <div className="space-y-4">

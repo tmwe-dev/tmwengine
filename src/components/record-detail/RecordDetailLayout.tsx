@@ -45,9 +45,12 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               
               {record.position !== undefined && (
                 <div className="text-left">
-                  <span className="text-sm text-foreground">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Position
+                  </div>
+                  <div className="text-sm text-foreground">
                     {formatCellValue(record.position, 'position')}
-                  </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -81,19 +84,19 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
           
-          {/* Country sopra Origin */}
-          {record.country !== undefined && (
+          {/* Position sopra Origin */}
+          <div className="flex-1"></div>
+          {record.position !== undefined && (
             <div className="min-w-[140px]">
               <FieldRenderer 
-                field="country" 
-                value={record.country} 
+                field="position" 
+                value={record.position} 
                 formatCellValue={formatCellValue}
               />
             </div>
           )}
           
-          {/* Origin spostato qui, allineato a destra */}
-          <div className="flex-1"></div>
+          {/* Origin */}
           {record.origin !== undefined && (
             <div className="min-w-[140px]">
               <FieldRenderer 

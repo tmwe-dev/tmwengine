@@ -1395,7 +1395,7 @@ export default function ImportTemplates() {
             </CardHeader>
             <CardContent>
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background">
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>File</TableHead>
@@ -1703,21 +1703,21 @@ export default function ImportTemplates() {
                  <Table>
                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>
-                       <TableHead className="w-12 bg-background">
+                       <TableHead className="w-12 bg-background border-b">
                          <Checkbox
                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
                            onCheckedChange={toggleSelectAll}
                            aria-label="Seleziona tutti"
                           />
                         </TableHead>
-                        <TableHead className="w-16 text-center">#</TableHead>
+                        <TableHead className="w-16 text-center bg-background border-b">#</TableHead>
                         {(() => {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
                           return visibleCols.map((key) => (
                              <TableHead 
                                key={key} 
-                               className={`bg-background cursor-pointer hover:bg-accent/50 ${
+                               className={`bg-background border-b cursor-pointer hover:bg-accent/50 ${
                                  key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
                                  key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
                                  key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :

@@ -257,7 +257,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       )}
 
       {/* Sezione Meta Flags - stile semplice senza sfondo */}
-      {Object.keys(record).some(key => key.startsWith('meta_')) && (
+      {Object.keys(record).some(key => key.startsWith('meta_') && record[key] === true) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center mt-1">
@@ -266,16 +266,14 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
               {Object.keys(record)
-                .filter(key => key.startsWith('meta_'))
+                .filter(key => key.startsWith('meta_') && record[key] === true)
                 .map(key => (
                   <div key={key} className="text-left">
                     <div className="text-sm font-medium text-blue-600 mb-1">
                       {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </div>
-                    <div className={`text-sm font-medium ${
-                      record[key] ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
-                      {record[key] ? 'Sì' : 'No'}
+                    <div className="text-sm font-medium text-foreground">
+                      Sì
                     </div>
                   </div>
                 ))}

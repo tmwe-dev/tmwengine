@@ -553,29 +553,31 @@ const Settings = () => {
       </Alert>
 
       <div className="w-full">
-        <Tabs defaultValue="email" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-          <TabsTrigger value="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email Provider
-          </TabsTrigger>
-          <TabsTrigger value="sync" className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Sincronizzazione
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
-            <Bot className="h-4 w-4" />
-            AI & Classificazione
-          </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Generale
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            Sicurezza
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="email" className="w-full space-y-6">
+          <div className="w-full border-b">
+            <TabsList className="grid w-full grid-cols-5 h-auto p-1 bg-muted rounded-lg">
+              <TabsTrigger value="email" className="flex items-center gap-2 py-3">
+                <Mail className="h-4 w-4" />
+                Email Provider
+              </TabsTrigger>
+              <TabsTrigger value="sync" className="flex items-center gap-2 py-3">
+                <RefreshCw className="h-4 w-4" />
+                Sincronizzazione
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="flex items-center gap-2 py-3">
+                <Bot className="h-4 w-4" />
+                AI & Classificazione
+              </TabsTrigger>
+              <TabsTrigger value="general" className="flex items-center gap-2 py-3">
+                <Database className="h-4 w-4" />
+                Generale
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-2 py-3">
+                <Key className="h-4 w-4" />
+                Sicurezza
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
         {/* Configurazione Email Provider */}
         <TabsContent value="email">

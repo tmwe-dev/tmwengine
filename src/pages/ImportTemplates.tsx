@@ -529,7 +529,7 @@ export default function ImportTemplates() {
   // Define DEFAULT always visible columns (priority for contact selection)
   const getDefaultColumns = () => [
     'company_name', 'company_alias', 'alias',
-    'name', 'origin', 'city', 'country', 'position', 'title',
+    'name', 'title', 'origin', 'city', 'country', 'position',
     'email',
     'phone', 'cell', // one of these will be shown based on availability
     'stato', 'agent_id',

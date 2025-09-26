@@ -183,11 +183,6 @@ const EmailSyncTab = () => {
     }
 
     await loadServerPreview();
-        variant: "destructive",
-      });
-    } finally {
-      setIsPreviewLoading(false);
-    }
   };
 
   const startSyncAnimation = (totalCount) => {

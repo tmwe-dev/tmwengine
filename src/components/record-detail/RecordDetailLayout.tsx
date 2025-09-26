@@ -1,7 +1,7 @@
 import React from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple } from 'lucide-react';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -256,7 +256,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       )}
 
-      {/* Sezione Meta Flags - stile semplice senza sfondo */}
+      {/* Sezione Meta Flags - organizzata per colonne specifiche */}
       {Object.keys(record).some(key => key.startsWith('meta_')) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
@@ -264,21 +264,94 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               <div className="h-2 w-2 bg-white rounded-full"></div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
-              {Object.keys(record)
-                .filter(key => key.startsWith('meta_'))
-                .map(key => (
-                  <div key={key} className="text-left">
-                    <div className="text-sm font-medium text-blue-600 mb-1">
-                      {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </div>
-                    {record[key] === true && (
-                      <div className="text-sm font-medium text-foreground">
-                        Sì
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+              {/* Colonna 1: Servizi (Settings icon) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                  <Settings className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-600">Servizi</span>
+                </div>
+                {['meta_wca', 'meta_express', 'meta_sea_freight', 'meta_air_freight']
+                  .filter(key => record[key] !== undefined)
+                  .map(key => (
+                    <div key={key} className="text-left">
+                      <div className="text-sm font-medium text-blue-600 mb-1">
+                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {record[key] === true && (
+                        <div className="text-sm font-medium text-foreground">
+                          Sì
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+
+              {/* Colonna 2: Clienti (Search icon) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                  <Search className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-600">Clienti</span>
+                </div>
+                {['meta_client', 'meta_exclient', 'meta_hight_value_customer', 'meta_interested']
+                  .filter(key => record[key] !== undefined)
+                  .map(key => (
+                    <div key={key} className="text-left">
+                      <div className="text-sm font-medium text-blue-600 mb-1">
+                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      {record[key] === true && (
+                        <div className="text-sm font-medium text-foreground">
+                          Sì
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+
+              {/* Colonna 3: Risultati (Award icon) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                  <Award className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-600">Risultati</span>
+                </div>
+                {['meta_tutorial', 'meta_presentation', 'meta_contact_required_email', 'meta_reception_required_email']
+                  .filter(key => record[key] !== undefined)
+                  .map(key => (
+                    <div key={key} className="text-left">
+                      <div className="text-sm font-medium text-blue-600 mb-1">
+                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      {record[key] === true && (
+                        <div className="text-sm font-medium text-foreground">
+                          Sì
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+
+              {/* Colonna 4: Stato (Apple icon) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                  <Apple className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-600">Stato</span>
+                </div>
+                {['meta_exworks', 'meta_rejected']
+                  .filter(key => record[key] !== undefined)
+                  .map(key => (
+                    <div key={key} className="text-left">
+                      <div className="text-sm font-medium text-blue-600 mb-1">
+                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      {record[key] === true && (
+                        <div className="text-sm font-medium text-foreground">
+                          Sì
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         </div>

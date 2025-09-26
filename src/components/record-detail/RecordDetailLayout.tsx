@@ -39,6 +39,14 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   </div>
                 </div>
               )}
+              
+              {record.position !== undefined && (
+                <div className="text-left">
+                  <span className="text-sm text-foreground">
+                    {formatCellValue(record.position, 'position')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -88,15 +96,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       <div className="space-y-4">
         <div className="flex items-start gap-4">
           <Users className="h-5 w-5 text-primary mt-5" />
-          
-          {/* Position allineato con name */}
-          {record.position !== undefined && (
-            <div className="max-w-[200px] min-w-[180px]">
-              <span className="text-sm text-foreground">
-                {formatCellValue(record.position, 'position')}
-              </span>
-            </div>
-          )}
           
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
           {record.name !== undefined && (

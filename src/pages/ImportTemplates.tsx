@@ -993,12 +993,16 @@ export default function ImportTemplates() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedRecords.size === filteredRecords.length) {
+    if (selectedRecords.size === viewingRecords.length) {
       // Se tutti sono selezionati, deseleziona tutti
-      setSelectedRecords(new Set());
+      setSelectedRecords(new Set<number>());
     } else {
-      // Altrimenti seleziona tutti i record filtrati
-      const allIndexes = new Set(filteredRecords.map((_, index) => index));
+      // Seleziona tutti i record attualmente visualizzati usando gli actualIndex
+      const allIndexes = new Set<number>();
+      for (let i = 0; i < viewingRecords.length; i++) {
+        const actualIndex = currentPage * recordsPerPage + i;
+        allIndexes.add(actualIndex);
+      }
       setSelectedRecords(allIndexes);
     }
   };
@@ -1149,7 +1153,14 @@ export default function ImportTemplates() {
     let errorCount = 0;
 
     try {
-      const selectedData = viewingRecords.filter((_, index) => selectedRecords.has(index));
+      // Ottieni i record selezionati usando gli indici corretti dai viewingRecords
+      const selectedData = [];
+      for (const selectedIndex of selectedRecords) {
+        const recordIndex = selectedIndex - (currentPage * recordsPerPage);
+        if (recordIndex >= 0 && recordIndex < viewingRecords.length) {
+          selectedData.push(viewingRecords[recordIndex]);
+        }
+      }
       
       for (const record of selectedData) {
         try {
@@ -1837,10 +1848,10 @@ export default function ImportTemplates() {
                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                      <TableRow>
                         <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
-                          <Checkbox
-                            checked={selectedRecords.size === filteredRecords.length && filteredRecords.length > 0}
-                            onCheckedChange={toggleSelectAll}
-                            aria-label="Seleziona tutti"
+                           <Checkbox
+                             checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
+                             onCheckedChange={toggleSelectAll}
+                             aria-label="Seleziona tutti"
                            />
                          </TableHead>
                         <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]">#</TableHead>

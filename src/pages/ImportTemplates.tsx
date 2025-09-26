@@ -1017,22 +1017,43 @@ export default function ImportTemplates() {
       
       console.log('Totale record nel database:', count);
       
-      // Carica tutti i record usando range per superare il limite di 1000
-      const { data, error } = await supabase
-        .from('imported_contacts')
-        .select('*')
-        .eq('import_log_id', importLog.id)
-        .range(0, (count || 0) - 1); // Carica tutti i record da 0 al totale-1
-
-      if (error) {
-        console.error('Errore query imported_contacts:', error);
-        throw error;
+      // Se ci sono molti record, carica in batch
+      const allRecords = [];
+      const batchSize = 1000;
+      let from = 0;
+      
+      while (from < (count || 0)) {
+        const to = Math.min(from + batchSize - 1, (count || 0) - 1);
+        
+        console.log(`Caricamento batch: ${from}-${to}`);
+        
+        const { data: batchData, error } = await supabase
+          .from('imported_contacts')
+          .select('*')
+          .eq('import_log_id', importLog.id)
+          .range(from, to);
+        
+        if (error) {
+          console.error('Errore nel batch', from, to, error);
+          throw error;
+        }
+        
+        if (batchData) {
+          allRecords.push(...batchData);
+          console.log(`Batch caricato: ${batchData.length} record, totale: ${allRecords.length}`);
+        }
+        
+        from += batchSize;
+        
+        // Break se non ci sono più dati
+        if (!batchData || batchData.length < batchSize) {
+          break;
+        }
       }
       
-      console.log('Record effettivamente caricati:', data?.length, 'di', count);
-      const contacts = data || [];
+      console.log('Record effettivamente caricati:', allRecords.length, 'di', count);
       
-      setAllRecords(contacts);
+      setAllRecords(allRecords);
       setTotalRecords(count || 0);
       setShowRecordsDialog(true);
       

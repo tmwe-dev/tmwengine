@@ -1959,7 +1959,7 @@ export default function ImportTemplates() {
         <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Dettaglio Contatto</span>
+              <span></span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"

@@ -60,81 +60,114 @@ const getCountryFlag = (countryName: string): string => {
   if (!countryName) return '';
   
   const countryFlags: { [key: string]: string } = {
-    'italy': '🇮🇹',
-    'italia': '🇮🇹',
-    'france': '🇫🇷',
-    'francia': '🇫🇷',
-    'germany': '🇩🇪',
-    'germania': '🇩🇪',
-    'spain': '🇪🇸',
-    'spagna': '🇪🇸',
-    'united kingdom': '🇬🇧',
-    'uk': '🇬🇧',
-    'regno unito': '🇬🇧',
-    'united states': '🇺🇸',
-    'usa': '🇺🇸',
-    'stati uniti': '🇺🇸',
-    'china': '🇨🇳',
-    'cina': '🇨🇳',
-    'japan': '🇯🇵',
-    'giappone': '🇯🇵',
-    'netherlands': '🇳🇱',
-    'olanda': '🇳🇱',
-    'paesi bassi': '🇳🇱',
-    'belgium': '🇧🇪',
-    'belgio': '🇧🇪',
-    'switzerland': '🇨🇭',
-    'svizzera': '🇨🇭',
-    'austria': '🇦🇹',
-    'poland': '🇵🇱',
-    'polonia': '🇵🇱',
-    'portugal': '🇵🇹',
-    'portogallo': '🇵🇹',
-    'greece': '🇬🇷',
-    'grecia': '🇬🇷',
-    'turkey': '🇹🇷',
-    'turchia': '🇹🇷',
-    'russia': '🇷🇺',
-    'russian federation': '🇷🇺',
-    'canada': '🇨🇦',
-    'australia': '🇦🇺',
-    'brazil': '🇧🇷',
-    'brasile': '🇧🇷',
-    'india': '🇮🇳',
-    'south korea': '🇰🇷',
-    'corea del sud': '🇰🇷',
-    'mexico': '🇲🇽',
-    'messico': '🇲🇽',
-    'argentina': '🇦🇷',
-    'sweden': '🇸🇪',
-    'svezia': '🇸🇪',
-    'norway': '🇳🇴',
-    'norvegia': '🇳🇴',
-    'denmark': '🇩🇰',
-    'danimarca': '🇩🇰',
-    'finland': '🇫🇮',
-    'finlandia': '🇫🇮',
-    'ireland': '🇮🇪',
-    'irlanda': '🇮🇪',
-    'czech republic': '🇨🇿',
-    'repubblica ceca': '🇨🇿',
-    'hungary': '🇭🇺',
-    'ungheria': '🇭🇺',
-    'romania': '🇷🇴',
-    'slovenia': '🇸🇮',
-    'croatia': '🇭🇷',
-    'croazia': '🇭🇷',
-    'slovakia': '🇸🇰',
-    'slovacchia': '🇸🇰',
-    'lithuania': '🇱🇹',
-    'lituania': '🇱🇹',
-    'latvia': '🇱🇻',
-    'lettonia': '🇱🇻',
-    'estonia': '🇪🇪'
+    // Italy
+    'italy': '🇮🇹', 'italia': '🇮🇹', 'it': '🇮🇹', 'ita': '🇮🇹',
+    // France
+    'france': '🇫🇷', 'francia': '🇫🇷', 'fr': '🇫🇷', 'fra': '🇫🇷',
+    // Germany
+    'germany': '🇩🇪', 'germania': '🇩🇪', 'de': '🇩🇪', 'deu': '🇩🇪', 'deutsch': '🇩🇪',
+    // Spain
+    'spain': '🇪🇸', 'spagna': '🇪🇸', 'es': '🇪🇸', 'esp': '🇪🇸', 'españa': '🇪🇸',
+    // UK
+    'united kingdom': '🇬🇧', 'uk': '🇬🇧', 'regno unito': '🇬🇧', 'gb': '🇬🇧', 'gbr': '🇬🇧',
+    'england': '🇬🇧', 'inghilterra': '🇬🇧', 'great britain': '🇬🇧',
+    // USA
+    'united states': '🇺🇸', 'usa': '🇺🇸', 'stati uniti': '🇺🇸', 'us': '🇺🇸',
+    'united states of america': '🇺🇸', 'america': '🇺🇸',
+    // China
+    'china': '🇨🇳', 'cina': '🇨🇳', 'cn': '🇨🇳', 'chn': '🇨🇳', 'people\'s republic of china': '🇨🇳',
+    // Japan
+    'japan': '🇯🇵', 'giappone': '🇯🇵', 'jp': '🇯🇵', 'jpn': '🇯🇵',
+    // Netherlands
+    'netherlands': '🇳🇱', 'olanda': '🇳🇱', 'paesi bassi': '🇳🇱', 'nl': '🇳🇱', 'nld': '🇳🇱', 'holland': '🇳🇱',
+    // Belgium
+    'belgium': '🇧🇪', 'belgio': '🇧🇪', 'be': '🇧🇪', 'bel': '🇧🇪',
+    // Switzerland
+    'switzerland': '🇨🇭', 'svizzera': '🇨🇭', 'ch': '🇨🇭', 'che': '🇨🇭',
+    // Austria
+    'austria': '🇦🇹', 'at': '🇦🇹', 'aut': '🇦🇹',
+    // Poland
+    'poland': '🇵🇱', 'polonia': '🇵🇱', 'pl': '🇵🇱', 'pol': '🇵🇱',
+    // Portugal
+    'portugal': '🇵🇹', 'portogallo': '🇵🇹', 'pt': '🇵🇹', 'prt': '🇵🇹',
+    // Greece
+    'greece': '🇬🇷', 'grecia': '🇬🇷', 'gr': '🇬🇷', 'grc': '🇬🇷',
+    // Turkey
+    'turkey': '🇹🇷', 'turchia': '🇹🇷', 'tr': '🇹🇷', 'tur': '🇹🇷',
+    // Russia
+    'russia': '🇷🇺', 'russian federation': '🇷🇺', 'ru': '🇷🇺', 'rus': '🇷🇺',
+    // Canada
+    'canada': '🇨🇦', 'ca': '🇨🇦', 'can': '🇨🇦',
+    // Australia
+    'australia': '🇦🇺', 'au': '🇦🇺', 'aus': '🇦🇺',
+    // Brazil
+    'brazil': '🇧🇷', 'brasile': '🇧🇷', 'br': '🇧🇷', 'bra': '🇧🇷', 'brasil': '🇧🇷',
+    // India
+    'india': '🇮🇳', 'in': '🇮🇳', 'ind': '🇮🇳',
+    // South Korea
+    'south korea': '🇰🇷', 'corea del sud': '🇰🇷', 'kr': '🇰🇷', 'kor': '🇰🇷', 'korea': '🇰🇷',
+    // Mexico
+    'mexico': '🇲🇽', 'messico': '🇲🇽', 'mx': '🇲🇽', 'mex': '🇲🇽',
+    // Argentina
+    'argentina': '🇦🇷', 'ar': '🇦🇷', 'arg': '🇦🇷',
+    // Nordic countries
+    'sweden': '🇸🇪', 'svezia': '🇸🇪', 'se': '🇸🇪', 'swe': '🇸🇪',
+    'norway': '🇳🇴', 'norvegia': '🇳🇴', 'no': '🇳🇴', 'nor': '🇳🇴',
+    'denmark': '🇩🇰', 'danimarca': '🇩🇰', 'dk': '🇩🇰', 'dnk': '🇩🇰',
+    'finland': '🇫🇮', 'finlandia': '🇫🇮', 'fi': '🇫🇮', 'fin': '🇫🇮',
+    'iceland': '🇮🇸', 'islanda': '🇮🇸', 'is': '🇮🇸', 'isl': '🇮🇸',
+    // Ireland
+    'ireland': '🇮🇪', 'irlanda': '🇮🇪', 'ie': '🇮🇪', 'irl': '🇮🇪',
+    // Eastern Europe
+    'czech republic': '🇨🇿', 'repubblica ceca': '🇨🇿', 'cz': '🇨🇿', 'cze': '🇨🇿', 'czechia': '🇨🇿',
+    'hungary': '🇭🇺', 'ungheria': '🇭🇺', 'hu': '🇭🇺', 'hun': '🇭🇺',
+    'romania': '🇷🇴', 'ro': '🇷🇴', 'rou': '🇷🇴',
+    'slovenia': '🇸🇮', 'si': '🇸🇮', 'svn': '🇸🇮',
+    'croatia': '🇭🇷', 'croazia': '🇭🇷', 'hr': '🇭🇷', 'hrv': '🇭🇷',
+    'slovakia': '🇸🇰', 'slovacchia': '🇸🇰', 'sk': '🇸🇰', 'svk': '🇸🇰',
+    'lithuania': '🇱🇹', 'lituania': '🇱🇹', 'lt': '🇱🇹', 'ltu': '🇱🇹',
+    'latvia': '🇱🇻', 'lettonia': '🇱🇻', 'lv': '🇱🇻', 'lva': '🇱🇻',
+    'estonia': '🇪🇪', 'ee': '🇪🇪', 'est': '🇪🇪',
+    // Middle East
+    'israel': '🇮🇱', 'il': '🇮🇱', 'isr': '🇮🇱',
+    'united arab emirates': '🇦🇪', 'ae': '🇦🇪', 'are': '🇦🇪', 'uae': '🇦🇪',
+    'saudi arabia': '🇸🇦', 'sa': '🇸🇦', 'sau': '🇸🇦',
+    // Africa
+    'south africa': '🇿🇦', 'za': '🇿🇦', 'zaf': '🇿🇦',
+    'egypt': '🇪🇬', 'egitto': '🇪🇬', 'eg': '🇪🇬', 'egy': '🇪🇬',
+    // Asia
+    'singapore': '🇸🇬', 'sg': '🇸🇬', 'sgp': '🇸🇬',
+    'thailand': '🇹🇭', 'th': '🇹🇭', 'tha': '🇹🇭',
+    'vietnam': '🇻🇳', 'vn': '🇻🇳', 'vnm': '🇻🇳',
+    'malaysia': '🇲🇾', 'my': '🇲🇾', 'mys': '🇲🇾',
+    'indonesia': '🇮🇩', 'id': '🇮🇩', 'idn': '🇮🇩',
+    'philippines': '🇵🇭', 'ph': '🇵🇭', 'phl': '🇵🇭',
+    // Others
+    'new zealand': '🇳🇿', 'nz': '🇳🇿', 'nzl': '🇳🇿',
+    'chile': '🇨🇱', 'cile': '🇨🇱', 'cl': '🇨🇱', 'chl': '🇨🇱',
+    'colombia': '🇨🇴', 'co': '🇨🇴', 'col': '🇨🇴',
+    'peru': '🇵🇪', 'perù': '🇵🇪', 'pe': '🇵🇪', 'per': '🇵🇪',
+    'uruguay': '🇺🇾', 'uy': '🇺🇾', 'ury': '🇺🇾',
+    'venezuela': '🇻🇪', 've': '🇻🇪', 'ven': '🇻🇪'
   };
   
-  const normalizedCountry = countryName.toLowerCase().trim();
-  return countryFlags[normalizedCountry] || '🌍';
+  // Normalize input: lowercase, trim, remove extra spaces
+  const normalizedCountry = countryName.toLowerCase().trim().replace(/\s+/g, ' ');
+  
+  // Try exact match first
+  if (countryFlags[normalizedCountry]) {
+    return countryFlags[normalizedCountry];
+  }
+  
+  // Try partial matches
+  for (const [key, flag] of Object.entries(countryFlags)) {
+    if (normalizedCountry.includes(key) || key.includes(normalizedCountry)) {
+      return flag;
+    }
+  }
+  
+  // If no match found, show the globe
+  return '🌍';
 };
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

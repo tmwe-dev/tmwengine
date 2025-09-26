@@ -1630,34 +1630,6 @@ export default function ImportTemplates() {
             </Button>
           </div>
 
-          {/* Controlli di navigazione */}
-          <div className="flex justify-center items-center gap-4 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentRecordIndex(Math.max(0, currentRecordIndex - 1))}
-              disabled={currentRecordIndex <= 0}
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Precedente
-            </Button>
-            
-            <span className="text-sm text-muted-foreground">
-              Record {currentRecordIndex + 1} di {filteredRecords.length}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentRecordIndex(Math.min(filteredRecords.length - 1, currentRecordIndex + 1))}
-              disabled={currentRecordIndex >= filteredRecords.length - 1}
-              className="flex items-center gap-2"
-            >
-              Successivo
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
           
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (

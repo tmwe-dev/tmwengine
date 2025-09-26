@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown } from 'lucide-react';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -112,6 +112,15 @@ export default function ImportTemplates() {
   const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([]);
   
+  // Stato per l'ordinamento delle colonne
+  const [sortConfig, setSortConfig] = useState<{
+    primary: { column: string; direction: 'asc' | 'desc' } | null;
+    secondary: { column: string; direction: 'asc' | 'desc' } | null;
+  }>({
+    primary: null,
+    secondary: null
+  });
+  
   // Stato per controllare la visibilità delle colonne
   const [visibleColumns, setVisibleColumns] = useState({
     company: true,
@@ -154,11 +163,12 @@ export default function ImportTemplates() {
     loadImportLogs();
   }, []);
 
-  // Aggiorna i filtri quando cambiano i record visualizzati
+  // Aggiorna i filtri e l'ordinamento quando cambiano i record visualizzati
   useEffect(() => {
-    const filtered = applyFilters(viewingRecords, activeFilters);
-    setFilteredRecords(filtered);
-  }, [viewingRecords, activeFilters]);
+    let result = applyFilters(viewingRecords, activeFilters);
+    result = applySorting(result, sortConfig);
+    setFilteredRecords(result);
+  }, [viewingRecords, activeFilters, sortConfig]);
 
   const loadEmailTemplates = async () => {
     try {
@@ -488,9 +498,111 @@ export default function ImportTemplates() {
     const newFilters = [...activeFilters, newFilter];
     setActiveFilters(newFilters);
     
-    // Applica i filtri ai record correnti
-    const filtered = applyFilters(viewingRecords, newFilters);
-    setFilteredRecords(filtered);
+    // Applica i filtri e l'ordinamento ai record correnti
+    let result = applyFilters(viewingRecords, newFilters);
+    result = applySorting(result, sortConfig);
+    setFilteredRecords(result);
+  };
+
+  // Funzioni per gestire l'ordinamento
+  const applySorting = (records: ImportedContact[], sorting: typeof sortConfig) => {
+    if (!sorting.primary) return records;
+    
+    return [...records].sort((a, b) => {
+      // Ordinamento primario
+      const primaryResult = compareValues(
+        a[sorting.primary!.column], 
+        b[sorting.primary!.column], 
+        sorting.primary!.direction
+      );
+      
+      // Se i valori primari sono uguali e c'è un ordinamento secondario
+      if (primaryResult === 0 && sorting.secondary) {
+        return compareValues(
+          a[sorting.secondary.column], 
+          b[sorting.secondary.column], 
+          sorting.secondary.direction
+        );
+      }
+      
+      return primaryResult;
+    });
+  };
+
+  const compareValues = (a: any, b: any, direction: 'asc' | 'desc'): number => {
+    // Gestione valori null/undefined
+    if (a == null && b == null) return 0;
+    if (a == null) return direction === 'asc' ? -1 : 1;
+    if (b == null) return direction === 'asc' ? 1 : -1;
+    
+    // Conversione a stringa per confronto uniforme
+    const aStr = String(a).toLowerCase();
+    const bStr = String(b).toLowerCase();
+    
+    // Confronto numerico se entrambi sono numeri
+    const aNum = Number(a);
+    const bNum = Number(b);
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return direction === 'asc' ? aNum - bNum : bNum - aNum;
+    }
+    
+    // Confronto date se sono date valide
+    const aDate = new Date(a);
+    const bDate = new Date(b);
+    if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+      return direction === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
+    }
+    
+    // Confronto stringhe
+    const result = aStr.localeCompare(bStr);
+    return direction === 'asc' ? result : -result;
+  };
+
+  const handleColumnSort = (column: string) => {
+    setSortConfig(prev => {
+      // Se clicco sulla colonna primaria corrente, cambia direzione
+      if (prev.primary?.column === column) {
+        return {
+          ...prev,
+          primary: {
+            column,
+            direction: prev.primary.direction === 'asc' ? 'desc' : 'asc'
+          }
+        };
+      }
+      
+      // Se clicco sulla colonna secondaria corrente, la promuove a primaria
+      if (prev.secondary?.column === column) {
+        return {
+          primary: { column, direction: 'asc' },
+          secondary: prev.primary
+        };
+      }
+      
+      // Nuova colonna: diventa primaria, la vecchia primaria diventa secondaria
+      return {
+        primary: { column, direction: 'asc' },
+        secondary: prev.primary
+      };
+    });
+  };
+
+  const getSortIcon = (column: string) => {
+    const { primary, secondary } = sortConfig;
+    
+    if (primary?.column === column) {
+      return primary.direction === 'asc' ? 
+        <ChevronUp className="h-4 w-4 text-primary" /> : 
+        <ChevronDown className="h-4 w-4 text-primary" />;
+    }
+    
+    if (secondary?.column === column) {
+      return secondary.direction === 'asc' ? 
+        <ChevronUp className="h-4 w-4 text-muted-foreground" /> : 
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />;
+    }
+    
+    return null;
   };
 
   // Funzione per aprire il dettaglio del record (non applica filtri)
@@ -516,14 +628,17 @@ export default function ImportTemplates() {
     );
     setActiveFilters(newFilters);
     
-    // Riapplica i filtri rimanenti
-    const filtered = applyFilters(viewingRecords, newFilters);
-    setFilteredRecords(filtered);
+    // Riapplica i filtri e l'ordinamento rimanenti
+    let result = applyFilters(viewingRecords, newFilters);
+    result = applySorting(result, sortConfig);
+    setFilteredRecords(result);
   };
 
   const clearAllFilters = () => {
     setActiveFilters([]);
-    setFilteredRecords(viewingRecords);
+    let result = applyFilters(viewingRecords, []);
+    result = applySorting(result, sortConfig);
+    setFilteredRecords(result);
   };
   
   // Define DEFAULT always visible columns (priority for contact selection)
@@ -653,15 +768,23 @@ export default function ImportTemplates() {
       
       if (append) {
         setViewingRecords(prev => [...prev, ...contacts]);
-        setFilteredRecords(prev => [...prev, ...contacts]);
+        // Applica filtri e ordinamento ai nuovi record
+        const allRecords = [...viewingRecords, ...contacts];
+        let result = applyFilters(allRecords, activeFilters);
+        result = applySorting(result, sortConfig);
+        setFilteredRecords(result);
       } else {
         setViewingRecords(contacts);
-        setFilteredRecords(contacts);
+        // Applica filtri e ordinamento
+        let result = applyFilters(contacts, activeFilters);
+        result = applySorting(result, sortConfig);
+        setFilteredRecords(result);
         setTotalRecords(count || 0);
         setShowRecordsDialog(true);
         setCurrentRecordIndex(0);
         setSelectedRecords(new Set());
         setActiveFilters([]);
+        setSortConfig({ primary: null, secondary: null });
         console.log('Dialog aperto con', contacts.length, 'record');
       }
       
@@ -1327,14 +1450,21 @@ export default function ImportTemplates() {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
                           return visibleCols.map((key) => (
-                             <TableHead key={key} className={`bg-background ${
-                               key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                               key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                               key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
-                               key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                               'min-w-[120px]'
-                             }`}>
-                               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                             <TableHead 
+                               key={key} 
+                               className={`bg-background cursor-pointer hover:bg-accent/50 ${
+                                 key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                 key === 'stato' ? 'w-16 min-w-[60px] max-w-[60px]' :
+                                 key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                 'min-w-[120px]'
+                               }`}
+                               onClick={() => handleColumnSort(key)}
+                             >
+                               <div className="flex items-center gap-1">
+                                 <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                 {getSortIcon(key)}
+                               </div>
                              </TableHead>
                           ));
                         })()}

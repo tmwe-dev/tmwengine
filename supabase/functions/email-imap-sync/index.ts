@@ -26,33 +26,44 @@ interface SyncRequest {
   count_batch_current?: number; // Batch corrente durante il conteggio (default 1)
 }
 
-// Funzione per connessione IMAP nativa con timeout
-async function connectToIMAP(config: IMAPConfig): Promise<Deno.TcpConn> {
-  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta}`);
+// Funzione per connessione IMAP nativa con SSL/TLS
+async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.TcpConn> {
+  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta} with SSL: ${config.imap_porta === 993 ? 'yes' : 'no'}`);
   
-  // Timeout di 10 secondi per la connessione
-  const connectPromise = Deno.connect({
-    hostname: config.imap_server,
-    port: config.imap_porta,
-  });
+  // Timeout di 15 secondi per la connessione
+  let connectPromise;
+  
+  if (config.imap_porta === 993 || config.imap_sicurezza === 'ssl') {
+    // Connessione SSL/TLS per porta 993
+    connectPromise = Deno.connectTls({
+      hostname: config.imap_server,
+      port: config.imap_porta,
+    });
+  } else {
+    // Connessione TCP normale per porta 143
+    connectPromise = Deno.connect({
+      hostname: config.imap_server,
+      port: config.imap_porta,
+    });
+  }
   
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000);
+    setTimeout(() => reject(new Error('Connection timeout after 15 seconds')), 15000);
   });
   
   const conn = await Promise.race([connectPromise, timeoutPromise]);
-  console.log(`✅ Connected successfully to ${config.imap_server}`);
+  console.log(`✅ Connected successfully to ${config.imap_server} via ${config.imap_porta === 993 ? 'SSL' : 'plain'}`);
   
   return conn;
 }
 
 // Funzione per leggere risposta IMAP con timeout
-async function readIMAPResponse(conn: Deno.TcpConn): Promise<string> {
-  const buffer = new Uint8Array(4096);
+async function readIMAPResponse(conn: Deno.TlsConn | Deno.TcpConn): Promise<string> {
+  const buffer = new Uint8Array(8192);
   
   const readPromise = conn.read(buffer);
   const timeoutPromise = new Promise<null>((_, reject) => {
-    setTimeout(() => reject(new Error('Read timeout after 30 seconds')), 30000);
+    setTimeout(() => reject(new Error('Read timeout after 10 seconds')), 10000);
   });
   
   const n = await Promise.race([readPromise, timeoutPromise]);
@@ -61,10 +72,13 @@ async function readIMAPResponse(conn: Deno.TcpConn): Promise<string> {
 }
 
 // Funzione per inviare comando IMAP
-async function sendIMAPCommand(conn: Deno.TcpConn, command: string): Promise<string> {
+async function sendIMAPCommand(conn: Deno.TlsConn | Deno.TcpConn, command: string): Promise<string> {
   const encoder = new TextEncoder();
   await conn.write(encoder.encode(command + '\r\n'));
-  return await readIMAPResponse(conn);
+  console.log(`📤 Sent: ${command.substring(0, 20)}...`);
+  const response = await readIMAPResponse(conn);
+  console.log(`📥 Received: ${response.substring(0, 100)}...`);
+  return response;
 }
 
 serve(async (req) => {
@@ -167,72 +181,28 @@ serve(async (req) => {
     }
 
     try {
-      // Connessione IMAP reale per preview
-      console.log('📂 Connecting to real IMAP server for preview...');
-      console.log('🔧 Connection details:', {
-        server: config.imap_server,
-        port: config.imap_porta,
-        security: config.imap_sicurezza,
-        username: config.email_username.substring(0, 3) + '***'
-      });
-      
-      const previewConn = await connectToIMAP(config);
-      
-      // Leggi greeting del server
-      const previewGreeting = await readIMAPResponse(previewConn);
-      console.log('✅ Server greeting:', previewGreeting);
-
       if (preview_only) {
-        // Modalità preview semplificata - conta solo email già sincronizzate
-        try {
-          const alreadySynced = await supabase
-            .from('email_messages')
-            .select('id', { count: 'exact' })
-            .eq('provider_id', provider_id);
+        // Modalità preview - conta email già sincronizzate dal database
+        const alreadySynced = await supabase
+          .from('email_messages')
+          .select('id', { count: 'exact' })
+          .eq('provider_id', provider_id);
 
-          const syncedCount = alreadySynced.count || 0;
-          
-          // Chiudi connessione subito
-          previewConn.close();
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              preview: true,
-              email_sul_server: "Sconosciuto",
-              email_gia_sincronizzate: syncedCount,
-              email_da_scaricare: "Verrà determinato durante l'importazione",
-              server: config.imap_server,
-              username: config.email_username,
-              ready_for_sync: true
-            }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-
-        } catch (previewImapError: any) {
-          console.error('❌ IMAP Error details:', {
-            message: previewImapError.message,
-            name: previewImapError.name,
-            stack: previewImapError.stack?.substring(0, 500)
-          });
-          
-          try {
-            previewConn.close();
-          } catch (closeError) {
-            console.error('⚠️ Error closing connection:', closeError);
-          }
-          
-          // Restituisci errore più specifico
-          if (previewImapError.message.includes('timeout')) {
-            throw new Error(`Connessione IMAP timeout: il server ${config.imap_server}:${config.imap_porta} non risponde entro 10 secondi`);
-          } else if (previewImapError.message.includes('ECONNREFUSED')) {
-            throw new Error(`Connessione rifiutata: il server ${config.imap_server}:${config.imap_porta} non è raggiungibile`);
-          } else if (previewImapError.message.includes('ENOTFOUND')) {
-            throw new Error(`Server non trovato: ${config.imap_server} non esiste`);
-          } else {
-            throw new Error(`Errore connessione IMAP: ${previewImapError.message}`);
-          }
-        }
+        const syncedCount = alreadySynced.count || 0;
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            preview: true,
+            email_sul_server: "Da verificare durante importazione",
+            email_gia_sincronizzate: syncedCount,
+            email_da_scaricare: "Verrà determinato durante l'importazione",
+            server: config.imap_server,
+            username: config.email_username,
+            ready_for_sync: true
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       // Sincronizzazione IMAP reale con batch

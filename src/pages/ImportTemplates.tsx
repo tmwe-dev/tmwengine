@@ -1327,7 +1327,11 @@ export default function ImportTemplates() {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
                           return visibleCols.map((key) => (
-                             <TableHead key={key} className={`bg-background ${key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 'min-w-[120px]'}`}>
+                             <TableHead key={key} className={`bg-background ${
+                               key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                               key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                               'min-w-[120px]'
+                             }`}>
                                {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                              </TableHead>
                           ));
@@ -1351,7 +1355,7 @@ export default function ImportTemplates() {
                                 <TableCell 
                                   key={key} 
                                   className={`truncate transition-colors ${
-                                    key === 'country' ? 'w-20 max-w-[80px]' : 'max-w-[200px]'
+                                    key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 'max-w-[200px]'
                                   } ${
                                     key === 'name' 
                                       ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 

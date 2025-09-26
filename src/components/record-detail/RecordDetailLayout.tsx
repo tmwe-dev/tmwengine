@@ -76,24 +76,19 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           )}
         </div>
         
-        {/* Position - larghezza limitata */}
-        {record.position !== undefined && (
-          <div className="max-w-[200px]">
-            <FieldRenderer 
-              field="position" 
-              value={record.position} 
-              formatCellValue={formatCellValue}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Sezione Contatti */}
-      <div className="space-y-4">
+        {/* Position insieme ai campi contatti */}
         <div className="flex items-end gap-4">
-          <Mail className="h-5 w-5 text-primary mb-3" />
+          {record.position !== undefined && (
+            <div className="max-w-[200px]">
+              <FieldRenderer 
+                field="position" 
+                value={record.position} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
           
-          {/* Campi contatti con icone subito a destra dell'icona principale */}
+          {/* Campi contatti con icone */}
           {record.email !== undefined && (
             <div className="flex-1 min-w-[250px] flex items-end gap-2">
               <Mail className="h-4 w-4 text-blue-500 mb-3" />

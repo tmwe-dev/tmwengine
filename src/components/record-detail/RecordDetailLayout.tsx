@@ -16,7 +16,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
             <Building className="h-5 w-5" />
-            Informazioni Azienda
           </h3>
           
           {/* Company fields allineati a destra */}

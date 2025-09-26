@@ -89,6 +89,15 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-start gap-4">
           <Users className="h-5 w-5 text-primary mt-5" />
           
+          {/* Position allineato con name */}
+          {record.position !== undefined && (
+            <div className="max-w-[200px] min-w-[180px]">
+              <span className="text-sm text-foreground">
+                {formatCellValue(record.position, 'position')}
+              </span>
+            </div>
+          )}
+          
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
           {record.name !== undefined && (
             <div className="max-w-[200px] min-w-[180px]">
@@ -122,18 +131,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       </div>
 
-      {/* Sezione Position + Contatti */}
+      {/* Sezione Contatti */}
       <div className="space-y-4">
-        {/* Position senza bordo e etichetta, solo testo in alto a sinistra */}
-        {record.position !== undefined && (
-          <div className="text-left">
-            <span className="text-sm text-foreground">
-              {formatCellValue(record.position, 'position')}
-            </span>
-          </div>
-        )}
-        
-        <div className="flex items-start gap-4">{/* Nessuna icona per la sezione */}
+        <div className="flex items-start gap-4">
           
           {/* Campi contatti con icone */}
           {record.email !== undefined && (

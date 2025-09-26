@@ -1713,7 +1713,7 @@ export default function ImportTemplates() {
                     <SelectTrigger id="country-filter">
                       <SelectValue placeholder="Tutti i paesi" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800 z-50">
+                    <SelectContent className="z-50">
                       <SelectItem value="__all__">Tutti i paesi</SelectItem>
                       {getUniqueValues('country').map((country) => (
                         <SelectItem key={country} value={String(country)}>

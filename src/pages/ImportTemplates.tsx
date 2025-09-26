@@ -12,13 +12,45 @@ import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock } from 'lucide-react';
 
 // Utility function to format empty values
-const formatCellValue = (value: any): string => {
+const formatCellValue = (value: any, fieldKey?: string): string => {
   if (value === null || value === undefined || value === '' || value === false || value === '-') {
     return '';
   }
   if (typeof value === 'boolean') {
     return value ? 'Sì' : '';
   }
+  
+  // Format dates based on field type
+  if (fieldKey && (typeof value === 'string' || value instanceof Date)) {
+    const fieldLower = fieldKey.toLowerCase();
+    
+    // For scheduled_contact and next_contact_date: only day and month
+    if (fieldLower.includes('scheduled_contact') || fieldLower.includes('next_contact_date')) {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+        }
+      } catch (e) {
+        // If date parsing fails, fall back to original value
+      }
+    }
+    
+    // For created_at and updated_at: time + short date
+    if (fieldLower.includes('created_at') || fieldLower.includes('updated_at')) {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          const time = date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+          const shortDate = date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+          return `${time} - ${shortDate}`;
+        }
+      } catch (e) {
+        // If date parsing fails, fall back to original value
+      }
+    }
+  }
+  
   return String(value);
 };
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1037,7 +1069,7 @@ export default function ImportTemplates() {
                            .filter(([key]) => key !== 'id' && key !== 'import_log_id')
                            .map(([key, value]) => (
                             <TableCell key={key} className="max-w-[200px] truncate">
-                              {formatCellValue(value)}
+                              {formatCellValue(value, key)}
                             </TableCell>
                          ))}
                        </TableRow>

@@ -115,7 +115,13 @@ serve(async (req) => {
 
       const getFieldValue = (fieldName: string, values: string[], isSecondOccurrence = false): string | null => {
         const index = getFieldIndex(fieldName, isSecondOccurrence);
-        return index >= 0 && index < values.length ? (values[index] || null) : null;
+        if (index >= 0 && index < values.length) {
+          const value = values[index];
+          if (!value || value === 'NULL') return null;
+          // Rimuove virgolette e spazi
+          return value.replace(/^["']|["']$/g, '').trim() || null;
+        }
+        return null;
       };
 
       const getBooleanValue = (value: string | null) => {

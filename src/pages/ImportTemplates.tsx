@@ -1958,7 +1958,7 @@ export default function ImportTemplates() {
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
         <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center justify-center">
               <span></span>
               <div className="flex items-center gap-2">
                 <Button

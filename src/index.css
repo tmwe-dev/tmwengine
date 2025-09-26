@@ -175,6 +175,7 @@ Tutti i colori DEVONO essere HSL.
     @apply bg-background text-foreground font-normal antialiased;
     font-size: var(--font-size-base);
     line-height: var(--line-height-normal);
+    touch-action: manipulation;
   }
 
   /* === TIPOGRAFIA GLOBALE === */

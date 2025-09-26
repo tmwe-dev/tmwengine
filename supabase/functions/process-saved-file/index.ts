@@ -7,6 +7,66 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Data validation functions
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+};
+
+const isValidPhone = (phone: string): boolean => {
+  const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,20}$/;
+  return phoneRegex.test(phone.trim());
+};
+
+const isValidCountry = (country: string): boolean => {
+  // Check if it looks like a country name (no @ symbol, reasonable length)
+  return !country.includes('@') && country.length >= 2 && country.length <= 50 && !/^\d+$/.test(country);
+};
+
+const isValidName = (name: string): boolean => {
+  // Name shouldn't contain @ or be just numbers
+  return !name.includes('@') && !/^\d+$/.test(name) && name.length >= 1 && name.length <= 100;
+};
+
+const isValidCompanyName = (company: string): boolean => {
+  // Company name basic validation
+  return company.length >= 1 && company.length <= 200 && !company.includes('@');
+};
+
+const validateAndCleanData = (data: any, fieldName: string, rawValue: string | null): any => {
+  if (!rawValue || rawValue === 'NULL' || rawValue.trim() === '') {
+    return null;
+  }
+
+  const cleanValue = rawValue.replace(/^["']|["']$/g, '').trim();
+
+  switch (fieldName) {
+    case 'email':
+      return isValidEmail(cleanValue) ? cleanValue.toLowerCase() : null;
+    
+    case 'phone':
+    case 'cell':
+      return isValidPhone(cleanValue) ? cleanValue : null;
+    
+    case 'country':
+      return isValidCountry(cleanValue) ? cleanValue : null;
+    
+    case 'name':
+    case 'alias':
+      return isValidName(cleanValue) ? cleanValue : null;
+    
+    case 'company_name':
+    case 'company_alias':
+      return isValidCompanyName(cleanValue) ? cleanValue : null;
+    
+    case 'city':
+      return (cleanValue.length >= 1 && cleanValue.length <= 100 && !cleanValue.includes('@')) ? cleanValue : null;
+    
+    default:
+      return cleanValue.length <= 500 ? cleanValue : cleanValue.substring(0, 500);
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,7 +81,25 @@ serve(async (req) => {
     const { importLogId } = await req.json();
     console.log('Processing saved file for import log:', importLogId);
 
-    // Trova il file salvato
+    // Check if processing is already in progress
+    const { data: existingLog } = await supabaseClient
+      .from('import_logs')
+      .select('stato, righe_importate')
+      .eq('id', importLogId)
+      .single();
+
+    if (existingLog?.stato === 'completato' || existingLog?.stato === 'completato_con_errori') {
+      console.log('Import already completed');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Import already completed',
+        alreadyCompleted: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Find saved file
     const { data: fileImport, error: fileError } = await supabaseClient
       .from('file_imports')
       .select('*')
@@ -33,7 +111,7 @@ serve(async (req) => {
       throw new Error('File salvato non trovato');
     }
 
-    // Aggiorna stato a "elaborazione"
+    // Update status to processing
     await supabaseClient
       .from('file_imports')
       .update({ stato: 'elaborazione' })
@@ -44,20 +122,23 @@ serve(async (req) => {
       .update({ stato: 'elaborazione' })
       .eq('id', importLogId);
 
-    // Processa il file salvato
+    // Process saved file
     const fileContent = fileImport.file_content;
     const separator = fileImport.separator_detected;
     const headers = fileImport.headers_detected;
     
     console.log(`Processing file: ${fileImport.file_name}, rows: ${fileImport.total_rows}`);
+    console.log('Detected headers:', headers);
 
     const lines = fileContent.split('\n').filter((line: string) => line.trim());
     const dataRows = lines.slice(1);
 
-    let processedRows = 0;
+    let processedRows = existingLog?.righe_importate || 0;
     let errorRows = 0;
     const errors: any[] = [];
-    const batchSize = 500;
+    const batchSize = 100; // Reduced batch size to avoid timeout
+    const maxProcessingTime = 100000; // 100 seconds max
+    const startTime = Date.now();
 
     // Helper functions
     const getFieldIndex = (headerName: string, isSecondOccurrence = false): number => {
@@ -75,8 +156,7 @@ serve(async (req) => {
       const index = getFieldIndex(fieldName, isSecondOccurrence);
       if (index >= 0 && index < values.length) {
         const value = values[index];
-        if (!value || value === 'NULL') return null;
-        return value.replace(/^["']|["']$/g, '').trim() || null;
+        return validateAndCleanData(null, fieldName, value);
       }
       return null;
     };
@@ -103,8 +183,18 @@ serve(async (req) => {
       }
     };
 
-    // Process in batches
-    for (let batchStart = 0; batchStart < dataRows.length; batchStart += batchSize) {
+    // Start processing from where we left off
+    const startFromRow = processedRows;
+    let totalValidRecords = 0;
+    
+    // Process in smaller batches
+    for (let batchStart = startFromRow; batchStart < dataRows.length; batchStart += batchSize) {
+      // Check timeout
+      if (Date.now() - startTime > maxProcessingTime) {
+        console.log('Processing timeout reached, will resume later');
+        break;
+      }
+
       const batchEnd = Math.min(batchStart + batchSize, dataRows.length);
       const batchRows = dataRows.slice(batchStart, batchEnd);
       const contactsToInsert = [];
@@ -166,13 +256,29 @@ serve(async (req) => {
           contactData.scheduled_contact = parseDate(getFieldValue('scheduled_contact', values));
           contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
 
-          contactsToInsert.push(contactData);
+          // Validate essential fields - skip record if critical data is invalid
+          const hasValidName = contactData.name || contactData.company_name || contactData.company_alias;
+          const hasValidContact = contactData.email || contactData.phone || contactData.cell;
+
+          if (hasValidName && hasValidContact) {
+            contactsToInsert.push(contactData);
+            totalValidRecords++;
+          } else {
+            console.log(`Skipping invalid record at row ${globalRowIndex + 1}: missing essential fields`);
+            errors.push({ 
+              row: globalRowIndex + 1, 
+              error: 'Missing essential fields (name/company and contact info)' 
+            });
+            errorRows++;
+          }
+          
           processedRows++;
           
         } catch (rowError: any) {
           console.error(`Error processing row ${globalRowIndex + 1}:`, rowError);
           errors.push({ row: globalRowIndex + 1, error: rowError.message });
           errorRows++;
+          processedRows++;
         }
       }
 
@@ -185,50 +291,61 @@ serve(async (req) => {
         if (insertError) {
           console.error('Insert error:', insertError);
           errorRows += contactsToInsert.length;
+          totalValidRecords -= contactsToInsert.length;
           errors.push({ batch: Math.floor(batchStart / batchSize) + 1, error: insertError.message });
         }
       }
 
-      // Update progress
+      // Update progress more frequently
       await supabaseClient
         .from('import_logs')
         .update({
-          righe_importate: processedRows,
+          righe_importate: totalValidRecords,
           righe_errori: errorRows,
           stato: 'elaborazione'
         })
         .eq('id', importLogId);
 
-      console.log(`Batch completed. Progress: ${processedRows + errorRows}/${dataRows.length}`);
+      console.log(`Batch completed. Valid records: ${totalValidRecords}, Errors: ${errorRows}, Progress: ${processedRows}/${dataRows.length}`);
     }
+
+    // Determine final status
+    const isComplete = processedRows >= dataRows.length;
+    const finalStatus = isComplete 
+      ? (errorRows === 0 ? 'completato' : 'completato_con_errori')
+      : 'elaborazione';
 
     // Final updates
     await supabaseClient
       .from('import_logs')
       .update({
         righe_totali: dataRows.length,
-        righe_importate: processedRows,
+        righe_importate: totalValidRecords,
         righe_errori: errorRows,
-        stato: errorRows === 0 ? 'completato' : 'completato_con_errori',
-        errori: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
-        completed_at: new Date().toISOString()
+        stato: finalStatus,
+        errori: errors.length > 0 ? { errors: errors.slice(0, 20) } : null,
+        completed_at: isComplete ? new Date().toISOString() : null
       })
       .eq('id', importLogId);
 
-    await supabaseClient
-      .from('file_imports')
-      .update({ stato: 'elaborato' })
-      .eq('id', fileImport.id);
+    if (isComplete) {
+      await supabaseClient
+        .from('file_imports')
+        .update({ stato: 'elaborato' })
+        .eq('id', fileImport.id);
+    }
 
-    console.log(`Processing completed. Processed: ${processedRows}, Errors: ${errorRows}`);
+    console.log(`Processing ${isComplete ? 'completed' : 'paused'}. Valid records: ${totalValidRecords}, Errors: ${errorRows}, Total processed: ${processedRows}/${dataRows.length}`);
 
     return new Response(JSON.stringify({
       success: true,
       data: {
         importLogId,
         totalRows: dataRows.length,
-        importedRows: processedRows,
+        validRecords: totalValidRecords,
         errorRows,
+        processedRows,
+        isComplete,
         errors: errors.slice(0, 5)
       }
     }), {

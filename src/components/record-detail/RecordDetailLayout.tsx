@@ -165,28 +165,27 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               />
             </div>
           )}
+          
+          {record.zip_code !== undefined && (
+            <div className="max-w-[200px] min-w-[100px]">
+              <FieldRenderer 
+                field="zip_code" 
+                value={record.zip_code} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
+          
+          {record.address !== undefined && (
+            <div className="max-w-[200px] min-w-[200px]">
+              <FieldRenderer 
+                field="address" 
+                value={record.address} 
+                formatCellValue={formatCellValue}
+              />
+            </div>
+          )}
         </div>
-        
-        {/* Address - larghezza limitata */}
-        {record.address !== undefined && (
-          <div className="max-w-[200px]">
-            <FieldRenderer 
-              field="address" 
-              value={record.address} 
-              formatCellValue={formatCellValue}
-            />
-          </div>
-        )}
-        
-        {record.zip_code !== undefined && (
-          <div className="w-40">
-            <FieldRenderer 
-              field="zip_code" 
-              value={record.zip_code} 
-              formatCellValue={formatCellValue}
-            />
-          </div>
-        )}
       </div>
 
       {/* Sezione Informazioni Aggiuntive */}

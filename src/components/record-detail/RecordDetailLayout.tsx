@@ -16,6 +16,68 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
+  // Function to get country flag emoji
+  const getCountryFlag = (country: string) => {
+    if (!country) return '🏳️';
+    
+    const countryFlags: { [key: string]: string } = {
+      'italy': '🇮🇹',
+      'italia': '🇮🇹',
+      'united states': '🇺🇸',
+      'usa': '🇺🇸',
+      'germany': '🇩🇪',
+      'germania': '🇩🇪',
+      'france': '🇫🇷',
+      'francia': '🇫🇷',
+      'spain': '🇪🇸',
+      'spagna': '🇪🇸',
+      'united kingdom': '🇬🇧',
+      'uk': '🇬🇧',
+      'regno unito': '🇬🇧',
+      'china': '🇨🇳',
+      'cina': '🇨🇳',
+      'japan': '🇯🇵',
+      'giappone': '🇯🇵',
+      'canada': '🇨🇦',
+      'australia': '🇦🇺',
+      'brazil': '🇧🇷',
+      'brasile': '🇧🇷',
+      'india': '🇮🇳',
+      'russia': '🇷🇺',
+      'netherlands': '🇳🇱',
+      'olanda': '🇳🇱',
+      'belgium': '🇧🇪',
+      'belgio': '🇧🇪',
+      'switzerland': '🇨🇭',
+      'svizzera': '🇨🇭',
+      'austria': '🇦🇹',
+      'poland': '🇵🇱',
+      'polonia': '🇵🇱',
+      'portugal': '🇵🇹',
+      'portogallo': '🇵🇹',
+      'greece': '🇬🇷',
+      'grecia': '🇬🇷',
+      'turkey': '🇹🇷',
+      'turchia': '🇹🇷',
+      'south korea': '🇰🇷',
+      'corea del sud': '🇰🇷',
+      'mexico': '🇲🇽',
+      'messico': '🇲🇽',
+      'argentina': '🇦🇷',
+      'sweden': '🇸🇪',
+      'svezia': '🇸🇪',
+      'norway': '🇳🇴',
+      'norvegia': '🇳🇴',
+      'denmark': '🇩🇰',
+      'danimarca': '🇩🇰',
+      'finland': '🇫🇮',
+      'finlandia': '🇫🇮'
+    };
+    
+    const lowerCountry = country.toLowerCase().trim();
+    return countryFlags[lowerCountry] || '🌍';
+  };
+
   const handleImportToRubrica = async () => {
     setIsImporting(true);
     try {
@@ -108,7 +170,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Header con bandiera, country e città */}
       <div className="flex justify-end">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <span>🏳️</span>
+          <span style={{ paddingRight: '5px' }}>{getCountryFlag(record.country)}</span>
           <span>{record.country || "N/A"}</span>
           <span>•</span>
           <span>{record.city || "N/A"}</span>

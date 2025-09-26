@@ -745,6 +745,47 @@ export default function ImportTemplates() {
       toast.error('Errore nell\'eliminazione del record');
     }
   };
+  
+  // Function to delete multiple selected records
+  const deleteSelectedRecords = async () => {
+    if (selectedRecords.size === 0) {
+      toast.error('Nessun record selezionato');
+      return;
+    }
+    
+    try {
+      // Get the IDs of selected records
+      const recordsToDelete = Array.from(selectedRecords).map(index => 
+        viewingRecords[index]?.id
+      ).filter(Boolean);
+      
+      if (recordsToDelete.length === 0) {
+        toast.error('Nessun record valido selezionato');
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('imported_contacts')
+        .delete()
+        .in('id', recordsToDelete);
+        
+      if (error) throw error;
+      
+      // Remove from local state
+      const newAllRecords = allRecords.filter(record => 
+        !recordsToDelete.includes(record.id)
+      );
+      setAllRecords(newAllRecords);
+      
+      // Clear selected records
+      setSelectedRecords(new Set());
+      
+      toast.success(`${recordsToDelete.length} record eliminati con successo`);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione dei record:', error);
+      toast.error('Errore nell\'eliminazione dei record');
+    }
+  };
 
   const compareValues = (a: any, b: any, direction: 'asc' | 'desc'): number => {
     // Gestione valori null/undefined
@@ -1661,6 +1702,31 @@ export default function ImportTemplates() {
             >
               Metadata & Sistema
             </Button>
+            
+            {/* Bulk delete button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={deleteSelectedRecords}
+                    disabled={selectedRecords.size === 0}
+                    className="text-xs px-2"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {selectedRecords.size === 0 
+                      ? 'Seleziona record da eliminare' 
+                      : `Elimina ${selectedRecords.size} record selezionati`
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           

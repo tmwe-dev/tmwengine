@@ -26,24 +26,27 @@ interface SyncRequest {
   count_batch_current?: number; // Batch corrente durante il conteggio (default 1)
 }
 
-// Funzione per connessione IMAP nativa con SSL/TLS
+// Funzione per connessione IMAP con gestione SSL appropriata
 async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.TcpConn> {
-  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta} with SSL: ${config.imap_porta === 993 ? 'yes' : 'no'}`);
+  console.log(`🔗 Connecting to ${config.imap_server}:${config.imap_porta} security: ${config.imap_sicurezza}`);
   
   // Timeout di 15 secondi per la connessione
   let connectPromise;
   
-  if (config.imap_porta === 993 || config.imap_sicurezza === 'ssl') {
-    // Connessione SSL/TLS per porta 993
-    connectPromise = Deno.connectTls({
+  // Se imap_sicurezza è "none", usa sempre TCP normale anche sulla porta 993
+  if (config.imap_sicurezza === 'none') {
+    console.log('📝 Using plain TCP connection (no SSL)');
+    connectPromise = Deno.connect({
       hostname: config.imap_server,
       port: config.imap_porta,
     });
   } else {
-    // Connessione TCP normale per porta 143
-    connectPromise = Deno.connect({
+    // Se imap_sicurezza è "ssl" o "tls", usa SSL ma ignora certificati non validi
+    console.log('🔐 Using SSL/TLS connection (ignoring cert validation)');
+    connectPromise = Deno.connectTls({
       hostname: config.imap_server,
       port: config.imap_porta,
+      caCerts: [], // Ignora certificati CA
     });
   }
   
@@ -52,7 +55,7 @@ async function connectToIMAP(config: IMAPConfig): Promise<Deno.TlsConn | Deno.Tc
   });
   
   const conn = await Promise.race([connectPromise, timeoutPromise]);
-  console.log(`✅ Connected successfully to ${config.imap_server} via ${config.imap_porta === 993 ? 'SSL' : 'plain'}`);
+  console.log(`✅ Connected successfully to ${config.imap_server}:${config.imap_porta}`);
   
   return conn;
 }

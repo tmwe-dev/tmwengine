@@ -554,6 +554,22 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   </Button>
                 </div>
               )}
+              
+              {/* Pulsante Crea Attività */}
+              <div className="min-w-[200px] flex items-end">
+                <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="flex items-center gap-2 mt-5"
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Crea Attività
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
+              </div>
             </div>
           </div>
         </div>
@@ -779,6 +795,21 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </div>
         </div>
       )}
+      
+      {/* Dialog per creare attività */}
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Nuova Attività</DialogTitle>
+        </DialogHeader>
+        <ActivityForm
+          onSubmit={handleCreateActivity}
+          onCancel={() => setIsActivityDialogOpen(false)}
+          preselectedCompany={{
+            id: record.id,
+            name: record.company_name || record.azienda || record.name || record.nome || 'Azienda'
+          }}
+        />
+      </DialogContent>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ActivityForm } from '@/components/attivita/ActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Activity {
   id: string;
@@ -93,19 +94,54 @@ export default function Attivita() {
     }
   };
 
-  const handleAddActivity = (activityData: Omit<Activity, 'id' | 'data_creazione'>) => {
-    const newActivity: Activity = {
-      ...activityData,
-      id: Math.random().toString(36).substr(2, 9),
-      data_creazione: new Date().toISOString()
-    };
-    
-    setActivities(prev => [newActivity, ...prev]);
-    setIsFormOpen(false);
-    toast({
-      title: "Attività aggiunta",
-      description: "L'attività è stata creata con successo."
-    });
+  const handleAddActivity = async (activityData: Omit<Activity, 'id' | 'data_creazione'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('attivita')
+        .insert({
+          rubrica_id: activityData.rubrica_id || null,
+          tipo: activityData.tipo,
+          descrizione: activityData.descrizione,
+          stato: activityData.stato || 'aperta',
+          scadenza: activityData.scadenza || null,
+          priorita: activityData.priorita || 'media',
+          assegnato_a: activityData.assegnato_a || null,
+          creato_da: activityData.creato_da || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newActivity: Activity = {
+        id: data.id,
+        rubrica_id: data.rubrica_id,
+        rubrica_nome: activityData.rubrica_nome,
+        tipo: data.tipo as 'chiamata' | 'meeting' | 'email' | 'task',
+        descrizione: data.descrizione,
+        stato: data.stato as 'aperta' | 'in_corso' | 'completata' | 'annullata',
+        scadenza: data.scadenza,
+        priorita: data.priorita as 'alta' | 'media' | 'bassa',
+        assegnato_a: data.assegnato_a,
+        assegnato_nome: activityData.assegnato_nome,
+        creato_da: data.creato_da,
+        data_creazione: data.created_at
+      };
+      
+      setActivities(prev => [newActivity, ...prev]);
+      setIsFormOpen(false);
+      toast({
+        title: "Attività aggiunta",
+        description: "L'attività è stata creata con successo."
+      });
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante la creazione dell'attività.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditActivity = (activityData: Omit<Activity, 'id' | 'data_creazione'>) => {

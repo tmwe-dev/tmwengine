@@ -44,7 +44,7 @@ const CRMLayout = ({ children }) => {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden"
+            className=""
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -89,10 +89,10 @@ const CRMLayout = ({ children }) => {
 
         {/* Sidebar */}
         <aside className={`
-          bg-card border-r border-border transition-all duration-300 z-40
+          bg-card border-r border-border transition-all duration-300
           ${sidebarOpen 
-            ? 'fixed md:relative w-64 left-0 top-16 h-[calc(100vh-4rem)] md:top-auto md:h-auto' 
-            : 'w-0 md:w-16 -left-full md:left-auto'
+            ? 'w-64 fixed md:relative left-0 top-16 h-[calc(100vh-4rem)] md:top-auto md:h-auto z-40' 
+            : 'w-0 md:w-16 -left-full md:left-auto md:relative'
           } 
           overflow-hidden md:overflow-visible
         `}>
@@ -123,7 +123,10 @@ const CRMLayout = ({ children }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-background">
+        <main className={`
+          flex-1 overflow-auto bg-background transition-all duration-300
+          ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}
+        `}>
           <div className="p-4 sm:p-6">
             {children}
           </div>

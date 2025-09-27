@@ -428,36 +428,57 @@ export function AdvancedMultipleActivityForm({
               <FormItem>
                 <FormLabel>Scadenza Generale (opzionale)</FormLabel>
                 <FormControl>
-                  <div className="flex gap-2">
-                    <Input
-                      {...field}
-                      type="datetime-local"
-                      placeholder="Seleziona data e ora di scadenza"
-                      className="flex-1"
-                    />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" type="button">
-                          <CalendarIcon className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={field.value ? new Date(field.value) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
-                              const newDateTime = format(date, 'yyyy-MM-dd') + 'T' + timeValue;
-                              field.onChange(newDateTime);
-                            }
-                          }}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        value={field.value ? field.value.split('T')[0] : ''}
+                        onChange={(e) => {
+                          const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
+                          const newDateTime = e.target.value + 'T' + timeValue;
+                          field.onChange(newDateTime);
+                        }}
+                        className="flex-1"
+                        placeholder="Data"
+                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="icon" type="button">
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={field.value ? new Date(field.value.split('T')[0]) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
+                                const newDateTime = format(date, 'yyyy-MM-dd') + 'T' + timeValue;
+                                field.onChange(newDateTime);
+                              }
+                            }}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="time"
+                        value={field.value ? field.value.split('T')[1] || '' : ''}
+                        onChange={(e) => {
+                          const dateValue = field.value ? field.value.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                          const newDateTime = dateValue + 'T' + e.target.value;
+                          field.onChange(newDateTime);
+                        }}
+                        className="w-32"
+                        placeholder="Ora"
+                      />
+                    </div>
                   </div>
                 </FormControl>
                 <FormMessage />

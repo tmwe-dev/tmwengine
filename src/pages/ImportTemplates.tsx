@@ -442,7 +442,7 @@ export default function ImportTemplates() {
           creato_da: activityData.creato_da || null
         });
 
-        // ATTIVITÀ FUTURA (se programmata una chiamata)
+        // ATTIVITÀ FUTURA (se programmata)
         if (activityData.tipo === 'chiamata' && 
             activityData.programma_chiamata && 
             activityData.data_chiamata_futura) {
@@ -462,6 +462,39 @@ export default function ImportTemplates() {
             descrizione: descrizioneFutura,
             stato: 'aperta', // Attività da fare
             scadenza: new Date(scadenzaFutura).toISOString(),
+            priorita: activityData.priorita || 'media',
+            assegnato_a: activityData.assegnato_a || null,
+            creato_da: activityData.creato_da || null
+          });
+        }
+
+        // ATTIVITÀ EMAIL FUTURA (se programmata)
+        if (activityData.tipo === 'email' && 
+            activityData.programma_email && 
+            activityData.data_email_futura) {
+          
+          let scadenzaEmailFutura = activityData.data_email_futura;
+          if (activityData.ora_email_futura) {
+            scadenzaEmailFutura += 'T' + activityData.ora_email_futura;
+          } else {
+            scadenzaEmailFutura += 'T09:00'; // Ora predefinita
+          }
+
+          let descrizioneEmailFutura = `Email programmata\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\n`;
+          
+          // Se è stato selezionato un template, aggiungi le info
+          if (activityData.template_email_futura) {
+            descrizioneEmailFutura += `Template selezionato: ${activityData.template_email_futura}\n\n`;
+          }
+          
+          descrizioneEmailFutura += `Da inviare email di follow-up`;
+
+          activities.push({
+            rubrica_id: company.id,
+            tipo: 'email',
+            descrizione: descrizioneEmailFutura,
+            stato: 'aperta', // Attività da fare
+            scadenza: new Date(scadenzaEmailFutura).toISOString(),
             priorita: activityData.priorita || 'media',
             assegnato_a: activityData.assegnato_a || null,
             creato_da: activityData.creato_da || null
@@ -492,7 +525,11 @@ export default function ImportTemplates() {
       
       let successMessage;
       if (futureCount > 0) {
-        successMessage = `${immediateCount} ${activityType} completate e ${futureCount} chiamate future programmate`;
+        if (activityData.tipo === 'email' && activityData.programma_email) {
+          successMessage = `${immediateCount} ${activityType} completate e ${futureCount} email future programmate`;
+        } else {
+          successMessage = `${immediateCount} ${activityType} completate e ${futureCount} chiamate future programmate`;
+        }
       } else {
         successMessage = `${immediateCount} ${activityType} completate con successo`;
       }

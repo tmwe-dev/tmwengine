@@ -27,6 +27,12 @@ const advancedActivitySchema = z.object({
   oggetto_email: z.string().optional(),
   testo_email: z.string().optional(),
   
+  // Per Email futura (opzionale)
+  programma_email: z.boolean().default(false),
+  data_email_futura: z.string().optional(),
+  ora_email_futura: z.string().optional(),
+  template_email_futura: z.string().optional(),
+  
   // Per Chiamata e Note generali
   note_generali: z.string().optional(),
   
@@ -97,6 +103,10 @@ export function AdvancedMultipleActivityForm({
       priorita: 'media',
       oggetto_email: '',
       testo_email: '',
+      programma_email: false,
+      data_email_futura: '',
+      ora_email_futura: '',
+      template_email_futura: '',
       note_generali: '',
       programma_chiamata: false,
       data_chiamata_futura: '',
@@ -274,6 +284,130 @@ export function AdvancedMultipleActivityForm({
                     </FormItem>
                   )}
                 />
+                
+                {/* Programma email futura */}
+                <div className="mt-4 p-4 border border-border rounded-lg bg-background-subtle">
+                  <FormField
+                    control={form.control}
+                    name="programma_email"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="font-medium">
+                            Programma anche una email futura
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Crea un'attività separata per un'email da inviare in futuro
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {form.watch('programma_email') && (
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="data_email_futura"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Data Email Futura</FormLabel>
+                              <FormControl>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input {...field} type="date" className="pl-10" />
+                                  </div>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" size="icon" type="button">
+                                        <CalendarIcon className="h-4 w-4" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={field.value ? new Date(field.value) : undefined}
+                                        onSelect={(date) => {
+                                          if (date) {
+                                            field.onChange(format(date, 'yyyy-MM-dd'));
+                                          }
+                                        }}
+                                        disabled={(date) => date < new Date()}
+                                        initialFocus
+                                        className={cn("p-3 pointer-events-auto")}
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="ora_email_futura"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Ora Email (opzionale)</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input
+                                    {...field}
+                                    type="time"
+                                    className="pl-10"
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      {/* Template per email futura */}
+                      {emailTemplates.length > 0 && (
+                        <FormField
+                          control={form.control}
+                          name="template_email_futura"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Template per Email Futura (opzionale)</FormLabel>
+                              <FormControl>
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleziona un template per l'email futura..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {emailTemplates.map((template) => (
+                                      <SelectItem key={template.id} value={template.id}>
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4" />
+                                          {template.nome}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
 

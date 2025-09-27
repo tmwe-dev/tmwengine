@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
-import { MultipleActivityForm } from '@/components/attivita/MultipleActivityForm';
+import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -1228,13 +1228,18 @@ export default function RubricaAvanzata() {
           </DialogHeader>
           
           {showMultipleActivityDialog && (
-            <MultipleActivityForm
-              companies={Array.from(selectedRecords).map(index => {
+            <AdvancedMultipleActivityForm
+              contacts={Array.from(selectedRecords).map(index => {
                 const record = allRecords[index];
                 return {
                   id: record.id,
-                  name: record.azienda || record.nome || 'Azienda non specificata',
-                  source: 'rubrica'
+                  company_name: record.azienda,
+                  company_alias: record.alias,
+                  name: record.nome,
+                  alias: record.responsabile,
+                  email: record.email,
+                  phone: record.telefono,
+                  cell: record.cellulare
                 };
               })}
               onSubmit={handleCreateMultipleActivities}

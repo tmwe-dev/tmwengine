@@ -1855,6 +1855,10 @@ export default function ImportTemplates() {
           {/* Controlli visibilità colonne */}
           <div className="flex justify-between items-center gap-2 py-4 border-b">
             <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Visualizza colonne:</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
               {/* Pulsante Crea Attività Multiple */}
               {selectedRecords.size > 0 && (
                 <TooltipProvider>
@@ -1876,11 +1880,7 @@ export default function ImportTemplates() {
                 </TooltipProvider>
               )}
               
-              <span className="text-sm font-medium">Visualizza colonne:</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-            <Button
+              <Button
               size="sm"
               variant={visibleColumns.company ? "default" : "outline"}
               onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}

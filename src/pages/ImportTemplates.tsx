@@ -2253,11 +2253,11 @@ export default function ImportTemplates() {
 
       {/* Dialog per attività multiple */}
       <Dialog open={showMultipleActivityDialog} onOpenChange={setShowMultipleActivityDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Crea Attività Multiple</DialogTitle>
             <DialogDescription>
-              Crea una nuova attività per tutte le aziende selezionate
+              Crea una nuova attività per tutte le aziende selezionate ({Array.from(selectedRecords).length} contatti)
             </DialogDescription>
           </DialogHeader>
           

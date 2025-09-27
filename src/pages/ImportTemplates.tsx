@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
+import { ActivityIndicators } from '@/components/ui/activity-indicators';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import countriesData from '@/data/countries.json';
 
 // Utility function to format empty values
@@ -292,6 +294,7 @@ export default function ImportTemplates() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
+  const { getCompanyActivities, hasActivities, refreshActivities } = useCompanyActivities();
 
   useEffect(() => {
     loadEmailTemplates();
@@ -446,9 +449,19 @@ export default function ImportTemplates() {
         };
       });
 
-      // Inserisci le attività nel database
+      // Inserisci le attività nel database usando SQL diretto
       const { error } = await supabase
-        .rpc('create_activity_records', { activity_data: activities });
+        .from('attivita')
+        .insert(activities.map(activity => ({
+          rubrica_id: activity.rubrica_id,
+          tipo: activity.tipo,
+          descrizione: activity.descrizione,
+          stato: activity.stato || 'aperta',
+          scadenza: activity.scadenza ? activity.scadenza : null,
+          priorita: activity.priorita || 'media',
+          assegnato_a: activity.assegnato_a || null,
+          creato_da: activity.creato_da || null
+        })));
 
       if (error) throw error;
 
@@ -2104,6 +2117,15 @@ export default function ImportTemplates() {
                                      <div className="flex items-center gap-1">
                                        <span className="text-base">{getCountryFlag(record[key])}</span>
                                        <span>{formatCellValue(record[key], key)}</span>
+                                     </div>
+                                   ) : key === 'company_name' ? (
+                                     <div className="flex items-center gap-2">
+                                       <span>{formatCellValue(record[key], key)}</span>
+                                       <ActivityIndicators 
+                                         companyId={record.id} 
+                                         activities={getCompanyActivities(record.id)}
+                                         size="sm"
+                                       />
                                      </div>
                                    ) : key === 'email' && record[key] ? (
                                      <TooltipProvider>

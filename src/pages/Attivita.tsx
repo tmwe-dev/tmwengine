@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ActivityForm } from '@/components/attivita/ActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Activity {
   id: string;
@@ -50,6 +51,7 @@ export default function Attivita() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     stato: '',
     tipo: '',
@@ -57,6 +59,47 @@ export default function Attivita() {
     scadenza: ''
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadActivities();
+  }, []);
+
+  const loadActivities = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('attivita')
+        .select(`
+          *,
+          rubrica:rubrica_id (
+            azienda,
+            nome
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedActivities: Activity[] = data?.map(activity => ({
+        ...activity,
+        tipo: activity.tipo as 'chiamata' | 'meeting' | 'email' | 'task',
+        stato: activity.stato as 'aperta' | 'in_corso' | 'completata' | 'annullata',
+        priorita: activity.priorita as 'alta' | 'media' | 'bassa',
+        rubrica_nome: activity.rubrica?.azienda || activity.rubrica?.nome || ''
+      })) || [];
+
+      setActivities(formattedActivities);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le attività",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,55 +136,123 @@ export default function Attivita() {
     }
   };
 
-  const handleAddActivity = (activityData: Omit<Activity, 'id' | 'data_creazione'>) => {
-    const newActivity: Activity = {
-      ...activityData,
-      id: Math.random().toString(36).substr(2, 9),
-      data_creazione: new Date().toISOString()
-    };
-    
-    setActivities(prev => [newActivity, ...prev]);
-    setIsFormOpen(false);
-    toast({
-      title: "Attività aggiunta",
-      description: "L'attività è stata creata con successo."
-    });
+  const handleAddActivity = async (activityData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('attivita')
+        .insert([{
+          rubrica_id: activityData.rubrica_id || null,
+          tipo: activityData.tipo,
+          descrizione: activityData.descrizione,
+          stato: activityData.stato || 'aperta',
+          scadenza: activityData.scadenza || null,
+          priorita: activityData.priorita || 'media',
+          assegnato_a: activityData.assegnato_a || null,
+          creato_da: activityData.creato_da || null
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await loadActivities(); // Ricarica la lista
+      setIsFormOpen(false);
+      toast({
+        title: "Attività aggiunta",
+        description: "L'attività è stata creata con successo."
+      });
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare l'attività",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditActivity = (activityData: Omit<Activity, 'id' | 'data_creazione'>) => {
+  const handleEditActivity = async (activityData: any) => {
     if (!selectedActivity) return;
 
-    setActivities(prev => prev.map(activity => 
-      activity.id === selectedActivity.id 
-        ? { ...activity, ...activityData }
-        : activity
-    ));
-    setSelectedActivity(null);
-    setIsFormOpen(false);
-    toast({
-      title: "Attività modificata",
-      description: "Le modifiche sono state salvate con successo."
-    });
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .update({
+          rubrica_id: activityData.rubrica_id || null,
+          tipo: activityData.tipo,
+          descrizione: activityData.descrizione,
+          stato: activityData.stato,
+          scadenza: activityData.scadenza || null,
+          priorita: activityData.priorita,
+          assegnato_a: activityData.assegnato_a || null
+        })
+        .eq('id', selectedActivity.id);
+
+      if (error) throw error;
+
+      await loadActivities(); // Ricarica la lista
+      setSelectedActivity(null);
+      setIsFormOpen(false);
+      toast({
+        title: "Attività modificata",
+        description: "Le modifiche sono state salvate con successo."
+      });
+    } catch (error) {
+      console.error('Error updating activity:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile modificare l'attività",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteActivity = (activityId: string) => {
-    setActivities(prev => prev.filter(activity => activity.id !== activityId));
-    toast({
-      title: "Attività eliminata",
-      description: "L'attività è stata rimossa."
-    });
+  const handleDeleteActivity = async (activityId: string) => {
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .delete()
+        .eq('id', activityId);
+
+      if (error) throw error;
+
+      await loadActivities(); // Ricarica la lista
+      toast({
+        title: "Attività eliminata",
+        description: "L'attività è stata rimossa."
+      });
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare l'attività",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleStatusChange = (activityId: string, newStatus: Activity['stato']) => {
-    setActivities(prev => prev.map(activity => 
-      activity.id === activityId 
-        ? { ...activity, stato: newStatus }
-        : activity
-    ));
-    toast({
-      title: "Stato aggiornato",
-      description: `L'attività è ora ${STATO_LABELS[newStatus].toLowerCase()}.`
-    });
+  const handleStatusChange = async (activityId: string, newStatus: Activity['stato']) => {
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .update({ stato: newStatus })
+        .eq('id', activityId);
+
+      if (error) throw error;
+
+      await loadActivities(); // Ricarica la lista
+      toast({
+        title: "Stato aggiornato",
+        description: `L'attività è ora ${STATO_LABELS[newStatus].toLowerCase()}.`
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato",
+        variant: "destructive"
+      });
+    }
   };
 
   const openEditForm = (activity: Activity) => {

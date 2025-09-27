@@ -9,8 +9,9 @@ import { ContactForm } from '@/components/rubrica/ContactForm';
 import { ContactFilters } from '@/components/rubrica/ContactFilters';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ActivityIndicators } from '@/components/ui/activity-indicators';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 
 interface Contact {
   id: string;
@@ -44,6 +45,9 @@ export default function Rubrica() {
     citta: '',
     nazione: ''
   });
+  
+  const { toast } = useToast();
+  const { getCompanyActivities, refreshActivities } = useCompanyActivities();
 
   // Carica i contatti dal database
   useEffect(() => {
@@ -59,14 +63,22 @@ export default function Rubrica() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        toast.error('Errore nel caricamento dei contatti');
+        toast({
+          title: "Errore",
+          description: "Errore nel caricamento dei contatti",
+          variant: "destructive"
+        });
         console.error('Error loading contacts:', error);
         return;
       }
 
       setContacts(data || []);
     } catch (error) {
-      toast.error('Errore nel caricamento dei contatti');
+      toast({
+        title: "Errore",
+        description: "Errore nel caricamento dei contatti",
+        variant: "destructive"
+      });
       console.error('Error loading contacts:', error);
     } finally {
       setLoading(false);
@@ -101,7 +113,10 @@ export default function Rubrica() {
 
       setContacts(prev => [data, ...prev]);
       setIsFormOpen(false);
-      toast.success('Contatto aggiunto con successo');
+      toast({
+        title: "Successo",
+        description: "Contatto aggiunto con successo"
+      });
     } catch (error) {
       toast.error('Errore nell\'aggiunta del contatto');
       console.error('Error adding contact:', error);
@@ -353,12 +368,17 @@ export default function Rubrica() {
                         {contact.nome || contact.responsabile}
                       </CardTitle>
                     </div>
-                    {contact.azienda && (
-                      <p className="text-body text-text-secondary flex items-center gap-2 mt-1">
-                        <Building className="h-4 w-4" />
-                        {contact.azienda}
-                      </p>
-                    )}
+                     {contact.azienda && (
+                       <div className="flex items-center gap-2 mt-1">
+                         <Building className="h-4 w-4" />
+                         <span className="text-body text-text-secondary">{contact.azienda}</span>
+                         <ActivityIndicators 
+                           companyId={contact.id} 
+                           activities={getCompanyActivities(contact.id)}
+                           size="sm"
+                         />
+                       </div>
+                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button

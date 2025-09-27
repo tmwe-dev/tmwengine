@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2 } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText } from 'lucide-react';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -781,14 +781,26 @@ export default function RubricaAvanzata() {
                         />
                       </TableHead>
                       <TableHead>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSort('nome')}
-                          className="h-auto p-0 font-medium flex items-center gap-1"
-                        >
-                          Nome {getSortIcon('nome')}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <FileText className="h-3 w-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Clicca l'icona per vedere le note</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort('nome')}
+                            className="h-auto p-0 font-medium flex items-center gap-1"
+                          >
+                            Nome {getSortIcon('nome')}
+                          </Button>
+                        </div>
                       </TableHead>
                       {visibleColumns.company && (
                         <TableHead>
@@ -861,15 +873,35 @@ export default function RubricaAvanzata() {
                             />
                           </TableCell>
                           <TableCell>
-                            <div 
-                              className="flex flex-col cursor-pointer hover:bg-primary/10 text-primary font-medium rounded p-1" 
-                              onClick={() => handleRecordClick(record, index)}
-                              title="Clicca per aprire dettaglio record"
-                            >
-                              <span className="font-medium">{formatCellValue(record.nome)}</span>
-                              {record.responsabile && record.responsabile !== record.nome && (
-                                <span className="text-sm text-text-secondary">{formatCellValue(record.responsabile)}</span>
+                            <div className="flex items-center gap-2">
+                              {record.note && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <FileText 
+                                        className="h-3 w-3 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toast.info(record.note);
+                                        }}
+                                      />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Clicca per vedere le note</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
+                              <div 
+                                className="flex flex-col cursor-pointer hover:bg-primary/10 text-primary font-medium rounded p-1" 
+                                onClick={() => handleRecordClick(record, index)}
+                                title="Clicca per aprire dettaglio record"
+                              >
+                                <span className="font-medium">{formatCellValue(record.nome)}</span>
+                                {record.responsabile && record.responsabile !== record.nome && (
+                                  <span className="text-sm text-text-secondary">{formatCellValue(record.responsabile)}</span>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                           {visibleColumns.company && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { ContactFilters } from '@/components/rubrica/ContactFilters';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Contact {
   id: string;
@@ -332,9 +333,26 @@ export default function Rubrica() {
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="text-heading-4 font-semibold text-text-primary">
-                      {contact.nome || contact.responsabile}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {contact.note && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <FileText 
+                                className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                onClick={() => toast.info(contact.note)}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Clicca per vedere le note</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      <CardTitle className="text-heading-4 font-semibold text-text-primary">
+                        {contact.nome || contact.responsabile}
+                      </CardTitle>
+                    </div>
                     {contact.azienda && (
                       <p className="text-body text-text-secondary flex items-center gap-2 mt-1">
                         <Building className="h-4 w-4" />

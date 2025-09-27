@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -15,6 +16,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
 
   // Function to get country code for flag
   const getCountryCode = (country: string) => {
@@ -188,6 +191,39 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       });
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    try {
+      // Determina la tabella in base ai campi presenti nel record
+      const isImportedContact = record.hasOwnProperty('import_log_id');
+      const tableName = isImportedContact ? 'imported_contacts' : 'rubrica';
+      
+      const { error } = await supabase
+        .from(tableName)
+        .update({ note: noteValue })
+        .eq('id', record.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Aggiorna il record locale
+      record.note = noteValue;
+      setEditingNote(false);
+      
+      toast({
+        title: "Note salvate",
+        description: "Le note sono state aggiornate con successo.",
+      });
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio delle note.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -487,6 +523,61 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
       )}
 
+      {/* Sezione Note */}
+      <div className="space-y-4">
+        <div className="flex items-start gap-4">
+          <FileText className="h-5 w-5 text-primary mt-5" />
+          
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-medium text-blue-600">Note</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (editingNote) {
+                    handleSaveNote();
+                  } else {
+                    setEditingNote(true);
+                  }
+                }}
+              >
+                {editingNote ? 'Salva' : 'Modifica'}
+              </Button>
+            </div>
+            
+            {editingNote ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={noteValue}
+                  onChange={(e) => setNoteValue(e.target.value)}
+                  placeholder="Inserisci le note..."
+                  className="min-h-[100px] resize-y"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNoteValue(record.note || record.notes || '');
+                      setEditingNote(false);
+                    }}
+                  >
+                    Annulla
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-muted/20 rounded-md border min-h-[60px]">
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {noteValue || 'Nessuna nota presente. Clicca "Modifica" per aggiungerne una.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Sezione Informazioni Sistema */}
       {(record.original_id !== undefined || record.commercial_anagrafiche_id !== undefined || record.stato !== undefined || record.agent_id !== undefined || record.completed !== undefined || record.archiviata !== undefined || record.has_actions !== undefined || record.row_number !== undefined || record.is_imported_to_rubrica !== undefined) && (
         <div className="space-y-4">
@@ -535,7 +626,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 'city', 'zip_code', 'address', 'last_contact',
                 'next_contact_date', 'scheduled_contact', 'created_at', 'updated_at',
                 'original_id', 'commercial_anagrafiche_id', 'stato', 'agent_id', 
-                'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica'
+                'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica',
+                'note', 'notes'
               ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '')
               .map(field => (
                 <div key={field} className="text-left">

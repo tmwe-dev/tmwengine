@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import countriesData from '@/data/countries.json';
 
@@ -1854,7 +1854,18 @@ export default function ImportTemplates() {
                              aria-label="Seleziona tutti"
                            />
                          </TableHead>
-                        <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]">#</TableHead>
+                         <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <FileText className="h-3 w-3 ml-1 inline" />
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Clicca l'icona per vedere le note</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </TableHead>
                         {(() => {
                           const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
                           const visibleCols = getVisibleColumns(allColumns);
@@ -1894,8 +1905,25 @@ export default function ImportTemplates() {
                               />
                             </TableCell>
                             <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
-                              {actualIndex + 1}
-                            </TableCell>
+                              <div className="flex items-center justify-center gap-1">
+                                {record.note && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <FileText 
+                                          className="h-3 w-3 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                          onClick={() => toast.info(record.note)}
+                                        />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Clicca per vedere le note</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                <span className="text-xs">{actualIndex + 1}</span>
+                              </div>
+                             </TableCell>
                           {(() => {
                             const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                             const visibleCols = getVisibleColumns(allColumns);

@@ -1862,12 +1862,11 @@ export default function ImportTemplates() {
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        variant="default"
+                        variant="outline"
                         onClick={() => setShowMultipleActivityDialog(true)}
-                        className="text-xs px-3 flex items-center gap-2"
+                        className="text-xs px-2"
                       >
-                        <FileText className="h-4 w-4" />
-                        Crea Attività ({selectedRecords.size})
+                        <FileText className="h-4 w-4 text-blue-500" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

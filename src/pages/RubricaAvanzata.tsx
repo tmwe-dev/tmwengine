@@ -844,10 +844,9 @@ export default function RubricaAvanzata() {
                       return (
                         <TableRow 
                           key={record.id || index}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleRecordClick(record, index)}
+                          className="hover:bg-muted/50"
                         >
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TableCell>
                             <Checkbox
                               checked={selectedRecords.has(actualIndex)}
                               onCheckedChange={(checked) => {
@@ -862,7 +861,11 @@ export default function RubricaAvanzata() {
                             />
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
+                            <div 
+                              className="flex flex-col cursor-pointer hover:bg-primary/10 text-primary font-medium rounded p-1" 
+                              onClick={() => handleRecordClick(record, index)}
+                              title="Clicca per aprire dettaglio record"
+                            >
                               <span className="font-medium">{formatCellValue(record.nome)}</span>
                               {record.responsabile && record.responsabile !== record.nome && (
                                 <span className="text-sm text-text-secondary">{formatCellValue(record.responsabile)}</span>
@@ -874,7 +877,7 @@ export default function RubricaAvanzata() {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <div className="cursor-pointer" onClick={(e) => { e.stopPropagation(); addFilter('azienda', record.azienda); }}>
+                                    <div className="cursor-pointer" onClick={() => addFilter('azienda', record.azienda)}>
                                       {formatCellValue(record.azienda)}
                                     </div>
                                   </TooltipTrigger>
@@ -903,7 +906,7 @@ export default function RubricaAvanzata() {
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <div className="cursor-pointer flex items-center gap-1" onClick={(e) => { e.stopPropagation(); addFilter('citta', record.citta); }}>
+                                      <div className="cursor-pointer flex items-center gap-1" onClick={() => addFilter('citta', record.citta)}>
                                         <MapPin className="h-3 w-3 text-text-secondary" />
                                         {formatCellValue(record.citta)}
                                       </div>
@@ -922,7 +925,7 @@ export default function RubricaAvanzata() {
                                 <TooltipTrigger asChild>
                                   <div 
                                     className="cursor-pointer flex items-center gap-1" 
-                                    onClick={(e) => { e.stopPropagation(); addFilter('paese', record.paese); }}
+                                    onClick={() => addFilter('paese', record.paese)}
                                   >
                                     <span className="text-lg">{getCountryFlag(record.paese)}</span>
                                     <span className="text-xs">{formatCellValue(record.paese)}</span>
@@ -946,7 +949,7 @@ export default function RubricaAvanzata() {
                                             <Badge 
                                               variant="secondary" 
                                               className="text-xs cursor-pointer"
-                                              onClick={(e) => { e.stopPropagation(); addFilter('tags', tag); }}
+                                              onClick={() => addFilter('tags', tag)}
                                             >
                                               <Tag className="h-2 w-2 mr-1" />
                                               {tag}
@@ -972,7 +975,7 @@ export default function RubricaAvanzata() {
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <div className="cursor-pointer" onClick={(e) => { e.stopPropagation(); addFilter('origine', record.origine); }}>
+                                      <div className="cursor-pointer" onClick={() => addFilter('origine', record.origine)}>
                                         {formatCellValue(record.origine)}
                                       </div>
                                     </TooltipTrigger>
@@ -989,7 +992,7 @@ export default function RubricaAvanzata() {
                                       <Badge 
                                         variant={record.stato === 'A' ? 'default' : 'secondary'} 
                                         className="cursor-pointer"
-                                        onClick={(e) => { e.stopPropagation(); addFilter('stato', record.stato); }}
+                                        onClick={() => addFilter('stato', record.stato)}
                                       >
                                         {record.stato === 'A' ? 'Attivo' : record.stato}
                                       </Badge>
@@ -1002,7 +1005,7 @@ export default function RubricaAvanzata() {
                               </TableCell>
                             </>
                           )}
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TableCell>
                             <div className="flex gap-1">
                               <TooltipProvider>
                                 <Tooltip>

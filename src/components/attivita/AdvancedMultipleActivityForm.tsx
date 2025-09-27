@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon } from 'lucide-react';
+import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -44,6 +44,10 @@ const advancedActivitySchema = z.object({
   // Per entrambi
   assegnato_nome: z.string().optional(),
   salva_in_rubrica: z.boolean().default(false),
+  
+  // Allegati
+  allegati_esistenti: z.array(z.string()).default([]), // IDs degli allegati selezionati dalla memoria
+  nuovi_allegati: z.array(z.any()).default([]), // Nuovi file caricati
 }).refine((data) => {
   if (data.tipo === 'email') {
     return data.oggetto_email && data.testo_email;
@@ -78,6 +82,14 @@ interface EmailTemplate {
   contenuto: string;
 }
 
+interface EmailAttachment {
+  id: string;
+  nome: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+}
+
 interface AdvancedMultipleActivityFormProps {
   contacts: ContactRecord[];
   onSubmit: (data: AdvancedActivityFormData) => void;
@@ -95,6 +107,9 @@ export function AdvancedMultipleActivityForm({
 }: AdvancedMultipleActivityFormProps) {
   const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>('email');
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -112,7 +127,9 @@ export function AdvancedMultipleActivityForm({
       data_chiamata_futura: '',
       ora_chiamata_futura: '',
       assegnato_nome: '',
-      salva_in_rubrica: false
+      salva_in_rubrica: false,
+      allegati_esistenti: [],
+      nuovi_allegati: [],
     }
   });
 
@@ -120,6 +137,7 @@ export function AdvancedMultipleActivityForm({
 
   useEffect(() => {
     loadEmailTemplates();
+    loadEmailAttachments();
   }, []);
 
   const loadEmailTemplates = async () => {
@@ -135,6 +153,74 @@ export function AdvancedMultipleActivityForm({
     } catch (error) {
       console.error('Errore caricamento template:', error);
     }
+  };
+
+  const loadEmailAttachments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_attachments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEmailAttachments(data || []);
+    } catch (error) {
+      console.error('Errore caricamento allegati:', error);
+    }
+  };
+
+  // Gestione drag & drop
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    setSelectedFiles(prev => [...prev, ...files]);
+    
+    // Aggiorna il form
+    const currentFiles = form.getValues('nuovi_allegati') || [];
+    form.setValue('nuovi_allegati', [...currentFiles, ...files]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+    
+    // Aggiorna il form
+    const currentFiles = form.getValues('nuovi_allegati') || [];
+    form.setValue('nuovi_allegati', [...currentFiles, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
+    form.setValue('nuovi_allegati', newFiles);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleTabChange = (value: string) => {
@@ -580,6 +666,166 @@ export function AdvancedMultipleActivityForm({
                 </FormItem>
               )}
             />
+          </div>
+        </div>
+
+        {/* Sezione Allegati */}
+        <div className="space-y-4">
+          <h3 className="text-heading-4 font-semibold text-text-primary flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Allegati
+          </h3>
+
+          {/* Allegati dalla memoria */}
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="allegati_esistenti"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Seleziona allegati dalla memoria</FormLabel>
+                  <FormControl>
+                    <Select
+                      value=""
+                      onValueChange={(value) => {
+                        if (value && !field.value.includes(value)) {
+                          field.onChange([...field.value, value]);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Scegli un allegato dalla memoria..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {emailAttachments.map((attachment) => (
+                          <SelectItem key={attachment.id} value={attachment.id}>
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              <span>{attachment.nome}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({formatFileSize(attachment.file_size)})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Mostra allegati selezionati dalla memoria */}
+            {form.watch('allegati_esistenti')?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Allegati selezionati dalla memoria:</p>
+                <div className="space-y-2">
+                  {form.watch('allegati_esistenti').map((attachmentId) => {
+                    const attachment = emailAttachments.find(a => a.id === attachmentId);
+                    if (!attachment) return null;
+                    
+                    return (
+                      <div key={attachmentId} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-sm">{attachment.nome}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({formatFileSize(attachment.file_size)})
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const current = form.getValues('allegati_esistenti');
+                            form.setValue('allegati_esistenti', current.filter(id => id !== attachmentId));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Drag & Drop per nuovi file */}
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="nuovi_allegati"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Carica nuovi allegati</FormLabel>
+                  <FormControl>
+                    <div
+                      className={cn(
+                        "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
+                        dragActive 
+                          ? "border-primary bg-primary/5" 
+                          : "border-muted-foreground/25 hover:border-primary/50"
+                      )}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                    >
+                      <input
+                        id="file-upload"
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileSelect}
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                      />
+                      <div className="space-y-2">
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm font-medium">
+                          Trascina i file qui o clicca per selezionare
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          PDF, Word, Excel, Immagini, Testo (max 10MB per file)
+                        </p>
+                      </div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Mostra file selezionati */}
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">File selezionati:</p>
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({formatFileSize(file.size)})
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

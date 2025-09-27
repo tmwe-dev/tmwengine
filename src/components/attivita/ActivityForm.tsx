@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Phone, Calendar, Clock } from 'lucide-react';
+import { Mail, Phone, Calendar, Clock, FileText } from 'lucide-react';
 import { CompanySelector } from './CompanySelector';
+import { supabase } from '@/integrations/supabase/client';
 
 const activitySchema = z.object({
   rubrica_id: z.string().optional(),
@@ -71,6 +72,13 @@ interface Activity {
   data_creazione: string;
 }
 
+interface EmailTemplate {
+  id: string;
+  nome: string;
+  oggetto: string;
+  contenuto: string;
+}
+
 interface ActivityFormProps {
   activity?: Activity | null;
   onSubmit: (data: ActivityFormData) => void;
@@ -86,6 +94,7 @@ interface ActivityFormProps {
 
 export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany }: ActivityFormProps) {
   const [activeTab, setActiveTab] = useState<'basic' | 'email' | 'chiamata'>('basic');
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   
   const form = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
@@ -112,6 +121,33 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
   });
 
   const watchTipo = form.watch('tipo');
+
+  useEffect(() => {
+    loadEmailTemplates();
+  }, []);
+
+  const loadEmailTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('attivo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setEmailTemplates(data || []);
+    } catch (error) {
+      console.error('Errore caricamento template:', error);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      form.setValue('oggetto_email', template.oggetto);
+      form.setValue('testo_email', template.contenuto);
+    }
+  };
 
   const handleSubmit = (data: ActivityFormData) => {
     let finalDescription = data.descrizione || '';
@@ -215,12 +251,34 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
           {/* Campi specifici per tipo attività */}
           {watchTipo === 'email' && (
             <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
-              <div className="flex items-center gap-2 mb-4">
-                <Mail className="h-5 w-5 text-blue-500" />
-                <h4 className="font-semibold">Configurazione Email</h4>
-              </div>
-              
-              <FormField
+               <div className="flex items-center gap-2 mb-4">
+                 <Mail className="h-5 w-5 text-blue-500" />
+                 <h4 className="font-semibold">Configurazione Email</h4>
+               </div>
+
+               {/* Selezione Template */}
+               {emailTemplates.length > 0 && (
+                 <div className="mb-4">
+                   <label className="text-sm font-medium mb-2 block">Template Email (opzionale)</label>
+                   <Select onValueChange={handleTemplateSelect}>
+                     <SelectTrigger>
+                       <SelectValue placeholder="Seleziona un template..." />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {emailTemplates.map((template) => (
+                         <SelectItem key={template.id} value={template.id}>
+                           <div className="flex items-center gap-2">
+                             <FileText className="h-4 w-4" />
+                             {template.nome}
+                           </div>
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+               )}
+               
+               <FormField
                 control={form.control}
                 name="oggetto_email"
                 render={({ field }) => (
@@ -343,40 +401,42 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
           <h3 className="text-heading-4 font-semibold text-text-primary">
             Azienda e Contatto Collegati
           </h3>
-          
-          <FormField
-            control={form.control}
-            name="rubrica_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Seleziona Azienda</FormLabel>
-                <FormControl>
-                  <CompanySelector
-                    value={field.value}
-                    onSelect={(companyId, companyName) => {
-                      field.onChange(companyId);
-                      form.setValue('rubrica_nome', companyName);
-                    }}
-                    placeholder="Seleziona un'azienda (opzionale)"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+           
+           {!preselectedCompany && (
+             <FormField
+               control={form.control}
+               name="rubrica_id"
+               render={({ field }) => (
+                 <FormItem>
+                   <FormLabel>Seleziona Azienda</FormLabel>
+                   <FormControl>
+                     <CompanySelector
+                       value={field.value}
+                       onSelect={(companyId, companyName) => {
+                         field.onChange(companyId);
+                         form.setValue('rubrica_nome', companyName);
+                       }}
+                       placeholder="Seleziona un'azienda (opzionale)"
+                     />
+                   </FormControl>
+                   <FormMessage />
+                 </FormItem>
+               )}
+             />
+           )}
 
-          {/* Mostra informazioni contatto preselezionato */}
-          {preselectedCompany && (
-            <div className="p-3 bg-background-subtle rounded border border-border">
-              <h4 className="font-medium text-sm mb-2">Dettagli Contatto:</h4>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div><strong>Azienda:</strong> {preselectedCompany.name}</div>
-                {preselectedCompany.alias && <div><strong>Alias Azienda:</strong> {preselectedCompany.alias}</div>}
-                {preselectedCompany.contact_name && <div><strong>Contatto:</strong> {preselectedCompany.contact_name}</div>}
-                {preselectedCompany.contact_alias && <div><strong>Alias Contatto:</strong> {preselectedCompany.contact_alias}</div>}
-              </div>
-            </div>
-          )}
+           {/* Mostra informazioni contatto preselezionato */}
+           {preselectedCompany && (
+             <div className="p-3 bg-background-subtle rounded border border-border">
+               <h4 className="font-medium text-sm mb-2">Dettagli Contatto:</h4>
+               <div className="text-sm text-muted-foreground space-y-1">
+                 <div><strong>Azienda:</strong> {preselectedCompany.name}</div>
+                 {preselectedCompany.alias && <div><strong>Alias Azienda:</strong> {preselectedCompany.alias}</div>}
+                 {preselectedCompany.contact_name && <div><strong>Contatto:</strong> {preselectedCompany.contact_name}</div>}
+                 {preselectedCompany.contact_alias && <div><strong>Alias Contatto:</strong> {preselectedCompany.contact_alias}</div>}
+               </div>
+             </div>
+           )}
         </div>
 
         {/* Scadenza e assegnazione */}

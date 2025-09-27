@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { CompanySelector } from './CompanySelector';
 
 const activitySchema = z.object({
   rubrica_id: z.string().optional(),
@@ -154,17 +155,24 @@ export function ActivityForm({ activity, onSubmit, onCancel }: ActivityFormProps
         {/* Contatto collegato */}
         <div className="space-y-4">
           <h3 className="text-heading-4 font-semibold text-text-primary">
-            Contatto Collegato
+            Azienda Collegata
           </h3>
           
           <FormField
             control={form.control}
-            name="rubrica_nome"
+            name="rubrica_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nome Contatto</FormLabel>
+                <FormLabel>Seleziona Azienda</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Nome del contatto collegato (opzionale)" />
+                  <CompanySelector
+                    value={field.value}
+                    onSelect={(companyId, companyName) => {
+                      field.onChange(companyId);
+                      form.setValue('rubrica_nome', companyName);
+                    }}
+                    placeholder="Seleziona un'azienda (opzionale)"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

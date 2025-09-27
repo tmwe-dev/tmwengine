@@ -34,7 +34,7 @@ const activitySchema = z.object({
   // Campi specifici per chiamata
   data_chiamata: z.string().optional(),
   ora_chiamata: z.string().optional(),
-  nota_chiamata: z.string().optional(),
+  note_generali: z.string().optional(),
   
   stato: z.enum(['aperta', 'in_corso', 'completata', 'annullata']).default('aperta'),
   scadenza: z.string().optional(),
@@ -48,7 +48,7 @@ const activitySchema = z.object({
     return data.oggetto_email && data.testo_email;
   }
   if (data.tipo === 'chiamata') {
-    return data.data_chiamata && data.ora_chiamata && data.nota_chiamata;
+    return data.note_generali && data.note_generali.trim().length > 0;
   }
   if (data.tipo === 'task' || data.tipo === 'meeting') {
     return data.descrizione && data.descrizione.trim().length > 0;
@@ -114,7 +114,7 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
       testo_email: '',
       data_chiamata: '',
       ora_chiamata: '',
-      nota_chiamata: '',
+      note_generali: '',
       stato: activity?.stato || 'aperta',
       scadenza: activity?.scadenza ? new Date(activity.scadenza).toISOString().slice(0, 16) : '',
       priorita: activity?.priorita || 'media',
@@ -161,15 +161,9 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
       finalDescription = `Email: ${data.oggetto_email}\n\nTesto:\n${data.testo_email}`;
     }
     
-    // Se è chiamata, usa la nota come descrizione
-    if (data.tipo === 'chiamata' && data.nota_chiamata) {
-      finalDescription = data.nota_chiamata;
-      
-      // Per le chiamate, imposta la scadenza dalla data/ora specifica
-      if (data.data_chiamata && data.ora_chiamata) {
-        const callDateTime = new Date(`${data.data_chiamata}T${data.ora_chiamata}`);
-        data.scadenza = callDateTime.toISOString().slice(0, 16);
-      }
+    // Se è chiamata, usa le note generali come descrizione
+    if (data.tipo === 'chiamata' && data.note_generali) {
+      finalDescription = data.note_generali;
     }
     
     const submitData = {
@@ -318,18 +312,18 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
 
           {watchTipo === 'chiamata' && (
             <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
-              <div className="flex items-center gap-2 mb-4">
-                <Phone className="h-5 w-5 text-green-500" />
-                <h4 className="font-semibold">Programmazione Chiamata</h4>
-              </div>
+               <div className="flex items-center gap-2 mb-4">
+                 <Phone className="h-5 w-5 text-green-500" />
+                 <h4 className="font-semibold">Programmazione Chiamata (opzionale)</h4>
+               </div>
               
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField
                    control={form.control}
                    name="data_chiamata"
                    render={({ field }) => (
-                     <FormItem>
-                       <FormLabel>Data Chiamata *</FormLabel>
+                      <FormItem>
+                        <FormLabel>Data Chiamata</FormLabel>
                        <FormControl>
                          <div className="flex gap-2">
                            <div className="relative flex-1">
@@ -368,8 +362,8 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
                   control={form.control}
                   name="ora_chiamata"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ora Chiamata *</FormLabel>
+                     <FormItem>
+                       <FormLabel>Ora Chiamata</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,23 +376,23 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="nota_chiamata"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nota Chiamata *</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="es. Chiamare per discutere la proposta inviata via email..."
-                        className="min-h-[100px]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+               <FormField
+                 control={form.control}
+                 name="note_generali"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Note Generali *</FormLabel>
+                     <FormControl>
+                       <Textarea
+                         {...field}
+                         placeholder="es. Aggiornamento contatto, invio mail promozionale..."
+                         className="min-h-[100px]"
+                       />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
             </div>
           )}
 
@@ -468,98 +462,23 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
 
         {/* Scadenza e assegnazione */}
         <div className="space-y-4">
-          <h3 className="text-heading-4 font-semibold text-text-primary">
-            Programmazione
-          </h3>
+           <h3 className="text-heading-4 font-semibold text-text-primary">
+             Assegnazione
+           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {watchTipo !== 'chiamata' && (
-               <FormField
-                 control={form.control}
-                 name="scadenza"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Data e Ora Scadenza</FormLabel>
-                     <FormControl>
-                       <div className="space-y-2">
-                         <div className="flex gap-2">
-                           <Input
-                             type="date"
-                             value={field.value ? field.value.split('T')[0] : ''}
-                             onChange={(e) => {
-                               const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
-                               const newDateTime = e.target.value + 'T' + timeValue;
-                               field.onChange(newDateTime);
-                             }}
-                             className="flex-1"
-                             placeholder="Data"
-                           />
-                           <Popover>
-                             <PopoverTrigger asChild>
-                               <Button variant="outline" size="icon" type="button">
-                                 <CalendarIcon className="h-4 w-4" />
-                               </Button>
-                             </PopoverTrigger>
-                             <PopoverContent className="w-auto p-0" align="start">
-                               <CalendarComponent
-                                 mode="single"
-                                 selected={field.value ? new Date(field.value.split('T')[0]) : undefined}
-                                 onSelect={(date) => {
-                                   if (date) {
-                                     const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
-                                     const newDateTime = format(date, 'yyyy-MM-dd') + 'T' + timeValue;
-                                     field.onChange(newDateTime);
-                                   }
-                                 }}
-                                 disabled={(date) => date < new Date()}
-                                 initialFocus
-                                 className={cn("p-3 pointer-events-auto")}
-                               />
-                             </PopoverContent>
-                           </Popover>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <Clock className="h-4 w-4 text-muted-foreground" />
-                           <Input
-                             type="time"
-                             value={field.value ? field.value.split('T')[1] || '' : ''}
-                             onChange={(e) => {
-                               const dateValue = field.value ? field.value.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                               const newDateTime = dateValue + 'T' + e.target.value;
-                               field.onChange(newDateTime);
-                             }}
-                             className="w-32"
-                             placeholder="Ora"
-                           />
-                         </div>
-                       </div>
-                     </FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
+           <FormField
+             control={form.control}
+             name="assegnato_nome"
+             render={({ field }) => (
+               <FormItem>
+                 <FormLabel>Assegnato a</FormLabel>
+                 <FormControl>
+                   <Input {...field} placeholder="Nome della persona assegnata" />
+                 </FormControl>
+                 <FormMessage />
+               </FormItem>
              )}
-
-            <FormField
-              control={form.control}
-              name="assegnato_nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assegnato a</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Nome della persona assegnata" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {watchTipo === 'chiamata' && (
-            <p className="text-sm text-muted-foreground">
-              Per le chiamate, la scadenza viene impostata automaticamente dalla data/ora della chiamata specificata sopra.
-            </p>
-          )}
+           />
         </div>
 
         {/* Stato (solo per modifica) */}

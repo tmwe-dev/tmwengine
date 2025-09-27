@@ -22,27 +22,28 @@ const advancedActivitySchema = z.object({
     errorMap: () => ({ message: "Seleziona tipo attività: Email o Chiamata" })
   }),
   priorita: z.enum(['alta', 'media', 'bassa']).default('media'),
-  stato: z.enum(['aperta', 'in_corso', 'completata', 'annullata']).default('aperta'),
   
   // Per Email
   oggetto_email: z.string().optional(),
   testo_email: z.string().optional(),
   
-  // Per Chiamata
-  data_chiamata: z.string().optional(),
-  ora_chiamata: z.string().optional(),
-  nota_chiamata: z.string().optional(),
+  // Per Chiamata e Note generali
+  note_generali: z.string().optional(),
+  
+  // Per chiamata futura (opzionale)
+  programma_chiamata: z.boolean().default(false),
+  data_chiamata_futura: z.string().optional(),
+  ora_chiamata_futura: z.string().optional(),
   
   // Per entrambi
   assegnato_nome: z.string().optional(),
-  scadenza: z.string().optional(),
   salva_in_rubrica: z.boolean().default(false),
 }).refine((data) => {
   if (data.tipo === 'email') {
     return data.oggetto_email && data.testo_email;
   }
   if (data.tipo === 'chiamata') {
-    return data.data_chiamata && data.ora_chiamata && data.nota_chiamata;
+    return data.note_generali && data.note_generali.trim().length > 0;
   }
   return true;
 }, {
@@ -94,14 +95,13 @@ export function AdvancedMultipleActivityForm({
     defaultValues: {
       tipo: 'email',
       priorita: 'media',
-      stato: 'aperta',
       oggetto_email: '',
       testo_email: '',
-      data_chiamata: '',
-      ora_chiamata: '',
-      nota_chiamata: '',
+      note_generali: '',
+      programma_chiamata: false,
+      data_chiamata_futura: '',
+      ora_chiamata_futura: '',
       assegnato_nome: '',
-      scadenza: '',
       salva_in_rubrica: false
     }
   });
@@ -142,11 +142,8 @@ export function AdvancedMultipleActivityForm({
   };
 
   const handleSubmit = (data: AdvancedActivityFormData) => {
-    const submitData = {
-      ...data,
-      scadenza: data.scadenza ? new Date(data.scadenza).toISOString() : undefined
-    };
-    onSubmit(submitData);
+    // I dati vengono passati così come sono - la logica di creazione attività è gestita dal parent
+    onSubmit(data);
   };
 
   const getContactDisplayName = (contact: ContactRecord) => {
@@ -285,92 +282,120 @@ export function AdvancedMultipleActivityForm({
               <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
                 <div className="flex items-center gap-2 mb-4">
                   <Phone className="h-5 w-5 text-green-500" />
-                  <h4 className="font-semibold">Programmazione Chiamata</h4>
+                  <h4 className="font-semibold">Note Chiamata</h4>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <FormField
-                     control={form.control}
-                     name="data_chiamata"
-                     render={({ field }) => (
-                       <FormItem>
-                         <FormLabel>Data Chiamata *</FormLabel>
-                         <FormControl>
-                           <div className="flex gap-2">
-                             <div className="relative flex-1">
-                               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                               <Input {...field} type="date" className="pl-10" />
-                             </div>
-                             <Popover>
-                               <PopoverTrigger asChild>
-                                 <Button variant="outline" size="icon" type="button">
-                                   <CalendarIcon className="h-4 w-4" />
-                                 </Button>
-                               </PopoverTrigger>
-                               <PopoverContent className="w-auto p-0" align="start">
-                                 <CalendarComponent
-                                   mode="single"
-                                   selected={field.value ? new Date(field.value) : undefined}
-                                   onSelect={(date) => {
-                                     if (date) {
-                                       field.onChange(format(date, 'yyyy-MM-dd'));
-                                     }
-                                   }}
-                                   disabled={(date) => date < new Date()}
-                                   initialFocus
-                                   className={cn("p-3 pointer-events-auto")}
-                                 />
-                               </PopoverContent>
-                             </Popover>
-                           </div>
-                         </FormControl>
-                         <FormMessage />
-                       </FormItem>
-                     )}
-                   />
-
-                  <FormField
-                    control={form.control}
-                    name="ora_chiamata"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ora Chiamata *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              type="time"
-                              className="pl-10"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <FormField
                   control={form.control}
-                  name="nota_chiamata"
+                  name="note_generali"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nota Chiamata *</FormLabel>
+                      <FormLabel>Note Generali *</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="es. Chiamare per discutere la proposta inviata via email..."
+                          placeholder="Scrivi cosa hai fatto: chiamata effettuata, email inviata, nota aggiunta..."
                           className="min-h-[100px]"
                         />
                       </FormControl>
                       <FormMessage />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Questa nota sarà visibile nell'attività e ti aiuterà a ricordare l'obiettivo della chiamata
+                        Descrivi l'attività che hai appena completato o quello che stai facendo ora
                       </p>
                     </FormItem>
                   )}
                 />
+                
+                {/* Programma chiamata futura */}
+                <div className="mt-4 p-4 border border-border rounded-lg bg-background-subtle">
+                  <FormField
+                    control={form.control}
+                    name="programma_chiamata"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="font-medium">
+                            Programma anche una chiamata futura
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Crea un'attività separata per una chiamata da fare in futuro
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {form.watch('programma_chiamata') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <FormField
+                        control={form.control}
+                        name="data_chiamata_futura"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data Chiamata Futura</FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input {...field} type="date" className="pl-10" />
+                                </div>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="icon" type="button">
+                                      <CalendarIcon className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarComponent
+                                      mode="single"
+                                      selected={field.value ? new Date(field.value) : undefined}
+                                      onSelect={(date) => {
+                                        if (date) {
+                                          field.onChange(format(date, 'yyyy-MM-dd'));
+                                        }
+                                      }}
+                                      disabled={(date) => date < new Date()}
+                                      initialFocus
+                                      className={cn("p-3 pointer-events-auto")}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="ora_chiamata_futura"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ora Chiamata (opzionale)</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  {...field}
+                                  type="time"
+                                  className="pl-10"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -420,74 +445,6 @@ export function AdvancedMultipleActivityForm({
               )}
             />
           </div>
-
-          <FormField
-            control={form.control}
-            name="scadenza"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Scadenza Generale (opzionale)</FormLabel>
-                <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={field.value ? field.value.split('T')[0] : ''}
-                        onChange={(e) => {
-                          const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
-                          const newDateTime = e.target.value + 'T' + timeValue;
-                          field.onChange(newDateTime);
-                        }}
-                        className="flex-1"
-                        placeholder="Data"
-                      />
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="icon" type="button">
-                            <CalendarIcon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={field.value ? new Date(field.value.split('T')[0]) : undefined}
-                            onSelect={(date) => {
-                              if (date) {
-                                const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
-                                const newDateTime = format(date, 'yyyy-MM-dd') + 'T' + timeValue;
-                                field.onChange(newDateTime);
-                              }
-                            }}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="time"
-                        value={field.value ? field.value.split('T')[1] || '' : ''}
-                        onChange={(e) => {
-                          const dateValue = field.value ? field.value.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                          const newDateTime = dateValue + 'T' + e.target.value;
-                          field.onChange(newDateTime);
-                        }}
-                        className="w-32"
-                        placeholder="Ora"
-                      />
-                    </div>
-                  </div>
-                </FormControl>
-                <FormMessage />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Per le chiamate, verrà utilizzata la data/ora specifica impostata sopra
-                </p>
-              </FormItem>
-            )}
-          />
         </div>
 
         {/* Opzione salva in rubrica */}
@@ -530,7 +487,7 @@ export function AdvancedMultipleActivityForm({
           </Button>
           <Button type="submit" className="shadow-soft" disabled={isSubmitting}>
             {isSubmitting ? 'Creazione in corso...' : 
-             `Crea ${contacts.length} Attività ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
+             `Registra ${contacts.length} Attività ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
           </Button>
         </div>
       </form>

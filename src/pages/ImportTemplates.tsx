@@ -417,36 +417,56 @@ export default function ImportTemplates() {
         }
       }
 
-      // Crea un'attività per ogni azienda selezionata
-      const activities = selectedCompanies.map(company => {
+      // Crea le attività per ogni azienda selezionata
+      const activities = [];
+      
+      selectedCompanies.forEach(company => {
+        // ATTIVITÀ IMMEDIATA (quello che ho fatto ora)
         let descrizione = '';
-        let scadenza = activityData.scadenza || null;
-
-        // Gestisci descrizione basata sul tipo
+        
         if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
-          descrizione = `Email: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
-        } else if (activityData.tipo === 'chiamata' && activityData.nota_chiamata) {
-          descrizione = `Chiamata programmata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNota:\n${activityData.nota_chiamata}`;
-          
-          // Per le chiamate, imposta la scadenza dalla data/ora specifica
-          if (activityData.data_chiamata && activityData.ora_chiamata) {
-            const callDateTime = new Date(`${activityData.data_chiamata}T${activityData.ora_chiamata}`);
-            scadenza = callDateTime.toISOString();
-          }
-        } else {
-          descrizione = activityData.descrizione || `Attività per ${company.record.company_name || company.record.name || 'contatto'}`;
+          descrizione = `Email inviata: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+        } else if (activityData.tipo === 'chiamata' && activityData.note_generali) {
+          descrizione = `Chiamata effettuata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNote:\n${activityData.note_generali}`;
         }
 
-        return {
+        // Attività immediata (data corrente)
+        activities.push({
           rubrica_id: company.id,
           tipo: activityData.tipo,
           descrizione: descrizione,
-          stato: activityData.stato || 'aperta',
-          scadenza: scadenza,
+          stato: 'completata', // Attività già completata
+          scadenza: null,
           priorita: activityData.priorita || 'media',
           assegnato_a: activityData.assegnato_a || null,
           creato_da: activityData.creato_da || null
-        };
+        });
+
+        // ATTIVITÀ FUTURA (se programmata una chiamata)
+        if (activityData.tipo === 'chiamata' && 
+            activityData.programma_chiamata && 
+            activityData.data_chiamata_futura) {
+          
+          let scadenzaFutura = activityData.data_chiamata_futura;
+          if (activityData.ora_chiamata_futura) {
+            scadenzaFutura += 'T' + activityData.ora_chiamata_futura;
+          } else {
+            scadenzaFutura += 'T09:00'; // Ora predefinita
+          }
+
+          const descrizioneFutura = `Chiamata programmata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nDa chiamare per: follow-up`;
+
+          activities.push({
+            rubrica_id: company.id,
+            tipo: 'chiamata',
+            descrizione: descrizioneFutura,
+            stato: 'aperta', // Attività da fare
+            scadenza: new Date(scadenzaFutura).toISOString(),
+            priorita: activityData.priorita || 'media',
+            assegnato_a: activityData.assegnato_a || null,
+            creato_da: activityData.creato_da || null
+          });
+        }
       });
 
       // Inserisci le attività nel database usando SQL diretto
@@ -465,11 +485,21 @@ export default function ImportTemplates() {
 
       if (error) throw error;
 
-      const activityType = activityData.tipo === 'email' ? 'Email' : 
-                           activityData.tipo === 'chiamata' ? 'Chiamate' : 'Attività';
-      const successMessage = activityData.salva_in_rubrica 
-        ? `${activities.length} ${activityType} create e contatti trasferiti in rubrica`
-        : `${activities.length} ${activityType} create con successo`;
+      const activityType = activityData.tipo === 'email' ? 'Email' : 'Chiamata';
+      const totalActivities = activities.length;
+      const immediateCount = selectedCompanies.length;
+      const futureCount = totalActivities - immediateCount;
+      
+      let successMessage;
+      if (futureCount > 0) {
+        successMessage = `${immediateCount} ${activityType} completate e ${futureCount} chiamate future programmate`;
+      } else {
+        successMessage = `${immediateCount} ${activityType} completate con successo`;
+      }
+      
+      if (activityData.salva_in_rubrica) {
+        successMessage += ' e contatti trasferiti in rubrica';
+      }
       
       toast.success(successMessage);
       setShowMultipleActivityDialog(false);

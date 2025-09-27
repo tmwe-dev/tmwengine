@@ -48,14 +48,18 @@ interface ActivityFormProps {
   activity?: Activity | null;
   onSubmit: (data: ActivityFormData) => void;
   onCancel: () => void;
+  preselectedCompany?: {
+    id: string;
+    name: string;
+  };
 }
 
-export function ActivityForm({ activity, onSubmit, onCancel }: ActivityFormProps) {
+export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany }: ActivityFormProps) {
   const form = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
     defaultValues: {
-      rubrica_id: activity?.rubrica_id || '',
-      rubrica_nome: activity?.rubrica_nome || '',
+      rubrica_id: activity?.rubrica_id || preselectedCompany?.id || '',
+      rubrica_nome: activity?.rubrica_nome || preselectedCompany?.name || '',
       tipo: activity?.tipo || 'task',
       descrizione: activity?.descrizione || '',
       stato: activity?.stato || 'aperta',

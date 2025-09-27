@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ActivityForm } from '@/components/attivita/ActivityForm';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -18,6 +20,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [isImporting, setIsImporting] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
+  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
 
   // Function to get country code for flag
   const getCountryCode = (country: string) => {
@@ -223,6 +226,38 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante il salvataggio delle note.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateActivity = async (activityData: any) => {
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .insert({
+          rubrica_id: activityData.rubrica_id || null,
+          tipo: activityData.tipo,
+          descrizione: activityData.descrizione,
+          stato: activityData.stato || 'aperta',
+          scadenza: activityData.scadenza || null,
+          priorita: activityData.priorita || 'media',
+          assegnato_a: activityData.assegnato_a || null,
+          creato_da: activityData.creato_da || null
+        });
+
+      if (error) throw error;
+
+      setIsActivityDialogOpen(false);
+      toast({
+        title: "Attività creata",
+        description: "L'attività è stata creata con successo.",
+      });
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante la creazione dell'attività.",
         variant: "destructive",
       });
     }

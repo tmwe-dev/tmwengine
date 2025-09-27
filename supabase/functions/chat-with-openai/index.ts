@@ -129,6 +129,10 @@ serve(async (req) => {
 
     console.log(`Using ${useFullMemory ? 'full' : 'limited'} memory. Messages in context: ${messages.length}`);
 
+    // Determina se la domanda richiede strumenti CRM
+    const requiresCRMTools = isCRMRelatedQuery(prompt, systemPrompt);
+    console.log(`CRM tools required: ${requiresCRMTools}`);
+
     // Definisci gli strumenti CRM disponibili per ChatGPT
     const tools = [
       {
@@ -273,8 +277,10 @@ serve(async (req) => {
         model: aiConfig.modello,
         messages: messages,
         max_completion_tokens: 1000,
-        tools: tools,
-        tool_choice: "auto"
+        ...(requiresCRMTools && {
+          tools: tools,
+          tool_choice: "auto"
+        })
       }),
     });
 
@@ -390,6 +396,72 @@ serve(async (req) => {
     });
   }
 });
+
+// Funzione per determinare se una query richiede strumenti CRM
+function isCRMRelatedQuery(prompt: string, systemPrompt: string = ''): boolean {
+  const lowerPrompt = prompt.toLowerCase();
+  const lowerSystemPrompt = systemPrompt.toLowerCase();
+  
+  // Se il system prompt indica che è un CRM assistant, usa sempre i tool
+  if (lowerSystemPrompt.includes('crm') || lowerSystemPrompt.includes('tmwe') || lowerSystemPrompt.includes('direttore commerciale')) {
+    return true;
+  }
+  
+  // Keywords che indicano domande CRM-related
+  const crmKeywords = [
+    // Contatti e clienti
+    'contatti', 'clienti', 'cliente', 'azienda', 'aziende', 'responsabile',
+    'email', 'telefono', 'rubrica',
+    
+    // Attività e task
+    'attività', 'attivita', 'task', 'appuntamento', 'appuntamenti', 'telefonata',
+    'chiamata', 'meeting', 'riunione', 'scadenza', 'deadline',
+    
+    // Campagne
+    'campagna', 'campagne', 'marketing', 'newsletter',
+    
+    // Azioni CRM
+    'crea', 'aggiungi', 'inserisci', 'aggiorna', 'modifica', 'cerca', 'trova',
+    'programma', 'pianifica', 'segna', 'registra',
+    
+    // Stati e statistiche
+    'quanti', 'quante', 'totale', 'statistiche', 'performance', 'stato',
+    'attivi', 'attive', 'completate', 'in corso', 'programmata',
+    
+    // Termini specifici CRM
+    'lead', 'prospect', 'vendite', 'commerciale', 'follow-up', 'pipeline'
+  ];
+  
+  // Keywords che indicano domande NON CRM-related
+  const nonCrmKeywords = [
+    'provincie', 'regioni', 'geografia', 'matematica', 'storia', 'scienza',
+    'meteo', 'tempo', 'ricetta', 'cucina', 'sport', 'calcio', 'musica',
+    'film', 'libro', 'notizie', 'cos\'è', 'come si', 'perché', 'quando',
+    'dove si trova', 'capitale', 'popolazione', 'animali', 'piante'
+  ];
+  
+  // Se contiene keyword non-CRM, probabilmente non serve CRM
+  for (const keyword of nonCrmKeywords) {
+    if (lowerPrompt.includes(keyword)) {
+      return false;
+    }
+  }
+  
+  // Se contiene keyword CRM, usa i tool
+  for (const keyword of crmKeywords) {
+    if (lowerPrompt.includes(keyword)) {
+      return true;
+    }
+  }
+  
+  // Default: se non siamo sicuri e il prompt è breve (domanda generica), non usare tool
+  if (prompt.length < 50) {
+    return false;
+  }
+  
+  // Per prompt più lunghi, default a true per sicurezza
+  return true;
+}
 
 // Background function to update usage statistics
 async function updateUsageStats(

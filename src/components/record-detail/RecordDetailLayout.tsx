@@ -197,9 +197,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Header con country e città */}
       <div className="flex justify-end">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <span>{record.country || "N/A"}</span>
+          <span>{record.country || record.paese || "N/A"}</span>
           <span>•</span>
-          <span>{record.city || "N/A"}</span>
+          <span>{record.city || record.citta || "N/A"}</span>
         </div>
       </div>
       {/* Sezione Date Sistema - in alto sotto i selettori */}
@@ -466,20 +466,22 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 </div>
               )}
               
-              {/* Pulsante Importa in Rubrica */}
-              <div className="min-w-[200px] flex items-end">
-                <Button 
-                  onClick={handleImportToRubrica}
-                  disabled={isImporting || record.is_imported_to_rubrica}
-                  className="flex items-center gap-2 mt-5"
-                  variant={record.is_imported_to_rubrica ? "outline" : "default"}
-                  size="sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  {isImporting ? "Importando..." : 
-                   record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-                </Button>
-              </div>
+              {/* Pulsante Importa in Rubrica - solo per record importati */}
+              {record.hasOwnProperty('is_imported_to_rubrica') && (
+                <div className="min-w-[200px] flex items-end">
+                  <Button 
+                    onClick={handleImportToRubrica}
+                    disabled={isImporting || record.is_imported_to_rubrica}
+                    className="flex items-center gap-2 mt-5"
+                    variant={record.is_imported_to_rubrica ? "outline" : "default"}
+                    size="sm"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    {isImporting ? "Importando..." : 
+                     record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

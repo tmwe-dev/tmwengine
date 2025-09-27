@@ -12,7 +12,6 @@ import { ChatMemoryControls } from '@/components/chat/ChatMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 
 interface Message {
   id: string;
@@ -113,149 +112,145 @@ const Chat = () => {
   }, [currentConversationId]);
 
   const loadSystemPrompts = async () => {
-    const { data, error } = await supabase
-      .from('chat_system_prompts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('chat_system_prompts')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+      setSystemPrompts(data || []);
+      
+      // Seleziona il prompt attivo
+      const activePrompt = data?.find(p => p.attivo);
+      if (activePrompt) {
+        setSelectedSystemPromptId(activePrompt.id);
+      }
+    } catch (error) {
       console.error('Errore caricamento system prompts:', error);
-      return;
     }
-
-    setSystemPrompts(data || []);
   };
 
   const loadConversations = async () => {
-    const { data, error } = await supabase
-      .from('chat_conversations')
-      .select('*')
-      .order('updated_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('chat_conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
       console.error('Errore caricamento conversazioni:', error);
-      return;
     }
-
-    setConversations(data || []);
   };
 
   const loadMessages = async (conversationId: string) => {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
 
-    if (error) {
+      if (error) throw error;
+      setMessages((data || []) as Message[]);
+    } catch (error) {
       console.error('Errore caricamento messaggi:', error);
-      return;
     }
-
-    setMessages(data?.map(msg => ({
-      ...msg,
-      role: msg.role as 'user' | 'assistant'
-    })) || []);
   };
 
   const createNewConversation = async () => {
     try {
-      // Get active system prompt
-      const activePrompt = systemPrompts.find(p => p.attivo);
-      
       const { data, error } = await supabase
         .from('chat_conversations')
-        .insert([{
-          titolo: `Conversazione ${new Date().toLocaleDateString('it-IT')}, ${new Date().toLocaleTimeString('it-IT')}`,
-          system_prompt_id: activePrompt?.id || null,
-          memoria_completa: false
-        }])
+        .insert({
+          titolo: `Conversazione ${new Date().toLocaleString()}`,
+          system_prompt_id: selectedSystemPromptId || null
+        })
         .select()
         .single();
 
       if (error) throw error;
-
+      
       setCurrentConversationId(data.id);
-      setCurrentConversation(data);
       setMessages([]);
+      
       toast({
-        title: "Nuova conversazione creata",
-        description: "Puoi iniziare a chattare!"
+        title: "Nuova Conversazione",
+        description: "Conversazione creata con successo.",
       });
     } catch (error) {
       console.error('Errore creazione conversazione:', error);
       toast({
         title: "Errore",
-        description: "Impossibile creare la conversazione",
-        variant: "destructive"
+        description: "Impossibile creare la conversazione.",
+        variant: "destructive",
       });
     }
   };
 
-  const selectConversation = (conversation: Conversation) => {
-    setCurrentConversationId(conversation.id);
-    setCurrentConversation(conversation);
-    loadMessages(conversation.id);
+  const selectConversation = async (conversationId: string) => {
+    setCurrentConversationId(conversationId);
+    loadMessages(conversationId);
+    
+    // Carica dettagli conversazione
+    const { data: convData } = await supabase
+      .from('chat_conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .single();
+    
+    if (convData) {
+      setCurrentConversation(convData);
+    }
   };
 
   const createSystemPrompt = async () => {
     if (!newSystemPromptName.trim() || !newSystemPromptContent.trim()) {
       toast({
         title: "Errore",
-        description: "Nome e contenuto sono obbligatori",
-        variant: "destructive"
+        description: "Nome e contenuto sono obbligatori.",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      // Disattiva tutti gli altri prompt
-      await supabase
+      const { error } = await supabase
         .from('chat_system_prompts')
-        .update({ attivo: false })
-        .neq('id', '');
-
-      const { data, error } = await supabase
-        .from('chat_system_prompts')
-        .insert([{
-          nome: newSystemPromptName.trim(),
-          contenuto: newSystemPromptContent.trim(),
-          attivo: true
-        }])
-        .select()
-        .single();
+        .insert({
+          nome: newSystemPromptName,
+          contenuto: newSystemPromptContent,
+          attivo: false
+        });
 
       if (error) throw error;
 
       setNewSystemPromptName('');
       setNewSystemPromptContent('');
-      setIsSystemPromptOpen(false);
       
       toast({
-        title: "System prompt creato",
-        description: "Il nuovo prompt è stato attivato"
+        title: "System Prompt Creato",
+        description: "Il nuovo system prompt è stato creato.",
       });
-      
-      loadSystemPrompts();
     } catch (error) {
       console.error('Errore creazione system prompt:', error);
       toast({
         title: "Errore",
-        description: "Impossibile creare il system prompt",
-        variant: "destructive"
+        description: "Impossibile creare il system prompt.",
+        variant: "destructive",
       });
     }
   };
 
   const activateSystemPrompt = async (promptId: string) => {
-    if (!promptId) return;
-
     try {
-      // Disattiva tutti
+      // Disattiva tutti gli altri
       await supabase
         .from('chat_system_prompts')
         .update({ attivo: false })
-        .neq('id', '');
+        .neq('id', promptId);
 
       // Attiva quello selezionato
       const { error } = await supabase
@@ -265,25 +260,18 @@ const Chat = () => {
 
       if (error) throw error;
 
+      setSelectedSystemPromptId(promptId);
+      
       toast({
-        title: "System prompt attivato",
-        description: "Il prompt selezionato è ora attivo"
+        title: "System Prompt Attivato",
+        description: "Il system prompt è ora attivo.",
       });
-
-      loadSystemPrompts();
     } catch (error) {
       console.error('Errore attivazione system prompt:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile attivare il system prompt",
-        variant: "destructive"
-      });
     }
   };
 
   const deleteSystemPrompt = async (promptId: string) => {
-    if (!promptId) return;
-
     try {
       const { error } = await supabase
         .from('chat_system_prompts')
@@ -291,289 +279,242 @@ const Chat = () => {
         .eq('id', promptId);
 
       if (error) throw error;
-
+      
       toast({
-        title: "System prompt eliminato",
-        description: "Il prompt è stato rimosso"
+        title: "System Prompt Eliminato",
+        description: "Il system prompt è stato eliminato.",
       });
-
-      loadSystemPrompts();
-      setSelectedSystemPromptId('');
     } catch (error) {
       console.error('Errore eliminazione system prompt:', error);
-      toast({
-        title: "Errore", 
-        description: "Impossibile eliminare il system prompt",
-        variant: "destructive"
-      });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim() || isLoading) return;
+    if (!prompt.trim()) return;
 
-    // Create conversation if none exists
-    if (!currentConversationId) {
+    // Crea una nuova conversazione se non esiste
+    let conversationId = currentConversationId;
+    if (!conversationId) {
       await createNewConversation();
-      return;
+      return; // Il messaggio verrà inviato dopo la creazione della conversazione
     }
 
-    const userMessage = prompt.trim();
-    setPrompt('');
-    setIsLoading(true);
-
+    // Salva il messaggio utente
     try {
-      // Save user message
-      const { data: messageData, error: messageError } = await supabase
+      const { data: userMessageData, error: userMessageError } = await supabase
         .from('chat_messages')
-        .insert([{
-          conversation_id: currentConversationId,
+        .insert({
+          conversation_id: conversationId,
           role: 'user',
-          content: userMessage
-        }])
+          content: prompt
+        })
         .select()
         .single();
 
-      if (messageError) throw messageError;
+      if (userMessageError) throw userMessageError;
 
-      // Get active system prompt
-      const activePrompt = systemPrompts.find(p => p.attivo);
+      setIsLoading(true);
+      const currentPrompt = prompt;
+      setPrompt('');
 
-      // Call the chat function
-      const { data: chatResponse, error: chatError } = await supabase.functions.invoke('chat-with-openai', {
-        body: {
-          prompt: userMessage,
-          systemPrompt: activePrompt?.contenuto || 'Sei un assistente AI utile e amichevole che risponde in italiano.',
-          conversationId: currentConversationId
+      // Ottieni il system prompt attivo
+      const activeSystemPrompt = systemPrompts.find(p => p.attivo);
+      const systemPromptContent = activeSystemPrompt?.contenuto || 'Sei un assistente AI utile e amichevole che risponde in italiano.';
+
+      const { data, error } = await supabase.functions.invoke('chat-with-openai', {
+        body: { 
+          prompt: currentPrompt, 
+          systemPrompt: systemPromptContent,
+          conversationId: conversationId
         }
       });
 
-      if (chatError) throw chatError;
+      if (error) throw error;
 
-      console.log('Risposta AI:', chatResponse);
-
-      // Update stats from response
-      if (chatResponse.tokens_used || chatResponse.response_time_ms) {
-        setLastResponseStats({
-          tokens: chatResponse.tokens_used || 0,
-          responseTime: chatResponse.response_time_ms || 0,
-          model: chatResponse.model || 'N/A',
-          memoryMode: chatResponse.memory_mode || 'N/A',
-          messagesInContext: chatResponse.messages_in_context || 0
-        });
-      }
-
-      // Save AI response
-      const { error: aiMessageError } = await supabase
-        .from('chat_messages')
-        .insert([{
-          conversation_id: currentConversationId,
-          role: 'assistant',
-          content: chatResponse.response || 'Errore nella risposta',
-          model: chatResponse.model,
-          tokens_used: chatResponse.tokens_used,
-          tempo_risposta_ms: chatResponse.response_time_ms
-        }]);
-
-      if (aiMessageError) throw aiMessageError;
-
-      toast({
-        title: "Messaggio inviato",
-        description: "Risposta ricevuta con successo"
+      // Aggiorna statistiche ultima risposta
+      setLastResponseStats({
+        tokens: data.tokens_used || 0,
+        responseTime: data.response_time_ms || 0,
+        model: data.model || 'unknown',
+        memoryMode: data.memory_mode || 'limited',
+        messagesInContext: data.messages_in_context || 0
       });
+
+      // Salva la risposta AI con statistiche dettagliate
+      await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: data.response,
+          model: data.model,
+          tokens_used: data.tokens_used,
+          token_input: data.tokens_input,
+          token_output: data.tokens_output,
+          tempo_risposta_ms: data.response_time_ms
+        });
 
     } catch (error) {
       console.error('Errore invio prompt:', error);
       toast({
         title: "Errore",
-        description: error instanceof Error ? error.message : "Errore nell'invio del messaggio",
-        variant: "destructive"
+        description: "Impossibile inviare il messaggio. Riprova.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleMemoriaCompletaChange = async (enabled: boolean) => {
-    if (!currentConversationId) return;
+  // Auto-invia il prompt se una conversazione viene appena creata
+  useEffect(() => {
+    if (currentConversationId && prompt.trim()) {
+      handleSubmit(new Event('submit') as any);
+    }
+  }, [currentConversationId]);
 
-    try {
-      const { error } = await supabase
-        .from('chat_conversations')
-        .update({ memoria_completa: enabled })
-        .eq('id', currentConversationId);
-
-      if (error) throw error;
-
-      setCurrentConversation(prev => prev ? { ...prev, memoria_completa: enabled } : null);
-      
-      toast({
-        title: enabled ? "Memoria completa attivata" : "Memoria completa disattivata",
-        description: enabled 
-          ? "Tutti i messaggi saranno mantenuti in memoria" 
-          : "Solo i messaggi recenti saranno mantenuti"
-      });
-    } catch (error) {
-      console.error('Errore aggiornamento memoria:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare le impostazioni di memoria",
-        variant: "destructive"
-      });
+  const handleMemoriaCompletaChange = (value: boolean) => {
+    if (currentConversation) {
+      setCurrentConversation({ ...currentConversation, memoria_completa: value });
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-7rem)] gap-4 lg:gap-6">
-      {/* Conversations Sidebar */}
-      <div className="w-full lg:w-80 xl:w-96 flex flex-col order-2 lg:order-1">
-        <Card className="flex-1 flex flex-col min-h-0">
-          <CardHeader className="flex-shrink-0 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Conversazioni
-              </CardTitle>
-              <Button onClick={createNewConversation} size="sm" variant="outline">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1">Nuova</span>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 p-3 overflow-hidden">
-            <div className="space-y-2 h-full overflow-y-auto">
-              {conversations.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Nessuna conversazione</p>
-                  <p className="text-xs mt-1">Inizia una nuova chat</p>
-                </div>
-              ) : (
-                conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    onClick={() => selectConversation(conv)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                      currentConversationId === conv.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-transparent hover:bg-accent'
-                    }`}
-                  >
-                    <div className="font-medium text-sm truncate">
-                      {conv.titolo || `Conversazione del ${new Date(conv.created_at).toLocaleDateString()}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                      <span>{new Date(conv.created_at).toLocaleString('it-IT')}</span>
-                      {conv.memoria_completa && (
-                        <Badge variant="secondary" className="text-xs">
-                          Full Memory
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Settings Dialog */}
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+            <MessageSquare className="h-8 w-8 text-primary" />
+            Chat AI
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Inserisci il tuo prompt per interagire con l'intelligenza artificiale
+          </p>
+        </div>
+        
+        {/* Settings Icon */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" className="mt-4 w-full">
-              <Settings className="h-4 w-4 mr-2" />
-              Impostazioni Chat
+            <Button variant="outline" size="icon">
+              <Settings className="h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Impostazioni Chat AI</DialogTitle>
+              <DialogTitle>Gestione Chat AI</DialogTitle>
             </DialogHeader>
-            <Tabs defaultValue="memory" className="w-full">
+            
+            <Tabs defaultValue="prompts" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="memory">Memoria</TabsTrigger>
-                <TabsTrigger value="prompts">System Prompts</TabsTrigger>
-                <TabsTrigger value="stats">Statistiche</TabsTrigger>
+                <TabsTrigger value="prompts">🤖 System Prompts</TabsTrigger>
+                <TabsTrigger value="controls">⚙️ Controlli Memoria</TabsTrigger>
+                <TabsTrigger value="stats">📊 Statistiche</TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="memory" className="space-y-4">
-                <ChatMemoryControls 
-                  conversationId={currentConversationId}
-                  memoriaCompleta={currentConversation?.memoria_completa || false}
-                  onMemoriaCompletaChange={(enabled) => handleMemoriaCompletaChange(enabled)}
-                />
-              </TabsContent>
-              
-              <TabsContent value="prompts" className="space-y-4">
-                {/* System Prompts Management */}
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Select value={selectedSystemPromptId} onValueChange={setSelectedSystemPromptId}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Seleziona un system prompt..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {systemPrompts.map((prompt) => (
-                          <SelectItem key={prompt.id} value={prompt.id}>
-                            {prompt.nome} {prompt.attivo && '(Attivo)'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => activateSystemPrompt(selectedSystemPromptId)}
-                        disabled={!selectedSystemPromptId}
-                        size="sm"
-                      >
-                        Attiva
-                      </Button>
-                      <Button 
-                        onClick={() => deleteSystemPrompt(selectedSystemPromptId)}
-                        disabled={!selectedSystemPromptId}
-                        variant="destructive"
-                        size="sm"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
 
+              <TabsContent value="prompts" className="space-y-6">
+                {/* System Prompt Configuration */}
+                <Card>
                   <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
                     <CollapsibleTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Nuovo System Prompt
-                      </Button>
+                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          System Prompt Management
+                          <span className="text-sm text-muted-foreground ml-auto">
+                            {isSystemPromptOpen ? 'Chiudi' : 'Gestisci'}
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
-                      <Input
-                        placeholder="Nome del system prompt..."
-                        value={newSystemPromptName}
-                        onChange={(e) => setNewSystemPromptName(e.target.value)}
-                      />
-                      <Textarea
-                        placeholder="Contenuto del system prompt..."
-                        value={newSystemPromptContent}
-                        onChange={(e) => setNewSystemPromptContent(e.target.value)}
-                        rows={6}
-                      />
-                      <Button 
-                        onClick={createSystemPrompt}
-                        disabled={!newSystemPromptName || !newSystemPromptContent}
-                        className="w-full"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Salva System Prompt
-                      </Button>
+                    <CollapsibleContent>
+                      <CardContent className="space-y-6">
+                        {/* System Prompts Esistenti */}
+                        <div>
+                          <h4 className="font-medium mb-3">System Prompts Esistenti</h4>
+                          <div className="space-y-3">
+                            {systemPrompts.map((prompt) => (
+                              <div
+                                key={prompt.id}
+                                className={`p-3 border rounded-lg break-words overflow-hidden whitespace-pre-wrap ${
+                                  prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 overflow-hidden">
+                                    <div className="font-medium flex items-center gap-2">
+                                      {prompt.nome}
+                                      {prompt.attivo && (
+                                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                                          ATTIVO
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden whitespace-pre-wrap">
+                                      {prompt.contenuto}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {!prompt.attivo && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => activateSystemPrompt(prompt.id)}
+                                      >
+                                        Attiva
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => deleteSystemPrompt(prompt.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Crea Nuovo System Prompt */}
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-3">Crea Nuovo System Prompt</h4>
+                          <div className="space-y-3">
+                            <Input
+                              placeholder="Nome del system prompt..."
+                              value={newSystemPromptName}
+                              onChange={(e) => setNewSystemPromptName(e.target.value)}
+                            />
+                            <Textarea
+                              placeholder="Contenuto del system prompt..."
+                              value={newSystemPromptContent}
+                              onChange={(e) => setNewSystemPromptContent(e.target.value)}
+                              rows={3}
+                            />
+                            <Button onClick={createSystemPrompt} className="w-full">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Crea System Prompt
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
                     </CollapsibleContent>
                   </Collapsible>
-                </div>
+                </Card>
               </TabsContent>
-              
-              <TabsContent value="stats" className="space-y-4">
-                <ConversationStats 
+
+              <TabsContent value="controls">
+                <ChatMemoryControls
+                  conversationId={currentConversationId}
+                  memoriaCompleta={currentConversation?.memoria_completa || false}
+                  onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                />
+              </TabsContent>
+
+              <TabsContent value="stats">
+                <ConversationStats
                   conversationId={currentConversationId}
                   currentTokenUsage={lastResponseStats?.tokens}
                   responseTime={lastResponseStats?.responseTime}
@@ -585,119 +526,157 @@ const Chat = () => {
         </Dialog>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 order-1 lg:order-2">
-        <Card className="flex-1 flex flex-col min-h-0">
-          <CardHeader className="flex-shrink-0 pb-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Chat AI
-                {currentConversation && (
-                  <Badge variant="outline" className="text-xs hidden sm:inline-flex">
-                    {currentConversation.memoria_completa ? 'Full Memory' : 'Limited Memory'}
-                  </Badge>
-                )}
+      {/* Sidebar Conversazioni */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Conversazioni
+                <Button onClick={createNewConversation} size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
               </CardTitle>
-              {lastResponseStats && (
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="hidden sm:inline">Tokens: {lastResponseStats.tokens}</span>
-                  <span className="hidden md:inline">Tempo: {lastResponseStats.responseTime}ms</span>
-                  <span className="hidden lg:inline">Modello: {lastResponseStats.model}</span>
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          
-          <CardContent className="flex-1 flex flex-col min-h-0 p-3">
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
-              {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-muted-foreground">
-                    <Bot className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                    <h3 className="text-lg font-medium mb-2">Benvenuto nel Chat AI</h3>
-                    <p className="text-sm max-w-md mx-auto">
-                      Inizia una conversazione digitando un messaggio qui sotto. 
-                      L'AI può aiutarti con il tuo CRM e rispondere alle tue domande.
-                    </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {conversations.map((conversation) => (
+                <Button
+                  key={conversation.id}
+                  variant={currentConversationId === conversation.id ? "default" : "ghost"}
+                  className="w-full justify-start text-left h-auto p-3"
+                  onClick={() => selectConversation(conversation.id)}
+                >
+                  <div className="truncate">
+                    <div className="font-medium truncate">
+                      {conversation.titolo || 'Conversazione senza titolo'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(conversation.updated_at).toLocaleDateString()}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                messages.map((message) => (
-                  <div 
-                    key={message.id} 
-                    className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                </Button>
+              ))}
+              {conversations.length === 0 && (
+                <p className="text-muted-foreground text-center py-4 text-sm">
+                  Nessuna conversazione ancora
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Area Chat Principale */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Messaggi della Conversazione */}
+          {currentConversationId && messages.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Conversazione</span>
+                  {currentConversation?.memoria_completa && (
+                    <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded">
+                      🧠 Memoria Completa Attiva
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-start gap-3 ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                        <Bot className="h-4 w-4 text-primary-foreground" />
-                      </div>
+                      <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     )}
-                    
-                    <div className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[60%] ${
-                      message.role === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    } rounded-lg p-3`}>
-                      <div className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </div>
-                      <div className="text-xs opacity-70 mt-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                        <span>{new Date(message.created_at).toLocaleTimeString('it-IT')}</span>
-                        {message.tokens_used && (
-                          <span className="hidden sm:inline">• {message.tokens_used} tokens</span>
-                        )}
-                        {message.model && (
-                          <span className="hidden md:inline">• {message.model}</span>
-                        )}
+                    <div
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div className="text-xs opacity-70 mt-2 flex justify-between">
+                        <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                        <div className="flex gap-2">
+                          {message.model && (
+                            <span className="text-xs">{message.model}</span>
+                          )}
+                          {message.tokens_used && (
+                            <span className="text-xs">{message.tokens_used}t</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    
                     {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-secondary-foreground" />
-                      </div>
+                      <User className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
-            {/* Input Area */}
-            <div className="flex-shrink-0">
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-                <Textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Scrivi il tuo messaggio..."
-                  className="flex-1 min-h-[60px] resize-none"
-                  disabled={isLoading}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit(e);
-                    }
-                  }}
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!prompt.trim() || isLoading}
-                  className="self-end sm:self-stretch px-4 h-[60px]"
-                >
-                  {isLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                  ) : (
+          {!currentConversationId && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Seleziona una conversazione esistente o iniziane una nuova per iniziare a chattare.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Area Input */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}</span>
+                {lastResponseStats && (
+                  <div className="flex gap-2 text-xs">
+                    <span className="bg-primary/10 px-2 py-1 rounded">
+                      {lastResponseStats.tokens} token
+                    </span>
+                    <span className="bg-secondary px-2 py-1 rounded">
+                      {lastResponseStats.responseTime}ms
+                    </span>
+                    <span className="bg-muted px-2 py-1 rounded">
+                      {lastResponseStats.memoryMode} memory
+                    </span>
+                  </div>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Inserisci qui il tuo messaggio..."
+                    className="min-h-[120px] resize-none"
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={!prompt.trim() || isLoading}
+                    className="flex items-center gap-2"
+                  >
                     <Send className="h-4 w-4" />
-                  )}
-                  <span className="ml-2 hidden sm:inline">
-                    {isLoading ? 'Invio...' : 'Invia'}
-                  </span>
-                </Button>
+                    {isLoading ? 'Invio...' : 'Invia Messaggio'}
+                  </Button>
+                </div>
               </form>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

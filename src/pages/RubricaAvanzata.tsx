@@ -625,20 +625,6 @@ export default function RubricaAvanzata() {
             </div>
           </div>
 
-          {/* Active Filters */}
-          {activeFilters.length > 0 && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium">Filtri attivi:</span>
-              {activeFilters.map((filter, index) => (
-                <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeFilter(index)}>
-                  {filter.displayValue} ×
-                </Badge>
-              ))}
-              <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                Pulisci tutti
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -729,6 +715,25 @@ export default function RubricaAvanzata() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium">Filtri attivi:</span>
+              {activeFilters.map((filter, index) => (
+                <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeFilter(index)}>
+                  {filter.displayValue} ×
+                </Badge>
+              ))}
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                Pulisci tutti
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions Bar */}
       {selectedRecords.size > 0 && (

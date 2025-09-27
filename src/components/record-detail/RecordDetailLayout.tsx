@@ -661,8 +661,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 {['meta_wca', 'meta_express', 'meta_sea_freight', 'meta_air_freight']
                   .filter(key => record[key] !== undefined)
                   .map(key => (
-                    <div key={key} className="text-left">
-                      <div className="text-sm font-medium text-blue-600 mb-1">
+                    <div key={key} className="flex justify-between items-center">
+                      <div className="text-sm font-medium text-blue-600">
                         {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </div>
                       {record[key] === true && (
@@ -675,70 +675,70 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               </div>
 
               {/* Colonna 2: Clienti (Search icon) */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                  <Search className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-600">Clienti</span>
-                </div>
-                {['meta_client', 'meta_exclient', 'meta_hight_value_customer', 'meta_interested']
-                  .filter(key => record[key] !== undefined)
-                  .map(key => (
-                    <div key={key} className="text-left">
-                      <div className="text-sm font-medium text-blue-600 mb-1">
-                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      {record[key] === true && (
-                        <div className="text-sm font-medium text-foreground">
-                          Sì
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+                <div className="space-y-3">
+                 <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                   <Search className="h-4 w-4 text-blue-600" />
+                   <span className="text-xs font-medium text-blue-600">Clienti</span>
+                 </div>
+                 {['meta_client', 'meta_exclient', 'meta_hight_value_customer', 'meta_interested']
+                   .filter(key => record[key] !== undefined)
+                   .map(key => (
+                     <div key={key} className="flex justify-between items-center">
+                       <div className="text-sm font-medium text-blue-600">
+                         {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                       </div>
+                       {record[key] === true && (
+                         <div className="text-sm font-medium text-foreground">
+                           Sì
+                         </div>
+                       )}
+                     </div>
+                   ))}
+               </div>
 
-              {/* Colonna 3: Risultati (Award icon) */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                  <Award className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-600">Risultati</span>
-                </div>
-                {['meta_tutorial', 'meta_presentation', 'meta_contact_required_email', 'meta_reception_required_email']
-                  .filter(key => record[key] !== undefined)
-                  .map(key => (
-                    <div key={key} className="text-left">
-                      <div className="text-sm font-medium text-blue-600 mb-1">
-                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      {record[key] === true && (
-                        <div className="text-sm font-medium text-foreground">
-                          Sì
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+               {/* Colonna 3: Risultati (Award icon) */}
+               <div className="space-y-3">
+                 <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                   <Award className="h-4 w-4 text-blue-600" />
+                   <span className="text-xs font-medium text-blue-600">Risultati</span>
+                 </div>
+                 {['meta_tutorial', 'meta_presentation', 'meta_contact_required_email', 'meta_reception_required_email']
+                   .filter(key => record[key] !== undefined)
+                   .map(key => (
+                     <div key={key} className="flex justify-between items-center">
+                       <div className="text-sm font-medium text-blue-600">
+                         {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                       </div>
+                       {record[key] === true && (
+                         <div className="text-sm font-medium text-foreground">
+                           Sì
+                         </div>
+                       )}
+                     </div>
+                   ))}
+               </div>
 
-              {/* Colonna 4: Stato (Apple icon) */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                  <Apple className="h-4 w-4 text-blue-600" />
-                  <span className="text-xs font-medium text-blue-600">Stato</span>
-                </div>
-                {['meta_exworks', 'meta_rejected']
-                  .filter(key => record[key] !== undefined)
-                  .map(key => (
-                    <div key={key} className="text-left">
-                      <div className="text-sm font-medium text-blue-600 mb-1">
-                        {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      {record[key] === true && (
-                        <div className="text-sm font-medium text-foreground">
-                          Sì
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+               {/* Colonna 4: Stato (Apple icon) */}
+               <div className="space-y-3">
+                 <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
+                   <Apple className="h-4 w-4 text-blue-600" />
+                   <span className="text-xs font-medium text-blue-600">Stato</span>
+                 </div>
+                 {['meta_exworks', 'meta_rejected']
+                   .filter(key => record[key] !== undefined)
+                   .map(key => (
+                     <div key={key} className="flex justify-between items-center">
+                       <div className="text-sm font-medium text-blue-600">
+                         {key.replace('meta_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                       </div>
+                       {record[key] === true && (
+                         <div className="text-sm font-medium text-foreground">
+                           Sì
+                         </div>
+                       )}
+                     </div>
+                   ))}
+               </div>
             </div>
           </div>
         </div>

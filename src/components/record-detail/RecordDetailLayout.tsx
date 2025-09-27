@@ -111,8 +111,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const handleImportToRubrica = async () => {
     setIsImporting(true);
     try {
-      // Map imported_contacts fields to rubrica fields
+      // Map imported_contacts fields to rubrica fields, preserving the original ID
       const rubricaData = {
+        id: record.id, // Preserve the original ID from imported_contacts
         nome: record.name,
         azienda: record.company_name,
         alias: record.alias,

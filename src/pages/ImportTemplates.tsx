@@ -1164,8 +1164,9 @@ export default function ImportTemplates() {
       
       for (const record of selectedData) {
         try {
-          // Map record fields to rubrica structure
+          // Map record fields to rubrica structure, preserving the original ID
           const rubricaData = {
+            id: record.id, // Preserve the original ID from imported_contacts
             nome: record.name || '',
             alias: record.alias || '',
             azienda: record.company_alias || record.company_name || '',

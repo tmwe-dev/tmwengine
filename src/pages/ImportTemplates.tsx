@@ -748,19 +748,51 @@ export default function ImportTemplates() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileThumbnail = (mimeType: string, fileName: string) => {
+  const getFileThumbnail = (mimeType: string, fileName: string, fileUrl: string) => {
     if (mimeType.includes('image/')) {
-      return <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-        <span className="text-purple-600 text-xs font-bold">IMG</span>
-      </div>;
+      return (
+        <div className="w-12 h-12 border rounded overflow-hidden bg-muted">
+          <img
+            src={fileUrl}
+            alt={fileName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to icon if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = '<div class="w-full h-full bg-purple-100 rounded flex items-center justify-center"><span class="text-purple-600 text-xs font-bold">IMG</span></div>';
+            }}
+          />
+        </div>
+      );
     } else if (mimeType.includes('pdf')) {
-      return <FileText className="h-8 w-8 text-red-500" />;
+      return (
+        <div className="w-12 h-12 bg-red-100 rounded flex flex-col items-center justify-center">
+          <FileText className="h-6 w-6 text-red-600" />
+          <span className="text-xs text-red-600 font-medium">PDF</span>
+        </div>
+      );
     } else if (mimeType.includes('word') || mimeType.includes('document')) {
-      return <FileText className="h-8 w-8 text-blue-500" />;
+      return (
+        <div className="w-12 h-12 bg-blue-100 rounded flex flex-col items-center justify-center">
+          <FileText className="h-6 w-6 text-blue-600" />
+          <span className="text-xs text-blue-600 font-medium">DOC</span>
+        </div>
+      );
     } else if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
-      return <FileSpreadsheet className="h-8 w-8 text-green-500" />;
+      return (
+        <div className="w-12 h-12 bg-green-100 rounded flex flex-col items-center justify-center">
+          <FileSpreadsheet className="h-6 w-6 text-green-600" />
+          <span className="text-xs text-green-600 font-medium">XLS</span>
+        </div>
+      );
     } else {
-      return <FileText className="h-8 w-8 text-muted-foreground" />;
+      return (
+        <div className="w-12 h-12 bg-gray-100 rounded flex flex-col items-center justify-center">
+          <FileText className="h-6 w-6 text-gray-600" />
+          <span className="text-xs text-gray-600 font-medium">FILE</span>
+        </div>
+      );
     }
   };
 
@@ -1828,21 +1860,27 @@ export default function ImportTemplates() {
                     </p>
                   ) : (
                     emailAttachments.map((attachment) => (
-                      <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <div key={attachment.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-shrink-0">
-                          {getFileThumbnail(attachment.mime_type, attachment.nome)}
+                          {getFileThumbnail(attachment.mime_type, attachment.nome, attachment.file_path)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{attachment.nome}</p>
+                          <p className="font-medium truncate text-sm">{attachment.nome}</p>
                           <p className="text-sm text-muted-foreground">
                             {formatFileSize(attachment.file_size)} • {new Date(attachment.created_at).toLocaleDateString('it-IT')}
                           </p>
-                        </div>
+                          {attachment.mime_type.includes('image/') && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Immagine • Clicca per visualizzare
+                            </p>
+                          )}
+                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewingDocument(attachment)}
+                            className="h-8 w-8 p-0"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -1850,6 +1888,7 @@ export default function ImportTemplates() {
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteAttachment(attachment.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

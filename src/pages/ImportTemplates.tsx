@@ -756,7 +756,10 @@ export default function ImportTemplates() {
             src={fileUrl}
             alt={fileName}
             className="w-full h-full object-cover"
+            loading="lazy"
+            onLoad={() => console.log('Image loaded successfully:', fileName)}
             onError={(e) => {
+              console.error('Image failed to load:', fileName, fileUrl);
               // Fallback to icon if image fails to load
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';

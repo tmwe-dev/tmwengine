@@ -1875,8 +1875,6 @@ export default function ImportTemplates() {
                   </Tooltip>
                 </TooltipProvider>
               )}
-              
-              <span className="text-sm font-medium">Visualizza colonne:</span>
             </div>
             
             <div className="flex items-center gap-2">

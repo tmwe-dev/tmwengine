@@ -106,7 +106,11 @@ export default function Rubrica() {
         .single();
 
       if (error) {
-        toast.error('Errore nell\'aggiunta del contatto');
+        toast({
+          title: "Errore",
+          description: "Errore nell'aggiunta del contatto",
+          variant: "destructive"
+        });
         console.error('Error adding contact:', error);
         return;
       }
@@ -118,7 +122,11 @@ export default function Rubrica() {
         description: "Contatto aggiunto con successo"
       });
     } catch (error) {
-      toast.error('Errore nell\'aggiunta del contatto');
+      toast({
+        title: "Errore",
+        description: "Errore nell'aggiunta del contatto",
+        variant: "destructive"
+      });
       console.error('Error adding contact:', error);
     }
   };
@@ -135,7 +143,11 @@ export default function Rubrica() {
         .single();
 
       if (error) {
-        toast.error('Errore nella modifica del contatto');
+        toast({
+          title: "Errore",
+          description: "Errore nella modifica del contatto",
+          variant: "destructive"
+        });
         console.error('Error updating contact:', error);
         return;
       }
@@ -145,9 +157,16 @@ export default function Rubrica() {
       ));
       setSelectedContact(null);
       setIsFormOpen(false);
-      toast.success('Contatto modificato con successo');
+      toast({
+        title: "Successo",
+        description: "Contatto modificato con successo"
+      });
     } catch (error) {
-      toast.error('Errore nella modifica del contatto');
+      toast({
+        title: "Errore",
+        description: "Errore nella modifica del contatto",
+        variant: "destructive"
+      });
       console.error('Error updating contact:', error);
     }
   };
@@ -160,15 +179,26 @@ export default function Rubrica() {
         .eq('id', contactId);
 
       if (error) {
-        toast.error('Errore nell\'eliminazione del contatto');
+        toast({
+          title: "Errore",
+          description: "Errore nell'eliminazione del contatto",
+          variant: "destructive"
+        });
         console.error('Error deleting contact:', error);
         return;
       }
 
       setContacts(prev => prev.filter(contact => contact.id !== contactId));
-      toast.success('Contatto eliminato con successo');
+      toast({
+        title: "Successo",
+        description: "Contatto eliminato con successo"
+      });
     } catch (error) {
-      toast.error('Errore nell\'eliminazione del contatto');
+      toast({
+        title: "Errore",
+        description: "Errore nell'eliminazione del contatto",
+        variant: "destructive"
+      });
       console.error('Error deleting contact:', error);
     }
   };
@@ -355,7 +385,10 @@ export default function Rubrica() {
                             <TooltipTrigger asChild>
                               <FileText 
                                 className="h-4 w-4 text-blue-500 cursor-pointer hover:text-blue-700" 
-                                onClick={() => toast.info(contact.note)}
+                                onClick={() => toast({
+                                  title: "Note",
+                                  description: contact.note
+                                })}
                               />
                             </TooltipTrigger>
                             <TooltipContent>

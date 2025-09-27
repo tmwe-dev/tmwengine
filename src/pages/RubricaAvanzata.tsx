@@ -1150,8 +1150,6 @@ export default function RubricaAvanzata() {
             <RecordDetailLayout
               record={selectedRecord}
               formatCellValue={formatCellValue}
-              getCountryFlag={getCountryFlag}
-              getCountryFullName={getCountryFullName}
             />
           )}
         </DialogContent>

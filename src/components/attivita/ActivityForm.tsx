@@ -8,9 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Phone, Calendar, Clock, FileText } from 'lucide-react';
+import { Mail, Phone, Calendar, Clock, FileText, CalendarIcon } from 'lucide-react';
 import { CompanySelector } from './CompanySelector';
 import { supabase } from '@/integrations/supabase/client';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const activitySchema = z.object({
   rubrica_id: z.string().optional(),
@@ -319,23 +323,46 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
                 <h4 className="font-semibold">Programmazione Chiamata</h4>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="data_chiamata"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data Chiamata *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input {...field} type="date" className="pl-10" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                   control={form.control}
+                   name="data_chiamata"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>Data Chiamata *</FormLabel>
+                       <FormControl>
+                         <div className="flex gap-2">
+                           <div className="relative flex-1">
+                             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                             <Input {...field} type="date" className="pl-10" />
+                           </div>
+                           <Popover>
+                             <PopoverTrigger asChild>
+                               <Button variant="outline" size="icon" type="button">
+                                 <CalendarIcon className="h-4 w-4" />
+                               </Button>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-auto p-0" align="start">
+                               <CalendarComponent
+                                 mode="single"
+                                 selected={field.value ? new Date(field.value) : undefined}
+                                 onSelect={(date) => {
+                                   if (date) {
+                                     field.onChange(format(date, 'yyyy-MM-dd'));
+                                   }
+                                 }}
+                                 disabled={(date) => date < new Date()}
+                                 initialFocus
+                                 className={cn("p-3 pointer-events-auto")}
+                               />
+                             </PopoverContent>
+                           </Popover>
+                         </div>
+                       </FormControl>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
 
                 <FormField
                   control={form.control}
@@ -446,25 +473,51 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {watchTipo !== 'chiamata' && (
-              <FormField
-                control={form.control}
-                name="scadenza"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data e Ora Scadenza</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="datetime-local"
-                        placeholder="Seleziona data e ora"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+             {watchTipo !== 'chiamata' && (
+               <FormField
+                 control={form.control}
+                 name="scadenza"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Data e Ora Scadenza</FormLabel>
+                     <FormControl>
+                       <div className="flex gap-2">
+                         <Input
+                           {...field}
+                           type="datetime-local"
+                           placeholder="Seleziona data e ora"
+                           className="flex-1"
+                         />
+                         <Popover>
+                           <PopoverTrigger asChild>
+                             <Button variant="outline" size="icon" type="button">
+                               <CalendarIcon className="h-4 w-4" />
+                             </Button>
+                           </PopoverTrigger>
+                           <PopoverContent className="w-auto p-0" align="start">
+                             <CalendarComponent
+                               mode="single"
+                               selected={field.value ? new Date(field.value) : undefined}
+                               onSelect={(date) => {
+                                 if (date) {
+                                   const timeValue = field.value ? field.value.split('T')[1] || '09:00' : '09:00';
+                                   const newDateTime = format(date, 'yyyy-MM-dd') + 'T' + timeValue;
+                                   field.onChange(newDateTime);
+                                 }
+                               }}
+                               disabled={(date) => date < new Date()}
+                               initialFocus
+                               className={cn("p-3 pointer-events-auto")}
+                             />
+                           </PopoverContent>
+                         </Popover>
+                       </div>
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+             )}
 
             <FormField
               control={form.control}

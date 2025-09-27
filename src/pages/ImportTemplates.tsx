@@ -180,6 +180,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { DocumentViewer } from '@/components/email/DocumentViewer';
 
 interface EmailTemplate {
   id: string;
@@ -188,6 +189,15 @@ interface EmailTemplate {
   contenuto: string;
   placeholder_disponibili: any;
   attivo: boolean;
+  created_at: string;
+}
+
+interface EmailAttachment {
+  id: string;
+  nome: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
   created_at: string;
 }
 
@@ -217,6 +227,7 @@ interface FilterTag {
 
 export default function ImportTemplates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -291,6 +302,10 @@ export default function ImportTemplates() {
   // Form per modifica template
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   
+  // Stati per attachments
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<EmailAttachment | null>(null);
+  
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
@@ -298,6 +313,7 @@ export default function ImportTemplates() {
 
   useEffect(() => {
     loadEmailTemplates();
+    loadEmailAttachments();
     loadImportLogs();
   }, []);
 
@@ -564,6 +580,21 @@ export default function ImportTemplates() {
     }
   };
 
+  const loadEmailAttachments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_attachments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEmailAttachments(data || []);
+    } catch (error) {
+      console.error('Errore nel caricamento allegati email:', error);
+      toast.error('Errore nel caricamento degli allegati email');
+    }
+  };
+
   const loadImportLogs = async () => {
     try {
       const { data, error } = await supabase
@@ -650,6 +681,82 @@ export default function ImportTemplates() {
     } catch (error) {
       console.error('Errore nell\'eliminazione:', error);
       toast.error('Errore nell\'eliminazione del template');
+    }
+  };
+
+  const handleAttachmentUpload = async (file: File) => {
+    setUploadingAttachment(true);
+    
+    try {
+      // Upload file to storage
+      const fileName = `attachments/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('import-files')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('import-files')
+        .getPublicUrl(fileName);
+
+      // Save attachment info to database
+      const { error: dbError } = await supabase
+        .from('email_attachments')
+        .insert({
+          nome: file.name,
+          file_path: publicUrl,
+          file_size: file.size,
+          mime_type: file.type
+        });
+
+      if (dbError) throw dbError;
+
+      toast.success('Allegato caricato con successo');
+      loadEmailAttachments();
+    } catch (error) {
+      console.error('Errore nel caricamento allegato:', error);
+      toast.error('Errore nel caricamento dell\'allegato');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+
+  const deleteAttachment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_attachments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Allegato eliminato');
+      loadEmailAttachments();
+    } catch (error) {
+      console.error('Errore nell\'eliminazione allegato:', error);
+      toast.error('Errore nell\'eliminazione dell\'allegato');
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileThumbnail = (mimeType: string, fileName: string) => {
+    if (mimeType.includes('pdf')) {
+      return <FileText className="h-8 w-8 text-red-500" />;
+    } else if (mimeType.includes('word') || mimeType.includes('document')) {
+      return <FileText className="h-8 w-8 text-blue-500" />;
+    } else if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
+      return <FileSpreadsheet className="h-8 w-8 text-green-500" />;
+    } else {
+      return <FileText className="h-8 w-8 text-muted-foreground" />;
     }
   };
 
@@ -1481,6 +1588,10 @@ export default function ImportTemplates() {
             <Mail className="h-4 w-4" />
             Templates Email
           </TabsTrigger>
+          <TabsTrigger value="attachments" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Attachments
+          </TabsTrigger>
           <TabsTrigger value="import" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Importa Contatti
@@ -1652,6 +1763,96 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="attachments" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Carica Allegato
+                </CardTitle>
+                <CardDescription>
+                  Carica file PDF, Word, Excel o testo da allegare alle email
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="attachment-file">File</Label>
+                  <Input
+                    id="attachment-file"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleAttachmentUpload(file);
+                      }
+                    }}
+                    disabled={uploadingAttachment}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Formati supportati: PDF, Word, Excel, Testo (max 10MB)
+                  </p>
+                </div>
+                {uploadingAttachment && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Caricamento in corso...
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Allegati Disponibili ({emailAttachments.length})</CardTitle>
+                <CardDescription>
+                  File disponibili per essere allegati alle email
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {emailAttachments.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      Nessun allegato caricato
+                    </p>
+                  ) : (
+                    emailAttachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                        <div className="flex-shrink-0">
+                          {getFileThumbnail(attachment.mime_type, attachment.nome)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{attachment.nome}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatFileSize(attachment.file_size)} • {new Date(attachment.created_at).toLocaleDateString('it-IT')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingDocument(attachment)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteAttachment(attachment.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -2372,6 +2573,17 @@ export default function ImportTemplates() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Document Viewer Dialog */}
+      {viewingDocument && (
+        <DocumentViewer
+          isOpen={!!viewingDocument}
+          onClose={() => setViewingDocument(null)}
+          fileName={viewingDocument.nome}
+          fileUrl={viewingDocument.file_path}
+          mimeType={viewingDocument.mime_type}
+        />
+      )}
     </div>
   );
 }

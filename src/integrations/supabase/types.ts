@@ -295,6 +295,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_attachments: {
+        Row: {
+          created_at: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           attachments: Json | null

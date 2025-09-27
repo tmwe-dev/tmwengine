@@ -272,8 +272,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: aiConfig.modello,
         messages: messages,
-        max_tokens: 1000,
-        temperature: 0.7,
+        max_completion_tokens: 1000,
         tools: tools,
         tool_choice: "auto"
       }),
@@ -343,8 +342,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: aiConfig.modello,
           messages: followUpMessages,
-          max_tokens: 1000,
-          temperature: 0.7,
+          max_completion_tokens: 1000,
         }),
       });
       

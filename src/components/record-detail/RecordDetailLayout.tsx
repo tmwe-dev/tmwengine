@@ -526,9 +526,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 </div>
               )}
               
-              {/* Pulsante Importa in Rubrica - solo per record importati */}
+              {/* Pulsanti azione - solo per record importati */}
               {record.hasOwnProperty('is_imported_to_rubrica') && (
-                <div className="min-w-[200px] flex items-end">
+                <div className="min-w-[200px] flex items-end gap-2">
                   <Button 
                     onClick={handleImportToRubrica}
                     disabled={isImporting || record.is_imported_to_rubrica}
@@ -540,6 +540,64 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                     {isImporting ? "Importando..." : 
                      record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
                   </Button>
+                  
+                  {/* Pulsante Crea Attività */}
+                  <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 mt-5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Crea Attività
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Crea Nuova Attività</DialogTitle>
+                      </DialogHeader>
+                      <ActivityForm
+                        onSubmit={handleCreateActivity}
+                        onCancel={() => setIsActivityDialogOpen(false)}
+                        preselectedCompany={{
+                          id: record.id,
+                          name: record.company_name || record.azienda || record.name || 'Azienda non specificata'
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+              
+              {/* Pulsante Crea Attività per record rubrica */}
+              {!record.hasOwnProperty('is_imported_to_rubrica') && (
+                <div className="min-w-[200px] flex items-end">
+                  <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex items-center gap-2 mt-5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Crea Attività
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Crea Nuova Attività</DialogTitle>
+                      </DialogHeader>
+                      <ActivityForm
+                        onSubmit={handleCreateActivity}
+                        onCancel={() => setIsActivityDialogOpen(false)}
+                        preselectedCompany={{
+                          id: record.id,
+                          name: record.company_name || record.azienda || record.name || 'Azienda non specificata'
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
             </div>

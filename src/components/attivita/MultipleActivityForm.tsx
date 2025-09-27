@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Building } from 'lucide-react';
 
 const multipleActivitySchema = z.object({
@@ -22,6 +23,7 @@ const multipleActivitySchema = z.object({
   scadenza: z.string().optional(),
   priorita: z.enum(['alta', 'media', 'bassa']).default('media'),
   assegnato_nome: z.string().optional(),
+  salva_in_rubrica: z.boolean().default(false),
 });
 
 type MultipleActivityFormData = z.infer<typeof multipleActivitySchema>;
@@ -37,9 +39,10 @@ interface MultipleActivityFormProps {
   onSubmit: (data: MultipleActivityFormData) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  showSaveToRubrica?: boolean; // Nuova prop per mostrare l'opzione
 }
 
-export function MultipleActivityForm({ companies, onSubmit, onCancel, isSubmitting }: MultipleActivityFormProps) {
+export function MultipleActivityForm({ companies, onSubmit, onCancel, isSubmitting, showSaveToRubrica = false }: MultipleActivityFormProps) {
   const form = useForm<MultipleActivityFormData>({
     resolver: zodResolver(multipleActivitySchema),
     defaultValues: {
@@ -48,7 +51,8 @@ export function MultipleActivityForm({ companies, onSubmit, onCancel, isSubmitti
       stato: 'aperta',
       scadenza: '',
       priorita: 'media',
-      assegnato_nome: ''
+      assegnato_nome: '',
+      salva_in_rubrica: false
     }
   });
 
@@ -198,6 +202,38 @@ export function MultipleActivityForm({ companies, onSubmit, onCancel, isSubmitti
             />
           </div>
         </div>
+
+        {/* Opzione salva in rubrica - solo per record import */}
+        {showSaveToRubrica && (
+          <div className="space-y-4">
+            <h3 className="text-heading-4 font-semibold text-text-primary">
+              Opzioni Aggiuntive
+            </h3>
+            
+            <FormField
+              control={form.control}
+              name="salva_in_rubrica"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Salva anche in Rubrica
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Trasferisci automaticamente tutte le aziende selezionate nella rubrica principale
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t border-border">

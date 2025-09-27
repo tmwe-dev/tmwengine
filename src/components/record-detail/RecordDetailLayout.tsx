@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ActivityForm } from '@/components/attivita/ActivityForm';
+import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -233,8 +233,32 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
   const handleCreateActivity = async (activityData: any) => {
     try {
-      // Temporarily disabled - will be implemented later
-      console.log('Activity creation:', activityData);
+      // Crea l'attività basata sul tipo selezionato
+      let descrizione = '';
+      let tipo = activityData.tipo;
+      
+      if (activityData.tipo === 'email') {
+        descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
+      } else if (activityData.tipo === 'chiamata') {
+        descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
+      }
+
+      const { data, error } = await supabase
+        .from('attivita')
+        .insert([{
+          rubrica_id: record.id,
+          tipo: tipo,
+          descrizione: descrizione,
+          stato: 'aperta',
+          scadenza: null,
+          priorita: activityData.priorita || 'media',
+          assegnato_a: null,
+          creato_da: null
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
       
       setIsActivityDialogOpen(false);
       toast({
@@ -553,17 +577,22 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl">
                       <DialogHeader>
                         <DialogTitle>Crea Nuova Attività</DialogTitle>
                       </DialogHeader>
-                      <ActivityForm
+                      <AdvancedMultipleActivityForm
+                        contacts={[{
+                          id: record.id,
+                          company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                          email: record.email,
+                          phone: record.telefono || record.phone,
+                          cell: record.cellulare || record.cell
+                        }]}
                         onSubmit={handleCreateActivity}
                         onCancel={() => setIsActivityDialogOpen(false)}
-                        preselectedCompany={{
-                          id: record.id,
-                          name: record.company_name || record.azienda || record.name || 'Azienda non specificata'
-                        }}
+                        isSubmitting={false}
+                        showSaveToRubrica={false}
                       />
                     </DialogContent>
                   </Dialog>
@@ -584,17 +613,22 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl">
                       <DialogHeader>
                         <DialogTitle>Crea Nuova Attività</DialogTitle>
                       </DialogHeader>
-                      <ActivityForm
+                      <AdvancedMultipleActivityForm
+                        contacts={[{
+                          id: record.id,
+                          company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                          email: record.email,
+                          phone: record.telefono || record.phone,
+                          cell: record.cellulare || record.cell
+                        }]}
                         onSubmit={handleCreateActivity}
                         onCancel={() => setIsActivityDialogOpen(false)}
-                        preselectedCompany={{
-                          id: record.id,
-                          name: record.company_name || record.azienda || record.name || 'Azienda non specificata'
-                        }}
+                        isSubmitting={false}
+                        showSaveToRubrica={false}
                       />
                     </DialogContent>
                   </Dialog>

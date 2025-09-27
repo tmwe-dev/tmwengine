@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ActivityForm } from '@/components/attivita/ActivityForm';
+import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -138,17 +138,27 @@ export default function Attivita() {
 
   const handleAddActivity = async (activityData: any) => {
     try {
+      // Crea l'attività basata sul tipo selezionato
+      let descrizione = '';
+      let tipo = activityData.tipo;
+      
+      if (activityData.tipo === 'email') {
+        descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
+      } else if (activityData.tipo === 'chiamata') {
+        descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
+      }
+
       const { data, error } = await supabase
         .from('attivita')
         .insert([{
-          rubrica_id: activityData.rubrica_id || null,
-          tipo: activityData.tipo,
-          descrizione: activityData.descrizione,
-          stato: activityData.stato || 'aperta',
-          scadenza: activityData.scadenza || null,
+          rubrica_id: null, // Per attività singole dalla pagina attività
+          tipo: tipo,
+          descrizione: descrizione,
+          stato: 'aperta',
+          scadenza: null,
           priorita: activityData.priorita || 'media',
-          assegnato_a: activityData.assegnato_a || null,
-          creato_da: activityData.creato_da || null
+          assegnato_a: null,
+          creato_da: null
         }])
         .select()
         .single();
@@ -327,16 +337,18 @@ export default function Attivita() {
               Nuova Attività
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedActivity ? 'Modifica Attività' : 'Nuova Attività'}
               </DialogTitle>
             </DialogHeader>
-            <ActivityForm
-              activity={selectedActivity}
+            <AdvancedMultipleActivityForm
+              contacts={[]} // Array vuoto per attività singole
               onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
               onCancel={() => setIsFormOpen(false)}
+              isSubmitting={false}
+              showSaveToRubrica={false}
             />
           </DialogContent>
         </Dialog>

@@ -173,31 +173,33 @@ export function AdvancedMultipleActivityForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Aziende selezionate */}
-        <div className="space-y-4">
-          <h3 className="text-heading-4 font-semibold text-text-primary flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Aziende Selezionate ({contacts.length})
-          </h3>
-          
-          <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-4 bg-background-subtle">
-            <div className="space-y-2">
-              {contacts.map((contact) => (
-                <div key={contact.id} className="flex items-center justify-between p-2 bg-background rounded border border-border">
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-sm">
-                      {contact.company_name || contact.company_alias || 'Azienda non specificata'}
-                    </span>
+        {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
+        {contacts.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-heading-4 font-semibold text-text-primary flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
+            </h3>
+            
+            <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-4 bg-background-subtle">
+              <div className="space-y-2">
+                {contacts.map((contact) => (
+                  <div key={contact.id} className="flex items-center justify-between p-2 bg-background rounded border border-border">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm">
+                        {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {getContactInfo(contact)}
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    ID: {contact.id.slice(0, 8)}...
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Tipo di attività */}
         <div className="space-y-4">

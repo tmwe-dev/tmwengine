@@ -38,13 +38,13 @@ const CRMLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border h-16 flex items-center justify-between px-4 lg:px-6">
+      <header className="bg-card border-b border-border h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden"
+            className="md:hidden"
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -53,17 +53,18 @@ const CRMLayout = ({ children }) => {
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">CRM</span>
             </div>
-            <h1 className="text-xl font-semibold text-foreground">Sistema CRM</h1>
+            <h1 className="text-xl font-semibold text-foreground hidden sm:block">Sistema CRM</h1>
+            <h1 className="text-lg font-semibold text-foreground sm:hidden">CRM</h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:block">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden lg:block">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Cerca in CRM..." 
-                className="pl-10 w-64"
+                className="pl-10 w-48 xl:w-64"
               />
             </div>
           </div>
@@ -77,12 +78,25 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex h-[calc(100vh-4rem)] relative">
+        {/* Mobile Backdrop */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-10 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className={`bg-card border-r border-border transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
-        } overflow-hidden`}>
-          <nav className="p-4 space-y-2">
+        <aside className={`
+          bg-card border-r border-border transition-all duration-300 z-20
+          ${sidebarOpen 
+            ? 'fixed md:relative w-64 left-0 top-16 bottom-0 md:top-auto md:bottom-auto' 
+            : 'w-0 md:w-16 -left-full md:left-auto'
+          } 
+          overflow-hidden md:overflow-visible
+        `}>
+          <nav className="p-4 space-y-2 h-full overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -91,6 +105,7 @@ const CRMLayout = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => window.innerWidth < 768 && setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     active
                       ? 'bg-primary text-primary-foreground'
@@ -98,7 +113,7 @@ const CRMLayout = ({ children }) => {
                   }`}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className={`${sidebarOpen ? 'block' : 'hidden lg:hidden xl:block'}`}>
+                  <span className={`${sidebarOpen ? 'block' : 'hidden md:hidden lg:block'} whitespace-nowrap`}>
                     {item.name}
                   </span>
                 </Link>
@@ -109,7 +124,7 @@ const CRMLayout = ({ children }) => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto bg-background">
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {children}
           </div>
         </main>

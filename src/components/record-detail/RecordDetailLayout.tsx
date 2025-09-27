@@ -252,11 +252,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <Building className="h-5 w-5 text-primary mt-5" />
           
           {/* Company fields + Origin allineati subito a destra dell'icona */}
-          {record.company_name !== undefined && (
+          {(record.company_name !== undefined || record.azienda !== undefined) && (
             <div className="max-w-[200px] min-w-[200px]">
               <FieldRenderer 
-                field="company_name" 
-                value={record.company_name} 
+                field={record.company_name !== undefined ? "company_name" : "azienda"} 
+                value={record.company_name || record.azienda} 
                 formatCellValue={formatCellValue}
               />
             </div>
@@ -275,11 +275,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <div className="flex-1"></div>
           
           {/* Origin */}
-          {record.origin !== undefined && (
+          {(record.origin !== undefined || record.origine !== undefined) && (
             <div className="min-w-[140px]">
               <FieldRenderer 
-                field="origin" 
-                value={record.origin} 
+                field={record.origin !== undefined ? "origin" : "origine"} 
+                value={record.origin || record.origine} 
                 formatCellValue={formatCellValue}
               />
             </div>
@@ -293,11 +293,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <Users className="h-5 w-5 text-primary mt-5" />
           
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
-          {record.name !== undefined && (
+          {(record.name !== undefined || record.nome !== undefined) && (
             <div className="max-w-[200px] min-w-[180px]">
               <FieldRenderer 
-                field="name" 
-                value={record.name} 
+                field={record.name !== undefined ? "name" : "nome"} 
+                value={record.name || record.nome} 
                 formatCellValue={formatCellValue}
               />
             </div>
@@ -342,24 +342,24 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           )}
           
-          {record.phone !== undefined && (
+          {(record.phone !== undefined || record.telefono !== undefined) && (
             <div className="min-w-[150px] flex items-start gap-2">
               <Phone className="h-4 w-4 text-green-500 mt-5" />
               <FieldRenderer 
-                field="phone" 
-                value={record.phone} 
+                field={record.phone !== undefined ? "phone" : "telefono"} 
+                value={record.phone || record.telefono} 
                 formatCellValue={formatCellValue}
                 className="flex-1"
               />
             </div>
           )}
           
-          {record.cell !== undefined && (
+          {(record.cell !== undefined || record.cellulare !== undefined) && (
             <div className="min-w-[150px] flex items-start gap-2">
               <Phone className="h-4 w-4 text-orange-500 mt-5" />
               <FieldRenderer 
-                field="cell" 
-                value={record.cell} 
+                field={record.cell !== undefined ? "cell" : "cellulare"} 
+                value={record.cell || record.cellulare} 
                 formatCellValue={formatCellValue}
                 className="flex-1"
               />
@@ -369,7 +369,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       </div>
 
       {/* Sezione Ubicazione */}
-      {(record.city !== undefined || record.zip_code !== undefined || record.address !== undefined) && (
+      {(record.city !== undefined || record.citta !== undefined || record.zip_code !== undefined || record.address !== undefined || record.indirizzo !== undefined) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <button 
@@ -385,11 +385,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {showLocationDetails && (
             <div className="flex items-start gap-4 ml-9">
-              {record.city !== undefined && (
+              {(record.city !== undefined || record.citta !== undefined) && (
                 <div className="max-w-[200px] min-w-[200px]">
                   <FieldRenderer 
-                    field="city" 
-                    value={record.city} 
+                    field={record.city !== undefined ? "city" : "citta"} 
+                    value={record.city || record.citta} 
                     formatCellValue={formatCellValue}
                   />
                 </div>
@@ -405,21 +405,21 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 </div>
               )}
               
-              {record.address !== undefined && (
+              {(record.address !== undefined || record.indirizzo !== undefined) && (
                 <div className="max-w-[200px] min-w-[200px]">
                   <FieldRenderer 
-                    field="address" 
-                    value={record.address} 
+                    field={record.address !== undefined ? "address" : "indirizzo"} 
+                    value={record.address || record.indirizzo} 
                     formatCellValue={formatCellValue}
                   />
                 </div>
               )}
               
-              {record.country !== undefined && (
+              {(record.country !== undefined || record.paese !== undefined) && (
                 <div className="max-w-[200px] min-w-[150px]">
                   <FieldRenderer 
-                    field="country" 
-                    value={record.country} 
+                    field={record.country !== undefined ? "country" : "paese"} 
+                    value={record.country || record.paese} 
                     formatCellValue={formatCellValue}
                   />
                 </div>

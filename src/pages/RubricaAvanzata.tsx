@@ -539,7 +539,7 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -628,12 +628,117 @@ export default function RubricaAvanzata() {
         </CardContent>
       </Card>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-heading-2 font-bold text-text-primary">
+                {allRecords.length}
+              </div>
+              <div className="text-small text-text-secondary">
+                Contatti Totali
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-heading-2 font-bold text-text-primary">
+                {filteredRecords.length}
+              </div>
+              <div className="text-small text-text-secondary">
+                Filtrati
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-heading-2 font-bold text-text-primary">
+                {allRecords.filter(c => c.azienda).length}
+              </div>
+              <div className="text-small text-text-secondary">
+                Con Azienda
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="text-heading-2 font-bold text-text-primary">
+                {selectedRecords.size}
+              </div>
+              <div className="text-small text-text-secondary">
+                Selezionati
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Column Visibility Controls */}
+      <Card className="border-card shadow-soft">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm font-medium">Mostra colonne:</span>
+            <Button
+              variant={visibleColumns.company ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleColumnVisibility('company')}
+            >
+              <Building className="h-4 w-4 mr-1" />
+              Azienda
+            </Button>
+            <Button
+              variant={visibleColumns.details ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleColumnVisibility('details')}
+            >
+              <Phone className="h-4 w-4 mr-1" />
+              Dettagli
+            </Button>
+            <Button
+              variant={visibleColumns.metadata ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleColumnVisibility('metadata')}
+            >
+              <Database className="h-4 w-4 mr-1" />
+              Metadata
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium">Filtri attivi:</span>
+              {activeFilters.map((filter, index) => (
+                <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeFilter(index)}>
+                  {filter.displayValue} ×
+                </Badge>
+              ))}
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                Pulisci tutti
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions Bar */}
       {selectedRecords.size > 0 && (
         <Card className="border-card shadow-soft">
-          <CardContent className="p-3">
+          <CardContent className="p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">
                 {selectedRecords.size} contatto/i selezionato/i
@@ -645,14 +750,14 @@ export default function RubricaAvanzata() {
                   onClick={deleteSelectedContacts}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Elimina
+                  Elimina Selezionati
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedRecords(new Set())}
                 >
-                  Deseleziona
+                  Deseleziona Tutti
                 </Button>
               </div>
             </div>
@@ -671,11 +776,6 @@ export default function RubricaAvanzata() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Debug Info */}
-          <div className="mb-4 p-2 bg-muted rounded text-xs">
-            Debug: Totali={allRecords.length} | Filtrati={filteredRecords.length} | Viewing={viewingRecords.length} | Loading={loadingAllRecords.toString()}
-          </div>
-          
           {loadingAllRecords ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1049,9 +1149,6 @@ export default function RubricaAvanzata() {
                 </Button>
               </div>
             </DialogTitle>
-            <DialogDescription>
-              Visualizza e gestisci i dettagli del contatto selezionato
-            </DialogDescription>
           </DialogHeader>
           
           {selectedRecord && (

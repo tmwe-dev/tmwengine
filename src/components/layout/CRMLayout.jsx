@@ -12,7 +12,8 @@ import {
   X,
   Search,
   MessageSquare,
-  FileUp
+  FileUp,
+  Database
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -23,6 +24,7 @@ const CRMLayout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Rubrica', href: '/rubrica', icon: Users },
+    { name: 'Rubrica Avanzata', href: '/rubrica-avanzata', icon: Database },
     { name: 'Attività', href: '/attivita', icon: Calendar },
     { name: 'Campagne', href: '/campagne', icon: BarChart3 },
     { name: 'Email', href: '/email', icon: Mail },

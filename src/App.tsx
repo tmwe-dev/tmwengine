@@ -9,6 +9,7 @@ import CRMLayout from "./components/layout/CRMLayout";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
+import RubricaAvanzata from "./pages/RubricaAvanzata";
 import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
 import Email from "./pages/Email";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/dashboard" element={<CRMLayout><Dashboard /></CRMLayout>} />
           <Route path="/settings" element={<CRMLayout><Settings /></CRMLayout>} />
           <Route path="/rubrica" element={<CRMLayout><Rubrica /></CRMLayout>} />
+          <Route path="/rubrica-avanzata" element={<CRMLayout><RubricaAvanzata /></CRMLayout>} />
           <Route path="/attivita" element={<CRMLayout><Attivita /></CRMLayout>} />
           <Route path="/campagne" element={<CRMLayout><Campagne /></CRMLayout>} />
           <Route path="/email" element={<CRMLayout><Email /></CRMLayout>} />

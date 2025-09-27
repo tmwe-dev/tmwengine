@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Download, FileText, FileSpreadsheet, File } from 'lucide-react';
+import { X, Download, FileText, FileSpreadsheet, File, Image } from 'lucide-react';
 
 interface DocumentViewerProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface DocumentViewerProps {
 }
 
 const getFileIcon = (mimeType: string) => {
+  if (mimeType.includes('image/')) return <Image className="h-5 w-5 text-purple-500" />;
   if (mimeType.includes('pdf')) return <File className="h-5 w-5 text-red-500" />;
   if (mimeType.includes('word') || mimeType.includes('document')) return <FileText className="h-5 w-5 text-blue-500" />;
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
@@ -19,7 +20,7 @@ const getFileIcon = (mimeType: string) => {
 };
 
 export function DocumentViewer({ isOpen, onClose, fileName, fileUrl, mimeType }: DocumentViewerProps) {
-  const canPreview = mimeType.includes('pdf') || mimeType.includes('text');
+  const canPreview = mimeType.includes('pdf') || mimeType.includes('text') || mimeType.includes('image/');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -49,7 +50,15 @@ export function DocumentViewer({ isOpen, onClose, fileName, fileUrl, mimeType }:
         <div className="flex-1 p-6 pt-4">
           {canPreview ? (
             <div className="w-full h-[70vh] border rounded-lg overflow-hidden">
-              {mimeType.includes('pdf') ? (
+              {mimeType.includes('image/') ? (
+                <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                  <img
+                    src={fileUrl}
+                    alt={fileName}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              ) : mimeType.includes('pdf') ? (
                 <iframe
                   src={fileUrl}
                   className="w-full h-full"

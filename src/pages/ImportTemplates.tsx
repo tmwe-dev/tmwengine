@@ -749,7 +749,11 @@ export default function ImportTemplates() {
   };
 
   const getFileThumbnail = (mimeType: string, fileName: string) => {
-    if (mimeType.includes('pdf')) {
+    if (mimeType.includes('image/')) {
+      return <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+        <span className="text-purple-600 text-xs font-bold">IMG</span>
+      </div>;
+    } else if (mimeType.includes('pdf')) {
       return <FileText className="h-8 w-8 text-red-500" />;
     } else if (mimeType.includes('word') || mimeType.includes('document')) {
       return <FileText className="h-8 w-8 text-blue-500" />;
@@ -1778,7 +1782,7 @@ export default function ImportTemplates() {
                   Carica Allegato
                 </CardTitle>
                 <CardDescription>
-                  Carica file PDF, Word, Excel o testo da allegare alle email
+                  Carica file PDF, Word, Excel, immagini o testo da allegare alle email
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1787,7 +1791,7 @@ export default function ImportTemplates() {
                   <Input
                     id="attachment-file"
                     type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -1797,7 +1801,7 @@ export default function ImportTemplates() {
                     disabled={uploadingAttachment}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Formati supportati: PDF, Word, Excel, Testo (max 10MB)
+                    Formati supportati: PDF, Word, Excel, Immagini (JPG, PNG, GIF), Testo (max 10MB)
                   </p>
                 </div>
                 {uploadingAttachment && (

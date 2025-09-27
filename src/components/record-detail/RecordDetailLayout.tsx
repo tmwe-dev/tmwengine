@@ -567,8 +567,21 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                       <Plus className="h-4 w-4" />
                       Crea Attività
                     </Button>
-                  </DialogTrigger>
-                </Dialog>
+                   </DialogTrigger>
+                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                     <DialogHeader>
+                       <DialogTitle>Nuova Attività</DialogTitle>
+                     </DialogHeader>
+                     <ActivityForm
+                       preselectedCompany={{
+                         id: record.id,
+                         name: record.azienda || record.company_name || record.nome || record.name || 'Sconosciuto'
+                       }}
+                       onSubmit={handleCreateActivity}
+                       onCancel={() => setIsActivityDialogOpen(false)}
+                     />
+                   </DialogContent>
+                 </Dialog>
               </div>
             </div>
           </div>

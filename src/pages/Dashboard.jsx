@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -316,10 +317,12 @@ const Dashboard = () => {
               <Users className="h-6 w-6 text-success" />
               <span className="font-medium">Nuovo Contatto</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-sm hover:bg-primary-muted hover:scale-105 transition-all duration-fast">
-              <Calendar className="h-6 w-6 text-primary" />
-              <span className="font-medium">Nuova Attività</span>
-            </Button>
+            <Link to="/attivita">
+              <Button variant="outline" className="h-20 flex-col gap-sm hover:bg-primary-muted hover:scale-105 transition-all duration-fast">
+                <Calendar className="h-6 w-6 text-primary" />
+                <span className="font-medium">Nuova Attività</span>
+              </Button>
+            </Link>
             <Button variant="outline" className="h-20 flex-col gap-sm hover:bg-primary-muted hover:scale-105 transition-all duration-fast">
               <Send className="h-6 w-6 text-warning" />
               <span className="font-medium">Invia Email</span>

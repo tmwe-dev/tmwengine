@@ -1744,13 +1744,37 @@ export default function ImportTemplates() {
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
             <div className="flex justify-between items-start gap-4">
-              <div className="flex-1">
-                <DialogTitle>
-                  Record Importati - {selectedImport?.file_name}
-                </DialogTitle>
-                <DialogDescription>
-                  Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
-                </DialogDescription>
+              <div className="flex-1 flex items-start gap-4">
+                <div>
+                  <DialogTitle>
+                    Record Importati - {selectedImport?.file_name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
+                  </DialogDescription>
+                </div>
+                
+                {/* Pulsante Crea Attività Multiple */}
+                {selectedRecords.size > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => setShowMultipleActivityDialog(true)}
+                          className="text-xs px-3 flex items-center gap-2 mt-1"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Crea Attività ({selectedRecords.size})
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Crea attività per le {selectedRecords.size} aziende selezionate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               
               {/* Search and Filter Controls - Top Right */}
@@ -1880,31 +1904,6 @@ export default function ImportTemplates() {
               Metadata & Sistema
             </Button>
             
-            {/* Multiple Activities button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowMultipleActivityDialog(true)}
-                    disabled={selectedRecords.size === 0}
-                    className="text-xs px-2"
-                  >
-                    <FileText className="h-4 w-4 text-blue-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    {selectedRecords.size === 0 
-                      ? 'Seleziona aziende per creare attività' 
-                      : `Crea attività per ${selectedRecords.size} aziende selezionate`
-                    }
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
             {/* Bulk delete button */}
             <TooltipProvider>
               <Tooltip>

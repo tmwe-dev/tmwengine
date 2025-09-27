@@ -460,26 +460,46 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
            )}
         </div>
 
-        {/* Scadenza e assegnazione */}
-        <div className="space-y-4">
-           <h3 className="text-heading-4 font-semibold text-text-primary">
-             Assegnazione
-           </h3>
-          
-           <FormField
-             control={form.control}
-             name="assegnato_nome"
-             render={({ field }) => (
-               <FormItem>
-                 <FormLabel>Assegnato a</FormLabel>
-                 <FormControl>
-                   <Input {...field} placeholder="Nome della persona assegnata" />
-                 </FormControl>
-                 <FormMessage />
-               </FormItem>
-             )}
-           />
-        </div>
+         {/* Scadenza e assegnazione */}
+         <div className="space-y-4">
+            <h3 className="text-heading-4 font-semibold text-text-primary">
+              Programmazione
+            </h3>
+           
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="scadenza"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data e Ora Scadenza</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        placeholder="Seleziona data e ora"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="assegnato_nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assegnato a</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Nome della persona assegnata" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+         </div>
 
         {/* Stato (solo per modifica) */}
         {activity && (

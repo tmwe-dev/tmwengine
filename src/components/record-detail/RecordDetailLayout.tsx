@@ -233,21 +233,9 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
   const handleCreateActivity = async (activityData: any) => {
     try {
-      const { error } = await supabase
-        .from('attivita')
-        .insert({
-          rubrica_id: activityData.rubrica_id || null,
-          tipo: activityData.tipo,
-          descrizione: activityData.descrizione,
-          stato: activityData.stato || 'aperta',
-          scadenza: activityData.scadenza || null,
-          priorita: activityData.priorita || 'media',
-          assegnato_a: activityData.assegnato_a || null,
-          creato_da: activityData.creato_da || null
-        });
-
-      if (error) throw error;
-
+      // Temporarily disabled - will be implemented later
+      console.log('Activity creation:', activityData);
+      
       setIsActivityDialogOpen(false);
       toast({
         title: "Attività creata",

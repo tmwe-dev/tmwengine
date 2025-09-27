@@ -82,16 +82,16 @@ const CRMLayout = ({ children }) => {
         {/* Mobile Backdrop */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-10 md:hidden"
+            className="fixed inset-0 top-16 bg-background/50 backdrop-blur-sm z-30 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Sidebar */}
         <aside className={`
-          bg-card border-r border-border transition-all duration-300 z-20
+          bg-card border-r border-border transition-all duration-300 z-40
           ${sidebarOpen 
-            ? 'fixed md:relative w-64 left-0 top-16 bottom-0 md:top-auto md:bottom-auto' 
+            ? 'fixed md:relative w-64 left-0 top-16 h-[calc(100vh-4rem)] md:top-auto md:h-auto' 
             : 'w-0 md:w-16 -left-full md:left-auto'
           } 
           overflow-hidden md:overflow-visible

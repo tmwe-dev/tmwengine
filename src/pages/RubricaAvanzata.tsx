@@ -671,6 +671,11 @@ export default function RubricaAvanzata() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Debug Info */}
+          <div className="mb-4 p-2 bg-muted rounded text-xs">
+            Debug: Totali={allRecords.length} | Filtrati={filteredRecords.length} | Viewing={viewingRecords.length} | Loading={loadingAllRecords.toString()}
+          </div>
+          
           {loadingAllRecords ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1044,6 +1049,9 @@ export default function RubricaAvanzata() {
                 </Button>
               </div>
             </DialogTitle>
+            <DialogDescription>
+              Visualizza e gestisci i dettagli del contatto selezionato
+            </DialogDescription>
           </DialogHeader>
           
           {selectedRecord && (

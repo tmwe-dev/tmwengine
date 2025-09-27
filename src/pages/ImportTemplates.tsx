@@ -446,11 +446,9 @@ export default function ImportTemplates() {
         };
       });
 
-      // TODO: Fix types issue with attivita table
-      // const { error } = await supabase
-      //   .from('attivita')
-      //   .insert(activities);
-      const error = null; // Temporary - will be fixed when types are updated
+      // Inserisci le attività nel database
+      const { error } = await supabase
+        .rpc('create_activity_records', { activity_data: activities });
 
       if (error) throw error;
 

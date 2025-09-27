@@ -641,9 +641,9 @@ const Chat = () => {
                     <span className="bg-primary/10 px-2 py-1 rounded">
                       {lastResponseStats.tokens} token
                     </span>
-                    <span className="bg-secondary px-2 py-1 rounded">
-                      {lastResponseStats.responseTime}ms
-                    </span>
+                     <span className="text-blue-500">
+                       {lastResponseStats.responseTime}ms
+                     </span>
                     <span className="bg-muted px-2 py-1 rounded">
                       {lastResponseStats.memoryMode} memory
                     </span>

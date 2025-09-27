@@ -177,7 +177,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
-import { MultipleActivityForm } from '@/components/attivita/MultipleActivityForm';
+import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 
 interface EmailTemplate {
   id: string;
@@ -415,16 +415,36 @@ export default function ImportTemplates() {
       }
 
       // Crea un'attività per ogni azienda selezionata
-      const activities = selectedCompanies.map(company => ({
-        rubrica_id: company.id,
-        tipo: activityData.tipo,
-        descrizione: activityData.descrizione,
-        stato: activityData.stato || 'aperta',
-        scadenza: activityData.scadenza || null,
-        priorita: activityData.priorita || 'media',
-        assegnato_a: activityData.assegnato_a || null,
-        creato_da: activityData.creato_da || null
-      }));
+      const activities = selectedCompanies.map(company => {
+        let descrizione = '';
+        let scadenza = activityData.scadenza || null;
+
+        // Gestisci descrizione basata sul tipo
+        if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
+          descrizione = `Email: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+        } else if (activityData.tipo === 'chiamata' && activityData.nota_chiamata) {
+          descrizione = `Chiamata programmata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNota:\n${activityData.nota_chiamata}`;
+          
+          // Per le chiamate, imposta la scadenza dalla data/ora specifica
+          if (activityData.data_chiamata && activityData.ora_chiamata) {
+            const callDateTime = new Date(`${activityData.data_chiamata}T${activityData.ora_chiamata}`);
+            scadenza = callDateTime.toISOString();
+          }
+        } else {
+          descrizione = activityData.descrizione || `Attività per ${company.record.company_name || company.record.name || 'contatto'}`;
+        }
+
+        return {
+          rubrica_id: company.id,
+          tipo: activityData.tipo,
+          descrizione: descrizione,
+          stato: activityData.stato || 'aperta',
+          scadenza: scadenza,
+          priorita: activityData.priorita || 'media',
+          assegnato_a: activityData.assegnato_a || null,
+          creato_da: activityData.creato_da || null
+        };
+      });
 
       // TODO: Fix types issue with attivita table
       // const { error } = await supabase
@@ -434,9 +454,11 @@ export default function ImportTemplates() {
 
       if (error) throw error;
 
+      const activityType = activityData.tipo === 'email' ? 'Email' : 
+                           activityData.tipo === 'chiamata' ? 'Chiamate' : 'Attività';
       const successMessage = activityData.salva_in_rubrica 
-        ? `${activities.length} attività create e contatti trasferiti in rubrica`
-        : `${activities.length} attività create con successo`;
+        ? `${activities.length} ${activityType} create e contatti trasferiti in rubrica`
+        : `${activities.length} ${activityType} create con successo`;
       
       toast.success(successMessage);
       setShowMultipleActivityDialog(false);
@@ -2240,13 +2262,19 @@ export default function ImportTemplates() {
           </DialogHeader>
           
           {showMultipleActivityDialog && (
-            <MultipleActivityForm
-              companies={Array.from(selectedRecords).map(index => {
+            <AdvancedMultipleActivityForm
+              contacts={Array.from(selectedRecords).map(index => {
                 const record = allRecords[index];
                 return {
                   id: record.id,
-                  name: record.company_name || record.name || 'Azienda non specificata',
-                  source: 'import'
+                  company_name: record.company_name,
+                  company_alias: record.company_alias,
+                  name: record.name,
+                  alias: record.alias,
+                  email: record.email,
+                  phone: record.phone,
+                  cell: record.cell,
+                  ...record
                 };
               })}
               onSubmit={handleCreateMultipleActivities}

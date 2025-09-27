@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,24 +7,51 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mail, Phone, Calendar, Clock } from 'lucide-react';
 import { CompanySelector } from './CompanySelector';
 
 const activitySchema = z.object({
   rubrica_id: z.string().optional(),
   rubrica_nome: z.string().optional(),
+  company_alias: z.string().optional(),
+  contact_name: z.string().optional(),
+  contact_alias: z.string().optional(),
   tipo: z.enum(['chiamata', 'meeting', 'email', 'task'], {
     errorMap: () => ({ message: "Seleziona un tipo di attività" })
   }),
-  descrizione: z.string()
-    .trim()
-    .nonempty({ message: "La descrizione è obbligatoria" })
-    .max(500, { message: "La descrizione deve essere inferiore a 500 caratteri" }),
+  descrizione: z.string().optional(),
+  
+  // Campi specifici per email
+  oggetto_email: z.string().optional(),
+  testo_email: z.string().optional(),
+  
+  // Campi specifici per chiamata
+  data_chiamata: z.string().optional(),
+  ora_chiamata: z.string().optional(),
+  nota_chiamata: z.string().optional(),
+  
   stato: z.enum(['aperta', 'in_corso', 'completata', 'annullata']).default('aperta'),
   scadenza: z.string().optional(),
   priorita: z.enum(['alta', 'media', 'bassa']).default('media'),
   assegnato_a: z.string().optional(),
   assegnato_nome: z.string().optional(),
   creato_da: z.string().optional()
+}).refine((data) => {
+  // Validazione condizionale basata sul tipo
+  if (data.tipo === 'email') {
+    return data.oggetto_email && data.testo_email;
+  }
+  if (data.tipo === 'chiamata') {
+    return data.data_chiamata && data.ora_chiamata && data.nota_chiamata;
+  }
+  if (data.tipo === 'task' || data.tipo === 'meeting') {
+    return data.descrizione && data.descrizione.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Compila tutti i campi obbligatori per il tipo di attività selezionato",
+  path: ["descrizione"]
 });
 
 type ActivityFormData = z.infer<typeof activitySchema>;
@@ -51,17 +78,30 @@ interface ActivityFormProps {
   preselectedCompany?: {
     id: string;
     name: string;
+    alias?: string;
+    contact_name?: string;
+    contact_alias?: string;
   };
 }
 
 export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany }: ActivityFormProps) {
+  const [activeTab, setActiveTab] = useState<'basic' | 'email' | 'chiamata'>('basic');
+  
   const form = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
     defaultValues: {
       rubrica_id: activity?.rubrica_id || preselectedCompany?.id || '',
       rubrica_nome: activity?.rubrica_nome || preselectedCompany?.name || '',
+      company_alias: preselectedCompany?.alias || '',
+      contact_name: preselectedCompany?.contact_name || '',
+      contact_alias: preselectedCompany?.contact_alias || '',
       tipo: activity?.tipo || 'task',
       descrizione: activity?.descrizione || '',
+      oggetto_email: '',
+      testo_email: '',
+      data_chiamata: '',
+      ora_chiamata: '',
+      nota_chiamata: '',
       stato: activity?.stato || 'aperta',
       scadenza: activity?.scadenza ? new Date(activity.scadenza).toISOString().slice(0, 16) : '',
       priorita: activity?.priorita || 'media',
@@ -71,18 +111,52 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
     }
   });
 
+  const watchTipo = form.watch('tipo');
+
   const handleSubmit = (data: ActivityFormData) => {
+    let finalDescription = data.descrizione || '';
+    
+    // Se è email, crea descrizione automatica
+    if (data.tipo === 'email' && data.oggetto_email && data.testo_email) {
+      finalDescription = `Email: ${data.oggetto_email}\n\nTesto:\n${data.testo_email}`;
+    }
+    
+    // Se è chiamata, usa la nota come descrizione
+    if (data.tipo === 'chiamata' && data.nota_chiamata) {
+      finalDescription = data.nota_chiamata;
+      
+      // Per le chiamate, imposta la scadenza dalla data/ora specifica
+      if (data.data_chiamata && data.ora_chiamata) {
+        const callDateTime = new Date(`${data.data_chiamata}T${data.ora_chiamata}`);
+        data.scadenza = callDateTime.toISOString().slice(0, 16);
+      }
+    }
+    
     const submitData = {
       ...data,
+      descrizione: finalDescription,
       scadenza: data.scadenza ? new Date(data.scadenza).toISOString() : undefined
     };
     onSubmit(submitData);
   };
 
+  const handleTipoChange = (newTipo: string) => {
+    form.setValue('tipo', newTipo as any);
+    
+    // Cambia tab automaticamente
+    if (newTipo === 'email') {
+      setActiveTab('email');
+    } else if (newTipo === 'chiamata') {
+      setActiveTab('chiamata');
+    } else {
+      setActiveTab('basic');
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Informazioni di base */}
+        {/* Tipo di attività */}
         <div className="space-y-4">
           <h3 className="text-heading-4 font-semibold text-text-primary">
             Dettagli Attività
@@ -96,7 +170,7 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
                 <FormItem>
                   <FormLabel>Tipo Attività *</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={handleTipoChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleziona tipo" />
                       </SelectTrigger>
@@ -137,29 +211,137 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="descrizione"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descrizione *</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="Descrivi l'attività da svolgere..."
-                    className="min-h-[100px]"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          
+          {/* Campi specifici per tipo attività */}
+          {watchTipo === 'email' && (
+            <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
+              <div className="flex items-center gap-2 mb-4">
+                <Mail className="h-5 w-5 text-blue-500" />
+                <h4 className="font-semibold">Configurazione Email</h4>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="oggetto_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Oggetto Email *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="es. Proposta commerciale - Seguimento" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="testo_email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Testo Email *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Gentile [Nome], scrivo per..."
+                        className="min-h-[150px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          {watchTipo === 'chiamata' && (
+            <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
+              <div className="flex items-center gap-2 mb-4">
+                <Phone className="h-5 w-5 text-green-500" />
+                <h4 className="font-semibold">Programmazione Chiamata</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="data_chiamata"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Chiamata *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input {...field} type="date" className="pl-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ora_chiamata"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ora Chiamata *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input {...field} type="time" className="pl-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="nota_chiamata"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nota Chiamata *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="es. Chiamare per discutere la proposta inviata via email..."
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          {(watchTipo === 'task' || watchTipo === 'meeting') && (
+            <FormField
+              control={form.control}
+              name="descrizione"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrizione *</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Descrivi l'attività da svolgere..."
+                      className="min-h-[100px]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* Contatto collegato */}
         <div className="space-y-4">
           <h3 className="text-heading-4 font-semibold text-text-primary">
-            Azienda Collegata
+            Azienda e Contatto Collegati
           </h3>
           
           <FormField
@@ -182,6 +364,19 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
               </FormItem>
             )}
           />
+
+          {/* Mostra informazioni contatto preselezionato */}
+          {preselectedCompany && (
+            <div className="p-3 bg-background-subtle rounded border border-border">
+              <h4 className="font-medium text-sm mb-2">Dettagli Contatto:</h4>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div><strong>Azienda:</strong> {preselectedCompany.name}</div>
+                {preselectedCompany.alias && <div><strong>Alias Azienda:</strong> {preselectedCompany.alias}</div>}
+                {preselectedCompany.contact_name && <div><strong>Contatto:</strong> {preselectedCompany.contact_name}</div>}
+                {preselectedCompany.contact_alias && <div><strong>Alias Contatto:</strong> {preselectedCompany.contact_alias}</div>}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scadenza e assegnazione */}
@@ -191,23 +386,25 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="scadenza"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data e Ora Scadenza</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="datetime-local"
-                      placeholder="Seleziona data e ora"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {watchTipo !== 'chiamata' && (
+              <FormField
+                control={form.control}
+                name="scadenza"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data e Ora Scadenza</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        placeholder="Seleziona data e ora"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -223,6 +420,12 @@ export function ActivityForm({ activity, onSubmit, onCancel, preselectedCompany 
               )}
             />
           </div>
+
+          {watchTipo === 'chiamata' && (
+            <p className="text-sm text-muted-foreground">
+              Per le chiamate, la scadenza viene impostata automaticamente dalla data/ora della chiamata specificata sopra.
+            </p>
+          )}
         </div>
 
         {/* Stato (solo per modifica) */}

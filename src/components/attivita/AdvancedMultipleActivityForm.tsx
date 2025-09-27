@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building, Mail, Phone, Calendar, Clock, User, FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const advancedActivitySchema = z.object({
   tipo: z.enum(['email', 'chiamata'], {
@@ -59,6 +60,13 @@ interface ContactRecord {
   [key: string]: any;
 }
 
+interface EmailTemplate {
+  id: string;
+  nome: string;
+  oggetto: string;
+  contenuto: string;
+}
+
 interface AdvancedMultipleActivityFormProps {
   contacts: ContactRecord[];
   onSubmit: (data: AdvancedActivityFormData) => void;
@@ -75,6 +83,7 @@ export function AdvancedMultipleActivityForm({
   showSaveToRubrica = false 
 }: AdvancedMultipleActivityFormProps) {
   const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>('email');
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -95,10 +104,37 @@ export function AdvancedMultipleActivityForm({
 
   const watchTipo = form.watch('tipo');
 
+  useEffect(() => {
+    loadEmailTemplates();
+  }, []);
+
+  const loadEmailTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('attivo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setEmailTemplates(data || []);
+    } catch (error) {
+      console.error('Errore caricamento template:', error);
+    }
+  };
+
   const handleTabChange = (value: string) => {
     const newType = value as 'email' | 'chiamata';
     setActiveTab(newType);
     form.setValue('tipo', newType);
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      form.setValue('oggetto_email', template.oggetto);
+      form.setValue('testo_email', template.contenuto);
+    }
   };
 
   const handleSubmit = (data: AdvancedActivityFormData) => {
@@ -126,27 +162,22 @@ export function AdvancedMultipleActivityForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Contatti selezionati */}
+        {/* Aziende selezionate */}
         <div className="space-y-4">
           <h3 className="text-heading-4 font-semibold text-text-primary flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Contatti Selezionati ({contacts.length})
+            <Building className="h-5 w-5" />
+            Aziende Selezionate ({contacts.length})
           </h3>
           
-          <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-4 bg-background-subtle">
-            <div className="space-y-3">
+          <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-4 bg-background-subtle">
+            <div className="space-y-2">
               {contacts.map((contact) => (
-                <div key={contact.id} className="flex items-start justify-between p-3 bg-background rounded border border-border">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-sm">{getContactDisplayName(contact)}</span>
-                    </div>
-                    {getContactInfo(contact) && (
-                      <div className="text-xs text-muted-foreground">
-                        {getContactInfo(contact)}
-                      </div>
-                    )}
+                <div key={contact.id} className="flex items-center justify-between p-2 bg-background rounded border border-border">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">
+                      {contact.company_name || contact.company_alias || 'Azienda non specificata'}
+                    </span>
                   </div>
                   <Badge variant="outline" className="text-xs">
                     ID: {contact.id.slice(0, 8)}...
@@ -182,6 +213,28 @@ export function AdvancedMultipleActivityForm({
                   <Mail className="h-5 w-5 text-blue-500" />
                   <h4 className="font-semibold">Configurazione Email</h4>
                 </div>
+
+                {/* Selezione Template */}
+                {emailTemplates.length > 0 && (
+                  <div className="mb-4">
+                    <label className="text-sm font-medium mb-2 block">Template Email (opzionale)</label>
+                    <Select onValueChange={handleTemplateSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona un template..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {emailTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              {template.nome}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 
                 <FormField
                   control={form.control}

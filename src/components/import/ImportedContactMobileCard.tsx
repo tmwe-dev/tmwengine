@@ -82,100 +82,100 @@ export function ImportedContactMobileCard({
                 )}
               </div>
 
-            {/* Company Name with enhanced styling */}
-            <div className="mb-4">
-              <div 
-                className="font-semibold text-lg text-primary cursor-pointer hover:underline truncate transition-colors duration-200 hover:text-primary/80"
-                onClick={onView}
-              >
-                {contact.company_name || contact.name || 'Azienda non specificata'}
+              {/* Company Name with enhanced styling */}
+              <div className="mb-4">
+                <div 
+                  className="font-semibold text-lg text-primary cursor-pointer hover:underline truncate transition-colors duration-200 hover:text-primary/80"
+                  onClick={onView}
+                >
+                  {contact.company_name || contact.name || 'Azienda non specificata'}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <ActivityIndicators 
+                    companyId={contact.id} 
+                    activities={getCompanyActivities(contact.id)}
+                    size="sm"
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <ActivityIndicators 
-                  companyId={contact.id} 
-                  activities={getCompanyActivities(contact.id)}
-                  size="sm"
-                />
-              </div>
-            </div>
 
-            {/* Contact Details with enhanced styling */}
-            {contact.name && contact.name !== contact.company_name && (
-              <div className="bg-muted/50 rounded-lg p-3 mb-3">
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                  <div className="bg-primary/10 p-1 rounded-full">
-                    👤
+              {/* Contact Details with enhanced styling */}
+              {contact.name && contact.name !== contact.company_name && (
+                <div className="rounded-lg p-3 mb-3 border border-border">
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <div className="p-1 rounded-full border border-primary/20">
+                      👤
+                    </div>
+                    <span className="font-medium">{formatCellValue(contact.name)}</span>
                   </div>
-                  <span className="font-medium">{formatCellValue(contact.name)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Location with enhanced styling */}
-            <div className="flex items-center gap-4 text-sm mb-4">
-              {contact.country && (
-                <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
-                  <span className="text-lg">{getCountryFlag(contact.country)}</span>
-                  <span className="font-medium text-foreground">{formatCellValue(contact.country)}</span>
                 </div>
               )}
-              {contact.city && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{formatCellValue(contact.city)}</span>
+
+              {/* Location with enhanced styling */}
+              <div className="flex items-center gap-4 text-sm mb-4">
+                {contact.country && (
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
+                    <span className="text-lg">{getCountryFlag(contact.country)}</span>
+                    <span className="font-medium text-foreground">{formatCellValue(contact.country)}</span>
+                  </div>
+                )}
+                {contact.city && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{formatCellValue(contact.city)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Contact Methods with enhanced styling */}
+              <div className="flex items-center gap-3 mb-4">
+                {contact.email && (
+                  <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-full text-sm font-medium">
+                    <Mail className="h-4 w-4" />
+                    <span>Email</span>
+                  </div>
+                )}
+                {(contact.phone || contact.cell) && (
+                  <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-full text-sm font-medium">
+                    <Phone className="h-4 w-4" />
+                    <span>Tel</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Origin with enhanced styling */}
+              {contact.origin && (
+                <div className="flex justify-between items-end">
+                  <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary font-medium px-3 py-1">
+                    {formatCellValue(contact.origin)}
+                  </Badge>
+                  {/* Delete button moved to bottom */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+              {!contact.origin && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               )}
             </div>
-
-            {/* Contact Methods with enhanced styling */}
-            <div className="flex items-center gap-3 mb-4">
-              {contact.email && (
-                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-full text-sm font-medium">
-                  <Mail className="h-4 w-4" />
-                  <span>Email</span>
-                </div>
-              )}
-              {(contact.phone || contact.cell) && (
-                <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-full text-sm font-medium">
-                  <Phone className="h-4 w-4" />
-                  <span>Tel</span>
-                </div>
-              )}
-            </div>
-
-            {/* Origin with enhanced styling */}
-            {contact.origin && (
-              <div className="flex justify-between items-end">
-                <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary font-medium px-3 py-1">
-                  {formatCellValue(contact.origin)}
-                </Badge>
-                {/* Delete button moved to bottom */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDelete}
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
-            {!contact.origin && (
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDelete}
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
     </TooltipProvider>
   );
 }

@@ -2382,8 +2382,51 @@ export default function ImportTemplates() {
                   </TooltipProvider>
                 )}
               </div>
-              
-              <div className="flex items-center gap-2">
+               
+               <div className="flex items-center gap-2">
+                 {/* Desktop Action Buttons as Icons */}
+                 {selectedRecords.size > 0 && (
+                   <>
+                     <TooltipProvider>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={importSelectedRecords}
+                             className="text-xs px-2"
+                           >
+                             <Database className="h-4 w-4 text-green-500" />
+                           </Button>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Importa {selectedRecords.size} record in rubrica</p>
+                         </TooltipContent>
+                       </Tooltip>
+                     </TooltipProvider>
+                     
+                     <TooltipProvider>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setShowMultipleActivityDialog(true)}
+                             className="text-xs px-2"
+                           >
+                             <FileText className="h-4 w-4 text-blue-500" />
+                           </Button>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Crea attività per le {selectedRecords.size} aziende selezionate</p>
+                         </TooltipContent>
+                       </Tooltip>
+                     </TooltipProvider>
+                   </>
+                 )}
+               </div>
+               
+               <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant={visibleColumns.company ? "default" : "outline"}
@@ -2746,106 +2789,153 @@ export default function ImportTemplates() {
                     )}
                   </div>
                   
-                  {/* Mobile Actions */}
-                  {isMobile ? (
-                    <div className="space-y-2">
-                      {selectedRecords.size > 0 && (
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm"
-                            disabled={importingSelected}
-                            onClick={importSelectedRecords}
-                            className="flex-1"
-                          >
-                            {importingSelected ? 'Trasferimento...' : `Trasferisci (${selectedRecords.size})`}
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowMultipleActivityDialog(true)}
-                            className="px-3"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                             setShowRecordsDialog(false);
-                             setSelectedImport(null);
-                             setViewingRecords([]);
-                             setFilteredRecords([]);
-                             setCurrentPage(0);
-                             setSelectedRecords(new Set());
-                             setActiveFilters([]);
-                           }}
-                           className="flex-1"
-                        >
-                           Chiudi
-                        </Button>
-                        
-                        {/* Pagination Mobile */}
-                        {totalRecords > recordsPerPage && (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                              disabled={currentPage === 0}
-                              className="px-3"
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <div className="px-3 py-1 text-sm bg-muted rounded text-center min-w-[60px]">
-                              {currentPage + 1}
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(currentPage + 1)}
-                              disabled={(currentPage + 1) * recordsPerPage >= filteredRecords.length}
-                              className="px-3"
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Desktop Actions */
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => {
-                         setShowRecordsDialog(false);
-                         setSelectedImport(null);
-                         setViewingRecords([]);
-                         setFilteredRecords([]);
-                         setCurrentPage(0);
-                         setSelectedRecords(new Set());
-                         setActiveFilters([]);
-                       }}>
-                         Chiudi
-                       </Button>
-                       <Button 
-                         disabled={selectedRecords.size === 0 || importingSelected}
-                         onClick={importSelectedRecords}
+                   {/* Mobile Actions */}
+                   {isMobile ? (
+                     <div className="space-y-3">
+                       {/* Mobile Selection Controls */}
+                       <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <Checkbox
+                             checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
+                             onCheckedChange={toggleSelectAll}
+                             aria-label="Seleziona tutti"
+                           />
+                           <span className="text-sm">
+                             Seleziona tutti ({viewingRecords.length})
+                           </span>
+                         </div>
+                         {selectedRecords.size > 0 && (
+                           <span className="text-sm font-medium text-primary">
+                             {selectedRecords.size} selezionati
+                           </span>
+                         )}
+                       </div>
+                       
+                       {/* Mobile Action Buttons as Icons */}
+                       {selectedRecords.size > 0 && (
+                         <div className="flex items-center justify-center gap-4">
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   size="sm"
+                                   variant="outline"
+                                   onClick={() => setShowMultipleActivityDialog(true)}
+                                   className="p-2"
+                                 >
+                                   <FileText className="h-4 w-4 text-blue-500" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Crea attività multiple</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   size="sm"
+                                   variant="outline"
+                                   onClick={importSelectedRecords}
+                                   className="p-2"
+                                 >
+                                   <Database className="h-4 w-4 text-green-500" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Importa in rubrica</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button
+                                   size="sm"
+                                   variant="outline"
+                                   onClick={deleteSelectedRecords}
+                                   className="p-2"
+                                 >
+                                   <Trash2 className="h-4 w-4 text-red-500" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Elimina selezionati</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </div>
+                       )}
+                       
+                       {/* Mobile Pagination */}
+                       <div className="flex justify-center">
+                         <div className="flex items-center gap-2">
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                             disabled={currentPage === 0}
+                           >
+                             <ChevronLeft className="h-4 w-4" />
+                           </Button>
+                           <span className="text-sm px-3 py-1 bg-muted rounded">
+                             {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                           </span>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                             disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                           >
+                             <ChevronRight className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </div>
+                     </div>
+                   ) : (
+                     /* Desktop Pagination */
+                     <div className="flex items-center gap-2">
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                         disabled={currentPage === 0}
                        >
-                         {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
+                         <ChevronLeft className="h-4 w-4" />
+                         Precedente
                        </Button>
-                    </div>
-                  )}
+                       <span className="text-sm px-3 py-1 bg-muted rounded">
+                         Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                       </span>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                         disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                       >
+                         Successivo
+                         <ChevronRight className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   )}
+                 </div>
                 </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+                </div>
+               )}
+             </div>
+           ) : (
+             <div className="text-center py-8">
+               <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+             </div>
+           )}
+         </DialogContent>
+       </Dialog>
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>

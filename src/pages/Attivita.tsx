@@ -746,12 +746,12 @@ export default function Attivita() {
         )}>
           <Card 
             className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all flex-shrink-0",
+              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
               statusFilter === 'all' && "ring-2 ring-primary border-primary"
             )}
             onClick={() => handleStatusFilter('all')}
           >
-            <CardContent className="text-center p-3 min-w-[60px]">
+            <CardContent className="text-center p-3 w-20">
               <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
               <div className="text-text-secondary text-xs">Totali</div>
             </CardContent>
@@ -759,12 +759,12 @@ export default function Attivita() {
           
           <Card 
             className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all flex-shrink-0",
+              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
               statusFilter === 'future' && "ring-2 ring-primary border-primary"
             )}
             onClick={() => handleStatusFilter('future')}
           >
-            <CardContent className="text-center p-3 min-w-[60px]">
+            <CardContent className="text-center p-3 w-20">
               <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
               <div className="text-text-secondary text-xs">In Sospeso</div>
             </CardContent>
@@ -772,12 +772,12 @@ export default function Attivita() {
 
           <Card 
             className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all flex-shrink-0",
+              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
               statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
             )}
             onClick={() => handleStatusFilter('scadute')}
           >
-            <CardContent className="text-center p-3 min-w-[60px]">
+            <CardContent className="text-center p-3 w-20">
               <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
               <div className="text-text-secondary text-xs">Scadute</div>
             </CardContent>

@@ -838,12 +838,12 @@ export default function Attivita() {
                       <TableCell>
                         {activity.scadenza ? (
                           <div className="space-y-1">
-                            <div className="font-semibold text-blue-600">
-                              {format(new Date(activity.scadenza), 'dd/MM/yyyy')}
-                            </div>
-                            <div className="text-sm font-medium text-blue-500">
-                              {format(new Date(activity.scadenza), 'HH:mm')}
-                            </div>
+            <div className="font-semibold text-blue-600">
+              {format(new Date(activity.scadenza), 'dd MMM')}
+            </div>
+            <div className="text-sm font-medium text-blue-500">
+              {format(new Date(activity.scadenza), 'HH:mm')}
+            </div>
                             {!isActivityFuture(activity) && activity.stato !== 'completata' && (
                               <Badge variant="destructive" className="text-xs">
                                 Scaduta
@@ -856,9 +856,9 @@ export default function Attivita() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="font-semibold text-blue-600">
-                            {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
-                          </div>
+          <div className="font-semibold text-blue-600">
+            {format(new Date(activity.data_creazione), 'dd MMM')}
+          </div>
                           {activity.ora_creazione && (
                             <div className="text-sm text-blue-500">
                               {activity.ora_creazione}

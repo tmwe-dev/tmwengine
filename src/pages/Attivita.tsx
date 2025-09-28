@@ -650,7 +650,7 @@ export default function Attivita() {
 
       {/* Azioni per selezione multipla */}
       {selectedActivities.length > 0 && (
-        <Card className="border-card shadow-soft bg-blue-50 border-blue-200">
+        <Card className="border-card shadow-soft border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

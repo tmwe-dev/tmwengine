@@ -830,6 +830,7 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+        )}
 
         {/* Configurazione AI */}
         {activeSection === 'ai' && (

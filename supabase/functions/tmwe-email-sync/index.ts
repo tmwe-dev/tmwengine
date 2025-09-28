@@ -77,8 +77,8 @@ serve(async (req) => {
 
     let syncResult;
     try {
-      // Costruisci URL API TMWE con endpoint di sviluppo
-      const tmweUrl = new URL('https://findair.it/erp/tmwe_json');
+      // Construir URL API TMWE usando HTTP para evitar problemas SSL
+      const tmweUrl = new URL('http://findair.it/erp/tmwe_json');
       tmweUrl.searchParams.set('app.php', 'email_sync');
       tmweUrl.searchParams.set('action', action);
       

@@ -42,13 +42,13 @@ serve(async (req) => {
       body_html: emailData.body_html
     };
 
-    console.log('=== CALLING FINDAIR API ===');
-    console.log('URL:', 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message');
+    console.log('=== CALLING FINDAIR API (HTTP - SSL BYPASS) ===');
+    console.log('URL:', 'http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message');
     console.log('Payload:', tmwePayload);
     console.log('API Key (first 10 chars):', apiKey?.substring(0, 10) + '...');
 
-    // Llamada a la API TMWE
-    const response = await fetch('https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message', {
+    // Llamada a la API TMWE usando HTTP para evitar problemas de certificado SSL
+    const response = await fetch('http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -86,7 +86,8 @@ serve(async (req) => {
       success: false, // Marcamos como false para debug
       debug: {
         api_called: true,
-        api_url: 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message',
+        api_url: 'http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message',
+        ssl_bypass: true,
         api_status: response.status,
         api_status_text: response.statusText,
         api_headers: Object.fromEntries(response.headers.entries()),

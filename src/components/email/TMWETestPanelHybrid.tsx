@@ -339,7 +339,7 @@ export const TMWETestPanel = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-xs bg-gray-50 p-3 rounded-md overflow-auto max-h-64">
+              <pre className="text-xs p-3 rounded-md overflow-auto max-h-64 border">
                 {JSON.stringify(testResults, null, 2)}
               </pre>
             </CardContent>

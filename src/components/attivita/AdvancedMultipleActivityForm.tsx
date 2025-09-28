@@ -334,6 +334,115 @@ export function AdvancedMultipleActivityForm({
                     </Select>
                   </div>
                 )}
+
+                {/* Gestione Allegati Email */}
+                <div className="space-y-4 border border-border rounded-lg p-4 bg-background-subtle">
+                  <h5 className="font-medium text-sm">Allegati Email</h5>
+                  
+                  {/* Allegati esistenti dalla memoria */}
+                  {emailAttachments.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Seleziona allegati dalla memoria</label>
+                      <div className="max-h-32 overflow-y-auto space-y-2">
+                        {emailAttachments.map((attachment) => (
+                          <FormField
+                            key={attachment.id}
+                            control={form.control}
+                            name="allegati_esistenti"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(attachment.id)}
+                                    onCheckedChange={(checked) => {
+                                      const currentValues = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentValues, attachment.id]);
+                                      } else {
+                                        field.onChange(currentValues.filter(id => id !== attachment.id));
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none flex-1">
+                                  <FormLabel className="text-sm font-normal cursor-pointer">
+                                    {attachment.nome}
+                                  </FormLabel>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(attachment.file_size)} • {attachment.mime_type}
+                                  </p>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload nuovi allegati */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Carica nuovi allegati</label>
+                    <div
+                      className={cn(
+                        "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                        dragActive 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    >
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Trascina i file qui o clicca per selezionare
+                      </p>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        id="file-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        Seleziona File
+                      </Button>
+                    </div>
+
+                    {/* Lista file selezionati */}
+                    {selectedFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <label className="text-sm font-medium">File selezionati:</label>
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-background border border-border rounded">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{file.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ({formatFileSize(file.size)})
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
                 <FormField
                   control={form.control}

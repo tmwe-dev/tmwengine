@@ -423,52 +423,55 @@ const Chat = () => {
               </Select>
 
               {selectedTab === 'prompts' && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <Card>
                     <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
                       <CollapsibleTrigger asChild>
-                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-6">
                           <CardTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <Settings className="h-5 w-5" />
-                              System Prompt Management
+                              <span className="text-lg">System Prompt Management</span>
                             </div>
-                            {isSystemPromptOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            {isSystemPromptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                           </CardTitle>
                         </CardHeader>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <CardContent className="space-y-6 pt-0">
+                        <CardContent className="space-y-8 pt-0 pb-6">
                           <div>
-                            <h4 className="font-medium mb-4">System Prompts Esistenti</h4>
-                            <div className="space-y-4">
+                            <h4 className="font-semibold text-base mb-6">System Prompts Esistenti</h4>
+                            <div className="space-y-6">
                               {systemPrompts.map((prompt) => (
                                 <div
                                   key={prompt.id}
-                                  className={`p-4 border rounded-lg ${
+                                  className={`p-6 border rounded-lg ${
                                     prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
                                   }`}
                                 >
-                                  <div className="flex items-start gap-4">
+                                  <div className="flex items-start gap-6">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <h5 className="font-medium">{prompt.nome}</h5>
+                                      <div className="flex items-center gap-3 mb-4">
+                                        <h5 className="font-semibold text-base">{prompt.nome}</h5>
                                         {prompt.attivo && (
-                                          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                                          <span className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-full font-medium">
                                             ATTIVO
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                                        {prompt.contenuto}
-                                      </p>
+                                      <div className="bg-muted/30 p-4 rounded-md border">
+                                        <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                                          {prompt.contenuto}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="flex flex-col gap-2 flex-shrink-0">
+                                    <div className="flex flex-col gap-3 flex-shrink-0">
                                       {!prompt.attivo && (
                                         <Button
                                           size="sm"
                                           variant="outline"
                                           onClick={() => activateSystemPrompt(prompt.id)}
+                                          className="min-w-[80px]"
                                         >
                                           Attiva
                                         </Button>
@@ -477,6 +480,7 @@ const Chat = () => {
                                         size="sm"
                                         variant="destructive"
                                         onClick={() => deleteSystemPrompt(prompt.id)}
+                                        className="min-w-[80px]"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
@@ -487,22 +491,33 @@ const Chat = () => {
                             </div>
                           </div>
 
-                          <div className="border-t pt-6">
-                            <h4 className="font-medium mb-4">Crea Nuovo System Prompt</h4>
-                            <div className="space-y-4">
-                              <Input
-                                placeholder="Nome del system prompt..."
-                                value={newSystemPromptName}
-                                onChange={(e) => setNewSystemPromptName(e.target.value)}
-                              />
-                              <Textarea
-                                placeholder="Contenuto del system prompt..."
-                                value={newSystemPromptContent}
-                                onChange={(e) => setNewSystemPromptContent(e.target.value)}
-                                rows={4}
-                                className="min-h-[100px]"
-                              />
-                              <Button onClick={createSystemPrompt} className="w-full">
+                          <div className="border-t pt-8">
+                            <h4 className="font-semibold text-base mb-6">Crea Nuovo System Prompt</h4>
+                            <div className="space-y-5">
+                              <div>
+                                <label className="text-sm font-medium text-foreground mb-2 block">
+                                  Nome Prompt
+                                </label>
+                                <Input
+                                  placeholder="Inserisci il nome del system prompt..."
+                                  value={newSystemPromptName}
+                                  onChange={(e) => setNewSystemPromptName(e.target.value)}
+                                  className="h-11"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-foreground mb-2 block">
+                                  Contenuto Prompt
+                                </label>
+                                <Textarea
+                                  placeholder="Inserisci il contenuto del system prompt..."
+                                  value={newSystemPromptContent}
+                                  onChange={(e) => setNewSystemPromptContent(e.target.value)}
+                                  rows={5}
+                                  className="min-h-[120px] resize-none"
+                                />
+                              </div>
+                              <Button onClick={createSystemPrompt} className="w-full h-11">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Crea System Prompt
                               </Button>

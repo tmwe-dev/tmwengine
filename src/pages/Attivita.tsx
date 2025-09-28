@@ -647,9 +647,6 @@ export default function Attivita() {
           <h1 className="text-heading-1 font-bold text-text-primary mb-2">
             Gestione Attività
           </h1>
-          <p className="text-body text-text-secondary">
-            Organizza e gestisci tutte le tue attività di business
-          </p>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

@@ -2399,7 +2399,7 @@ export default function ImportTemplates() {
              <div className="space-y-4 flex flex-col min-h-0 flex-1">
                {isMobile ? (
                  /* Mobile View - Cards */
-                 <div className="space-y-3 flex-1 overflow-auto">
+                 <div className="space-y-3 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
                    {viewingRecords.map((record, viewIndex) => {
                      const actualIndex = currentPage * recordsPerPage + viewIndex;
                      return (

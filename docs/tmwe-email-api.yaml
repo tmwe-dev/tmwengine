@@ -1,0 +1,952 @@
+openapi: 3.0.3
+info:
+  title: TMWE ERP Email API
+  description: Email management API for TMWE ERP system
+  version: 1.0.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://erp.tmwe.it/erp/tmwe_json
+    description: Production server
+    variables:
+      protocol:
+        default: https
+        enum:
+          - https
+          - http
+  - url: https://findair.it/erp/tmwe_json
+    description: Development server (findair.it)
+    variables:
+      protocol:
+        default: https
+        enum:
+          - https
+          - http
+  - url: http://localhost/erp/tmwe_json
+    description: Local development server
+    variables:
+      protocol:
+        default: http
+        enum:
+          - http
+          - https
+
+security:
+  - ApiKeyAuth: []
+  - OAuth2: []
+
+paths:
+  /?app.php=get_email_list:
+    get:
+      tags:
+        - Email List
+      summary: Get email list
+      description: Retrieves a list of emails from a specific folder
+      parameters:
+        - name: folder
+          in: query
+          description: Email folder name
+          required: false
+          schema:
+            type: string
+            default: INBOX
+        - name: criteria
+          in: query
+          description: Search criteria
+          required: false
+          schema:
+            type: string
+            default: ALL
+        - name: offset
+          in: query
+          description: Email number to start from
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          description: Maximum number of emails to return
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Email list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailListItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /?app.php=get_email:
+    get:
+      tags:
+        - Email Detail
+      summary: Get specific email
+      description: Retrieves details of a specific email by UID
+      parameters:
+        - name: uid
+          in: query
+          description: Email UID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    $ref: '#/components/schemas/EmailDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /?app.php=email_account:
+    get:
+      tags:
+        - Email Account
+      summary: Gestión de cuenta de email
+      description: Realiza operaciones sobre la cuenta de email del usuario
+      parameters:
+        - name: action
+          in: query
+          description: Acción a realizar
+          required: true
+          schema:
+            type: string
+            enum: [test_connection, get_account_info, get_quota]
+      responses:
+        '200':
+          description: Operación realizada correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ConnectionTest'
+                  - $ref: '#/components/schemas/AccountInfo'
+                  - $ref: '#/components/schemas/QuotaInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /?app.php=email_sync:
+    post:
+      tags:
+        - Email Sync
+      summary: Sincronización de emails
+      description: Sincroniza emails desde el servidor IMAP
+      parameters:
+        - name: action
+          in: query
+          description: Tipo de sincronización
+          required: true
+          schema:
+            type: string
+            enum: [full_sync, incremental_sync, sync_folder, get_sync_status, cancel_sync]
+        - name: folder_name
+          in: query
+          description: Nombre de carpeta (para sync_folder)
+          required: false
+          schema:
+            type: string
+        - name: folders
+          in: query
+          description: Lista de carpetas a sincronizar
+          required: false
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          description: Fecha desde (formato ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: date_to
+          in: query
+          description: Fecha hasta (formato ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: last_sync_date
+          in: query
+          description: Fecha de última sincronización
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Sincronización iniciada o completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /?app.php=email_message:
+    get:
+      tags:
+        - Email Messages
+      summary: Gestión de mensajes de email
+      description: Realiza operaciones sobre mensajes de email
+      parameters:
+        - name: action
+          in: query
+          description: Acción a realizar
+          required: true
+          schema:
+            type: string
+            enum: [get_messages, get_message, search_messages, get_attachment]
+        - name: uid
+          in: query
+          description: UID del mensaje (para get_message, get_attachment)
+          required: false
+          schema:
+            type: string
+        - name: attachment_id
+          in: query
+          description: ID del attachment (para get_attachment)
+          required: false
+          schema:
+            type: string
+        - name: folder
+          in: query
+          description: Carpeta de email
+          required: false
+          schema:
+            type: string
+            default: INBOX
+        - name: limit
+          in: query
+          description: Límite de mensajes
+          required: false
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Offset de mensajes
+          required: false
+          schema:
+            type: integer
+        - name: include_attachments
+          in: query
+          description: Incluir información de attachments
+          required: false
+          schema:
+            type: boolean
+        - name: format
+          in: query
+          description: Formato del mensaje
+          required: false
+          schema:
+            type: string
+            enum: [text, html]
+            default: text
+        - name: search_from
+          in: query
+          description: Búsqueda por remitente
+          required: false
+          schema:
+            type: string
+        - name: search_to
+          in: query
+          description: Búsqueda por destinatario
+          required: false
+          schema:
+            type: string
+        - name: search_subject
+          in: query
+          description: Búsqueda por asunto
+          required: false
+          schema:
+            type: string
+        - name: search_body
+          in: query
+          description: Búsqueda por contenido
+          required: false
+          schema:
+            type: string
+        - name: search_date_from
+          in: query
+          description: Búsqueda desde fecha
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: search_date_to
+          in: query
+          description: Búsqueda hasta fecha
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: search_unread
+          in: query
+          description: Búsqueda solo no leídos
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Operación realizada correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MessagesResponse'
+                  - $ref: '#/components/schemas/MessageDetail'
+                  - $ref: '#/components/schemas/SearchResults'
+                  - $ref: '#/components/schemas/AttachmentData'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Email Messages
+      summary: Envío y manipulación de mensajes
+      description: Envía mensajes, responde, reenvía, elimina o marca mensajes
+      parameters:
+        - name: action
+          in: query
+          description: Acción a realizar
+          required: true
+          schema:
+            type: string
+            enum: [send_message, reply_message, forward_message, delete_messages, move_messages, mark_messages]
+        - name: uid
+          in: query
+          description: UID del mensaje (para reply, forward)
+          required: false
+          schema:
+            type: string
+        - name: uids
+          in: query
+          description: UIDs de mensajes (para delete, move, mark)
+          required: false
+          schema:
+            type: string
+        - name: target_folder
+          in: query
+          description: Carpeta destino (para move_messages)
+          required: false
+          schema:
+            type: string
+        - name: expunge
+          in: query
+          description: Eliminar definitivamente (para delete_messages)
+          required: false
+          schema:
+            type: boolean
+        - name: read
+          in: query
+          description: Marcar como leído (para mark_messages)
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        description: Datos del mensaje para envío, respuesta o reenvío
+        required: false
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/MessageData'
+                - $ref: '#/components/schemas/ReplyData'
+                - $ref: '#/components/schemas/ForwardData'
+      responses:
+        '200':
+          description: Operación realizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /?app.php=email_folder:
+    get:
+      tags:
+        - Email Folders
+      summary: Gestión de carpetas de email
+      description: Operaciones de lectura sobre carpetas de email
+      parameters:
+        - name: action
+          in: query
+          description: Acción a realizar
+          required: true
+          schema:
+            type: string
+            enum: [get_folders, get_folder_info, get_folder_tree]
+        - name: folder_name
+          in: query
+          description: Nombre de la carpeta (para get_folder_info)
+          required: false
+          schema:
+            type: string
+        - name: hierarchy
+          in: query
+          description: Incluir jerarquía en get_folders
+          required: false
+          schema:
+            type: boolean
+        - name: include_counts
+          in: query
+          description: Incluir contadores en get_folders
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Operación realizada correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FoldersResponse'
+                  - $ref: '#/components/schemas/FolderInfo'
+                  - $ref: '#/components/schemas/FolderTree'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Email Folders
+      summary: Operaciones de escritura en carpetas
+      description: Crea, elimina, renombra y gestiona carpetas de email
+      parameters:
+        - name: action
+          in: query
+          description: Acción a realizar
+          required: true
+          schema:
+            type: string
+            enum: [create_folder, delete_folder, rename_folder, subscribe_folder, unsubscribe_folder, empty_folder]
+        - name: folder_name
+          in: query
+          description: Nombre de la carpeta
+          required: false
+          schema:
+            type: string
+        - name: parent_folder
+          in: query
+          description: Carpeta padre (para create_folder)
+          required: false
+          schema:
+            type: string
+        - name: old_name
+          in: query
+          description: Nombre anterior (para rename_folder)
+          required: false
+          schema:
+            type: string
+        - name: new_name
+          in: query
+          description: Nuevo nombre (para rename_folder)
+          required: false
+          schema:
+            type: string
+        - name: force
+          in: query
+          description: Forzar eliminación (para delete_folder)
+          required: false
+          schema:
+            type: boolean
+        - name: expunge
+          in: query
+          description: Eliminar definitivamente (para empty_folder)
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Operación realizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: "{server}/?app.php=auth"
+          tokenUrl: "{server}/?app.php=token"
+          revokeUrl: "{server}/?app.php=revoke"
+          introspectionUrl: "{server}/?app.php=introspect"
+          scopes:
+            read: Email reading permissions
+            write: Email writing permissions
+            admin: Email account administration
+
+  schemas:
+    EmailListItem:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: UID único del email
+        subject:
+          type: string
+          description: Asunto del email
+        from:
+          type: string
+          description: Remitente del email
+        date:
+          type: string
+          format: date-time
+          description: Fecha del email
+        size:
+          type: integer
+          description: Tamaño del email en bytes
+        seen:
+          type: boolean
+          description: Si el email ha sido leído
+        flagged:
+          type: boolean
+          description: Si el email está marcado
+        answered:
+          type: boolean
+          description: Si el email ha sido respondido
+
+    EmailDetail:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: UID único del email
+        subject:
+          type: string
+          description: Asunto del email
+        from:
+          type: string
+          description: Remitente del email
+        to:
+          type: string
+          description: Destinatarios del email
+        cc:
+          type: string
+          description: Destinatarios en copia
+        bcc:
+          type: string
+          description: Destinatarios en copia oculta
+        date:
+          type: string
+          format: date-time
+          description: Fecha del email
+        body:
+          type: string
+          description: Cuerpo del email en texto plano
+        body_html:
+          type: string
+          description: Cuerpo del email en HTML
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+        headers:
+          type: object
+          description: Headers completos del email
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID del attachment
+        filename:
+          type: string
+          description: Nombre del archivo
+        size:
+          type: integer
+          description: Tamaño en bytes
+        mime_type:
+          type: string
+          description: Tipo MIME del archivo
+
+    ConnectionTest:
+      type: object
+      properties:
+        success:
+          type: boolean
+        imap_connection:
+          type: boolean
+          description: Conexión IMAP exitosa
+        smtp_connection:
+          type: boolean
+          description: Conexión SMTP exitosa
+        message:
+          type: string
+          description: Mensaje de estado
+
+    AccountInfo:
+      type: object
+      properties:
+        success:
+          type: boolean
+        username:
+          type: string
+          description: Nombre de usuario de email
+        server:
+          type: string
+          description: Servidor de email
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: Capacidades del servidor
+
+    QuotaInfo:
+      type: object
+      properties:
+        success:
+          type: boolean
+        used:
+          type: integer
+          description: Espacio usado en bytes
+        limit:
+          type: integer
+          description: Límite de espacio en bytes
+        percentage:
+          type: number
+          format: float
+          description: Porcentaje de uso
+
+    SyncResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+          enum: [started, in_progress, completed, cancelled, error]
+        messages_synced:
+          type: integer
+          description: Número de mensajes sincronizados
+        folders_synced:
+          type: integer
+          description: Número de carpetas sincronizadas
+        progress:
+          type: number
+          format: float
+          description: Progreso de sincronización (0-100)
+
+    MessagesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailListItem'
+        total:
+          type: integer
+          description: Total de mensajes en la carpeta
+        count:
+          type: integer
+          description: Número de mensajes devueltos
+
+    MessageDetail:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          $ref: '#/components/schemas/EmailDetail'
+
+    SearchResults:
+      type: object
+      properties:
+        success:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailListItem'
+        total:
+          type: integer
+          description: Total de resultados encontrados
+
+    AttachmentData:
+      type: object
+      properties:
+        success:
+          type: boolean
+        filename:
+          type: string
+        content:
+          type: string
+          format: base64
+          description: Contenido del archivo en base64
+        mime_type:
+          type: string
+
+    MessageData:
+      type: object
+      required:
+        - to
+        - subject
+        - body
+      properties:
+        to:
+          type: string
+          description: Destinatarios (separados por coma)
+        cc:
+          type: string
+          description: Destinatarios en copia
+        bcc:
+          type: string
+          description: Destinatarios en copia oculta
+        subject:
+          type: string
+          description: Asunto del mensaje
+        body:
+          type: string
+          description: Cuerpo del mensaje en texto plano
+        body_html:
+          type: string
+          description: Cuerpo del mensaje en HTML
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    ReplyData:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          description: Cuerpo de la respuesta
+        body_html:
+          type: string
+          description: Cuerpo de la respuesta en HTML
+        reply_all:
+          type: boolean
+          description: Responder a todos
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    ForwardData:
+      type: object
+      required:
+        - to
+        - body
+      properties:
+        to:
+          type: string
+          description: Destinatarios del reenvío
+        cc:
+          type: string
+          description: Destinatarios en copia
+        bcc:
+          type: string
+          description: Destinatarios en copia oculta
+        body:
+          type: string
+          description: Cuerpo del reenvío
+        body_html:
+          type: string
+          description: Cuerpo del reenvío en HTML
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    FoldersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/FolderInfo'
+
+    FolderInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre de la carpeta
+        full_name:
+          type: string
+          description: Nombre completo con jerarquía
+        delimiter:
+          type: string
+          description: Delimitador de jerarquía
+        attributes:
+          type: array
+          items:
+            type: string
+          description: Atributos de la carpeta
+        message_count:
+          type: integer
+          description: Número de mensajes
+        unseen_count:
+          type: integer
+          description: Número de mensajes no leídos
+        recent_count:
+          type: integer
+          description: Número de mensajes recientes
+
+    FolderTree:
+      type: object
+      properties:
+        success:
+          type: boolean
+        tree:
+          type: object
+          description: Árbol jerárquico de carpetas
+
+    OperationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          description: Mensaje de resultado
+        affected:
+          type: integer
+          description: Número de elementos afectados
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Mensaje de error
+        code:
+          type: string
+          description: Código de error
+
+  responses:
+    BadRequest:
+      description: Solicitud incorrecta
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Parámetros faltantes o incorrectos"
+            code: "BAD_REQUEST"
+
+    Unauthorized:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Acceso no autorizado"
+            code: "UNAUTHORIZED"
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Recurso no encontrado"
+            code: "NOT_FOUND"
+
+    InternalServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Error interno del servidor"
+            code: "INTERNAL_ERROR"
+
+tags:
+  - name: Email List
+    description: Operaciones para listar emails
+  - name: Email Detail
+    description: Obtener detalles de emails específicos
+  - name: Email Account
+    description: Gestión de cuenta de email
+  - name: Email Sync
+    description: Sincronización de emails
+  - name: Email Messages
+    description: Gestión de mensajes de email
+  - name: Email Folders
+    description: Gestión de carpetas de email

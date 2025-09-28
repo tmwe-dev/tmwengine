@@ -719,7 +719,7 @@ export default function Attivita() {
                     mode="single"
                     selected={filterDate}
                     onSelect={handleDateFilter}
-                    numberOfMonths={3}
+                    numberOfMonths={2}
                     initialFocus
                 className="p-3 pointer-events-auto"
               />
@@ -817,7 +817,7 @@ export default function Attivita() {
                     <CalendarComponent
                       mode="single"
                       selected={undefined}
-                      numberOfMonths={3}
+                      numberOfMonths={2}
                       onSelect={(date) => {
                         if (date) handleRescheduleSelected(date);
                       }}

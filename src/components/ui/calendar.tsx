@@ -7,11 +7,12 @@ import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
-function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+function Calendar({ className, classNames, showOutsideDays = true, numberOfMonths = 3, ...props }: CalendarProps) {
   return (
     <DayPicker
+      numberOfMonths={numberOfMonths}
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
@@ -33,7 +34,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         day_range_end: "day-range-end",
         day_selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
+        day_today: "bg-blue-500 text-white hover:bg-blue-600",
         day_outside:
           "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
         day_disabled: "text-muted-foreground opacity-50",

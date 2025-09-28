@@ -560,12 +560,13 @@ export default function Attivita() {
                   {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filterDate}
-                  onSelect={handleDateFilter}
-                  initialFocus
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={filterDate}
+                      onSelect={handleDateFilter}
+                      numberOfMonths={3}
+                      initialFocus
                   className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
@@ -670,6 +671,7 @@ export default function Attivita() {
                     <CalendarComponent
                       mode="single"
                       selected={undefined}
+                      numberOfMonths={3}
                       onSelect={(date) => {
                         if (date) handleRescheduleSelected(date);
                       }}

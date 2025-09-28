@@ -50,16 +50,30 @@ serve(async (req) => {
       `)
       .eq('provider', 'TMWE')
       .eq('attivo', true)
-      .single();
+      .maybeSingle();
 
-    if (providerError || !provider) {
+    if (providerError) {
+      console.error('Provider error:', providerError);
+      throw new Error(`Errore database: ${providerError.message}`);
+    }
+    
+    if (!provider) {
       throw new Error('Provider TMWE non configurato o non attivo');
     }
 
-    const apiKey = provider.email_provider_credenziali[0]?.api_key;
+    console.log('Provider found:', provider.id);
+
+    const credentials = provider.email_provider_credenziali;
+    if (!credentials || credentials.length === 0) {
+      throw new Error('Credenziali TMWE non configurate');
+    }
+
+    const apiKey = credentials[0]?.api_key;
     if (!apiKey) {
       throw new Error('API Key TMWE non configurata');
     }
+
+    console.log('API Key found, length:', apiKey.length);
 
     // Costruisci payload per TMWE API
     const tmwePayload = {

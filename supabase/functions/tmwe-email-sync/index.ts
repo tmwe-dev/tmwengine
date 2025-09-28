@@ -37,23 +37,30 @@ serve(async (req) => {
       `)
       .eq('provider', 'TMWE')
       .eq('attivo', true)
-      .single();
+      .maybeSingle();
 
-    if (providerError || !provider) {
+    if (providerError) {
+      console.error('Provider error:', providerError);
+      throw new Error(`Errore database: ${providerError.message}`);
+    }
+    
+    if (!provider) {
       throw new Error('Provider TMWE non configurato o non attivo');
     }
 
-    // Recupera configurazione SSL
-    const { data: sslConfig } = await supabase
-      .from('email_ssl_config')
-      .select('*')
-      .eq('provider_id', provider.id)
-      .single();
+    console.log('Provider found:', provider.id);
 
-    const apiKey = provider.email_provider_credenziali[0]?.api_key;
+    const credentials = provider.email_provider_credenziali;
+    if (!credentials || credentials.length === 0) {
+      throw new Error('Credenziali TMWE non configurate');
+    }
+
+    const apiKey = credentials[0]?.api_key;
     if (!apiKey) {
       throw new Error('API Key TMWE non configurata');
     }
+
+    console.log('Starting sync with TMWE API...');
 
     // Avvia log di sincronizzazione
     const { data: syncLog, error: logError } = await supabase

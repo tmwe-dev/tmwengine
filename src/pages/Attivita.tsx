@@ -719,10 +719,9 @@ export default function Attivita() {
                     mode="single"
                     selected={filterDate}
                     onSelect={handleDateFilter}
-                    numberOfMonths={2}
                     initialFocus
-                className="p-3 pointer-events-auto"
-              />
+                    className="p-3 pointer-events-auto"
+                  />
             </PopoverContent>
           </Popover>
 
@@ -817,7 +816,6 @@ export default function Attivita() {
                     <CalendarComponent
                       mode="single"
                       selected={undefined}
-                      numberOfMonths={2}
                       onSelect={(date) => {
                         if (date) handleRescheduleSelected(date);
                       }}

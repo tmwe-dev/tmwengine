@@ -38,6 +38,10 @@ interface Conversation {
   riassunto_contesto?: string;
   created_at: string;
   updated_at: string;
+  chat_messages?: Array<{
+    content: string;
+    created_at: string;
+  }>;
 }
 
 const Chat = () => {
@@ -135,7 +139,10 @@ const Chat = () => {
     try {
       const { data, error } = await supabase
         .from('chat_conversations')
-        .select('*')
+        .select(`
+          *,
+          chat_messages(content, created_at)
+        `)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -548,13 +555,12 @@ const Chat = () => {
                 >
                   <div className="w-full space-y-1">
                     <div className="text-xs text-muted-foreground">
-                      {new Date(conversation.updated_at).toLocaleDateString()} - {new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(conversation.updated_at).toLocaleDateString()} {new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    <div className="text-sm truncate">
-                      {conversation.riassunto_contesto ? 
-                        conversation.riassunto_contesto.substring(0, 60) + (conversation.riassunto_contesto.length > 60 ? '...' : '') :
-                        conversation.titolo?.replace(/^Conversazione\s*/i, '').substring(0, 60) + (conversation.titolo && conversation.titolo.replace(/^Conversazione\s*/i, '').length > 60 ? '...' : '') ||
-                        'Nuova chat'
+                    <div className="text-sm text-muted-foreground truncate">
+                      {conversation.chat_messages && conversation.chat_messages.length > 0 
+                        ? conversation.chat_messages[0].content.substring(0, 60) + (conversation.chat_messages[0].content.length > 60 ? '...' : '')
+                        : 'Nuova chat'
                       }
                     </div>
                   </div>

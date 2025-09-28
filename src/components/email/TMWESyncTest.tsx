@@ -228,7 +228,7 @@ export function TMWESyncTest() {
                 value={emailData.body_text}
                 onChange={(e) => setEmailData(prev => ({ ...prev, body_text: e.target.value }))}
                 placeholder="Contenuto dell'email..."
-                className="w-full h-24 p-3 border rounded-md resize-none"
+                className="w-full h-24 p-3 border rounded-md resize-none bg-transparent"
               />
             </div>
           </div>

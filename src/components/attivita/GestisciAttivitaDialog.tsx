@@ -28,6 +28,7 @@ interface Activity {
   rubrica_nome?: string;
   rubrica_id?: string;
   cellulare?: string;
+  telefono?: string;
 }
 
 interface GestisciAttivitaDialogProps {
@@ -57,7 +58,9 @@ export function GestisciAttivitaDialog({
         stato: activity.stato,
         priorita: activity.priorita,
         note: activity.note || '',
-        scadenza: activity.scadenza
+        scadenza: activity.scadenza,
+        cellulare: activity.cellulare || '',
+        telefono: activity.telefono || ''
       });
       
       if (activity.scadenza) {
@@ -86,10 +89,9 @@ export function GestisciAttivitaDialog({
       scadenza
     };
 
-    // Se il cellulare è cambiato e c'è un rubrica_id, chiedi se aggiornare l'azienda
-    if (formData.cellulare !== activity?.cellulare && 
-        formData.cellulare && 
-        activity?.rubrica_id) {
+    // Se il cellulare o telefono è cambiato e c'è un rubrica_id, chiedi se aggiornare l'azienda
+    const phoneChanged = formData.cellulare !== activity?.cellulare || formData.telefono !== activity?.telefono;
+    if (phoneChanged && activity?.rubrica_id) {
       setPendingUpdate(updatedData);
       setShowUpdateCompanyDialog(true);
     } else {
@@ -287,19 +289,35 @@ export function GestisciAttivitaDialog({
               />
             </div>
 
-            {/* Campo Cellulare */}
-            <div>
-              <Label htmlFor="cellulare" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Cellulare
-              </Label>
-              <Input
-                id="cellulare"
-                type="tel"
-                value={formData.cellulare || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
-                placeholder="Inserisci numero di cellulare..."
-              />
+            {/* Campi Telefono e Cellulare */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="telefono" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Telefono
+                </Label>
+                <Input
+                  id="telefono"
+                  type="tel"
+                  value={formData.telefono || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                  placeholder="Inserisci numero di telefono..."
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="cellulare" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Cellulare
+                </Label>
+                <Input
+                  id="cellulare"
+                  type="tel"
+                  value={formData.cellulare || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                  placeholder="Inserisci numero di cellulare..."
+                />
+              </div>
             </div>
           </div>
 
@@ -352,7 +370,7 @@ export function GestisciAttivitaDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Aggiornare anche l'azienda?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hai modificato il numero di cellulare. Vuoi aggiornare anche il record dell'azienda nella rubrica con il nuovo numero?
+              Hai modificato il numero di telefono o cellulare. Vuoi aggiornare anche il record dell'azienda nella rubrica con i nuovi numeri?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

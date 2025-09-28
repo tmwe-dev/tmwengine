@@ -111,8 +111,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   />
                 ) : (
                   <div 
-                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors"
+                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
                     onClick={handleFieldFocus}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleFieldFocus();
+                      }
+                    }}
                   >
                     <span className="font-mono text-sm">
                       {contact.telefono || 'Clicca per aggiungere'}
@@ -168,8 +174,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   />
                 ) : (
                   <div 
-                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors"
+                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
                     onClick={handleFieldFocus}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleFieldFocus();
+                      }
+                    }}
                   >
                     <span className="font-mono text-sm">
                       {contact.cellulare || 'Clicca per aggiungere'}

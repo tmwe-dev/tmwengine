@@ -90,7 +90,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md w-[95vw] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
@@ -148,7 +148,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
             </div>
             
             {!isEditing && (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="default"
                   size="sm"
@@ -211,7 +211,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
             </div>
             
             {!isEditing && (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="default"
                   size="sm"

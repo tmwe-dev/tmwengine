@@ -638,9 +638,9 @@ const Chat = () => {
 
           {!currentConversationId && (
             <Card>
-              <CardContent className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
+              <CardContent className="flex items-center justify-start py-4 px-4">
+                <MessageSquare className="h-4 w-4 text-muted-foreground mr-2 flex-shrink-0" />
+                <p className="text-muted-foreground text-sm">
                   Seleziona una conversazione esistente o iniziane una nuova per iniziare a chattare.
                 </p>
               </CardContent>

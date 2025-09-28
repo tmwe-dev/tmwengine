@@ -11,7 +11,6 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 function Calendar({ className, classNames, showOutsideDays = true, numberOfMonths, ...props }: CalendarProps) {
   const isMobile = useIsMobile();
   const today = new Date();
-  const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   
   // Su mobile mostra solo 1 mese, su desktop 2 mesi (se non specificato)
   const monthsToShow = numberOfMonths ?? (isMobile ? 1 : 2);
@@ -19,7 +18,6 @@ function Calendar({ className, classNames, showOutsideDays = true, numberOfMonth
   return (
     <DayPicker
       numberOfMonths={monthsToShow}
-      month={currentMonth}
       showOutsideDays={showOutsideDays}
       className={cn("p-3 pointer-events-auto", className)}
       classNames={{

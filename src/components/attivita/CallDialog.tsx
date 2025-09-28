@@ -59,7 +59,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   const phoneNumbers = [
     { label: 'Telefono', number: isEditing ? telefono : contact.telefono },
     { label: 'Cellulare', number: isEditing ? cellulare : contact.cellulare }
-  ];
+  ]; // Rimuovo il filter per mostrare sempre entrambi i campi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -169,13 +169,15 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
             ))}
           </div>
 
+          {/* Se non ci sono numeri e non siamo in modalità editing, mostra messaggio */}
           {phoneNumbers.every(item => !item.number) && !isEditing && (
-            <div className="text-center py-8 text-text-secondary">
-              <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nessun numero di telefono disponibile</p>
+            <div className="text-center py-4 text-text-secondary">
+              <Phone className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nessun numero di telefono disponibile</p>
               <Button 
                 variant="outline" 
-                className="mt-3"
+                size="sm"
+                className="mt-2"
                 onClick={() => setIsEditing(true)}
               >
                 <Edit className="h-4 w-4 mr-1" />

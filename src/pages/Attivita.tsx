@@ -909,7 +909,7 @@ export default function Attivita() {
           </div>
                           {activity.ora_creazione && (
                             <div className="text-sm text-blue-500">
-                              {activity.ora_creazione}
+                              {activity.ora_creazione.substring(0, 5)}
                             </div>
                           )}
                         </div>

@@ -909,11 +909,6 @@ export default function Attivita() {
             <div className="text-sm font-medium text-blue-500">
               {format(new Date(activity.scadenza), 'HH:mm')}
             </div>
-                            {!isActivityFuture(activity) && activity.stato !== 'completata' && (
-                              <Badge variant="destructive" className="text-xs">
-                                Scaduta
-                              </Badge>
-                            )}
                           </div>
                         ) : (
                           <span className="text-text-secondary">-</span>

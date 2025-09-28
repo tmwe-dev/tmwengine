@@ -15,7 +15,7 @@ import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, U
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
-import { TMWETestPanel } from "@/components/email/TMWETestPanel";
+import { TMWETestPanel } from "@/components/email/TMWETestPanelHybrid";
 
 interface Email {
   id: string;

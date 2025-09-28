@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 
@@ -36,44 +37,50 @@ export function ImportedContactMobileCard({
 }: ImportedContactMobileCardProps) {
 
   return (
-    <Card className={cn(
-      "border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 rounded-xl bg-gradient-to-br from-background to-muted/30",
-      isSelected && "ring-2 ring-primary border-primary bg-primary/5 shadow-md"
-    )}>
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          {/* Checkbox with enhanced styling */}
-          <div className="relative">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect(index, !!checked)}
-              className="mt-1 h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all duration-200"
-            />
-          </div>
+    <TooltipProvider>
+      <Card className={cn(
+        "border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 rounded-xl bg-gradient-to-br from-background to-muted/30",
+        isSelected && "ring-2 ring-primary border-primary bg-primary/5 shadow-md"
+      )}>
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            {/* Checkbox with enhanced styling */}
+            <div className="relative">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelect(index, !!checked)}
+                className="mt-1 h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all duration-200"
+              />
+            </div>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            {/* Header with enhanced styling */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                  #{index + 1}
-                </div>
-                {contact.note && (
-                  <div className="bg-blue-100 p-1.5 rounded-full">
-                    <FileText className="h-3 w-3 text-blue-600" />
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Header with enhanced styling */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                    #{index + 1}
                   </div>
+                  {contact.note && (
+                    <div className="bg-blue-100 p-1.5 rounded-full">
+                      <FileText className="h-3 w-3 text-blue-600" />
+                    </div>
+                  )}
+                </div>
+                {/* Mail icon with tooltip */}
+                {contact.email && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="bg-blue-100 p-2 rounded-full cursor-pointer hover:bg-blue-200 transition-colors">
+                        <Mail className="h-4 w-4 text-blue-600" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{contact.email}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onDelete}
-                className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
 
             {/* Company Name with enhanced styling */}
             <div className="mb-4">
@@ -138,15 +145,37 @@ export function ImportedContactMobileCard({
 
             {/* Origin with enhanced styling */}
             {contact.origin && (
-              <div className="flex justify-end">
+              <div className="flex justify-between items-end">
                 <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary font-medium px-3 py-1">
                   {formatCellValue(contact.origin)}
                 </Badge>
+                {/* Delete button moved to bottom */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onDelete}
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+            {!contact.origin && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onDelete}
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             )}
           </div>
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }

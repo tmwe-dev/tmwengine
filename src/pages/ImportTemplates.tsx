@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
@@ -1612,22 +1612,16 @@ export default function ImportTemplates() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header with Dropdown Navigation */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestione Email e Import</h1>
-          <p className="text-muted-foreground">
-            Gestisci templates email e importa contatti da file Excel/CSV
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Gestione Email e Import</h1>
+          <p className="text-muted-foreground">Gestisci templates email e importa contatti da file Excel/CSV</p>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        {/* Selector per la sezione */}
-        <div className="space-y-1">
-          <Label htmlFor="section-select" className="text-sm font-medium">Seleziona Sezione</Label>
+        <div className="w-full lg:w-64">
           <Select value={activeSection} onValueChange={setActiveSection}>
-            <SelectTrigger className="w-full max-w-sm h-9">
-              <SelectValue placeholder="Seleziona una sezione..." />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleziona sezione" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="templates">
@@ -1638,7 +1632,7 @@ export default function ImportTemplates() {
               </SelectItem>
               <SelectItem value="attachments">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
+                  <Paperclip className="h-4 w-4" />
                   Attachments
                 </div>
               </SelectItem>
@@ -1657,8 +1651,9 @@ export default function ImportTemplates() {
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        {activeSection === 'templates' && (
+      {activeSection === 'templates' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -2089,10 +2084,8 @@ export default function ImportTemplates() {
               }}
             />
           )}
-        )}
-      </div>
-
-      </div>
+        </div>
+      )}
 
       {/* Dialog per visualizzare i record importati */}
       <Dialog open={showRecordsDialog} onOpenChange={(open) => {

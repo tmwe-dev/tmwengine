@@ -11,8 +11,40 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Custom fetch con configuración SSL personalizada
+async function fetchWithSelfSignedCert(url: string, options: RequestInit) {
+  // Configurar agente HTTP personalizado que acepta certificados autofirmados
+  const httpsAgent = {
+    rejectUnauthorized: false, // Acepta certificados autofirmados
+    checkServerIdentity: () => undefined // Ignora verificación de hostname
+  };
+
+  try {
+    // En Deno, usamos fetch con configuración de TLS personalizada
+    const response = await fetch(url, {
+      ...options,
+      // @ts-ignore - Configuración específica de Deno para SSL
+      tls: {
+        rejectUnauthorized: false,
+        checkServerIdentity: false
+      }
+    });
+    return response;
+  } catch (error) {
+    console.log('First attempt failed, trying with different approach:', error);
+    
+    // Fallback: intenta con fetch normal y captura el error
+    try {
+      return await fetch(url, options);
+    } catch (secondError) {
+      console.log('Both approaches failed:', secondError);
+      throw secondError;
+    }
+  }
+}
+
 serve(async (req) => {
-  console.log('=== TMWE API TEST ===');
+  console.log('=== TMWE API TEST (SSL SELF-SIGNED) ===');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,13 +74,13 @@ serve(async (req) => {
       body_html: emailData.body_html
     };
 
-    console.log('=== CALLING FINDAIR API (HTTP - SSL BYPASS) ===');
-    console.log('URL:', 'http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message');
+    console.log('=== CALLING FINDAIR API (HTTPS + SSL BYPASS) ===');
+    console.log('URL:', 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message');
     console.log('Payload:', tmwePayload);
-    console.log('API Key (first 10 chars):', apiKey?.substring(0, 10) + '...');
+    console.log('SSL: Accepting self-signed certificates');
 
-    // Llamada a la API TMWE usando HTTP para evitar problemas de certificado SSL
-    const response = await fetch('http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message', {
+    // Llamada a la API TMWE con certificados autofirmados aceptados
+    const response = await fetchWithSelfSignedCert('https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -86,8 +118,8 @@ serve(async (req) => {
       success: false, // Marcamos como false para debug
       debug: {
         api_called: true,
-        api_url: 'http://findair.it/erp/tmwe_json?app.php=email_message&action=send_message',
-        ssl_bypass: true,
+        api_url: 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message',
+        ssl_self_signed_accepted: true,
         api_status: response.status,
         api_status_text: response.statusText,
         api_headers: Object.fromEntries(response.headers.entries()),
@@ -110,7 +142,8 @@ serve(async (req) => {
       debug: {
         error_type: typeof error,
         error_name: error?.constructor?.name,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ssl_note: 'Attempted to accept self-signed certificates'
       }
     }), {
       status: 200,

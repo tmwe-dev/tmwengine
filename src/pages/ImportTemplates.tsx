@@ -16,6 +16,7 @@ import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import countriesData from '@/data/countries.json';
 
 // Utility function to format empty values
@@ -2110,7 +2111,7 @@ export default function ImportTemplates() {
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
-            <div className="flex justify-between items-start gap-4">
+            <div className="flex flex-col gap-4">
               <div className="flex-1">
                 <DialogTitle>
                   Record Importati - {selectedImport?.file_name}
@@ -2120,10 +2121,13 @@ export default function ImportTemplates() {
                 </DialogDescription>
               </div>
               
-              {/* Search and Filter Controls - Top Right */}
-              <div className="flex gap-4 items-end">
+              {/* Search and Filter Controls - Responsive Layout */}
+              <div className={cn(
+                "flex gap-2 items-end",
+                isMobile ? "flex-col w-full space-y-2" : "flex-row"
+              )}>
                 {/* Search field */}
-                <div className="w-64">
+                <div className={cn(isMobile ? "w-full" : "w-64")}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -2136,60 +2140,66 @@ export default function ImportTemplates() {
                   </div>
                 </div>
                 
-                {/* Origin filter */}
-                <div className="w-48">
-                  <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
-                  <Select value={originFilter} onValueChange={setOriginFilter}>
-                    <SelectTrigger id="origin-filter">
-                      <SelectValue placeholder="Tutte le origini" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__all__">Tutte le origini</SelectItem>
-                      {getUniqueValues('origin').map((origin) => (
-                        <SelectItem key={origin} value={String(origin)}>
-                          {String(origin)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Country filter */}
-                <div className="w-48">
-                  <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
-                  <Select value={countryFilter} onValueChange={setCountryFilter}>
-                    <SelectTrigger id="country-filter">
-                      <SelectValue placeholder="Tutti i paesi" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50">
-                      <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                      {getUniqueValues('country').map((country) => (
-                        <SelectItem key={country} value={String(country)}>
-                          {getCountryFullName(String(country))}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Records per page */}
-                <div className="w-36">
-                  <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
-                  <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                    console.log('Changing records per page to:', value);
-                    setRecordsPerPage(Number(value));
-                  }}>
-                    <SelectTrigger id="records-per-page">
-                      <SelectValue placeholder={`${recordsPerPage} record`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="250">250</SelectItem>
-                      <SelectItem value="500">500</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Filters row for mobile, inline for desktop */}
+                <div className={cn(
+                  "flex gap-2",
+                  isMobile ? "w-full flex-col space-y-2" : "flex-row"
+                )}>
+                  {/* Origin filter */}
+                  <div className={cn(isMobile ? "w-full" : "w-48")}>
+                    {!isMobile && <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>}
+                    <Select value={originFilter} onValueChange={setOriginFilter}>
+                      <SelectTrigger id="origin-filter">
+                        <SelectValue placeholder="Tutte le origini" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Tutte le origini</SelectItem>
+                        {getUniqueValues('origin').map((origin) => (
+                          <SelectItem key={origin} value={String(origin)}>
+                            {String(origin)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Country filter */}
+                  <div className={cn(isMobile ? "w-full" : "w-48")}>
+                    {!isMobile && <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>}
+                    <Select value={countryFilter} onValueChange={setCountryFilter}>
+                      <SelectTrigger id="country-filter">
+                        <SelectValue placeholder="Tutti i paesi" />
+                      </SelectTrigger>
+                      <SelectContent className="z-50">
+                        <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                        {getUniqueValues('country').map((country) => (
+                          <SelectItem key={country} value={String(country)}>
+                            {getCountryFullName(String(country))}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Records per page */}
+                  <div className={cn(isMobile ? "w-full" : "w-36")}>
+                    {!isMobile && <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>}
+                    <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                      console.log('Changing records per page to:', value);
+                      setRecordsPerPage(Number(value));
+                    }}>
+                      <SelectTrigger id="records-per-page">
+                        <SelectValue placeholder={`${recordsPerPage} record`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="250">250</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { 
   Users, 
@@ -18,8 +19,16 @@ import {
 import { Input } from '@/components/ui/input';
 
 const CRMLayout = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Chiudi automaticamente la sidebar su mobile quando cambia la rotta
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

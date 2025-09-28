@@ -175,7 +175,6 @@ const getCountryFlag = (countryName: string): string => {
   return '🌍';
 };
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
@@ -309,6 +308,7 @@ export default function ImportTemplates() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
+  const [activeSection, setActiveSection] = useState('templates');
   const { getCompanyActivities, hasActivities, refreshActivities } = useCompanyActivities();
 
   useEffect(() => {
@@ -1621,27 +1621,45 @@ export default function ImportTemplates() {
         </div>
       </div>
 
-      <Tabs defaultValue="templates" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Templates Email
-          </TabsTrigger>
-          <TabsTrigger value="attachments" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Attachments
-          </TabsTrigger>
-          <TabsTrigger value="import" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Importa Contatti
-          </TabsTrigger>
-          <TabsTrigger value="manage" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Gestisci Import
-          </TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        {/* Selector per la sezione */}
+        <div className="space-y-1">
+          <Label htmlFor="section-select" className="text-sm font-medium">Seleziona Sezione</Label>
+          <Select value={activeSection} onValueChange={setActiveSection}>
+            <SelectTrigger className="w-full max-w-sm h-9">
+              <SelectValue placeholder="Seleziona una sezione..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="templates">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Templates Email
+                </div>
+              </SelectItem>
+              <SelectItem value="attachments">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Attachments
+                </div>
+              </SelectItem>
+              <SelectItem value="import">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Importa Contatti
+                </div>
+              </SelectItem>
+              <SelectItem value="manage">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Gestisci Import
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <TabsContent value="templates" className="space-y-4">
+        {activeSection === 'templates' && (
+          <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -1806,9 +1824,11 @@ export default function ImportTemplates() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+          </div>
+        )}
 
-        <TabsContent value="attachments" className="space-y-4">
+        {activeSection === 'attachments' && (
+          <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -1903,9 +1923,10 @@ export default function ImportTemplates() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+          </div>
+        )}
 
-        <TabsContent value="import" className="space-y-4">
+        {activeSection === 'import' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1967,9 +1988,10 @@ export default function ImportTemplates() {
               </Button>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
-        <TabsContent value="manage" className="space-y-4">
+        {activeSection === 'manage' && (
+          <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -2069,8 +2091,8 @@ export default function ImportTemplates() {
               }}
             />
           )}
-        </TabsContent>
-      </Tabs>
+          )}
+      </div>
 
       {/* Dialog per visualizzare i record importati */}
       <Dialog open={showRecordsDialog} onOpenChange={(open) => {

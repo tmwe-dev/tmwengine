@@ -576,6 +576,7 @@ const Settings = () => {
                       <SelectItem value="mailgun">Mailgun</SelectItem>
                       <SelectItem value="ses">Amazon SES</SelectItem>
                       <SelectItem value="resend">Resend</SelectItem>
+                      <SelectItem value="tmwe">TMWE ERP</SelectItem>
                       <SelectItem value="custom">SMTP Custom</SelectItem>
                     </SelectContent>
                   </Select>

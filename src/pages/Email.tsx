@@ -249,7 +249,7 @@ const Email = () => {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -365,7 +365,7 @@ const Email = () => {
             </CardHeader>
             
             <CardContent className="p-0">
-              <ScrollArea className="h-96">
+              <ScrollArea className="h-96 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {filteredEmails.map((email) => (
                   <div
                     key={email.id}

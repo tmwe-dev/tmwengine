@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
+import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -2000,77 +2001,97 @@ export default function ImportTemplates() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-background">
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>File</TableHead>
-                    <TableHead>Stato</TableHead>
-                    <TableHead>Righe</TableHead>
-                    <TableHead>Errori</TableHead>
-                    <TableHead>Selezionati</TableHead>
-                    <TableHead>Azioni</TableHead>
-                    <TableHead className="w-16"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              {isMobile ? (
+                /* Mobile View - Cards */
+                <div className="space-y-3">
                   {importLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        {new Date(log.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>{log.file_name}</TableCell>
-                      <TableCell>{getStatusBadge(log.stato)}</TableCell>
-                      <TableCell>{log.righe_totali}</TableCell>
-                      <TableCell className="text-red-600">{log.righe_errori}</TableCell>
-                      <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
-                      <TableCell>
-                         <div className="flex gap-1">
-                            {/* Pulsante per processare file salvati */}
-                            {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
-                              <Button 
-                                variant="default" 
-                                size="sm"
-                                onClick={() => processFile(log.id)}
-                                disabled={importProgress.isProcessing}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                <Upload className="h-4 w-4 mr-1" />
-                                Elabora
-                              </Button>
-                            )}
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => viewImportRecords(log)}
-                              disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
-                            >
-                              <Users className="h-4 w-4" />
-                              {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
-                            </Button>
-                             
-                             {log.trasferiti_rubrica && (
-                               <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
-                                 Trasferiti
-                               </Badge>
-                             )}
-                          </div>
-                       </TableCell>
-                       <TableCell>
-                         <Button 
-                           variant="outline" 
-                           size="sm"
-                           onClick={() => deleteImportFile(log)}
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </TableCell>
-                     </TableRow>
+                    <ImportLogMobileCard
+                      key={log.id}
+                      log={log}
+                      onProcess={() => processFile(log.id)}
+                      onViewRecords={() => viewImportRecords(log)}
+                      onDelete={() => deleteImportFile(log)}
+                      getStatusBadge={getStatusBadge}
+                      isProcessing={importProgress.isProcessing}
+                      isLoading={loadingAllRecords && selectedImport?.id === log.id}
+                      isSelected={selectedImport?.id === log.id}
+                    />
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              ) : (
+                /* Desktop View - Table */
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-background">
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>File</TableHead>
+                      <TableHead>Stato</TableHead>
+                      <TableHead>Righe</TableHead>
+                      <TableHead>Errori</TableHead>
+                      <TableHead>Selezionati</TableHead>
+                      <TableHead>Azioni</TableHead>
+                      <TableHead className="w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          {new Date(log.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{log.file_name}</TableCell>
+                        <TableCell>{getStatusBadge(log.stato)}</TableCell>
+                        <TableCell>{log.righe_totali}</TableCell>
+                        <TableCell className="text-red-600">{log.righe_errori}</TableCell>
+                        <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
+                        <TableCell>
+                           <div className="flex gap-1">
+                              {/* Pulsante per processare file salvati */}
+                              {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
+                                <Button 
+                                  variant="default" 
+                                  size="sm"
+                                  onClick={() => processFile(log.id)}
+                                  disabled={importProgress.isProcessing}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Upload className="h-4 w-4 mr-1" />
+                                  Elabora
+                                </Button>
+                              )}
+                              
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => viewImportRecords(log)}
+                                disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
+                              >
+                                <Users className="h-4 w-4" />
+                                {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                              </Button>
+                               
+                               {log.trasferiti_rubrica && (
+                                 <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
+                                   Trasferiti
+                                 </Badge>
+                               )}
+                            </div>
+                         </TableCell>
+                         <TableCell>
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => deleteImportFile(log)}
+                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </TableCell>
+                       </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
               
               {importLogs.length === 0 && !loading && (
                 <div className="text-center py-8 text-muted-foreground">

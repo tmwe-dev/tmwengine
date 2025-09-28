@@ -1120,10 +1120,13 @@ export default function ImportTemplates() {
     }
     
     try {
-      // Get the IDs of selected records
-      const recordsToDelete = Array.from(selectedRecords).map(index => 
-        viewingRecords[index]?.id
-      ).filter(Boolean);
+      // Get the IDs of selected records using allRecords (not viewingRecords)
+      const recordsToDelete = Array.from(selectedRecords).map(index => {
+        if (index >= 0 && index < allRecords.length) {
+          return allRecords[index]?.id;
+        }
+        return null;
+      }).filter(Boolean);
       
       if (recordsToDelete.length === 0) {
         toast.error('Nessun record valido selezionato');
@@ -1521,12 +1524,11 @@ export default function ImportTemplates() {
     let errorCount = 0;
 
     try {
-      // Ottieni i record selezionati usando gli indici corretti dai viewingRecords
+      // Ottieni i record selezionati usando gli indici corretti da allRecords (non viewingRecords)
       const selectedData = [];
       for (const selectedIndex of selectedRecords) {
-        const recordIndex = selectedIndex - (currentPage * recordsPerPage);
-        if (recordIndex >= 0 && recordIndex < viewingRecords.length) {
-          selectedData.push(viewingRecords[recordIndex]);
+        if (selectedIndex >= 0 && selectedIndex < allRecords.length) {
+          selectedData.push(allRecords[selectedIndex]);
         }
       }
       

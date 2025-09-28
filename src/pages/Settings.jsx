@@ -346,8 +346,8 @@ const Settings = () => {
   };
 
   const renderSecretField = (label, value, field, onChange, placeholder) => (
-    <div className="space-y-2">
-      <Label htmlFor={field}>{label}</Label>
+    <div className="space-y-1">
+      <Label htmlFor={field} className="text-sm">{label}</Label>
       <div className="relative">
         <Input
           id={field}
@@ -355,7 +355,7 @@ const Settings = () => {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="pr-10"
+          className="pr-10 h-9"
         />
         <Button
           type="button"
@@ -388,28 +388,28 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
-        <SettingsIcon className="h-8 w-8 text-primary" />
+        <SettingsIcon className="h-6 w-6 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Impostazioni CRM</h1>
-          <p className="text-muted-foreground">Configura API keys, provider email e impostazioni AI</p>
+          <h1 className="text-2xl font-bold text-foreground">Impostazioni CRM</h1>
+          <p className="text-sm text-muted-foreground">Configura API keys, provider email e impostazioni AI</p>
         </div>
       </div>
 
-      <Alert>
+      <Alert className="mb-4">
         <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
+        <AlertDescription className="text-sm">
           Le chiavi API sono archiviate in modo sicuro e crittografato. Non condividere mai le tue chiavi API.
         </AlertDescription>
       </Alert>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Selector per la sezione */}
-        <div className="space-y-2">
-          <Label htmlFor="section-select">Seleziona Sezione</Label>
+        <div className="space-y-1">
+          <Label htmlFor="section-select" className="text-sm font-medium">Seleziona Sezione</Label>
           <Select value={activeSection} onValueChange={setActiveSection}>
-            <SelectTrigger className="w-full max-w-md">
+            <SelectTrigger className="w-full max-w-sm h-9">
               <SelectValue placeholder="Seleziona una sezione..." />
             </SelectTrigger>
             <SelectContent>
@@ -449,88 +449,98 @@ const Settings = () => {
         
         {/* Renderizza la sezione selezionata */}
         {activeSection === 'profile' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="w-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <User className="h-5 w-5" />
                 Profilo Utente
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configura i tuoi dati personali. Questi dati verranno automaticamente assegnati a tutte le attività che crei.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="nomeUtente">Nome *</Label>
-                  <Input
-                    id="nomeUtente"
-                    value={generalConfig.nomeUtente}
-                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, nomeUtente: e.target.value }))}
-                    placeholder="Mario"
-                  />
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Colonna sinistra */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="nomeUtente" className="text-sm">Nome *</Label>
+                    <Input
+                      id="nomeUtente"
+                      value={generalConfig.nomeUtente}
+                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, nomeUtente: e.target.value }))}
+                      placeholder="Mario"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="emailUtente" className="text-sm">Email *</Label>
+                    <Input
+                      id="emailUtente"
+                      type="email"
+                      value={generalConfig.emailUtente}
+                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, emailUtente: e.target.value }))}
+                      placeholder="mario.rossi@azienda.com"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="ruoloUtente" className="text-sm">Ruolo</Label>
+                    <Select value={generalConfig.ruoloUtente} onValueChange={(value) => 
+                      setGeneralConfig(prev => ({ ...prev, ruoloUtente: value }))
+                    }>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Seleziona ruolo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Utente">Utente</SelectItem>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="Amministratore">Amministratore</SelectItem>
+                        <SelectItem value="Commerciale">Commerciale</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cognomeUtente">Cognome *</Label>
-                  <Input
-                    id="cognomeUtente"
-                    value={generalConfig.cognomeUtente}
-                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, cognomeUtente: e.target.value }))}
-                    placeholder="Rossi"
-                  />
-                </div>
+                {/* Colonna destra */}
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="cognomeUtente" className="text-sm">Cognome *</Label>
+                    <Input
+                      id="cognomeUtente"
+                      value={generalConfig.cognomeUtente}
+                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, cognomeUtente: e.target.value }))}
+                      placeholder="Rossi"
+                      className="h-9"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="emailUtente">Email *</Label>
-                  <Input
-                    id="emailUtente"
-                    type="email"
-                    value={generalConfig.emailUtente}
-                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, emailUtente: e.target.value }))}
-                    placeholder="mario.rossi@azienda.com"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="telefonoUtente">Telefono</Label>
-                  <Input
-                    id="telefonoUtente"
-                    value={generalConfig.telefonoUtente}
-                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, telefonoUtente: e.target.value }))}
-                    placeholder="+39 123 456 7890"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ruoloUtente">Ruolo</Label>
-                  <Select value={generalConfig.ruoloUtente} onValueChange={(value) => 
-                    setGeneralConfig(prev => ({ ...prev, ruoloUtente: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona ruolo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Utente">Utente</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
-                      <SelectItem value="Amministratore">Amministratore</SelectItem>
-                      <SelectItem value="Commerciale">Commerciale</SelectItem>
-                      <SelectItem value="Marketing">Marketing</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-1">
+                    <Label htmlFor="telefonoUtente" className="text-sm">Telefono</Label>
+                    <Input
+                      id="telefonoUtente"
+                      value={generalConfig.telefonoUtente}
+                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, telefonoUtente: e.target.value }))}
+                      placeholder="+39 123 456 7890"
+                      className="h-9"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <Alert>
+              <Alert className="mt-3">
                 <User className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Auto-assegnazione:</strong> Tutte le attività che crei verranno automaticamente assegnate a te come utente. 
-                  Il nome completo "{generalConfig.nomeUtente} {generalConfig.cognomeUtente}" apparirà nel campo "Assegnato a" di ogni nuova attività.
+                <AlertDescription className="text-sm">
+                  <strong>Auto-assegnazione:</strong> Tutte le attività che crei verranno automaticamente assegnate a te. 
+                  Il nome completo "{generalConfig.nomeUtente} {generalConfig.cognomeUtente}" apparirà nel campo "Assegnato a".
                 </AlertDescription>
               </Alert>
 
-              <div className="flex justify-end">
-                <Button onClick={handleSaveGeneralConfig} disabled={saving}>
+              <div className="flex justify-end pt-2">
+                <Button onClick={handleSaveGeneralConfig} disabled={saving} className="h-9">
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? 'Salvataggio...' : 'Salva Profilo'}
                 </Button>
@@ -541,24 +551,24 @@ const Settings = () => {
 
         {/* Configurazione Email Provider */}
         {activeSection === 'email' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="w-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Mail className="h-5 w-5" />
                 Configurazione Email Provider
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Configura il provider email per invio e ricezione automatica
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="emailProvider">Provider Email</Label>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="emailProvider" className="text-sm">Provider Email</Label>
                   <Select value={emailConfig.provider} onValueChange={(value) => 
                     setEmailConfig(prev => ({ ...prev, provider: value }))
                   }>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder="Seleziona provider" />
                     </SelectTrigger>
                     <SelectContent>
@@ -571,18 +581,19 @@ const Settings = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dominioInvio">Dominio di Invio</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="dominioInvio" className="text-sm">Dominio di Invio</Label>
                   <Input
                     id="dominioInvio"
                     value={emailConfig.dominioInvio}
                     onChange={(e) => setEmailConfig(prev => ({ ...prev, dominioInvio: e.target.value }))}
                     placeholder="crm.tuodominio.com"
+                    className="h-9"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {renderSecretField(
                   "API Key",
                   emailConfig.apiKey,
@@ -598,39 +609,43 @@ const Settings = () => {
                   (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
                   "Secret per validazione webhook inbound"
                 )}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="inboundRoute">Route Inbound Email</Label>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="inboundRoute" className="text-sm">Route Inbound Email</Label>
                   <Input
                     id="inboundRoute"
                     value={emailConfig.inboundRoute}
                     onChange={(e) => setEmailConfig(prev => ({ ...prev, inboundRoute: e.target.value }))}
                     placeholder="/api/email/inbound"
+                    className="h-9"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="outboundEndpoint">Endpoint Outbound</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="outboundEndpoint" className="text-sm">Endpoint Outbound</Label>
                   <Input
                     id="outboundEndpoint"
                     value={emailConfig.outboundEndpoint}
                     onChange={(e) => setEmailConfig(prev => ({ ...prev, outboundEndpoint: e.target.value }))}
                     placeholder="https://api.provider.com/send"
+                    className="h-9"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="emailAttivo"
                     checked={emailConfig.attivo}
                     onCheckedChange={(checked) => setEmailConfig(prev => ({ ...prev, attivo: checked }))}
                   />
-                  <Label htmlFor="emailAttivo">Provider email attivo</Label>
+                  <Label htmlFor="emailAttivo" className="text-sm">Provider email attivo</Label>
                 </div>
 
-                <Button onClick={handleSaveEmailConfig} disabled={saving}>
+                <Button onClick={handleSaveEmailConfig} disabled={saving} className="h-9">
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? 'Salvataggio...' : 'Salva Configurazione'}
                 </Button>

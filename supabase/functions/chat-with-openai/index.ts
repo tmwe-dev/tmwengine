@@ -127,7 +127,12 @@ serve(async (req) => {
     // Add current user message
     messages.push({ role: 'user', content: prompt });
 
-    console.log(`Using ${useFullMemory ? 'full' : 'limited'} memory. Messages in context: ${messages.length}`);
+    console.log(`[MEMORY] Using ${useFullMemory ? 'FULL' : 'LIMITED'} memory for conversation ${conversationId}`);
+    console.log(`[MEMORY] Total messages in context: ${messages.length}`);
+    console.log(`[MEMORY] Memory config: ${JSON.stringify(config)}`);
+    if (!useFullMemory) {
+      console.log(`[MEMORY] Time window: last ${config.memoria_ore} hours, max ${config.memoria_messaggi} messages`);
+    }
 
     // Determina se la domanda richiede strumenti CRM
     const requiresCRMTools = isCRMRelatedQuery(prompt, systemPrompt);

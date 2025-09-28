@@ -308,27 +308,19 @@ const Chat = () => {
       return; // Il messaggio verrà inviato dopo la creazione della conversazione
     }
 
-    // Salva il messaggio utente
+    setIsLoading(true);
+    const currentPrompt = prompt;
+    setPrompt('');
+
     try {
-      const { data: userMessageData, error: userMessageError } = await supabase
-        .from('chat_messages')
-        .insert({
-          conversation_id: conversationId,
-          role: 'user',
-          content: prompt
-        })
-        .select()
-        .single();
-
-      if (userMessageError) throw userMessageError;
-
-      setIsLoading(true);
-      const currentPrompt = prompt;
-      setPrompt('');
-
       // Ottieni il system prompt attivo
       const activeSystemPrompt = systemPrompts.find(p => p.attivo);
       const systemPromptContent = activeSystemPrompt?.contenuto || 'Sei un assistente AI utile e amichevole che risponde in italiano.';
+
+      console.log(`Sending message to conversation ${conversationId} with memory settings:`, {
+        memoria_completa: currentConversation?.memoria_completa,
+        prompt: currentPrompt.substring(0, 50) + '...'
+      });
 
       const { data, error } = await supabase.functions.invoke('chat-with-openai', {
         body: { 
@@ -349,19 +341,10 @@ const Chat = () => {
         messagesInContext: data.messages_in_context || 0
       });
 
-      // Salva la risposta AI con statistiche dettagliate
-      await supabase
-        .from('chat_messages')
-        .insert({
-          conversation_id: conversationId,
-          role: 'assistant',
-          content: data.response,
-          model: data.model,
-          tokens_used: data.tokens_used,
-          token_input: data.tokens_input,
-          token_output: data.tokens_output,
-          tempo_risposta_ms: data.response_time_ms
-        });
+      console.log(`Response received with ${data.messages_in_context} messages in context (${data.memory_mode} memory mode)`);
+
+      // Ricarica i messaggi per mostrare la conversazione aggiornata
+      await loadMessages(conversationId);
 
     } catch (error) {
       console.error('Errore invio prompt:', error);

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Edit, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +53,8 @@ export default function Attivita() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortField, setSortField] = useState<keyof Activity>('data_creazione');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState({
     stato: '',
     tipo: '',
@@ -71,26 +74,33 @@ export default function Attivita() {
         .from('attivita')
         .select(`
           *,
-          rubrica:rubrica_id (
-            azienda,
-            nome
+          rubrica (
+            id,
+            nome,
+            azienda
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('data_creazione', { ascending: false });
 
       if (error) throw error;
 
-      const formattedActivities: Activity[] = data?.map(activity => ({
-        ...activity,
-        tipo: activity.tipo as 'chiamata' | 'meeting' | 'email' | 'task',
-        stato: activity.stato as 'aperta' | 'in_corso' | 'completata' | 'annullata',
-        priorita: activity.priorita as 'alta' | 'media' | 'bassa',
-        rubrica_nome: activity.rubrica?.azienda || activity.rubrica?.nome || ''
-      })) || [];
+      const formattedActivities: Activity[] = (data || []).map(activity => ({
+        id: activity.id,
+        rubrica_id: activity.rubrica_id,
+        rubrica_nome: activity.rubrica?.[0]?.nome || activity.rubrica?.[0]?.azienda,
+        tipo: activity.tipo as Activity['tipo'],
+        descrizione: activity.descrizione,
+        stato: activity.stato as Activity['stato'],
+        scadenza: activity.scadenza,
+        priorita: activity.priorita as Activity['priorita'],
+        assegnato_a: activity.assegnato_a,
+        assegnato_nome: null,
+        creato_da: activity.creato_da,
+        data_creazione: activity.data_creazione
+      }));
 
       setActivities(formattedActivities);
-    } catch (error) {
-      console.error('Error loading activities:', error);
+    } catch (error: any) {
       toast({
         title: "Errore",
         description: "Impossibile caricare le attività",
@@ -98,6 +108,27 @@ export default function Attivita() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Helper function to get activity type icon
+  const getActivityIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'chiamata': return Phone;
+      case 'email': return Mail;
+      case 'meeting': return Users;
+      case 'task': return FileText;
+      default: return FileText;
+    }
+  };
+
+  // Sorting function
+  const handleSort = (field: keyof Activity) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
     }
   };
 
@@ -112,6 +143,15 @@ export default function Attivita() {
       (!filters.scadenza || checkScadenzaFilter(activity.scadenza, filters.scadenza));
 
     return matchesSearch && matchesFilters;
+  }).sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+    
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+    
+    const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    return sortDirection === 'asc' ? comparison : -comparison;
   });
 
   const checkScadenzaFilter = (scadenza: string | undefined, filter: string) => {
@@ -151,7 +191,6 @@ export default function Attivita() {
       const { data, error } = await supabase
         .from('attivita')
         .insert([{
-          rubrica_id: null, // Per attività singole dalla pagina attività
           tipo: tipo,
           descrizione: descrizione,
           stato: 'aperta',
@@ -160,22 +199,22 @@ export default function Attivita() {
           assegnato_a: null,
           creato_da: null
         }])
-        .select()
-        .single();
+        .select();
 
       if (error) throw error;
-
-      await loadActivities(); // Ricarica la lista
+      
       setIsFormOpen(false);
+      setSelectedActivity(null);
+      await loadActivities();
+      
       toast({
-        title: "Attività aggiunta",
-        description: "L'attività è stata creata con successo."
+        title: "Attività creata",
+        description: "L'attività è stata creata con successo.",
       });
-    } catch (error) {
-      console.error('Error creating activity:', error);
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Impossibile creare l'attività",
+        description: error.message || "Si è verificato un errore durante la creazione dell'attività.",
         variant: "destructive"
       });
     }
@@ -185,33 +224,38 @@ export default function Attivita() {
     if (!selectedActivity) return;
 
     try {
+      let descrizione = '';
+      let tipo = activityData.tipo;
+      
+      if (activityData.tipo === 'email') {
+        descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
+      } else if (activityData.tipo === 'chiamata') {
+        descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
+      }
+
       const { error } = await supabase
         .from('attivita')
         .update({
-          rubrica_id: activityData.rubrica_id || null,
-          tipo: activityData.tipo,
-          descrizione: activityData.descrizione,
-          stato: activityData.stato,
-          scadenza: activityData.scadenza || null,
-          priorita: activityData.priorita,
-          assegnato_a: activityData.assegnato_a || null
+          tipo: tipo,
+          descrizione: descrizione,
+          priorita: activityData.priorita || 'media'
         })
         .eq('id', selectedActivity.id);
 
       if (error) throw error;
 
-      await loadActivities(); // Ricarica la lista
-      setSelectedActivity(null);
       setIsFormOpen(false);
+      setSelectedActivity(null);
+      await loadActivities();
+      
       toast({
-        title: "Attività modificata",
-        description: "Le modifiche sono state salvate con successo."
+        title: "Attività aggiornata",
+        description: "L'attività è stata aggiornata con successo.",
       });
-    } catch (error) {
-      console.error('Error updating activity:', error);
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Impossibile modificare l'attività",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento dell'attività.",
         variant: "destructive"
       });
     }
@@ -226,22 +270,22 @@ export default function Attivita() {
 
       if (error) throw error;
 
-      await loadActivities(); // Ricarica la lista
+      await loadActivities();
+      
       toast({
         title: "Attività eliminata",
-        description: "L'attività è stata rimossa."
+        description: "L'attività è stata eliminata con successo.",
       });
-    } catch (error) {
-      console.error('Error deleting activity:', error);
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Impossibile eliminare l'attività",
+        description: error.message || "Si è verificato un errore durante l'eliminazione dell'attività.",
         variant: "destructive"
       });
     }
   };
 
-  const handleStatusChange = async (activityId: string, newStatus: Activity['stato']) => {
+  const handleStatusChange = async (activityId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('attivita')
@@ -250,16 +294,16 @@ export default function Attivita() {
 
       if (error) throw error;
 
-      await loadActivities(); // Ricarica la lista
+      await loadActivities();
+      
       toast({
         title: "Stato aggiornato",
-        description: `L'attività è ora ${STATO_LABELS[newStatus].toLowerCase()}.`
+        description: `Lo stato dell'attività è stato cambiato in ${STATO_LABELS[newStatus as keyof typeof STATO_LABELS]}.`,
       });
-    } catch (error) {
-      console.error('Error updating status:', error);
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Impossibile aggiornare lo stato",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento dello stato.",
         variant: "destructive"
       });
     }
@@ -275,58 +319,70 @@ export default function Attivita() {
     setIsFormOpen(true);
   };
 
-  const getStatoBadgeVariant = (stato: Activity['stato']) => {
+  const getStatoBadgeVariant = (stato: string) => {
     switch (stato) {
-      case 'completata': return 'default';
-      case 'in_corso': return 'secondary';
-      case 'aperta': return 'outline';
-      case 'annullata': return 'destructive';
-      default: return 'outline';
+      case 'aperta': return 'default' as const;
+      case 'in_corso': return 'secondary' as const;
+      case 'completata': return 'default' as const;
+      case 'annullata': return 'destructive' as const;
+      default: return 'default' as const;
     }
   };
 
-  const getPrioritaBadgeVariant = (priorita: Activity['priorita']) => {
+  const getPrioritaBadgeVariant = (priorita: string) => {
     switch (priorita) {
-      case 'alta': return 'destructive';
-      case 'media': return 'secondary';
-      case 'bassa': return 'outline';
-      default: return 'outline';
+      case 'alta': return 'destructive' as const;
+      case 'media': return 'secondary' as const;
+      case 'bassa': return 'outline' as const;
+      default: return 'outline' as const;
     }
   };
 
-  const getStatoIcon = (stato: Activity['stato']) => {
+  const getStatoIcon = (stato: string) => {
     switch (stato) {
-      case 'completata': return CheckCircle;
-      case 'in_corso': return Clock;
       case 'aperta': return AlertCircle;
+      case 'in_corso': return Clock;
+      case 'completata': return CheckCircle;
       case 'annullata': return X;
       default: return AlertCircle;
     }
   };
 
   const getStatsData = () => {
-    return {
-      totali: activities.length,
-      aperte: activities.filter(a => a.stato === 'aperta').length,
-      in_corso: activities.filter(a => a.stato === 'in_corso').length,
-      completate: activities.filter(a => a.stato === 'completata').length,
-      scadute: activities.filter(a => {
-        if (!a.scadenza) return false;
-        return new Date(a.scadenza) < new Date();
-      }).length
-    };
+    const totali = activities.length;
+    const aperte = activities.filter(a => a.stato === 'aperta').length;
+    const in_corso = activities.filter(a => a.stato === 'in_corso').length;
+    const completate = activities.filter(a => a.stato === 'completata').length;
+    
+    const today = new Date();
+    const scadute = activities.filter(a => {
+      if (!a.scadenza) return false;
+      return new Date(a.scadenza) < today && a.stato !== 'completata';
+    }).length;
+
+    return { totali, aperte, in_corso, completate, scadute };
   };
 
   const stats = getStatsData();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-text-secondary">Caricamento attività...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="section-spacing">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-heading-1 font-bold text-text-primary">Attività</h1>
+          <h1 className="text-heading-1 font-bold text-text-primary mb-2">
+            Gestione Attività
+          </h1>
           <p className="text-body text-text-secondary">
-            Gestisci e monitora tutte le tue attività
+            Organizza e gestisci tutte le tue attività di business
           </p>
         </div>
         
@@ -372,19 +428,14 @@ export default function Attivita() {
             
             <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="shadow-soft">
+                <Button variant="outline" className="flex items-center gap-2">
                   <Filter className="h-4 w-4" />
                   Filtri
-                  {Object.values(filters).filter(Boolean).length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {Object.values(filters).filter(Boolean).length}
-                    </Badge>
-                  )}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Filtri Avanzati</DialogTitle>
+                  <DialogTitle>Filtri Attività</DialogTitle>
                 </DialogHeader>
                 <ActivityFilters
                   filters={filters}
@@ -435,148 +486,206 @@ export default function Attivita() {
         </Card>
       </div>
 
-      {/* Activities List */}
-      <div className="space-y-4">
-        {filteredActivities.length === 0 ? (
-          <Card className="border-card shadow-soft">
-            <CardContent className="p-12 text-center">
-              <div className="text-text-secondary mb-4">
-                {activities.length === 0 ? (
-                  <>
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-heading-3 font-semibold mb-2">Nessuna attività</h3>
-                    <p className="text-body mb-4">
-                      Inizia creando la tua prima attività
-                    </p>
-                    <Button onClick={openAddForm}>
-                      <Plus className="h-4 w-4" />
-                      Crea Prima Attività
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-heading-3 font-semibold mb-2">Nessun risultato</h3>
-                    <p className="text-body">
-                      Prova a modificare i termini di ricerca o i filtri
-                    </p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredActivities.map((activity) => {
-            const StatoIcon = getStatoIcon(activity.stato);
-            return (
-              <Card key={activity.id} className="border-card shadow-soft hover:shadow-medium transition-shadow">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <StatoIcon className="h-5 w-5 text-text-secondary" />
-                        <CardTitle className="text-heading-4 font-semibold text-text-primary">
-                          {activity.descrizione}
-                        </CardTitle>
+      {/* Activities Table */}
+      <Card className="border-card shadow-soft">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50 w-16" 
+                  onClick={() => handleSort('tipo')}
+                >
+                  <div className="flex items-center gap-2">
+                    Tipo
+                    {sortField === 'tipo' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('rubrica_nome')}
+                >
+                  <div className="flex items-center gap-2">
+                    Contatto
+                    {sortField === 'rubrica_nome' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('scadenza')}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-600">Data/Ora</span>
+                    {sortField === 'scadenza' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('stato')}
+                >
+                  <div className="flex items-center gap-2">
+                    Stato
+                    {sortField === 'stato' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('priorita')}
+                >
+                  <div className="flex items-center gap-2">
+                    Priorità
+                    {sortField === 'priorita' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="w-32">Azioni</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredActivities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    {activities.length === 0 ? (
+                      <div className="text-text-secondary">
+                        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-heading-3 font-semibold mb-2">Nessuna attività</h3>
+                        <p className="text-body mb-4">
+                          Inizia creando la tua prima attività
+                        </p>
+                        <Button onClick={openAddForm}>
+                          <Plus className="h-4 w-4" />
+                          Crea Prima Attività
+                        </Button>
                       </div>
-                      
-                      <div className="flex flex-wrap items-center gap-2">
+                    ) : (
+                      <div className="text-text-secondary">
+                        <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="text-heading-3 font-semibold mb-2">Nessun risultato</h3>
+                        <p className="text-body">
+                          Prova a modificare i termini di ricerca o i filtri
+                        </p>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredActivities.map((activity) => {
+                  const ActivityIcon = getActivityIcon(activity.tipo);
+                  return (
+                    <TableRow key={activity.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center justify-center">
+                          <ActivityIcon className="h-5 w-5 text-blue-500" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[300px]">
+                        <div>
+                          <div className="font-medium text-text-primary truncate">
+                            {activity.rubrica_nome || 'Nessun contatto'}
+                          </div>
+                          <div className="text-sm text-text-secondary truncate">
+                            {activity.descrizione}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {activity.scadenza ? (
+                          <div className="space-y-1">
+                            <div className="font-semibold text-blue-600">
+                              {new Date(activity.scadenza).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            <div className="text-sm font-medium text-blue-500">
+                              {new Date(activity.scadenza).toLocaleTimeString('it-IT', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            {new Date(activity.scadenza) < new Date() && (
+                              <Badge variant="destructive" className="text-xs">
+                                Scaduta
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-text-secondary">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant={getStatoBadgeVariant(activity.stato)}>
                           {STATO_LABELS[activity.stato]}
                         </Badge>
-                        <Badge variant="outline">
-                          {TIPO_LABELS[activity.tipo]}
-                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      {activity.stato !== 'completata' && activity.stato !== 'annullata' && (
-                        <>
-                          {activity.stato === 'aperta' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStatusChange(activity.id, 'in_corso')}
-                            >
-                              Inizia
-                            </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {activity.stato !== 'completata' && activity.stato !== 'annullata' && (
+                            <>
+                              {activity.stato === 'aperta' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange(activity.id, 'in_corso')}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  Inizia
+                                </Button>
+                              )}
+                              {activity.stato === 'in_corso' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange(activity.id, 'completata')}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  Completa
+                                </Button>
+                              )}
+                            </>
                           )}
-                          {activity.stato === 'in_corso' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStatusChange(activity.id, 'completata')}
-                            >
-                              Completa
-                            </Button>
-                          )}
-                        </>
-                      )}
-                      
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditForm(activity)}
-                        className="h-8 w-8"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteActivity(activity.id)}
-                        className="h-8 w-8 text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  {activity.rubrica_nome && (
-                    <div className="flex items-center gap-2 text-body text-text-secondary">
-                      <User className="h-4 w-4" />
-                      <span>Contatto: {activity.rubrica_nome}</span>
-                    </div>
-                  )}
-                  
-                  {activity.scadenza && (
-                    <div className="flex items-center gap-2 text-body text-text-secondary">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        Scadenza: {new Date(activity.scadenza).toLocaleDateString('it-IT', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                      {new Date(activity.scadenza) < new Date() && (
-                        <Badge variant="destructive" className="text-xs">
-                          Scaduta
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  
-                  {activity.assegnato_nome && (
-                    <div className="flex items-center gap-2 text-body text-text-secondary">
-                      <User className="h-4 w-4" />
-                      <span>Assegnato a: {activity.assegnato_nome}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditForm(activity)}
+                            className="h-7 w-7"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteActivity(activity.id)}
+                            className="h-7 w-7 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

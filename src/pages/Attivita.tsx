@@ -834,9 +834,9 @@ export default function Attivita() {
           <div className="font-medium text-text-primary truncate">
             {activity.rubrica_azienda || 'Nessuna azienda'}
           </div>
-                          <div className="text-sm text-text-secondary truncate">
-                            {activity.descrizione}
-                          </div>
+          <div className="text-sm text-gray-500 truncate">
+            {activity.descrizione}
+          </div>
                         </div>
                       </TableCell>
                       <TableCell>

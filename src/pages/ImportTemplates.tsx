@@ -15,6 +15,7 @@ import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
+import { useIsMobile } from '@/hooks/use-mobile';
 import countriesData from '@/data/countries.json';
 
 // Utility function to format empty values
@@ -180,6 +181,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { DocumentViewer } from '@/components/email/DocumentViewer';
+import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 
 interface EmailTemplate {
   id: string;
@@ -310,6 +312,7 @@ export default function ImportTemplates() {
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('templates');
   const { getCompanyActivities, hasActivities, refreshActivities } = useCompanyActivities();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadEmailTemplates();
@@ -2216,11 +2219,90 @@ export default function ImportTemplates() {
             </div>
           )}
 
-          {/* Controlli visibilità colonne */}
-          <div className="flex justify-between items-center gap-2 py-4 border-b">
-            <div className="flex items-center gap-2">
-              {/* Pulsante Crea Attività Multiple */}
-              {selectedRecords.size > 0 && (
+          {/* Controlli visibilità colonne - Solo desktop */}
+          {!isMobile && (
+            <div className="flex justify-between items-center gap-2 py-4 border-b">
+              <div className="flex items-center gap-2">
+                {/* Pulsante Crea Attività Multiple */}
+                {selectedRecords.size > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowMultipleActivityDialog(true)}
+                          className="text-xs px-2"
+                        >
+                          <FileText className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Crea attività per le {selectedRecords.size} aziende selezionate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={visibleColumns.company ? "default" : "outline"}
+                onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
+                className="text-xs"
+              >
+                Azienda & Contatti
+              </Button>
+              <Button
+                size="sm"
+                variant={visibleColumns.details ? "default" : "outline"}
+                onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                className="text-xs"
+              >
+                Dettagli Commerciali
+              </Button>
+              <Button
+                size="sm"
+                variant={visibleColumns.metadata ? "default" : "outline"}
+                onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                className="text-xs"
+              >
+                Metadata & Sistema
+              </Button>
+              
+              {/* Bulk delete button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={deleteSelectedRecords}
+                      disabled={selectedRecords.size === 0}
+                      className="text-xs px-2"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {selectedRecords.size === 0 
+                        ? 'Seleziona record da eliminare' 
+                        : `Elimina ${selectedRecords.size} record selezionati`
+                      }
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              </div>
+            </div>
+          )}
+
+          {/* Controlli mobile - Solo mobile */}
+          {isMobile && selectedRecords.size > 0 && (
+            <div className="flex justify-between items-center gap-2 py-4 border-b">
+              <div className="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2231,6 +2313,7 @@ export default function ImportTemplates() {
                         className="text-xs px-2"
                       >
                         <FileText className="h-4 w-4 text-blue-500" />
+                        Crea Attività ({selectedRecords.size})
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -2238,61 +2321,28 @@ export default function ImportTemplates() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              )}
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={deleteSelectedRecords}
+                        className="text-xs px-2"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                        Elimina ({selectedRecords.size})
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Elimina {selectedRecords.size} record selezionati</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={visibleColumns.company ? "default" : "outline"}
-              onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
-              className="text-xs"
-            >
-              Azienda & Contatti
-            </Button>
-            <Button
-              size="sm"
-              variant={visibleColumns.details ? "default" : "outline"}
-              onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-              className="text-xs"
-            >
-              Dettagli Commerciali
-            </Button>
-            <Button
-              size="sm"
-              variant={visibleColumns.metadata ? "default" : "outline"}
-              onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-              className="text-xs"
-            >
-              Metadata & Sistema
-            </Button>
-            
-            {/* Bulk delete button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={deleteSelectedRecords}
-                    disabled={selectedRecords.size === 0}
-                    className="text-xs px-2"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    {selectedRecords.size === 0 
-                      ? 'Seleziona record da eliminare' 
-                      : `Elimina ${selectedRecords.size} record selezionati`
-                    }
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            </div>
-          </div>
+          )}
 
           
           {/* Area filtri attivi */}
@@ -2336,186 +2386,210 @@ export default function ImportTemplates() {
               </div>
             </div>
            ) : filteredRecords.length > 0 ? (
-            <div className="space-y-4 flex flex-col min-h-0 flex-1">
-              <div className="overflow-auto flex-1 border rounded-md">
-                 <Table>
-                   <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                     <TableRow>
-                        <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
-                           <Checkbox
-                             checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
-                             onCheckedChange={toggleSelectAll}
-                             aria-label="Seleziona tutti"
-                           />
-                         </TableHead>
-                         <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <FileText className="h-3 w-3 ml-1 inline" />
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Clicca l'icona per vedere le note</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         </TableHead>
-                        {(() => {
-                          const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                          const visibleCols = getVisibleColumns(allColumns);
-                          return visibleCols.map((key) => (
-                              <TableHead 
-                                key={key} 
-                                 className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
-                                   key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                   key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                   key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                   key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                   (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                   'min-w-[120px]'
-                                 }`}
-                               onClick={() => handleColumnSort(key)}
-                             >
-                               <div className="flex items-center gap-1">
-                                 <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                 {getSortIcon(key)}
-                               </div>
-                             </TableHead>
-                           ));
-                         })()}
-                         <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
-                     </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                      {viewingRecords.map((record, viewIndex) => {
-                        const actualIndex = currentPage * recordsPerPage + viewIndex;
-                        return (
-                        <TableRow key={viewIndex}>
-                            <TableCell className="w-12 px-4 py-[10px]">
+             <div className="space-y-4 flex flex-col min-h-0 flex-1">
+               {isMobile ? (
+                 /* Mobile View - Cards */
+                 <div className="space-y-3 flex-1 overflow-auto">
+                   {viewingRecords.map((record, viewIndex) => {
+                     const actualIndex = currentPage * recordsPerPage + viewIndex;
+                     return (
+                       <ImportedContactMobileCard
+                         key={viewIndex}
+                         contact={record}
+                         index={actualIndex}
+                         isSelected={selectedRecords.has(actualIndex)}
+                         onSelect={() => toggleRecordSelection(actualIndex)}
+                         onView={() => openRecordDetail(record, actualIndex)}
+                         onDelete={() => deleteImportedContact(record.id, actualIndex)}
+                         getCompanyActivities={getCompanyActivities}
+                         getCountryFlag={getCountryFlag}
+                         formatCellValue={formatCellValue}
+                       />
+                     );
+                   })}
+                 </div>
+               ) : (
+                 /* Desktop View - Table */
+                 <div className="overflow-auto flex-1 border rounded-md">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                        <TableRow>
+                           <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
                               <Checkbox
-                               checked={selectedRecords.has(actualIndex)}
-                               onCheckedChange={() => toggleRecordSelection(actualIndex)}
-                               aria-label={`Seleziona record ${actualIndex + 1}`}
+                                checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
+                                onCheckedChange={toggleSelectAll}
+                                aria-label="Seleziona tutti"
                               />
-                            </TableCell>
-                            <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
-                              <div className="flex items-center justify-center gap-1">
-                                {record.note && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <FileText 
-                                          className="h-3 w-3 text-blue-500 cursor-pointer hover:text-blue-700" 
-                                          onClick={() => toast.info(record.note)}
-                                        />
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Clicca per vedere le note</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                                <span className="text-xs">{actualIndex + 1}</span>
-                              </div>
-                             </TableCell>
-                          {(() => {
-                            const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
-                            const visibleCols = getVisibleColumns(allColumns);
-                            return visibleCols.map((key) => (
-                                <TableCell 
-                                  key={key} 
-                                  className={`truncate transition-colors px-4 py-[10px] ${
-                                    key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
-                                    key === 'stato' ? 'w-20 max-w-[80px] text-center' :
-                                    key === 'agent_id' ? 'w-22 max-w-[84px]' :
-                                    (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 max-w-[80px] text-center' :
-                                    'max-w-[200px]'
-                                  } ${
-                                    key === 'name' 
-                                      ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
-                                      : 'cursor-pointer hover:bg-accent/50'
-                                  }`}
-                                 onClick={() => {
-                                   if (key === 'name') {
-                                     openRecordDetail(record, actualIndex);
-                                   } else {
-                                     addFilter(key, record[key]);
-                                   }
-                                 }}
-                                  title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                            </TableHead>
+                            <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <FileText className="h-3 w-3 ml-1 inline" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Clicca l'icona per vedere le note</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </TableHead>
+                           {(() => {
+                             const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                             const visibleCols = getVisibleColumns(allColumns);
+                             return visibleCols.map((key) => (
+                                 <TableHead 
+                                   key={key} 
+                                    className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
+                                      key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                      key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                      key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                      key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                      (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                      'min-w-[120px]'
+                                    }`}
+                                  onClick={() => handleColumnSort(key)}
                                 >
-                                   {key === 'country' ? (
-                                     <div className="flex items-center gap-1">
-                                       <span className="text-base">{getCountryFlag(record[key])}</span>
-                                       <span>{formatCellValue(record[key], key)}</span>
-                                     </div>
-                                   ) : key === 'company_name' ? (
-                                     <div className="flex items-center gap-2">
-                                       <span>{formatCellValue(record[key], key)}</span>
-                                       <ActivityIndicators 
-                                         companyId={record.id} 
-                                         activities={getCompanyActivities(record.id)}
-                                         size="sm"
-                                       />
-                                     </div>
-                                   ) : key === 'email' && record[key] ? (
-                                     <TooltipProvider>
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <div className="flex items-center justify-center cursor-pointer">
-                                             <Mail className="h-4 w-4 text-blue-500" />
-                                           </div>
-                                         </TooltipTrigger>
-                                         <TooltipContent>
-                                           <p>{formatCellValue(record[key], key)}</p>
-                                         </TooltipContent>
-                                       </Tooltip>
-                                     </TooltipProvider>
-                                   ) : (key === 'phone' || key === 'cell') && record[key] ? (
-                                     <TooltipProvider>
-                                       <Tooltip>
-                                         <TooltipTrigger asChild>
-                                           <div className="flex items-center justify-center cursor-pointer">
-                                             <Phone className="h-4 w-4 text-blue-500" />
-                                           </div>
-                                         </TooltipTrigger>
-                                         <TooltipContent>
-                                           <p>{formatCellValue(record[key], key)}</p>
-                                         </TooltipContent>
-                                       </Tooltip>
-                                     </TooltipProvider>
-                                   ) : (
-                                     formatCellValue(record[key], key)
-                                   )}
-                                </TableCell>
-                             ));
-                           })()}
-                           <TableCell className="w-16 px-4 py-[10px] text-center">
-                             <TooltipProvider>
-                               <Tooltip>
-                                 <TooltipTrigger asChild>
-                                   <button
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       deleteImportedContact(record.id, actualIndex);
-                                     }}
-                                     className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
-                                   >
-                                     <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
-                                   </button>
-                                 </TooltipTrigger>
-                                 <TooltipContent>
-                                   <p>Elimina record</p>
-                                 </TooltipContent>
-                               </Tooltip>
-                             </TooltipProvider>
-                           </TableCell>
-                         </TableRow>
-                        );
-                      })}
-                   </TableBody>
-                 </Table>
-               </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                    {getSortIcon(key)}
+                                  </div>
+                                </TableHead>
+                              ));
+                            })()}
+                            <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                         {viewingRecords.map((record, viewIndex) => {
+                           const actualIndex = currentPage * recordsPerPage + viewIndex;
+                           return (
+                           <TableRow key={viewIndex}>
+                               <TableCell className="w-12 px-4 py-[10px]">
+                                 <Checkbox
+                                  checked={selectedRecords.has(actualIndex)}
+                                  onCheckedChange={() => toggleRecordSelection(actualIndex)}
+                                  aria-label={`Seleziona record ${actualIndex + 1}`}
+                                />
+                              </TableCell>
+                              <TableCell className="w-16 text-center text-muted-foreground px-4 py-[10px]">
+                                <div className="flex items-center justify-center gap-1">
+                                  {record.note && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <FileText 
+                                            className="h-3 w-3 text-blue-500 cursor-pointer hover:text-blue-700" 
+                                            onClick={() => toast.info(record.note)}
+                                          />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Clicca per vedere le note</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  <span className="text-xs">{actualIndex + 1}</span>
+                                </div>
+                               </TableCell>
+                            {(() => {
+                              const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
+                              const visibleCols = getVisibleColumns(allColumns);
+                              return visibleCols.map((key) => (
+                                  <TableCell 
+                                    key={key} 
+                                    className={`truncate transition-colors px-4 py-[10px] ${
+                                      key === 'country' || key === 'title' ? 'w-20 max-w-[80px]' : 
+                                      key === 'stato' ? 'w-20 max-w-[80px] text-center' :
+                                      key === 'agent_id' ? 'w-22 max-w-[84px]' :
+                                      (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 max-w-[80px] text-center' :
+                                      'max-w-[200px]'
+                                    } ${
+                                      key === 'name' 
+                                        ? 'cursor-pointer hover:bg-primary/10 text-primary font-medium' 
+                                        : 'cursor-pointer hover:bg-accent/50'
+                                    }`}
+                                   onClick={() => {
+                                     if (key === 'name') {
+                                       openRecordDetail(record, actualIndex);
+                                     } else {
+                                       addFilter(key, record[key]);
+                                     }
+                                   }}
+                                    title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                                  >
+                                     {key === 'country' ? (
+                                       <div className="flex items-center gap-1">
+                                         <span className="text-base">{getCountryFlag(record[key])}</span>
+                                         <span>{formatCellValue(record[key], key)}</span>
+                                       </div>
+                                     ) : key === 'company_name' ? (
+                                       <div className="flex items-center gap-2">
+                                         <span>{formatCellValue(record[key], key)}</span>
+                                         <ActivityIndicators 
+                                           companyId={record.id} 
+                                           activities={getCompanyActivities(record.id)}
+                                           size="sm"
+                                         />
+                                       </div>
+                                     ) : key === 'email' && record[key] ? (
+                                       <TooltipProvider>
+                                         <Tooltip>
+                                           <TooltipTrigger asChild>
+                                             <div className="flex items-center justify-center cursor-pointer">
+                                               <Mail className="h-4 w-4 text-blue-500" />
+                                             </div>
+                                           </TooltipTrigger>
+                                           <TooltipContent>
+                                             <p>{formatCellValue(record[key], key)}</p>
+                                           </TooltipContent>
+                                         </Tooltip>
+                                       </TooltipProvider>
+                                     ) : (key === 'phone' || key === 'cell') && record[key] ? (
+                                       <TooltipProvider>
+                                         <Tooltip>
+                                           <TooltipTrigger asChild>
+                                             <div className="flex items-center justify-center cursor-pointer">
+                                               <Phone className="h-4 w-4 text-blue-500" />
+                                             </div>
+                                           </TooltipTrigger>
+                                           <TooltipContent>
+                                             <p>{formatCellValue(record[key], key)}</p>
+                                           </TooltipContent>
+                                         </Tooltip>
+                                       </TooltipProvider>
+                                     ) : (
+                                       formatCellValue(record[key], key)
+                                     )}
+                                  </TableCell>
+                               ));
+                             })()}
+                             <TableCell className="w-16 px-4 py-[10px] text-center">
+                               <TooltipProvider>
+                                 <Tooltip>
+                                   <TooltipTrigger asChild>
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         deleteImportedContact(record.id, actualIndex);
+                                       }}
+                                       className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
+                                     >
+                                       <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
+                                     </button>
+                                   </TooltipTrigger>
+                                   <TooltipContent>
+                                     <p>Elimina record</p>
+                                   </TooltipContent>
+                                 </Tooltip>
+                               </TooltipProvider>
+                             </TableCell>
+                           </TableRow>
+                          );
+                        })}
+                     </TableBody>
+                   </Table>
+                 </div>
+               )}
                
                <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
                 <div className="text-sm text-muted-foreground">

@@ -15,7 +15,6 @@ import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, U
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
-import { TMWETestPanel } from "@/components/email/TMWETestPanelHybrid";
 
 interface Email {
   id: string;
@@ -254,7 +253,7 @@ const Email = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gestione Email</h1>
           <p className="text-muted-foreground">
-            Gestisci le email con classificazione AI automatica e integrazione TMWE
+            Gestisci le email con classificazione AI automatica
           </p>
         </div>
         
@@ -273,9 +272,6 @@ const Email = () => {
           </Button>
         </div>
       </div>
-
-      {/* TMWE Test Panel */}
-      <TMWETestPanel />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -114,7 +114,7 @@ export function ImportLogMobileCard({
 
           {/* Errors if any */}
           {log.righe_errori > 0 && (
-            <div className="bg-red-50 rounded-lg p-3">
+            <div className="rounded-lg p-3 border border-red-200">
               <div className="flex items-center gap-2">
                 <div className="bg-red-100 p-1 rounded-full">
                   <AlertTriangle className="h-3 w-3 text-red-600" />

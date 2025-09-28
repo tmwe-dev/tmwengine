@@ -740,72 +740,69 @@ export default function Attivita() {
       </Card>
 
       {/* Stats */}
-      <div className={cn(
-        "grid gap-3",
-        isMobile ? "grid-cols-2" : "grid-cols-2 md:grid-cols-5"
-      )}>
+      <div className="flex gap-2 overflow-x-auto">
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'all' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('all')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-text-primary", isMobile ? "text-xl" : "text-heading-3")}>{stats.totali}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Totali</div>
+          <CardContent className="text-center p-2">
+            <div className="font-bold text-text-primary text-lg">{stats.totali}</div>
+            <div className="text-text-secondary text-xs">Totali</div>
           </CardContent>
         </Card>
         
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'future' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('future')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-orange-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.future}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Sospeso</div>
+          <CardContent className="text-center p-2">
+            <div className="font-bold text-orange-600 text-lg">{stats.future}</div>
+            <div className="text-text-secondary text-xs">In Sospeso</div>
           </CardContent>
         </Card>
 
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'in_corso' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('in_corso')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-blue-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.in_corso}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Corso</div>
+          <CardContent className="text-center p-2">
+            <div className="font-bold text-blue-600 text-lg">{stats.in_corso}</div>
+            <div className="text-text-secondary text-xs">In Corso</div>
           </CardContent>
         </Card>
 
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'completate' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('completate')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-green-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.completate}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Completate</div>
+          <CardContent className="text-center p-2">
+            <div className="font-bold text-green-600 text-lg">{stats.completate}</div>
+            <div className="text-text-secondary text-xs">Completate</div>
           </CardContent>
         </Card>
 
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'scadute' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('scadute')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-red-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.scadute}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Scadute</div>
+          <CardContent className="text-center p-2">
+            <div className="font-bold text-red-600 text-lg">{stats.scadute}</div>
+            <div className="text-text-secondary text-xs">Scadute</div>
           </CardContent>
         </Card>
       </div>

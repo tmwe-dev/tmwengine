@@ -481,7 +481,7 @@ export default function Attivita() {
     try {
       const { data: contact, error } = await supabase
         .from('rubrica')
-        .select('nome, azienda, telefono, cellulare')
+        .select('id, nome, azienda, telefono, cellulare')
         .eq('id', activity.rubrica_id)
         .maybeSingle();
 
@@ -493,6 +493,35 @@ export default function Attivita() {
       toast({
         title: "Errore",
         description: "Impossibile recuperare i dati del contatto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveContact = async (contactId: string, telefono: string, cellulare: string) => {
+    try {
+      const { error } = await supabase
+        .from('rubrica')
+        .update({ telefono, cellulare })
+        .eq('id', contactId);
+
+      if (error) throw error;
+
+      // Aggiorna il contatto selezionato con i nuovi valori
+      setSelectedContact(prev => ({
+        ...prev,
+        telefono,
+        cellulare
+      }));
+
+      toast({
+        title: "Contatto aggiornato",
+        description: "I numeri di telefono sono stati salvati con successo.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile salvare le modifiche al contatto",
         variant: "destructive"
       });
     }
@@ -1136,6 +1165,7 @@ export default function Attivita() {
         isOpen={isCallDialogOpen}
         contact={selectedContact}
         onClose={() => setIsCallDialogOpen(false)}
+        onSave={handleSaveContact}
       />
     </div>
   );

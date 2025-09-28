@@ -1,21 +1,36 @@
-import React from 'react';
-import { Phone, MessageCircle, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Phone, MessageCircle, X, Edit, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface CallDialogProps {
   isOpen: boolean;
   onClose: () => void;
   contact: {
+    id?: string;
     nome?: string;
     azienda?: string;
     telefono?: string;
     cellulare?: string;
   } | null;
+  onSave?: (contactId: string, telefono: string, cellulare: string) => void;
 }
 
-export function CallDialog({ isOpen, onClose, contact }: CallDialogProps) {
+export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [telefono, setTelefono] = useState('');
+  const [cellulare, setCellulare] = useState('');
+
+  useEffect(() => {
+    if (contact) {
+      setTelefono(contact.telefono || '');
+      setCellulare(contact.cellulare || '');
+    }
+  }, [contact]);
+
   if (!contact) return null;
 
   const handlePhoneCall = (phoneNumber: string) => {
@@ -34,10 +49,17 @@ export function CallDialog({ isOpen, onClose, contact }: CallDialogProps) {
     }
   };
 
+  const handleSave = () => {
+    if (onSave && contact.id) {
+      onSave(contact.id, telefono, cellulare);
+      setIsEditing(false);
+    }
+  };
+
   const phoneNumbers = [
-    { label: 'Telefono', number: contact.telefono },
-    { label: 'Cellulare', number: contact.cellulare }
-  ].filter(item => item.number);
+    { label: 'Telefono', number: isEditing ? telefono : contact.telefono },
+    { label: 'Cellulare', number: isEditing ? cellulare : contact.cellulare }
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -62,16 +84,59 @@ export function CallDialog({ isOpen, onClose, contact }: CallDialogProps) {
             )}
           </div>
 
+          {/* Pulsanti di azione principale */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={isEditing ? "outline" : "default"}
+              size="sm"
+              onClick={() => setIsEditing(!isEditing)}
+              className="flex-1"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              {isEditing ? 'Annulla' : 'Modifica'}
+            </Button>
+            
+            {isEditing && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSave}
+                className="flex-1"
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Salva
+              </Button>
+            )}
+          </div>
+
           {/* Numeri disponibili */}
-          {phoneNumbers.length > 0 ? (
-            <div className="space-y-3">
-              {phoneNumbers.map((item, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{item.label}</Badge>
-                    <span className="font-mono text-sm">{item.number}</span>
-                  </div>
-                  
+          <div className="space-y-3">
+            {phoneNumbers.map((item, index) => (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="outline">{item.label}</Badge>
+                  {isEditing ? (
+                    <div className="flex-1 ml-3">
+                      <Input
+                        type="tel"
+                        value={item.label === 'Telefono' ? telefono : cellulare}
+                        onChange={(e) => 
+                          item.label === 'Telefono' 
+                            ? setTelefono(e.target.value)
+                            : setCellulare(e.target.value)
+                        }
+                        placeholder={`Inserisci ${item.label.toLowerCase()}`}
+                        className="text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <span className="font-mono text-sm">
+                      {item.number || 'Non disponibile'}
+                    </span>
+                  )}
+                </div>
+                
+                {!isEditing && item.number && (
                   <div className="flex gap-2">
                     <Button
                       variant="default"
@@ -93,13 +158,29 @@ export function CallDialog({ isOpen, onClose, contact }: CallDialogProps) {
                       WhatsApp
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
+                )}
+                
+                {!isEditing && !item.number && (
+                  <div className="text-center py-2 text-text-secondary text-sm">
+                    {item.label} non disponibile
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {phoneNumbers.every(item => !item.number) && !isEditing && (
             <div className="text-center py-8 text-text-secondary">
               <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nessun numero di telefono disponibile</p>
+              <Button 
+                variant="outline" 
+                className="mt-3"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Aggiungi numeri
+              </Button>
             </div>
           )}
 

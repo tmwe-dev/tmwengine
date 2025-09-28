@@ -577,23 +577,25 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
+                    <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                      <DialogHeader className="flex-shrink-0">
                         <DialogTitle>Crea Nuova Attività</DialogTitle>
                       </DialogHeader>
-                      <AdvancedMultipleActivityForm
-                        contacts={[{
-                          id: record.id,
-                          company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                          email: record.email,
-                          phone: record.telefono || record.phone,
-                          cell: record.cellulare || record.cell
-                        }]}
-                        onSubmit={handleCreateActivity}
-                        onCancel={() => setIsActivityDialogOpen(false)}
-                        isSubmitting={false}
-                        showSaveToRubrica={false}
-                      />
+                      <div className="flex-1 overflow-y-auto">
+                        <AdvancedMultipleActivityForm
+                          contacts={[{
+                            id: record.id,
+                            company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                            email: record.email,
+                            phone: record.telefono || record.phone,
+                            cell: record.cellulare || record.cell
+                          }]}
+                          onSubmit={handleCreateActivity}
+                          onCancel={() => setIsActivityDialogOpen(false)}
+                          isSubmitting={false}
+                          showSaveToRubrica={false}
+                        />
+                      </div>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -613,24 +615,26 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>Crea Nuova Attività</DialogTitle>
-                      </DialogHeader>
-                      <AdvancedMultipleActivityForm
-                        contacts={[{
-                          id: record.id,
-                          company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                          email: record.email,
-                          phone: record.telefono || record.phone,
-                          cell: record.cellulare || record.cell
-                        }]}
-                        onSubmit={handleCreateActivity}
-                        onCancel={() => setIsActivityDialogOpen(false)}
-                        isSubmitting={false}
-                        showSaveToRubrica={false}
-                      />
-                    </DialogContent>
+                     <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                       <DialogHeader className="flex-shrink-0">
+                         <DialogTitle>Crea Nuova Attività</DialogTitle>
+                       </DialogHeader>
+                       <div className="flex-1 overflow-y-auto">
+                         <AdvancedMultipleActivityForm
+                           contacts={[{
+                             id: record.id,
+                             company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                             email: record.email,
+                             phone: record.telefono || record.phone,
+                             cell: record.cellulare || record.cell
+                           }]}
+                           onSubmit={handleCreateActivity}
+                           onCancel={() => setIsActivityDialogOpen(false)}
+                           isSubmitting={false}
+                           showSaveToRubrica={false}
+                         />
+                       </div>
+                     </DialogContent>
                   </Dialog>
                 </div>
               )}

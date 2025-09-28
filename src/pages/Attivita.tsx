@@ -83,6 +83,7 @@ export default function Attivita() {
     priorita: '',
     scadenza: ''
   });
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
   const { toast } = useToast();
 
   useEffect(() => {
@@ -199,6 +200,12 @@ export default function Attivita() {
     }
   };
 
+  // Status filter functions per i summary cards
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    setSelectedActivities([]); // Reset selezione quando cambia filtro
+  };
+
   // Date filter function
   const handleDateFilter = (date: Date | undefined) => {
     setFilterDate(date);
@@ -223,7 +230,14 @@ export default function Attivita() {
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
 
-    return matchesSearch && matchesFilters && matchesDateFilter;
+    // Nuovo filtro per status dalla card summary
+    const matchesStatusFilter = statusFilter === 'all' || 
+      (statusFilter === 'future' && isActivityFuture(activity)) ||
+      (statusFilter === 'completate' && activity.stato === 'completata') ||
+      (statusFilter === 'in_corso' && activity.stato === 'in_corso') ||
+      (statusFilter === 'scadute' && !isActivityFuture(activity) && activity.stato !== 'completata');
+
+    return matchesSearch && matchesFilters && matchesDateFilter && matchesStatusFilter;
   }).sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
@@ -634,35 +648,65 @@ export default function Attivita() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="border-card shadow-soft">
+        <Card 
+          className={cn(
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            statusFilter === 'all' && "ring-2 ring-primary"
+          )}
+          onClick={() => handleStatusFilter('all')}
+        >
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-text-primary">{stats.totali}</div>
             <div className="text-small text-text-secondary">Totali</div>
           </CardContent>
         </Card>
         
-        <Card className="border-card shadow-soft">
+        <Card 
+          className={cn(
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            statusFilter === 'future' && "ring-2 ring-primary"
+          )}
+          onClick={() => handleStatusFilter('future')}
+        >
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-orange-600">{stats.future}</div>
             <div className="text-small text-text-secondary">In Sospeso</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card 
+          className={cn(
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            statusFilter === 'in_corso' && "ring-2 ring-primary"
+          )}
+          onClick={() => handleStatusFilter('in_corso')}
+        >
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-blue-600">{stats.in_corso}</div>
             <div className="text-small text-text-secondary">In Corso</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card 
+          className={cn(
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            statusFilter === 'completate' && "ring-2 ring-primary"
+          )}
+          onClick={() => handleStatusFilter('completate')}
+        >
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-green-600">{stats.completate}</div>
             <div className="text-small text-text-secondary">Completate</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card 
+          className={cn(
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            statusFilter === 'scadute' && "ring-2 ring-primary"
+          )}
+          onClick={() => handleStatusFilter('scadute')}
+        >
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-red-600">{stats.scadute}</div>
             <div className="text-small text-text-secondary">Scadute</div>

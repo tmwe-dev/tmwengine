@@ -87,9 +87,9 @@ export function ImportLogMobileCard({
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/50 rounded-lg p-3">
+            <div className="rounded-lg p-3 border border-border">
               <div className="flex items-center gap-2">
-                <div className="bg-green-100 p-1 rounded-full">
+                <div className="p-1 rounded-full border border-green-200">
                   <TrendingUp className="h-3 w-3 text-green-600" />
                 </div>
                 <div>
@@ -99,9 +99,9 @@ export function ImportLogMobileCard({
               </div>
             </div>
             
-            <div className="bg-muted/50 rounded-lg p-3">
+            <div className="rounded-lg p-3 border border-border">
               <div className="flex items-center gap-2">
-                <div className="bg-blue-100 p-1 rounded-full">
+                <div className="p-1 rounded-full border border-blue-200">
                   <Users className="h-3 w-3 text-blue-600" />
                 </div>
                 <div>
@@ -116,7 +116,7 @@ export function ImportLogMobileCard({
           {log.righe_errori > 0 && (
             <div className="rounded-lg p-3 border border-red-200">
               <div className="flex items-center gap-2">
-                <div className="bg-red-100 p-1 rounded-full">
+                <div className="p-1 rounded-full border border-red-200">
                   <AlertTriangle className="h-3 w-3 text-red-600" />
                 </div>
                 <div>

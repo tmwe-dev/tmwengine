@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip } from 'lucide-react';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
+import { CompactContactCard } from '@/components/import/CompactContactCard';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -313,6 +314,7 @@ export default function ImportTemplates() {
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('templates');
+  const [showFilters, setShowFilters] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities } = useCompanyActivities();
   const isMobile = useIsMobile();
 
@@ -2132,98 +2134,203 @@ export default function ImportTemplates() {
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
           <DialogHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex-1">
-                <DialogTitle>
-                  Record Importati - {selectedImport?.file_name}
+            {isMobile ? (
+              /* Mobile Header - Compact */
+              <div className="space-y-3">
+                <DialogTitle className="text-lg font-semibold">
+                  {selectedImport?.file_name}
                 </DialogTitle>
-                <DialogDescription>
-                  Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
-                </DialogDescription>
-              </div>
-              
-              {/* Search and Filter Controls - Responsive Layout */}
-              <div className={cn(
-                "flex gap-2 items-end",
-                isMobile ? "flex-col w-full space-y-2" : "flex-row"
-              )}>
-                {/* Search field */}
-                <div className={cn(isMobile ? "w-full" : "w-64")}>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      placeholder="Cerca per nome azienda, alias, nome, città..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="text-primary font-medium">{filteredRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> contatti
                 </div>
                 
-                {/* Filters row for mobile, inline for desktop */}
-                <div className={cn(
-                  "flex gap-2",
-                  isMobile ? "w-full flex-col space-y-2" : "flex-row"
-                )}>
-                  {/* Origin filter */}
-                  <div className={cn(isMobile ? "w-full" : "w-48")}>
-                    {!isMobile && <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>}
-                    <Select value={originFilter} onValueChange={setOriginFilter}>
-                      <SelectTrigger id="origin-filter">
-                        <SelectValue placeholder="Tutte le origini" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Tutte le origini</SelectItem>
-                        {getUniqueValues('origin').map((origin) => (
-                          <SelectItem key={origin} value={String(origin)}>
-                            {String(origin)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {/* Mobile Filters - Collapsible */}
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="w-full justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filtri e Ricerca
+                    </div>
+                    {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                  
+                  {showFilters && (
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                      {/* Search */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Cerca..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 h-9"
+                        />
+                      </div>
+                      
+                      {/* Quick Filters Row */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <Select value={originFilter} onValueChange={setOriginFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Origine" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutte</SelectItem>
+                            {getUniqueValues('origin').map((origin) => (
+                              <SelectItem key={origin} value={String(origin)}>
+                                {String(origin)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={countryFilter} onValueChange={setCountryFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Paese" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutti</SelectItem>
+                            {getUniqueValues('country').map((country) => (
+                              <SelectItem key={country} value={String(country)}>
+                                {getCountryFullName(String(country))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Active Filters Chips */}
+                  {(searchQuery || originFilter || countryFilter) && (
+                    <div className="flex flex-wrap gap-1">
+                      {searchQuery && (
+                        <Badge variant="secondary" className="text-xs">
+                          🔍 {searchQuery}
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setSearchQuery('')}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )}
+                      {originFilter && (
+                        <Badge variant="secondary" className="text-xs">
+                          📂 {originFilter}
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setOriginFilter('')}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )}
+                      {countryFilter && (
+                        <Badge variant="secondary" className="text-xs">
+                          🌍 {getCountryFullName(countryFilter)}
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setCountryFilter('')}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Desktop Header - Original */
+              <div className="flex flex-col gap-4">
+                <div className="flex-1">
+                  <DialogTitle>
+                    Record Importati - {selectedImport?.file_name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
+                  </DialogDescription>
+                </div>
+                
+                {/* Desktop Search and Filter Controls */}
+                <div className="flex gap-2 items-end flex-row">
+                  <div className="w-64">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="search"
+                        placeholder="Cerca per nome azienda, alias, nome, città..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                   
-                  {/* Country filter */}
-                  <div className={cn(isMobile ? "w-full" : "w-48")}>
-                    {!isMobile && <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>}
-                    <Select value={countryFilter} onValueChange={setCountryFilter}>
-                      <SelectTrigger id="country-filter">
-                        <SelectValue placeholder="Tutti i paesi" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50">
-                        <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                        {getUniqueValues('country').map((country) => (
-                          <SelectItem key={country} value={String(country)}>
-                            {getCountryFullName(String(country))}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Records per page */}
-                  <div className={cn(isMobile ? "w-full" : "w-36")}>
-                    {!isMobile && <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>}
-                    <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                      console.log('Changing records per page to:', value);
-                      setRecordsPerPage(Number(value));
-                    }}>
-                      <SelectTrigger id="records-per-page">
-                        <SelectValue placeholder={`${recordsPerPage} record`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                        <SelectItem value="250">250</SelectItem>
-                        <SelectItem value="500">500</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="flex gap-2 flex-row">
+                    <div className="w-48">
+                      <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                      <Select value={originFilter} onValueChange={setOriginFilter}>
+                        <SelectTrigger id="origin-filter">
+                          <SelectValue placeholder="Tutte le origini" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">Tutte le origini</SelectItem>
+                          {getUniqueValues('origin').map((origin) => (
+                            <SelectItem key={origin} value={String(origin)}>
+                              {String(origin)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="w-48">
+                      <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                      <Select value={countryFilter} onValueChange={setCountryFilter}>
+                        <SelectTrigger id="country-filter">
+                          <SelectValue placeholder="Tutti i paesi" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50">
+                          <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                          {getUniqueValues('country').map((country) => (
+                            <SelectItem key={country} value={String(country)}>
+                              {getCountryFullName(String(country))}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="w-36">
+                      <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
+                      <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                        console.log('Changing records per page to:', value);
+                        setRecordsPerPage(Number(value));
+                      }}>
+                        <SelectTrigger id="records-per-page">
+                          <SelectValue placeholder={`${recordsPerPage} record`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="250">250</SelectItem>
+                          <SelectItem value="500">500</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </DialogHeader>
 
           {/* Clear filters section */}
@@ -2418,27 +2525,26 @@ export default function ImportTemplates() {
             </div>
            ) : filteredRecords.length > 0 ? (
              <div className="space-y-4 flex flex-col min-h-0 flex-1">
-               {isMobile ? (
-                 /* Mobile View - Cards */
-                 <div className="space-y-3 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-                   {viewingRecords.map((record, viewIndex) => {
-                     const actualIndex = currentPage * recordsPerPage + viewIndex;
-                     return (
-                       <ImportedContactMobileCard
-                         key={viewIndex}
-                         contact={record}
-                         index={actualIndex}
-                         isSelected={selectedRecords.has(actualIndex)}
-                         onSelect={() => toggleRecordSelection(actualIndex)}
-                         onView={() => openRecordDetail(record, actualIndex)}
-                         onDelete={() => deleteImportedContact(record.id, actualIndex)}
-                         getCompanyActivities={getCompanyActivities}
-                         getCountryFlag={getCountryFlag}
-                         formatCellValue={formatCellValue}
-                       />
-                     );
-                   })}
-                 </div>
+                {isMobile ? (
+                  /* Mobile View - Ultra-Compact Cards */
+                  <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {viewingRecords.map((record, viewIndex) => {
+                      const actualIndex = currentPage * recordsPerPage + viewIndex;
+                      return (
+                        <CompactContactCard
+                          key={viewIndex}
+                          contact={record}
+                          index={actualIndex}
+                          isSelected={selectedRecords.has(actualIndex)}
+                          onSelect={() => toggleRecordSelection(actualIndex)}
+                          onView={() => openRecordDetail(record, actualIndex)}
+                          onDelete={() => deleteImportedContact(record.id, actualIndex)}
+                          getCountryFlag={getCountryFlag}
+                          formatCellValue={formatCellValue}
+                        />
+                      );
+                    })}
+                  </div>
                ) : (
                  /* Desktop View - Table */
                  <div className="overflow-auto flex-1 border rounded-md">
@@ -2621,36 +2727,117 @@ export default function ImportTemplates() {
                    </Table>
                  </div>
                )}
-               
-               <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
-                <div className="text-sm text-muted-foreground">
-                  Caricati: {viewingRecords.length} di {totalRecords} record totali
-                  {activeFilters.length > 0 && (
-                    <span className="ml-2 text-blue-600">
-                      • {filteredRecords.length} filtrati
-                    </span>
+                
+                {/* Footer - Responsive Controls */}
+                <div className={cn(
+                  "pt-4 border-t flex-shrink-0",
+                  isMobile ? "space-y-3" : "flex justify-between items-center"
+                )}>
+                  {/* Stats */}
+                  <div className={cn(
+                    "text-sm text-muted-foreground",
+                    isMobile && "text-center"
+                  )}>
+                    <span className="text-primary font-medium">{viewingRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> record
+                    {activeFilters.length > 0 && (
+                      <span className="ml-2 text-blue-600">
+                        • {filteredRecords.length} filtrati
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Mobile Actions */}
+                  {isMobile ? (
+                    <div className="space-y-2">
+                      {selectedRecords.size > 0 && (
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm"
+                            disabled={importingSelected}
+                            onClick={importSelectedRecords}
+                            className="flex-1"
+                          >
+                            {importingSelected ? 'Trasferimento...' : `Trasferisci (${selectedRecords.size})`}
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMultipleActivityDialog(true)}
+                            className="px-3"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                             setShowRecordsDialog(false);
+                             setSelectedImport(null);
+                             setViewingRecords([]);
+                             setFilteredRecords([]);
+                             setCurrentPage(0);
+                             setSelectedRecords(new Set());
+                             setActiveFilters([]);
+                           }}
+                           className="flex-1"
+                        >
+                           Chiudi
+                        </Button>
+                        
+                        {/* Pagination Mobile */}
+                        {totalRecords > recordsPerPage && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                              disabled={currentPage === 0}
+                              className="px-3"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <div className="px-3 py-1 text-sm bg-muted rounded text-center min-w-[60px]">
+                              {currentPage + 1}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={(currentPage + 1) * recordsPerPage >= filteredRecords.length}
+                              className="px-3"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Desktop Actions */
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => {
+                         setShowRecordsDialog(false);
+                         setSelectedImport(null);
+                         setViewingRecords([]);
+                         setFilteredRecords([]);
+                         setCurrentPage(0);
+                         setSelectedRecords(new Set());
+                         setActiveFilters([]);
+                       }}>
+                         Chiudi
+                       </Button>
+                       <Button 
+                         disabled={selectedRecords.size === 0 || importingSelected}
+                         onClick={importSelectedRecords}
+                       >
+                         {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
+                       </Button>
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => {
-                     setShowRecordsDialog(false);
-                     setSelectedImport(null);
-                     setViewingRecords([]);
-                     setFilteredRecords([]);
-                     setCurrentPage(0);
-                     setSelectedRecords(new Set());
-                     setActiveFilters([]);
-                   }}>
-                     Chiudi
-                   </Button>
-                   <Button 
-                     disabled={selectedRecords.size === 0 || importingSelected}
-                     onClick={importSelectedRecords}
-                   >
-                     {importingSelected ? 'Trasferimento...' : `Trasferisci Selezionati (${selectedRecords.size})`}
-                   </Button>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="text-center py-8">

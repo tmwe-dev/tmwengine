@@ -1351,18 +1351,28 @@ export default function ImportTemplates() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedRecords.size === viewingRecords.length) {
-      // Se tutti sono selezionati, deseleziona tutti
-      setSelectedRecords(new Set<number>());
-    } else {
-      // Seleziona tutti i record attualmente visualizzati usando gli actualIndex
-      const allIndexes = new Set<number>();
-      for (let i = 0; i < viewingRecords.length; i++) {
-        const actualIndex = currentPage * recordsPerPage + i;
-        allIndexes.add(actualIndex);
-      }
-      setSelectedRecords(allIndexes);
+    // Controlla quanti record della pagina corrente sono già selezionati
+    const currentPageIndexes = new Set<number>();
+    for (let i = 0; i < viewingRecords.length; i++) {
+      const actualIndex = currentPage * recordsPerPage + i;
+      currentPageIndexes.add(actualIndex);
     }
+    
+    const currentPageSelectedCount = Array.from(currentPageIndexes).filter(index => 
+      selectedRecords.has(index)
+    ).length;
+    
+    const newSelected = new Set(selectedRecords);
+    
+    if (currentPageSelectedCount === viewingRecords.length) {
+      // Se tutti i record della pagina corrente sono selezionati, deselezionali
+      currentPageIndexes.forEach(index => newSelected.delete(index));
+    } else {
+      // Altrimenti seleziona tutti i record della pagina corrente (mantieni le altre selezioni)
+      currentPageIndexes.forEach(index => newSelected.add(index));
+    }
+    
+    setSelectedRecords(newSelected);
   };
 
   const loadAllRecords = async (importLog: ImportLog) => {
@@ -2514,11 +2524,19 @@ export default function ImportTemplates() {
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
                            <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
-                              <Checkbox
-                                checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
-                                onCheckedChange={toggleSelectAll}
-                                aria-label="Seleziona tutti"
-                              />
+                               <Checkbox
+                                 checked={(() => {
+                                   // Controlla se tutti i record della pagina corrente sono selezionati
+                                   const currentPageIndexes = [];
+                                   for (let i = 0; i < viewingRecords.length; i++) {
+                                     const actualIndex = currentPage * recordsPerPage + i;
+                                     currentPageIndexes.push(actualIndex);
+                                   }
+                                   return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                 })()}
+                                 onCheckedChange={toggleSelectAll}
+                                 aria-label="Seleziona tutti della pagina corrente"
+                               />
                             </TableHead>
                             <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
                               <TooltipProvider>
@@ -2714,14 +2732,22 @@ export default function ImportTemplates() {
                        {/* Mobile Selection Controls */}
                        <div className="flex items-center justify-between">
                          <div className="flex items-center gap-2">
-                           <Checkbox
-                             checked={selectedRecords.size === viewingRecords.length && viewingRecords.length > 0}
-                             onCheckedChange={toggleSelectAll}
-                             aria-label="Seleziona tutti"
-                           />
-                           <span className="text-sm">
-                             Seleziona tutti ({viewingRecords.length})
-                           </span>
+                            <Checkbox
+                              checked={(() => {
+                                // Controlla se tutti i record della pagina corrente sono selezionati
+                                const currentPageIndexes = [];
+                                for (let i = 0; i < viewingRecords.length; i++) {
+                                  const actualIndex = currentPage * recordsPerPage + i;
+                                  currentPageIndexes.push(actualIndex);
+                                }
+                                return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                              })()}
+                              onCheckedChange={toggleSelectAll}
+                              aria-label="Seleziona tutti della pagina"
+                            />
+                            <span className="text-sm">
+                              Seleziona pagina ({viewingRecords.length})
+                            </span>
                          </div>
                          {selectedRecords.size > 0 && (
                            <span className="text-sm font-medium text-primary">

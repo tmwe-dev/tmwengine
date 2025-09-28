@@ -23,7 +23,6 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   const [isEditing, setIsEditing] = useState(false);
   const [telefono, setTelefono] = useState('');
   const [cellulare, setCellulare] = useState('');
-  const [showEditButton, setShowEditButton] = useState(false);
 
   useEffect(() => {
     if (contact) {
@@ -54,13 +53,12 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
     if (onSave && contact.id) {
       onSave(contact.id, telefono, cellulare);
       setIsEditing(false);
-      setShowEditButton(false);
     }
   };
 
   const handleFieldFocus = () => {
     if (!isEditing) {
-      setShowEditButton(true);
+      setIsEditing(true); // Attiva direttamente la modalità editing
     }
   };
 
@@ -221,17 +219,6 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
           {/* Pulsanti di azione */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="flex gap-2">
-              {showEditButton && !isEditing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Modifica
-                </Button>
-              )}
-              
               {isEditing && (
                 <>
                   <Button
@@ -247,7 +234,6 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                     size="sm"
                     onClick={() => {
                       setIsEditing(false);
-                      setShowEditButton(false);
                       setTelefono(contact.telefono || '');
                       setCellulare(contact.cellulare || '');
                     }}

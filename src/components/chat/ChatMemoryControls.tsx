@@ -234,11 +234,11 @@ export const ChatMemoryControls = ({
         </div>
 
         {/* Preview */}
-        <div className="p-3 bg-secondary/50 rounded-lg">
-          <h4 className="font-medium mb-2">Anteprima Configurazione</h4>
+        <div className="p-3 bg-transparent rounded-lg border border-muted">
+          <h4 className="font-medium mb-2 text-blue-600">Anteprima Configurazione</h4>
           <div className="text-sm space-y-1">
-            <p><strong>Memoria:</strong> {getMemoryPreview()}</p>
-            <p><strong>Stima Token:</strong> {getTokenEstimate()}</p>
+            <p><strong className="text-blue-600">Memoria:</strong> <span className="text-muted-foreground">{getMemoryPreview()}</span></p>
+            <p><strong className="text-blue-600">Stima Token:</strong> <span className="text-muted-foreground">{getTokenEstimate()}</span></p>
             <p className={`text-xs ${memoriaCompleta ? 'text-orange-600' : 'text-green-600'}`}>
               {memoriaCompleta 
                 ? "⚠️ Modalità memoria completa attiva per questa conversazione"

@@ -122,13 +122,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
               </div>
             </div>
             
-            {!isEditing && contact.telefono && (
+            {!isEditing && (
               <div className="flex gap-2">
                 <Button
                   variant="default"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handlePhoneCall(contact.telefono!)}
+                  onClick={() => handlePhoneCall(contact.telefono || '')}
+                  disabled={!contact.telefono}
                 >
                   <Phone className="h-4 w-4 mr-1" />
                   Chiama
@@ -138,7 +139,8 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handleWhatsApp(contact.telefono!)}
+                  onClick={() => handleWhatsApp(contact.telefono || '')}
+                  disabled={!contact.telefono}
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp
@@ -177,13 +179,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
               </div>
             </div>
             
-            {!isEditing && contact.cellulare && (
+            {!isEditing && (
               <div className="flex gap-2">
                 <Button
                   variant="default"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handlePhoneCall(contact.cellulare!)}
+                  onClick={() => handlePhoneCall(contact.cellulare || '')}
+                  disabled={!contact.cellulare}
                 >
                   <Phone className="h-4 w-4 mr-1" />
                   Chiama
@@ -193,7 +196,8 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={() => handleWhatsApp(contact.cellulare!)}
+                  onClick={() => handleWhatsApp(contact.cellulare || '')}
+                  disabled={!contact.cellulare}
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp

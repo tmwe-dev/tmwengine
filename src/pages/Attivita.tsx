@@ -705,15 +705,14 @@ export default function Attivita() {
               onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
             >
               <SelectTrigger className="flex-1 min-w-[200px]">
-                <SelectValue placeholder="Filtra per stato" />
+                <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tutte le attività</SelectItem>
-                <SelectItem value="aperta,in_corso">Da svolgere</SelectItem>
-                <SelectItem value="completata">Completate</SelectItem>
-                <SelectItem value="annullata">Annullate</SelectItem>
-                <SelectItem value="aperta">Solo aperte</SelectItem>
-                <SelectItem value="in_corso">Solo in corso</SelectItem>
+                <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
+                <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
+                <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
+                <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
+                <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
               </SelectContent>
             </Select>
 
@@ -741,71 +740,45 @@ export default function Attivita() {
 
       {/* Stats */}
       <div className={cn(
-        "grid gap-3",
-        isMobile ? "grid-cols-2" : "grid-cols-2 md:grid-cols-5"
+        "flex gap-2 overflow-x-auto",
+        isMobile ? "flex-nowrap" : "flex-wrap"
       )}>
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'all' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('all')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-text-primary", isMobile ? "text-xl" : "text-heading-3")}>{stats.totali}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Totali</div>
+          <CardContent className="text-center p-2 min-w-[50px]">
+            <div className="font-bold text-text-primary text-lg">{stats.totali}</div>
+            <div className="text-text-secondary text-[10px]">Totali</div>
           </CardContent>
         </Card>
         
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'future' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('future')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-orange-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.future}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Sospeso</div>
+          <CardContent className="text-center p-2 min-w-[50px]">
+            <div className="font-bold text-orange-600 text-lg">{stats.future}</div>
+            <div className="text-text-secondary text-[10px]">In Sospeso</div>
           </CardContent>
         </Card>
 
         <Card 
           className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
-            statusFilter === 'in_corso' && "ring-2 ring-primary"
-          )}
-          onClick={() => handleStatusFilter('in_corso')}
-        >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-blue-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.in_corso}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Corso</div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
-            statusFilter === 'completate' && "ring-2 ring-primary"
-          )}
-          onClick={() => handleStatusFilter('completate')}
-        >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-green-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.completate}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Completate</div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={cn(
-            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
+            "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow flex-shrink-0",
             statusFilter === 'scadute' && "ring-2 ring-primary"
           )}
           onClick={() => handleStatusFilter('scadute')}
         >
-          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
-            <div className={cn("font-bold text-red-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.scadute}</div>
-            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Scadute</div>
+          <CardContent className="text-center p-2 min-w-[50px]">
+            <div className="font-bold text-red-600 text-lg">{stats.scadute}</div>
+            <div className="text-text-secondary text-[10px]">Scadute</div>
           </CardContent>
         </Card>
       </div>

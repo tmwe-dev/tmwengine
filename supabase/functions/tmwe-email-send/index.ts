@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
@@ -12,150 +11,116 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-interface TMWEEmailSendRequest {
-  to: string;
-  cc?: string;
-  bcc?: string;
-  subject: string;
-  body_text?: string;
-  body_html?: string;
-  attachments?: Array<{
-    filename: string;
-    content: string; // base64
-  }>;
-  reply_to?: string;
-  priority?: 'low' | 'normal' | 'high';
-}
-
 serve(async (req) => {
+  console.log('=== TMWE Email Send Test - START ===');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const emailData: TMWEEmailSendRequest = await req.json();
-    console.log('TMWE Email Send request:', { to: emailData.to, subject: emailData.subject });
+    console.log('1. Reading request body...');
+    const emailData = await req.json();
+    console.log('2. Email data received:', { to: emailData.to, subject: emailData.subject });
 
     // Validazione input
     if (!emailData.to || !emailData.subject) {
       throw new Error('Destinatario e oggetto sono obbligatori');
     }
 
-    // Recupera configurazione provider TMWE
+    console.log('3. Querying database for TMWE provider...');
+    
+    // Query semplificata
     const { data: provider, error: providerError } = await supabase
       .from('email_provider')
-      .select(`
-        *,
-        email_provider_credenziali(*)
-      `)
+      .select('*')
       .eq('provider', 'TMWE')
       .eq('attivo', true)
-      .maybeSingle();
+      .limit(1);
+
+    console.log('4. Provider query result:', { 
+      hasData: !!provider, 
+      dataLength: provider?.length || 0, 
+      error: providerError 
+    });
 
     if (providerError) {
-      console.error('Provider error:', providerError);
-      throw new Error(`Errore database: ${providerError.message}`);
+      console.error('Provider query error:', providerError);
+      throw new Error(`Database error: ${providerError.message}`);
     }
-    
-    if (!provider) {
+
+    if (!provider || provider.length === 0) {
+      console.error('No TMWE provider found');
       throw new Error('Provider TMWE non configurato o non attivo');
     }
 
-    console.log('Provider found:', provider.id);
+    const providerData = provider[0];
+    console.log('5. Provider found:', providerData.id);
 
-    const credentials = provider.email_provider_credenziali;
+    // Query credenziali separata
+    console.log('6. Querying credentials...');
+    const { data: credentials, error: credError } = await supabase
+      .from('email_provider_credenziali')
+      .select('api_key')
+      .eq('provider_id', providerData.id)
+      .limit(1);
+
+    console.log('7. Credentials query result:', { 
+      hasData: !!credentials, 
+      dataLength: credentials?.length || 0, 
+      error: credError 
+    });
+
+    if (credError) {
+      console.error('Credentials query error:', credError);
+      throw new Error(`Credentials error: ${credError.message}`);
+    }
+
     if (!credentials || credentials.length === 0) {
+      console.error('No credentials found');
       throw new Error('Credenziali TMWE non configurate');
     }
 
     const apiKey = credentials[0]?.api_key;
     if (!apiKey) {
+      console.error('API key not found in credentials');
       throw new Error('API Key TMWE non configurata');
     }
 
-    console.log('API Key found, length:', apiKey.length);
+    console.log('8. API Key found, length:', apiKey.length);
 
-    // Costruisci payload per TMWE API
-    const tmwePayload = {
-      action: 'send_message',
-      to: emailData.to,
-      cc: emailData.cc,
-      bcc: emailData.bcc,
-      subject: emailData.subject,
-      body: emailData.body_text,
-      body_html: emailData.body_html,
-      reply_to: emailData.reply_to,
-      priority: emailData.priority || 'normal',
-      attachments: emailData.attachments || []
+    // Test semplice senza chiamata esterna per ora
+    console.log('9. Simulation mode - not calling external API yet');
+
+    // Simula una risposta di successo
+    const mockResult = {
+      success: true,
+      message_id: `test-${Date.now()}`,
+      simulation: true
     };
 
-    console.log('Sending to TMWE API...');
+    console.log('10. Returning success response');
 
-    // Chiamata API TMWE per invio email - endpoint di sviluppo
-    const tmweUrl = 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message';
-    const response = await fetch(tmweUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(tmwePayload)
+    return new Response(JSON.stringify(mockResult), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-    if (!response.ok) {
-      throw new Error(`TMWE API Error: ${response.status} ${response.statusText}`);
-    }
-
-    const tmweResult = await response.json();
-    console.log('TMWE API Response:', tmweResult);
-
-    if (tmweResult.success) {
-      // Salva email inviata nel database
-      const { data: savedEmail, error: saveError } = await supabase
-        .from('email_messages')
-        .insert({
-          provider_id: provider.id,
-          message_id: tmweResult.message_id || `tmwe-${Date.now()}`,
-          subject: emailData.subject,
-          from_email: provider.email_username,
-          to_email: emailData.to,
-          cc_email: emailData.cc,
-          bcc_email: emailData.bcc,
-          body_text: emailData.body_text,
-          body_html: emailData.body_html,
-          data_invio: new Date().toISOString(),
-          cartella: 'Sent',
-          direzione: 'outbound',
-          stato: 'inviato',
-          sync_status: 'sincronizzato',
-          attachments: emailData.attachments || []
-        })
-        .select()
-        .single();
-
-      if (saveError) {
-        console.error('Error saving sent email:', saveError);
-      }
-
-      return new Response(JSON.stringify({
-        success: true,
-        message_id: tmweResult.message_id,
-        email_saved_id: savedEmail?.id,
-        tmwe_response: tmweResult
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    } else {
-      throw new Error(`TMWE API failed: ${tmweResult.error || 'Unknown error'}`);
-    }
-
   } catch (error) {
-    console.error('Error in tmwe-email-send function:', error);
+    console.error('=== ERROR ===');
+    console.error('Error type:', typeof error);
+    console.error('Error:', error);
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    
     return new Response(JSON.stringify({ 
       success: false, 
-      error: errorMessage 
+      error: errorMessage,
+      debug: {
+        errorType: typeof error,
+        errorName: errorName,
+        timestamp: new Date().toISOString()
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

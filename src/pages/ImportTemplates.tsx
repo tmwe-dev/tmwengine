@@ -2361,26 +2361,7 @@ export default function ImportTemplates() {
           {!isMobile && (
             <div className="flex justify-between items-center gap-2 py-4 border-b">
               <div className="flex items-center gap-2">
-                {/* Pulsante Crea Attività Multiple */}
-                {selectedRecords.size > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowMultipleActivityDialog(true)}
-                          className="text-xs px-2"
-                        >
-                          <FileText className="h-4 w-4 text-blue-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Crea attività per le {selectedRecords.size} aziende selezionate</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+                {/* Spazio per eventuali controlli futuri */}
               </div>
                
                <div className="flex items-center gap-2">
@@ -2404,27 +2385,9 @@ export default function ImportTemplates() {
                          </TooltipContent>
                        </Tooltip>
                      </TooltipProvider>
-                     
-                     <TooltipProvider>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => setShowMultipleActivityDialog(true)}
-                             className="text-xs px-2"
-                           >
-                             <FileText className="h-4 w-4 text-blue-500" />
-                           </Button>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Crea attività per le {selectedRecords.size} aziende selezionate</p>
-                         </TooltipContent>
-                       </Tooltip>
-                     </TooltipProvider>
-                   </>
-                 )}
-               </div>
+                    </>
+                  )}
+                </div>
                
                <div className="flex items-center gap-2">
               <Button

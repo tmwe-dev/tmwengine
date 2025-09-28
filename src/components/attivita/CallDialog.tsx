@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, MessageCircle, X, Edit, Save } from 'lucide-react';
+import { Phone, MessageCircle, X, Edit, Save, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   const [isEditing, setIsEditing] = useState(false);
   const [telefono, setTelefono] = useState('');
   const [cellulare, setCellulare] = useState('');
+  const [showEditButton, setShowEditButton] = useState(false);
 
   useEffect(() => {
     if (contact) {
@@ -53,6 +54,13 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
     if (onSave && contact.id) {
       onSave(contact.id, telefono, cellulare);
       setIsEditing(false);
+      setShowEditButton(false);
+    }
+  };
+
+  const handleFieldFocus = () => {
+    if (!isEditing) {
+      setShowEditButton(true);
     }
   };
 
@@ -84,110 +92,156 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
             )}
           </div>
 
-          {/* Pulsanti di azione principale */}
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant={isEditing ? "outline" : "default"}
-              size="sm"
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex-1"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              {isEditing ? 'Annulla' : 'Modifica'}
-            </Button>
-            
-            {isEditing && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSave}
-                className="flex-1"
-              >
-                <Save className="h-4 w-4 mr-1" />
-                Salva
-              </Button>
-            )}
-          </div>
-
-          {/* Numeri disponibili */}
-          <div className="space-y-3">
-            {phoneNumbers.map((item, index) => (
-              <div key={index} className="border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant="outline">{item.label}</Badge>
-                  {isEditing ? (
-                    <div className="flex-1 ml-3">
-                      <Input
-                        type="tel"
-                        value={item.label === 'Telefono' ? telefono : cellulare}
-                        onChange={(e) => 
-                          item.label === 'Telefono' 
-                            ? setTelefono(e.target.value)
-                            : setCellulare(e.target.value)
-                        }
-                        placeholder={`Inserisci ${item.label.toLowerCase()}`}
-                        className="text-sm"
-                      />
-                    </div>
-                  ) : (
+          {/* Campo Telefono */}
+          <div className="border rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
+                <Phone className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-sm font-medium">Telefono</Label>
+                {isEditing ? (
+                  <Input
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    placeholder="Inserisci numero di telefono"
+                    className="mt-1"
+                    onFocus={handleFieldFocus}
+                  />
+                ) : (
+                  <div 
+                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={handleFieldFocus}
+                  >
                     <span className="font-mono text-sm">
-                      {item.number || 'Non disponibile'}
+                      {contact.telefono || 'Clicca per aggiungere'}
                     </span>
-                  )}
-                </div>
-                
-                {!isEditing && item.number && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handlePhoneCall(item.number!)}
-                    >
-                      <Phone className="h-4 w-4 mr-1" />
-                      Chiama
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleWhatsApp(item.number!)}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      WhatsApp
-                    </Button>
-                  </div>
-                )}
-                
-                {!isEditing && !item.number && (
-                  <div className="text-center py-2 text-text-secondary text-sm">
-                    {item.label} non disponibile
                   </div>
                 )}
               </div>
-            ))}
+            </div>
+            
+            {!isEditing && contact.telefono && (
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handlePhoneCall(contact.telefono!)}
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  Chiama
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleWhatsApp(contact.telefono!)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  WhatsApp
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Se non ci sono numeri e non siamo in modalità editing, mostra messaggio */}
-          {phoneNumbers.every(item => !item.number) && !isEditing && (
-            <div className="text-center py-4 text-text-secondary">
-              <Phone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nessun numero di telefono disponibile</p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="mt-2"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Aggiungi numeri
-              </Button>
+          {/* Campo Cellulare */}
+          <div className="border rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                <Smartphone className="h-4 w-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-sm font-medium">Cellulare</Label>
+                {isEditing ? (
+                  <Input
+                    type="tel"
+                    value={cellulare}
+                    onChange={(e) => setCellulare(e.target.value)}
+                    placeholder="Inserisci numero di cellulare"
+                    className="mt-1"
+                    onFocus={handleFieldFocus}
+                  />
+                ) : (
+                  <div 
+                    className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={handleFieldFocus}
+                  >
+                    <span className="font-mono text-sm">
+                      {contact.cellulare || 'Clicca per aggiungere'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+            
+            {!isEditing && contact.cellulare && (
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handlePhoneCall(contact.cellulare!)}
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  Chiama
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleWhatsApp(contact.cellulare!)}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  WhatsApp
+                </Button>
+              </div>
+            )}
+          </div>
 
-          {/* Pulsante chiudi */}
-          <div className="flex justify-end pt-4 border-t">
+          {/* Pulsanti di azione */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex gap-2">
+              {showEditButton && !isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Modifica
+                </Button>
+              )}
+              
+              {isEditing && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSave}
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Salva
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setShowEditButton(false);
+                      setTelefono(contact.telefono || '');
+                      setCellulare(contact.cellulare || '');
+                    }}
+                  >
+                    Annulla
+                  </Button>
+                </>
+              )}
+            </div>
+            
             <Button variant="outline" onClick={onClose}>
               <X className="h-4 w-4 mr-1" />
               Chiudi

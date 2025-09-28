@@ -704,7 +704,7 @@ export default function Attivita() {
               value={filters.stato}
               onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="flex-1 min-w-[200px]">
                 <SelectValue placeholder="Filtra per stato" />
               </SelectTrigger>
               <SelectContent>

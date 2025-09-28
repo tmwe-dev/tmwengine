@@ -337,19 +337,21 @@ export default function Attivita() {
               Nuova Attività
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {selectedActivity ? 'Modifica Attività' : 'Nuova Attività'}
               </DialogTitle>
             </DialogHeader>
-            <AdvancedMultipleActivityForm
-              contacts={[]} // Array vuoto per attività singole
-              onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
-              onCancel={() => setIsFormOpen(false)}
-              isSubmitting={false}
-              showSaveToRubrica={false}
-            />
+            <div className="flex-1 overflow-y-auto">
+              <AdvancedMultipleActivityForm
+                contacts={[]} // Array vuoto per attività singole
+                onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
+                onCancel={() => setIsFormOpen(false)}
+                isSubmitting={false}
+                showSaveToRubrica={false}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </div>

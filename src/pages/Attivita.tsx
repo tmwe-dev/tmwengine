@@ -882,7 +882,8 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell 
-                        className="max-w-[300px] cursor-pointer hover:bg-blue-50"
+                        className="max-w-[300px] cursor-pointer hover:bg-blue-50 focus-within:bg-black focus-within:border-2 focus-within:border-green-500"
+                        tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (activity.rubrica_id) {

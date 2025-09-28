@@ -182,12 +182,14 @@ export function GestisciAttivitaDialog({
             
             <div>
               <Label className="text-xs text-muted-foreground">PRIORITÀ</Label>
-              <Badge variant={
-                activity.priorita === 'alta' ? 'destructive' : 
-                activity.priorita === 'media' ? 'secondary' : 'outline'
-              }>
-                {activity.priorita.toUpperCase()}
-              </Badge>
+              <div className="mt-1">
+                <Badge variant={
+                  activity.priorita === 'alta' ? 'destructive' : 
+                  activity.priorita === 'media' ? 'secondary' : 'outline'
+                }>
+                  {activity.priorita.toUpperCase()}
+                </Badge>
+              </div>
             </div>
           </div>
 

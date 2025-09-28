@@ -409,7 +409,7 @@ const Settings = () => {
         <div className="space-y-1">
           <Label htmlFor="section-select" className="text-sm font-medium">Seleziona Sezione</Label>
           <Select value={activeSection} onValueChange={setActiveSection}>
-            <SelectTrigger className="w-full max-w-sm h-9">
+            <SelectTrigger className="w-full max-w-sm h-9 border-red-500 data-[state=open]:border-primary focus:border-primary">
               <SelectValue placeholder="Seleziona una sezione..." />
             </SelectTrigger>
             <SelectContent>

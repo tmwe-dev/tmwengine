@@ -91,8 +91,8 @@ serve(async (req) => {
 
     console.log('Sending to TMWE API...');
 
-    // Chiamata API TMWE per invio email
-    const tmweUrl = 'https://erp.tmwe.it/erp/tmwe_json?app.php=email_message';
+    // Chiamata API TMWE per invio email - endpoint corretto dalla documentazione
+    const tmweUrl = 'https://erp.tmwe.it/erp/tmwe_json?app.php=email_message&action=send_message';
     const response = await fetch(tmweUrl, {
       method: 'POST',
       headers: {

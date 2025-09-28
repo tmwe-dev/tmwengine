@@ -26,14 +26,14 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
 
   const clearFilters = () => {
     onFiltersChange({
-      stato: '',
-      tipo: '',
-      priorita: '',
-      scadenza: ''
+      stato: 'all',
+      tipo: 'all',
+      priorita: 'all',
+      scadenza: 'all'
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value.trim() !== '');
+  const hasActiveFilters = Object.values(filters).some(value => value.trim() !== '' && value !== 'all');
 
   return (
     <div className="space-y-6">
@@ -45,7 +45,7 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectValue placeholder="Tutti gli stati" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti gli stati</SelectItem>
+              <SelectItem value="all">Tutti gli stati</SelectItem>
               <SelectItem value="aperta">Aperta</SelectItem>
               <SelectItem value="in_corso">In Corso</SelectItem>
               <SelectItem value="completata">Completata</SelectItem>
@@ -61,7 +61,7 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectValue placeholder="Tutti i tipi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti i tipi</SelectItem>
+              <SelectItem value="all">Tutti i tipi</SelectItem>
               <SelectItem value="chiamata">Chiamata</SelectItem>
               <SelectItem value="meeting">Meeting</SelectItem>
               <SelectItem value="email">Email</SelectItem>
@@ -77,7 +77,7 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectValue placeholder="Tutte le priorità" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutte le priorità</SelectItem>
+              <SelectItem value="all">Tutte le priorità</SelectItem>
               <SelectItem value="alta">Alta</SelectItem>
               <SelectItem value="media">Media</SelectItem>
               <SelectItem value="bassa">Bassa</SelectItem>
@@ -92,7 +92,7 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectValue placeholder="Tutte le scadenze" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutte le scadenze</SelectItem>
+              <SelectItem value="all">Tutte le scadenze</SelectItem>
               <SelectItem value="scadute">Scadute</SelectItem>
               <SelectItem value="oggi">Oggi</SelectItem>
               <SelectItem value="domani">Domani</SelectItem>

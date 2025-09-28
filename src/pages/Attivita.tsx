@@ -200,9 +200,9 @@ export default function Attivita() {
     
     const matchesFilters = 
       matchesStato &&
-      (!filters.tipo || activity.tipo === filters.tipo) &&
-      (!filters.priorita || activity.priorita === filters.priorita) &&
-      (!filters.scadenza || checkScadenzaFilter(activity.scadenza, filters.scadenza));
+      (!filters.tipo || filters.tipo === 'all' || activity.tipo === filters.tipo) &&
+      (!filters.priorita || filters.priorita === 'all' || activity.priorita === filters.priorita) &&
+      (!filters.scadenza || filters.scadenza === 'all' || checkScadenzaFilter(activity.scadenza, filters.scadenza));
 
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));

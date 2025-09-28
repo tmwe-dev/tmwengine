@@ -545,6 +545,36 @@ export type Database = {
           },
         ]
       }
+      email_ssl_config: {
+        Row: {
+          accept_self_signed: boolean
+          ca_bundle: string | null
+          created_at: string
+          id: string
+          provider_id: string
+          updated_at: string
+          verify_hostname: boolean
+        }
+        Insert: {
+          accept_self_signed?: boolean
+          ca_bundle?: string | null
+          created_at?: string
+          id?: string
+          provider_id: string
+          updated_at?: string
+          verify_hostname?: boolean
+        }
+        Update: {
+          accept_self_signed?: boolean
+          ca_bundle?: string | null
+          created_at?: string
+          id?: string
+          provider_id?: string
+          updated_at?: string
+          verify_hostname?: boolean
+        }
+        Relationships: []
+      }
       email_sync_logs: {
         Row: {
           created_at: string

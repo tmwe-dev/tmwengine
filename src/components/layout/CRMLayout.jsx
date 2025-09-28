@@ -15,8 +15,9 @@ import {
   MessageSquare,
   FileUp,
   Database
-} from 'lucide-react';
+ } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 const CRMLayout = ({ children }) => {
   const isMobile = useIsMobile();
@@ -47,7 +48,10 @@ const CRMLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border h-16 flex items-center justify-between px-4 lg:px-6">
+      <header className={cn(
+        "bg-card border-b border-border flex items-center justify-between",
+        isMobile ? "h-14 px-3" : "h-16 px-4 lg:px-6"
+      )}>
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -62,7 +66,9 @@ const CRMLayout = ({ children }) => {
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">CRM</span>
             </div>
-            <h1 className="text-xl font-semibold text-foreground">Sistema CRM</h1>
+            <h1 className={cn("font-semibold text-foreground", isMobile ? "text-lg" : "text-xl")}>
+              {isMobile ? "CRM" : "Sistema CRM"}
+            </h1>
           </div>
         </div>
 
@@ -86,7 +92,7 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-3.5rem)]" : "h-[calc(100vh-4rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'

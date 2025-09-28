@@ -12,10 +12,12 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
+import { ActivityMobileCard } from '@/components/attivita/ActivityMobileCard';
 import { GestisciAttivitaDialog } from '@/components/attivita/GestisciAttivitaDialog';
 import { CompanyDialog } from '@/components/attivita/CompanyDialog';
 import { CallDialog } from '@/components/attivita/CallDialog';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -90,6 +92,7 @@ export default function Attivita() {
   });
   const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadActivities();
@@ -626,7 +629,7 @@ export default function Attivita() {
   }
 
   return (
-    <div className="section-spacing">
+    <div className={cn("section-spacing", isMobile && "space-y-4")}>
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -666,8 +669,8 @@ export default function Attivita() {
 
       {/* Search and Filters */}
       <Card className="border-card shadow-soft">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
+          <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
               <Input
@@ -737,7 +740,10 @@ export default function Attivita() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className={cn(
+        "grid gap-3",
+        isMobile ? "grid-cols-2" : "grid-cols-2 md:grid-cols-5"
+      )}>
         <Card 
           className={cn(
             "border-card shadow-soft cursor-pointer hover:shadow-md transition-shadow",
@@ -745,9 +751,9 @@ export default function Attivita() {
           )}
           onClick={() => handleStatusFilter('all')}
         >
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-text-primary">{stats.totali}</div>
-            <div className="text-small text-text-secondary">Totali</div>
+          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
+            <div className={cn("font-bold text-text-primary", isMobile ? "text-xl" : "text-heading-3")}>{stats.totali}</div>
+            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Totali</div>
           </CardContent>
         </Card>
         
@@ -758,9 +764,9 @@ export default function Attivita() {
           )}
           onClick={() => handleStatusFilter('future')}
         >
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-orange-600">{stats.future}</div>
-            <div className="text-small text-text-secondary">In Sospeso</div>
+          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
+            <div className={cn("font-bold text-orange-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.future}</div>
+            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Sospeso</div>
           </CardContent>
         </Card>
 
@@ -771,9 +777,9 @@ export default function Attivita() {
           )}
           onClick={() => handleStatusFilter('in_corso')}
         >
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-blue-600">{stats.in_corso}</div>
-            <div className="text-small text-text-secondary">In Corso</div>
+          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
+            <div className={cn("font-bold text-blue-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.in_corso}</div>
+            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>In Corso</div>
           </CardContent>
         </Card>
 
@@ -784,9 +790,9 @@ export default function Attivita() {
           )}
           onClick={() => handleStatusFilter('completate')}
         >
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-green-600">{stats.completate}</div>
-            <div className="text-small text-text-secondary">Completate</div>
+          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
+            <div className={cn("font-bold text-green-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.completate}</div>
+            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Completate</div>
           </CardContent>
         </Card>
 
@@ -797,9 +803,9 @@ export default function Attivita() {
           )}
           onClick={() => handleStatusFilter('scadute')}
         >
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-red-600">{stats.scadute}</div>
-            <div className="text-small text-text-secondary">Scadute</div>
+          <CardContent className={cn("text-center", isMobile ? "p-3" : "p-4")}>
+            <div className={cn("font-bold text-red-600", isMobile ? "text-xl" : "text-heading-3")}>{stats.scadute}</div>
+            <div className={cn("text-text-secondary", isMobile ? "text-xs" : "text-small")}>Scadute</div>
           </CardContent>
         </Card>
       </div>
@@ -807,9 +813,9 @@ export default function Attivita() {
       {/* Azioni per selezione multipla */}
       {selectedActivities.length > 0 && (
         <Card className="border-card shadow-soft border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
+            <div className={cn("flex items-center", isMobile ? "flex-col gap-3" : "justify-between")}>
+              <div className={cn("flex items-center gap-2", isMobile && "w-full justify-center")}>
                 <span className="text-sm font-medium text-blue-700">
                   {selectedActivities.length} attività selezionate
                 </span>
@@ -817,9 +823,9 @@ export default function Attivita() {
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    <Button size={isMobile ? "default" : "sm"} className="bg-blue-600 hover:bg-blue-700">
                       <Calendar className="h-4 w-4 mr-1" />
-                      Riprogramma
+                      {isMobile ? "Riprogramma" : "Riprogramma"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -837,7 +843,7 @@ export default function Attivita() {
                 </Popover>
                 <Button 
                   variant="outline" 
-                  size="sm"
+                  size={isMobile ? "default" : "sm"}
                   onClick={() => setSelectedActivities([])}
                 >
                   <X className="h-4 w-4 mr-1" />
@@ -849,9 +855,55 @@ export default function Attivita() {
         </Card>
       )}
 
-      {/* Activities Table */}
-      <Card className="border-card shadow-soft">
-        <CardContent className="p-0">
+      {/* Activities */}
+      {isMobile ? (
+        /* Mobile Card Layout */
+        <div className="space-y-3">
+          {filteredActivities.length === 0 ? (
+            <Card className="border-card shadow-soft">
+              <CardContent className="p-8 text-center">
+                {activities.length === 0 ? (
+                  <div className="text-text-secondary">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">Nessuna attività</h3>
+                    <p className="text-sm mb-4">
+                      Inizia creando la tua prima attività
+                    </p>
+                    <Button onClick={openAddForm}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crea Prima Attività
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-text-secondary">
+                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">Nessun risultato</h3>
+                    <p className="text-sm">
+                      Prova a modificare i termini di ricerca o i filtri
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            filteredActivities.map((activity) => (
+              <ActivityMobileCard
+                key={activity.id}
+                activity={activity}
+                isSelected={selectedActivities.includes(activity.id)}
+                onSelect={handleActivitySelect}
+                onPhoneClick={() => handlePhoneClick(activity)}
+                onCompanyClick={() => activity.rubrica_id && openCompanyDialog(activity.rubrica_id)}
+                onGestisci={() => openGestisciForm(activity)}
+                onDelete={() => handleDeleteActivity(activity.id)}
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        /* Desktop Table Layout */
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1144,6 +1196,7 @@ export default function Attivita() {
           </Table>
         </CardContent>
       </Card>
+      )}
 
       {/* Dialog Gestisci Attività */}
       <GestisciAttivitaDialog

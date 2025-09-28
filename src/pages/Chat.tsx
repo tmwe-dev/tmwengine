@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3 } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -63,6 +63,7 @@ const Chat = () => {
     memoryMode: string;
     messagesInContext: number;
   } | null>(null);
+  const [showConversations, setShowConversations] = useState(true);
   const { toast } = useToast();
 
   // Carica system prompts
@@ -537,41 +538,46 @@ const Chat = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <Card>
-            <CardHeader>
+            <CardHeader className="cursor-pointer" onClick={() => setShowConversations(!showConversations)}>
               <CardTitle className="flex items-center justify-between">
-                Conversazioni
-                <Button onClick={createNewConversation} size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <span>Conversazioni</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); createNewConversation(); }}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  {showConversations ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-              {conversations.map((conversation) => (
-                <Button
-                  key={conversation.id}
-                  variant={currentConversationId === conversation.id ? "default" : "ghost"}
-                  className="w-full justify-start text-left h-auto p-3"
-                  onClick={() => selectConversation(conversation.id)}
-                >
-                  <div className="w-full space-y-1">
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(conversation.updated_at).toLocaleDateString()} {new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {showConversations && (
+              <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                {conversations.map((conversation) => (
+                  <Button
+                    key={conversation.id}
+                    variant={currentConversationId === conversation.id ? "default" : "ghost"}
+                    className="w-full justify-start text-left h-auto p-3"
+                    onClick={() => selectConversation(conversation.id)}
+                  >
+                    <div className="w-full space-y-1">
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(conversation.updated_at).toLocaleDateString()} {new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="text-sm text-muted-foreground truncate">
+                        {conversation.chat_messages && conversation.chat_messages.length > 0 
+                          ? conversation.chat_messages[0].content.substring(0, 60) + (conversation.chat_messages[0].content.length > 60 ? '...' : '')
+                          : 'Nuova chat'
+                        }
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {conversation.chat_messages && conversation.chat_messages.length > 0 
-                        ? conversation.chat_messages[0].content.substring(0, 60) + (conversation.chat_messages[0].content.length > 60 ? '...' : '')
-                        : 'Nuova chat'
-                      }
-                    </div>
-                  </div>
-                </Button>
-              ))}
-              {conversations.length === 0 && (
-                <p className="text-muted-foreground text-center py-4 text-sm">
-                  Nessuna conversazione ancora
-                </p>
-              )}
-            </CardContent>
+                  </Button>
+                ))}
+                {conversations.length === 0 && (
+                  <p className="text-muted-foreground text-center py-4 text-sm">
+                    Nessuna conversazione ancora
+                  </p>
+                )}
+              </CardContent>
+            )}
           </Card>
         </div>
 

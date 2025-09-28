@@ -546,12 +546,16 @@ const Chat = () => {
                   className="w-full justify-start text-left h-auto p-3"
                   onClick={() => selectConversation(conversation.id)}
                 >
-                  <div className="truncate">
-                    <div className="font-medium truncate">
-                      {conversation.titolo || 'Conversazione senza titolo'}
-                    </div>
+                  <div className="w-full space-y-1">
                     <div className="text-xs text-muted-foreground">
-                      {new Date(conversation.updated_at).toLocaleDateString()}
+                      {new Date(conversation.updated_at).toLocaleDateString()} - {new Date(conversation.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className="text-sm truncate">
+                      {conversation.riassunto_contesto ? 
+                        conversation.riassunto_contesto.substring(0, 60) + (conversation.riassunto_contesto.length > 60 ? '...' : '') :
+                        conversation.titolo?.replace(/^Conversazione\s*/i, '').substring(0, 60) + (conversation.titolo && conversation.titolo.replace(/^Conversazione\s*/i, '').length > 60 ? '...' : '') ||
+                        'Nuova chat'
+                      }
                     </div>
                   </div>
                 </Button>

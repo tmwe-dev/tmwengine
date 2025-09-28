@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, MessageCircle, X, Edit, Save, Smartphone } from 'lucide-react';
+import { Phone, MessageCircle, X, Edit, Save, Smartphone, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { usePhoneActions } from '@/hooks/usePhoneActions';
 
 interface CallDialogProps {
   isOpen: boolean;
@@ -27,6 +28,16 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   
   const telefonoRef = useRef<HTMLInputElement>(null);
   const cellulareRef = useRef<HTMLInputElement>(null);
+  
+  // Usa il nuovo hook per le azioni telefono/WhatsApp
+  const { 
+    makePhoneCall, 
+    sendWhatsAppMessage, 
+    validateAndFormatNumber, 
+    formatForDisplay,
+    isWhatsAppAvailable,
+    config 
+  } = usePhoneActions();
 
   useEffect(() => {
     if (contact) {
@@ -52,20 +63,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
 
   if (!contact) return null;
 
+  // Gestisce chiamata telefonica con validazione avanzata
   const handlePhoneCall = (phoneNumber: string) => {
-    if (phoneNumber) {
-      const cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
-      window.open(`tel:${cleanNumber}`, '_self');
-    }
+    makePhoneCall(phoneNumber);
   };
 
+  // Gestisce messaggio WhatsApp con validazione avanzata
   const handleWhatsApp = (phoneNumber: string) => {
-    if (phoneNumber) {
-      const cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
-      // Rimuove il + iniziale per WhatsApp se presente
-      const whatsappNumber = cleanNumber.startsWith('+') ? cleanNumber.substring(1) : cleanNumber;
-      window.open(`https://wa.me/${whatsappNumber}`, '_blank');
-    }
+    sendWhatsAppMessage(phoneNumber);
   };
 
   const handleSave = () => {
@@ -81,6 +86,12 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
       setFocusField(field);
       setIsEditing(true);
     }
+  };
+
+  // Valida e mostra stato del numero in tempo reale
+  const getNumberValidation = (number: string) => {
+    if (!number) return null;
+    return validateAndFormatNumber(number);
   };
 
   const phoneNumbers = [
@@ -117,17 +128,45 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
               <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
                 <Phone className="h-4 w-4 text-primary" />
               </div>
-              <div className="flex-1">
-                <Label className="text-sm font-medium">Telefono</Label>
+               <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Telefono</Label>
+                  {!isEditing && contact.telefono && (
+                    <div className="flex items-center gap-1">
+                      {getNumberValidation(contact.telefono)?.isValid ? (
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-yellow-500" />
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {getNumberValidation(contact.telefono)?.type || 'sconosciuto'}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {isEditing ? (
-                  <Input
-                    ref={telefonoRef}
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="Inserisci numero di telefono"
-                    className="mt-1"
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      ref={telefonoRef}
+                      type="tel"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      placeholder={`es. ${config.defaultCountryCode} 123 456 7890`}
+                      className="mt-1"
+                    />
+                    {telefono && (
+                      <div className="flex items-center gap-1 text-xs">
+                        {getNumberValidation(telefono)?.isValid ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={getNumberValidation(telefono)?.isValid ? 'text-green-600' : 'text-red-600'}>
+                          {getNumberValidation(telefono)?.isValid ? 'Numero valido' : 'Numero non valido'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div 
                     className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
@@ -140,7 +179,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                     }}
                   >
                     <span className="font-mono text-sm">
-                      {contact.telefono || 'Clicca per aggiungere'}
+                      {contact.telefono ? formatForDisplay(contact.telefono) : 'Clicca per aggiungere'}
                     </span>
                   </div>
                 )}
@@ -154,7 +193,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   size="sm"
                   className="flex-1"
                   onClick={() => handlePhoneCall(contact.telefono || '')}
-                  disabled={!contact.telefono}
+                  disabled={!contact.telefono || !getNumberValidation(contact.telefono)?.isValid}
                 >
                   <Phone className="h-4 w-4 mr-1" />
                   Chiama
@@ -165,7 +204,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   size="sm"
                   className="flex-1"
                   onClick={() => handleWhatsApp(contact.telefono || '')}
-                  disabled={!contact.telefono}
+                  disabled={!contact.telefono || !isWhatsAppAvailable(contact.telefono || '')}
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp
@@ -181,16 +220,44 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                 <Smartphone className="h-4 w-4 text-green-600" />
               </div>
               <div className="flex-1">
-                <Label className="text-sm font-medium">Cellulare</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Cellulare</Label>
+                  {!isEditing && contact.cellulare && (
+                    <div className="flex items-center gap-1">
+                      {getNumberValidation(contact.cellulare)?.isValid ? (
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-3 w-3 text-yellow-500" />
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {getNumberValidation(contact.cellulare)?.type || 'sconosciuto'}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {isEditing ? (
-                  <Input
-                    ref={cellulareRef}
-                    type="tel"
-                    value={cellulare}
-                    onChange={(e) => setCellulare(e.target.value)}
-                    placeholder="Inserisci numero di cellulare"
-                    className="mt-1"
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      ref={cellulareRef}
+                      type="tel"
+                      value={cellulare}
+                      onChange={(e) => setCellulare(e.target.value)}
+                      placeholder={`es. ${config.defaultCountryCode} 333 456 7890`}
+                      className="mt-1"
+                    />
+                    {cellulare && (
+                      <div className="flex items-center gap-1 text-xs">
+                        {getNumberValidation(cellulare)?.isValid ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                        )}
+                        <span className={getNumberValidation(cellulare)?.isValid ? 'text-green-600' : 'text-red-600'}>
+                          {getNumberValidation(cellulare)?.isValid ? 'Numero valido' : 'Numero non valido'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div 
                     className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
@@ -203,7 +270,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                     }}
                   >
                     <span className="font-mono text-sm">
-                      {contact.cellulare || 'Clicca per aggiungere'}
+                      {contact.cellulare ? formatForDisplay(contact.cellulare) : 'Clicca per aggiungere'}
                     </span>
                   </div>
                 )}
@@ -217,7 +284,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   size="sm"
                   className="flex-1"
                   onClick={() => handlePhoneCall(contact.cellulare || '')}
-                  disabled={!contact.cellulare}
+                  disabled={!contact.cellulare || !getNumberValidation(contact.cellulare)?.isValid}
                 >
                   <Phone className="h-4 w-4 mr-1" />
                   Chiama
@@ -228,7 +295,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   size="sm"
                   className="flex-1"
                   onClick={() => handleWhatsApp(contact.cellulare || '')}
-                  disabled={!contact.cellulare}
+                  disabled={!contact.cellulare || !isWhatsAppAvailable(contact.cellulare || '')}
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp

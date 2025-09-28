@@ -74,6 +74,19 @@ const Settings = () => {
     autoDetectCountry: true
   });
 
+  // Sincronizza con il hook usePhoneActions
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('phone_config');
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        setPhoneConfig(prev => ({ ...prev, ...parsed }));
+      } catch (error) {
+        console.error('Error loading phone config:', error);
+      }
+    }
+  }, []);
+
   // Carica le configurazioni esistenti
   useEffect(() => {
     loadConfigurations();
@@ -345,7 +358,14 @@ const Settings = () => {
       });
     } catch (error) {
       console.error('Errore salvataggio config generale:', error);
-      toast({
+    // Salva anche le configurazioni phone
+    try {
+      localStorage.setItem('phone_config', JSON.stringify(phoneConfig));
+    } catch (error) {
+      console.error('Error saving phone config:', error);
+    }
+
+    toast({
         title: "Errore",
         description: "Impossibile salvare le configurazioni generali",
         variant: "destructive",

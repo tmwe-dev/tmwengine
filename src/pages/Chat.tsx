@@ -545,7 +545,7 @@ const Chat = () => {
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
               {conversations.map((conversation) => (
                 <Button
                   key={conversation.id}

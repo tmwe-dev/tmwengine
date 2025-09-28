@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface Contact {
   id: string;
@@ -48,6 +50,7 @@ export default function Rubrica() {
   
   const { toast } = useToast();
   const { getCompanyActivities, refreshActivities } = useCompanyActivities();
+  const isMobile = useIsMobile();
 
   // Carica i contatti dal database
   useEffect(() => {

@@ -10,11 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface Email {
   id: string;

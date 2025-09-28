@@ -15,6 +15,9 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { ContactMobileCard } from '@/components/rubrica/ContactMobileCard';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -229,6 +232,9 @@ export default function RubricaAvanzata() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
+
+  // Mobile hook
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadContacts();
@@ -589,12 +595,14 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", isMobile && "space-y-4")}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className={cn("flex justify-between items-start gap-4", isMobile ? "flex-col" : "flex-col sm:flex-row sm:items-center")}>
         <div>
-          <h1 className="text-heading-1 font-bold text-text-primary">Rubrica Avanzata</h1>
-          <p className="text-body text-text-secondary">
+          <h1 className={cn("font-bold text-text-primary", isMobile ? "text-2xl" : "text-heading-1")}>
+            Rubrica Avanzata
+          </h1>
+          <p className={cn("text-text-secondary", isMobile ? "text-sm" : "text-body")}>
             Gestione avanzata della rubrica con filtri e visualizzazione tabellare
           </p>
         </div>
@@ -602,13 +610,13 @@ export default function RubricaAvanzata() {
 
       {/* Compact Search and Filters Section */}
       <Card className="border-card shadow-soft">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+        <CardHeader className={cn(isMobile ? "pb-2" : "pb-3")}>
+          <CardTitle className={cn("flex items-center gap-2", isMobile ? "text-base" : "text-lg")}>
             <Filter className="h-4 w-4" />
             Ricerca e Filtri
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className={cn(isMobile ? "space-y-2" : "space-y-3")}>
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
@@ -621,9 +629,9 @@ export default function RubricaAvanzata() {
           </div>
 
           {/* Filters and Stats Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+          <div className={cn("grid gap-3 items-end", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12")}>
             {/* Filter Controls */}
-            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={cn("grid gap-3", isMobile ? "grid-cols-1" : "lg:col-span-6 grid-cols-1 sm:grid-cols-3")}>
               {/* Origin Filter */}
               <div>
                 <label className="text-xs font-medium mb-1 block">Origine</label>
@@ -787,30 +795,131 @@ export default function RubricaAvanzata() {
         </CardContent>
       </Card>
 
-      {/* Data Table */}
-      <Card className="border-card shadow-soft">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Contatti Rubrica ({filteredRecords.length})
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
+      {/* Data */}
+      {isMobile ? (
+        /* Mobile Card Layout */
+        <div className="space-y-3">
+          {/* Header Mobile */}
+          <Card className="border-card shadow-soft">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5" />
+                Contatti ({filteredRecords.length})
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
           {loadingAllRecords ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+            <Card className="border-card shadow-soft">
+              <CardContent className="flex items-center justify-center h-32 p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
           ) : viewingRecords.length === 0 ? (
-            <div className="text-center py-12 text-text-secondary">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-heading-3 font-semibold mb-2">Nessun contatto trovato</h3>
-              <p className="text-body">
-                Prova a modificare i filtri di ricerca
-              </p>
-            </div>
+            <Card className="border-card shadow-soft">
+              <CardContent className="text-center py-12 text-text-secondary">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Nessun contatto trovato</h3>
+                <p className="text-sm">
+                  Prova a modificare i filtri di ricerca
+                </p>
+              </CardContent>
+            </Card>
           ) : (
+            viewingRecords.map((record, index) => {
+              const actualIndex = currentPage * recordsPerPage + index;
+              return (
+                <ContactMobileCard
+                  key={record.id || index}
+                  contact={record}
+                  index={actualIndex}
+                  isSelected={selectedRecords.has(actualIndex)}
+                  onSelect={(index, selected) => {
+                    const newSelected = new Set(selectedRecords);
+                    if (selected) {
+                      newSelected.add(index);
+                    } else {
+                      newSelected.delete(index);
+                    }
+                    setSelectedRecords(newSelected);
+                  }}
+                  onView={() => {
+                    setSelectedRecord(record);
+                    setSelectedRecordIndex(actualIndex);
+                    setShowRecordDetail(true);
+                  }}
+                  onCreateActivity={() => {
+                    // Temporarily select this record and open activity dialog
+                    setSelectedRecords(new Set([actualIndex]));
+                    setShowMultipleActivityDialog(true);
+                  }}
+                />
+              );
+            })
+          )}
+
+          {/* Mobile Pagination */}
+          {totalPages > 1 && (
+            <Card className="border-card shadow-soft">
+              <CardContent className="p-3">
+                <div className="flex flex-col gap-3">
+                  <div className="text-sm text-text-secondary text-center">
+                    Pagina {currentPage + 1} di {totalPages} 
+                    <br />
+                    ({filteredRecords.length} risultati totali)
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                      disabled={currentPage === 0}
+                      className="h-9"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Precedente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                      disabled={currentPage >= totalPages - 1}
+                      className="h-9"
+                    >
+                      Successiva
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : (
+        /* Desktop Table Layout */
+        <Card className="border-card shadow-soft">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Contatti Rubrica ({filteredRecords.length})
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingAllRecords ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : viewingRecords.length === 0 ? (
+              <div className="text-center py-12 text-text-secondary">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-heading-3 font-semibold mb-2">Nessun contatto trovato</h3>
+                <p className="text-body">
+                  Prova a modificare i filtri di ricerca
+                </p>
+              </div>
+            ) : (
             <>
               <div className="overflow-x-auto">
                 <Table>
@@ -1202,10 +1311,11 @@ export default function RubricaAvanzata() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Record Detail Dialog */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={cn("max-h-[90vh] overflow-y-auto", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Dettagli Contatto</span>

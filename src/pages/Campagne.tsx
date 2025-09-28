@@ -9,6 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { CampaignForm } from '@/components/campagne/CampaignForm';
 import { CampaignFilters } from '@/components/campagne/CampaignFilters';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface Campaign {
   id: string;
@@ -39,6 +41,7 @@ export default function Campagne() {
     periodo: ''
   });
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||

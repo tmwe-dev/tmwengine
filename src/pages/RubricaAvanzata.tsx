@@ -1218,8 +1218,15 @@ export default function RubricaAvanzata() {
       </Dialog>
 
       {/* Dialog per attività multiple */}
-      <Dialog open={showMultipleActivityDialog} onOpenChange={setShowMultipleActivityDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showMultipleActivityDialog} onOpenChange={(open) => {
+        setShowMultipleActivityDialog(open);
+        // Cleanup scroll lock when dialog closes
+        if (!open) {
+          document.body.style.overflow = '';
+          document.body.removeAttribute('data-scroll-locked');
+        }
+      }}>
+        <DialogContent className="max-w-2xl" onCloseAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Crea Attività Multiple</DialogTitle>
             <DialogDescription>

@@ -252,7 +252,9 @@ export type Database = {
       }
       config_generale: {
         Row: {
+          cognome_utente: string | null
           created_at: string
+          email_utente: string | null
           formato_data: string
           id: string
           lingua_predefinita: string
@@ -261,12 +263,17 @@ export type Database = {
           memoria_messaggi: number | null
           memoria_ore: number | null
           mostra_statistiche: boolean | null
+          nome_utente: string | null
+          ruolo_utente: string | null
+          telefono_utente: string | null
           timezone_fuso: string
           updated_at: string
           usa_riassunto: boolean | null
         }
         Insert: {
+          cognome_utente?: string | null
           created_at?: string
+          email_utente?: string | null
           formato_data?: string
           id?: string
           lingua_predefinita?: string
@@ -275,12 +282,17 @@ export type Database = {
           memoria_messaggi?: number | null
           memoria_ore?: number | null
           mostra_statistiche?: boolean | null
+          nome_utente?: string | null
+          ruolo_utente?: string | null
+          telefono_utente?: string | null
           timezone_fuso?: string
           updated_at?: string
           usa_riassunto?: boolean | null
         }
         Update: {
+          cognome_utente?: string | null
           created_at?: string
+          email_utente?: string | null
           formato_data?: string
           id?: string
           lingua_predefinita?: string
@@ -289,6 +301,9 @@ export type Database = {
           memoria_messaggi?: number | null
           memoria_ore?: number | null
           mostra_statistiche?: boolean | null
+          nome_utente?: string | null
+          ruolo_utente?: string | null
+          telefono_utente?: string | null
           timezone_fuso?: string
           updated_at?: string
           usa_riassunto?: boolean | null

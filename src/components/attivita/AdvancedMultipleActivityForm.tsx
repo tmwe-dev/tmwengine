@@ -110,6 +110,7 @@ export function AdvancedMultipleActivityForm({
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [userProfile, setUserProfile] = useState<{nomeCompleto: string} | null>(null);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -138,6 +139,7 @@ export function AdvancedMultipleActivityForm({
   useEffect(() => {
     loadEmailTemplates();
     loadEmailAttachments();
+    loadUserProfile();
   }, []);
 
   const loadEmailTemplates = async () => {
@@ -166,6 +168,26 @@ export function AdvancedMultipleActivityForm({
       setEmailAttachments(data || []);
     } catch (error) {
       console.error('Errore caricamento allegati:', error);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('config_generale')
+        .select('nome_utente, cognome_utente')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data && data.nome_utente && data.cognome_utente) {
+        const nomeCompleto = `${data.nome_utente} ${data.cognome_utente}`;
+        setUserProfile({ nomeCompleto });
+        // Auto-imposta il campo assegnato_nome
+        form.setValue('assegnato_nome', nomeCompleto);
+      }
+    } catch (error) {
+      console.error('Errore caricamento profilo utente:', error);
     }
   };
 
@@ -773,8 +795,24 @@ export function AdvancedMultipleActivityForm({
                 <FormItem>
                   <FormLabel>Assegnato a</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Nome della persona assegnata" />
+                    <div className="relative">
+                      <Input 
+                        {...field} 
+                        placeholder={userProfile ? userProfile.nomeCompleto : "Nome della persona assegnata"}
+                        className={userProfile ? "bg-muted" : ""}
+                      />
+                      {userProfile && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
+                  {userProfile && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-assegnato dal profilo utente nelle impostazioni
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

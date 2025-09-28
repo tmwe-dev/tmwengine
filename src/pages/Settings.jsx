@@ -21,7 +21,8 @@ import {
   EyeOff,
   Save,
   AlertTriangle,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  User
 } from 'lucide-react';
 
 const Settings = () => {
@@ -55,7 +56,12 @@ const Settings = () => {
     maxEmailGiorno: 100,
     timezoneFuso: 'Europe/Rome',
     linguaPredefinita: 'it',
-    formatoData: 'DD/MM/YYYY'
+    formatoData: 'DD/MM/YYYY',
+    nomeUtente: '',
+    cognomeUtente: '',
+    emailUtente: '',
+    ruoloUtente: 'Utente',
+    telefonoUtente: ''
   });
 
   // Carica le configurazioni esistenti
@@ -112,7 +118,12 @@ const Settings = () => {
           maxEmailGiorno: generalData.max_email_giorno,
           timezoneFuso: generalData.timezone_fuso,
           linguaPredefinita: generalData.lingua_predefinita,
-          formatoData: generalData.formato_data
+          formatoData: generalData.formato_data,
+          nomeUtente: generalData.nome_utente || '',
+          cognomeUtente: generalData.cognome_utente || '',
+          emailUtente: generalData.email_utente || '',
+          ruoloUtente: generalData.ruolo_utente || 'Utente',
+          telefonoUtente: generalData.telefono_utente || ''
         });
       }
     } catch (error) {
@@ -286,7 +297,12 @@ const Settings = () => {
             max_email_giorno: generalConfig.maxEmailGiorno,
             timezone_fuso: generalConfig.timezoneFuso,
             lingua_predefinita: generalConfig.linguaPredefinita,
-            formato_data: generalConfig.formatoData
+            formato_data: generalConfig.formatoData,
+            nome_utente: generalConfig.nomeUtente,
+            cognome_utente: generalConfig.cognomeUtente,
+            email_utente: generalConfig.emailUtente,
+            ruolo_utente: generalConfig.ruoloUtente,
+            telefono_utente: generalConfig.telefonoUtente
           })
           .eq('id', generalConfig.id);
 
@@ -299,7 +315,12 @@ const Settings = () => {
             max_email_giorno: generalConfig.maxEmailGiorno,
             timezone_fuso: generalConfig.timezoneFuso,
             lingua_predefinita: generalConfig.linguaPredefinita,
-            formato_data: generalConfig.formatoData
+            formato_data: generalConfig.formatoData,
+            nome_utente: generalConfig.nomeUtente,
+            cognome_utente: generalConfig.cognomeUtente,
+            email_utente: generalConfig.emailUtente,
+            ruolo_utente: generalConfig.ruoloUtente,
+            telefono_utente: generalConfig.telefonoUtente
           })
           .select()
           .single();
@@ -383,8 +404,12 @@ const Settings = () => {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Profilo Utente
+          </TabsTrigger>
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Provider
@@ -402,6 +427,98 @@ const Settings = () => {
             Sicurezza
           </TabsTrigger>
         </TabsList>
+
+        {/* Configurazione Profilo Utente */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profilo Utente
+              </CardTitle>
+              <CardDescription>
+                Configura i tuoi dati personali. Questi dati verranno automaticamente assegnati a tutte le attività che crei.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nomeUtente">Nome *</Label>
+                  <Input
+                    id="nomeUtente"
+                    value={generalConfig.nomeUtente}
+                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, nomeUtente: e.target.value }))}
+                    placeholder="Mario"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cognomeUtente">Cognome *</Label>
+                  <Input
+                    id="cognomeUtente"
+                    value={generalConfig.cognomeUtente}
+                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, cognomeUtente: e.target.value }))}
+                    placeholder="Rossi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emailUtente">Email *</Label>
+                  <Input
+                    id="emailUtente"
+                    type="email"
+                    value={generalConfig.emailUtente}
+                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, emailUtente: e.target.value }))}
+                    placeholder="mario.rossi@azienda.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="telefonoUtente">Telefono</Label>
+                  <Input
+                    id="telefonoUtente"
+                    value={generalConfig.telefonoUtente}
+                    onChange={(e) => setGeneralConfig(prev => ({ ...prev, telefonoUtente: e.target.value }))}
+                    placeholder="+39 123 456 7890"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ruoloUtente">Ruolo</Label>
+                  <Select value={generalConfig.ruoloUtente} onValueChange={(value) => 
+                    setGeneralConfig(prev => ({ ...prev, ruoloUtente: value }))
+                  }>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona ruolo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Utente">Utente</SelectItem>
+                      <SelectItem value="Manager">Manager</SelectItem>
+                      <SelectItem value="Amministratore">Amministratore</SelectItem>
+                      <SelectItem value="Commerciale">Commerciale</SelectItem>
+                      <SelectItem value="Marketing">Marketing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Alert>
+                <User className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Auto-assegnazione:</strong> Tutte le attività che crei verranno automaticamente assegnate a te come utente. 
+                  Il nome completo "{generalConfig.nomeUtente} {generalConfig.cognomeUtente}" apparirà nel campo "Assegnato a" di ogni nuova attività.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveGeneralConfig} disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Salvataggio...' : 'Salva Profilo'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Configurazione Email Provider */}
         <TabsContent value="email">

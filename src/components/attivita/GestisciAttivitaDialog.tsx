@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Edit3, History, Save, X } from 'lucide-react';
+import { Calendar, Clock, Edit3, History, Save, X, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface Activity {
@@ -25,13 +26,15 @@ interface Activity {
   data_ultima_modifica?: string;
   modifiche_log?: any[];
   rubrica_nome?: string;
+  rubrica_id?: string;
+  cellulare?: string;
 }
 
 interface GestisciAttivitaDialogProps {
   isOpen: boolean;
   activity: Activity | null;
   onClose: () => void;
-  onSave: (updatedActivity: Partial<Activity>) => void;
+  onSave: (updatedActivity: Partial<Activity>, updateCompany?: boolean) => void;
 }
 
 export function GestisciAttivitaDialog({ 
@@ -44,6 +47,8 @@ export function GestisciAttivitaDialog({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [showHistory, setShowHistory] = useState(false);
+  const [showUpdateCompanyDialog, setShowUpdateCompanyDialog] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<Partial<Activity> | null>(null);
 
   React.useEffect(() => {
     if (activity) {
@@ -76,11 +81,30 @@ export function GestisciAttivitaDialog({
       scadenza = selectedDate.toISOString();
     }
 
-    onSave({
+    const updatedData = {
       ...formData,
       scadenza
-    });
-    onClose();
+    };
+
+    // Se il cellulare è cambiato e c'è un rubrica_id, chiedi se aggiornare l'azienda
+    if (formData.cellulare !== activity?.cellulare && 
+        formData.cellulare && 
+        activity?.rubrica_id) {
+      setPendingUpdate(updatedData);
+      setShowUpdateCompanyDialog(true);
+    } else {
+      onSave(updatedData);
+      onClose();
+    }
+  };
+
+  const handleConfirmUpdate = (updateCompany: boolean) => {
+    if (pendingUpdate) {
+      onSave(pendingUpdate, updateCompany);
+      onClose();
+    }
+    setShowUpdateCompanyDialog(false);
+    setPendingUpdate(null);
   };
 
   const getActivityIcon = (tipo: string) => {
@@ -262,6 +286,21 @@ export function GestisciAttivitaDialog({
                 className="min-h-[100px]"
               />
             </div>
+
+            {/* Campo Cellulare */}
+            <div>
+              <Label htmlFor="cellulare" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Cellulare
+              </Label>
+              <Input
+                id="cellulare"
+                type="tel"
+                value={formData.cellulare || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                placeholder="Inserisci numero di cellulare..."
+              />
+            </div>
           </div>
 
           {/* Storico modifiche */}
@@ -306,6 +345,26 @@ export function GestisciAttivitaDialog({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Dialog di conferma aggiornamento azienda */}
+      <AlertDialog open={showUpdateCompanyDialog} onOpenChange={setShowUpdateCompanyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aggiornare anche l'azienda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hai modificato il numero di cellulare. Vuoi aggiornare anche il record dell'azienda nella rubrica con il nuovo numero?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleConfirmUpdate(false)}>
+              Solo attività
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleConfirmUpdate(true)}>
+              Aggiorna azienda
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

@@ -42,6 +42,7 @@ interface Activity {
   data_ultima_modifica?: string;
   modifiche_log?: any[];
   selezionata?: boolean;
+  cellulare?: string;
 }
 
 const TIPO_LABELS = {
@@ -106,7 +107,8 @@ export default function Attivita() {
             azienda,
             origine,
             paese,
-            citta
+            citta,
+            cellulare
           )
         `)
         .order('data_creazione', { ascending: false });
@@ -121,6 +123,7 @@ export default function Attivita() {
         rubrica_origine: activity.rubrica?.origine,
         rubrica_paese: activity.rubrica?.paese,
         rubrica_citta: activity.rubrica?.citta,
+        cellulare: activity.rubrica?.cellulare,
         tipo: activity.tipo as Activity['tipo'],
         descrizione: activity.descrizione,
         stato: activity.stato as Activity['stato'],
@@ -388,10 +391,11 @@ export default function Attivita() {
     }
   };
 
-  const handleGestisciActivity = async (updates: Partial<Activity>) => {
+  const handleGestisciActivity = async (updates: Partial<Activity>, updateCompany?: boolean) => {
     if (!selectedActivity) return;
 
     try {
+      // Aggiorna sempre l'attività
       const { error } = await supabase
         .from('attivita')
         .update(updates)
@@ -399,14 +403,36 @@ export default function Attivita() {
 
       if (error) throw error;
 
+      // Se richiesto, aggiorna anche l'azienda nella rubrica
+      if (updateCompany && updates.cellulare && selectedActivity.rubrica_id) {
+        const { error: rubricaError } = await supabase
+          .from('rubrica')
+          .update({ cellulare: updates.cellulare })
+          .eq('id', selectedActivity.rubrica_id);
+
+        if (rubricaError) {
+          console.error('Errore aggiornamento rubrica:', rubricaError);
+          toast({
+            title: "Attività aggiornata",
+            description: "L'attività è stata aggiornata ma non è stato possibile aggiornare l'azienda nella rubrica.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Aggiornamento completato",
+            description: "Attività e azienda aggiornate con successo.",
+          });
+        }
+      } else {
+        toast({
+          title: "Attività aggiornata",
+          description: "Le modifiche sono state salvate con successo.",
+        });
+      }
+
       await loadActivities();
       setIsGestisciOpen(false);
       setSelectedActivity(null);
-      
-      toast({
-        title: "Attività aggiornata",
-        description: "Le modifiche sono state salvate con successo.",
-      });
     } catch (error: any) {
       toast({
         title: "Errore",

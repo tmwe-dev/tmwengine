@@ -882,7 +882,7 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell 
-                        className="max-w-[300px] cursor-pointer focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
+                        className="max-w-[300px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();

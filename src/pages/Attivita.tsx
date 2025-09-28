@@ -22,6 +22,7 @@ interface Activity {
   id: string;
   rubrica_id?: string;
   rubrica_nome?: string;
+  rubrica_azienda?: string;
   tipo: 'chiamata' | 'meeting' | 'email' | 'task';
   descrizione: string;
   stato: 'aperta' | 'in_corso' | 'completata' | 'annullata';
@@ -102,7 +103,8 @@ export default function Attivita() {
       const formattedActivities: Activity[] = (data || []).map(activity => ({
         id: activity.id,
         rubrica_id: activity.rubrica_id,
-        rubrica_nome: activity.rubrica?.[0]?.nome || activity.rubrica?.[0]?.azienda,
+        rubrica_nome: activity.rubrica?.[0]?.nome,
+        rubrica_azienda: activity.rubrica?.[0]?.azienda,
         tipo: activity.tipo as Activity['tipo'],
         descrizione: activity.descrizione,
         stato: activity.stato as Activity['stato'],
@@ -192,7 +194,7 @@ export default function Attivita() {
 
   const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.rubrica_nome?.toLowerCase().includes(searchTerm.toLowerCase());
+      activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Gestione filtro stato multiplo (es: "aperta,in_corso") o "all"
     const matchesStato = !filters.stato || filters.stato === 'all' || 
@@ -829,9 +831,9 @@ export default function Attivita() {
                       </TableCell>
                       <TableCell className="max-w-[300px]">
                         <div>
-                          <div className="font-medium text-text-primary truncate">
-                            {activity.rubrica_nome || 'Nessun contatto'}
-                          </div>
+          <div className="font-medium text-text-primary truncate">
+            {activity.rubrica_azienda || 'Nessuna azienda'}
+          </div>
                           <div className="text-sm text-text-secondary truncate">
                             {activity.descrizione}
                           </div>

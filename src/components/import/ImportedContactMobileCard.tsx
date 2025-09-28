@@ -37,47 +37,53 @@ export function ImportedContactMobileCard({
 
   return (
     <Card className={cn(
-      "border transition-all duration-200 hover:shadow-md",
-      isSelected && "ring-2 ring-primary border-primary"
+      "border transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 rounded-xl bg-gradient-to-br from-background to-muted/30",
+      isSelected && "ring-2 ring-primary border-primary bg-primary/5 shadow-md"
     )}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          {/* Checkbox */}
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelect(index, !!checked)}
-            className="mt-1"
-          />
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4">
+          {/* Checkbox with enhanced styling */}
+          <div className="relative">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(index, !!checked)}
+              className="mt-1 h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all duration-200"
+            />
+          </div>
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs text-muted-foreground">#{index + 1}</span>
+            {/* Header with enhanced styling */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                  #{index + 1}
+                </div>
                 {contact.note && (
-                  <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                  <div className="bg-blue-100 p-1.5 rounded-full">
+                    <FileText className="h-3 w-3 text-blue-600" />
+                  </div>
                 )}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onDelete}
-                className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Company Name */}
-            <div className="mb-2">
+            {/* Company Name with enhanced styling */}
+            <div className="mb-4">
               <div 
-                className="font-medium text-primary cursor-pointer hover:underline truncate"
+                className="font-semibold text-lg text-primary cursor-pointer hover:underline truncate transition-colors duration-200 hover:text-primary/80"
                 onClick={onView}
               >
                 {contact.company_name || contact.name || 'Azienda non specificata'}
               </div>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-2">
                 <ActivityIndicators 
                   companyId={contact.id} 
                   activities={getCompanyActivities(contact.id)}
@@ -86,49 +92,54 @@ export function ImportedContactMobileCard({
               </div>
             </div>
 
-            {/* Contact Details */}
+            {/* Contact Details with enhanced styling */}
             {contact.name && contact.name !== contact.company_name && (
-              <div className="text-sm text-muted-foreground mb-1">
-                👤 {formatCellValue(contact.name)}
+              <div className="bg-muted/50 rounded-lg p-3 mb-3">
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <div className="bg-primary/10 p-1 rounded-full">
+                    👤
+                  </div>
+                  <span className="font-medium">{formatCellValue(contact.name)}</span>
+                </div>
               </div>
             )}
 
-            {/* Location */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            {/* Location with enhanced styling */}
+            <div className="flex items-center gap-4 text-sm mb-4">
               {contact.country && (
-                <div className="flex items-center gap-1">
-                  <span>{getCountryFlag(contact.country)}</span>
-                  <span>{formatCellValue(contact.country)}</span>
+                <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
+                  <span className="text-lg">{getCountryFlag(contact.country)}</span>
+                  <span className="font-medium text-foreground">{formatCellValue(contact.country)}</span>
                 </div>
               )}
               {contact.city && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5" />
                   <span>{formatCellValue(contact.city)}</span>
                 </div>
               )}
             </div>
 
-            {/* Contact Methods */}
-            <div className="flex items-center gap-4 text-sm">
+            {/* Contact Methods with enhanced styling */}
+            <div className="flex items-center gap-3 mb-4">
               {contact.email && (
-                <div className="flex items-center gap-1 text-blue-600">
-                  <Mail className="h-3 w-3" />
-                  <span className="text-xs">Email</span>
+                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-full text-sm font-medium">
+                  <Mail className="h-4 w-4" />
+                  <span>Email</span>
                 </div>
               )}
               {(contact.phone || contact.cell) && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <Phone className="h-3 w-3" />
-                  <span className="text-xs">Tel</span>
+                <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-full text-sm font-medium">
+                  <Phone className="h-4 w-4" />
+                  <span>Tel</span>
                 </div>
               )}
             </div>
 
-            {/* Origin */}
+            {/* Origin with enhanced styling */}
             {contact.origin && (
-              <div className="mt-2">
-                <Badge variant="outline" className="text-xs">
+              <div className="flex justify-end">
+                <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary font-medium px-3 py-1">
                   {formatCellValue(contact.origin)}
                 </Badge>
               </div>

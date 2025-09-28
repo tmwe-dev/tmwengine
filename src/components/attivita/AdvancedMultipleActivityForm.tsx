@@ -306,27 +306,27 @@ export function AdvancedMultipleActivityForm({
             </TabsList>
 
             {/* Email Form */}
-            <TabsContent value="email" className="space-y-4 mt-6">
-              <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
-                <div className="flex items-center gap-2 mb-4">
-                  <Mail className="h-5 w-5 text-blue-500" />
-                  <h4 className="font-semibold">Configurazione Email</h4>
+            <TabsContent value="email" className="space-y-3 mt-4">
+              <div className="space-y-3 p-3 border border-border rounded-lg bg-background">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mail className="h-4 w-4 text-blue-500" />
+                  <h4 className="font-medium text-sm">Configurazione Email</h4>
                 </div>
 
                 {/* Selezione Template */}
                 {emailTemplates.length > 0 && (
-                  <div className="mb-4">
-                    <label className="text-sm font-medium mb-2 block">Template Email (opzionale)</label>
+                  <div className="mb-3">
+                    <label className="text-xs font-medium mb-1 block">Template Email (opzionale)</label>
                     <Select onValueChange={handleTemplateSelect}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8">
                         <SelectValue placeholder="Seleziona un template..." />
                       </SelectTrigger>
                       <SelectContent>
                         {emailTemplates.map((template) => (
                           <SelectItem key={template.id} value={template.id}>
                             <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4" />
-                              {template.nome}
+                              <FileText className="h-3 w-3" />
+                              <span className="text-xs">{template.nome}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -336,21 +336,21 @@ export function AdvancedMultipleActivityForm({
                 )}
 
                 {/* Gestione Allegati Email */}
-                <div className="space-y-4 border border-border rounded-lg p-4 bg-background-subtle">
-                  <h5 className="font-medium text-sm">Allegati Email</h5>
+                <div className="space-y-2 border border-border rounded p-2 bg-background-subtle">
+                  <h5 className="font-medium text-xs">Allegati Email</h5>
                   
                   {/* Allegati esistenti dalla memoria */}
                   {emailAttachments.length > 0 && (
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Seleziona allegati dalla memoria</label>
-                      <div className="max-h-32 overflow-y-auto space-y-2">
+                      <label className="text-xs font-medium mb-1 block">Seleziona dalla memoria</label>
+                      <div className="max-h-20 overflow-y-auto space-y-1">
                         {emailAttachments.map((attachment) => (
                           <FormField
                             key={attachment.id}
                             control={form.control}
                             name="allegati_esistenti"
                             render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                 <FormControl>
                                   <Checkbox
                                     checked={field.value?.includes(attachment.id)}
@@ -362,14 +362,15 @@ export function AdvancedMultipleActivityForm({
                                         field.onChange(currentValues.filter(id => id !== attachment.id));
                                       }
                                     }}
+                                    className="h-3 w-3"
                                   />
                                 </FormControl>
-                                <div className="space-y-1 leading-none flex-1">
-                                  <FormLabel className="text-sm font-normal cursor-pointer">
+                                <div className="flex-1 min-w-0">
+                                  <FormLabel className="text-xs font-normal cursor-pointer truncate block">
                                     {attachment.nome}
                                   </FormLabel>
                                   <p className="text-xs text-muted-foreground">
-                                    {formatFileSize(attachment.file_size)} • {attachment.mime_type}
+                                    {formatFileSize(attachment.file_size)}
                                   </p>
                                 </div>
                               </FormItem>
@@ -382,10 +383,10 @@ export function AdvancedMultipleActivityForm({
 
                   {/* Upload nuovi allegati */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Carica nuovi allegati</label>
+                    <label className="text-xs font-medium mb-1 block">Carica nuovi allegati</label>
                     <div
                       className={cn(
-                        "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                        "border-2 border-dashed rounded p-3 text-center transition-colors",
                         dragActive 
                           ? "border-primary bg-primary/10" 
                           : "border-border hover:border-primary/50"
@@ -395,9 +396,9 @@ export function AdvancedMultipleActivityForm({
                       onDragOver={handleDragOver}
                       onDrop={handleDrop}
                     >
-                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Trascina i file qui o clicca per selezionare
+                      <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Trascina file o clicca
                       </p>
                       <input
                         type="file"
@@ -410,22 +411,23 @@ export function AdvancedMultipleActivityForm({
                         type="button"
                         variant="outline"
                         size="sm"
+                        className="h-6 text-xs px-2"
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
-                        Seleziona File
+                        Seleziona
                       </Button>
                     </div>
 
                     {/* Lista file selezionati */}
                     {selectedFiles.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <label className="text-sm font-medium">File selezionati:</label>
+                      <div className="mt-2 space-y-1">
+                        <label className="text-xs font-medium">File selezionati:</label>
                         {selectedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-background border border-border rounded">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{file.name}</span>
-                              <span className="text-xs text-muted-foreground">
+                          <div key={index} className="flex items-center justify-between p-1 bg-background border border-border rounded text-xs">
+                            <div className="flex items-center gap-1 min-w-0 flex-1">
+                              <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate">{file.name}</span>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
                                 ({formatFileSize(file.size)})
                               </span>
                             </div>
@@ -433,9 +435,10 @@ export function AdvancedMultipleActivityForm({
                               type="button"
                               variant="ghost"
                               size="sm"
+                              className="h-5 w-5 p-0"
                               onClick={() => removeFile(index)}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
                         ))}
@@ -449,11 +452,12 @@ export function AdvancedMultipleActivityForm({
                   name="oggetto_email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Oggetto Email *</FormLabel>
+                      <FormLabel className="text-xs">Oggetto Email *</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           placeholder="es. Proposta commerciale - Seguimento"
+                          className="h-8"
                         />
                       </FormControl>
                       <FormMessage />
@@ -466,12 +470,12 @@ export function AdvancedMultipleActivityForm({
                   name="testo_email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Testo Email *</FormLabel>
+                      <FormLabel className="text-xs">Testo Email *</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
                           placeholder="Gentile [Nome], scrivo per..."
-                          className="min-h-[150px]"
+                          className="min-h-[80px] text-xs"
                         />
                       </FormControl>
                       <FormMessage />

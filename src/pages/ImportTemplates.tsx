@@ -1943,7 +1943,7 @@ export default function ImportTemplates() {
 
               {/* Progress Indicator */}
               {importProgress.isProcessing && (
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="border-blue-200">
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-blue-700">
@@ -2304,7 +2304,7 @@ export default function ImportTemplates() {
                   <Badge 
                     key={`${filter.field}-${filter.value}-${index}`}
                     variant="outline" 
-                    className="text-blue-600 border-blue-200 bg-transparent hover:bg-blue-50/20 cursor-pointer flex items-center gap-1"
+                    className="text-blue-600 border-blue-200 bg-transparent cursor-pointer flex items-center gap-1"
                     onClick={() => removeFilter(filter)}
                   >
                     <span className="capitalize">

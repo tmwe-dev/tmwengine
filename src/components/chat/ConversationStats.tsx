@@ -125,7 +125,7 @@ export const ConversationStats = ({
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Token Input */}
-          <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+          <div className="text-center p-3 dark:bg-blue-950/30 rounded-lg">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.token_totali_input.toLocaleString()}
             </div>

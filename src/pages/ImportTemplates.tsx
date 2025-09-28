@@ -2006,6 +2006,7 @@ export default function ImportTemplates() {
                     <TableHead>Errori</TableHead>
                     <TableHead>Selezionati</TableHead>
                     <TableHead>Azioni</TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2044,24 +2045,25 @@ export default function ImportTemplates() {
                               <Users className="h-4 w-4" />
                               {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
                             </Button>
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => deleteImportFile(log)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            
-                            {log.trasferiti_rubrica && (
-                              <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
-                                Trasferiti
-                              </Badge>
-                            )}
-                         </div>
-                      </TableCell>
-                    </TableRow>
+                             
+                             {log.trasferiti_rubrica && (
+                               <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
+                                 Trasferiti
+                               </Badge>
+                             )}
+                          </div>
+                       </TableCell>
+                       <TableCell>
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           onClick={() => deleteImportFile(log)}
+                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </TableCell>
+                     </TableRow>
                   ))}
                 </TableBody>
               </Table>

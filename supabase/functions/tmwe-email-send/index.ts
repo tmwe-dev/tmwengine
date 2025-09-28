@@ -91,7 +91,7 @@ serve(async (req) => {
       throw new Error('Credenciales TMWE no configuradas');
     }
 
-    const oauthToken = credentials[0].oauth_token;
+    const oauthToken = credentials[0].oauth_token || credentials[0].api_key;
     if (!oauthToken) {
       throw new Error('OAuth Token TMWE no configurado');
     }

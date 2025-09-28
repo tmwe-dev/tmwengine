@@ -41,13 +41,15 @@ serve(async (req) => {
         .eq('attivo', true)
         .maybeSingle();
       
-      if (provider?.email_provider_credenziali?.[0]?.oauth_token) {
-        oauthToken = provider.email_provider_credenziali[0].oauth_token;
+      if (provider?.email_provider_credenziali?.[0]) {
+        // Cerca prima in oauth_token poi in api_key come fallback
+        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
+                     provider.email_provider_credenziali[0].api_key;
       }
     }
     
     if (!oauthToken) {
-      throw new Error('TMWE OAuth token non configurato');
+      throw new Error('TMWE OAuth token non configurato nel database o environment');
     }
 
     console.log('Using TMWE OAuth token');

@@ -363,14 +363,44 @@ serve(async (req) => {
     const tokensOutput = data.usage?.completion_tokens || 0;
     const responseTime = Date.now() - startTime;
 
-    // Update usage statistics in background
+    // Save messages to database
     if (conversationId) {
-      updateUsageStats(
-        conversationId, 
-        tokensInput, 
-        tokensOutput, 
-        responseTime
-      ).catch(error => console.error('Background stats update failed:', error));
+      try {
+        // Save user message first
+        await supabase
+          .from('chat_messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'user',
+            content: prompt
+          });
+
+        // Save AI response
+        await supabase
+          .from('chat_messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: aiResponse,
+            model: aiConfig.modello,
+            tokens_used: tokensUsed,
+            token_input: tokensInput,
+            token_output: tokensOutput,
+            tempo_risposta_ms: responseTime
+          });
+
+        // Update usage statistics in background
+        updateUsageStats(
+          conversationId, 
+          tokensInput, 
+          tokensOutput, 
+          responseTime
+        ).catch(error => console.error('Background stats update failed:', error));
+
+      } catch (dbError) {
+        console.error('Error saving messages to database:', dbError);
+        // Don't fail the response if database save fails
+      }
     }
 
     return new Response(JSON.stringify({ 

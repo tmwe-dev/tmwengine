@@ -20,11 +20,16 @@ export type Database = {
           created_at: string
           creato_da: string | null
           data_creazione: string
+          data_ultima_modifica: string | null
           descrizione: string
           id: string
+          modifiche_log: Json | null
+          note: string | null
+          ora_creazione: string | null
           priorita: string
           rubrica_id: string | null
           scadenza: string | null
+          selezionata: boolean | null
           stato: string
           tipo: string
           updated_at: string
@@ -34,11 +39,16 @@ export type Database = {
           created_at?: string
           creato_da?: string | null
           data_creazione?: string
+          data_ultima_modifica?: string | null
           descrizione: string
           id?: string
+          modifiche_log?: Json | null
+          note?: string | null
+          ora_creazione?: string | null
           priorita?: string
           rubrica_id?: string | null
           scadenza?: string | null
+          selezionata?: boolean | null
           stato?: string
           tipo: string
           updated_at?: string
@@ -48,11 +58,16 @@ export type Database = {
           created_at?: string
           creato_da?: string | null
           data_creazione?: string
+          data_ultima_modifica?: string | null
           descrizione?: string
           id?: string
+          modifiche_log?: Json | null
+          note?: string | null
+          ora_creazione?: string | null
           priorita?: string
           rubrica_id?: string | null
           scadenza?: string | null
+          selezionata?: boolean | null
           stato?: string
           tipo?: string
           updated_at?: string

@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Edit, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
+import { GestisciAttivitaDialog } from '@/components/attivita/GestisciAttivitaDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Activity {
   id: string;
@@ -24,6 +31,11 @@ interface Activity {
   assegnato_nome?: string;
   creato_da?: string;
   data_creazione: string;
+  note?: string;
+  ora_creazione?: string;
+  data_ultima_modifica?: string;
+  modifiche_log?: any[];
+  selezionata?: boolean;
 }
 
 const TIPO_LABELS = {
@@ -52,9 +64,12 @@ export default function Attivita() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isGestisciOpen, setIsGestisciOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<keyof Activity>('data_creazione');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filters, setFilters] = useState({
     stato: '',
     tipo: '',
@@ -96,7 +111,12 @@ export default function Attivita() {
         assegnato_a: activity.assegnato_a,
         assegnato_nome: null,
         creato_da: activity.creato_da,
-        data_creazione: activity.data_creazione
+        data_creazione: activity.data_creazione,
+        note: activity.note,
+        ora_creazione: activity.ora_creazione,
+        data_ultima_modifica: activity.data_ultima_modifica,
+        modifiche_log: Array.isArray(activity.modifiche_log) ? activity.modifiche_log : [],
+        selezionata: activity.selezionata || false
       }));
 
       setActivities(formattedActivities);
@@ -122,6 +142,22 @@ export default function Attivita() {
     }
   };
 
+  // Determina se l'attività è futura o passata
+  const isActivityFuture = (activity: Activity) => {
+    if (!activity.scadenza) return false;
+    return new Date(activity.scadenza) > new Date();
+  };
+
+  // Classifica attività: future = in sospeso, passate = completate
+  const getActivityStatus = (activity: Activity) => {
+    const isFuture = isActivityFuture(activity);
+    if (isFuture) {
+      return activity.stato === 'completata' ? 'programmata' : 'in sospeso';
+    } else {
+      return activity.stato === 'completata' ? 'completata' : 'scaduta';
+    }
+  };
+
   // Sorting function
   const handleSort = (field: keyof Activity) => {
     if (sortField === field) {
@@ -130,6 +166,28 @@ export default function Attivita() {
       setSortField(field);
       setSortDirection('asc');
     }
+  };
+
+  // Selection functions
+  const handleActivitySelect = (activityId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedActivities(prev => [...prev, activityId]);
+    } else {
+      setSelectedActivities(prev => prev.filter(id => id !== activityId));
+    }
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedActivities(filteredActivities.map(a => a.id));
+    } else {
+      setSelectedActivities([]);
+    }
+  };
+
+  // Date filter function
+  const handleDateFilter = (date: Date | undefined) => {
+    setFilterDate(date);
   };
 
   const filteredActivities = activities.filter(activity => {
@@ -142,7 +200,10 @@ export default function Attivita() {
       (!filters.priorita || activity.priorita === filters.priorita) &&
       (!filters.scadenza || checkScadenzaFilter(activity.scadenza, filters.scadenza));
 
-    return matchesSearch && matchesFilters;
+    const matchesDateFilter = !filterDate || 
+      (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
+
+    return matchesSearch && matchesFilters && matchesDateFilter;
   }).sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
@@ -178,7 +239,6 @@ export default function Attivita() {
 
   const handleAddActivity = async (activityData: any) => {
     try {
-      // Crea l'attività basata sul tipo selezionato
       let descrizione = '';
       let tipo = activityData.tipo;
       
@@ -261,6 +321,34 @@ export default function Attivita() {
     }
   };
 
+  const handleGestisciActivity = async (updates: Partial<Activity>) => {
+    if (!selectedActivity) return;
+
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .update(updates)
+        .eq('id', selectedActivity.id);
+
+      if (error) throw error;
+
+      await loadActivities();
+      setIsGestisciOpen(false);
+      setSelectedActivity(null);
+      
+      toast({
+        title: "Attività aggiornata",
+        description: "Le modifiche sono state salvate con successo.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDeleteActivity = async (activityId: string) => {
     try {
       const { error } = await supabase
@@ -309,6 +397,11 @@ export default function Attivita() {
     }
   };
 
+  const openGestisciForm = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setIsGestisciOpen(true);
+  };
+
   const openEditForm = (activity: Activity) => {
     setSelectedActivity(activity);
     setIsFormOpen(true);
@@ -350,9 +443,9 @@ export default function Attivita() {
 
   const getStatsData = () => {
     const totali = activities.length;
-    const aperte = activities.filter(a => a.stato === 'aperta').length;
-    const in_corso = activities.filter(a => a.stato === 'in_corso').length;
+    const future = activities.filter(a => isActivityFuture(a)).length;
     const completate = activities.filter(a => a.stato === 'completata').length;
+    const in_corso = activities.filter(a => a.stato === 'in_corso').length;
     
     const today = new Date();
     const scadute = activities.filter(a => {
@@ -360,7 +453,7 @@ export default function Attivita() {
       return new Date(a.scadenza) < today && a.stato !== 'completata';
     }).length;
 
-    return { totali, aperte, in_corso, completate, scadute };
+    return { totali, future, completate, in_corso, scadute };
   };
 
   const stats = getStatsData();
@@ -401,7 +494,7 @@ export default function Attivita() {
             </DialogHeader>
             <div className="flex-1 overflow-y-auto">
               <AdvancedMultipleActivityForm
-                contacts={[]} // Array vuoto per attività singole
+                contacts={[]}
                 onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
                 onCancel={() => setIsFormOpen(false)}
                 isSubmitting={false}
@@ -425,6 +518,24 @@ export default function Attivita() {
                 className="pl-10"
               />
             </div>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={filterDate}
+                  onSelect={handleDateFilter}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
             
             <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
               <DialogTrigger asChild>
@@ -459,14 +570,14 @@ export default function Attivita() {
         
         <Card className="border-card shadow-soft">
           <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-blue-600">{stats.aperte}</div>
-            <div className="text-small text-text-secondary">Aperte</div>
+            <div className="text-heading-3 font-bold text-orange-600">{stats.future}</div>
+            <div className="text-small text-text-secondary">In Sospeso</div>
           </CardContent>
         </Card>
 
         <Card className="border-card shadow-soft">
           <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-orange-600">{stats.in_corso}</div>
+            <div className="text-heading-3 font-bold text-blue-600">{stats.in_corso}</div>
             <div className="text-small text-text-secondary">In Corso</div>
           </CardContent>
         </Card>
@@ -492,6 +603,12 @@ export default function Attivita() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedActivities.length === filteredActivities.length && filteredActivities.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 w-16" 
                   onClick={() => handleSort('tipo')}
@@ -527,6 +644,17 @@ export default function Attivita() {
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('data_creazione')}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-600">Creata</span>
+                    {sortField === 'data_creazione' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
                   onClick={() => handleSort('stato')}
                 >
                   <div className="flex items-center gap-2">
@@ -553,7 +681,7 @@ export default function Attivita() {
             <TableBody>
               {filteredActivities.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     {activities.length === 0 ? (
                       <div className="text-text-secondary">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -580,8 +708,23 @@ export default function Attivita() {
               ) : (
                 filteredActivities.map((activity) => {
                   const ActivityIcon = getActivityIcon(activity.tipo);
+                  const activityStatus = getActivityStatus(activity);
                   return (
-                    <TableRow key={activity.id} className="hover:bg-muted/50">
+                    <TableRow 
+                      key={activity.id} 
+                      className={cn(
+                        "hover:bg-muted/50 cursor-pointer",
+                        selectedActivities.includes(activity.id) && "bg-blue-50"
+                      )}
+                      onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedActivities.includes(activity.id)}
+                          onCheckedChange={(checked) => handleActivitySelect(activity.id, !!checked)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center">
                           <ActivityIcon className="h-5 w-5 text-blue-500" />
@@ -601,19 +744,12 @@ export default function Attivita() {
                         {activity.scadenza ? (
                           <div className="space-y-1">
                             <div className="font-semibold text-blue-600">
-                              {new Date(activity.scadenza).toLocaleDateString('it-IT', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })}
+                              {format(new Date(activity.scadenza), 'dd/MM/yyyy')}
                             </div>
                             <div className="text-sm font-medium text-blue-500">
-                              {new Date(activity.scadenza).toLocaleTimeString('it-IT', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                              {format(new Date(activity.scadenza), 'HH:mm')}
                             </div>
-                            {new Date(activity.scadenza) < new Date() && (
+                            {!isActivityFuture(activity) && activity.stato !== 'completata' && (
                               <Badge variant="destructive" className="text-xs">
                                 Scaduta
                               </Badge>
@@ -624,8 +760,26 @@ export default function Attivita() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatoBadgeVariant(activity.stato)}>
-                          {STATO_LABELS[activity.stato]}
+                        <div className="space-y-1">
+                          <div className="font-semibold text-blue-600">
+                            {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
+                          </div>
+                          {activity.ora_creazione && (
+                            <div className="text-sm text-blue-500">
+                              {activity.ora_creazione}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            activityStatus === 'in sospeso' ? 'secondary' :
+                            activityStatus === 'completata' ? 'default' :
+                            activityStatus === 'scaduta' ? 'destructive' : 'outline'
+                          }
+                        >
+                          {activityStatus}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -633,41 +787,18 @@ export default function Attivita() {
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          {activity.stato !== 'completata' && activity.stato !== 'annullata' && (
-                            <>
-                              {activity.stato === 'aperta' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleStatusChange(activity.id, 'in_corso')}
-                                  className="h-7 px-2 text-xs"
-                                >
-                                  Inizia
-                                </Button>
-                              )}
-                              {activity.stato === 'in_corso' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleStatusChange(activity.id, 'completata')}
-                                  className="h-7 px-2 text-xs"
-                                >
-                                  Completa
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditForm(activity)}
-                            className="h-7 w-7"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openGestisciForm(activity)}
+                            className="h-7 px-2 text-xs"
                           >
-                            <Edit className="h-3 w-3" />
+                            <Settings className="h-3 w-3 mr-1" />
+                            Gestisci
                           </Button>
+                          
                           <Button
                             variant="ghost"
                             size="icon"
@@ -686,6 +817,14 @@ export default function Attivita() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialog Gestisci Attività */}
+      <GestisciAttivitaDialog
+        isOpen={isGestisciOpen}
+        activity={selectedActivity}
+        onClose={() => setIsGestisciOpen(false)}
+        onSave={handleGestisciActivity}
+      />
     </div>
   );
 }

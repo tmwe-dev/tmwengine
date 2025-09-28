@@ -689,25 +689,6 @@ export default function Attivita() {
               />
             </div>
             
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
-                </Button>
-              </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={filterDate}
-                      onSelect={handleDateFilter}
-                      numberOfMonths={3}
-                      initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            
             <Select
               value={filters.stato}
               onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
@@ -723,26 +704,47 @@ export default function Attivita() {
                 <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
               </SelectContent>
             </Select>
-
-            <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtri Avanzati
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Filtri Attività</DialogTitle>
-                </DialogHeader>
-                <ActivityFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onClose={() => setIsFiltersOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
           </div>
+
+          <div className="flex gap-3 mt-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                </Button>
+              </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={filterDate}
+                    onSelect={handleDateFilter}
+                    numberOfMonths={3}
+                    initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filtri Avanzati
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filtri Attività</DialogTitle>
+              </DialogHeader>
+              <ActivityFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                onClose={() => setIsFiltersOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
         </CardContent>
       </Card>
 

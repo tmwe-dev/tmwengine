@@ -259,15 +259,15 @@ const Email = () => {
         
         <div className="flex items-center space-x-2">
           <Button onClick={() => setShowAIPanel(true)} variant="outline">
-            <Brain className="mr-2 h-4 w-4" />
+            <Brain className="mr-1 h-4 w-4" />
             AI Panel
           </Button>
           <Button onClick={() => setShowFilters(!showFilters)} variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
+            <Filter className="mr-1 h-4 w-4" />
             Filtri
           </Button>
           <Button onClick={() => setShowComposer(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1 h-4 w-4" />
             Nuova Email
           </Button>
         </div>

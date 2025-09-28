@@ -274,7 +274,7 @@ export const AIClassificationPanel: React.FC<AIClassificationPanelProps> = ({ em
                   disabled={isProcessing}
                   className="flex-1"
                 >
-                  <Brain className="mr-2 h-4 w-4" />
+                  <Brain className="mr-1 h-4 w-4" />
                   {isProcessing ? 'Processamento...' : 'Classifica Tutte'}
                 </Button>
                 
@@ -283,7 +283,7 @@ export const AIClassificationPanel: React.FC<AIClassificationPanelProps> = ({ em
                   onClick={handleRetrainModel}
                   disabled={isProcessing}
                 >
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className="mr-1 h-4 w-4" />
                   Riaddestra
                 </Button>
               </div>

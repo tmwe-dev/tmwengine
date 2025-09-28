@@ -186,7 +186,7 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
               size="sm"
               onClick={clearAllFilters}
             >
-              <RotateCcw className="mr-2 h-4 w-4" />
+              <RotateCcw className="mr-1 h-4 w-4" />
               Cancella Tutti
             </Button>
           )}
@@ -302,7 +302,7 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
                     !filters.dateFrom && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-1 h-4 w-4" />
                   {filters.dateFrom ? format(filters.dateFrom, "PPP") : "Seleziona data"}
                 </Button>
               </PopoverTrigger>
@@ -328,7 +328,7 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
                     !filters.dateTo && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-1 h-4 w-4" />
                   {filters.dateTo ? format(filters.dateTo, "PPP") : "Seleziona data"}
                 </Button>
               </PopoverTrigger>

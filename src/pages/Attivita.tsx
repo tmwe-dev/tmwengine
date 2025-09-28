@@ -728,7 +728,7 @@ export default function Attivita() {
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Calendar className="h-4 w-4 mr-1" />
                       Riprogramma
                     </Button>
                   </PopoverTrigger>
@@ -750,7 +750,7 @@ export default function Attivita() {
                   size="sm"
                   onClick={() => setSelectedActivities([])}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4 mr-1" />
                   Deseleziona
                 </Button>
               </div>

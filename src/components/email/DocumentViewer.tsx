@@ -37,7 +37,7 @@ export function DocumentViewer({ isOpen, onClose, fileName, fileUrl, mimeType }:
                 size="sm"
                 onClick={() => window.open(fileUrl, '_blank')}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>
               <Button variant="ghost" size="sm" onClick={onClose}>

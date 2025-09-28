@@ -227,7 +227,7 @@ export function GestisciAttivitaDialog({
                         !selectedDate && "text-muted-foreground"
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <Calendar className="mr-1 h-4 w-4" />
                       {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Seleziona data'}
                     </Button>
                   </PopoverTrigger>
@@ -297,11 +297,11 @@ export function GestisciAttivitaDialog({
         {/* Azioni */}
         <div className="flex justify-end gap-3 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 mr-1" />
             Annulla
           </Button>
           <Button onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 mr-1" />
             Salva Modifiche
           </Button>
         </div>

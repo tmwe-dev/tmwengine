@@ -249,7 +249,7 @@ export const ChatMemoryControls = ({
         </div>
 
         <Button onClick={saveConfig} disabled={isLoading} className="w-full">
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="h-4 w-4 mr-1" />
           {isLoading ? 'Salvando...' : 'Salva Configurazione'}
         </Button>
       </CardContent>

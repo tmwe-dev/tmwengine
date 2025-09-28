@@ -494,7 +494,7 @@ const Chat = () => {
                               rows={3}
                             />
                             <Button onClick={createSystemPrompt} className="w-full">
-                              <Plus className="h-4 w-4 mr-2" />
+                              <Plus className="h-4 w-4 mr-1" />
                               Crea System Prompt
                             </Button>
                           </div>

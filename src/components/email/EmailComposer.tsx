@@ -307,7 +307,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
                 onClick={handleAIAssist}
                 disabled={!watchedBody || isAIAssisted}
               >
-                <Brain className="mr-2 h-4 w-4" />
+                <Brain className="mr-1 h-4 w-4" />
                 Assistenza AI
               </Button>
               <Button type="button" variant="outline" size="sm">
@@ -356,7 +356,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex space-x-2">
             <Button type="button" variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="mr-1 h-4 w-4" />
               Programma
             </Button>
             <Button type="button" variant="outline">
@@ -369,7 +369,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
               Annulla
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              <Send className="mr-2 h-4 w-4" />
+              <Send className="mr-1 h-4 w-4" />
               {isSubmitting ? 'Invio...' : 'Invia'}
             </Button>
           </div>

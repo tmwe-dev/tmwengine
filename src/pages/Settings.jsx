@@ -572,6 +572,7 @@ const Settings = () => {
                       <SelectValue placeholder="Seleziona provider" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="TMWE">TMWE Email API</SelectItem>
                       <SelectItem value="sendgrid">SendGrid</SelectItem>
                       <SelectItem value="mailgun">Mailgun</SelectItem>
                       <SelectItem value="ses">Amazon SES</SelectItem>
@@ -594,20 +595,41 @@ const Settings = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {renderSecretField(
-                  "API Key",
-                  emailConfig.apiKey,
-                  "emailApiKey",
-                  (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
-                  "Inserisci la tua API key del provider email"
-                )}
+                {emailConfig.provider === 'TMWE' ? (
+                  <>
+                    {renderSecretField(
+                      "TMWE API Token *",
+                      emailConfig.apiKey,
+                      "emailApiKey",
+                      (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
+                      "Inserisci il tuo token TMWE API"
+                    )}
+                    
+                    <div className="space-y-1">
+                      <Label className="text-sm">Configurazione TMWE</Label>
+                      <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+                        Utilizza il token fornito da TMWE per l'integrazione email
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {renderSecretField(
+                      "API Key",
+                      emailConfig.apiKey,
+                      "emailApiKey",
+                      (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
+                      "Inserisci la tua API key del provider email"
+                    )}
 
-                {renderSecretField(
-                  "Webhook Secret",
-                  emailConfig.webhookSecret,
-                  "webhookSecret",
-                  (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
-                  "Secret per validazione webhook inbound"
+                    {renderSecretField(
+                      "Webhook Secret",
+                      emailConfig.webhookSecret,
+                      "webhookSecret",
+                      (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
+                      "Secret per validazione webhook inbound"
+                    )}
+                  </>
                 )}
               </div>
 
@@ -624,14 +646,21 @@ const Settings = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="outboundEndpoint" className="text-sm">Endpoint Outbound</Label>
+                  <Label htmlFor="outboundEndpoint" className="text-sm">
+                    {emailConfig.provider === 'TMWE' ? 'TMWE Endpoint' : 'Endpoint Outbound'}
+                  </Label>
                   <Input
                     id="outboundEndpoint"
                     value={emailConfig.outboundEndpoint}
                     onChange={(e) => setEmailConfig(prev => ({ ...prev, outboundEndpoint: e.target.value }))}
-                    placeholder="https://api.provider.com/send"
+                    placeholder={emailConfig.provider === 'TMWE' ? 'https://api.tmwe.it/v1/send' : 'https://api.provider.com/send'}
                     className="h-9"
                   />
+                  {emailConfig.provider === 'TMWE' && (
+                    <div className="text-xs text-muted-foreground">
+                      Endpoint predefinito per TMWE API
+                    </div>
+                  )}
                 </div>
               </div>
 

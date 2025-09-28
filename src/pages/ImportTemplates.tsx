@@ -2055,7 +2055,7 @@ export default function ImportTemplates() {
                             </Button>
                             
                             {log.trasferiti_rubrica && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
                                 Trasferiti
                               </Badge>
                             )}

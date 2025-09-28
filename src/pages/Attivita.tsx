@@ -194,8 +194,8 @@ export default function Attivita() {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_nome?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Gestione filtro stato multiplo (es: "aperta,in_corso")
-    const matchesStato = !filters.stato || 
+    // Gestione filtro stato multiplo (es: "aperta,in_corso") o "all"
+    const matchesStato = !filters.stato || filters.stato === 'all' || 
       filters.stato.split(',').includes(activity.stato);
     
     const matchesFilters = 
@@ -579,7 +579,7 @@ export default function Attivita() {
                 <SelectValue placeholder="Filtra per stato" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutte le attività</SelectItem>
+                <SelectItem value="all">Tutte le attività</SelectItem>
                 <SelectItem value="aperta,in_corso">Da svolgere</SelectItem>
                 <SelectItem value="completata">Completate</SelectItem>
                 <SelectItem value="annullata">Annullate</SelectItem>

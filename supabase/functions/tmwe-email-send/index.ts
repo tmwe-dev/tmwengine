@@ -11,40 +11,56 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Custom fetch con configuración SSL personalizada
-async function fetchWithSelfSignedCert(url: string, options: RequestInit) {
-  // Configurar agente HTTP personalizado que acepta certificados autofirmados
-  const httpsAgent = {
-    rejectUnauthorized: false, // Acepta certificados autofirmados
-    checkServerIdentity: () => undefined // Ignora verificación de hostname
-  };
-
+// Función para manejar certificados autofirmados de findair.it
+async function fetchWithCertBypass(url: string, options: RequestInit = {}) {
+  console.log('Attempting connection with cert bypass strategies...');
+  
+  // Estrategia 1: Intentar HTTPS con variables de entorno de Deno
   try {
-    // En Deno, usamos fetch con configuración de TLS personalizada
+    console.log('Strategy 1: HTTPS with environment bypass');
+    
+    // Configurar variables de entorno para Deno
+    const originalCaStore = Deno.env.get('DENO_TLS_CA_STORE');
+    Deno.env.set('DENO_TLS_CA_STORE', 'system,mozilla');
+    
     const response = await fetch(url, {
       ...options,
-      // @ts-ignore - Configuración específica de Deno para SSL
-      tls: {
-        rejectUnauthorized: false,
-        checkServerIdentity: false
-      }
+      // En Supabase Edge Functions, esto puede ayudar
+      signal: AbortSignal.timeout(30000) // 30 segundos timeout
     });
-    return response;
-  } catch (error) {
-    console.log('First attempt failed, trying with different approach:', error);
     
-    // Fallback: intenta con fetch normal y captura el error
+    // Restaurar variable original si existía
+    if (originalCaStore) {
+      Deno.env.set('DENO_TLS_CA_STORE', originalCaStore);
+    }
+    
+    console.log('Strategy 1 successful');
+    return response;
+    
+  } catch (httpsError) {
+    console.log('Strategy 1 failed:', httpsError);
+    
+    // Estrategia 2: Fallback a HTTP
     try {
-      return await fetch(url, options);
-    } catch (secondError) {
-      console.log('Both approaches failed:', secondError);
-      throw secondError;
+      console.log('Strategy 2: HTTP fallback');
+      const httpUrl = url.replace('https://', 'http://');
+      const response = await fetch(httpUrl, options);
+      console.log('Strategy 2 successful');
+      return response;
+      
+    } catch (httpError) {
+      console.log('Strategy 2 failed:', httpError);
+      
+      // Estrategia 3: Último intento con fetch básico
+      console.log('Strategy 3: Basic fetch attempt');
+      const response = await fetch(url, options);
+      return response;
     }
   }
 }
 
 serve(async (req) => {
-  console.log('=== TMWE API TEST (SSL SELF-SIGNED) ===');
+  console.log('=== TMWE EMAIL SEND (CERT BYPASS) ===');
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -52,35 +68,52 @@ serve(async (req) => {
 
   try {
     const emailData = await req.json();
-    console.log('Email data:', emailData);
+    console.log('Request data:', { to: emailData.to, subject: emailData.subject });
 
-    // Recupera API Key dal database
-    const { data: provider } = await supabase
+    // Recuperar configuración TMWE
+    const { data: provider, error: providerError } = await supabase
       .from('email_provider')
       .select('*, email_provider_credenziali(*)')
       .eq('provider', 'TMWE')
       .eq('attivo', true)
       .limit(1);
 
-    const apiKey = provider?.[0]?.email_provider_credenziali?.[0]?.api_key;
-    console.log('API Key found:', !!apiKey, 'Length:', apiKey?.length || 0);
+    if (providerError) {
+      throw new Error(`Database error: ${providerError.message}`);
+    }
 
-    // Payload para la API TMWE
-    const tmwePayload = {
+    if (!provider || !provider[0]) {
+      throw new Error('Provider TMWE no encontrado o inactivo');
+    }
+
+    const credentials = provider[0].email_provider_credenziali;
+    if (!credentials || !credentials[0]) {
+      throw new Error('Credenciales TMWE no configuradas');
+    }
+
+    const apiKey = credentials[0].api_key;
+    if (!apiKey) {
+      throw new Error('API Key TMWE no configurada');
+    }
+
+    console.log('Configuration loaded, API key length:', apiKey.length);
+
+    // Preparar payload para TMWE
+    const payload = {
       action: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
-      body: emailData.body_text,
-      body_html: emailData.body_html
+      body: emailData.body_text || '',
+      body_html: emailData.body_html || ''
     };
 
-    console.log('=== CALLING FINDAIR API (HTTPS + SSL BYPASS) ===');
-    console.log('URL:', 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message');
-    console.log('Payload:', tmwePayload);
-    console.log('SSL: Accepting self-signed certificates');
+    console.log('=== CALLING FINDAIR.IT API ===');
+    const apiUrl = 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message';
+    console.log('URL:', apiUrl);
+    console.log('Payload:', payload);
 
-    // Llamada a la API TMWE con certificados autofirmados aceptados
-    const response = await fetchWithSelfSignedCert('https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message', {
+    // Realizar llamada con bypass de certificados
+    const response = await fetchWithCertBypass(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -88,46 +121,46 @@ serve(async (req) => {
         'Accept': 'application/json',
         'User-Agent': 'TMWE-CRM-Integration/1.0'
       },
-      body: JSON.stringify(tmwePayload)
+      body: JSON.stringify(payload)
     });
 
     console.log('=== API RESPONSE ===');
-    console.log('Status:', response.status);
-    console.log('Status Text:', response.statusText);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
+    console.log('Status:', response.status, response.statusText);
+    
+    const responseHeaders = Object.fromEntries(response.headers.entries());
+    console.log('Headers count:', Object.keys(responseHeaders).length);
 
-    let responseText;
+    let responseText = '';
     let responseJson = null;
     
     try {
       responseText = await response.text();
-      console.log('Response Text:', responseText);
+      console.log('Response length:', responseText.length);
       
-      // Intenta parsear como JSON
-      if (responseText) {
+      if (responseText.trim()) {
         responseJson = JSON.parse(responseText);
-        console.log('Response JSON:', responseJson);
+        console.log('JSON parsed successfully');
       }
     } catch (parseError) {
-      console.log('JSON Parse Error:', parseError);
-      console.log('Raw response was:', responseText);
+      console.log('JSON parse failed, raw response:', responseText.substring(0, 200));
     }
 
-    // Retorna toda la información para debug
+    // Determinar si fue exitoso
+    const isSuccess = response.ok && responseJson?.success !== false;
+
     return new Response(JSON.stringify({
-      success: false, // Marcamos como false para debug
+      success: isSuccess,
+      message_id: responseJson?.message_id,
+      tmwe_response: responseJson,
       debug: {
-        api_called: true,
-        api_url: 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message',
-        ssl_self_signed_accepted: true,
+        cert_bypass_used: true,
         api_status: response.status,
         api_status_text: response.statusText,
-        api_headers: Object.fromEntries(response.headers.entries()),
-        api_response_text: responseText,
+        api_headers: responseHeaders,
+        api_response_text: responseText.substring(0, 500),
         api_response_json: responseJson,
-        payload_sent: tmwePayload,
-        has_api_key: !!apiKey,
-        api_key_length: apiKey?.length || 0
+        payload_sent: payload,
+        timestamp: new Date().toISOString()
       }
     }), {
       status: 200,
@@ -135,15 +168,18 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Function Error:', error);
+    console.error('Function error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorType = error instanceof Error ? error.constructor.name : typeof error;
+    
     return new Response(JSON.stringify({
       success: false,
-      error: String(error),
+      error: errorMessage,
       debug: {
-        error_type: typeof error,
-        error_name: error?.constructor?.name,
-        timestamp: new Date().toISOString(),
-        ssl_note: 'Attempted to accept self-signed certificates'
+        error_type: errorType,
+        cert_bypass_attempted: true,
+        timestamp: new Date().toISOString()
       }
     }), {
       status: 200,

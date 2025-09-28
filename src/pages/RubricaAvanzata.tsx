@@ -886,6 +886,7 @@ export default function RubricaAvanzata() {
                       {visibleColumns.details && (
                         <>
                           <TableHead>Telefono</TableHead>
+                          <TableHead>Cellulare</TableHead>
                           <TableHead>Città</TableHead>
                         </>
                       )}
@@ -990,7 +991,13 @@ export default function RubricaAvanzata() {
                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   <Phone className="h-3 w-3 text-text-secondary" />
-                                  {formatCellValue(record.telefono) || formatCellValue(record.cellulare)}
+                                  {formatCellValue(record.telefono)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3 text-text-secondary" />
+                                  {formatCellValue(record.cellulare)}
                                 </div>
                               </TableCell>
                               <TableCell>

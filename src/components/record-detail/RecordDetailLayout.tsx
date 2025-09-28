@@ -114,83 +114,39 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const handleImportToRubrica = async () => {
     setIsImporting(true);
     try {
-      // Map imported_contacts fields to rubrica fields, preserving the original ID
-      const rubricaData = {
-        id: record.id, // Preserve the original ID from imported_contacts
-        nome: record.name,
-        azienda: record.company_name,
-        alias: record.alias,
-        company_alias: record.company_alias,
-        responsabile: record.name,
-        title: record.title,
-        position: record.position,
-        email: record.email,
-        telefono: record.phone,
-        cellulare: record.cell,
-        indirizzo: record.address,
-        citta: record.city,
-        paese: record.country,
-        zip_code: record.zip_code,
-        origine: record.origin,
-        client_code: record.client_code,
-        note: record.note,
-        stato: record.stato,
-        created_by: record.created_by,
-        last_contact: record.last_contact,
-        next_contact_date: record.next_contact_date,
-        scheduled_contact: record.scheduled_contact,
-        completed: record.completed,
-        archiviata: record.archiviata,
-        has_actions: record.has_actions,
-        meta_client: record.meta_client,
-        meta_exclient: record.meta_exclient,
-        meta_express: record.meta_express,
-        meta_sea_freight: record.meta_sea_freight,
-        meta_air_freight: record.meta_air_freight,
-        meta_interested: record.meta_interested,
-        meta_reception_required_email: record.meta_reception_required_email,
-        meta_contact_required_email: record.meta_contact_required_email,
-        meta_presentation: record.meta_presentation,
-        meta_tutorial: record.meta_tutorial,
-        meta_wca: record.meta_wca,
-        meta_rejected: record.meta_rejected,
-        meta_exworks: record.meta_exworks,
-        meta_hight_value_customer: record.meta_hight_value_customer
-      };
-
-      // Remove undefined values
-      Object.keys(rubricaData).forEach(key => {
-        if (rubricaData[key] === undefined) {
-          delete rubricaData[key];
-        }
+      // Usa la funzione database per trasferimento completo con attività
+      const { data, error } = await supabase.rpc('transfer_company_to_rubrica', {
+        imported_contact_id: record.id
       });
-
-      const { error } = await supabase
-        .from('rubrica')
-        .insert([rubricaData]);
 
       if (error) {
         throw error;
       }
 
-      // Update the imported_contacts record to mark as imported
-      if (record.id) {
-        await supabase
-          .from('imported_contacts')
-          .update({ is_imported_to_rubrica: true })
-          .eq('id', record.id);
-      }
+      const result = data as {
+        success: boolean;
+        new_rubrica_id: string;
+        activities_transferred: number;
+        message: string;
+      };
 
-      toast({
-        title: "Contatto importato",
-        description: "Il contatto è stato aggiunto alla rubrica con successo.",
-      });
+      if (result.success) {
+        toast({
+          title: "Azienda trasferita",
+          description: result.message,
+        });
+        
+        // Il record viene automaticamente rimosso dalle tabelle import dalla funzione
+        // Non è necessario aggiornare lo stato locale
+      } else {
+        throw new Error('Trasferimento fallito');
+      }
 
     } catch (error) {
       console.error('Error importing to rubrica:', error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'importazione del contatto.",
+        description: "Si è verificato un errore durante il trasferimento dell'azienda.",
         variant: "destructive",
       });
     } finally {

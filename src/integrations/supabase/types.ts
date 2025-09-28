@@ -1092,6 +1092,10 @@ export type Database = {
           | { table_name: string }
         Returns: Json
       }
+      transfer_company_to_rubrica: {
+        Args: { imported_contact_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

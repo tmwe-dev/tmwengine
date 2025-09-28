@@ -396,9 +396,6 @@ const Chat = () => {
             <MessageSquare className="h-8 w-8 text-primary" />
             Chat AI
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Inserisci il tuo prompt per interagire con l'intelligenza artificiale
-          </p>
         </div>
         
         {/* Settings Icon */}

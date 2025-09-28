@@ -809,7 +809,7 @@ export default function Attivita() {
                       key={activity.id} 
                       className={cn(
                         "hover:bg-muted/50 cursor-pointer",
-                        selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "border-2 border-red-500"
+                        selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >

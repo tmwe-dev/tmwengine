@@ -171,3 +171,15 @@ verify_jwt = true
 
 [functions.tmwe-email-send]
 verify_jwt = true
+
+[functions.tmwe-email-messages]
+verify_jwt = true
+
+[functions.tmwe-email-folders]
+verify_jwt = true
+
+[functions.tmwe-email-account]
+verify_jwt = true
+
+[functions.tmwe-email-list]
+verify_jwt = true

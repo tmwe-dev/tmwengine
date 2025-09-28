@@ -107,16 +107,16 @@ serve(async (req) => {
       body_html: emailData.body_html || ''
     };
 
-    console.log('=== CALLING FINDAIR.IT API ===');
-    const apiUrl = 'https://findair.it/erp/tmwe_json?app.php=email_message&action=send_message';
+    console.log('=== CALLING TMWE API ===');
+    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
     console.log('URL:', apiUrl);
     console.log('Payload:', payload);
 
-    // Realizar llamada con bypass de certificados
+    // Llamada siguiendo la documentación OpenAPI
     const response = await fetchWithCertBypass(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'X-API-Key': apiKey,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'TMWE-CRM-Integration/1.0'

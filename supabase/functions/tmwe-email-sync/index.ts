@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
@@ -13,10 +12,12 @@ const supabase = createClient(
 );
 
 interface TMWEEmailSyncRequest {
-  action: 'full_sync' | 'incremental_sync' | 'sync_folder' | 'get_sync_status';
+  action: 'full_sync' | 'incremental_sync' | 'sync_folder' | 'get_sync_status' | 'cancel_sync';
   folder_name?: string;
+  folders?: string;
   date_from?: string;
   date_to?: string;
+  last_sync_date?: string;
 }
 
 serve(async (req) => {
@@ -25,152 +26,114 @@ serve(async (req) => {
   }
 
   try {
-    const { action, folder_name, date_from, date_to }: TMWEEmailSyncRequest = await req.json();
-    console.log('TMWE Email Sync request:', { action, folder_name });
+    const { action, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
+    console.log('TMWE Email Sync request:', { action, folder_name, folders });
 
-    // Recupera configurazione provider TMWE
-    const { data: provider, error: providerError } = await supabase
-      .from('email_provider')
-      .select(`
-        *,
-        email_provider_credenziali(*)
-      `)
-      .eq('provider', 'TMWE')
-      .eq('attivo', true)
-      .maybeSingle();
-
-    if (providerError) {
-      console.error('Provider error:', providerError);
-      throw new Error(`Errore database: ${providerError.message}`);
-    }
-    
-    if (!provider) {
-      throw new Error('Provider TMWE non configurato o non attivo');
-    }
-
-    console.log('Provider found:', provider.id);
-
-    const credentials = provider.email_provider_credenziali;
-    if (!credentials || credentials.length === 0) {
-      throw new Error('Credenziali TMWE non configurate');
-    }
-
-    const apiKey = credentials[0]?.api_key;
+    // Usa l'API key direttamente dall'environment
+    const apiKey = Deno.env.get('TMWE_API_KEY');
     if (!apiKey) {
-      throw new Error('API Key TMWE non configurata');
+      throw new Error('TMWE_API_KEY non configurata negli environment secrets');
     }
+
+    console.log('Using TMWE API key from environment');
 
     console.log('Starting sync with TMWE API...');
+
+    // Usa un UUID default per TMWE
+    const defaultProviderId = '00000000-0000-0000-0000-000000000000';
 
     // Avvia log di sincronizzazione
     const { data: syncLog, error: logError } = await supabase
       .from('email_sync_logs')
       .insert({
-        provider_id: provider.id,
+        provider_id: defaultProviderId,
         tipo_sync: action,
         stato: 'in_corso'
       })
       .select()
       .single();
 
-    if (logError) throw logError;
+    if (logError) {
+      console.error('Error creating sync log:', logError);
+      // Continue without logging if there's an error
+    }
 
     let syncResult;
     try {
-      // Construir URL API TMWE usando HTTP para evitar problemas SSL
-      const tmweUrl = new URL('http://findair.it/erp/tmwe_json');
-      tmweUrl.searchParams.set('app.php', 'email_sync');
-      tmweUrl.searchParams.set('action', action);
+      // Construir URL API TMWE según la documentación OpenAPI
+      const baseUrl = 'https://findair.it/erp/tmwe_json';
+      const params = new URLSearchParams({
+        action: 'email_sync'
+      });
+
+      const requestBody: any = {
+        action: action
+      };
       
-      if (folder_name) tmweUrl.searchParams.set('folder_name', folder_name);
-      if (date_from) tmweUrl.searchParams.set('date_from', date_from);
-      if (date_to) tmweUrl.searchParams.set('date_to', date_to);
+      if (folder_name) requestBody.folder_name = folder_name;
+      if (folders) requestBody.folders = folders;
+      if (date_from) requestBody.date_from = date_from;
+      if (date_to) requestBody.date_to = date_to;
+      if (last_sync_date) requestBody.last_sync_date = last_sync_date;
 
-      console.log('Calling TMWE API:', tmweUrl.toString());
+      const fullUrl = `${baseUrl}/app.php?${params}`;
+      console.log('Calling TMWE API:', fullUrl);
+      console.log('Request body:', requestBody);
 
-      // Chiamata API TMWE con gestione certificati auto-firmati
-      const response = await fetch(tmweUrl.toString(), {
+      // Chiamata API TMWE seguendo la documentazione OpenAPI
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'X-API-Key': apiKey,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        // Configurazione per accettare certificati auto-firmati
-        // Nota: Questo bypassa la verifica SSL in ambiente Deno Edge Function
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`TMWE API Error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('TMWE API Error response:', errorText);
+        throw new Error(`TMWE API Error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       syncResult = await response.json();
       console.log('TMWE API Response:', syncResult);
 
-      if (syncResult.success && syncResult.emails) {
-        // Processa email sincronizzate
-        let emailsSincronizzate = 0;
-        let emailsNuove = 0;
-
-        for (const email of syncResult.emails) {
-          const { data: existingEmail } = await supabase
-            .from('email_messages')
-            .select('id')
-            .eq('message_id', email.message_id)
-            .single();
-
-          if (!existingEmail) {
-            // Nuova email - inserisci
-            const { error: insertError } = await supabase
-              .from('email_messages')
-              .insert({
-                provider_id: provider.id,
-                message_id: email.message_id,
-                subject: email.subject,
-                from_email: email.from,
-                to_email: email.to,
-                cc_email: email.cc,
-                bcc_email: email.bcc,
-                body_text: email.body_text,
-                body_html: email.body_html,
-                data_ricezione: email.date,
-                cartella: email.folder || 'INBOX',
-                direzione: 'inbound',
-                stato: email.seen ? 'letto' : 'nuovo',
-                sync_status: 'sincronizzato',
-                flags: email.flags || [],
-                attachments: email.attachments || []
-              });
-
-            if (!insertError) {
-              emailsNuove++;
-              emailsSincronizzate++;
-            }
-          } else {
-            emailsSincronizzate++;
-          }
-        }
+      // Gestisci la risposta in base al formato dell'API TMWE
+      if (syncResult.success) {
+        let messaggiSincronizzati = syncResult.messages_synced || 0;
+        let cartelleSync = syncResult.folders_synced || 0;
+        let progresso = syncResult.progress || 0;
 
         // Aggiorna log di sincronizzazione - successo
-        await supabase
-          .from('email_sync_logs')
-          .update({
-            stato: 'completato',
-            sync_end: new Date().toISOString(),
-            messaggi_sincronizzati: emailsSincronizzate,
-            messaggi_nuovi: emailsNuove
-          })
-          .eq('id', syncLog.id);
+        if (syncLog) {
+          await supabase
+            .from('email_sync_logs')
+            .update({
+              stato: syncResult.status === 'completed' ? 'completato' : 'in_corso',
+              sync_end: syncResult.status === 'completed' ? new Date().toISOString() : null,
+              messaggi_sincronizzati: messaggiSincronizzati,
+              messaggi_nuovi: messaggiSincronizzati
+            })
+            .eq('id', syncLog.id);
+        }
 
         return new Response(JSON.stringify({
           success: true,
-          sync_log_id: syncLog.id,
-          emails_sincronizzate: emailsSincronizzate,
-          emails_nuove: emailsNuove,
+          status: syncResult.status,
+          messages_synced: messaggiSincronizzati,
+          folders_synced: cartelleSync,
+          progress: progresso,
+          sync_log_id: syncLog?.id,
           tmwe_response: syncResult
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
+      } else {
+        throw new Error(syncResult.error || 'Sync failed');
       }
 
     } catch (syncError) {
@@ -178,14 +141,16 @@ serve(async (req) => {
       const errorMessage = syncError instanceof Error ? syncError.message : 'Unknown sync error';
       
       // Aggiorna log di sincronizzazione - errore
-      await supabase
-        .from('email_sync_logs')
-        .update({
-          stato: 'errore',
-          sync_end: new Date().toISOString(),
-          errori: [{ error: errorMessage }]
-        })
-        .eq('id', syncLog.id);
+      if (syncLog) {
+        await supabase
+          .from('email_sync_logs')
+          .update({
+            stato: 'errore',
+            sync_end: new Date().toISOString(),
+            errori: [{ error: errorMessage, timestamp: new Date().toISOString() }]
+          })
+          .eq('id', syncLog.id);
+      }
 
       throw syncError;
     }

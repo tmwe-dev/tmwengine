@@ -2631,7 +2631,7 @@ export default function ImportTemplates() {
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] h-[90vh] flex flex-col mx-auto my-auto overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-5xl h-[95vh] max-h-[95vh] flex flex-col overflow-hidden p-2 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center">
               <span></span>

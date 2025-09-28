@@ -133,7 +133,7 @@ export function GestisciAttivitaDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] flex flex-col overflow-hidden p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <span className="text-2xl">{getActivityIcon(activity.tipo)}</span>

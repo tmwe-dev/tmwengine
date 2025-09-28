@@ -1326,7 +1326,7 @@ export default function ImportTemplates() {
       case 'pronto_per_elaborazione':
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Pronto per elaborazione</Badge>;
       case 'completato_con_errori':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Completato con errori</Badge>;
+        return <Badge variant="secondary" className="text-blue-800">Completato con errori</Badge>;
       default:
         return <Badge variant="outline">{stato}</Badge>;
     }

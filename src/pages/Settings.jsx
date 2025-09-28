@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
@@ -30,6 +29,7 @@ const Settings = () => {
   const [showSecrets, setShowSecrets] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState('profile');
 
   // Stati per le configurazioni
   const [emailConfig, setEmailConfig] = useState({
@@ -404,32 +404,51 @@ const Settings = () => {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Profilo Utente
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email Provider
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
-            <Bot className="h-4 w-4" />
-            AI & Classificazione
-          </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Generale
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            Sicurezza
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Configurazione Profilo Utente */}
-        <TabsContent value="profile">
+      <div className="space-y-6">
+        {/* Selector per la sezione */}
+        <div className="space-y-2">
+          <Label htmlFor="section-select">Seleziona Sezione</Label>
+          <Select value={activeSection} onValueChange={setActiveSection}>
+            <SelectTrigger className="w-full max-w-md">
+              <SelectValue placeholder="Seleziona una sezione..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="profile">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Profilo Utente
+                </div>
+              </SelectItem>
+              <SelectItem value="email">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email Provider
+                </div>
+              </SelectItem>
+              <SelectItem value="ai">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4" />
+                  AI & Classificazione
+                </div>
+              </SelectItem>
+              <SelectItem value="general">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Generale
+                </div>
+              </SelectItem>
+              <SelectItem value="security">
+                <div className="flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Sicurezza
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Renderizza la sezione selezionata */}
+        {activeSection === 'profile' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -518,10 +537,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
         {/* Configurazione Email Provider */}
-        <TabsContent value="email">
+        {activeSection === 'email' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -618,10 +637,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
         {/* Configurazione AI */}
-        <TabsContent value="ai">
+        {activeSection === 'ai' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -751,10 +770,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
         {/* Configurazioni Generali */}
-        <TabsContent value="general">
+        {activeSection === 'general' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -838,10 +857,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        )}
 
         {/* Sicurezza */}
-        <TabsContent value="security">
+        {activeSection === 'security' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -883,8 +902,8 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 };

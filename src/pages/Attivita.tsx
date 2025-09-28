@@ -214,8 +214,14 @@ export default function Attivita() {
 
   // Status filter functions per i summary cards
   const handleStatusFilter = (status: string) => {
+    const currentScrollPosition = window.scrollY;
     setStatusFilter(status);
     setSelectedActivities([]); // Reset selezione quando cambia filtro
+    
+    // Mantieni la posizione di scroll
+    setTimeout(() => {
+      window.scrollTo({ top: currentScrollPosition, behavior: 'instant' });
+    }, 0);
   };
 
   // Date filter function

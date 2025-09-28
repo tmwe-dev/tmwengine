@@ -2185,7 +2185,38 @@ export default function ImportTemplates() {
                       </div>
                       
                       {/* Quick Filters Row */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-2">
+                        {/* Sort dropdown */}
+                        <Select value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : ''} onValueChange={(value) => {
+                          if (value === '') {
+                            setSortConfig({ primary: null, secondary: null });
+                          } else {
+                            const [column, direction] = value.split('-');
+                            setSortConfig({ 
+                              primary: { column, direction: direction as 'asc' | 'desc' }, 
+                              secondary: null 
+                            });
+                          }
+                        }}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Ordinamento" />
+                          </SelectTrigger>
+                          <SelectContent className="z-50">
+                            <SelectItem value="">Nessun ordinamento</SelectItem>
+                            <SelectItem value="company_name-asc">Azienda (A-Z)</SelectItem>
+                            <SelectItem value="company_name-desc">Azienda (Z-A)</SelectItem>
+                            <SelectItem value="name-asc">Nome (A-Z)</SelectItem>
+                            <SelectItem value="name-desc">Nome (Z-A)</SelectItem>
+                            <SelectItem value="country-asc">Paese (A-Z)</SelectItem>
+                            <SelectItem value="country-desc">Paese (Z-A)</SelectItem>
+                            <SelectItem value="city-asc">Città (A-Z)</SelectItem>
+                            <SelectItem value="city-desc">Città (Z-A)</SelectItem>
+                            <SelectItem value="origin-asc">Origine (A-Z)</SelectItem>
+                            <SelectItem value="origin-desc">Origine (Z-A)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <div className="grid grid-cols-3 gap-2">
                         <Select value={originFilter} onValueChange={setOriginFilter}>
                           <SelectTrigger className="h-9">
                             <SelectValue placeholder="Origine" />
@@ -2254,9 +2285,9 @@ export default function ImportTemplates() {
                             <X className="h-3 w-3" />
                           </Button>
                         </Badge>
-                      )}
-                    </div>
-                  )}
+                       )}
+                     </div>
+                   )}
                 </div>
               </div>
             ) : (

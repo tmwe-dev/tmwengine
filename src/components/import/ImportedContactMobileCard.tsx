@@ -56,23 +56,20 @@ export function ImportedContactMobileCard({
             {/* Main Content */}
             <div className="flex-1 min-w-0">
               {/* Header with enhanced styling */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                    #{index + 1}
-                  </div>
-                  {contact.note && (
-                    <div className="bg-blue-100 p-1.5 rounded-full">
-                      <FileText className="h-3 w-3 text-blue-600" />
-                    </div>
-                  )}
-                </div>
-                {/* Mail icon with tooltip */}
+               <div className="flex items-center justify-between mb-3">
+                 <div className="flex items-center gap-3 min-w-0">
+                   {contact.note && (
+                     <div className="bg-blue-100 p-1.5 rounded-full">
+                       <FileText className="h-3 w-3 text-blue-600" />
+                     </div>
+                   )}
+                 </div>
+                {/* Mail icon with tooltip - better aligned */}
                 {contact.email && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="bg-blue-100 p-2 rounded-full cursor-pointer hover:bg-blue-200 transition-colors">
-                        <Mail className="h-4 w-4 text-blue-600" />
+                      <div className="bg-blue-100 p-1.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors flex items-center justify-center">
+                        <Mail className="h-3.5 w-3.5 text-blue-600" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -82,15 +79,20 @@ export function ImportedContactMobileCard({
                 )}
               </div>
 
-              {/* Company Name with enhanced styling */}
+              {/* Company Name with enhanced styling and record number */}
               <div className="mb-4">
-                <div 
-                  className="font-semibold text-lg text-primary cursor-pointer hover:underline truncate transition-colors duration-200 hover:text-primary/80"
-                  onClick={onView}
-                >
-                  {contact.company_name || contact.name || 'Azienda non specificata'}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-muted/50 text-muted-foreground px-2 py-1 rounded text-xs font-mono">
+                    #{index + 1}
+                  </div>
+                  <div 
+                    className="font-semibold text-lg text-primary cursor-pointer hover:underline truncate transition-colors duration-200 hover:text-primary/80 flex-1"
+                    onClick={onView}
+                  >
+                    {contact.company_name || contact.name || 'Azienda non specificata'}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2">
                   <ActivityIndicators 
                     companyId={contact.id} 
                     activities={getCompanyActivities(contact.id)}

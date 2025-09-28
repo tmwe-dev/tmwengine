@@ -71,7 +71,7 @@ export default function Attivita() {
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filters, setFilters] = useState({
-    stato: '',
+    stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
     priorita: '',
     scadenza: ''
@@ -194,8 +194,12 @@ export default function Attivita() {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_nome?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    // Gestione filtro stato multiplo (es: "aperta,in_corso")
+    const matchesStato = !filters.stato || 
+      filters.stato.split(',').includes(activity.stato);
+    
     const matchesFilters = 
-      (!filters.stato || activity.stato === filters.stato) &&
+      matchesStato &&
       (!filters.tipo || activity.tipo === filters.tipo) &&
       (!filters.priorita || activity.priorita === filters.priorita) &&
       (!filters.scadenza || checkScadenzaFilter(activity.scadenza, filters.scadenza));
@@ -316,6 +320,36 @@ export default function Attivita() {
       toast({
         title: "Errore",
         description: error.message || "Si è verificato un errore durante l'aggiornamento dell'attività.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRescheduleSelected = async (newDate: Date) => {
+    if (selectedActivities.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .update({ 
+          scadenza: newDate.toISOString(),
+          stato: 'aperta' // Reset to 'aperta' when rescheduling
+        })
+        .in('id', selectedActivities);
+
+      if (error) throw error;
+
+      await loadActivities();
+      setSelectedActivities([]);
+      
+      toast({
+        title: "Attività riprogrammate",
+        description: `${selectedActivities.length} attività sono state riprogrammate per ${format(newDate, 'dd/MM/yyyy HH:mm')}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la riprogrammazione.",
         variant: "destructive"
       });
     }
@@ -537,11 +571,28 @@ export default function Attivita() {
               </PopoverContent>
             </Popover>
             
+            <Select
+              value={filters.stato}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtra per stato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tutte le attività</SelectItem>
+                <SelectItem value="aperta,in_corso">Da svolgere</SelectItem>
+                <SelectItem value="completata">Completate</SelectItem>
+                <SelectItem value="annullata">Annullate</SelectItem>
+                <SelectItem value="aperta">Solo aperte</SelectItem>
+                <SelectItem value="in_corso">Solo in corso</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
                   <Filter className="h-4 w-4" />
-                  Filtri
+                  Filtri Avanzati
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -596,6 +647,50 @@ export default function Attivita() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Azioni per selezione multipla */}
+      {selectedActivities.length > 0 && (
+        <Card className="border-card shadow-soft bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-700">
+                  {selectedActivities.length} attività selezionate
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Riprogramma
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={undefined}
+                      onSelect={(date) => {
+                        if (date) handleRescheduleSelected(date);
+                      }}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedActivities([])}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Deseleziona
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Activities Table */}
       <Card className="border-card shadow-soft">

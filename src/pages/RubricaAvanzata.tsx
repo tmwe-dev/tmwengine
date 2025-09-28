@@ -883,10 +883,28 @@ export default function RubricaAvanzata() {
                           Email {getSortIcon('email')}
                         </Button>
                       </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort('telefono')}
+                          className="h-auto p-0 font-medium flex items-center gap-1"
+                        >
+                          Telefono {getSortIcon('telefono')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort('cellulare')}
+                          className="h-auto p-0 font-medium flex items-center gap-1"
+                        >
+                          Cellulare {getSortIcon('cellulare')}
+                        </Button>
+                      </TableHead>
                       {visibleColumns.details && (
                         <>
-                          <TableHead>Telefono</TableHead>
-                          <TableHead>Cellulare</TableHead>
                           <TableHead>Città</TableHead>
                         </>
                       )}
@@ -986,20 +1004,20 @@ export default function RubricaAvanzata() {
                               {formatCellValue(record.email)}
                             </div>
                           </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-text-secondary" />
+                              {formatCellValue(record.telefono)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-text-secondary" />
+                              {formatCellValue(record.cellulare)}
+                            </div>
+                          </TableCell>
                           {visibleColumns.details && (
                             <>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3 text-text-secondary" />
-                                  {formatCellValue(record.telefono)}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3 text-text-secondary" />
-                                  {formatCellValue(record.cellulare)}
-                                </div>
-                              </TableCell>
                               <TableCell>
                                 <TooltipProvider>
                                   <Tooltip>

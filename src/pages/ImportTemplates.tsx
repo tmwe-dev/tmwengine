@@ -2922,20 +2922,14 @@ export default function ImportTemplates() {
                      </div>
                    )}
                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
-                </div>
+                 </div>
+               ) : (
+                 <div className="text-center py-8">
+                   <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
+                 </div>
                )}
-             </div>
-           ) : (
-             <div className="text-center py-8">
-               <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
-             </div>
-           )}
-         </DialogContent>
-       </Dialog>
+             </DialogContent>
+           </Dialog>
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>

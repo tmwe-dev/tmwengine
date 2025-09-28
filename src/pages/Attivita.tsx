@@ -235,7 +235,7 @@ export default function Attivita() {
       (statusFilter === 'future' && isActivityFuture(activity)) ||
       (statusFilter === 'completate' && activity.stato === 'completata') ||
       (statusFilter === 'in_corso' && activity.stato === 'in_corso') ||
-      (statusFilter === 'scadute' && !isActivityFuture(activity) && activity.stato !== 'completata');
+      (statusFilter === 'scadute' && activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata');
 
     return matchesSearch && matchesFilters && matchesDateFilter && matchesStatusFilter;
   }).sort((a, b) => {

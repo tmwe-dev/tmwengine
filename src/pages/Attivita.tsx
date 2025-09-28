@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { GestisciAttivitaDialog } from '@/components/attivita/GestisciAttivitaDialog';
+import { CompanyDialog } from '@/components/attivita/CompanyDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -74,6 +75,8 @@ export default function Attivita() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [filterDate, setFilterDate] = useState<Date | undefined>();
+  const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
@@ -457,6 +460,11 @@ export default function Attivita() {
   const openAddForm = () => {
     setSelectedActivity(null);
     setIsFormOpen(true);
+  };
+
+  const openCompanyDialog = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    setIsCompanyDialogOpen(true);
   };
 
   const getStatoBadgeVariant = (stato: string) => {
@@ -873,11 +881,19 @@ export default function Attivita() {
                           <ActivityIcon className="h-5 w-5 text-blue-500" />
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[300px]">
+                      <TableCell 
+                        className="max-w-[300px] cursor-pointer hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activity.rubrica_id) {
+                            openCompanyDialog(activity.rubrica_id);
+                          }
+                        }}
+                      >
                         <div>
-          <div className="font-medium text-text-primary truncate">
-            {activity.rubrica_azienda || 'Nessuna azienda'}
-          </div>
+                          <div className="font-medium text-text-primary truncate">
+                            {activity.rubrica_azienda || 'Nessuna azienda'}
+                          </div>
           <div className="text-sm text-gray-500 truncate">
             {activity.descrizione}
           </div>
@@ -994,6 +1010,13 @@ export default function Attivita() {
         activity={selectedActivity}
         onClose={() => setIsGestisciOpen(false)}
         onSave={handleGestisciActivity}
+      />
+
+      {/* Dialog Azienda */}
+      <CompanyDialog
+        isOpen={isCompanyDialogOpen}
+        companyId={selectedCompanyId}
+        onClose={() => setIsCompanyDialogOpen(false)}
       />
     </div>
   );

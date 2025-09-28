@@ -1,0 +1,285 @@
+import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Phone, Mail, Users, FileText, MapPin, Globe, Building } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface CompanyInfo {
+  id: string;
+  nome: string;
+  azienda: string;
+  email?: string;
+  telefono?: string;
+  cellulare?: string;
+  indirizzo?: string;
+  citta?: string;
+  paese?: string;
+  origine?: string;
+}
+
+interface Activity {
+  id: string;
+  tipo: 'chiamata' | 'meeting' | 'email' | 'task';
+  descrizione: string;
+  stato: 'aperta' | 'in_corso' | 'completata' | 'annullata';
+  scadenza?: string;
+  priorita: 'alta' | 'media' | 'bassa';
+  data_creazione: string;
+  ora_creazione?: string;
+}
+
+interface CompanyDialogProps {
+  isOpen: boolean;
+  companyId: string | null;
+  onClose: () => void;
+}
+
+const TIPO_LABELS = {
+  chiamata: 'Chiamata',
+  meeting: 'Meeting',
+  email: 'Email',
+  task: 'Task'
+};
+
+const STATO_LABELS = {
+  aperta: 'Aperta',
+  in_corso: 'In Corso',
+  completata: 'Completata',
+  annullata: 'Annullata'
+};
+
+const PRIORITA_LABELS = {
+  alta: 'Alta',
+  media: 'Media',
+  bassa: 'Bassa'
+};
+
+export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps) {
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && companyId) {
+      loadCompanyData();
+    }
+  }, [isOpen, companyId]);
+
+  const loadCompanyData = async () => {
+    if (!companyId) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Carica info azienda
+      const { data: companyData, error: companyError } = await supabase
+        .from('rubrica')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError) throw companyError;
+      setCompanyInfo(companyData);
+
+      // Carica attività dell'azienda
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('attivita')
+        .select('*')
+        .eq('rubrica_id', companyId)
+        .order('data_creazione', { ascending: false });
+
+      if (activitiesError) throw activitiesError;
+      
+      const formattedActivities: Activity[] = (activitiesData || []).map(activity => ({
+        id: activity.id,
+        tipo: activity.tipo as Activity['tipo'],
+        descrizione: activity.descrizione,
+        stato: activity.stato as Activity['stato'],
+        scadenza: activity.scadenza,
+        priorita: activity.priorita as Activity['priorita'],
+        data_creazione: activity.data_creazione,
+        ora_creazione: activity.ora_creazione
+      }));
+      
+      setActivities(formattedActivities);
+
+    } catch (error) {
+      console.error('Errore nel caricamento dati azienda:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getActivityIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'chiamata': return Phone;
+      case 'email': return Mail;
+      case 'meeting': return Users;
+      case 'task': return FileText;
+      default: return FileText;
+    }
+  };
+
+  const getStatoBadgeVariant = (stato: string) => {
+    switch (stato) {
+      case 'aperta': return 'default' as const;
+      case 'in_corso': return 'secondary' as const;
+      case 'completata': return 'default' as const;
+      case 'annullata': return 'destructive' as const;
+      default: return 'default' as const;
+    }
+  };
+
+  const getPrioritaBadgeVariant = (priorita: string) => {
+    switch (priorita) {
+      case 'alta': return 'destructive' as const;
+      case 'media': return 'secondary' as const;
+      case 'bassa': return 'outline' as const;
+      default: return 'outline' as const;
+    }
+  };
+
+  if (!companyInfo) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center gap-3">
+            <Building className="h-5 w-5 text-blue-500" />
+            {companyInfo.azienda}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-y-auto space-y-6">
+          {/* Info Azienda */}
+          <Card className="border-card shadow-soft">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-text-primary mb-3">Informazioni Contatto</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm">{companyInfo.nome}</span>
+                    </div>
+                    {companyInfo.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{companyInfo.email}</span>
+                      </div>
+                    )}
+                    {companyInfo.telefono && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{companyInfo.telefono}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-text-primary mb-3">Localizzazione</h3>
+                  <div className="space-y-2">
+                    {companyInfo.citta && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{companyInfo.citta}</span>
+                      </div>
+                    )}
+                    {companyInfo.paese && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{companyInfo.paese}</span>
+                      </div>
+                    )}
+                    {companyInfo.origine && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Origine:</span>
+                        <span className="text-sm">{companyInfo.origine}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Elenco Attività */}
+          <div>
+            <h3 className="font-semibold text-text-primary mb-4">
+              Attività ({activities.length})
+            </h3>
+            
+            {isLoading ? (
+              <div className="text-center py-8 text-text-secondary">
+                Caricamento attività...
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="text-center py-8 text-text-secondary">
+                Nessuna attività trovata per questa azienda
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activities.map((activity) => {
+                  const ActivityIcon = getActivityIcon(activity.tipo);
+                  return (
+                    <Card key={activity.id} className="border-card shadow-soft">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            <ActivityIcon className="h-5 w-5 text-blue-500" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-text-primary truncate">
+                                  {TIPO_LABELS[activity.tipo]}
+                                </h4>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {activity.descrizione}
+                                </p>
+                              </div>
+                              
+                              <div className="flex-shrink-0 text-right">
+                                <div className="text-sm font-semibold text-blue-600">
+                                  {format(new Date(activity.data_creazione), 'dd MMM')}
+                                </div>
+                                {activity.ora_creazione && (
+                                  <div className="text-xs text-blue-500">
+                                    {activity.ora_creazione.substring(0, 5)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-3">
+                              <Badge variant={getStatoBadgeVariant(activity.stato)}>
+                                {STATO_LABELS[activity.stato]}
+                              </Badge>
+                              <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
+                                {PRIORITA_LABELS[activity.priorita]}
+                              </Badge>
+                              {activity.scadenza && (
+                                <span className="text-xs text-gray-500">
+                                  Scadenza: {format(new Date(activity.scadenza), 'dd MMM HH:mm')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

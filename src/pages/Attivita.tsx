@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +91,7 @@ export default function Attivita() {
     scadenza: ''
   });
   const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
+  const scrollPositionRef = useRef<number>(0);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -214,15 +215,19 @@ export default function Attivita() {
 
   // Status filter functions per i summary cards
   const handleStatusFilter = (status: string) => {
-    const currentScrollPosition = window.scrollY;
+    // Salva la posizione di scroll prima di cambiare il filtro
+    scrollPositionRef.current = window.scrollY;
     setStatusFilter(status);
     setSelectedActivities([]); // Reset selezione quando cambia filtro
-    
-    // Mantieni la posizione di scroll
-    setTimeout(() => {
-      window.scrollTo({ top: currentScrollPosition, behavior: 'instant' });
-    }, 0);
   };
+
+  // Usa useLayoutEffect per ripristinare la posizione di scroll prima che il browser dipinga
+  useLayoutEffect(() => {
+    if (scrollPositionRef.current > 0) {
+      window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
+      scrollPositionRef.current = 0;
+    }
+  }, [statusFilter]);
 
   // Date filter function
   const handleDateFilter = (date: Date | undefined) => {

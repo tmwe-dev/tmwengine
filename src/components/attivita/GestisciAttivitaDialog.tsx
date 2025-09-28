@@ -192,14 +192,14 @@ export function GestisciAttivitaDialog({
           </div>
 
           {/* Form di modifica */}
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             <div>
               <Label htmlFor="descrizione">Descrizione</Label>
               <Textarea
                 id="descrizione"
                 value={formData.descrizione || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
-                className="min-h-[80px]"
+                className="min-h-[80px] focus:ring-2 focus:ring-offset-2"
               />
             </div>
 

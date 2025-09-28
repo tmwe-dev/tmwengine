@@ -405,12 +405,12 @@ const Chat = () => {
               <Settings className="h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4">
-              <DialogTitle className="text-xl">Gestione Chat AI</DialogTitle>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+            <DialogHeader className="pb-3 sm:pb-4">
+              <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Select value={selectedTab} onValueChange={setSelectedTab}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleziona una sezione" />
@@ -423,55 +423,55 @@ const Chat = () => {
               </Select>
 
               {selectedTab === 'prompts' && (
-                <div className="space-y-8">
+                <div className="space-y-4 sm:space-y-6">
                   <Card>
                     <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
                       <CollapsibleTrigger asChild>
-                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-6">
+                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3 sm:py-4">
                           <CardTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Settings className="h-5 w-5" />
-                              <span className="text-lg">System Prompt Management</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                              <span className="text-sm sm:text-base font-medium">System Prompt Management</span>
                             </div>
-                            {isSystemPromptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            {isSystemPromptOpen ? <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />}
                           </CardTitle>
                         </CardHeader>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <CardContent className="space-y-8 pt-0 pb-6">
+                        <CardContent className="space-y-4 sm:space-y-6 pt-0 pb-4 sm:pb-6">
                           <div>
-                            <h4 className="font-semibold text-base mb-6">System Prompts Esistenti</h4>
-                            <div className="space-y-6">
+                            <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">System Prompts Esistenti</h4>
+                            <div className="space-y-3 sm:space-y-4">
                               {systemPrompts.map((prompt) => (
                                 <div
                                   key={prompt.id}
-                                  className={`p-6 border rounded-lg ${
+                                  className={`p-3 sm:p-4 border rounded-lg ${
                                     prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
                                   }`}
                                 >
-                                  <div className="flex items-start gap-6">
+                                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-3 mb-4">
-                                        <h5 className="font-semibold text-base">{prompt.nome}</h5>
+                                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                        <h5 className="font-semibold text-sm sm:text-base">{prompt.nome}</h5>
                                         {prompt.attivo && (
-                                          <span className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-full font-medium">
+                                          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full font-medium">
                                             ATTIVO
                                           </span>
                                         )}
                                       </div>
-                                      <div className="bg-muted/30 p-4 rounded-md border">
-                                        <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                                      <div className="bg-muted/30 p-2 sm:p-3 rounded-md border">
+                                        <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
                                           {prompt.contenuto}
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="flex flex-col gap-3 flex-shrink-0">
+                                    <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
                                       {!prompt.attivo && (
                                         <Button
                                           size="sm"
                                           variant="outline"
                                           onClick={() => activateSystemPrompt(prompt.id)}
-                                          className="min-w-[80px]"
+                                          className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
                                         >
                                           Attiva
                                         </Button>
@@ -480,9 +480,9 @@ const Chat = () => {
                                         size="sm"
                                         variant="destructive"
                                         onClick={() => deleteSystemPrompt(prompt.id)}
-                                        className="min-w-[80px]"
+                                        className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
                                       >
-                                        <Trash2 className="h-4 w-4" />
+                                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                                       </Button>
                                     </div>
                                   </div>
@@ -491,34 +491,34 @@ const Chat = () => {
                             </div>
                           </div>
 
-                          <div className="border-t pt-8">
-                            <h4 className="font-semibold text-base mb-6">Crea Nuovo System Prompt</h4>
-                            <div className="space-y-5">
+                          <div className="border-t pt-4 sm:pt-6">
+                            <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">Crea Nuovo System Prompt</h4>
+                            <div className="space-y-3 sm:space-y-4">
                               <div>
-                                <label className="text-sm font-medium text-foreground mb-2 block">
+                                <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
                                   Nome Prompt
                                 </label>
                                 <Input
                                   placeholder="Inserisci il nome del system prompt..."
                                   value={newSystemPromptName}
                                   onChange={(e) => setNewSystemPromptName(e.target.value)}
-                                  className="h-11"
+                                  className="h-9 sm:h-10 text-sm"
                                 />
                               </div>
                               <div>
-                                <label className="text-sm font-medium text-foreground mb-2 block">
+                                <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
                                   Contenuto Prompt
                                 </label>
                                 <Textarea
                                   placeholder="Inserisci il contenuto del system prompt..."
                                   value={newSystemPromptContent}
                                   onChange={(e) => setNewSystemPromptContent(e.target.value)}
-                                  rows={5}
-                                  className="min-h-[120px] resize-none"
+                                  rows={4}
+                                  className="min-h-[80px] sm:min-h-[100px] resize-none text-sm"
                                 />
                               </div>
-                              <Button onClick={createSystemPrompt} className="w-full h-11">
-                                <Plus className="h-4 w-4 mr-2" />
+                              <Button onClick={createSystemPrompt} className="w-full h-9 sm:h-10 text-sm">
+                                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                                 Crea System Prompt
                               </Button>
                             </div>

@@ -103,8 +103,8 @@ export default function Attivita() {
       const formattedActivities: Activity[] = (data || []).map(activity => ({
         id: activity.id,
         rubrica_id: activity.rubrica_id,
-        rubrica_nome: activity.rubrica?.[0]?.nome,
-        rubrica_azienda: activity.rubrica?.[0]?.azienda,
+        rubrica_nome: activity.rubrica?.nome,
+        rubrica_azienda: activity.rubrica?.azienda,
         tipo: activity.tipo as Activity['tipo'],
         descrizione: activity.descrizione,
         stato: activity.stato as Activity['stato'],

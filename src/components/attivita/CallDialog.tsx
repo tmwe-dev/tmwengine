@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Phone, MessageCircle, X, Edit, Save, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -23,6 +23,10 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   const [isEditing, setIsEditing] = useState(false);
   const [telefono, setTelefono] = useState('');
   const [cellulare, setCellulare] = useState('');
+  const [focusField, setFocusField] = useState<'telefono' | 'cellulare' | null>(null);
+  
+  const telefonoRef = useRef<HTMLInputElement>(null);
+  const cellulareRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (contact) {
@@ -30,6 +34,21 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
       setCellulare(contact.cellulare || '');
     }
   }, [contact]);
+
+  // Focus automatico quando entra in modalità editing
+  useEffect(() => {
+    if (isEditing && focusField) {
+      const timeoutId = setTimeout(() => {
+        if (focusField === 'telefono' && telefonoRef.current) {
+          telefonoRef.current.focus();
+        } else if (focusField === 'cellulare' && cellulareRef.current) {
+          cellulareRef.current.focus();
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isEditing, focusField]);
 
   if (!contact) return null;
 
@@ -53,12 +72,14 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
     if (onSave && contact.id) {
       onSave(contact.id, telefono, cellulare);
       setIsEditing(false);
+      setFocusField(null);
     }
   };
 
-  const handleFieldFocus = () => {
+  const handleFieldClick = (field: 'telefono' | 'cellulare') => {
     if (!isEditing) {
-      setIsEditing(true); // Attiva direttamente la modalità editing
+      setFocusField(field);
+      setIsEditing(true);
     }
   };
 
@@ -100,21 +121,21 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                 <Label className="text-sm font-medium">Telefono</Label>
                 {isEditing ? (
                   <Input
+                    ref={telefonoRef}
                     type="tel"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
                     placeholder="Inserisci numero di telefono"
                     className="mt-1"
-                    onFocus={handleFieldFocus}
                   />
                 ) : (
                   <div 
                     className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
-                    onClick={handleFieldFocus}
+                    onClick={() => handleFieldClick('telefono')}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        handleFieldFocus();
+                        handleFieldClick('telefono');
                       }
                     }}
                   >
@@ -163,21 +184,21 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                 <Label className="text-sm font-medium">Cellulare</Label>
                 {isEditing ? (
                   <Input
+                    ref={cellulareRef}
                     type="tel"
                     value={cellulare}
                     onChange={(e) => setCellulare(e.target.value)}
                     placeholder="Inserisci numero di cellulare"
                     className="mt-1"
-                    onFocus={handleFieldFocus}
                   />
                 ) : (
                   <div 
                     className="mt-1 p-2 bg-muted/20 rounded border cursor-pointer hover:bg-muted/30 transition-colors min-h-[40px] flex items-center"
-                    onClick={handleFieldFocus}
+                    onClick={() => handleFieldClick('cellulare')}
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        handleFieldFocus();
+                        handleFieldClick('cellulare');
                       }
                     }}
                   >
@@ -234,6 +255,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                     size="sm"
                     onClick={() => {
                       setIsEditing(false);
+                      setFocusField(null);
                       setTelefono(contact.telefono || '');
                       setCellulare(contact.cellulare || '');
                     }}

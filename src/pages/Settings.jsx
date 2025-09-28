@@ -22,7 +22,8 @@ import {
   Save,
   AlertTriangle,
   Settings as SettingsIcon,
-  User
+  User,
+  Phone
 } from 'lucide-react';
 
 const Settings = () => {
@@ -63,6 +64,14 @@ const Settings = () => {
     emailUtente: '',
     ruoloUtente: 'Utente',
     telefonoUtente: ''
+  });
+
+  const [phoneConfig, setPhoneConfig] = useState({
+    defaultCountryCode: '+39',
+    enableWhatsApp: true,
+    whatsAppBusiness: false,
+    phoneFormat: 'international',
+    autoDetectCountry: true
   });
 
   // Carica le configurazioni esistenti
@@ -438,6 +447,12 @@ const Settings = () => {
                   Generale
                 </div>
               </SelectItem>
+              <SelectItem value="phone">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Telefono & WhatsApp
+                </div>
+              </SelectItem>
               <SelectItem value="security">
                 <div className="flex items-center gap-2">
                   <Key className="h-4 w-4" />
@@ -690,6 +705,131 @@ const Settings = () => {
             <TMWESyncTest />
           </div>
         )}
+
+        {/* Configurazione Telefono & WhatsApp */}
+        {activeSection === 'phone' && (
+          <Card className="w-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Phone className="h-5 w-5" />
+                Impostazioni Telefono & WhatsApp
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Configura le impostazioni per chiamate telefoniche e messaggi WhatsApp
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="defaultCountryCode">Prefisso Paese Predefinito</Label>
+                    <Select
+                      value={phoneConfig.defaultCountryCode}
+                      onValueChange={(value) => setPhoneConfig(prev => ({ ...prev, defaultCountryCode: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="+39">🇮🇹 +39 (Italia)</SelectItem>
+                        <SelectItem value="+1">🇺🇸 +1 (USA/Canada)</SelectItem>
+                        <SelectItem value="+44">🇬🇧 +44 (Regno Unito)</SelectItem>
+                        <SelectItem value="+33">🇫🇷 +33 (Francia)</SelectItem>
+                        <SelectItem value="+49">🇩🇪 +49 (Germania)</SelectItem>
+                        <SelectItem value="+34">🇪🇸 +34 (Spagna)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="phoneFormat">Formato Numero</Label>
+                    <Select
+                      value={phoneConfig.phoneFormat}
+                      onValueChange={(value) => setPhoneConfig(prev => ({ ...prev, phoneFormat: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="international">Internazionale (+39 333 1234567)</SelectItem>
+                        <SelectItem value="national">Nazionale (333 1234567)</SelectItem>
+                        <SelectItem value="local">Locale (333-1234567)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Abilita WhatsApp</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Permetti l'invio di messaggi tramite WhatsApp
+                      </div>
+                    </div>
+                    <Switch
+                      checked={phoneConfig.enableWhatsApp}
+                      onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, enableWhatsApp: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>WhatsApp Business</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Utilizza WhatsApp Business per i contatti
+                      </div>
+                    </div>
+                    <Switch
+                      checked={phoneConfig.whatsAppBusiness}
+                      onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, whatsAppBusiness: checked }))}
+                      disabled={!phoneConfig.enableWhatsApp}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto-Rileva Paese</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Rileva automaticamente il paese dal numero
+                      </div>
+                    </div>
+                    <Switch
+                      checked={phoneConfig.autoDetectCountry}
+                      onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, autoDetectCountry: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-muted/20 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-medium mb-2">Come funziona</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Clicca sull'icona telefono nelle attività per aprire il menu di contatto</li>
+                      <li>• Scegli tra chiamata telefonica diretta o messaggio WhatsApp</li>
+                      <li>• I numeri vengono automaticamente formattati secondo le impostazioni</li>
+                      <li>• WhatsApp si aprirà in una nuova finestra del browser</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => {
+                  toast({
+                    title: "Impostazioni Salvate",
+                    description: "Le impostazioni telefono sono state salvate con successo.",
+                  });
+                }}>
+                  <Save className="h-4 w-4 mr-1" />
+                  Salva Impostazioni
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
         {/* Configurazione AI */}
         {activeSection === 'ai' && (

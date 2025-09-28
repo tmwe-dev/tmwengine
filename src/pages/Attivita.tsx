@@ -14,6 +14,7 @@ import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMult
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { GestisciAttivitaDialog } from '@/components/attivita/GestisciAttivitaDialog';
 import { CompanyDialog } from '@/components/attivita/CompanyDialog';
+import { CallDialog } from '@/components/attivita/CallDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -77,6 +78,8 @@ export default function Attivita() {
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
   const [filters, setFilters] = useState({
     stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
@@ -432,6 +435,29 @@ export default function Attivita() {
       toast({
         title: "Errore",
         description: error.message || "Si è verificato un errore durante l'eliminazione dell'attività.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePhoneClick = async (activity: Activity) => {
+    if (!activity.rubrica_id) return;
+
+    try {
+      const { data: contact, error } = await supabase
+        .from('rubrica')
+        .select('nome, azienda, telefono, cellulare')
+        .eq('id', activity.rubrica_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      setSelectedContact(contact);
+      setIsCallDialogOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile recuperare i dati del contatto",
         variant: "destructive"
       });
     }
@@ -920,11 +946,22 @@ export default function Attivita() {
                           onClick={(e) => e.stopPropagation()}
                         />
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center">
-                          <ActivityIcon className="h-5 w-5 text-blue-500" />
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div 
+                           className={cn(
+                             "flex items-center justify-center",
+                             activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50 rounded p-1"
+                           )}
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             if (activity.tipo === 'chiamata' && activity.rubrica_id) {
+                               handlePhoneClick(activity);
+                             }
+                           }}
+                         >
+                           <ActivityIcon className="h-5 w-5 text-blue-500" />
+                         </div>
+                       </TableCell>
                       <TableCell 
                         className="max-w-[300px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
                         tabIndex={0}
@@ -1057,6 +1094,13 @@ export default function Attivita() {
         isOpen={isCompanyDialogOpen}
         companyId={selectedCompanyId}
         onClose={() => setIsCompanyDialogOpen(false)}
+      />
+
+      {/* Dialog Chiamate */}
+      <CallDialog
+        isOpen={isCallDialogOpen}
+        contact={selectedContact}
+        onClose={() => setIsCallDialogOpen(false)}
       />
     </div>
   );

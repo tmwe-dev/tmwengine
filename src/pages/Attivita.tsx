@@ -23,6 +23,9 @@ interface Activity {
   rubrica_id?: string;
   rubrica_nome?: string;
   rubrica_azienda?: string;
+  rubrica_origine?: string;
+  rubrica_paese?: string;
+  rubrica_citta?: string;
   tipo: 'chiamata' | 'meeting' | 'email' | 'task';
   descrizione: string;
   stato: 'aperta' | 'in_corso' | 'completata' | 'annullata';
@@ -93,7 +96,10 @@ export default function Attivita() {
           rubrica (
             id,
             nome,
-            azienda
+            azienda,
+            origine,
+            paese,
+            citta
           )
         `)
         .order('data_creazione', { ascending: false });
@@ -105,6 +111,9 @@ export default function Attivita() {
         rubrica_id: activity.rubrica_id,
         rubrica_nome: activity.rubrica?.nome,
         rubrica_azienda: activity.rubrica?.azienda,
+        rubrica_origine: activity.rubrica?.origine,
+        rubrica_paese: activity.rubrica?.paese,
+        rubrica_citta: activity.rubrica?.citta,
         tipo: activity.tipo as Activity['tipo'],
         descrizione: activity.descrizione,
         stato: activity.stato as Activity['stato'],
@@ -194,7 +203,9 @@ export default function Attivita() {
 
   const filteredActivities = activities.filter(activity => {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase());
+      activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Gestione filtro stato multiplo (es: "aperta,in_corso") o "all"
     const matchesStato = !filters.stato || filters.stato === 'all' || 
@@ -765,6 +776,39 @@ export default function Attivita() {
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('rubrica_origine')}
+                >
+                  <div className="flex items-center gap-2">
+                    Origine
+                    {sortField === 'rubrica_origine' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('rubrica_paese')}
+                >
+                  <div className="flex items-center gap-2">
+                    Paese
+                    {sortField === 'rubrica_paese' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
+                  onClick={() => handleSort('rubrica_citta')}
+                >
+                  <div className="flex items-center gap-2">
+                    Città
+                    {sortField === 'rubrica_citta' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50" 
                   onClick={() => handleSort('priorita')}
                 >
                   <div className="flex items-center gap-2">
@@ -780,7 +824,7 @@ export default function Attivita() {
             <TableBody>
               {filteredActivities.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={11} className="text-center py-12">
                     {activities.length === 0 ? (
                       <div className="text-text-secondary">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -880,6 +924,33 @@ export default function Attivita() {
                         >
                           {activityStatus}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-text-secondary text-sm">
+                          {activity.rubrica_origine || '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {activity.rubrica_paese && (
+                            <img 
+                              src={`https://flagcdn.com/16x12/${activity.rubrica_paese.toLowerCase()}.png`}
+                              alt={activity.rubrica_paese}
+                              className="w-4 h-3 object-cover border border-gray-200"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="text-text-secondary text-sm">
+                            {activity.rubrica_paese || '-'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-text-secondary text-sm">
+                          {activity.rubrica_citta || '-'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>

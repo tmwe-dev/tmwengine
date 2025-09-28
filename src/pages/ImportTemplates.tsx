@@ -1659,7 +1659,6 @@ export default function ImportTemplates() {
         </div>
 
         {activeSection === 'templates' && (
-          <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -1823,7 +1822,6 @@ export default function ImportTemplates() {
                 </div>
               </CardContent>
             </Card>
-          </div>
           </div>
         )}
 
@@ -2091,7 +2089,9 @@ export default function ImportTemplates() {
               }}
             />
           )}
-          )}
+        )}
+      </div>
+
       </div>
 
       {/* Dialog per visualizzare i record importati */}

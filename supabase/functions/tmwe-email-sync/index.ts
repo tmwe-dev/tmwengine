@@ -29,13 +29,28 @@ serve(async (req) => {
     const { action, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
     console.log('TMWE Email Sync request:', { action, folder_name, folders });
 
-    // Usa l'API key direttamente dall'environment
-    const apiKey = Deno.env.get('TMWE_API_KEY');
-    if (!apiKey) {
-      throw new Error('TMWE_API_KEY non configurata negli environment secrets');
+    // Usa l'OAuth token dall'environment o dal database
+    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+    
+    if (!oauthToken) {
+      // Fallback al database se non presente nell'environment
+      const { data: provider } = await supabase
+        .from('email_provider')
+        .select('email_provider_credenziali(*)')
+        .eq('provider', 'TMWE')
+        .eq('attivo', true)
+        .maybeSingle();
+      
+      if (provider?.email_provider_credenziali?.[0]?.oauth_token) {
+        oauthToken = provider.email_provider_credenziali[0].oauth_token;
+      }
+    }
+    
+    if (!oauthToken) {
+      throw new Error('TMWE OAuth token non configurato');
     }
 
-    console.log('Using TMWE API key from environment');
+    console.log('Using TMWE OAuth token');
 
     console.log('Starting sync with TMWE API...');
 
@@ -80,11 +95,11 @@ serve(async (req) => {
       console.log('Calling TMWE API:', fullUrl);
       console.log('Request body:', requestBody);
 
-      // Chiamata API TMWE seguendo la documentazione OpenAPI
+      // Chiamata API TMWE seguendo la documentazione OpenAPI con OAuth
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
-          'X-API-Key': apiKey,
+          'Authorization': `Bearer ${oauthToken}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },

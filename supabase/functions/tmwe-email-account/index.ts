@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,9 +19,30 @@ serve(async (req) => {
     const requestData: TMWEEmailAccountRequest = await req.json();
     console.log('TMWE Email Account request:', { action: requestData.action });
 
-    const apiKey = Deno.env.get('TMWE_API_KEY');
-    if (!apiKey) {
-      throw new Error('TMWE_API_KEY non configurata negli environment secrets');
+    // Usa l'OAuth token dall'environment o dal database
+    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+    
+    if (!oauthToken) {
+      // Fallback al database se non presente nell'environment
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { data: provider } = await supabase
+        .from('email_provider')
+        .select('email_provider_credenziali(*)')
+        .eq('provider', 'TMWE')
+        .eq('attivo', true)
+        .maybeSingle();
+      
+      if (provider?.email_provider_credenziali?.[0]?.oauth_token) {
+        oauthToken = provider.email_provider_credenziali[0].oauth_token;
+      }
+    }
+    
+    if (!oauthToken) {
+      throw new Error('TMWE OAuth token non configurato');
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
@@ -31,7 +53,7 @@ serve(async (req) => {
     const response = await fetch(`${baseUrl}/app.php?action=email_account&${params}`, {
       method: 'GET',
       headers: {
-        'X-API-Key': apiKey,
+        'Authorization': `Bearer ${oauthToken}`,
         'Accept': 'application/json'
       }
     });

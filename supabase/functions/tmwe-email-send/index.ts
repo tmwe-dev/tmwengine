@@ -91,12 +91,12 @@ serve(async (req) => {
       throw new Error('Credenciales TMWE no configuradas');
     }
 
-    const apiKey = credentials[0].api_key;
-    if (!apiKey) {
-      throw new Error('API Key TMWE no configurada');
+    const oauthToken = credentials[0].oauth_token;
+    if (!oauthToken) {
+      throw new Error('OAuth Token TMWE no configurado');
     }
 
-    console.log('Configuration loaded, API key length:', apiKey.length);
+    console.log('Configuration loaded, OAuth token available');
 
     // Preparar payload para TMWE
     const payload = {
@@ -112,11 +112,11 @@ serve(async (req) => {
     console.log('URL:', apiUrl);
     console.log('Payload:', payload);
 
-    // Llamada siguiendo la documentación OpenAPI
+    // Realizar llamada con bypass de certificados usando OAuth
     const response = await fetchWithCertBypass(apiUrl, {
       method: 'POST',
       headers: {
-        'X-API-Key': apiKey,
+        'Authorization': `Bearer ${oauthToken}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'TMWE-CRM-Integration/1.0'

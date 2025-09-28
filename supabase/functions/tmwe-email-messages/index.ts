@@ -57,9 +57,25 @@ serve(async (req) => {
     const requestData: TMWEEmailMessageRequest = await req.json();
     console.log('TMWE Email Messages request:', { action: requestData.action });
 
-    const apiKey = Deno.env.get('TMWE_API_KEY');
-    if (!apiKey) {
-      throw new Error('TMWE_API_KEY non configurata negli environment secrets');
+    // Usa l'OAuth token dall'environment o dal database
+    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+    
+    if (!oauthToken) {
+      // Fallback al database se non presente nell'environment
+      const { data: provider } = await supabase
+        .from('email_provider')
+        .select('email_provider_credenziali(*)')
+        .eq('provider', 'TMWE')
+        .eq('attivo', true)
+        .maybeSingle();
+      
+      if (provider?.email_provider_credenziali?.[0]?.oauth_token) {
+        oauthToken = provider.email_provider_credenziali[0].oauth_token;
+      }
+    }
+    
+    if (!oauthToken) {
+      throw new Error('TMWE OAuth token non configurato');
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
@@ -89,7 +105,7 @@ serve(async (req) => {
       response = await fetch(`${baseUrl}/app.php?action=email_message&${params}`, {
         method: 'POST',
         headers: {
-          'X-API-Key': apiKey,
+          'Authorization': `Bearer ${oauthToken}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -116,7 +132,7 @@ serve(async (req) => {
       response = await fetch(`${baseUrl}/app.php?action=email_message&${params}`, {
         method: 'GET',
         headers: {
-          'X-API-Key': apiKey,
+          'Authorization': `Bearer ${oauthToken}`,
           'Accept': 'application/json'
         }
       });

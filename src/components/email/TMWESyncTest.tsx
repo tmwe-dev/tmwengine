@@ -14,6 +14,7 @@ interface SyncResult {
   sync_log_id?: string;
   emails_sincronizzate?: number;
   emails_nuove?: number;
+  messages_found?: number;
   error?: string;
 }
 
@@ -92,18 +93,30 @@ export function TMWESyncTest() {
     setSyncResult(null);
     
     try {
-      console.log('Download email tramite TMWE...');
+      console.log('Download email tramite tmwe-email-sync esistente...');
       
-      const { data, error } = await supabase.functions.invoke('tmwe-email-download', {
-        body: { limit: 100, folder: 'INBOX' }
+      // USA LA FUNZIONE SYNC CHE GIÀ FUNZIONA - niente edge function separata!
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync', {
+        body: { 
+          action: 'incremental_sync',
+          folder_name: 'INBOX',
+          date_from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
+          date_to: new Date().toISOString()
+        }
       });
 
       if (error) throw error;
       
-      setSyncResult(data);
+      setSyncResult({
+        success: data.success,
+        emails_sincronizzate: data.messages_synced || data.emails_downloaded || 0,
+        emails_nuove: data.messages_new || data.emails_nuove || 0,
+        sync_log_id: data.sync_log_id,
+        messages_found: data.emails_downloaded || 0
+      });
       
       if (data.success) {
-        toast.success(`Download completato! Trovate ${data.messages_found} email, inserite ${data.messages_inserted}, aggiornate ${data.messages_updated}`);
+        toast.success(`Download completato! Scaricate ${data.emails_downloaded || data.messages_synced || 0} email tramite sync esistente`);
       } else {
         toast.error(`Errore download: ${data.error}`);
       }
@@ -217,21 +230,21 @@ export function TMWESyncTest() {
               )}
             </Button>
             
-            <Button 
-              onClick={handleDownloadEmails} 
-              disabled={syncLoading}
-              variant="outline"
-              className="flex-1"
-            >
-              {syncLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Download...
-                </>
-              ) : (
-                'Download 100 Email'
-              )}
-            </Button>
+              <Button 
+                onClick={handleDownloadEmails} 
+                disabled={syncLoading}
+                variant="outline"
+                className="flex-1"
+              >
+                {syncLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Download...
+                  </>
+                ) : (
+                  'Download Email (via Sync)'
+                )}
+              </Button>
           </div>
           
           {syncResult && (

@@ -179,6 +179,39 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
   return (
     <div className="space-y-6">
+      
+      {/* Statistiche Real-Time */}
+      {progress && isRunning && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="h-5 w-5 animate-pulse text-primary" />
+              Importazione in Corso - Dati in Tempo Reale
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{progress.processed_messages}</div>
+                <div className="text-sm text-muted-foreground">Email Processate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">#{progress.current_batch}</div>
+                <div className="text-sm text-muted-foreground">Batch Corrente</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{progress.last_offset}</div>
+                <div className="text-sm text-muted-foreground">Offset Attuale</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{progress.batch_size}</div>
+                <div className="text-sm text-muted-foreground">Batch Size</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header Controls */}
       <Card>
         <CardHeader>
@@ -247,14 +280,36 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar con dettagli reali */}
           {progress && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Progresso Batch {progress.current_batch}</span>
-                <span>{percentage}% - {progress.processed_messages}/{progress.total_messages}</span>
+            <div className="space-y-3 bg-muted p-4 rounded-lg">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium">Sincronizzazione in corso</span>
+                <div className="flex gap-4 text-xs">
+                  <span>Batch: {progress.current_batch}</span>
+                  <span>Offset: {progress.last_offset}</span>
+                </div>
               </div>
-              <Progress value={percentage} className="h-3" />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progresso: {progress.processed_messages} email processate</span>
+                  <span className="font-mono">{percentage}%</span>
+                </div>
+                <Progress value={percentage} className="h-3" />
+                
+                <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                  <div>
+                    <div>📦 Batch Size: {progress.batch_size}</div>
+                    <div>📁 Cartella: {progress.folder_name}</div>
+                  </div>
+                  <div>
+                    <div>⏰ Avviato: {new Date(progress.started_at).toLocaleTimeString()}</div>
+                    <div>🔄 Ultimo aggiornamento: {new Date(progress.updated_at).toLocaleTimeString()}</div>
+                  </div>
+                </div>
+              </div>
+              
               {estimatedTimeRemaining > 0 && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />

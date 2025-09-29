@@ -211,6 +211,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
 
+
       {/* Company Information */}
       <Card>
         <CardHeader className="pb-2">

@@ -69,61 +69,66 @@ const Email = () => {
   });
 
   // Recupera email reali dal database
-  useEffect(() => {
-    const fetchEmails = async () => {
-      try {
-        const { data: emailData, error } = await supabase
-          .from('email_messages')
-          .select('*')
-          .order('data_ricezione', { ascending: false });
+  const fetchEmails = async () => {
+    try {
+      console.log('Fetching emails from database...');
+      const { data: emailData, error } = await supabase
+        .from('email_messages')
+        .select('*')
+        .order('data_ricezione', { ascending: false });
 
-        if (error) {
-          console.error('Errore recupero email:', error);
-          toast({
-            title: "Errore",
-            description: "Errore nel recupero delle email",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // Converte i dati del database al formato dell'interfaccia
-        const convertedEmails: Email[] = emailData?.map(email => ({
-          id: email.id,
-          from: email.from_email,
-          to: email.to_email,
-          subject: email.subject || 'Nessun oggetto',
-          body: email.body_text || email.body_html || 'Nessun contenuto',
-          date: email.data_ricezione,
-          status: email.stato === 'nuovo' ? 'unread' : 
-                 email.stato === 'letto' ? 'read' : 
-                 email.stato === 'risposto' ? 'replied' : 'archived',
-          priority: 'medium', // Default, può essere esteso
-          category: email.cartella?.toLowerCase() || 'general'
-        })) || [];
-
-        setEmails(convertedEmails);
-        setStats({
-          total: convertedEmails.length,
-          unread: convertedEmails.filter(e => e.status === 'unread').length,
-          replied: convertedEmails.filter(e => e.status === 'replied').length,
-          archived: convertedEmails.filter(e => e.status === 'archived').length,
-          avgResponseTime: '2h 30m',
-          aiClassified: 0
-        });
-
-        console.log(`Caricate ${convertedEmails.length} email dal database`);
-        
-      } catch (error) {
-        console.error('Errore imprevisto nel recupero email:', error);
+      if (error) {
+        console.error('Errore recupero email:', error);
         toast({
           title: "Errore",
-          description: "Errore imprevisto nel recupero delle email",
+          description: "Errore nel recupero delle email",
           variant: "destructive"
         });
+        return;
       }
-    };
 
+      console.log('Raw email data from database:', emailData);
+
+      // Converte i dati del database al formato dell'interfaccia
+      const convertedEmails: Email[] = emailData?.map(email => ({
+        id: email.id,
+        from: email.from_email,
+        to: email.to_email,
+        subject: email.subject || 'Nessun oggetto',
+        body: email.body_text || email.body_html || 'Nessun contenuto',
+        date: email.data_ricezione,
+        status: email.stato === 'nuovo' ? 'unread' : 
+               email.stato === 'letto' ? 'read' : 
+               email.stato === 'risposto' ? 'replied' : 'archived',
+        priority: 'medium', // Default, può essere esteso
+        category: email.cartella?.toLowerCase() || 'general'
+      })) || [];
+
+      console.log('Converted emails:', convertedEmails);
+      
+      setEmails(convertedEmails);
+      setStats({
+        total: convertedEmails.length,
+        unread: convertedEmails.filter(e => e.status === 'unread').length,
+        replied: convertedEmails.filter(e => e.status === 'replied').length,
+        archived: convertedEmails.filter(e => e.status === 'archived').length,
+        avgResponseTime: '2h 30m',
+        aiClassified: 0
+      });
+
+      console.log(`Caricate ${convertedEmails.length} email dal database`);
+      
+    } catch (error) {
+      console.error('Errore imprevisto nel recupero email:', error);
+      toast({
+        title: "Errore",
+        description: "Errore imprevisto nel recupero delle email",
+        variant: "destructive"
+      });
+    }
+  };
+
+  useEffect(() => {
     fetchEmails();
   }, [toast]);
 
@@ -265,6 +270,14 @@ const Email = () => {
           >
             <Filter className="mr-2 h-4 w-4" />
             Filtri
+          </Button>
+          <Button 
+            onClick={fetchEmails} 
+            variant="outline"
+            className="w-full sm:w-auto justify-center"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Ricarica
           </Button>
           <Button 
             onClick={() => setShowComposer(true)}

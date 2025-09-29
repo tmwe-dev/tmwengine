@@ -127,9 +127,8 @@ serve(async (req) => {
 
     console.log('Configuration loaded, OAuth token available');
 
-    // Preparar payload para TMWE
+    // Preparar payload para TMWE según documentación
     const payload = {
-      action: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
       body: emailData.body_text || '',
@@ -137,7 +136,7 @@ serve(async (req) => {
     };
 
     console.log('=== CALLING TMWE API ===');
-    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
+    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=send_message';
     console.log('URL:', apiUrl);
     console.log('Payload:', payload);
 

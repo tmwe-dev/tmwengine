@@ -782,6 +782,18 @@ export default function RubricaAvanzata() {
               <Card className="border-card shadow-soft w-fit">
                 <CardContent className="p-2">
                   <div className="flex items-center gap-2">
+                    {/* Create Activity button - only show when contacts are selected */}
+                    {selectedRecords.size > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-transparent"
+                        onClick={() => setShowMultipleActivityDialog(true)}
+                        title={`Crea attività per ${selectedRecords.size} contatti selezionati`}
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    )}
                     <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                     <Select
                       value={sortConfig.primary?.column || ""}
@@ -907,19 +919,9 @@ export default function RubricaAvanzata() {
                       
                       {/* Actions Bar Mobile */}
                       {selectedRecords.size > 0 && (
-                         <div className="space-y-2 pt-1 border-t border-border">
-                          <div className="flex flex-col gap-2">
-                             <Button
-                               variant="default"
-                               size="sm"
-                               onClick={() => setShowMultipleActivityDialog(true)}
-                               className="w-full h-7 text-xs"
-                             >
-                               <FileText className="h-3 w-3 mr-1" />
-                               Crea Attività
-                             </Button>
-                          </div>
-                       </div>
+                        <div className="space-y-2 pt-1 border-t border-border">
+                          {/* Keep only the area styling, no buttons needed */}
+                        </div>
                      )}
                    </CardContent>
                  </Card>

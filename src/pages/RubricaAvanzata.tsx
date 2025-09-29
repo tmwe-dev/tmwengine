@@ -605,9 +605,6 @@ export default function RubricaAvanzata() {
           <h1 className={cn("font-bold text-text-primary", isMobile ? "text-2xl" : "text-heading-1")}>
             Rubrica Avanzata
           </h1>
-          <p className={cn("text-text-secondary", isMobile ? "text-sm" : "text-body")}>
-            Gestione avanzata della rubrica con filtri e visualizzazione tabellare
-          </p>
         </div>
       </div>
 

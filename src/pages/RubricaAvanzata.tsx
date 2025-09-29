@@ -895,10 +895,7 @@ export default function RubricaAvanzata() {
                       
                       {/* Actions Bar Mobile */}
                       {selectedRecords.size > 0 && (
-                        <div className="space-y-2 pt-1 border-t border-border">
-                          <div className="text-center text-xs font-medium text-text-primary">
-                           {selectedRecords.size} contatto/i selezionato/i
-                         </div>
+                         <div className="space-y-2 pt-1 border-t border-border">
                          <div className="flex flex-col gap-2">
                             <Button
                               variant="default"

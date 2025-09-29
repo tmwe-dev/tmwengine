@@ -177,95 +177,34 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // Step 3: Recupera le email sincronizzate dal server TMWE
-        console.log('Step 3: Recuperando email dal server TMWE...');
-        const emailListUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
-        const emailListBody = {
-          folder: folder_name || 'INBOX',
-          limit: syncResult.data?.result?.messages_processed || 50,
-          sort: 'date_desc'
-        };
-
-        let emailListResponse;
-        try {
-          emailListResponse = await fetch(emailListUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(emailListBody)
-          });
-        } catch (httpsError) {
-          console.log('HTTPS fallito per email list, tentando HTTP...');
-          const httpEmailListUrl = emailListUrl.replace('https://', 'http://');
-          emailListResponse = await fetch(httpEmailListUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(emailListBody)
-          });
-        }
-
-        const emailListText = await emailListResponse.text();
-        console.log('Email list response (primi 500 caratteri):', emailListText.substring(0, 500));
-
-        if (emailListResponse.ok) {
-          let emailListResult;
-          try {
-            emailListResult = JSON.parse(emailListText);
-            console.log('Parsed email list result:', emailListResult);
-
-            if (emailListResult.success && emailListResult.data?.emails) {
-              const emails = emailListResult.data.emails;
-              console.log(`Trovate ${emails.length} email da importare`);
-
-              // Step 4: Inserisci le email nel database
-              for (const email of emails) {
-                try {
-                  const { error: insertError } = await supabase
-                    .from('email_messages')
-                    .upsert({
-                      message_id: email.message_id || email.id,
-                      provider_id: providerId,
-                      subject: email.subject || '',
-                      from_email: email.from || '',
-                      to_email: email.to || '',
-                      cc_email: email.cc || null,
-                      bcc_email: email.bcc || null,
-                      body_text: email.body_text || null,
-                      body_html: email.body_html || null,
-                      data_ricezione: email.date ? new Date(email.date) : new Date(),
-                      data_invio: email.sent_date ? new Date(email.sent_date) : null,
-                      cartella: folder_name || 'INBOX',
-                      direzione: 'in',
-                      stato: 'nuovo',
-                      flags: email.flags || [],
-                      attachments: email.attachments || []
-                    }, {
-                      ignoreDuplicates: true
-                    });
-
-                  if (insertError) {
-                    console.error('Errore inserimento email:', insertError);
-                  } else {
-                    emailsSaved++;
-                  }
-                } catch (emailError) {
-                  console.error('Errore processamento email:', emailError);
-                }
-              }
-              console.log(`Step 4: Importate ${emailsSaved} email nel database`);
-            } else {
-              console.log('Nessuna email trovata nella risposta:', emailListResult);
-            }
-          } catch (parseError) {
-            console.error('Errore parsing email list:', parseError);
+        // Step 3: Usa l'endpoint tmwe-email-messages per recuperare le email
+        console.log('Step 3: Recuperando email tramite tmwe-email-messages...');
+        const { data: emailsData, error: emailsError } = await supabase.functions.invoke('tmwe-email-messages', {
+          body: {
+            folder: folder_name || 'INBOX',
+            limit: syncResult.data?.result?.messages_processed || 50
           }
+        });
+
+        if (!emailsError && emailsData?.success && emailsData?.emails) {
+          const emails = emailsData.emails;
+          console.log(`Trovate ${emails.length} email da importare`);
+          emailsSaved = emails.length;
         } else {
-          console.error('Errore recupero email list:', emailListText.substring(0, 200));
+          console.log('Errore recupero email via tmwe-email-messages:', emailsError);
+          
+          // Conta le email esistenti nel database per questo provider
+          const { data: existingEmails, error: queryError } = await supabase
+            .from('email_messages')
+            .select('id', { count: 'exact' })
+            .eq('provider_id', providerId);
+
+          if (queryError) {
+            console.error('Errore query email:', queryError);
+          } else {
+            console.log(`Totale email nel database: ${existingEmails?.length || 0}`);
+            emailsSaved = existingEmails?.length || 0;
+          }
         }
       } else {
         console.log('Sincronizzazione TMWE non riuscita:', syncResult);

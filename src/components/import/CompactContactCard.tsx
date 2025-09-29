@@ -117,7 +117,7 @@ export function CompactContactCard({
               </div>
             )}
             {(contact.phone || contact.cell) && (
-              <div className="p-1.5 bg-green-100 border border-green-200 rounded-full shadow-sm hover:bg-green-200 transition-colors">
+              <div className="p-1.5 border border-green-200 rounded-full shadow-sm hover:border-green-300 transition-colors">
                 <Phone className="h-4 w-4 text-green-600" />
               </div>
             )}

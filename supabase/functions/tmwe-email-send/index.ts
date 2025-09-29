@@ -87,6 +87,8 @@ serve(async (req) => {
     }
 
     const credentials = provider[0].email_provider_credenziali;
+    console.log('Credentials found:', credentials?.length || 0);
+    
     if (!credentials || credentials.length === 0) {
       throw new Error('Credenciales TMWE no configuradas');
     }
@@ -94,10 +96,20 @@ serve(async (req) => {
     // Buscar la credencial más reciente con token válido
     let validCredential = null;
     for (const cred of credentials) {
+      console.log('Checking credential:', { 
+        id: cred.id, 
+        has_oauth: !!cred.oauth_token, 
+        has_api_key: !!cred.api_key,
+        oauth_length: cred.oauth_token?.length,
+        api_key_length: cred.api_key?.length,
+        created_at: cred.created_at
+      });
+      
       if ((cred.oauth_token && cred.oauth_token.trim() !== '') || 
           (cred.api_key && cred.api_key.trim() !== '')) {
         if (!validCredential || new Date(cred.created_at) > new Date(validCredential.created_at)) {
           validCredential = cred;
+          console.log('Found valid credential:', validCredential.id);
         }
       }
     }
@@ -107,6 +119,8 @@ serve(async (req) => {
     }
 
     const oauthToken = validCredential.oauth_token || validCredential.api_key;
+    console.log('Using token length:', oauthToken?.length);
+    
     if (!oauthToken || oauthToken.trim() === '') {
       throw new Error('OAuth Token TMWE no configurado');
     }

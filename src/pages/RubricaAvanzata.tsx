@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown } from 'lucide-react';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -801,7 +801,7 @@ export default function RubricaAvanzata() {
                     <CardContent className="p-2 space-y-2">
                       {/* Mobile Sort Dropdown */}
                       <div className="flex items-center gap-2">
-                        <label className="text-xs font-medium text-muted-foreground">Ordina per:</label>
+                        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                         <Select
                           value={sortConfig.primary?.column || ""}
                           onValueChange={(value) => {

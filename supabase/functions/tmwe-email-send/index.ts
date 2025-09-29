@@ -148,66 +148,53 @@ serve(async (req) => {
 
     console.log('Configuration loaded, OAuth token available');
 
-    // Preparar payload para TMWE según documentación OpenAPI v2.0.0
+    // Construye el payload igual que el script bash funcional
     const payload = {
       handler: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
-      body: emailData.body_text || emailData.body || 'Test message body', // Campo requerido
+      body: emailData.body_text || emailData.body || 'Test message body',
       body_html: emailData.body_html || ''
     };
 
-    console.log('=== TESTING CONNECTION FIRST ===');
+    console.log('Payload completo:', JSON.stringify(payload, null, 2));
+    console.log('Token usado (primeros 20 chars):', `${oauthToken.substring(0, 20)}...`);
     
-    // Primer intento: probar conexión con POST para verificar autenticación
-    const testUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_account';
-    console.log('Testing connection with URL:', testUrl);
-    
-    try {
-      const testResponse = await fetchWithCertBypass(testUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'TMWE-CRM-Integration/1.0'
-        },
-        body: JSON.stringify({ handler: 'test_connection' })
-      });
-      
-      const testText = await testResponse.text();
-      console.log('Test connection status:', testResponse.status);
-      console.log('Test connection response:', testText);
-    } catch (testError) {
-      console.log('Test connection failed:', testError);
-    }
-
     console.log('=== CALLING TMWE API FOR EMAIL SEND ===');
     const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
     console.log('URL completa:', apiUrl);
-    console.log('Payload completo:', JSON.stringify(payload, null, 2));
-
+    
+    // Usar exactamente los mismos headers que el script bash exitoso
     const headers = {
       'Authorization': `Bearer ${oauthToken}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': 'TMWE-CRM-Integration/1.0'
+      'Content-Type': 'application/json'
     };
     
     console.log('Headers enviados:', JSON.stringify({
       'Authorization': `Bearer ${oauthToken.substring(0, 20)}...`,
-      'Content-Type': headers['Content-Type'],
-      'Accept': headers['Accept'],
-      'User-Agent': headers['User-Agent']
+      'Content-Type': 'application/json'
     }, null, 2));
-    console.log('Token usado (primeros 20 chars):', oauthToken.substring(0, 20) + '...');
-
-    // Realizar llamada con bypass de certificados usando OAuth - API v2.0.0 (POST con JSON)
-    const response = await fetchWithCertBypass(apiUrl, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
+    
+    // Intento directo sin lógica compleja de SSL bypass
+    let response;
+    try {
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload)
+      });
+    } catch (sslError) {
+      const errorMessage = sslError instanceof Error ? sslError.message : String(sslError);
+      console.log('HTTPS falló, intentando HTTP:', errorMessage);
+      // Fallback simple a HTTP como hace curl cuando SSL falla
+      const httpUrl = apiUrl.replace('https://', 'http://');
+      console.log('Trying HTTP fallback:', httpUrl);
+      response = await fetch(httpUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload)
+      });
+    }
 
     console.log('=== API RESPONSE ===');
     console.log('Status:', response.status, response.statusText);
@@ -250,9 +237,7 @@ serve(async (req) => {
       url_used: apiUrl,
       headers_sent: {
         'Authorization': `Bearer ${oauthToken.substring(0, 20)}...`,
-        'Content-Type': headers['Content-Type'],
-        'Accept': headers['Accept'],
-        'User-Agent': headers['User-Agent']
+        'Content-Type': headers['Content-Type']
       },
       timestamp: new Date().toISOString(),
       is_success: response.ok,

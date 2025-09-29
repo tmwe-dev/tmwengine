@@ -127,11 +127,12 @@ serve(async (req) => {
 
     console.log('Configuration loaded, OAuth token available');
 
-    // Preparar payload para TMWE según documentación
+    // Preparar payload para TMWE según documentación OpenAPI
     const payload = {
+      action: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
-      body: emailData.body_text || '',
+      body: emailData.body_text || emailData.body || '',
       body_html: emailData.body_html || ''
     };
 
@@ -169,32 +170,61 @@ serve(async (req) => {
     try {
       responseText = await response.text();
       console.log('Response length:', responseText.length);
+      console.log('Raw response text:', responseText);
       
       if (responseText.trim()) {
-        responseJson = JSON.parse(responseText);
-        console.log('JSON parsed successfully');
+        try {
+          responseJson = JSON.parse(responseText);
+          console.log('JSON parsed successfully:', JSON.stringify(responseJson, null, 2));
+        } catch (jsonError) {
+          console.log('JSON parse error:', jsonError);
+          console.log('Raw response for JSON error:', responseText);
+        }
+      } else {
+        console.log('Empty response body received');
       }
     } catch (parseError) {
-      console.log('JSON parse failed, raw response:', responseText.substring(0, 200));
+      console.log('Text extraction failed:', parseError);
     }
 
+    // Crear respuesta detallada del debug
+    const debugInfo = {
+      cert_bypass_used: true,
+      api_status: response.status,
+      api_status_text: response.statusText,
+      api_headers: responseHeaders,
+      api_response_text: responseText,
+      api_response_json: responseJson,
+      payload_sent: payload,
+      url_used: apiUrl,
+      headers_sent: {
+        'Authorization': `Bearer ${oauthToken.substring(0, 20)}...`,
+        'Content-Type': headers['Content-Type'],
+        'Accept': headers['Accept'],
+        'User-Agent': headers['User-Agent']
+      },
+      timestamp: new Date().toISOString(),
+      is_success: response.ok,
+      has_response_content: !!responseText.trim()
+    };
+
+    console.log('=== FINAL DEBUG INFO ===');
+    console.log(JSON.stringify(debugInfo, null, 2));
+
     // Determinar si fue exitoso
-    const isSuccess = response.ok && responseJson?.success !== false;
+    const isSuccess = response.ok && (responseJson?.success !== false);
 
     return new Response(JSON.stringify({
       success: isSuccess,
       message_id: responseJson?.message_id,
       tmwe_response: responseJson,
-      debug: {
-        cert_bypass_used: true,
-        api_status: response.status,
-        api_status_text: response.statusText,
-        api_headers: responseHeaders,
-        api_response_text: responseText.substring(0, 500),
-        api_response_json: responseJson,
-        payload_sent: payload,
-        timestamp: new Date().toISOString()
-      }
+      error_details: !response.ok ? {
+        status: response.status,
+        status_text: response.statusText,
+        response_body: responseText,
+        headers: responseHeaders
+      } : null,
+      debug: debugInfo
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -138,18 +138,23 @@ serve(async (req) => {
 
     console.log('=== CALLING TMWE API ===');
     const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
-    console.log('URL:', apiUrl);
-    console.log('Payload:', payload);
+    console.log('URL completa:', apiUrl);
+    console.log('Payload completo:', JSON.stringify(payload, null, 2));
+
+    const headers = {
+      'Authorization': `Bearer ${oauthToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'TMWE-CRM-Integration/1.0'
+    };
+    
+    console.log('Headers enviados:', JSON.stringify(headers, null, 2));
+    console.log('Token usado (primeros 20 chars):', oauthToken.substring(0, 20) + '...');
 
     // Realizar llamada con bypass de certificados usando OAuth
     const response = await fetchWithCertBypass(apiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${oauthToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'TMWE-CRM-Integration/1.0'
-      },
+      headers: headers,
       body: JSON.stringify(payload)
     });
 

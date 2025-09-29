@@ -919,11 +919,6 @@ export default function RubricaAvanzata() {
                       
                        {/* Actions Bar Mobile - Always visible to prevent layout shift */}
                        <div className="space-y-2 pt-1 border-t border-border">
-                         {selectedRecords.size > 0 && (
-                           <div className="text-center text-xs font-medium text-text-primary">
-                             Azioni disponibili
-                           </div>
-                         )}
                        </div>
                    </CardContent>
                  </Card>

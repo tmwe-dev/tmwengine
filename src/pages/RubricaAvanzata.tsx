@@ -825,8 +825,50 @@ export default function RubricaAvanzata() {
                 </p>
               </CardContent>
             </Card>
-          ) : (
-            viewingRecords.map((record, index) => {
+           ) : (
+             <>
+               {/* Checkbox Seleziona tutto per Mobile */}
+               {viewingRecords.length > 0 && (
+                 <Card className="border-card shadow-soft">
+                   <CardContent className="p-3">
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <Checkbox
+                           checked={
+                             viewingRecords.length > 0 && 
+                             viewingRecords.every((_, index) => selectedRecords.has(currentPage * recordsPerPage + index))
+                           }
+                           onCheckedChange={(checked) => {
+                             if (checked) {
+                               const newSelected = new Set(selectedRecords);
+                               viewingRecords.forEach((_, index) => {
+                                 newSelected.add(currentPage * recordsPerPage + index);
+                               });
+                               setSelectedRecords(newSelected);
+                             } else {
+                               const newSelected = new Set(selectedRecords);
+                               viewingRecords.forEach((_, index) => {
+                                 newSelected.delete(currentPage * recordsPerPage + index);
+                               });
+                               setSelectedRecords(newSelected);
+                             }
+                           }}
+                         />
+                         <span className="text-sm font-medium">
+                           Seleziona tutti ({viewingRecords.length})
+                         </span>
+                       </div>
+                       {selectedRecords.size > 0 && (
+                         <span className="text-xs text-blue-600">
+                           {selectedRecords.size} selezionati
+                         </span>
+                       )}
+                     </div>
+                   </CardContent>
+                 </Card>
+               )}
+
+               {viewingRecords.map((record, index) => {
               const actualIndex = currentPage * recordsPerPage + index;
               return (
                 <ContactMobileCard
@@ -855,8 +897,9 @@ export default function RubricaAvanzata() {
                   }}
                 />
               );
-            })
-          )}
+             })}
+             </>
+           )}
 
           {/* Mobile Pagination */}
           {totalPages > 1 && (

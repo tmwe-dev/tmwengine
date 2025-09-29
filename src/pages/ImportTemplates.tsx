@@ -2038,14 +2038,14 @@ export default function ImportTemplates() {
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>File</TableHead>
-                      <TableHead>Stato</TableHead>
-                      <TableHead>Righe</TableHead>
-                      <TableHead>Errori</TableHead>
-                      <TableHead>Selezionati</TableHead>
-                      <TableHead>Azioni</TableHead>
-                      <TableHead className="w-16"></TableHead>
+                       <TableHead>Data</TableHead>
+                       <TableHead>File</TableHead>
+                       <TableHead>Stato</TableHead>
+                       <TableHead>Record</TableHead>
+                       <TableHead>Errori</TableHead>
+                       <TableHead>Selezionati</TableHead>
+                       <TableHead>Azioni</TableHead>
+                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2056,7 +2056,12 @@ export default function ImportTemplates() {
                         </TableCell>
                         <TableCell>{log.file_name}</TableCell>
                         <TableCell>{getStatusBadge(log.stato)}</TableCell>
-                        <TableCell>{log.righe_totali}</TableCell>
+                         <TableCell>
+                           <div className="flex items-center gap-1">
+                             <span className="font-medium text-primary">{log.righe_totali}</span>
+                             <span className="text-sm text-muted-foreground">record</span>
+                           </div>
+                         </TableCell>
                         <TableCell className="text-red-600">{log.righe_errori}</TableCell>
                         <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
                         <TableCell>

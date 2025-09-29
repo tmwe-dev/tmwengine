@@ -432,7 +432,7 @@ const Settings = () => {
       <Alert className="mb-4">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          Le chiavi API sono archiviate in modo sicuro e crittografato. Non condividere mai le tue chiavi API.
+          ✅ <strong>Configurazione permanente attiva:</strong> Tutte le chiavi API sono salvate in modo sicuro e non dovrai mai più reinserirle. Il sistema le utilizza automaticamente per ogni operazione.
         </AlertDescription>
       </Alert>
 

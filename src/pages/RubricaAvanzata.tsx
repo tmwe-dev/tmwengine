@@ -775,7 +775,7 @@ export default function RubricaAvanzata() {
       {/* Data */}
       {isMobile ? (
         /* Mobile Card Layout */
-        <div className="space-y-2">
+        <div className="space-y-1">
           {/* Sort Dropdown - Center */}
           {viewingRecords.length > 0 && (
             <div className="flex justify-center">
@@ -935,7 +935,7 @@ export default function RubricaAvanzata() {
                 
                 {/* Mobile Pagination - Top */}
                 {totalPages > 1 && (
-                  <Card className="border-card shadow-soft mt-1">
+                  <Card className="border-card shadow-soft">
                     <CardContent className="p-2">
                       <div className="flex flex-col gap-1">
                         <div className="text-xs text-text-secondary text-center">

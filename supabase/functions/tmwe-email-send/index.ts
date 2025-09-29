@@ -11,50 +11,71 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Función para manejar certificados autofirmados de findair.it
-async function fetchWithCertBypass(url: string, options: RequestInit = {}) {
-  console.log('Attempting connection with cert bypass strategies...');
+// Enhanced fetch function similar to curl -k (ignore SSL certificate errors)
+async function fetchWithCertBypass(url: string, options: RequestInit = {}): Promise<Response> {
+  console.log('Attempting fetch similar to curl -k behavior to:', url);
   
-  // Estrategia 1: Intentar HTTPS con variables de entorno de Deno
+  // Configure fetch options similar to curl behavior
+  const curlLikeOptions: RequestInit = {
+    ...options,
+    headers: {
+      // Default headers similar to what curl sends
+      'User-Agent': 'curl/7.88.1',
+      'Accept': '*/*',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      ...options.headers,
+    }
+  };
+
+  // Set Deno environment variables to bypass SSL certificate validation (like curl -k)
+  const originalTlsStore = Deno.env.get('DENO_TLS_CA_STORE');
+  const originalNodeTls = Deno.env.get('NODE_TLS_REJECT_UNAUTHORIZED');
+  
   try {
-    console.log('Strategy 1: HTTPS with environment bypass');
+    console.log('Setting TLS bypass environment (curl -k equivalent)');
+    Deno.env.set('DENO_TLS_CA_STORE', 'system');
+    Deno.env.set('NODE_TLS_REJECT_UNAUTHORIZED', '0');
     
-    // Configurar variables de entorno para Deno
-    const originalCaStore = Deno.env.get('DENO_TLS_CA_STORE');
-    Deno.env.set('DENO_TLS_CA_STORE', 'system,mozilla');
-    
+    console.log('Making HTTPS request with SSL bypass...');
     const response = await fetch(url, {
-      ...options,
-      // En Supabase Edge Functions, esto puede ayudar
-      signal: AbortSignal.timeout(30000) // 30 segundos timeout
+      ...curlLikeOptions,
+      signal: AbortSignal.timeout(30000) // 30 second timeout like curl default
     });
     
-    // Restaurar variable original si existía
-    if (originalCaStore) {
-      Deno.env.set('DENO_TLS_CA_STORE', originalCaStore);
-    }
-    
-    console.log('Strategy 1 successful');
+    console.log('HTTPS request successful, status:', response.status, response.statusText);
     return response;
     
   } catch (httpsError) {
-    console.log('Strategy 1 failed:', httpsError);
+    const httpsErrorMessage = httpsError instanceof Error ? httpsError.message : String(httpsError);
+    console.log('HTTPS request failed (similar to curl SSL error):', httpsErrorMessage);
     
-    // Estrategia 2: Fallback a HTTP
+    // Fallback to HTTP (some servers accept both)
     try {
-      console.log('Strategy 2: HTTP fallback');
       const httpUrl = url.replace('https://', 'http://');
-      const response = await fetch(httpUrl, options);
-      console.log('Strategy 2 successful');
+      console.log('Trying HTTP fallback:', httpUrl);
+      
+      const response = await fetch(httpUrl, curlLikeOptions);
+      console.log('HTTP fallback successful, status:', response.status);
       return response;
       
     } catch (httpError) {
-      console.log('Strategy 2 failed:', httpError);
-      
-      // Estrategia 3: Último intento con fetch básico
-      console.log('Strategy 3: Basic fetch attempt');
-      const response = await fetch(url, options);
-      return response;
+      const httpErrorMessage = httpError instanceof Error ? httpError.message : String(httpError);
+      console.log('HTTP fallback also failed:', httpErrorMessage);
+      throw new Error(`All requests failed. HTTPS error: ${httpsErrorMessage}, HTTP error: ${httpErrorMessage}`);
+    }
+  } finally {
+    // Restore original environment variables
+    if (originalTlsStore !== undefined) {
+      Deno.env.set('DENO_TLS_CA_STORE', originalTlsStore);
+    } else {
+      Deno.env.delete('DENO_TLS_CA_STORE');
+    }
+    
+    if (originalNodeTls !== undefined) {
+      Deno.env.set('NODE_TLS_REJECT_UNAUTHORIZED', originalNodeTls);
+    } else {
+      Deno.env.delete('NODE_TLS_REJECT_UNAUTHORIZED');
     }
   }
 }

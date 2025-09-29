@@ -76,7 +76,7 @@ const CRMLayout = ({ children }) => {
           </Button>
           
           <div className="flex items-center gap-2">
-            <h1 className={cn("font-semibold text-foreground", isMobile ? "text-lg" : "text-xl")}>
+            <h1 className={cn("font-semibold text-white bg-blue-600 px-3 py-1.5 rounded-lg", isMobile ? "text-lg" : "text-xl")}>
               {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
             </h1>
           </div>

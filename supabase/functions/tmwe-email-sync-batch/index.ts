@@ -36,7 +36,7 @@ serve(async (req) => {
       action, 
       folder_name = 'INBOX', 
       handler = action || 'sync_folder',
-      batch_size = 100,  // Batch size più grande per efficienza
+      batch_size = 10,  // Limite fisso API TMWE
       start_offset = 0,
       max_total_emails = 10000  // Limite molto alto per importare tutto
     } = requestData;
@@ -144,8 +144,8 @@ serve(async (req) => {
       const syncText = await syncResponse.text();
       console.log('✅ Sincronizzazione iniziale completata');
 
-      // STEP 2: Processo di importazione batch con paginazione completa
-      console.log(`🔢 Step 2: Avviando importazione completa a batch da ${batch_size} email`);
+      // STEP 2: Processo di importazione batch con limite fisso API
+      console.log(`🔢 Step 2: Avviando importazione completa (10 email per batch - limite API TMWE)`);
       
       let consecutiveEmptyBatches = 0;
       const maxEmptyBatches = 2;  // Se ricevi 2 batch vuoti consecutivi, fermati
@@ -163,13 +163,15 @@ serve(async (req) => {
           })
           .eq('id', progressRecord?.id);
 
-        // Chiama API corretta per lista messaggi con paginazione
-        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
+        // Chiama API per lista messaggi - TMWE ha limite fisso di 10 email per chiamata
+        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
         const listBody = {
+          handler: 'get_messages',
           folder: folder_name,
-          criteria: 'ALL',
+          limit: 10,  // LIMITE FISSO API TMWE - non può essere più alto
           offset: currentOffset,
-          limit: Math.min(batch_size, 50)  // L'API ha limite 10 di default, testiamo con 50
+          include_attachments: false,
+          format: 'text'
         };
 
         console.log(`🌐 Chiamata API batch ${batchNumber}:`, listBody);
@@ -194,21 +196,22 @@ serve(async (req) => {
           const listText = await listResponse.text();
           const listResult = JSON.parse(listText);
           
-          // Debug: mostra la risposta completa dell'endpoint corretto
+          // Debug: mostra la risposta completa
           console.log(`📊 Batch ${batchNumber} API Response:`, { 
             success: listResult.success,
-            results_length: listResult.results?.length,
-            endpoint: 'get_email_list'
+            total: listResult.total,
+            count: listResult.count,
+            messages_length: listResult.messages?.length,
+            offset_richiesto: currentOffset
           });
           
-          // L'endpoint get_email_list usa "results" invece di "messages"
-          if (!listResult.results || !Array.isArray(listResult.results)) {
-            console.log(`⚠️ Batch ${batchNumber}: Nessun risultato ricevuto o formato errato`);
+          if (!listResult.messages || !Array.isArray(listResult.messages)) {
+            console.log(`⚠️ Batch ${batchNumber}: Nessun messaggio ricevuto o formato errato`);
             break;
           }
           
-          // Se non ci sono risultati, incrementa contatore vuoti
-          if (listResult.results.length === 0) {
+          // Se non ci sono messaggi, incrementa contatore vuoti
+          if (listResult.messages.length === 0) {
             consecutiveEmptyBatches++;
             console.log(`🔄 Batch ${batchNumber}: Vuoto (${consecutiveEmptyBatches}/${maxEmptyBatches})`);
             // Se abbiamo 2 batch vuoti consecutivi, probabilmente abbiamo finito
@@ -216,20 +219,20 @@ serve(async (req) => {
               console.log(`🏁 Fine importazione: ${consecutiveEmptyBatches} batch vuoti consecutivi`);
               break;
             }
-            // Avanza offset per batch vuoti
-            currentOffset += Math.min(batch_size, 50);
+            // Avanza offset per batch vuoti - con limite fisso di 10
+            currentOffset += 10;
             batchNumber++;
             continue;
           } else {
-            // Reset contatore se troviamo risultati
+            // Reset contatore se troviamo messaggi
             consecutiveEmptyBatches = 0;
           }
 
-          console.log(`📧 Batch ${batchNumber}: Ricevuti ${listResult.results.length} risultati`);
+          console.log(`📧 Batch ${batchNumber}: Ricevuti ${listResult.messages.length} messaggi`);
 
-          // STEP 3: Salva ogni messaggio del batch (usa results invece di messages)
+          // STEP 3: Salva ogni messaggio del batch
           let batchSaved = 0;
-          for (const email of listResult.results) {
+          for (const email of listResult.messages) {
             try {
               const messageId = `tmwe_${email.uid}`;
               
@@ -282,11 +285,11 @@ serve(async (req) => {
             }
           }
 
-          totalProcessed += listResult.results.length;
+          totalProcessed += listResult.messages.length;
           console.log(`✅ Batch ${batchNumber} completato: ${batchSaved} nuove, ${totalProcessed} totali processate`);
 
-          // Aggiorna offset per prossimo batch
-          currentOffset += listResult.results.length;  // Usa il numero effettivo di risultati ricevuti
+          // Aggiorna offset per prossimo batch - TMWE usa sempre incrementi di 10
+          currentOffset += 10;  // Incremento fisso perché API restituisce sempre max 10 email
           batchNumber++;
 
           // Log di progresso continuo

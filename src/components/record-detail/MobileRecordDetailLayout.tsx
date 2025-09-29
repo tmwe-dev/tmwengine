@@ -162,8 +162,8 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
   return (
     <div className="space-y-3 px-1">
       {/* Header Card - Location Info */}
-      <Card className="border-l-4 border-l-primary">
-        <CardContent className="p-3">
+      <div className="border border-l-4 border-l-primary rounded-lg">
+        <div className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
@@ -176,13 +176,13 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               <span>{record.country || record.paese || "N/A"}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* System Timestamps - Compact */}
       {(record.created_at || record.updated_at) && (
-        <Card>
-          <CardContent className="p-3">
+        <div className="border rounded-lg">
+          <div className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Sistema</span>
@@ -207,19 +207,19 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                 <div className="text-sm font-medium">{formatCellValue(record.position)}</div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Company Information */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
+      <div className="border rounded-lg">
+        <div className="pb-2 p-6">
+          <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
             <Building className="h-4 w-4" />
             Azienda
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+          </div>
+        </div>
+        <div className="p-6 pt-0 space-y-3">
           {(record.company_name || record.azienda) && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Nome Azienda</div>
@@ -244,18 +244,18 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </Badge>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Contact Person */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
+      <div className="border rounded-lg">
+        <div className="pb-2 p-6">
+          <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
             <Users className="h-4 w-4" />
             Contatto
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+          </div>
+        </div>
+        <div className="p-6 pt-0 space-y-3">
           {(record.name || record.nome) && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Nome</div>
@@ -280,18 +280,18 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Contact Information */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
+      <div className="border rounded-lg">
+        <div className="pb-2 p-6">
+          <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
             <Phone className="h-4 w-4" />
             Contatti
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+          </div>
+        </div>
+        <div className="p-6 pt-0 space-y-3">
           {record.email && (
             <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
               <Mail className="h-4 w-4 text-blue-600" />
@@ -329,13 +329,13 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Location Details - Collapsible */}
       {(record.city || record.citta || record.zip_code || record.address || record.indirizzo) && (
-        <Card>
-          <CardContent className="p-3">
+        <div className="border rounded-lg">
+          <div className="p-3">
             <button 
               onClick={() => setShowLocationDetails(!showLocationDetails)}
               className="flex items-center justify-between w-full text-left"
@@ -369,20 +369,20 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Contact Scheduling */}
       {(record.last_contact || record.next_contact_date || record.scheduled_contact) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        <div className="border rounded-lg">
+          <div className="pb-2 p-6">
+            <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
               <Clock className="h-4 w-4" />
               Programmazione
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
+            </div>
+          </div>
+          <div className="p-6 pt-0">
             <div className="grid grid-cols-1 gap-2 text-xs">
               {record.last_contact && (
                 <div className="flex justify-between p-2 bg-gray-50 rounded">
@@ -403,13 +403,13 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Action Buttons */}
-      <Card className="border-primary/20">
-        <CardContent className="p-3">
+      <div className="border border-primary/20 rounded-lg">
+        <div className="p-3">
           <div className="space-y-2">
             {/* Import button for imported contacts */}
             {record.hasOwnProperty('is_imported_to_rubrica') && (
@@ -456,17 +456,17 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </DialogContent>
             </Dialog>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Notes Section */}
-      <Card>
-        <CardHeader className="pb-2">
+      <div className="border rounded-lg">
+        <div className="pb-2 p-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
               <FileText className="h-4 w-4" />
               Note
-            </CardTitle>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -481,8 +481,8 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               <Edit className="h-3 w-3" />
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
+        </div>
+        <div className="p-6 pt-0">
           {editingNote ? (
             <div className="space-y-2">
               <Textarea
@@ -511,13 +511,13 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* System Information - Collapsible */}
       {(record.original_id || record.commercial_anagrafiche_id || record.stato || record.agent_id || record.completed || record.archiviata || record.has_actions || record.row_number || record.is_imported_to_rubrica) && (
-        <Card>
-          <CardContent className="p-3">
+        <div className="border rounded-lg">
+          <div className="p-3">
             <button 
               onClick={() => setShowSystemDetails(!showSystemDetails)}
               className="flex items-center justify-between w-full text-left"
@@ -545,14 +545,14 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                   ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Meta Information - Collapsible */}
       {Object.keys(record).some(key => key.startsWith('meta_')) && (
-        <Card>
-          <CardContent className="p-3">
+        <div className="border rounded-lg">
+          <div className="p-3">
             <button 
               onClick={() => setShowMetaDetails(!showMetaDetails)}
               className="flex items-center justify-between w-full text-left"
@@ -624,8 +624,8 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Additional Fields */}
@@ -639,14 +639,14 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
           'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica',
           'note', 'notes', 'azienda', 'nome', 'telefono', 'cellulare', 'citta', 'paese', 'origine', 'indirizzo'
         ].includes(key) && !key.startsWith('meta_') && record[key] !== undefined && record[key] !== null && record[key] !== '').length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
+        <div className="border rounded-lg">
+          <div className="pb-2 p-6">
+            <div className="flex items-center gap-2 text-sm text-2xl font-semibold leading-none tracking-tight">
               <Database className="h-4 w-4" />
               Campi Aggiuntivi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
+            </div>
+          </div>
+          <div className="p-6 pt-0">
             <div className="space-y-2">
               {Object.keys(record)
                 .filter(key => ![
@@ -669,8 +669,8 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                   </div>
                 ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

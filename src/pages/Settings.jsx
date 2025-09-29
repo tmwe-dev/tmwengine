@@ -714,7 +714,7 @@ const Settings = () => {
 
                 <Button onClick={handleSaveEmailConfig} disabled={saving} className="h-9">
                   <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Salvataggio...' : 'Salva Configurazione'}
+                  {saving ? "Salvataggio..." : "Salva"}
                 </Button>
               </div>
             </CardContent>

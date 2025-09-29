@@ -632,7 +632,7 @@ export default function RubricaAvanzata() {
                   <Filter className="h-5 w-5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
+              <PopoverContent className="w-80 p-0" align="center">
                 <Card className="border-0 shadow-none">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">

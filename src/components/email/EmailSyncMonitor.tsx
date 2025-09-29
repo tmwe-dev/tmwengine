@@ -100,33 +100,24 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const startSync = async () => {
     try {
       setIsRunning(true);
-      addLog(`🚀 Avviando sincronizzazione cartella ${syncConfig.folder}`);
-      addLog(`📋 Configurazione: ${syncConfig.batchSize} email per batch, max ${syncConfig.maxEmails} totali`);
+      addLog(`🚀 Avviando sincronizzazione progressiva cartella ${syncConfig.folder}`);
+      addLog(`🎯 Target: TUTTE le email disponibili (3769)`);
+      addLog(`⏱️ Modalità: Sequenziale con pausa 2s tra batch`);
 
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-batch', {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-progressive', {
         body: {
-          handler: 'batch_sync',
           folder_name: syncConfig.folder,
-          batch_size: syncConfig.batchSize,
-          start_offset: 0,
-          max_total_emails: syncConfig.maxEmails
+          target_emails: 3769, // Target tutte le email
+          batch_delay: 2000    // 2 secondi di pausa tra batch
         }
       });
 
       if (error) throw error;
 
-      if (data.progress_id) {
-        addLog(`📊 Tracciamento avviato (ID: ${data.progress_id})`);
-        startRealTimeTracking(data.progress_id);
-      }
-
-      addLog(`✅ Sincronizzazione completata: ${data.emails_downloaded} nuove email`);
-      
-      // Ferma il tracking real-time alla fine della sincronizzazione
-      setTimeout(() => {
-        setIsRunning(false);
-        stopRealTimeTracking();
-      }, 2000);
+      addLog(`✅ Sincronizzazione progressiva completata!`);
+      addLog(`📊 Risultato: ${data.total_imported} email importate`);
+      addLog(`🔄 Batch processati: ${data.batches_processed}`);
+      addLog(`📍 Offset finale: ${data.final_offset}`);
       
       if (onSyncComplete) {
         onSyncComplete();

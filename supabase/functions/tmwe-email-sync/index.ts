@@ -177,33 +177,35 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // Step 3: Usa l'endpoint tmwe-email-messages per recuperare le email
-        console.log('Step 3: Recuperando email tramite tmwe-email-messages...');
-        const { data: emailsData, error: emailsError } = await supabase.functions.invoke('tmwe-email-messages', {
-          body: {
-            folder: folder_name || 'INBOX',
-            limit: syncResult.data?.result?.messages_processed || 50
-          }
-        });
+        // Step 3: Verifica se le email sono già nel database locale
+        console.log('Step 3: Verificando email nel database locale...');
+        const { data: recentEmails, error: queryError } = await supabase
+          .from('email_messages')
+          .select('id, subject, created_at')
+          .eq('provider_id', providerId)
+          .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()) // ultimi 10 minuti
+          .order('created_at', { ascending: false });
 
-        if (!emailsError && emailsData?.success && emailsData?.emails) {
-          const emails = emailsData.emails;
-          console.log(`Trovate ${emails.length} email da importare`);
-          emailsSaved = emails.length;
+        if (queryError) {
+          console.error('Errore query email recenti:', queryError);
         } else {
-          console.log('Errore recupero email via tmwe-email-messages:', emailsError);
-          
-          // Conta le email esistenti nel database per questo provider
-          const { data: existingEmails, error: queryError } = await supabase
+          console.log(`Trovate ${recentEmails?.length || 0} email recenti nel database`);
+          if (recentEmails && recentEmails.length > 0) {
+            emailsSaved = recentEmails.length;
+            console.log('Email recenti trovate:', recentEmails);
+          }
+        }
+
+        // Step 4: Se non ci sono email recenti, conta tutte le email del provider
+        if (emailsSaved === 0) {
+          const { data: allEmails, error: countError } = await supabase
             .from('email_messages')
             .select('id', { count: 'exact' })
             .eq('provider_id', providerId);
 
-          if (queryError) {
-            console.error('Errore query email:', queryError);
-          } else {
-            console.log(`Totale email nel database: ${existingEmails?.length || 0}`);
-            emailsSaved = existingEmails?.length || 0;
+          if (!countError) {
+            emailsSaved = allEmails?.length || 0;
+            console.log(`Totale email nel database per questo provider: ${emailsSaved}`);
           }
         }
       } else {

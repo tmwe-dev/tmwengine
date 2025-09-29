@@ -19,22 +19,22 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 border border-border rounded-lg">
+          <Link to="/rubrica" className="p-4 border border-border rounded-lg hover:bg-accent transition-colors">
             <Users className="h-8 w-8 text-primary mx-auto mb-2" />
             <span className="text-sm font-medium">Rubrica</span>
-          </div>
-          <div className="p-4 border border-border rounded-lg">
+          </Link>
+          <Link to="/attivita" className="p-4 border border-border rounded-lg hover:bg-accent transition-colors">
             <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
             <span className="text-sm font-medium">Attività</span>
-          </div>
-          <div className="p-4 border border-border rounded-lg">
+          </Link>
+          <Link to="/email" className="p-4 border border-border rounded-lg hover:bg-accent transition-colors">
             <Mail className="h-8 w-8 text-primary mx-auto mb-2" />
             <span className="text-sm font-medium">Email</span>
-          </div>
-          <div className="p-4 border border-border rounded-lg">
+          </Link>
+          <Link to="/campagne" className="p-4 border border-border rounded-lg hover:bg-accent transition-colors">
             <BarChart3 className="h-8 w-8 text-primary mx-auto mb-2" />
             <span className="text-sm font-medium">Campagne</span>
-          </div>
+          </Link>
         </div>
 
         <Link to="/dashboard">

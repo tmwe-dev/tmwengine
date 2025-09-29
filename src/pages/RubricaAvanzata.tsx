@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX } from 'lucide-react';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -232,6 +232,9 @@ export default function RubricaAvanzata() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
+  
+  // Stato per nascondere/mostrare sezione superiore
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
 
   // Mobile hook
   const isMobile = useIsMobile();
@@ -608,6 +611,9 @@ export default function RubricaAvanzata() {
         </div>
       </div>
 
+      {/* Search and Filters - Collapsible */}
+      {!isHeaderCollapsed && (
+      <div className="animate-fade-in">
       {/* Compact Search and Filters Section */}
       <Card className="border-card shadow-soft">
         <CardHeader className={cn(isMobile ? "pb-2" : "pb-3")}>
@@ -756,6 +762,21 @@ export default function RubricaAvanzata() {
 
         </CardContent>
       </Card>
+      </div>
+      )}
+
+      {/* Controllo visibilità filtri - Centrato */}
+      <div className="flex justify-center mb-4">
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          className="text-text-secondary hover:text-text-primary transition-colors p-3"
+          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
+        >
+          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
+        </Button>
+      </div>
 
       {/* Data */}
       {isMobile ? (

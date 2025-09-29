@@ -753,7 +753,7 @@ export default function Attivita() {
       )}
 
       {/* Stats - Sempre visibili */}
-      <div className="flex justify-center">
+      <div className="flex justify-center mb-6">
         <div className={cn(
           "flex gap-2 overflow-x-auto",
           isMobile ? "flex-nowrap" : "flex-wrap justify-center"

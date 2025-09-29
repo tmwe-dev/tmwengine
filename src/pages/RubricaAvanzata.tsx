@@ -773,7 +773,7 @@ export default function RubricaAvanzata() {
           <div className="flex justify-center">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Users className="h-4 w-4" />
-              Contatti ({filteredRecords.length})
+              ({filteredRecords.length})
             </div>
           </div>
 

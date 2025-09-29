@@ -87,12 +87,21 @@ serve(async (req) => {
     }
 
     const credentials = provider[0].email_provider_credenziali;
-    if (!credentials || !credentials[0]) {
+    if (!credentials || credentials.length === 0) {
       throw new Error('Credenciales TMWE no configuradas');
     }
 
-    const oauthToken = credentials[0].oauth_token || credentials[0].api_key;
-    if (!oauthToken) {
+    // Buscar la credencial más reciente con oauth_token o api_key válido
+    const validCredential = credentials
+      .filter(cred => cred.oauth_token || cred.api_key)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    if (!validCredential) {
+      throw new Error('Credenciales TMWE válidas no encontradas');
+    }
+
+    const oauthToken = validCredential.oauth_token || validCredential.api_key;
+    if (!oauthToken || oauthToken.trim() === '') {
       throw new Error('OAuth Token TMWE no configurado');
     }
 

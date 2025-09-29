@@ -703,7 +703,7 @@ export default function RubricaAvanzata() {
                 <div className="text-xs text-text-secondary">Aziende</div>
               </div>
               <div className="text-center">
-                <div className={cn("font-bold text-accent", isMobile ? "text-base" : "text-lg")}>{selectedRecords.size}</div>
+                <div className={cn("font-bold", selectedRecords.size > 0 ? "text-blue-600" : "text-accent", isMobile ? "text-base" : "text-lg")}>{selectedRecords.size}</div>
                 <div className="text-xs text-text-secondary">Selez.</div>
               </div>
             </div>

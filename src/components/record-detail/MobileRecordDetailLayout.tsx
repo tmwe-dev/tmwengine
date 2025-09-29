@@ -656,7 +656,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
     </div>
-
+    
     {/* Dialog per Crea Attività */}
     <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
       <DialogContent className="max-w-[95vw] max-h-[85vh] flex flex-col p-4">

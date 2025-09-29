@@ -160,6 +160,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
   };
 
   return (
+    <>
     <div className="space-y-3 px-1">
       {/* Header Card - Location Info */}
       <Card className="border-l-4 border-l-primary">
@@ -211,6 +212,38 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
 
+      {/* Action Buttons */}
+      <Card className="border-primary/20">
+        <CardContent className="p-3">
+          <div className="space-y-2">
+            {/* Import button for imported contacts */}
+            {record.hasOwnProperty('is_imported_to_rubrica') && (
+              <Button 
+                onClick={handleImportToRubrica}
+                disabled={isImporting || record.is_imported_to_rubrica}
+                className="w-full"
+                variant={record.is_imported_to_rubrica ? "outline" : "default"}
+                size="sm"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {isImporting ? "Importando..." : 
+                 record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+              </Button>
+            )}
+            
+            {/* Create Activity Button */}
+            <Button 
+              onClick={() => setIsActivityDialogOpen(true)}
+              variant="outline"
+              className="w-full"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Crea Attività
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Company Information */}
       <Card>
@@ -408,57 +441,6 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <Card className="border-primary/20">
-        <CardContent className="p-3">
-          <div className="space-y-2">
-            {/* Import button for imported contacts */}
-            {record.hasOwnProperty('is_imported_to_rubrica') && (
-              <Button 
-                onClick={handleImportToRubrica}
-                disabled={isImporting || record.is_imported_to_rubrica}
-                className="w-full"
-                variant={record.is_imported_to_rubrica ? "outline" : "default"}
-                size="sm"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {isImporting ? "Importando..." : 
-                 record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-              </Button>
-            )}
-            
-            {/* Create Activity button */}
-            <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crea Attività
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] max-h-[85vh] flex flex-col p-4">
-                <DialogHeader className="flex-shrink-0">
-                  <DialogTitle>Crea Nuova Attività</DialogTitle>
-                </DialogHeader>
-                <div className="flex-1 overflow-y-auto">
-                  <AdvancedMultipleActivityForm
-                    contacts={[{
-                      id: record.id,
-                      company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                      email: record.email,
-                      phone: record.telefono || record.phone,
-                      cell: record.cellulare || record.cell
-                    }]}
-                    onSubmit={handleCreateActivity}
-                    onCancel={() => setIsActivityDialogOpen(false)}
-                    isSubmitting={false}
-                    showSaveToRubrica={false}
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Notes Section */}
       <Card>
@@ -674,5 +656,30 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
     </div>
+
+    {/* Dialog per Crea Attività */}
+    <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+      <DialogContent className="max-w-[95vw] max-h-[85vh] flex flex-col p-4">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>Crea Nuova Attività</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto">
+          <AdvancedMultipleActivityForm
+            contacts={[{
+              id: record.id,
+              company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+              email: record.email,
+              phone: record.telefono || record.phone,
+              cell: record.cellulare || record.cell
+            }]}
+            onSubmit={handleCreateActivity}
+            onCancel={() => setIsActivityDialogOpen(false)}
+            isSubmitting={false}
+            showSaveToRubrica={false}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

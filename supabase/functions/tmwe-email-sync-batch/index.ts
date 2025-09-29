@@ -36,9 +36,9 @@ serve(async (req) => {
       action, 
       folder_name = 'INBOX', 
       handler = action || 'sync_folder',
-      batch_size = 50,  // Ridotto per compatibilità API TMWE
+      batch_size = 100,  // Batch size più grande per efficienza
       start_offset = 0,
-      max_total_emails = 1000
+      max_total_emails = 10000  // Limite molto alto per importare tutto
     } = requestData;
     
     console.log('Batch Sync Parameters:', { 
@@ -144,14 +144,14 @@ serve(async (req) => {
       const syncText = await syncResponse.text();
       console.log('✅ Sincronizzazione iniziale completata');
 
-      // STEP 2: Processo di importazione batch con gestione intelligente della paginazione
-      console.log(`🔢 Step 2: Avviando importazione batch (max ${maxBatches} batch da ${Math.min(batch_size, 50)} email)`);
+      // STEP 2: Processo di importazione batch con paginazione completa
+      console.log(`🔢 Step 2: Avviando importazione completa a batch da ${batch_size} email`);
       
       let consecutiveEmptyBatches = 0;
-      const maxEmptyBatches = 3;  // Se ricevi 3 batch vuoti consecutivi, fermati
+      const maxEmptyBatches = 2;  // Se ricevi 2 batch vuoti consecutivi, fermati
       
-      while (batchNumber <= maxBatches && currentOffset < max_total_emails && consecutiveEmptyBatches < maxEmptyBatches) {
-        console.log(`📦 Batch ${batchNumber}/${maxBatches} - Offset: ${currentOffset}, Size: ${Math.min(batch_size, 50)}, Empty: ${consecutiveEmptyBatches}/${maxEmptyBatches}`);
+      while (consecutiveEmptyBatches < maxEmptyBatches) {
+        console.log(`📦 Batch ${batchNumber} - Offset: ${currentOffset}, Size: ${batch_size}, Empty: ${consecutiveEmptyBatches}/${maxEmptyBatches}`);
         
         // Aggiorna progress
         await supabase
@@ -163,12 +163,12 @@ serve(async (req) => {
           })
           .eq('id', progressRecord?.id);
 
-        // Chiama API per lista messaggi con paginazione
+        // Chiama API per lista messaggi con batch size completo
         const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
         const listBody = {
           handler: 'get_messages',
           folder: folder_name,
-          limit: Math.min(batch_size, 50),  // Limite API TMWE massimo 50
+          limit: batch_size,  // Usa il batch_size completo
           offset: currentOffset,
           include_attachments: false,
           format: 'text'
@@ -213,8 +213,13 @@ serve(async (req) => {
           if (listResult.messages.length === 0) {
             consecutiveEmptyBatches++;
             console.log(`🔄 Batch ${batchNumber}: Vuoto (${consecutiveEmptyBatches}/${maxEmptyBatches})`);
-            // Avanza offset anche per batch vuoti per evitare loop infiniti
-            currentOffset += Math.min(batch_size, 50);
+            // Se abbiamo 2 batch vuoti consecutivi, probabilmente abbiamo finito
+            if (consecutiveEmptyBatches >= maxEmptyBatches) {
+              console.log(`🏁 Fine importazione: ${consecutiveEmptyBatches} batch vuoti consecutivi`);
+              break;
+            }
+            // Avanza offset per batch vuoti
+            currentOffset += batch_size;
             batchNumber++;
             continue;
           } else {
@@ -286,17 +291,11 @@ serve(async (req) => {
           currentOffset += listResult.messages.length;  // Usa il numero effettivo di messaggi ricevuti
           batchNumber++;
 
-          // Se abbiamo ricevuto 0 messaggi o abbiamo raggiunto il limite, fermiamoci
-          if (listResult.messages.length === 0) {
-            console.log(`🏁 Fine importazione: nessun messaggio nel batch ${batchNumber-1}`);
-            break;
-          }
+          // Log di progresso continuo
+          console.log(`📊 Progresso: Batch ${batchNumber-1} completato, ${totalProcessed} email totali processate, ${emailsSaved} nuove`);
           
-          // Se riceviamo meno messaggi del limite API, potremmo essere alla fine
-          // Ma continuiamo comunque per essere sicuri
-          if (listResult.messages.length < Math.min(batch_size, 50)) {
-            console.log(`⚠️ Batch incompleto (${listResult.messages.length} < ${Math.min(batch_size, 50)}), ma continuiamo...`);
-          }
+          // Non fermarsi mai per batch incompleti - continua sempre
+          // L'unico modo per fermarsi è avere batch completamente vuoti
 
           // Piccola pausa tra batch per non sovraccaricare l'API
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -304,11 +303,12 @@ serve(async (req) => {
         } catch (batchError) {
           console.error(`❌ Errore batch ${batchNumber}:`, batchError);
           // Continua con il prossimo batch invece di fermarsi
-          currentOffset += Math.min(batch_size, 50);  // Avanza anche in caso di errore
+          currentOffset += batch_size;  // Avanza anche in caso di errore
           batchNumber++;
           
-          // Se abbiamo troppi errori consecutivi, fermiamoci
-          if (batchNumber > maxBatches + 5) {
+          // Se abbiamo troppi errori consecutivi, fermati per sicurezza
+          consecutiveEmptyBatches++;
+          if (consecutiveEmptyBatches >= maxEmptyBatches) {
             console.log('❌ Troppi errori consecutivi, interruzione importazione');
             break;
           }

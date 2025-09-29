@@ -46,7 +46,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const [syncConfig, setSyncConfig] = useState({
     folder: 'INBOX',
     batchSize: 100,
-    maxEmails: 1000
+    maxEmails: 10000  // Limite molto alto per importare tutto
   });
 
   const addLog = (message: string) => {
@@ -216,20 +216,20 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 value={syncConfig.batchSize}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, batchSize: parseInt(e.target.value) }))}
                 disabled={isRunning}
-                min="10"
-                max="500"
+                min="50"
+                max="1000"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Max Email</label>
+              <label className="text-sm font-medium">Max Email (0 = Tutte)</label>
               <input 
                 type="number" 
                 className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.maxEmails}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, maxEmails: parseInt(e.target.value) }))}
                 disabled={isRunning}
-                min="100"
-                max="10000"
+                min="0"
+                max="50000"
               />
             </div>
             <div className="flex items-end">

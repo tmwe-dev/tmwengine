@@ -806,102 +806,45 @@ export default function RubricaAvanzata() {
               </CardContent>
             </Card>
            ) : (
-              <>
-                {/* Mobile Controls Card */}
+             <>
+               {/* Mobile Selection Controls */}
                 {viewingRecords.length > 0 && (
                   <Card className="border-card shadow-soft">
-                    <CardContent className="p-3 space-y-3">
-                      {/* Ordinamento Mobile */}
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Ordina per:</label>
-                        <Select 
-                          value={sortConfig.primary?.column || ''} 
-                          onValueChange={(column) => handleSort(column)}
-                        >
-                          <SelectTrigger className="w-40 h-8">
-                            <SelectValue placeholder="Scegli campo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="azienda">Azienda</SelectItem>
-                            <SelectItem value="nome">Nome</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="responsabile">Responsabile</SelectItem>
-                            <SelectItem value="citta">Città</SelectItem>
-                            <SelectItem value="paese">Paese</SelectItem>
-                            <SelectItem value="origine">Origine</SelectItem>
-                            <SelectItem value="created_at">Data creazione</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Controlli Colonne Mobile */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium block">Mostra sezioni:</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          <Button
-                            variant={visibleColumns.company ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleColumnVisibility('company')}
-                            className="h-9 text-xs flex flex-col items-center gap-1"
-                          >
-                            <Building className="h-3 w-3" />
-                            <span>Azienda</span>
-                          </Button>
-                          <Button
-                            variant={visibleColumns.details ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleColumnVisibility('details')}
-                            className="h-9 text-xs flex flex-col items-center gap-1"
-                          >
-                            <Phone className="h-3 w-3" />
-                            <span>Contatti</span>
-                          </Button>
-                          <Button
-                            variant={visibleColumns.metadata ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleColumnVisibility('metadata')}
-                            className="h-9 text-xs flex flex-col items-center gap-1"
-                          >
-                            <Database className="h-3 w-3" />
-                            <span>Dati</span>
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Selezione tutto */}
-                      <div className="flex items-center justify-between border-t pt-3">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={
-                              viewingRecords.length > 0 && 
-                              viewingRecords.every((_, index) => selectedRecords.has(currentPage * recordsPerPage + index))
-                            }
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                const newSelected = new Set(selectedRecords);
-                                viewingRecords.forEach((_, index) => {
-                                  newSelected.add(currentPage * recordsPerPage + index);
-                                });
-                                setSelectedRecords(newSelected);
-                              } else {
-                                const newSelected = new Set(selectedRecords);
-                                viewingRecords.forEach((_, index) => {
-                                  newSelected.delete(currentPage * recordsPerPage + index);
-                                });
-                                setSelectedRecords(newSelected);
-                              }
-                            }}
-                          />
-                          <span className="text-sm font-medium">
-                            Seleziona tutti ({viewingRecords.length})
-                          </span>
-                        </div>
-                        {selectedRecords.size > 0 && (
-                          <span className="text-xs text-blue-600 font-medium">
-                            {selectedRecords.size} selezionati
-                          </span>
-                        )}
-                      </div>
+                   <CardContent className="p-3 space-y-3">
+                     {/* Checkbox Seleziona tutto */}
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <Checkbox
+                           checked={
+                             viewingRecords.length > 0 && 
+                             viewingRecords.every((_, index) => selectedRecords.has(currentPage * recordsPerPage + index))
+                           }
+                           onCheckedChange={(checked) => {
+                             if (checked) {
+                               const newSelected = new Set(selectedRecords);
+                               viewingRecords.forEach((_, index) => {
+                                 newSelected.add(currentPage * recordsPerPage + index);
+                               });
+                               setSelectedRecords(newSelected);
+                             } else {
+                               const newSelected = new Set(selectedRecords);
+                               viewingRecords.forEach((_, index) => {
+                                 newSelected.delete(currentPage * recordsPerPage + index);
+                               });
+                               setSelectedRecords(newSelected);
+                             }
+                           }}
+                         />
+                         <span className="text-sm font-medium">
+                           Seleziona tutti ({viewingRecords.length})
+                         </span>
+                       </div>
+                       {selectedRecords.size > 0 && (
+                         <span className="text-xs text-blue-600 font-medium">
+                           {selectedRecords.size} selezionati
+                         </span>
+                       )}
+                     </div>
                      
                      {/* Actions Bar Mobile */}
                      {selectedRecords.size > 0 && (
@@ -953,7 +896,6 @@ export default function RubricaAvanzata() {
                   contact={record}
                   index={actualIndex}
                   isSelected={selectedRecords.has(actualIndex)}
-                  visibleColumns={visibleColumns}
                   onSelect={(index, selected) => {
                     const newSelected = new Set(selectedRecords);
                     if (selected) {

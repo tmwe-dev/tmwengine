@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Phone, Mail, MapPin, Tag, Eye, Users, User, Database } from 'lucide-react';
+import { Building, Phone, Mail, MapPin, Tag, Eye, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,11 +14,6 @@ interface ContactMobileCardProps {
   contact: Contact;
   index: number;
   isSelected: boolean;
-  visibleColumns: {
-    company: boolean;
-    details: boolean;
-    metadata: boolean;
-  };
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onCreateActivity: () => void;
@@ -51,7 +46,6 @@ export function ContactMobileCard({
   contact,
   index,
   isSelected,
-  visibleColumns,
   onSelect,
   onView,
   onCreateActivity
@@ -73,7 +67,7 @@ export function ContactMobileCard({
       isSelected && "ring-2 ring-primary border-primary"
     )}>
       <CardContent className="p-4 space-y-3">
-        {/* Header con checkbox e azienda - SEMPRE VISIBILE */}
+        {/* Header con checkbox e azienda */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Checkbox
@@ -99,136 +93,77 @@ export function ContactMobileCard({
           )}
         </div>
 
-        {/* SEZIONE COMPANY - Informazioni base azienda */}
-        {visibleColumns.company && (
-          <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-            <h5 className="text-xs font-semibold text-primary uppercase tracking-wide flex items-center gap-1">
-              <Building className="h-3 w-3" />
-              Azienda
-            </h5>
-            <div className="space-y-2 text-sm">
-              {formatCellValue(contact.responsabile) && (
-                <div className="flex items-center gap-2">
-                  <User className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-foreground">{formatCellValue(contact.responsabile)}</span>
-                </div>
-              )}
-              {(formatCellValue(contact.citta) || formatCellValue(contact.paese)) && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-3 w-3 text-muted-foreground" />
-                  <div className="flex items-center gap-2">
-                    {formatCellValue(contact.paese) && (
-                      <span>{getCountryFlag(contact.paese)}</span>
-                    )}
-                    <span className="text-foreground">
-                      {[formatCellValue(contact.citta), formatCellValue(contact.paese)]
-                        .filter(Boolean)
-                        .join(', ')}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {formatCellValue(contact.settore) && (
-                <div className="flex items-center gap-2">
-                  <Tag className="h-3 w-3 text-muted-foreground" />
-                  <Badge variant="secondary" className="text-xs">
-                    {formatCellValue(contact.settore)}
-                  </Badge>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* SEZIONE DETAILS - Contatti e dettagli */}
-        {visibleColumns.details && (formatCellValue(contact.email) || formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
-          <div className="space-y-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-            <h5 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              Contatti
-            </h5>
-            <div className="space-y-2">
+        {/* Contatti */}
+        <div className="space-y-2">
+          {(formatCellValue(contact.email) || formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
+            <div className="grid gap-2">
               {formatCellValue(contact.email) && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-3 w-3 text-muted-foreground" />
+                  <Mail className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground">{formatCellValue(contact.email)}</span>
                 </div>
               )}
               
               {(formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-3 w-3 text-muted-foreground" />
+                  <Phone className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground">
                     {formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)}
                   </span>
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* SEZIONE METADATA - Dati di sistema e stato */}
-        {visibleColumns.metadata && (
-          <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-            <h5 className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center gap-1">
-              <Database className="h-3 w-3" />
-              Metadata
-            </h5>
-            <div className="space-y-2 text-sm">
-              {formatCellValue(contact.stato) && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Stato:</span>
-                  <Badge variant={contact.stato === 'A' ? 'default' : 'secondary'} className="text-xs">
-                    {contact.stato === 'A' ? 'Attivo' : formatCellValue(contact.stato)}
-                  </Badge>
-                </div>
+        {/* Localizzazione */}
+        {(formatCellValue(contact.citta) || formatCellValue(contact.paese)) && (
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {formatCellValue(contact.paese) && (
+                <span>{getCountryFlag(contact.paese)}</span>
               )}
-              {formatCellValue(contact.client_code) && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Codice:</span>
-                  <span className="text-foreground font-mono text-xs">{formatCellValue(contact.client_code)}</span>
-                </div>
-              )}
-              {contact.created_at && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Creato:</span>
-                  <span className="text-foreground text-xs">
-                    {new Date(contact.created_at).toLocaleDateString('it-IT', { 
-                      day: '2-digit', 
-                      month: 'short',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-              )}
-              {contact.last_contact && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Ultimo contatto:</span>
-                  <span className="text-foreground text-xs">
-                    {new Date(contact.last_contact).toLocaleDateString('it-IT', { 
-                      day: '2-digit', 
-                      month: 'short'
-                    })}
-                  </span>
-                </div>
-              )}
-              {contact.next_contact_date && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Prossimo contatto:</span>
-                  <span className="text-foreground text-xs">
-                    {new Date(contact.next_contact_date).toLocaleDateString('it-IT', { 
-                      day: '2-digit', 
-                      month: 'short'
-                    })}
-                  </span>
-                </div>
-              )}
+              <span className="text-foreground">
+                {[formatCellValue(contact.citta), formatCellValue(contact.paese)]
+                  .filter(Boolean)
+                  .join(', ')}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Azioni - SEMPRE VISIBILI */}
-        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+        {/* Informazioni aggiuntive */}
+        {formatCellValue(contact.responsabile) && (
+          <div className="text-sm">
+            <span className="text-muted-foreground">Responsabile: </span>
+            <span className="text-foreground">{formatCellValue(contact.responsabile)}</span>
+          </div>
+        )}
+
+        {/* Settore/Tags */}
+        {formatCellValue(contact.settore) && (
+          <div className="flex items-center gap-2">
+            <Tag className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="secondary" className="text-xs">
+              {formatCellValue(contact.settore)}
+            </Badge>
+          </div>
+        )}
+
+        {/* Data creazione */}
+        {contact.created_at && (
+          <div className="text-xs text-muted-foreground border-t border-border pt-2">
+            Aggiunto: {new Date(contact.created_at).toLocaleDateString('it-IT', { 
+              day: '2-digit', 
+              month: 'short',
+              year: 'numeric'
+            })}
+          </div>
+        )}
+
+        {/* Azioni */}
+        <div className="flex justify-end gap-2 pt-2">
           <Button
             variant="outline"
             size="sm"

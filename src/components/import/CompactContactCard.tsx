@@ -39,6 +39,11 @@ export function CompactContactCard({
     )}>
       <CardContent className="p-3">
         <div className="flex items-center gap-2">
+          {/* Numero record */}
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <span className="text-xs font-medium text-primary">#{index + 1}</span>
+          </div>
+          
           {/* Checkbox compatto */}
           <Checkbox
             checked={isSelected}

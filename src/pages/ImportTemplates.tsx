@@ -2758,9 +2758,9 @@ export default function ImportTemplates() {
                             </span>
                          </div>
                          {selectedRecords.size > 0 && (
-                           <span className="text-sm font-medium text-primary">
-                             {selectedRecords.size} selezionati
-                           </span>
+                            <span className="text-sm font-medium text-white bg-blue-500 px-2 py-1 rounded">
+                              {selectedRecords.size} selezionati
+                            </span>
                          )}
                        </div>
                        

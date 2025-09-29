@@ -91,10 +91,16 @@ serve(async (req) => {
       throw new Error('Credenciales TMWE no configuradas');
     }
 
-    // Buscar la credencial más reciente con oauth_token o api_key válido
-    const validCredential = credentials
-      .filter(cred => cred.oauth_token || cred.api_key)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    // Buscar la credencial más reciente con token válido
+    let validCredential = null;
+    for (const cred of credentials) {
+      if ((cred.oauth_token && cred.oauth_token.trim() !== '') || 
+          (cred.api_key && cred.api_key.trim() !== '')) {
+        if (!validCredential || new Date(cred.created_at) > new Date(validCredential.created_at)) {
+          validCredential = cred;
+        }
+      }
+    }
 
     if (!validCredential) {
       throw new Error('Credenciales TMWE válidas no encontradas');

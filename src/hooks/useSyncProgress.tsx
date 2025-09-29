@@ -87,10 +87,21 @@ export const useSyncProgress = (): UseSyncProgressReturn => {
         (payload) => {
           console.log('Progress update received:', payload);
           if (payload.new && typeof payload.new === 'object') {
-            setProgress({
+            const newProgress = {
               ...payload.new,
               status: (payload.new as any).status as 'in_progress' | 'completed' | 'error'
-            } as SyncProgress);
+            } as SyncProgress;
+            setProgress(newProgress);
+            
+            // Auto-stop tracking quando completato
+            if (newProgress.status === 'completed' || newProgress.status === 'error') {
+              setTimeout(() => {
+                setSubscription(null);
+                if (subscription) {
+                  supabase.removeChannel(subscription);
+                }
+              }, 2000);
+            }
           }
         }
       )

@@ -21,6 +21,19 @@ interface SendResult {
   success: boolean;
   message_id?: string;
   error?: string;
+  error_details?: {
+    status: number;
+    status_text: string;
+    response_body: string;
+    headers: Record<string, string>;
+  };
+  debug?: {
+    api_status: number;
+    api_status_text: string;
+    url_used: string;
+    api_response_text: string;
+    [key: string]: any;
+  };
 }
 
 export function TMWESyncTest() {
@@ -92,7 +105,18 @@ export function TMWESyncTest() {
       if (data.success) {
         toast.success(`Email inviata! Message ID: ${data.message_id}`);
       } else {
-        toast.error(`Errore invio: ${data.error}`);
+        // Extract detailed error information
+        const errorMessage = data.error || 
+          (data.error_details ? `${data.error_details.status} ${data.error_details.status_text}` : 'Errore sconosciuto');
+        
+        const debugInfo = data.debug ? 
+          `Status: ${data.debug.api_status}, URL: ${data.debug.url_used}, Response: ${data.debug.api_response_text || 'Empty'}` : 
+          'Debug info non disponibile';
+          
+        toast.error(`Errore invio: ${errorMessage}`, {
+          description: debugInfo,
+          duration: 10000
+        });
       }
       
     } catch (error) {
@@ -265,7 +289,23 @@ export function TMWESyncTest() {
                   Message ID: <code className="text-xs bg-muted p-1 rounded">{sendResult.message_id}</code>
                 </div>
               ) : (
-                <div className="text-sm text-red-600">{sendResult.error}</div>
+                <div className="space-y-2">
+                  <div className="text-sm text-red-600">{sendResult.error || 'Errore sconosciuto'}</div>
+                  {sendResult.error_details && (
+                    <div className="text-xs text-muted-foreground">
+                      <div>Status: {sendResult.error_details.status} {sendResult.error_details.status_text}</div>
+                      <div>Response: {sendResult.error_details.response_body || 'Empty response'}</div>
+                    </div>
+                  )}
+                  {sendResult.debug && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-muted-foreground">Debug Info</summary>
+                      <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                        {JSON.stringify(sendResult.debug, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
               )}
             </div>
           )}

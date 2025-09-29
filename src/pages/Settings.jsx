@@ -200,6 +200,7 @@ const Settings = () => {
           .upsert({
             provider_id: emailConfig.id,
             api_key: emailConfig.apiKey,
+            oauth_token: emailConfig.apiKey,
             webhook_secret: emailConfig.webhookSecret
           });
 
@@ -227,6 +228,7 @@ const Settings = () => {
           .insert({
             provider_id: emailProviderId,
             api_key: emailConfig.apiKey,
+            oauth_token: emailConfig.apiKey,
             webhook_secret: emailConfig.webhookSecret
           });
 

@@ -381,64 +381,67 @@ const Email = () => {
                 {filteredEmails.map((email) => (
                   <div
                     key={email.id}
-                    className={`p-3 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
+                    className={`p-2 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
                       selectedEmail?.id === email.id ? 'bg-muted' : ''
                     }`}
                     onClick={() => setSelectedEmail(email)}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                        <div className="flex items-center gap-1 mb-1">
                           {getStatusIcon(email.status)}
-                          <span className={`font-medium truncate text-sm md:text-base ${email.status === 'unread' ? 'font-bold' : ''}`}>
+                          <span className={`font-medium truncate text-xs md:text-sm flex-1 ${email.status === 'unread' ? 'font-bold' : ''}`}>
                             {email.from}
                           </span>
-                          <Badge variant={getPriorityColor(email.priority)} className="text-xs">
-                            {email.priority}
-                          </Badge>
-                          {email.aiClassification && (
-                            <Badge variant="outline" className="text-xs">
-                              <Brain className="w-3 h-3 mr-1" />
-                              AI
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Badge variant={getPriorityColor(email.priority)} className="text-xs px-1 py-0 h-4 min-w-0">
+                              {email.priority.charAt(0).toUpperCase()}
                             </Badge>
-                          )}
+                            {email.aiClassification && (
+                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 min-w-0">
+                                <Brain className="w-2 h-2" />
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         
-                        <h4 className={`text-sm truncate ${email.status === 'unread' ? 'font-semibold' : ''}`}>
+                        <h4 className={`text-xs md:text-sm truncate mb-1 ${email.status === 'unread' ? 'font-semibold' : ''}`}>
                           {email.subject}
                         </h4>
                         
-                        <p className="text-xs text-muted-foreground truncate mt-1">
+                        <p className="text-xs text-muted-foreground truncate mb-2">
                           {email.body}
                         </p>
                         
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
                             {new Date(email.date).toLocaleDateString('it-IT')}
                           </span>
                           
-                          <div className="flex space-x-1">
+                          <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-6 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEmailAction(email.id, email.status === 'read' ? 'mark-unread' : 'mark-read');
                               }}
                             >
-                              {email.status === 'read' ? 'Non letta' : 'Segna letta'}
+                              {email.status === 'read' ? '●' : '○'}
                             </Button>
                             
                             {!email.aiClassification && (
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-6 px-2"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleAIClassification(email.id);
                                 }}
                               >
-                                <Brain className="h-4 w-4" />
+                                <Brain className="h-3 w-3" />
                               </Button>
                             )}
                           </div>

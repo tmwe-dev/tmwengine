@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon, EyeOff, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,6 +91,7 @@ export default function Attivita() {
     scadenza: ''
   });
   const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
   const scrollPositionRef = useRef<number>(0);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -643,10 +644,19 @@ export default function Attivita() {
     <div className={cn("section-spacing", isMobile && "space-y-4")}>
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-heading-1 font-bold text-text-primary mb-2">
             Gestione Attività
           </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+            className="text-text-secondary hover:text-text-primary transition-colors"
+            title={isHeaderCollapsed ? "Mostra sezione filtri" : "Nascondi sezione filtri"}
+          >
+            {isHeaderCollapsed ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </Button>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -675,124 +685,128 @@ export default function Attivita() {
         </Dialog>
       </div>
 
-      {/* Search and Filters */}
-      <Card className="border-card shadow-soft">
-        <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
-          <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-              <Input
-                placeholder="Cerca per descrizione o contatto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select
-              value={filters.stato}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
-            >
-              <SelectTrigger className="flex-1 min-w-[200px]">
-                <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
-                <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
-                <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
-                <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
-                <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex gap-3 mt-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
-                </Button>
-              </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={filterDate}
-                    onSelect={handleDateFilter}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
+      {/* Search and Filters - Collapsible */}
+      {!isHeaderCollapsed && (
+        <div className="animate-fade-in">
+          <Card className="border-card shadow-soft">
+            <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
+              <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    placeholder="Cerca per descrizione o contatto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
                   />
-            </PopoverContent>
-          </Popover>
+                </div>
+                
+                <Select
+                  value={filters.stato}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
+                >
+                  <SelectTrigger className="flex-1 min-w-[200px]">
+                    <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
+                    <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
+                    <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
+                    <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
+                    <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filtri Avanzati
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Filtri Attività</DialogTitle>
-              </DialogHeader>
-              <ActivityFilters
-                filters={filters}
-                onFiltersChange={setFilters}
-                onClose={() => setIsFiltersOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+              <div className="flex gap-3 mt-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                    </Button>
+                  </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={filterDate}
+                        onSelect={handleDateFilter}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                </PopoverContent>
+              </Popover>
+
+              <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filtri Avanzati
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Filtri Attività</DialogTitle>
+                  </DialogHeader>
+                  <ActivityFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onClose={() => setIsFiltersOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats */}
+          <div className="flex justify-center">
+            <div className={cn(
+              "flex gap-2 overflow-x-auto",
+              isMobile ? "flex-nowrap" : "flex-wrap justify-center"
+            )}>
+              <Card 
+                className={cn(
+                  "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                  statusFilter === 'all' && "ring-2 ring-primary border-primary"
+                )}
+                onClick={() => handleStatusFilter('all')}
+              >
+                <CardContent className="text-center p-3 w-20">
+                  <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
+                  <div className="text-text-secondary text-xs">Totali</div>
+                </CardContent>
+              </Card>
+              
+              <Card 
+                className={cn(
+                  "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                  statusFilter === 'future' && "ring-2 ring-primary border-primary"
+                )}
+                onClick={() => handleStatusFilter('future')}
+              >
+                <CardContent className="text-center p-3 w-20">
+                  <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
+                  <div className="text-text-secondary text-xs">In Sospeso</div>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className={cn(
+                  "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                  statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
+                )}
+                onClick={() => handleStatusFilter('scadute')}
+              >
+                <CardContent className="text-center p-3 w-20">
+                  <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
+                  <div className="text-text-secondary text-xs">Scadute</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats */}
-      <div className="flex justify-center">
-        <div className={cn(
-          "flex gap-2 overflow-x-auto",
-          isMobile ? "flex-nowrap" : "flex-wrap justify-center"
-        )}>
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'all' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('all')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
-              <div className="text-text-secondary text-xs">Totali</div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'future' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('future')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
-              <div className="text-text-secondary text-xs">In Sospeso</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('scadute')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
-              <div className="text-text-secondary text-xs">Scadute</div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      )}
 
       {/* Azioni per selezione multipla */}
       {selectedActivities.length > 0 && (

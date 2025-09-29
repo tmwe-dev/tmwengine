@@ -599,11 +599,11 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div className={cn("space-y-4", isMobile && "space-y-2")}>
+    <div className={cn("space-y-2", isMobile && "space-y-1")}>
 
       {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft">
-        <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
+        <CardContent className={cn(isMobile ? "p-2" : "p-4")}>
           <div className="flex items-center gap-3">
             {/* Counter - Mobile */}
             {isMobile && (
@@ -881,7 +881,7 @@ export default function RubricaAvanzata() {
            {/* Mobile Controls */}
                  {viewingRecords.length > 0 && (
                    <Card className="border-card shadow-soft">
-                    <CardContent className="p-2 space-y-2 mb-4">
+                    <CardContent className="p-1.5 space-y-1 mb-4">
                       {/* Checkbox Seleziona tutto */}
                       <div className="flex items-center justify-between px-4">
                         <div className="flex items-center gap-3">

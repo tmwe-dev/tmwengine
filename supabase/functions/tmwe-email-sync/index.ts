@@ -221,16 +221,16 @@ serve(async (req) => {
             const listResult = JSON.parse(listText);
             console.log('Parsed list result:', listResult);
             
-            // Gestisci il formato di risposta secondo OpenAPI v2.0.0
-            if (listResult.success && listResult.messages) {
+            // Gestisci il formato di risposta - TMWE restituisce direttamente i messaggi
+            if (listResult.messages && Array.isArray(listResult.messages)) {
               const emailsList = listResult.messages;
               console.log(`Trovati ${emailsList.length} messaggi nella lista`);
 
               // Step 4: Salva ogni messaggio nel database
               for (const email of emailsList) {
               try {
-                // Genera un message_id univoco se non presente
-                const messageId = email.message_id || email.id || `tmwe_${Date.now()}_${Math.random()}`;
+                // Usa l'UID TMWE come message_id univoco
+                const messageId = `tmwe_${email.uid}`;
                 
                 // Controlla se esiste già
                 const { data: existing } = await supabase

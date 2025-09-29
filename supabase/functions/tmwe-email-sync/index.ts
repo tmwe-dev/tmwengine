@@ -177,26 +177,54 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // SOLUZIONE: usa l'edge function tmwe-email-messages per ottenere la lista
-        console.log('Step 3: Ottieni lista messaggi via edge function...');
-        
+        // SOLUZIONE: usa l'endpoint corretto get_email_list
+        console.log('Step 3: Ottieni lista messaggi con get_email_list...');
+        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
+        const listBody = {
+          folder: folder_name || 'INBOX',
+          limit: 50,
+          offset: 0,
+          criteria: 'ALL'
+        };
+
+        let listResponse;
         try {
-          const messageResponse = await supabase.functions.invoke('tmwe-email-messages', {
-            body: {
-              handler: 'get_messages',
-              folder: folder_name || 'INBOX',
-              limit: 50
-            }
+          listResponse = await fetch(listUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listBody)
           });
+          console.log('HTTPS riuscito per lista, status:', listResponse.status);
+        } catch (httpsError) {
+          console.log('HTTPS fallito per lista, tentando HTTP...');
+          const httpListUrl = listUrl.replace('https://', 'http://');
+          listResponse = await fetch(httpListUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listBody)
+          });
+          console.log('HTTP riuscito per lista, status:', listResponse.status);
+        }
 
-          console.log('Message response:', messageResponse);
-          
-          if (messageResponse.data && messageResponse.data.success) {
-            const emailsList = messageResponse.data.data?.messages || [];
-            console.log(`Trovati ${emailsList.length} messaggi nella lista`);
+        const listText = await listResponse.text();
+        console.log('Lista response status:', listResponse.status);
+        console.log('Lista response (primi 500 caratteri):', listText.substring(0, 500));
 
-            // Step 4: Salva ogni messaggio nel database
-            for (const email of emailsList) {
+        if (listResponse.ok) {
+          try {
+            const listResult = JSON.parse(listText);
+            if (listResult.success && listResult.results) {
+              const emailsList = listResult.results;
+              console.log(`Trovati ${emailsList.length} messaggi nella lista`);
+
+              // Step 4: Salva ogni messaggio nel database
+              for (const email of emailsList) {
               try {
                 // Genera un message_id univoco se non presente
                 const messageId = email.message_id || email.id || `tmwe_${Date.now()}_${Math.random()}`;
@@ -244,11 +272,14 @@ serve(async (req) => {
               }
             }
             console.log(`Step 4: Salvati ${emailsSaved} nuovi messaggi nel database`);
-          } else {
-            console.error('Errore dalla funzione tmwe-email-messages:', messageResponse.error);
+            } else {
+              console.log('Nessun messaggio trovato nella lista:', listResult);
+            }
+          } catch (parseError) {
+            console.error('Errore parsing lista response:', parseError);
           }
-        } catch (functionError) {
-          console.error('Errore chiamata edge function:', functionError);
+        } else {
+          console.error('Errore lista messaggi:', listText.substring(0, 200));
         }
 
         // Se non sono state salvate nuove email, usa il conteggio dalla sincronizzazione

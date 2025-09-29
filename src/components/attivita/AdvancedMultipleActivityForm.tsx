@@ -277,59 +277,54 @@ export function AdvancedMultipleActivityForm({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto overscroll-contain">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 p-1">
-            {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
-            {contacts.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                  <Building className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">
-                    {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
-                  </span>
-                </h3>
-                
-                <div className="max-h-20 overflow-y-auto border border-border rounded-lg p-2 bg-background-subtle">
-                  <div className="space-y-1">
-                    {contacts.map((contact) => (
-                      <div key={contact.id} className="flex flex-col gap-1 p-2 bg-background rounded border border-border text-xs">
-                        <div className="flex items-center gap-2">
-                          <Building className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <span className="font-medium truncate">
-                            {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate pl-5">
-                          {getContactInfo(contact)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tipo di attività */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-text-primary">
-                Tipo di Attività
+    <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-2">
+          {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
+          {contacts.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
               </h3>
               
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-8">
-                  <TabsTrigger value="email" className="flex items-center gap-1 text-xs px-2">
-                    <Mail className="h-3 w-3" />
-                    <span className="hidden xs:inline">Email</span>
-                    <span className="xs:hidden">✉</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="chiamata" className="flex items-center gap-1 text-xs px-2">
-                    <Phone className="h-3 w-3" />
-                    <span className="hidden xs:inline">Call</span>
-                    <span className="xs:hidden">📞</span>
-                  </TabsTrigger>
-                </TabsList>
+              <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-3 bg-background-subtle">
+                <div className="space-y-2">
+                  {contacts.map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between p-3 bg-background rounded border border-border">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {getContactInfo(contact)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tipo di attività */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-text-primary">
+              Tipo di Attività
+            </h3>
+            
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Invio Email
+                </TabsTrigger>
+                <TabsTrigger value="chiamata" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Chiamata Programmata
+                </TabsTrigger>
+              </TabsList>
 
                 {/* Email Form */}
                 <TabsContent value="email" className="space-y-2 mt-2">
@@ -762,67 +757,67 @@ export function AdvancedMultipleActivityForm({
           </Tabs>
         </div>
 
-            {/* Impostazioni comuni */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-text-primary">
-                Impostazioni Comuni
-              </h3>
-              
-              <div className="grid grid-cols-1 gap-3">
-                <FormField
-                  control={form.control}
-                  name="priorita"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Priorità</FormLabel>
-                      <FormControl>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Seleziona priorità" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="media">Media</SelectItem>
-                            <SelectItem value="bassa">Bassa</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {/* Impostazioni comuni */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-text-primary">
+            Impostazioni Comuni
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="priorita"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Priorità</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona priorità" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Media</SelectItem>
+                        <SelectItem value="bassa">Bassa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormField
-                  control={form.control}
-                  name="assegnato_nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Assegnato a</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            {...field} 
-                            placeholder={userProfile ? userProfile.nomeCompleto : "Nome della persona assegnata"}
-                            className={cn("h-8 text-sm", userProfile ? "bg-muted pr-8" : "")}
-                          />
-                          {userProfile && (
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                              <User className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      </FormControl>
+            <FormField
+              control={form.control}
+              name="assegnato_nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assegnato a</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input 
+                        {...field} 
+                        placeholder={userProfile ? userProfile.nomeCompleto : "Nome della persona assegnata"}
+                        className={userProfile ? "bg-muted" : ""}
+                      />
                       {userProfile && (
-                        <p className="text-xs text-muted-foreground">
-                          Auto-assegnato dal profilo utente nelle impostazioni
-                        </p>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       )}
-                      <FormMessage />
-                    </FormItem>
+                    </div>
+                  </FormControl>
+                  {userProfile && (
+                    <p className="text-xs text-muted-foreground">
+                      Auto-assegnato dal profilo utente nelle impostazioni
+                    </p>
                   )}
-                />
-              </div>
-            </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
 
         {/* Opzione salva in rubrica */}
@@ -858,33 +853,18 @@ export function AdvancedMultipleActivityForm({
           </div>
         )}
 
-          </form>
-        </Form>
-      </div>
-      
-      {/* Fixed Actions at bottom */}
-      <div className="flex-shrink-0 border-t border-border bg-background p-3">
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel} 
-            disabled={isSubmitting} 
-            className="h-9 text-sm"
-          >
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Annulla
           </Button>
-          <Button 
-            type="submit" 
-            className="h-9 text-sm shadow-soft" 
-            disabled={isSubmitting}
-            onClick={form.handleSubmit(handleSubmit)}
-          >
-            {isSubmitting ? 'Creazione...' : 
-             `Registra ${contacts.length} ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
+          <Button type="submit" className="shadow-soft" disabled={isSubmitting}>
+            {isSubmitting ? 'Creazione in corso...' : 
+             `Registra ${contacts.length} Attività ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
           </Button>
         </div>
-      </div>
+      </form>
+    </Form>
     </div>
   );
 }

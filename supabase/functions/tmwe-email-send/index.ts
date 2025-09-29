@@ -127,16 +127,39 @@ serve(async (req) => {
 
     console.log('Configuration loaded, OAuth token available');
 
-    // Preparar payload para TMWE según documentación OpenAPI
+    // Preparar payload para TMWE según documentación OpenAPI SendMessageRequest
     const payload = {
       action: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
-      body: emailData.body_text || emailData.body || '',
+      body: emailData.body_text || emailData.body || 'Test message body', // Campo requerido
       body_html: emailData.body_html || ''
     };
 
-    console.log('=== CALLING TMWE API ===');
+    console.log('=== TESTING CONNECTION FIRST ===');
+    
+    // Primer intento: probar conexión con GET para verificar autenticación
+    const testUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_account&action=test_connection';
+    console.log('Testing connection with URL:', testUrl);
+    
+    try {
+      const testResponse = await fetchWithCertBypass(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Accept': 'application/json',
+          'User-Agent': 'TMWE-CRM-Integration/1.0'
+        }
+      });
+      
+      const testText = await testResponse.text();
+      console.log('Test connection status:', testResponse.status);
+      console.log('Test connection response:', testText);
+    } catch (testError) {
+      console.log('Test connection failed:', testError);
+    }
+
+    console.log('=== CALLING TMWE API FOR EMAIL SEND ===');
     const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
     console.log('URL completa:', apiUrl);
     console.log('Payload completo:', JSON.stringify(payload, null, 2));
@@ -148,7 +171,12 @@ serve(async (req) => {
       'User-Agent': 'TMWE-CRM-Integration/1.0'
     };
     
-    console.log('Headers enviados:', JSON.stringify(headers, null, 2));
+    console.log('Headers enviados:', JSON.stringify({
+      'Authorization': `Bearer ${oauthToken.substring(0, 20)}...`,
+      'Content-Type': headers['Content-Type'],
+      'Accept': headers['Accept'],
+      'User-Agent': headers['User-Agent']
+    }, null, 2));
     console.log('Token usado (primeros 20 chars):', oauthToken.substring(0, 20) + '...');
 
     // Realizar llamada con bypass de certificados usando OAuth

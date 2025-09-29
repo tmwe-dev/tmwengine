@@ -161,15 +161,6 @@ const Email = () => {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  // DEBUG: Log dei filtri
-  console.log('=== EMAIL FILTER DEBUG ===');
-  console.log('Emails totali:', emails.length);
-  console.log('Search term:', searchTerm);
-  console.log('Status filter:', statusFilter);
-  console.log('Category filter:', categoryFilter);
-  console.log('Filtered emails:', filteredEmails.length);
-  console.log('=========================');
-
   const handleEmailAction = async (emailId: string, action: string) => {
     try {
       const updatedEmails = emails.map(email => {

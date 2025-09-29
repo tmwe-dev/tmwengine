@@ -61,38 +61,38 @@ serve(async (req: Request) => {
     // TMWE API URL - use same endpoint as sync function
     const tmweUrl = 'https://findair.it/erp/tmwe_json/app.php';
 
-    // Download messages from TMWE using same approach as sync function
-    const requestBody = {
-      handler: 'get_messages',
-      folder: folder,
-      limit: limit,
-      format: 'json'
-    };
+    // Use same API endpoint pattern as tmwe-email-sync (that works!)
+    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
 
-    console.log(`Fetching emails from TMWE with body:`, requestBody);
+    const requestParams = new URLSearchParams({
+      api_key: apiKey,
+      folder: folder,
+      limit: limit.toString(),
+      format: 'json'
+    });
+
+    console.log(`Fetching emails from: ${apiUrl} with params:`, requestParams.toString());
 
     let response;
     try {
       console.log("Tentativo connessione HTTPS a TMWE...");
-      response = await fetch(tmweUrl, {
-        method: 'POST',
+      response = await fetch(`${apiUrl}&${requestParams}`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
 
     } catch (httpsError) {
-      console.log("HTTPS falló, intentando HTTP...");
-      const httpUrl = tmweUrl.replace('https://', 'http://');
-      response = await fetch(httpUrl, {
-        method: 'POST',
+      console.log("HTTPS fallito, tentativo HTTP...");
+      const httpUrl = apiUrl.replace('https://', 'http://');
+      response = await fetch(`${httpUrl}&${requestParams}`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
     }
 

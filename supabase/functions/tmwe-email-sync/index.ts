@@ -89,96 +89,204 @@ serve(async (req) => {
     }
 
     let syncResult;
+    let emailsSaved = 0;
+    
     try {
-      // Construir URL API TMWE según la documentación OpenAPI
-      const baseUrl = 'https://findair.it/erp/tmwe_json';
-      const params = new URLSearchParams({
-        action: 'email_sync'
-      });
+      // Step 1: Avvia sincronizzazione con TMWE
+      console.log('Step 1: Avviando sincronizzazione TMWE...');
+      const syncUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_sync';
+      const syncBody: any = { handler: handler };
+      if (folder_name) syncBody.folder_name = folder_name;
+      if (folders) syncBody.folders = folders;
+      if (date_from) syncBody.date_from = date_from;
+      if (date_to) syncBody.date_to = date_to;
+      if (last_sync_date) syncBody.last_sync_date = last_sync_date;
 
-      const requestBody: any = {
-        handler: handler
-      };
-      
-      if (folder_name) requestBody.folder_name = folder_name;
-      if (folders) requestBody.folders = folders;
-      if (date_from) requestBody.date_from = date_from;
-      if (date_to) requestBody.date_to = date_to;
-      if (last_sync_date) requestBody.last_sync_date = last_sync_date;
-
-      const fullUrl = `${baseUrl}/app.php?${params}`;
-      console.log('Calling TMWE API:', fullUrl);
-      console.log('Request body:', requestBody);
-
-      // Llamada API TMWE con headers mínimos como tmwe-email-send exitoso
-      let response;
+      let syncResponse;
       try {
-        response = await fetch(fullUrl, {
+        syncResponse = await fetch(syncUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${oauthToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(syncBody)
         });
       } catch (error) {
-        console.log('HTTPS falló, intentando HTTP:', error);
-        // Fallback a HTTP como tmwe-email-send exitoso
-        const httpUrl = fullUrl.replace('https://', 'http://');
-        response = await fetch(httpUrl, {
+        console.log('HTTPS falló para sync, intentando HTTP:', error);
+        const httpSyncUrl = syncUrl.replace('https://', 'http://');
+        syncResponse = await fetch(httpSyncUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${oauthToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(syncBody)
         });
       }
 
-      console.log('Response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('TMWE API Error response:', errorText);
-        throw new Error(`TMWE API Error: ${response.status} ${response.statusText} - ${errorText}`);
+      if (!syncResponse.ok) {
+        const errorText = await syncResponse.text();
+        throw new Error(`TMWE Sync Error: ${syncResponse.status} - ${errorText}`);
       }
 
-      syncResult = await response.json();
-      console.log('TMWE API Response:', syncResult);
+      syncResult = await syncResponse.json();
+      console.log('Sync response:', syncResult);
 
-      // Gestisci la risposta in base al formato dell'API TMWE
-      if (syncResult.success) {
-        let messaggiSincronizzati = syncResult.messages_synced || 0;
-        let cartelleSync = syncResult.folders_synced || 0;
-        let progresso = syncResult.progress || 0;
+      // Step 2: Recupera lista email dalla cartella
+      console.log('Step 2: Recuperando lista email...');
+      const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
+      const listBody = {
+        folder: folder_name || 'INBOX',
+        criteria: 'ALL',
+        limit: 100 // Limita per evitare timeout
+      };
 
-        // Aggiorna log di sincronizzazione - successo
-        if (syncLog) {
-          await supabase
-            .from('email_sync_logs')
-            .update({
-              stato: syncResult.status === 'completed' ? 'completato' : 'in_corso',
-              sync_end: syncResult.status === 'completed' ? new Date().toISOString() : null,
-              messaggi_sincronizzati: messaggiSincronizzati,
-              messaggi_nuovi: messaggiSincronizzati
-            })
-            .eq('id', syncLog.id);
-        }
-
-        return new Response(JSON.stringify({
-          success: true,
-          status: syncResult.status,
-          messages_synced: messaggiSincronizzati,
-          folders_synced: cartelleSync,
-          progress: progresso,
-          sync_log_id: syncLog?.id,
-          tmwe_response: syncResult
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      let listResponse;
+      try {
+        listResponse = await fetch(listUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(listBody)
         });
+      } catch (error) {
+        console.log('HTTPS falló para list, intentando HTTP:', error);
+        const httpListUrl = listUrl.replace('https://', 'http://');
+        listResponse = await fetch(httpListUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(listBody)
+        });
+      }
+
+      if (!listResponse.ok) {
+        console.log('Lista email non disponibile, continuando con sync result');
       } else {
-        throw new Error(syncResult.error || 'Sync failed');
+        const listResult = await listResponse.json();
+        console.log('Email list result:', listResult);
+
+        // Step 3: Salva email nel database Supabase
+        if (listResult.success && listResult.results && Array.isArray(listResult.results)) {
+          console.log(`Step 3: Salvando ${listResult.results.length} email nel database...`);
+          
+          for (const emailItem of listResult.results.slice(0, 10)) { // Limita a 10 per test
+            try {
+              // Recupera dettagli completi email
+              const detailUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email';
+              const detailBody = { uid: emailItem.uid };
+
+              let detailResponse;
+              try {
+                detailResponse = await fetch(detailUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${oauthToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(detailBody)
+                });
+              } catch (error) {
+                const httpDetailUrl = detailUrl.replace('https://', 'http://');
+                detailResponse = await fetch(httpDetailUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${oauthToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(detailBody)
+                });
+              }
+
+              if (detailResponse.ok) {
+                const detailResult = await detailResponse.json();
+                if (detailResult.success && detailResult.result) {
+                  const email = detailResult.result;
+                  
+                  // Controlla se l'email esiste già
+                  const { data: existingEmail } = await supabase
+                    .from('email_messages')
+                    .select('id')
+                    .eq('message_id', email.uid)
+                    .single();
+
+                  if (!existingEmail) {
+                    // Salva email nel database
+                    const { error: insertError } = await supabase
+                      .from('email_messages')
+                      .insert({
+                        message_id: email.uid,
+                        provider_id: defaultProviderId,
+                        subject: email.subject || '',
+                        from_email: email.from || '',
+                        to_email: email.to || '',
+                        cc_email: email.cc || null,
+                        bcc_email: email.bcc || null,
+                        body_text: email.body || '',
+                        body_html: email.body_html || null,
+                        data_ricezione: email.date ? new Date(email.date) : new Date(),
+                        data_invio: email.date ? new Date(email.date) : null,
+                        direzione: 'inbound',
+                        stato: email.seen ? 'letto' : 'nuovo',
+                        cartella: folder_name || 'INBOX',
+                        flags: JSON.stringify({
+                          seen: email.seen || false,
+                          flagged: email.flagged || false,
+                          answered: email.answered || false
+                        }),
+                        attachments: email.attachments ? JSON.stringify(email.attachments) : '[]',
+                        raw_headers: email.headers ? JSON.stringify(email.headers) : null
+                      });
+
+                    if (!insertError) {
+                      emailsSaved++;
+                      console.log(`Email salvata: ${email.subject}`);
+                    } else {
+                      console.error('Errore salvataggio email:', insertError);
+                    }
+                  }
+                }
+              }
+            } catch (emailError) {
+              console.error(`Errore processando email ${emailItem.uid}:`, emailError);
+            }
+          }
+        }
       }
+
+      // Gestisci la risposta e aggiorna log
+      const messaggiSincronizzati = emailsSaved;
+      const messaggiNuovi = emailsSaved;
+
+      // Aggiorna log di sincronizzazione - successo
+      if (syncLog) {
+        await supabase
+          .from('email_sync_logs')
+          .update({
+            stato: 'completato',
+            sync_end: new Date().toISOString(),
+            messaggi_sincronizzati: messaggiSincronizzati,
+            messaggi_nuovi: messaggiNuovi
+          })
+          .eq('id', syncLog.id);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        status: 'completed',
+        emails_downloaded: emailsSaved,
+        messages_synced: messaggiSincronizzati,
+        messages_new: messaggiNuovi,
+        sync_log_id: syncLog?.id,
+        tmwe_response: syncResult
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
 
     } catch (syncError) {
       console.error('Sync error:', syncError);

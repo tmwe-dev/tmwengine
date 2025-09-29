@@ -1859,6 +1859,7 @@ export default function ImportTemplates() {
                     id="attachment-file"
                     type="file"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                    className="border-blue-500"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {

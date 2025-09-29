@@ -17,6 +17,11 @@ interface ContactMobileCardProps {
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onCreateActivity: () => void;
+  visibleColumns?: {
+    company: boolean;
+    details: boolean;
+    metadata: boolean;
+  };
 }
 
 // Function to get country flag emoji
@@ -48,7 +53,8 @@ export function ContactMobileCard({
   isSelected,
   onSelect,
   onView,
-  onCreateActivity
+  onCreateActivity,
+  visibleColumns = { company: true, details: true, metadata: true }
 }: ContactMobileCardProps) {
   
   const formatCellValue = (value: any): string => {
@@ -93,66 +99,70 @@ export function ContactMobileCard({
           )}
         </div>
 
-        {/* Contatti */}
-        <div className="space-y-2">
-          {(formatCellValue(contact.email) || formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
-            <div className="grid gap-2">
-              {formatCellValue(contact.email) && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-foreground">{formatCellValue(contact.email)}</span>
-                </div>
-              )}
-              
-              {(formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
+        {/* Contatti - Solo se details è visibile */}
+        {visibleColumns.details && (
+          <div className="space-y-2">
+            {(formatCellValue(contact.email) || formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
+              <div className="grid gap-2">
+                {formatCellValue(contact.email) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">{formatCellValue(contact.email)}</span>
+                  </div>
+                )}
+                
+                {(formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground">
+                      {formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Localizzazione e altre info - Solo se details è visibile */}
+        {visibleColumns.details && (
+          <>
+            {(formatCellValue(contact.citta) || formatCellValue(contact.paese)) && (
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  {formatCellValue(contact.paese) && (
+                    <span>{getCountryFlag(contact.paese)}</span>
+                  )}
                   <span className="text-foreground">
-                    {formatCellValue(contact.telefono) || formatCellValue(contact.cellulare)}
+                    {[formatCellValue(contact.citta), formatCellValue(contact.paese)]
+                      .filter(Boolean)
+                      .join(', ')}
                   </span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
 
-        {/* Localizzazione */}
-        {(formatCellValue(contact.citta) || formatCellValue(contact.paese)) && (
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <div className="flex items-center gap-2">
-              {formatCellValue(contact.paese) && (
-                <span>{getCountryFlag(contact.paese)}</span>
-              )}
-              <span className="text-foreground">
-                {[formatCellValue(contact.citta), formatCellValue(contact.paese)]
-                  .filter(Boolean)
-                  .join(', ')}
-              </span>
-            </div>
-          </div>
+            {formatCellValue(contact.responsabile) && (
+              <div className="text-sm">
+                <span className="text-muted-foreground">Responsabile: </span>
+                <span className="text-foreground">{formatCellValue(contact.responsabile)}</span>
+              </div>
+            )}
+
+            {formatCellValue(contact.settore) && (
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <Badge variant="secondary" className="text-xs">
+                  {formatCellValue(contact.settore)}
+                </Badge>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Informazioni aggiuntive */}
-        {formatCellValue(contact.responsabile) && (
-          <div className="text-sm">
-            <span className="text-muted-foreground">Responsabile: </span>
-            <span className="text-foreground">{formatCellValue(contact.responsabile)}</span>
-          </div>
-        )}
-
-        {/* Settore/Tags */}
-        {formatCellValue(contact.settore) && (
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="secondary" className="text-xs">
-              {formatCellValue(contact.settore)}
-            </Badge>
-          </div>
-        )}
-
-        {/* Data creazione */}
-        {contact.created_at && (
+        {/* Metadati - Solo se metadata è visibile */}
+        {visibleColumns.metadata && contact.created_at && (
           <div className="text-xs text-muted-foreground border-t border-border pt-2">
             Aggiunto: {new Date(contact.created_at).toLocaleDateString('it-IT', { 
               day: '2-digit', 

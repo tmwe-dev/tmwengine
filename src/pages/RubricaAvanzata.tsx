@@ -807,10 +807,56 @@ export default function RubricaAvanzata() {
             </Card>
            ) : (
              <>
-               {/* Mobile Selection Controls */}
-                {viewingRecords.length > 0 && (
-                  <Card className="border-card shadow-soft">
-                   <CardContent className="p-3 space-y-3">
+          {/* Mobile Controls */}
+                 {viewingRecords.length > 0 && (
+                   <Card className="border-card shadow-soft">
+                    <CardContent className="p-3 space-y-3">
+                      {/* Mobile Sort Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-muted-foreground">Ordina per:</label>
+                        <Select
+                          value={sortConfig.primary?.column || ""}
+                          onValueChange={(value) => {
+                            if (value) {
+                              setSortConfig({
+                                primary: { column: value, direction: 'asc' },
+                                secondary: null
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs w-auto min-w-[120px]">
+                            <SelectValue placeholder="Seleziona" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="azienda">Azienda</SelectItem>
+                            <SelectItem value="nome">Nome</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="telefono">Telefono</SelectItem>
+                            <SelectItem value="citta">Città</SelectItem>
+                            <SelectItem value="paese">Paese</SelectItem>
+                            <SelectItem value="created_at">Data creazione</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {sortConfig.primary && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSortConfig(prev => ({
+                                ...prev,
+                                primary: prev.primary ? {
+                                  ...prev.primary,
+                                  direction: prev.primary.direction === 'asc' ? 'desc' : 'asc'
+                                } : null
+                              }));
+                            }}
+                            className="h-8 px-2"
+                          >
+                            {sortConfig.primary.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          </Button>
+                        )}
+                      </div>
                      {/* Checkbox Seleziona tutto */}
                      <div className="flex items-center justify-between">
                        <div className="flex items-center gap-2">
@@ -888,7 +934,7 @@ export default function RubricaAvanzata() {
                  </Card>
                )}
 
-               {viewingRecords.map((record, index) => {
+                {viewingRecords.map((record, index) => {
               const actualIndex = currentPage * recordsPerPage + index;
               return (
                 <ContactMobileCard
@@ -896,6 +942,7 @@ export default function RubricaAvanzata() {
                   contact={record}
                   index={actualIndex}
                   isSelected={selectedRecords.has(actualIndex)}
+                  visibleColumns={visibleColumns}
                   onSelect={(index, selected) => {
                     const newSelected = new Set(selectedRecords);
                     if (selected) {

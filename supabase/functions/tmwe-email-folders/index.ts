@@ -73,15 +73,30 @@ serve(async (req) => {
     if (requestData.force !== undefined) requestBody.force = requestData.force;
     if (requestData.expunge !== undefined) requestBody.expunge = requestData.expunge;
 
-    const response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${oauthToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    // Usar headers mínimos como tmwe-email-send exitoso
+    let response;
+    try {
+      response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+    } catch (error) {
+      console.log('HTTPS falló, intentando HTTP:', error);
+      // Fallback a HTTP como tmwe-email-send exitoso
+      const httpUrl = `${baseUrl}/app.php?action=email_folder`.replace('https://', 'http://');
+      response = await fetch(httpUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+    }
 
     console.log('Response status:', response.status, response.statusText);
 

@@ -86,16 +86,30 @@ serve(async (req) => {
     console.log('API v2.0.0 - POST request to:', apiUrl);
     console.log('Request body:', JSON.stringify(requestData));
 
-    // API v2.0.0 - All operations use POST with JSON body
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${oauthToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(requestData)
-    });
+    // API v2.0.0 - All operations use POST with JSON body (headers mínimos como tmwe-email-send exitoso)
+    let response;
+    try {
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+    } catch (error) {
+      console.log('HTTPS falló, intentando HTTP:', error);
+      // Fallback a HTTP como tmwe-email-send exitoso
+      const httpUrl = apiUrl.replace('https://', 'http://');
+      response = await fetch(httpUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+    }
 
     console.log('Response status:', response.status, response.statusText);
 

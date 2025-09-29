@@ -97,16 +97,30 @@ serve(async (req) => {
       console.log('Calling TMWE API:', fullUrl);
       console.log('Request body:', requestBody);
 
-      // Chiamata API TMWE seguendo la documentazione OpenAPI con OAuth
-      const response = await fetch(fullUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      // Llamada API TMWE con headers mínimos como tmwe-email-send exitoso
+      let response;
+      try {
+        response = await fetch(fullUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+      } catch (error) {
+        console.log('HTTPS falló, intentando HTTP:', error);
+        // Fallback a HTTP como tmwe-email-send exitoso
+        const httpUrl = fullUrl.replace('https://', 'http://');
+        response = await fetch(httpUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+      }
 
       console.log('Response status:', response.status, response.statusText);
 

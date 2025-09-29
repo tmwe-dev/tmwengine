@@ -58,39 +58,38 @@ serve(async (req: Request) => {
     // Use OAuth token if available, otherwise API key
     const apiKey = credentials.oauth_token?.trim() || credentials.api_key?.trim();
 
-    // TMWE API URL - esatto come tmwe-email-sync
-    const baseUrl = 'https://findair.it/erp/tmwe_json/app.php';
-    
-    const requestParams = new URLSearchParams({
-      action: 'get_messages',
-      api_key: apiKey,
+    // TMWE API URL - esatto come tmwe-email-sync che FUNZIONA
+    const downloadUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
+    const downloadBody = {
       folder: folder,
-      limit: limit.toString(),
-      format: 'json'
-    });
+      limit: limit,
+      include_body: true
+    };
 
-    console.log(`Fetching emails from: ${baseUrl}?${requestParams.toString()}`);
+    console.log(`Fetching emails from: ${downloadUrl} with body:`, downloadBody);
 
     let response;
     try {
       console.log("Tentativo connessione HTTPS a TMWE...");
-      response = await fetch(`${baseUrl}?${requestParams}`, {
-        method: 'GET',
+      response = await fetch(downloadUrl, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(downloadBody)
       });
 
     } catch (httpsError) {
       console.log("HTTPS fallito, tentativo HTTP...");
-      const httpUrl = baseUrl.replace('https://', 'http://');
-      response = await fetch(`${httpUrl}?${requestParams}`, {
-        method: 'GET',
+      const httpUrl = downloadUrl.replace('https://', 'http://');
+      response = await fetch(httpUrl, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(downloadBody)
       });
     }
 

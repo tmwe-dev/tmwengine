@@ -246,19 +246,24 @@ serve(async (req) => {
                       message_id: messageId,
                       provider_id: providerId,
                       subject: email.subject || '',
-                      from_email: email.from || email.sender || '',
-                      to_email: email.to || email.recipient || '',
-                      cc_email: email.cc || null,
-                      bcc_email: email.bcc || null,
-                      body_text: email.body || email.text_content || email.preview || 'Contenuto non disponibile',
-                      body_html: email.html_content || null,
+                      from_email: email.from || '',
+                      to_email: email.to || '',
+                      cc_email: null, // Non disponibile in lista messaggi
+                      bcc_email: null, // Non disponibile in lista messaggi  
+                      body_text: 'Contenuto da recuperare', // Bisogna fare chiamata separata per il body
+                      body_html: null, // Non disponibile in lista messaggi
                       data_ricezione: email.date ? new Date(email.date) : new Date(),
-                      data_invio: email.sent_date ? new Date(email.sent_date) : null,
+                      data_invio: email.date ? new Date(email.date) : new Date(),
                       cartella: folder_name || 'INBOX',
-                      direzione: 'in',
-                      stato: email.seen ? 'letto' : 'nuovo',
-                      flags: email.flags || [],
-                      attachments: email.attachments || []
+                      direzione: 'inbound',
+                      stato: email.seen == 1 ? 'letto' : 'nuovo',
+                      flags: JSON.stringify({
+                        seen: email.seen == 1,
+                        flagged: email.flagged == 1,
+                        answered: email.answered == 1,
+                        recent: email.recent == 1
+                      }),
+                      attachments: JSON.stringify([]) // Vuoto per ora
                     });
 
                   if (!insertError) {

@@ -118,15 +118,15 @@ export function CompactContactCard({
 
         {/* Icone contatti in basso a destra */}
         {(contact.email || contact.phone || contact.cell) && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
             {contact.email && (
-              <div className="p-1 bg-blue-50 rounded-full">
-                <Mail className="h-4 w-4 text-blue-500" />
+              <div className="p-1.5 bg-blue-100 border border-blue-200 rounded-full shadow-sm hover:bg-blue-200 transition-colors">
+                <Mail className="h-4 w-4 text-blue-600" />
               </div>
             )}
             {(contact.phone || contact.cell) && (
-              <div className="p-1 bg-green-50 rounded-full">
-                <Phone className="h-4 w-4 text-green-500" />
+              <div className="p-1.5 bg-green-100 border border-green-200 rounded-full shadow-sm hover:bg-green-200 transition-colors">
+                <Phone className="h-4 w-4 text-green-600" />
               </div>
             )}
           </div>

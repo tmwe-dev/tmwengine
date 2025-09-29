@@ -8,6 +8,8 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -21,6 +23,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Function to get country code for flag
   const getCountryCode = (country: string) => {
@@ -533,7 +536,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                     <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
                       <DialogHeader className="flex-shrink-0">
                         <DialogTitle>Crea Nuova Attività</DialogTitle>
                       </DialogHeader>
@@ -571,7 +574,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                         Crea Attività
                       </Button>
                     </DialogTrigger>
-                     <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                     <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
                        <DialogHeader className="flex-shrink-0">
                          <DialogTitle>Crea Nuova Attività</DialogTitle>
                        </DialogHeader>
@@ -670,7 +673,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </div>
           
           {showSystemDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 ml-9">
+            <div className={cn("gap-4 ml-9", isMobile ? "grid grid-cols-1" : "grid grid-cols-1 md:grid-cols-4")}>
               {['original_id', 'commercial_anagrafiche_id', 'stato', 'agent_id', 'completed', 'archiviata', 'has_actions', 'row_number', 'is_imported_to_rubrica']
                 .filter(key => record[key] !== undefined && record[key] !== null && record[key] !== '')
                 .map(field => (
@@ -693,7 +696,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-start gap-4">
           <Database className="h-5 w-5 text-primary mt-5" />
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+          <div className={cn("gap-4 flex-1", isMobile ? "grid grid-cols-1" : "grid grid-cols-1 md:grid-cols-4")}>
             {/* Mostra tutti i campi che non sono già stati visualizzati nelle sezioni precedenti */}
             {Object.keys(record)
               .filter(key => ![
@@ -727,7 +730,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
               <div className="h-2 w-2 bg-white rounded-full"></div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+            <div className={cn("gap-6 flex-1", isMobile ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 md:grid-cols-4 gap-6")}>
               {/* Colonna 1: Servizi (Settings icon) */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-blue-200">

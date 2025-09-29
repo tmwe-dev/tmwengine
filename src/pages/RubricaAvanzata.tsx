@@ -1383,26 +1383,28 @@ export default function RubricaAvanzata() {
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
         <DialogContent className={cn("max-h-[85vh] overflow-y-auto", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Dettagli Contatto</span>
-              <div className="flex gap-2">
+            <DialogTitle className={cn("flex items-center justify-between", isMobile && "flex-col gap-3")}>
+              <span className={cn(isMobile ? "text-center" : "")}>Dettagli Contatto</span>
+              <div className={cn("flex gap-2", isMobile && "justify-center w-full")}>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={handlePrevRecord}
                   disabled={selectedRecordIndex === 0}
                 >
                   <ChevronLeft className="h-4 w-4" />
+                  {!isMobile && "Prec"}
                 </Button>
-                <span className="text-sm text-text-secondary">
+                <span className={cn("text-sm text-text-secondary flex items-center", isMobile ? "px-3" : "")}>
                   {selectedRecordIndex + 1} di {viewingRecords.length}
                 </span>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={handleNextRecord}
                   disabled={selectedRecordIndex >= viewingRecords.length - 1}
                 >
+                  {!isMobile && "Succ"}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

@@ -931,9 +931,9 @@ export default function RubricaAvanzata() {
                 {totalPages > 1 && (
                   <Card className="border-card shadow-soft">
                     <CardContent className="p-2">
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1">
                         <div className="text-xs text-text-secondary text-center">
-                          Pagina {currentPage + 1} di {totalPages} ({filteredRecords.length} risultati)
+                          Pagina {currentPage + 1} di {totalPages}
                         </div>
                         <div className="flex justify-center gap-2">
                           <Button
@@ -1000,10 +1000,10 @@ export default function RubricaAvanzata() {
            {totalPages > 1 && (
              <Card className="border-card shadow-soft">
                <CardContent className="p-2">
-                 <div className="flex flex-col gap-2">
-                   <div className="text-xs text-text-secondary text-center">
-                     Pagina {currentPage + 1} di {totalPages} ({filteredRecords.length} risultati)
-                   </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-xs text-text-secondary text-center">
+                      Pagina {currentPage + 1} di {totalPages}
+                    </div>
                    <div className="flex justify-center gap-2">
                      <Button
                        variant="outline"

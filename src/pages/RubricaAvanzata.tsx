@@ -918,14 +918,6 @@ export default function RubricaAvanzata() {
                                <FileText className="h-3 w-3 mr-1" />
                                Crea Attività
                              </Button>
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={() => setSelectedRecords(new Set())}
-                               className="w-full h-7 text-xs"
-                             >
-                               Deseleziona
-                             </Button>
                           </div>
                        </div>
                      )}

@@ -608,13 +608,9 @@ export default function RubricaAvanzata() {
         </div>
       </div>
 
-      {/* Search and Filters - Collapsible */}
-      {!isHeaderCollapsed && (
-      <div className="animate-fade-in">
-      {/* Compact Search and Filters Section */}
+      {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft">
-        <CardContent className={cn(isMobile ? "space-y-2 pt-3 px-3 pb-3" : "space-y-3 pt-6")}>
-          {/* Search Bar */}
+        <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
             <Input
@@ -624,7 +620,15 @@ export default function RubricaAvanzata() {
               className={cn("pl-10", isMobile ? "h-8" : "h-9")}
             />
           </div>
+        </CardContent>
+      </Card>
 
+      {/* Filters - Collapsible */}
+      {!isHeaderCollapsed && (
+      <div className="animate-fade-in">
+      {/* Compact Filters Section */}
+      <Card className="border-card shadow-soft">
+        <CardContent className={cn(isMobile ? "space-y-2 pt-3 px-3 pb-3" : "space-y-3 pt-6")}>
           {/* Filters and Stats Row */}
           <div className={cn("grid gap-2 items-end", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12")}>
             {/* Filter Controls */}

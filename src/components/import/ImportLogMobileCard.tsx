@@ -79,7 +79,7 @@ export function ImportLogMobileCard({
           <div className="flex items-center gap-2">
             {getStatusBadge(log.stato)}
             {log.trasferiti_rubrica && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="text-blue-700 border-blue-200">
                 Trasferiti
               </Badge>
             )}

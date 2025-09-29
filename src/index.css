@@ -238,4 +238,36 @@ Tutti i colori DEVONO essere HSL.
   .element-spacing {
     @apply space-y-2;
   }
+  /* === DIALOG IMPROVEMENTS === */
+  .dialog-content {
+    @apply max-h-[85vh] overflow-y-auto;
+  }
+
+  /* === MOBILE OPTIMIZATIONS === */
+  @media (max-width: 640px) {
+    .dialog-content {
+      @apply max-h-[90vh] w-[95vw] p-4;
+    }
+  }
+
+  /* === SCROLL BEHAVIOR === */
+  .scroll-container {
+    @apply overflow-y-auto;
+    scroll-behavior: smooth;
+  }
+
+  /* === LAYOUT FIXES === */
+  .mobile-layout {
+    @apply space-y-3 p-3;
+  }
+
+  .actions-bar {
+    @apply flex flex-col gap-2 p-3 border-t border-border;
+  }
+
+  @media (min-width: 640px) {
+    .actions-bar {
+      @apply flex-row justify-between;
+    }
+  }
 }

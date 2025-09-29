@@ -827,10 +827,11 @@ export default function RubricaAvanzata() {
             </Card>
            ) : (
              <>
-               {/* Checkbox Seleziona tutto per Mobile */}
+               {/* Mobile Selection Controls */}
                {viewingRecords.length > 0 && (
                  <Card className="border-card shadow-soft">
-                   <CardContent className="p-3">
+                   <CardContent className="p-3 space-y-3">
+                     {/* Checkbox Seleziona tutto */}
                      <div className="flex items-center justify-between">
                        <div className="flex items-center gap-2">
                          <Checkbox
@@ -859,11 +860,50 @@ export default function RubricaAvanzata() {
                          </span>
                        </div>
                        {selectedRecords.size > 0 && (
-                         <span className="text-xs text-blue-600">
+                         <span className="text-xs text-blue-600 font-medium">
                            {selectedRecords.size} selezionati
                          </span>
                        )}
                      </div>
+                     
+                     {/* Actions Bar Mobile */}
+                     {selectedRecords.size > 0 && (
+                       <div className="space-y-2 pt-2 border-t border-border">
+                         <div className="text-center text-sm font-medium text-text-primary">
+                           {selectedRecords.size} contatto/i selezionato/i
+                         </div>
+                         <div className="flex flex-col gap-2">
+                           <Button
+                             variant="default"
+                             size="sm"
+                             onClick={() => setShowMultipleActivityDialog(true)}
+                             className="w-full h-8"
+                           >
+                             <FileText className="h-4 w-4 mr-2" />
+                             Crea Attività
+                           </Button>
+                           <div className="flex gap-2">
+                             <Button
+                               variant="destructive"
+                               size="sm"
+                               onClick={deleteSelectedContacts}
+                               className="flex-1 h-8"
+                             >
+                               <Trash2 className="h-4 w-4 mr-1" />
+                               Elimina
+                             </Button>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => setSelectedRecords(new Set())}
+                               className="flex-1 h-8"
+                             >
+                               Deseleziona
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+                     )}
                    </CardContent>
                  </Card>
                )}
@@ -1358,7 +1398,7 @@ export default function RubricaAvanzata() {
 
       {/* Record Detail Dialog */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
-        <DialogContent className={cn("max-h-[90vh] overflow-y-auto", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
+        <DialogContent className={cn("max-h-[85vh] overflow-y-auto", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Dettagli Contatto</span>

@@ -828,8 +828,8 @@ export default function RubricaAvanzata() {
            ) : (
              <>
                {/* Mobile Selection Controls */}
-               {viewingRecords.length > 0 && (
-                 <Card className="border-card shadow-soft">
+                {viewingRecords.length > 0 && (
+                  <Card className="border-card shadow-soft bg-yellow-500/20 border-yellow-500">
                    <CardContent className="p-3 space-y-3">
                      {/* Checkbox Seleziona tutto */}
                      <div className="flex items-center justify-between">

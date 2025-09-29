@@ -34,7 +34,7 @@ export function CompactContactCard({
   
   return (
     <Card className={cn(
-      "border transition-all duration-200 hover:shadow-sm bg-background",
+      "border transition-all duration-200 hover:shadow-sm bg-background relative",
       isSelected && "ring-1 ring-primary border-primary bg-primary/5"
     )}>
       <CardContent className="p-3">
@@ -73,12 +73,6 @@ export function CompactContactCard({
                       )}
                     </div>
                   )}
-                  
-                  {/* Contatti disponibili - icone uniformi */}
-                  <div className="flex items-center gap-1 ml-auto">
-                    {contact.email && <Mail className="h-4 w-4 text-blue-500" />}
-                    {(contact.phone || contact.cell) && <Phone className="h-4 w-4 text-green-500" />}
-                  </div>
                 </div>
               </div>
               
@@ -121,6 +115,22 @@ export function CompactContactCard({
             )}
           </div>
         </div>
+
+        {/* Icone contatti in basso a destra */}
+        {(contact.email || contact.phone || contact.cell) && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
+            {contact.email && (
+              <div className="p-1 bg-blue-50 rounded-full">
+                <Mail className="h-4 w-4 text-blue-500" />
+              </div>
+            )}
+            {(contact.phone || contact.cell) && (
+              <div className="p-1 bg-green-50 rounded-full">
+                <Phone className="h-4 w-4 text-green-500" />
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -600,14 +600,6 @@ export default function RubricaAvanzata() {
 
   return (
     <div className={cn("space-y-4", isMobile && "space-y-2")}>
-      {/* Header */}
-      <div className={cn("flex justify-between items-start gap-4", isMobile ? "flex-col" : "flex-col sm:flex-row sm:items-center")}>
-        <div>
-          <h1 className={cn("font-bold text-text-primary", isMobile ? "text-xl" : "text-heading-1")}>
-            Rubrica Avanzata
-          </h1>
-        </div>
-      </div>
 
       {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft">

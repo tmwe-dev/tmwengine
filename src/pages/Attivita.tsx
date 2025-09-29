@@ -985,9 +985,27 @@ export default function Attivita() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedActivities.length === filteredActivities.length && filteredActivities.length > 0}
-                    onCheckedChange={handleSelectAll}
+                   <Checkbox
+                     checked={
+                       paginatedActivities.length > 0 && 
+                       paginatedActivities.every(activity => selectedActivities.includes(activity.id))
+                     }
+                     onCheckedChange={(checked) => {
+                       if (checked) {
+                         // Seleziona tutti gli elementi della pagina corrente
+                         const newSelected = [...selectedActivities];
+                         paginatedActivities.forEach(activity => {
+                           if (!newSelected.includes(activity.id)) {
+                             newSelected.push(activity.id);
+                           }
+                         });
+                         setSelectedActivities(newSelected);
+                       } else {
+                         // Deseleziona tutti gli elementi della pagina corrente
+                         const pageActivityIds = paginatedActivities.map(activity => activity.id);
+                         setSelectedActivities(selectedActivities.filter(id => !pageActivityIds.includes(id)));
+                       }
+                     }}
                   />
                 </TableHead>
                 <TableHead 

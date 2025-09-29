@@ -112,7 +112,7 @@ export function CompactContactCard({
         {(contact.email || contact.phone || contact.cell) && (
           <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
             {contact.email && (
-              <div className="p-1.5 bg-blue-100 border border-blue-200 rounded-full shadow-sm hover:bg-blue-200 transition-colors">
+              <div className="p-1.5 border border-blue-200 rounded-full shadow-sm hover:border-blue-300 transition-colors">
                 <Mail className="h-4 w-4 text-blue-600" />
               </div>
             )}

@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 const campaignSchema = z.object({
   nome: z.string()
     .trim()
-    .nonempty({ message: "Il nome della campagna è obbligatorio" })
+    .min(1, { message: "Il nome della campagna è obbligatorio" })
     .max(255, { message: "Il nome deve essere inferiore a 255 caratteri" }),
   obiettivo: z.string()
     .trim()
@@ -23,11 +23,10 @@ const campaignSchema = z.object({
     .min(0, { message: "Il budget deve essere maggiore di 0" })
     .optional()
     .transform(val => val || undefined),
-  stato: z.enum(['attiva', 'pausa', 'completata']).default('attiva'),
+  stato: z.enum(['attiva', 'pausa', 'completata']),
   max_email_giorno: z.number()
     .min(1, { message: "Il limite deve essere almeno 1" })
     .max(10000, { message: "Il limite non può superare 10.000" })
-    .default(100)
 }).refine((data) => {
   if (data.inizio && data.fine) {
     return new Date(data.inizio) <= new Date(data.fine);

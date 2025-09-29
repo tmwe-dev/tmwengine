@@ -12,18 +12,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Building } from 'lucide-react';
 
 const multipleActivitySchema = z.object({
-  tipo: z.enum(['chiamata', 'meeting', 'email', 'task'], {
-    errorMap: () => ({ message: "Seleziona un tipo di attività" })
-  }),
+  tipo: z.enum(['chiamata', 'meeting', 'email', 'task']),
   descrizione: z.string()
     .trim()
-    .nonempty({ message: "La descrizione è obbligatoria" })
+    .min(1, { message: "La descrizione è obbligatoria" })
     .max(500, { message: "La descrizione deve essere inferiore a 500 caratteri" }),
-  stato: z.enum(['aperta', 'in_corso', 'completata', 'annullata']).default('aperta'),
+  stato: z.enum(['aperta', 'in_corso', 'completata', 'annullata']),
   scadenza: z.string().optional(),
-  priorita: z.enum(['alta', 'media', 'bassa']).default('media'),
+  priorita: z.enum(['alta', 'media', 'bassa']),
   assegnato_nome: z.string().optional(),
-  salva_in_rubrica: z.boolean().default(false),
+  salva_in_rubrica: z.boolean(),
 });
 
 type MultipleActivityFormData = z.infer<typeof multipleActivitySchema>;

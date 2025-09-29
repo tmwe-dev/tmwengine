@@ -12,7 +12,7 @@ import { X } from 'lucide-react';
 const contactSchema = z.object({
   responsabile: z.string()
     .trim()
-    .nonempty({ message: "Il nome del responsabile è obbligatorio" })
+    .min(1, { message: "Il nome del responsabile è obbligatorio" })
     .max(255, { message: "Il nome deve essere inferiore a 255 caratteri" }),
   azienda: z.string()
     .trim()

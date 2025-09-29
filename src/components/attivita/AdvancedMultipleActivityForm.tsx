@@ -18,17 +18,15 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const advancedActivitySchema = z.object({
-  tipo: z.enum(['email', 'chiamata'], {
-    errorMap: () => ({ message: "Seleziona tipo attività: Email o Chiamata" })
-  }),
-  priorita: z.enum(['alta', 'media', 'bassa']).default('media'),
+  tipo: z.enum(['email', 'chiamata']),
+  priorita: z.enum(['alta', 'media', 'bassa']),
   
   // Per Email
   oggetto_email: z.string().optional(),
   testo_email: z.string().optional(),
   
   // Per Email futura (opzionale)
-  programma_email: z.boolean().default(false),
+  programma_email: z.boolean(),
   data_email_futura: z.string().optional(),
   ora_email_futura: z.string().optional(),
   template_email_futura: z.string().optional(),
@@ -37,17 +35,17 @@ const advancedActivitySchema = z.object({
   note_generali: z.string().optional(),
   
   // Per chiamata futura (opzionale)
-  programma_chiamata: z.boolean().default(false),
+  programma_chiamata: z.boolean(),
   data_chiamata_futura: z.string().optional(),
   ora_chiamata_futura: z.string().optional(),
   
   // Per entrambi
   assegnato_nome: z.string().optional(),
-  salva_in_rubrica: z.boolean().default(false),
+  salva_in_rubrica: z.boolean(),
   
   // Allegati
-  allegati_esistenti: z.array(z.string()).default([]), // IDs degli allegati selezionati dalla memoria
-  nuovi_allegati: z.array(z.any()).default([]), // Nuovi file caricati
+  allegati_esistenti: z.array(z.string()), // IDs degli allegati selezionati dalla memoria
+  nuovi_allegati: z.array(z.any()), // Nuovi file caricati
 }).refine((data) => {
   if (data.tipo === 'email') {
     return data.oggetto_email && data.testo_email;

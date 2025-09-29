@@ -100,7 +100,20 @@ export default function Rubrica() {
     return matchesSearch && matchesFilters;
   });
 
-  const handleAddContact = async (contactData: Omit<Contact, 'id' | 'created_at'>) => {
+  const handleAddContact = async (formData: { responsabile: string; azienda?: string; email?: string; telefono?: string; indirizzo?: string; cap?: string; citta?: string; provincia_stato?: string; nazione?: string; note?: string; tag?: string[]; }) => {
+    const contactData: Omit<Contact, 'id' | 'created_at'> = {
+      nome: formData.responsabile,
+      azienda: formData.azienda,
+      email: formData.email,
+      telefono: formData.telefono,
+      indirizzo: formData.indirizzo,
+      zip_code: formData.cap,
+      citta: formData.citta,
+      paese: formData.nazione,
+      note: formData.note,
+      tags: formData.tag,
+      responsabile: formData.responsabile
+    };
     try {
       const { data, error } = await supabase
         .from('rubrica')
@@ -134,8 +147,22 @@ export default function Rubrica() {
     }
   };
 
-  const handleEditContact = async (contactData: Omit<Contact, 'id' | 'created_at'>) => {
+  const handleEditContact = async (formData: { responsabile: string; azienda?: string; email?: string; telefono?: string; indirizzo?: string; cap?: string; citta?: string; provincia_stato?: string; nazione?: string; note?: string; tag?: string[]; }) => {
     if (!selectedContact) return;
+    
+    const contactData: Omit<Contact, 'id' | 'created_at'> = {
+      nome: formData.responsabile,
+      azienda: formData.azienda,
+      email: formData.email,
+      telefono: formData.telefono,
+      indirizzo: formData.indirizzo,
+      zip_code: formData.cap,
+      citta: formData.citta,
+      paese: formData.nazione,
+      note: formData.note,
+      tags: formData.tag,
+      responsabile: formData.responsabile
+    };
 
     try {
       const { data, error } = await supabase

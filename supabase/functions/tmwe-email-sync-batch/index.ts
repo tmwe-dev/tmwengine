@@ -36,7 +36,7 @@ serve(async (req) => {
       action, 
       folder_name = 'INBOX', 
       handler = action || 'sync_folder',
-      batch_size = 100,
+      batch_size = 50,  // Ridotto per compatibilità API TMWE
       start_offset = 0,
       max_total_emails = 1000
     } = requestData;
@@ -144,11 +144,14 @@ serve(async (req) => {
       const syncText = await syncResponse.text();
       console.log('✅ Sincronizzazione iniziale completata');
 
-      // STEP 2: Processo di importazione batch
-      console.log(`🔢 Step 2: Avviando importazione batch (max ${maxBatches} batch da ${batch_size} email)`);
+      // STEP 2: Processo di importazione batch con gestione intelligente della paginazione
+      console.log(`🔢 Step 2: Avviando importazione batch (max ${maxBatches} batch da ${Math.min(batch_size, 50)} email)`);
       
-      while (batchNumber <= maxBatches && currentOffset < max_total_emails) {
-        console.log(`📦 Batch ${batchNumber}/${maxBatches} - Offset: ${currentOffset}, Size: ${batch_size}`);
+      let consecutiveEmptyBatches = 0;
+      const maxEmptyBatches = 3;  // Se ricevi 3 batch vuoti consecutivi, fermati
+      
+      while (batchNumber <= maxBatches && currentOffset < max_total_emails && consecutiveEmptyBatches < maxEmptyBatches) {
+        console.log(`📦 Batch ${batchNumber}/${maxBatches} - Offset: ${currentOffset}, Size: ${Math.min(batch_size, 50)}, Empty: ${consecutiveEmptyBatches}/${maxEmptyBatches}`);
         
         // Aggiorna progress
         await supabase
@@ -165,7 +168,7 @@ serve(async (req) => {
         const listBody = {
           handler: 'get_messages',
           folder: folder_name,
-          limit: batch_size,
+          limit: Math.min(batch_size, 50),  // Limite API TMWE massimo 50
           offset: currentOffset,
           include_attachments: false,
           format: 'text'
@@ -193,9 +196,30 @@ serve(async (req) => {
           const listText = await listResponse.text();
           const listResult = JSON.parse(listText);
           
+          // Debug: mostra la risposta completa
+          console.log(`📊 Batch ${batchNumber} API Response:`, { 
+            success: listResult.success,
+            total: listResult.total,
+            count: listResult.count,
+            messages_length: listResult.messages?.length 
+          });
+          
           if (!listResult.messages || !Array.isArray(listResult.messages)) {
-            console.log(`⚠️ Batch ${batchNumber}: Nessun messaggio ricevuto, fine importazione`);
+            console.log(`⚠️ Batch ${batchNumber}: Nessun messaggio ricevuto o formato errato`);
             break;
+          }
+          
+          // Se non ci sono messaggi, incrementa contatore vuoti
+          if (listResult.messages.length === 0) {
+            consecutiveEmptyBatches++;
+            console.log(`🔄 Batch ${batchNumber}: Vuoto (${consecutiveEmptyBatches}/${maxEmptyBatches})`);
+            // Avanza offset anche per batch vuoti per evitare loop infiniti
+            currentOffset += Math.min(batch_size, 50);
+            batchNumber++;
+            continue;
+          } else {
+            // Reset contatore se troviamo messaggi
+            consecutiveEmptyBatches = 0;
           }
 
           console.log(`📧 Batch ${batchNumber}: Ricevuti ${listResult.messages.length} messaggi`);
@@ -258,15 +282,21 @@ serve(async (req) => {
           totalProcessed += listResult.messages.length;
           console.log(`✅ Batch ${batchNumber} completato: ${batchSaved} nuove, ${totalProcessed} totali processate`);
 
-          // Se abbiamo ricevuto meno messaggi del batch_size, siamo alla fine
-          if (listResult.messages.length < batch_size) {
-            console.log(`🏁 Fine importazione: batch incompleto (${listResult.messages.length} < ${batch_size})`);
+          // Aggiorna offset per prossimo batch
+          currentOffset += listResult.messages.length;  // Usa il numero effettivo di messaggi ricevuti
+          batchNumber++;
+
+          // Se abbiamo ricevuto 0 messaggi o abbiamo raggiunto il limite, fermiamoci
+          if (listResult.messages.length === 0) {
+            console.log(`🏁 Fine importazione: nessun messaggio nel batch ${batchNumber-1}`);
             break;
           }
-
-          // Prepara prossimo batch
-          currentOffset += batch_size;
-          batchNumber++;
+          
+          // Se riceviamo meno messaggi del limite API, potremmo essere alla fine
+          // Ma continuiamo comunque per essere sicuri
+          if (listResult.messages.length < Math.min(batch_size, 50)) {
+            console.log(`⚠️ Batch incompleto (${listResult.messages.length} < ${Math.min(batch_size, 50)}), ma continuiamo...`);
+          }
 
           // Piccola pausa tra batch per non sovraccaricare l'API
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -274,8 +304,14 @@ serve(async (req) => {
         } catch (batchError) {
           console.error(`❌ Errore batch ${batchNumber}:`, batchError);
           // Continua con il prossimo batch invece di fermarsi
-          currentOffset += batch_size;
+          currentOffset += Math.min(batch_size, 50);  // Avanza anche in caso di errore
           batchNumber++;
+          
+          // Se abbiamo troppi errori consecutivi, fermiamoci
+          if (batchNumber > maxBatches + 5) {
+            console.log('❌ Troppi errori consecutivi, interruzione importazione');
+            break;
+          }
         }
       }
 

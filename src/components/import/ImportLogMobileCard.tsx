@@ -93,8 +93,8 @@ export function ImportLogMobileCard({
                   <TrendingUp className="h-3 w-3 text-green-600" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">{log.righe_totali}</div>
-                  <div className="text-xs text-muted-foreground">Righe totali</div>
+                  <div className="text-sm font-medium text-primary">{log.righe_totali}</div>
+                  <div className="text-xs text-muted-foreground">Record</div>
                 </div>
               </div>
             </div>

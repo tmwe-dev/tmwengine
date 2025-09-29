@@ -830,6 +830,18 @@ export default function RubricaAvanzata() {
                         }
                       </Button>
                     )}
+                    {/* Delete button - only show when contacts are selected */}
+                    {selectedRecords.size > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-transparent"
+                        onClick={deleteSelectedContacts}
+                        title={`Elimina ${selectedRecords.size} contatti selezionati`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -896,36 +908,25 @@ export default function RubricaAvanzata() {
                       {/* Actions Bar Mobile */}
                       {selectedRecords.size > 0 && (
                          <div className="space-y-2 pt-1 border-t border-border">
-                         <div className="flex flex-col gap-2">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => setShowMultipleActivityDialog(true)}
-                              className="w-full h-7 text-xs"
-                            >
-                              <FileText className="h-3 w-3 mr-1" />
-                              Crea Attività
-                            </Button>
-                           <div className="flex gap-2">
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={deleteSelectedContacts}
-                                className="flex-1 h-7 text-xs"
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Elimina
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedRecords(new Set())}
-                                className="flex-1 h-7 text-xs"
-                              >
-                                Deseleziona
-                              </Button>
-                           </div>
-                         </div>
+                          <div className="flex flex-col gap-2">
+                             <Button
+                               variant="default"
+                               size="sm"
+                               onClick={() => setShowMultipleActivityDialog(true)}
+                               className="w-full h-7 text-xs"
+                             >
+                               <FileText className="h-3 w-3 mr-1" />
+                               Crea Attività
+                             </Button>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => setSelectedRecords(new Set())}
+                               className="w-full h-7 text-xs"
+                             >
+                               Deseleziona
+                             </Button>
+                          </div>
                        </div>
                      )}
                    </CardContent>

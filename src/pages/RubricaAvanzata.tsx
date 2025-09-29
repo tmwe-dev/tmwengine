@@ -611,14 +611,25 @@ export default function RubricaAvanzata() {
       {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft">
         <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-            <Input
-              placeholder="Cerca per nome, azienda, email o città..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn("pl-10", isMobile ? "h-8" : "h-9")}
-            />
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+              <Input
+                placeholder="Cerca per nome, azienda, email o città..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn("pl-10", isMobile ? "h-8" : "h-9")}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+              className="text-text-secondary hover:text-text-primary transition-colors p-2 shrink-0"
+              title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
+            >
+              {isHeaderCollapsed ? <SearchCheck className="h-5 w-5" /> : <SearchX className="h-5 w-5" />}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -759,18 +770,6 @@ export default function RubricaAvanzata() {
       </div>
       )}
 
-      {/* Controllo visibilità filtri - Centrato */}
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-          className="text-text-secondary hover:text-text-primary transition-colors p-2"
-          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
-        >
-          {isHeaderCollapsed ? <SearchCheck className="h-5 w-5" /> : <SearchX className="h-5 w-5" />}
-        </Button>
-      </div>
 
       {/* Data */}
       {isMobile ? (

@@ -613,13 +613,7 @@ export default function RubricaAvanzata() {
       <div className="animate-fade-in">
       {/* Compact Search and Filters Section */}
       <Card className="border-card shadow-soft">
-        <CardHeader className={cn(isMobile ? "pb-1 pt-3 px-3" : "pb-3")}>
-          <CardTitle className={cn("flex items-center gap-2", isMobile ? "text-sm" : "text-lg")}>
-            <Filter className="h-4 w-4" />
-            Ricerca e Filtri
-          </CardTitle>
-        </CardHeader>
-        <CardContent className={cn(isMobile ? "space-y-2 pt-1 px-3 pb-3" : "space-y-3")}>
+        <CardContent className={cn(isMobile ? "space-y-2 pt-3 px-3 pb-3" : "space-y-3 pt-6")}>
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />

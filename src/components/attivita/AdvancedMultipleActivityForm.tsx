@@ -289,17 +289,37 @@ export function AdvancedMultipleActivityForm({
               </h3>
               
               <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-3 bg-background-subtle">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {contacts.map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between p-3 bg-background rounded border border-border">
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">
+                    <div key={contact.id} className="p-3 bg-background rounded-lg border border-border shadow-sm">
+                      {/* Nome azienda prominente in alto */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <Building className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <h4 className="font-semibold text-base text-text-primary leading-tight">
                           {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
-                        </span>
+                        </h4>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {getContactInfo(contact)}
+                      
+                      {/* Informazioni di contatto sotto */}
+                      <div className="space-y-1 ml-6">
+                        {contact.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            <span>{contact.email}</span>
+                          </div>
+                        )}
+                        {(contact.phone || contact.cell) && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            <span>{contact.phone || contact.cell}</span>
+                          </div>
+                        )}
+                        {contact.alias && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span>{contact.alias}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

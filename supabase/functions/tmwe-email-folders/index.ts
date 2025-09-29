@@ -58,52 +58,30 @@ serve(async (req) => {
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
-    const isWriteOperation = ['create_folder', 'delete_folder', 'rename_folder', 'subscribe_folder', 'unsubscribe_folder', 'empty_folder'].includes(requestData.handler);
     
-    let response;
+    // API v2.0.0 - All operations use POST with JSON body
+    const requestBody: any = {
+      handler: requestData.handler
+    };
     
-    if (isWriteOperation) {
-      // POST operations - API v2.0.0 uses JSON body
-      const requestBody: any = {
-        handler: requestData.handler
-      };
-      
-      if (requestData.folder_name) requestBody.folder_name = requestData.folder_name;
-      if (requestData.parent_folder) requestBody.parent_folder = requestData.parent_folder;
-      if (requestData.old_name) requestBody.old_name = requestData.old_name;
-      if (requestData.new_name) requestBody.new_name = requestData.new_name;
-      if (requestData.force !== undefined) requestBody.force = requestData.force;
-      if (requestData.expunge !== undefined) requestBody.expunge = requestData.expunge;
+    if (requestData.folder_name) requestBody.folder_name = requestData.folder_name;
+    if (requestData.parent_folder) requestBody.parent_folder = requestData.parent_folder;
+    if (requestData.old_name) requestBody.old_name = requestData.old_name;
+    if (requestData.new_name) requestBody.new_name = requestData.new_name;
+    if (requestData.hierarchy !== undefined) requestBody.hierarchy = requestData.hierarchy;
+    if (requestData.include_counts !== undefined) requestBody.include_counts = requestData.include_counts;
+    if (requestData.force !== undefined) requestBody.force = requestData.force;
+    if (requestData.expunge !== undefined) requestBody.expunge = requestData.expunge;
 
-      response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-    } else {
-      // GET operations - API v2.0.0 uses JSON body
-      const requestBody: any = {
-        handler: requestData.handler
-      };
-      
-      if (requestData.folder_name) requestBody.folder_name = requestData.folder_name;
-      if (requestData.hierarchy !== undefined) requestBody.hierarchy = requestData.hierarchy;
-      if (requestData.include_counts !== undefined) requestBody.include_counts = requestData.include_counts;
-
-      response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-    }
+    const response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${oauthToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
 
     console.log('Response status:', response.status, response.statusText);
 

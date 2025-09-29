@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Folder, 
+  FolderOpen,
   Database, 
   Clock, 
   CheckCircle, 
@@ -52,6 +53,50 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 49)]);
+  };
+
+  const discoverFolders = async () => {
+    try {
+      addLog('🔍 Ricerca cartelle disponibili sul server TMWE...');
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-email-folders', {
+        body: { 
+          handler: 'get_folders',
+          include_counts: true,
+          hierarchy: true
+        }
+      });
+
+      if (error) {
+        console.error('Errore ricerca cartelle:', error);
+        addLog('❌ Errore durante la ricerca cartelle');
+        toast({
+          title: "Errore",
+          description: "Impossibile recuperare l'elenco delle cartelle",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Cartelle trovate:', data);
+      addLog(`✅ Trovate ${data?.folders?.length || 0} cartelle sul server`);
+      
+      if (data?.folders) {
+        const folderList = data.folders.map((folder: any) => 
+          `📁 ${folder.name} (${folder.messages || 0} email)`
+        ).join('\n');
+        addLog(`Cartelle disponibili:\n${folderList}`);
+      }
+
+      toast({
+        title: "Cartelle trovate",
+        description: `Scoperte ${data?.folders?.length || 0} cartelle. Controlla i log per i dettagli.`
+      });
+
+    } catch (error) {
+      console.error('Errore:', error);
+      addLog('❌ Errore di connessione durante la ricerca cartelle');
+    }
   };
 
   const fetchFolderStats = async () => {
@@ -262,14 +307,18 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 max="50000"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
+              <Button onClick={discoverFolders} variant="outline" className="flex-1">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Scopri Cartelle
+              </Button>
               {!isRunning ? (
-                <Button onClick={startSync} className="w-full">
+                <Button onClick={startSync} className="flex-1">
                   <Play className="h-4 w-4 mr-2" />
                   Avvia Sync
                 </Button>
               ) : (
-                <Button onClick={stopSync} variant="destructive" className="w-full">
+                <Button onClick={stopSync} variant="destructive" className="flex-1">
                   <Pause className="h-4 w-4 mr-2" />
                   Ferma Sync
                 </Button>

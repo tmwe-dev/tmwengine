@@ -99,10 +99,7 @@ export function ImportLogMobileCard({
               </div>
             </div>
             
-          </div>
-
-          {/* Errors if any */}
-          {log.righe_errori > 0 && (
+            {/* Errors section */}
             <div className="rounded-lg p-3 border border-red-200">
               <div className="flex items-center gap-2">
                 <div className="p-1 rounded-full border border-red-200">
@@ -114,7 +111,7 @@ export function ImportLogMobileCard({
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">

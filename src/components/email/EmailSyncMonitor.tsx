@@ -79,13 +79,23 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       }
 
       console.log('Cartelle trovate:', data);
-      addLog(`✅ Trovate ${data?.folders?.length || 0} cartelle sul server`);
+      console.log('Struttura completa:', JSON.stringify(data, null, 2));
       
-      if (data?.folders) {
-        const folderList = data.folders.map((folder: any) => 
-          `📁 ${folder.name} (${folder.messages || 0} email)`
+      // Gestisce diversi formati possibili della risposta
+      let folders = data?.folders || data?.data?.folders || data || [];
+      if (!Array.isArray(folders)) {
+        folders = [];
+      }
+      
+      addLog(`✅ Trovate ${folders.length} cartelle sul server`);
+      
+      if (folders.length > 0) {
+        const folderList = folders.map((folder: any) => 
+          `📁 ${folder.name || folder.folder_name || folder} (${folder.messages || folder.message_count || folder.count || '?'} email)`
         ).join('\n');
         addLog(`Cartelle disponibili:\n${folderList}`);
+      } else {
+        addLog('🔍 Nessuna cartella trovata. Struttura risposta nel console.');
       }
 
       toast({

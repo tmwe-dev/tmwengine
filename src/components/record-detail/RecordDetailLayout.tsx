@@ -19,17 +19,17 @@ interface RecordDetailLayoutProps {
 
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   const isMobile = useIsMobile();
-
-  // Use mobile layout for mobile devices
-  if (isMobile) {
-    return <MobileRecordDetailLayout record={record} formatCellValue={formatCellValue} />;
-  }
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+
+  // Use mobile layout for mobile devices
+  if (isMobile) {
+    return <MobileRecordDetailLayout record={record} formatCellValue={formatCellValue} />;
+  }
 
   // Function to get country code for flag
   const getCountryCode = (country: string) => {

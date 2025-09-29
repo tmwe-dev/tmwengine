@@ -605,11 +605,11 @@ export default function RubricaAvanzata() {
       <Card className="border-card shadow-soft">
         <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
           <div className="flex items-center gap-3">
-            {/* Contatti counter - Mobile */}
+            {/* Counter - Mobile */}
             {isMobile && (
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Users className="h-4 w-4" />
-                Contatti ({filteredRecords.length})
+                ({filteredRecords.length})
               </div>
             )}
             <div className="relative flex-1">

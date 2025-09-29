@@ -30,7 +30,7 @@ serve(async (req: Request) => {
 
     console.log(`Downloading ${limit} emails from folder: ${folder}`);
 
-    // Get TMWE credentials
+    // Get TMWE credentials - same logic as tmwe-email-sync
     const { data: providers, error: providerError } = await supabase
       .from('email_provider')
       .select(`
@@ -44,35 +44,57 @@ serve(async (req: Request) => {
       throw new Error('Provider email non trovato o non attivo');
     }
 
-    const credentials = providers.email_provider_credenziali;
-    if (!credentials || !credentials.api_key) {
-      throw new Error('Credenziali TMWE non trovate');
+    // Get the most recent credentials with API key or OAuth token
+    const credentials = providers.email_provider_credenziali
+      ?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      ?.find((cred: any) => cred.api_key?.trim() || cred.oauth_token?.trim());
+
+    if (!credentials || (!credentials.api_key?.trim() && !credentials.oauth_token?.trim())) {
+      throw new Error('Credenziali TMWE non trovate o vuote');
     }
 
-    console.log("Using TMWE API key for download");
+    console.log("Using TMWE credentials for download");
 
-    // TMWE API URL
-    const tmweUrl = providers.outbound_endpoint || 'https://api.my-tmwe.it/app.php';
-    const apiKey = credentials.api_key;
+    // Use OAuth token if available, otherwise API key
+    const apiKey = credentials.oauth_token?.trim() || credentials.api_key?.trim();
 
-    // Download messages from TMWE
-    const downloadParams = new URLSearchParams({
-      action: 'get_messages',
-      api_key: apiKey,
+    // TMWE API URL - use same endpoint as sync function
+    const tmweUrl = 'https://findair.it/erp/tmwe_json/app.php';
+
+    // Download messages from TMWE using same approach as sync function
+    const requestBody = {
+      handler: 'get_messages',
       folder: folder,
-      limit: limit.toString(),
+      limit: limit,
       format: 'json'
-    });
+    };
 
-    console.log(`Fetching emails from: ${tmweUrl}?${downloadParams}`);
+    console.log(`Fetching emails from TMWE with body:`, requestBody);
 
-    const response = await fetch(`${tmweUrl}?${downloadParams}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
+    let response;
+    try {
+      console.log("Tentativo connessione HTTPS a TMWE...");
+      response = await fetch(tmweUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+    } catch (httpsError) {
+      console.log("HTTPS falló, intentando HTTP...");
+      const httpUrl = tmweUrl.replace('https://', 'http://');
+      response = await fetch(httpUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+    }
 
     console.log(`Response status: ${response.status}`);
 

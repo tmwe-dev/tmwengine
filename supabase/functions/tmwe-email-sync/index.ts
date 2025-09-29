@@ -177,36 +177,99 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // Step 3: Verifica se le email sono già nel database locale
-        console.log('Step 3: Verificando email nel database locale...');
-        const { data: recentEmails, error: queryError } = await supabase
-          .from('email_messages')
-          .select('id, subject, created_at')
-          .eq('provider_id', providerId)
-          .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()) // ultimi 10 minuti
-          .order('created_at', { ascending: false });
+        // Step 3: Scarica direttamente le email dall'API TMWE
+        console.log('Step 3: Scaricando email dall\'API TMWE...');
+        const downloadUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
+        const downloadBody = {
+          folder: folder_name || 'INBOX',
+          limit: 50,
+          include_body: true
+        };
 
-        if (queryError) {
-          console.error('Errore query email recenti:', queryError);
-        } else {
-          console.log(`Trovate ${recentEmails?.length || 0} email recenti nel database`);
-          if (recentEmails && recentEmails.length > 0) {
-            emailsSaved = recentEmails.length;
-            console.log('Email recenti trovate:', recentEmails);
-          }
+        let downloadResponse;
+        try {
+          downloadResponse = await fetch(downloadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(downloadBody)
+          });
+        } catch (httpsError) {
+          console.log('HTTPS fallito, tentando HTTP...');
+          const httpDownloadUrl = downloadUrl.replace('https://', 'http://');
+          downloadResponse = await fetch(httpDownloadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(downloadBody)
+          });
         }
 
-        // Step 4: Se non ci sono email recenti, conta tutte le email del provider
+        const downloadText = await downloadResponse.text();
+        console.log('Download response (primi 300 caratteri):', downloadText.substring(0, 300));
+
+        if (downloadResponse.ok) {
+          try {
+            const downloadResult = JSON.parse(downloadText);
+            if (downloadResult.success && downloadResult.data?.messages) {
+              const messages = downloadResult.data.messages;
+              console.log(`Trovati ${messages.length} messaggi da salvare`);
+
+              // Step 4: Salva ogni messaggio nel database
+              for (const msg of messages) {
+                try {
+                  const { error: insertError } = await supabase
+                    .from('email_messages')
+                    .insert({
+                      message_id: msg.id || msg.message_id || `tmwe_${Date.now()}_${Math.random()}`,
+                      provider_id: providerId,
+                      subject: msg.subject || '',
+                      from_email: msg.from || '',
+                      to_email: msg.to || '',
+                      cc_email: msg.cc || null,
+                      bcc_email: msg.bcc || null,
+                      body_text: msg.body_text || msg.text || null,
+                      body_html: msg.body_html || msg.html || null,
+                      data_ricezione: msg.date ? new Date(msg.date) : new Date(),
+                      data_invio: msg.sent_date ? new Date(msg.sent_date) : null,
+                      cartella: folder_name || 'INBOX',
+                      direzione: 'in',
+                      stato: 'nuovo',
+                      flags: msg.flags || [],
+                      attachments: msg.attachments || []
+                    });
+
+                  if (!insertError) {
+                    emailsSaved++;
+                  } else if (insertError.code !== '23505') { // Ignora duplicati
+                    console.error('Errore inserimento:', insertError);
+                  }
+                } catch (msgError) {
+                  console.error('Errore processamento messaggio:', msgError);
+                }
+              }
+              console.log(`Step 4: Salvati ${emailsSaved} messaggi nel database`);
+            } else {
+              console.log('Nessun messaggio trovato:', downloadResult);
+            }
+          } catch (parseError) {
+            console.error('Errore parsing download response:', parseError);
+          }
+        } else {
+          console.error('Errore download messaggi:', downloadText.substring(0, 200));
+        }
+
+        // Fallback: conta email esistenti
         if (emailsSaved === 0) {
-          const { data: allEmails, error: countError } = await supabase
+          const { data: existingEmails } = await supabase
             .from('email_messages')
             .select('id', { count: 'exact' })
             .eq('provider_id', providerId);
-
-          if (!countError) {
-            emailsSaved = allEmails?.length || 0;
-            console.log(`Totale email nel database per questo provider: ${emailsSaved}`);
-          }
+          emailsSaved = existingEmails?.length || 0;
         }
       } else {
         console.log('Sincronizzazione TMWE non riuscita:', syncResult);

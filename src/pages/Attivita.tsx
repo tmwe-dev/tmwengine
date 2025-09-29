@@ -676,19 +676,6 @@ export default function Attivita() {
         </Dialog>
       </div>
 
-      {/* Controllo visibilità filtri - Centrato */}
-      <div className="flex justify-center mb-4">
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-          className="text-text-secondary hover:text-text-primary transition-colors p-3"
-          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
-        >
-          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
-        </Button>
-      </div>
-
       {/* Search and Filters - Collapsible */}
       {!isHeaderCollapsed && (
         <div className="animate-fade-in">
@@ -811,6 +798,19 @@ export default function Attivita() {
           </div>
         </div>
       )}
+
+      {/* Controllo visibilità filtri - Centrato */}
+      <div className="flex justify-center mb-4">
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          className="text-text-secondary hover:text-text-primary transition-colors p-3"
+          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
+        >
+          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
+        </Button>
+      </div>
 
       {/* Azioni per selezione multipla */}
       {selectedActivities.length > 0 && (

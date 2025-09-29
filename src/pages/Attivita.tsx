@@ -282,6 +282,16 @@ export default function Attivita() {
     (currentPage + 1) * recordsPerPage
   );
 
+  // Debug per mobile
+  console.log('🔍 DEBUG PAGINATION:', {
+    filteredActivitiesCount: filteredActivities.length,
+    recordsPerPage,
+    totalPages,
+    currentPage,
+    isMobile,
+    shouldShowPagination: totalPages > 1
+  });
+
   const checkScadenzaFilter = (scadenza: string | undefined, filter: string) => {
     if (!scadenza) return filter === 'senza_scadenza';
     
@@ -869,7 +879,7 @@ export default function Attivita() {
       {isMobile ? (
         /* Mobile Card Layout */
         <div className="space-y-3">
-          {filteredActivities.length === 0 ? (
+           {paginatedActivities.length === 0 ? (
             <Card className="border-card shadow-soft">
               <CardContent className="p-8 text-center">
                 {activities.length === 0 ? (
@@ -896,7 +906,7 @@ export default function Attivita() {
               </CardContent>
             </Card>
           ) : (
-            filteredActivities.map((activity) => (
+            paginatedActivities.map((activity) => (
               <ActivityMobileCard
                 key={activity.id}
                 activity={activity}
@@ -908,6 +918,63 @@ export default function Attivita() {
                 onDelete={() => handleDeleteActivity(activity.id)}
               />
             ))
+           )}
+          
+          {/* Paginazione Mobile */}
+          {totalPages > 1 && (
+            <Card className="border-card shadow-soft mt-4">
+              <CardContent className="p-3">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-text-secondary">Per pagina:</span>
+                    <Select 
+                      value={recordsPerPage.toString()} 
+                      onValueChange={(value) => {
+                        setRecordsPerPage(Number(value));
+                        setCurrentPage(0);
+                      }}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-center text-sm text-text-secondary">
+                    {filteredActivities.length} risultati totali
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                        disabled={currentPage === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm px-3 py-1 bg-muted rounded">
+                        {currentPage + 1} di {totalPages}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                        disabled={currentPage >= totalPages - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       ) : (

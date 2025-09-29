@@ -293,7 +293,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {record.email && (
-            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-2 p-2 border rounded-lg">
               <Mail className="h-4 w-4 text-blue-600" />
               <div className="flex-1">
                 <div className="text-xs text-blue-600 mb-1">Email</div>
@@ -306,7 +306,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
           
           <div className="grid grid-cols-1 gap-2">
             {(record.phone || record.telefono) && (
-              <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-2 p-2 border rounded-lg">
                 <Phone className="h-4 w-4 text-green-600" />
                 <div>
                   <div className="text-xs text-green-600">Telefono</div>
@@ -318,7 +318,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
             )}
             
             {(record.cell || record.cellulare) && (
-              <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg">
+              <div className="flex items-center gap-2 p-2 border rounded-lg">
                 <Phone className="h-4 w-4 text-orange-600" />
                 <div>
                   <div className="text-xs text-orange-600">Cellulare</div>
@@ -385,19 +385,19 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-2 text-xs">
               {record.last_contact && (
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
+                <div className="flex justify-between p-2 border rounded">
                   <span className="text-muted-foreground">Last Contact</span>
                   <span className="font-medium">{formatCellValue(record.last_contact)}</span>
                 </div>
               )}
               {record.next_contact_date && (
-                <div className="flex justify-between p-2 bg-blue-50 rounded">
+                <div className="flex justify-between p-2 border rounded">
                   <span className="text-blue-600">Next Contact Date</span>
                   <span className="font-medium text-blue-900">{formatCellValue(record.next_contact_date, 'next_contact_date')}</span>
                 </div>
               )}
               {record.scheduled_contact && (
-                <div className="flex justify-between p-2 bg-green-50 rounded">
+                <div className="flex justify-between p-2 border rounded">
                   <span className="text-green-600">Scheduled Contact</span>
                   <span className="font-medium text-green-900">{formatCellValue(record.scheduled_contact, 'scheduled_contact')}</span>
                 </div>

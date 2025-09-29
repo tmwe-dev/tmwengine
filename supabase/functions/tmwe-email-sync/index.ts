@@ -177,99 +177,78 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // SOLUZIONE SEMPLICE: usiamo la LISTA MESSAGGI che funziona
-        console.log('Step 3: Ottieni lista messaggi con tmwe_email_list...');
-        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=tmwe_email_list';
-        const listBody = {
-          folder: folder_name || 'INBOX',
-          limit: 50
-        };
-
-        let listResponse;
+        // SOLUZIONE: usa l'edge function tmwe-email-messages per ottenere la lista
+        console.log('Step 3: Ottieni lista messaggi via edge function...');
+        
         try {
-          listResponse = await fetch(listUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(listBody)
-          });
-        } catch (httpsError) {
-          console.log('HTTPS fallito per lista, tentando HTTP...');
-          const httpListUrl = listUrl.replace('https://', 'http://');
-          listResponse = await fetch(httpListUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(listBody)
-          });
-        }
-
-        const listText = await listResponse.text();
-        console.log('Lista response status:', listResponse.status);
-        console.log('Lista response (primi 500 caratteri):', listText.substring(0, 500));
-
-        if (listResponse.ok) {
-          try {
-            const listResult = JSON.parse(listText);
-            if (listResult.success && listResult.data?.emails) {
-              const emailsList = listResult.data.emails;
-              console.log(`Trovati ${emailsList.length} messaggi nella lista`);
-
-              // Step 4: Salva ogni messaggio nel database
-              for (const email of emailsList) {
-                try {
-                  // Controlla se esiste già
-                  const { data: existing } = await supabase
-                    .from('email_messages')
-                    .select('id')
-                    .eq('message_id', email.message_id || email.id || `tmwe_${Date.now()}_${Math.random()}`)
-                    .maybeSingle();
-
-                  if (!existing) {
-                    const { error: insertError } = await supabase
-                      .from('email_messages')
-                      .insert({
-                        message_id: email.message_id || email.id || `tmwe_${Date.now()}_${Math.random()}`,
-                        provider_id: providerId,
-                        subject: email.subject || '',
-                        from_email: email.from || email.sender || '',
-                        to_email: email.to || email.recipient || '',
-                        cc_email: email.cc || null,
-                        bcc_email: email.bcc || null,
-                        body_text: email.body || email.text_content || email.preview || 'Contenuto non disponibile',
-                        body_html: email.html_content || null,
-                        data_ricezione: email.date ? new Date(email.date) : new Date(),
-                        data_invio: email.sent_date ? new Date(email.sent_date) : null,
-                        cartella: folder_name || 'INBOX',
-                        direzione: 'in',
-                        stato: email.seen ? 'letto' : 'nuovo',
-                        flags: email.flags || [],
-                        attachments: email.attachments || []
-                      });
-
-                    if (!insertError) {
-                      emailsSaved++;
-                    } else {
-                      console.error('Errore inserimento email:', insertError);
-                    }
-                  }
-                } catch (emailError) {
-                  console.error('Errore processamento email:', emailError);
-                }
-              }
-              console.log(`Step 4: Salvati ${emailsSaved} nuovi messaggi nel database`);
-            } else {
-              console.log('Nessun messaggio trovato nella lista:', listResult);
+          const messageResponse = await supabase.functions.invoke('tmwe-email-messages', {
+            body: {
+              handler: 'get_messages',
+              folder: folder_name || 'INBOX',
+              limit: 50
             }
-          } catch (parseError) {
-            console.error('Errore parsing lista response:', parseError);
+          });
+
+          console.log('Message response:', messageResponse);
+          
+          if (messageResponse.data && messageResponse.data.success) {
+            const emailsList = messageResponse.data.data?.messages || [];
+            console.log(`Trovati ${emailsList.length} messaggi nella lista`);
+
+            // Step 4: Salva ogni messaggio nel database
+            for (const email of emailsList) {
+              try {
+                // Genera un message_id univoco se non presente
+                const messageId = email.message_id || email.id || `tmwe_${Date.now()}_${Math.random()}`;
+                
+                // Controlla se esiste già
+                const { data: existing } = await supabase
+                  .from('email_messages')
+                  .select('id')
+                  .eq('message_id', messageId)
+                  .maybeSingle();
+
+                if (!existing) {
+                  const { error: insertError } = await supabase
+                    .from('email_messages')
+                    .insert({
+                      message_id: messageId,
+                      provider_id: providerId,
+                      subject: email.subject || '',
+                      from_email: email.from || email.sender || '',
+                      to_email: email.to || email.recipient || '',
+                      cc_email: email.cc || null,
+                      bcc_email: email.bcc || null,
+                      body_text: email.body || email.text_content || email.preview || 'Contenuto non disponibile',
+                      body_html: email.html_content || null,
+                      data_ricezione: email.date ? new Date(email.date) : new Date(),
+                      data_invio: email.sent_date ? new Date(email.sent_date) : null,
+                      cartella: folder_name || 'INBOX',
+                      direzione: 'in',
+                      stato: email.seen ? 'letto' : 'nuovo',
+                      flags: email.flags || [],
+                      attachments: email.attachments || []
+                    });
+
+                  if (!insertError) {
+                    emailsSaved++;
+                    console.log(`Email salvata: ${email.subject || 'Senza oggetto'}`);
+                  } else {
+                    console.error('Errore inserimento email:', insertError);
+                  }
+                } else {
+                  console.log(`Email già esistente: ${email.subject || 'Senza oggetto'}`);
+                }
+              } catch (emailError) {
+                console.error('Errore processamento email:', emailError);
+              }
+            }
+            console.log(`Step 4: Salvati ${emailsSaved} nuovi messaggi nel database`);
+          } else {
+            console.error('Errore dalla funzione tmwe-email-messages:', messageResponse.error);
           }
-        } else {
-          console.error('Errore lista messaggi:', listText.substring(0, 200));
+        } catch (functionError) {
+          console.error('Errore chiamata edge function:', functionError);
         }
 
         // Se non sono state salvate nuove email, usa il conteggio dalla sincronizzazione

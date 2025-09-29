@@ -127,9 +127,9 @@ serve(async (req) => {
 
     console.log('Configuration loaded, OAuth token available');
 
-    // Preparar payload para TMWE según documentación OpenAPI SendMessageRequest
+    // Preparar payload para TMWE según documentación OpenAPI v2.0.0
     const payload = {
-      action: 'send_message',
+      handler: 'send_message',
       to: emailData.to,
       subject: emailData.subject,
       body: emailData.body_text || emailData.body || 'Test message body', // Campo requerido
@@ -138,18 +138,20 @@ serve(async (req) => {
 
     console.log('=== TESTING CONNECTION FIRST ===');
     
-    // Primer intento: probar conexión con GET para verificar autenticación
-    const testUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_account&action=test_connection';
+    // Primer intento: probar conexión con POST para verificar autenticación
+    const testUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_account';
     console.log('Testing connection with URL:', testUrl);
     
     try {
       const testResponse = await fetchWithCertBypass(testUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'TMWE-CRM-Integration/1.0'
-        }
+        },
+        body: JSON.stringify({ handler: 'test_connection' })
       });
       
       const testText = await testResponse.text();
@@ -179,7 +181,7 @@ serve(async (req) => {
     }, null, 2));
     console.log('Token usado (primeros 20 chars):', oauthToken.substring(0, 20) + '...');
 
-    // Realizar llamada con bypass de certificados usando OAuth
+    // Realizar llamada con bypass de certificados usando OAuth - API v2.0.0 (POST con JSON)
     const response = await fetchWithCertBypass(apiUrl, {
       method: 'POST',
       headers: headers,

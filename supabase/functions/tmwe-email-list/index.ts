@@ -53,28 +53,35 @@ serve(async (req) => {
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
     
-    let endpoint;
-    let params = new URLSearchParams();
+    let apiUrl;
+    let requestBody: any;
     
     if (requestData.uid) {
       // Get specific email
-      endpoint = '/app.php?action=get_email';
-      params.append('uid', requestData.uid);
+      apiUrl = `${baseUrl}/app.php?action=get_email`;
+      requestBody = { uid: requestData.uid };
     } else {
       // Get email list
-      endpoint = '/app.php?action=get_email_list';
-      if (requestData.folder) params.append('folder', requestData.folder);
-      if (requestData.criteria) params.append('criteria', requestData.criteria);
-      if (requestData.offset !== undefined) params.append('offset', requestData.offset.toString());
-      if (requestData.limit !== undefined) params.append('limit', requestData.limit.toString());
+      apiUrl = `${baseUrl}/app.php?action=get_email_list`;
+      requestBody = {
+        folder: requestData.folder || 'INBOX',
+        criteria: requestData.criteria || 'ALL',
+        offset: requestData.offset || 0,
+        limit: requestData.limit || 10
+      };
     }
 
-    const response = await fetch(`${baseUrl}${endpoint}&${params}`, {
-      method: 'GET',
+    console.log('API v2.0.0 - POST request to:', apiUrl);
+    console.log('Request body:', JSON.stringify(requestBody));
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${oauthToken}`,
+        'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
 
     console.log('Response status:', response.status, response.statusText);

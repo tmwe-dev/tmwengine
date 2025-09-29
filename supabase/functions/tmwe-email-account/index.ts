@@ -7,7 +7,13 @@ const corsHeaders = {
 };
 
 interface TMWEEmailAccountRequest {
-  action: 'test_connection' | 'get_account_info' | 'get_quota';
+  handler: 'test_connection' | 'get_account_info' | 'get_quota';
+  imap_port?: number;
+  imap_use_ssl?: boolean;
+  imap_use_tls?: boolean;
+  smtp_port?: number;
+  smtp_use_ssl?: boolean;
+  smtp_use_tls?: boolean;
 }
 
 serve(async (req) => {
@@ -17,7 +23,7 @@ serve(async (req) => {
 
   try {
     const requestData: TMWEEmailAccountRequest = await req.json();
-    console.log('TMWE Email Account request:', { action: requestData.action });
+    console.log('TMWE Email Account request:', { handler: requestData.handler });
 
     // Usa l'OAuth token dall'environment o dal database
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
@@ -48,16 +54,19 @@ serve(async (req) => {
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
-    const params = new URLSearchParams({ 
-      action: requestData.action 
-    });
+    const apiUrl = `${baseUrl}/app.php?action=email_account`;
 
-    const response = await fetch(`${baseUrl}/app.php?action=email_account&${params}`, {
-      method: 'GET',
+    console.log('API v2.0.0 - POST request to:', apiUrl);
+    console.log('Request body:', JSON.stringify(requestData));
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${oauthToken}`,
+        'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      body: JSON.stringify(requestData)
     });
 
     console.log('Response status:', response.status, response.statusText);

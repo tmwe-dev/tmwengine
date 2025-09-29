@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: TMWE ERP Email API
   description: Email management API for TMWE ERP system
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: TMWE API Support
     url: https://findair.it
@@ -19,40 +19,35 @@ security:
 
 paths:
   /app.php?action=get_email_list:
-    get:
+    post:
       tags:
         - Email List
       summary: Get email list
       description: Retrieves a list of emails from a specific folder
-      parameters:
-        - name: folder
-          in: query
-          description: Email folder name
-          required: false
-          schema:
-            type: string
-            default: INBOX
-        - name: criteria
-          in: query
-          description: Search criteria
-          required: false
-          schema:
-            type: string
-            default: ALL
-        - name: offset
-          in: query
-          description: Email number to start from
-          required: false
-          schema:
-            type: integer
-            default: 0
-        - name: limit
-          in: query
-          description: Maximum number of emails to return
-          required: false
-          schema:
-            type: integer
-            default: 10
+      requestBody:
+        description: Email list request parameters
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder:
+                  type: string
+                  description: Email folder name
+                  default: INBOX
+                criteria:
+                  type: string
+                  description: Search criteria
+                  default: ALL
+                offset:
+                  type: integer
+                  description: Email number to start from
+                  default: 0
+                limit:
+                  type: integer
+                  description: Maximum number of emails to return
+                  default: 10
       responses:
         '200':
           description: Email list retrieved successfully
@@ -73,18 +68,24 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /app.php?action=get_email:
-    get:
+    post:
       tags:
         - Email Detail
       summary: Get specific email
       description: Retrieves details of a specific email by UID
-      parameters:
-        - name: uid
-          in: query
-          description: Email UID
-          required: true
-          schema:
-            type: string
+      requestBody:
+        description: Email detail request parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - uid
+              properties:
+                uid:
+                  type: string
+                  description: Email UID
       responses:
         '200':
           description: Email details retrieved successfully
@@ -103,19 +104,49 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /app.php?action=email_account:
-    get:
+    post:
       tags:
         - Email Account
       summary: Gestión de cuenta de email
       description: Realiza operaciones sobre la cuenta de email del usuario
-      parameters:
-        - name: action
-          in: query
-          description: Acción a realizar
-          required: true
-          schema:
-            type: string
-            enum: [test_connection, get_account_info, get_quota]
+      requestBody:
+        description: Email account request parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - handler
+              properties:
+                handler:
+                  type: string
+                  description: Acción a realizar
+                  enum: [test_connection, get_account_info, get_quota]
+                imap_port:
+                  type: integer
+                  description: Puerto IMAP
+                  default: 993
+                imap_use_ssl:
+                  type: boolean
+                  description: Usar SSL para IMAP
+                  default: false
+                imap_use_tls:
+                  type: boolean
+                  description: Usar TLS para IMAP
+                  default: true
+                smtp_port:
+                  type: integer
+                  description: Puerto SMTP
+                  default: 587
+                smtp_use_ssl:
+                  type: boolean
+                  description: Usar SSL para SMTP
+                  default: false
+                smtp_use_tls:
+                  type: boolean
+                  description: Usar TLS para SMTP
+                  default: true
       responses:
         '200':
           description: Operación realizada correctamente
@@ -138,7 +169,7 @@ paths:
       summary: Sincronización de emails
       description: Sincroniza emails desde el servidor IMAP
       parameters:
-        - name: action
+        - name: handler
           in: query
           description: Tipo de sincronización
           required: true
@@ -191,108 +222,118 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /app.php?action=email_message:
-    get:
+    post:
       tags:
         - Email Messages
       summary: Gestión de mensajes de email
       description: Realiza operaciones sobre mensajes de email
-      parameters:
-        - name: action
-          in: query
-          description: Acción a realizar
-          required: true
-          schema:
-            type: string
-            enum: [get_messages, get_message, search_messages, get_attachment]
-        - name: uid
-          in: query
-          description: UID del mensaje (para get_message, get_attachment)
-          required: false
-          schema:
-            type: string
-        - name: attachment_id
-          in: query
-          description: ID del attachment (para get_attachment)
-          required: false
-          schema:
-            type: string
-        - name: folder
-          in: query
-          description: Carpeta de email
-          required: false
-          schema:
-            type: string
-            default: INBOX
-        - name: limit
-          in: query
-          description: Límite de mensajes
-          required: false
-          schema:
-            type: integer
-        - name: offset
-          in: query
-          description: Offset de mensajes
-          required: false
-          schema:
-            type: integer
-        - name: include_attachments
-          in: query
-          description: Incluir información de attachments
-          required: false
-          schema:
-            type: boolean
-        - name: format
-          in: query
-          description: Formato del mensaje
-          required: false
-          schema:
-            type: string
-            enum: [text, html]
-            default: text
-        - name: search_from
-          in: query
-          description: Búsqueda por remitente
-          required: false
-          schema:
-            type: string
-        - name: search_to
-          in: query
-          description: Búsqueda por destinatario
-          required: false
-          schema:
-            type: string
-        - name: search_subject
-          in: query
-          description: Búsqueda por asunto
-          required: false
-          schema:
-            type: string
-        - name: search_body
-          in: query
-          description: Búsqueda por contenido
-          required: false
-          schema:
-            type: string
-        - name: search_date_from
-          in: query
-          description: Búsqueda desde fecha
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: search_date_to
-          in: query
-          description: Búsqueda hasta fecha
-          required: false
-          schema:
-            type: string
-            format: date
-        - name: search_unread
-          in: query
-          description: Búsqueda solo no leídos
-          required: false
-          schema:
-            type: boolean
+      requestBody:
+        description: Email message request parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - handler
+              properties:
+                handler:
+                  type: string
+                  description: Acción a realizar
+                  enum: [get_messages, get_message, search_messages, get_attachment, send_message, reply_message, forward_message, delete_messages, move_messages, mark_messages]
+                uid:
+                  type: string
+                  description: UID del mensaje (para get_message, get_attachment)
+                attachment_id:
+                  type: string
+                  description: ID del attachment (para get_attachment)
+                folder:
+                  type: string
+                  description: Carpeta de email
+                  default: INBOX
+                limit:
+                  type: integer
+                  description: Límite de mensajes
+                offset:
+                  type: integer
+                  description: Offset de mensajes
+                include_attachments:
+                  type: boolean
+                  description: Incluir información de attachments
+                format:
+                  type: string
+                  description: Formato del mensaje
+                  enum: [text, html]
+                  default: text
+                search_from:
+                  type: string
+                  description: Búsqueda por remitente
+                search_to:
+                  type: string
+                  description: Búsqueda por destinatario
+                search_subject:
+                  type: string
+                  description: Búsqueda por asunto
+                search_body:
+                  type: string
+                  description: Búsqueda por contenido
+                search_date_from:
+                  type: string
+                  format: date
+                  description: Búsqueda desde fecha
+                search_date_to:
+                  type: string
+                  format: date
+                  description: Búsqueda hasta fecha
+                search_unread:
+                  type: boolean
+                  description: Búsqueda solo no leídos
+                # Campos para send_message
+                to:
+                  type: string
+                  description: Destinatarios (para envío, reenvío)
+                cc:
+                  type: string
+                  description: Destinatarios en copia
+                bcc:
+                  type: string
+                  description: Destinatarios en copia oculta
+                subject:
+                  type: string
+                  description: Asunto del mensaje
+                body:
+                  type: string
+                  description: Cuerpo del mensaje
+                body_html:
+                  type: string
+                  description: Cuerpo del mensaje en HTML
+                attachments:
+                  type: array
+                  description: Archivos adjuntos
+                  items:
+                    type: object
+                    properties:
+                      filename:
+                        type: string
+                      content:
+                        type: string
+                        format: base64
+                # Campos para operaciones
+                uids:
+                  type: string
+                  description: UIDs de mensajes (separados por coma)
+                target_folder:
+                  type: string
+                  description: Carpeta destino (para move_messages)
+                expunge:
+                  type: boolean
+                  description: Eliminar definitivamente
+                read:
+                  type: boolean
+                  description: Marcar como leído
+                reply_all:
+                  type: boolean
+                  description: Responder a todos
       responses:
         '200':
           description: Operación realizada correctamente
@@ -309,68 +350,52 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+
+  /app.php?action=email_folder:
     post:
       tags:
-        - Email Messages
-      summary: Envío y manipulación de mensajes
-      description: Envía mensajes, responde, reenvía, elimina o marca mensajes
+        - Email Folders
+      summary: Gestión de carpetas de email
+      description: Operaciones completas sobre carpetas de email
       requestBody:
-        description: Datos para envío, respuesta, reenvío o manipulación de mensajes
+        description: Email folder request parameters
         required: true
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/SendMessageRequest'
-                - $ref: '#/components/schemas/ReplyMessageRequest'
-                - $ref: '#/components/schemas/ForwardMessageRequest'
-                - $ref: '#/components/schemas/DeleteMessagesRequest'
-                - $ref: '#/components/schemas/MoveMessagesRequest'
-                - $ref: '#/components/schemas/MarkMessagesRequest'
-      responses:
-        '200':
-          description: Operación realizada correctamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OperationResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /app.php?action=email_folder:
-    get:
-      tags:
-        - Email Folders
-      summary: Gestión de carpetas de email
-      description: Operaciones de lectura sobre carpetas de email
-      parameters:
-        - name: action
-          in: query
-          description: Acción a realizar
-          required: true
-          schema:
-            type: string
-            enum: [get_folders, get_folder_info, get_folder_tree]
-        - name: folder_name
-          in: query
-          description: Nombre de la carpeta (para get_folder_info)
-          required: false
-          schema:
-            type: string
-        - name: hierarchy
-          in: query
-          description: Incluir jerarquía en get_folders
-          required: false
-          schema:
-            type: boolean
-        - name: include_counts
-          in: query
-          description: Incluir contadores en get_folders
-          required: false
-          schema:
-            type: boolean
+              type: object
+              required:
+                - handler
+              properties:
+                handler:
+                  type: string
+                  description: Acción a realizar
+                  enum: [get_folders, get_folder_info, get_folder_tree, create_folder, delete_folder, rename_folder, subscribe_folder, unsubscribe_folder, empty_folder]
+                folder_name:
+                  type: string
+                  description: Nombre de la carpeta
+                hierarchy:
+                  type: boolean
+                  description: Incluir jerarquía en get_folders
+                include_counts:
+                  type: boolean
+                  description: Incluir contadores en get_folders
+                parent_folder:
+                  type: string
+                  description: Carpeta padre (para create_folder)
+                old_name:
+                  type: string
+                  description: Nombre anterior (para rename_folder)
+                new_name:
+                  type: string
+                  description: Nuevo nombre (para rename_folder)
+                force:
+                  type: boolean
+                  description: Forzar eliminación (para delete_folder)
+                expunge:
+                  type: boolean
+                  description: Eliminar definitivamente (para empty_folder)
+                  default: true
       responses:
         '200':
           description: Operación realizada correctamente
@@ -386,67 +411,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-    post:
-      tags:
-        - Email Folders
-      summary: Operaciones de escritura en carpetas
-      description: Crea, elimina, renombra y gestiona carpetas de email
-      parameters:
-        - name: action
-          in: query
-          description: Acción a realizar
-          required: true
-          schema:
-            type: string
-            enum: [create_folder, delete_folder, rename_folder, subscribe_folder, unsubscribe_folder, empty_folder]
-        - name: folder_name
-          in: query
-          description: Nombre de la carpeta
-          required: false
-          schema:
-            type: string
-        - name: parent_folder
-          in: query
-          description: Carpeta padre (para create_folder)
-          required: false
-          schema:
-            type: string
-        - name: old_name
-          in: query
-          description: Nombre anterior (para rename_folder)
-          required: false
-          schema:
-            type: string
-        - name: new_name
-          in: query
-          description: Nuevo nombre (para rename_folder)
-          required: false
-          schema:
-            type: string
-        - name: force
-          in: query
-          description: Forzar eliminación (para delete_folder)
-          required: false
-          schema:
-            type: boolean
-        - name: expunge
-          in: query
-          description: Eliminar definitivamente (para empty_folder)
-          required: false
-          schema:
-            type: boolean
-            default: true
-      responses:
-        '200':
-          description: Operación realizada correctamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OperationResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
 components:
   securitySchemes:
@@ -824,12 +788,12 @@ components:
     SendMessageRequest:
       type: object
       required:
-        - action
+        - handler
         - to
         - subject
         - body
       properties:
-        action:
+        handler:
           type: string
           enum: [send_message]
         to:
@@ -864,11 +828,11 @@ components:
     ReplyMessageRequest:
       type: object
       required:
-        - action
+        - handler
         - uid
         - body
       properties:
-        action:
+        handler:
           type: string
           enum: [reply_message]
         uid:
@@ -897,12 +861,12 @@ components:
     ForwardMessageRequest:
       type: object
       required:
-        - action
+        - handler
         - uid
         - to
         - body
       properties:
-        action:
+        handler:
           type: string
           enum: [forward_message]
         uid:
@@ -937,10 +901,10 @@ components:
     DeleteMessagesRequest:
       type: object
       required:
-        - action
+        - handler
         - uids
       properties:
-        action:
+        handler:
           type: string
           enum: [delete_messages]
         uids:
@@ -954,11 +918,11 @@ components:
     MoveMessagesRequest:
       type: object
       required:
-        - action
+        - handler
         - uids
         - target_folder
       properties:
-        action:
+        handler:
           type: string
           enum: [move_messages]
         uids:
@@ -971,10 +935,10 @@ components:
     MarkMessagesRequest:
       type: object
       required:
-        - action
+        - handler
         - uids
       properties:
-        action:
+        handler:
           type: string
           enum: [mark_messages]
         uids:
@@ -1056,3 +1020,17 @@ tags:
     description: Gestión de mensajes de email
   - name: Email Folders
     description: Gestión de carpetas de email
+
+# Changelog
+# v2.0.0 (2025-09-29) - BREAKING CHANGES
+# - BREAKING: Changed ALL endpoints from GET to POST methods
+# - BREAKING: Converted all query parameters to request body (JSON) format
+# - Consolidated duplicate endpoint definitions into single endpoints per action
+# - Unified all email operations under respective POST endpoints
+# - All API calls now use JSON request bodies instead of query parameters
+#
+# v1.1.0 (2025-09-29)
+# - Updated parameter names from 'action' to 'handler' to match actual controller implementation
+# - Added IMAP/SMTP configuration parameters (ports, SSL/TLS settings) to email_account endpoint
+# - Fixed request body schemas to use 'handler' instead of 'action'
+# - Aligned documentation with actual PHP controller code structure

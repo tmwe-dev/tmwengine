@@ -12,7 +12,7 @@ const supabase = createClient(
 );
 
 interface TMWEEmailMessageRequest {
-  action: 'get_messages' | 'get_message' | 'search_messages' | 'get_attachment' | 
+  handler: 'get_messages' | 'get_message' | 'search_messages' | 'get_attachment' | 
           'send_message' | 'reply_message' | 'forward_message' | 'delete_messages' | 
           'move_messages' | 'mark_messages';
   uid?: string;
@@ -55,7 +55,7 @@ serve(async (req) => {
 
   try {
     const requestData: TMWEEmailMessageRequest = await req.json();
-    console.log('TMWE Email Messages request:', { action: requestData.action });
+    console.log('TMWE Email Messages request:', { handler: requestData.handler });
 
     // Usa l'OAuth token dall'environment o dal database
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
@@ -81,64 +81,21 @@ serve(async (req) => {
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
-    const isWriteOperation = ['send_message', 'reply_message', 'forward_message', 'delete_messages', 'move_messages', 'mark_messages'].includes(requestData.action);
-    
-    let response;
-    
-    if (isWriteOperation) {
-      // POST operations
-      const params = new URLSearchParams({ action: requestData.action });
-      if (requestData.uid) params.append('uid', requestData.uid);
-      if (requestData.uids) params.append('uids', requestData.uids);
-      if (requestData.target_folder) params.append('target_folder', requestData.target_folder);
-      if (requestData.expunge !== undefined) params.append('expunge', requestData.expunge.toString());
-      if (requestData.read !== undefined) params.append('read', requestData.read.toString());
+    const apiUrl = `${baseUrl}/app.php?action=email_message`;
 
-      const requestBody: any = {};
-      if (requestData.to) requestBody.to = requestData.to;
-      if (requestData.cc) requestBody.cc = requestData.cc;
-      if (requestData.bcc) requestBody.bcc = requestData.bcc;
-      if (requestData.subject) requestBody.subject = requestData.subject;
-      if (requestData.body) requestBody.body = requestData.body;
-      if (requestData.body_html) requestBody.body_html = requestData.body_html;
-      if (requestData.attachments) requestBody.attachments = requestData.attachments;
-      if (requestData.reply_all !== undefined) requestBody.reply_all = requestData.reply_all;
+    console.log('API v2.0.0 - POST request to:', apiUrl);
+    console.log('Request body:', JSON.stringify(requestData));
 
-      response = await fetch(`${baseUrl}/app.php?action=email_message&${params}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-    } else {
-      // GET operations
-      const params = new URLSearchParams({ action: requestData.action });
-      if (requestData.uid) params.append('uid', requestData.uid);
-      if (requestData.attachment_id) params.append('attachment_id', requestData.attachment_id);
-      if (requestData.folder) params.append('folder', requestData.folder);
-      if (requestData.limit) params.append('limit', requestData.limit.toString());
-      if (requestData.offset) params.append('offset', requestData.offset.toString());
-      if (requestData.include_attachments !== undefined) params.append('include_attachments', requestData.include_attachments.toString());
-      if (requestData.format) params.append('format', requestData.format);
-      if (requestData.search_from) params.append('search_from', requestData.search_from);
-      if (requestData.search_to) params.append('search_to', requestData.search_to);
-      if (requestData.search_subject) params.append('search_subject', requestData.search_subject);
-      if (requestData.search_body) params.append('search_body', requestData.search_body);
-      if (requestData.search_date_from) params.append('search_date_from', requestData.search_date_from);
-      if (requestData.search_date_to) params.append('search_date_to', requestData.search_date_to);
-      if (requestData.search_unread !== undefined) params.append('search_unread', requestData.search_unread.toString());
-
-      response = await fetch(`${baseUrl}/app.php?action=email_message&${params}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Accept': 'application/json'
-        }
-      });
-    }
+    // API v2.0.0 - All operations use POST with JSON body
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${oauthToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
 
     console.log('Response status:', response.status, response.statusText);
 
@@ -151,10 +108,13 @@ serve(async (req) => {
     const result = await response.json();
     console.log('TMWE API Response received');
 
-    // If it's a write operation, log it to the database
+    // If it's a send operation, log it to the database
+    const writeOperations = ['send_message', 'reply_message', 'forward_message', 'delete_messages', 'move_messages', 'mark_messages'];
+    const isWriteOperation = writeOperations.includes(requestData.handler);
+    
     if (isWriteOperation && result.success) {
       try {
-        if (requestData.action === 'send_message') {
+        if (requestData.handler === 'send_message') {
           await supabase.from('email_messages').insert({
             provider_id: '00000000-0000-0000-0000-000000000000',
             message_id: result.message_id || `sent_${Date.now()}`,

@@ -695,79 +695,81 @@ export default function Attivita() {
         </Dialog>
       </div>
 
-      {/* Search and Filters - Always Visible */}
-      <div className="animate-fade-in">
-        <Card className="border-card shadow-soft">
-          <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
-            <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                <Input
-                  placeholder="Cerca per descrizione o contatto..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Search and Filters - Collapsible */}
+      {!isHeaderCollapsed && (
+        <div className="animate-fade-in">
+          <Card className="border-card shadow-soft">
+            <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
+              <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    placeholder="Cerca per descrizione o contatto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Select
+                  value={filters.stato}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
+                >
+                  <SelectTrigger className="flex-1 min-w-[200px]">
+                    <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
+                    <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
+                    <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
+                    <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
+                    <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <Select
-                value={filters.stato}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
-              >
-                <SelectTrigger className="flex-1 min-w-[200px]">
-                  <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
-                  <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
-                  <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
-                  <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
-                  <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="flex gap-3 mt-4">
-              <Popover>
-                <PopoverTrigger asChild>
+              <div className="flex gap-3 mt-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                    </Button>
+                  </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={filterDate}
+                        onSelect={handleDateFilter}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                </PopoverContent>
+              </Popover>
+
+              <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <DialogTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                    <Filter className="h-4 w-4" />
+                    Filtri Avanzati
                   </Button>
-                </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={filterDate}
-                      onSelect={handleDateFilter}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-              </PopoverContent>
-            </Popover>
-
-            <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtri Avanzati
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Filtri Attività</DialogTitle>
-                </DialogHeader>
-                <ActivityFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onClose={() => setIsFiltersOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-          </CardContent>
-        </Card>
-      </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Filtri Attività</DialogTitle>
+                  </DialogHeader>
+                  <ActivityFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onClose={() => setIsFiltersOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Stats - Sempre visibili */}
       <div className="flex justify-center mb-6">

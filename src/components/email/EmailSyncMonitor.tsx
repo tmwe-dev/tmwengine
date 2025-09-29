@@ -122,6 +122,12 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
       addLog(`✅ Sincronizzazione completata: ${data.emails_downloaded} nuove email`);
       
+      // Ferma il tracking real-time alla fine della sincronizzazione
+      setTimeout(() => {
+        setIsRunning(false);
+        stopRealTimeTracking();
+      }, 2000);
+      
       if (onSyncComplete) {
         onSyncComplete();
       }

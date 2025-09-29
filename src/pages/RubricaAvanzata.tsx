@@ -598,11 +598,11 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div className={cn("space-y-6", isMobile && "space-y-4")}>
+    <div className={cn("space-y-4", isMobile && "space-y-2")}>
       {/* Header */}
       <div className={cn("flex justify-between items-start gap-4", isMobile ? "flex-col" : "flex-col sm:flex-row sm:items-center")}>
         <div>
-          <h1 className={cn("font-bold text-text-primary", isMobile ? "text-2xl" : "text-heading-1")}>
+          <h1 className={cn("font-bold text-text-primary", isMobile ? "text-xl" : "text-heading-1")}>
             Rubrica Avanzata
           </h1>
         </div>
@@ -613,13 +613,13 @@ export default function RubricaAvanzata() {
       <div className="animate-fade-in">
       {/* Compact Search and Filters Section */}
       <Card className="border-card shadow-soft">
-        <CardHeader className={cn(isMobile ? "pb-2" : "pb-3")}>
-          <CardTitle className={cn("flex items-center gap-2", isMobile ? "text-base" : "text-lg")}>
+        <CardHeader className={cn(isMobile ? "pb-1 pt-3 px-3" : "pb-3")}>
+          <CardTitle className={cn("flex items-center gap-2", isMobile ? "text-sm" : "text-lg")}>
             <Filter className="h-4 w-4" />
             Ricerca e Filtri
           </CardTitle>
         </CardHeader>
-        <CardContent className={cn(isMobile ? "space-y-2" : "space-y-3")}>
+        <CardContent className={cn(isMobile ? "space-y-2 pt-1 px-3 pb-3" : "space-y-3")}>
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
@@ -627,19 +627,19 @@ export default function RubricaAvanzata() {
               placeholder="Cerca per nome, azienda, email o città..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-9"
+              className={cn("pl-10", isMobile ? "h-8" : "h-9")}
             />
           </div>
 
           {/* Filters and Stats Row */}
-          <div className={cn("grid gap-3 items-end", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12")}>
+          <div className={cn("grid gap-2 items-end", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12")}>
             {/* Filter Controls */}
-            <div className={cn("grid gap-3", isMobile ? "grid-cols-1" : "lg:col-span-6 grid-cols-1 sm:grid-cols-3")}>
+            <div className={cn("grid gap-2", isMobile ? "grid-cols-3" : "lg:col-span-6 grid-cols-1 sm:grid-cols-3")}>
               {/* Origin Filter */}
               <div>
-                <label className="text-xs font-medium mb-1 block">Origine</label>
+                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Origine</label>
                 <Select value={originFilter} onValueChange={setOriginFilter}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
                     <SelectValue placeholder="Tutte" />
                   </SelectTrigger>
                   <SelectContent>
@@ -655,9 +655,9 @@ export default function RubricaAvanzata() {
 
               {/* Country Filter */}
               <div>
-                <label className="text-xs font-medium mb-1 block">Paese</label>
+                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Paese</label>
                 <Select value={countryFilter} onValueChange={setCountryFilter}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
                     <SelectValue placeholder="Tutti" />
                   </SelectTrigger>
                   <SelectContent>
@@ -673,9 +673,9 @@ export default function RubricaAvanzata() {
 
               {/* Records Per Page */}
               <div>
-                <label className="text-xs font-medium mb-1 block">Per pagina</label>
+                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Per pagina</label>
                 <Select value={recordsPerPage.toString()} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -689,34 +689,34 @@ export default function RubricaAvanzata() {
             </div>
 
             {/* Compact Stats */}
-            <div className="lg:col-span-4 grid grid-cols-4 gap-2">
+            <div className={cn(isMobile ? "grid grid-cols-4 gap-1 py-2" : "lg:col-span-4 grid grid-cols-4 gap-2")}>
               <div className="text-center">
-                <div className="text-lg font-bold text-text-primary">{allRecords.length}</div>
+                <div className={cn("font-bold text-text-primary", isMobile ? "text-base" : "text-lg")}>{allRecords.length}</div>
                 <div className="text-xs text-text-secondary">Totali</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-primary">{filteredRecords.length}</div>
+                <div className={cn("font-bold text-primary", isMobile ? "text-base" : "text-lg")}>{filteredRecords.length}</div>
                 <div className="text-xs text-text-secondary">Filtrati</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-text-primary">{allRecords.filter(c => c.azienda).length}</div>
+                <div className={cn("font-bold text-text-primary", isMobile ? "text-base" : "text-lg")}>{allRecords.filter(c => c.azienda).length}</div>
                 <div className="text-xs text-text-secondary">Aziende</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-accent">{selectedRecords.size}</div>
+                <div className={cn("font-bold text-accent", isMobile ? "text-base" : "text-lg")}>{selectedRecords.size}</div>
                 <div className="text-xs text-text-secondary">Selez.</div>
               </div>
             </div>
 
             {/* Column Visibility Controls */}
-            <div className="lg:col-span-2">
-              <label className="text-xs font-medium mb-1 block">Colonne</label>
-              <div className="flex gap-1">
+            <div className={cn(isMobile ? "py-1" : "lg:col-span-2")}>
+              <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Colonne</label>
+              <div className={cn("flex gap-1", isMobile && "justify-center")}>
                 <Button
                   variant={visibleColumns.company ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleColumnVisibility('company')}
-                  className="h-8 px-2 text-xs"
+                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
                 >
                   <Building className="h-3 w-3" />
                 </Button>
@@ -724,7 +724,7 @@ export default function RubricaAvanzata() {
                   variant={visibleColumns.details ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleColumnVisibility('details')}
-                  className="h-8 px-2 text-xs"
+                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
                 >
                   <Phone className="h-3 w-3" />
                 </Button>
@@ -732,7 +732,7 @@ export default function RubricaAvanzata() {
                   variant={visibleColumns.metadata ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleColumnVisibility('metadata')}
-                  className="h-8 px-2 text-xs"
+                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
                 >
                   <Database className="h-3 w-3" />
                 </Button>
@@ -763,27 +763,27 @@ export default function RubricaAvanzata() {
       )}
 
       {/* Controllo visibilità filtri - Centrato */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center">
         <Button
           variant="ghost"
-          size="lg"
+          size="sm"
           onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-          className="text-text-secondary hover:text-text-primary transition-colors p-3"
+          className="text-text-secondary hover:text-text-primary transition-colors p-2"
           title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
         >
-          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
+          {isHeaderCollapsed ? <SearchCheck className="h-5 w-5" /> : <SearchX className="h-5 w-5" />}
         </Button>
       </div>
 
       {/* Data */}
       {isMobile ? (
         /* Mobile Card Layout */
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Header Mobile */}
           <Card className="border-card shadow-soft">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5" />
+            <CardHeader className="pb-2 pt-3 px-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4" />
                 Contatti ({filteredRecords.length})
               </CardTitle>
             </CardHeader>
@@ -810,7 +810,7 @@ export default function RubricaAvanzata() {
           {/* Mobile Controls */}
                  {viewingRecords.length > 0 && (
                    <Card className="border-card shadow-soft">
-                    <CardContent className="p-3 space-y-3">
+                    <CardContent className="p-2 space-y-2">
                       {/* Mobile Sort Dropdown */}
                       <div className="flex items-center gap-2">
                         <label className="text-xs font-medium text-muted-foreground">Ordina per:</label>
@@ -891,41 +891,41 @@ export default function RubricaAvanzata() {
                          </span>
                        )}
                      </div>
-                     
-                     {/* Actions Bar Mobile */}
-                     {selectedRecords.size > 0 && (
-                       <div className="space-y-2 pt-2 border-t border-border">
-                         <div className="text-center text-sm font-medium text-text-primary">
+                      
+                      {/* Actions Bar Mobile */}
+                      {selectedRecords.size > 0 && (
+                        <div className="space-y-2 pt-1 border-t border-border">
+                          <div className="text-center text-xs font-medium text-text-primary">
                            {selectedRecords.size} contatto/i selezionato/i
                          </div>
                          <div className="flex flex-col gap-2">
-                           <Button
-                             variant="default"
-                             size="sm"
-                             onClick={() => setShowMultipleActivityDialog(true)}
-                             className="w-full h-8"
-                           >
-                             <FileText className="h-4 w-4 mr-2" />
-                             Crea Attività
-                           </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => setShowMultipleActivityDialog(true)}
+                              className="w-full h-7 text-xs"
+                            >
+                              <FileText className="h-3 w-3 mr-1" />
+                              Crea Attività
+                            </Button>
                            <div className="flex gap-2">
-                             <Button
-                               variant="destructive"
-                               size="sm"
-                               onClick={deleteSelectedContacts}
-                               className="flex-1 h-8"
-                             >
-                               <Trash2 className="h-4 w-4 mr-1" />
-                               Elimina
-                             </Button>
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={() => setSelectedRecords(new Set())}
-                               className="flex-1 h-8"
-                             >
-                               Deseleziona
-                             </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={deleteSelectedContacts}
+                                className="flex-1 h-7 text-xs"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Elimina
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedRecords(new Set())}
+                                className="flex-1 h-7 text-xs"
+                              >
+                                Deseleziona
+                              </Button>
                            </div>
                          </div>
                        </div>
@@ -968,42 +968,40 @@ export default function RubricaAvanzata() {
              </>
            )}
 
-          {/* Mobile Pagination */}
-          {totalPages > 1 && (
-            <Card className="border-card shadow-soft">
-              <CardContent className="p-3">
-                <div className="flex flex-col gap-3">
-                  <div className="text-sm text-text-secondary text-center">
-                    Pagina {currentPage + 1} di {totalPages} 
-                    <br />
-                    ({filteredRecords.length} risultati totali)
-                  </div>
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                      disabled={currentPage === 0}
-                      className="h-9"
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Precedente
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                      disabled={currentPage >= totalPages - 1}
-                      className="h-9"
-                    >
-                      Successiva
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+           {/* Mobile Pagination */}
+           {totalPages > 1 && (
+             <Card className="border-card shadow-soft">
+               <CardContent className="p-2">
+                 <div className="flex flex-col gap-2">
+                   <div className="text-xs text-text-secondary text-center">
+                     Pagina {currentPage + 1} di {totalPages} ({filteredRecords.length} risultati)
+                   </div>
+                   <div className="flex justify-center gap-2">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                       disabled={currentPage === 0}
+                       className="h-8 text-xs"
+                     >
+                       <ChevronLeft className="h-4 w-4 mr-1" />
+                       Precedente
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                       disabled={currentPage >= totalPages - 1}
+                       className="h-8 text-xs"
+                     >
+                       Successiva
+                       <ChevronRight className="h-4 w-4 ml-1" />
+                     </Button>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           )}
         </div>
       ) : (
         /* Desktop Table Layout */

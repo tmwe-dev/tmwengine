@@ -917,12 +917,18 @@ export default function RubricaAvanzata() {
                         )}
                       </div>
                       
-                      {/* Actions Bar Mobile */}
-                      {selectedRecords.size > 0 && (
-                        <div className="space-y-2 pt-1 border-t border-border">
-                          {/* Keep only the area styling, no buttons needed */}
-                        </div>
-                     )}
+                      {/* Actions Bar Mobile - Always visible to prevent layout shift */}
+                      <div className="space-y-2 pt-1 border-t border-border">
+                        {selectedRecords.size > 0 ? (
+                          <div className="text-center text-xs font-medium text-text-primary">
+                            Azioni disponibili
+                          </div>
+                        ) : (
+                          <div className="text-center text-xs font-medium text-text-secondary">
+                            Seleziona contatti per azioni
+                          </div>
+                        )}
+                      </div>
                    </CardContent>
                  </Card>
                 )}

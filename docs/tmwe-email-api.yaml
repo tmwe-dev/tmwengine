@@ -67,7 +67,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /app.php?action=get_email:
+  //app.php?action=get_email:
     post:
       tags:
         - Email Detail
@@ -103,7 +103,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /app.php?action=email_account:
+  //app.php?action=email_account:
     post:
       tags:
         - Email Account
@@ -168,47 +168,38 @@ paths:
         - Email Sync
       summary: Sincronización de emails
       description: Sincroniza emails desde el servidor IMAP
-      parameters:
-        - name: handler
-          in: query
-          description: Tipo de sincronización
-          required: true
-          schema:
-            type: string
-            enum: [full_sync, incremental_sync, sync_folder, get_sync_status, cancel_sync]
-        - name: folder_name
-          in: query
-          description: Nombre de carpeta (para sync_folder)
-          required: false
-          schema:
-            type: string
-        - name: folders
-          in: query
-          description: Lista de carpetas a sincronizar
-          required: false
-          schema:
-            type: string
-        - name: date_from
-          in: query
-          description: Fecha desde (formato ISO 8601)
-          required: false
-          schema:
-            type: string
-            format: date-time
-        - name: date_to
-          in: query
-          description: Fecha hasta (formato ISO 8601)
-          required: false
-          schema:
-            type: string
-            format: date-time
-        - name: last_sync_date
-          in: query
-          description: Fecha de última sincronización
-          required: false
-          schema:
-            type: string
-            format: date-time
+      requestBody:
+        description: Email sync request parameters
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - handler
+              properties:
+                handler:
+                  type: string
+                  description: Tipo de sincronización
+                  enum: [full_sync, incremental_sync, sync_folder, get_sync_status, cancel_sync]
+                folder_name:
+                  type: string
+                  description: Nombre de carpeta (para sync_folder)
+                folders:
+                  type: string
+                  description: Lista de carpetas a sincronizar
+                date_from:
+                  type: string
+                  format: date-time
+                  description: Fecha desde (formato ISO 8601)
+                date_to:
+                  type: string
+                  format: date-time
+                  description: Fecha hasta (formato ISO 8601)
+                last_sync_date:
+                  type: string
+                  format: date-time
+                  description: Fecha de última sincronización
       responses:
         '200':
           description: Sincronización iniciada o completada
@@ -221,7 +212,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /app.php?action=email_message:
+  //app.php?action=email_message:
     post:
       tags:
         - Email Messages
@@ -351,7 +342,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
 
-  /app.php?action=email_folder:
+  //app.php?action=email_folder:
     post:
       tags:
         - Email Folders

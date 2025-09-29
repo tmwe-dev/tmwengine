@@ -12,7 +12,7 @@ const supabase = createClient(
 );
 
 interface TMWEEmailSyncRequest {
-  action: 'full_sync' | 'incremental_sync' | 'sync_folder' | 'get_sync_status' | 'cancel_sync';
+  handler: 'full_sync' | 'incremental_sync' | 'sync_folder' | 'get_sync_status' | 'cancel_sync';
   folder_name?: string;
   folders?: string;
   date_from?: string;
@@ -26,8 +26,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
-    console.log('TMWE Email Sync request:', { action, folder_name, folders });
+    const { handler, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
+    console.log('TMWE Email Sync request:', { handler, folder_name, folders });
 
     // Usa l'OAuth token dall'environment o dal database
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
@@ -64,7 +64,7 @@ serve(async (req) => {
       .from('email_sync_logs')
       .insert({
         provider_id: defaultProviderId,
-        tipo_sync: action,
+        tipo_sync: handler,
         stato: 'in_corso'
       })
       .select()
@@ -84,7 +84,7 @@ serve(async (req) => {
       });
 
       const requestBody: any = {
-        action: action
+        handler: handler
       };
       
       if (folder_name) requestBody.folder_name = folder_name;

@@ -7,9 +7,9 @@ const corsHeaders = {
 };
 
 interface TMWEEmailFolderRequest {
-  action: 'get_folders' | 'get_folder_info' | 'get_folder_tree' | 
-          'create_folder' | 'delete_folder' | 'rename_folder' | 
-          'subscribe_folder' | 'unsubscribe_folder' | 'empty_folder';
+  handler: 'get_folders' | 'get_folder_info' | 'get_folder_tree' | 
+           'create_folder' | 'delete_folder' | 'rename_folder' | 
+           'subscribe_folder' | 'unsubscribe_folder' | 'empty_folder';
   folder_name?: string;
   parent_folder?: string;
   old_name?: string;
@@ -27,7 +27,7 @@ serve(async (req) => {
 
   try {
     const requestData: TMWEEmailFolderRequest = await req.json();
-    console.log('TMWE Email Folders request:', { action: requestData.action });
+    console.log('TMWE Email Folders request:', { handler: requestData.handler });
 
     // Usa l'OAuth token dall'environment o dal database
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
@@ -58,40 +58,50 @@ serve(async (req) => {
     }
 
     const baseUrl = 'https://findair.it/erp/tmwe_json';
-    const isWriteOperation = ['create_folder', 'delete_folder', 'rename_folder', 'subscribe_folder', 'unsubscribe_folder', 'empty_folder'].includes(requestData.action);
+    const isWriteOperation = ['create_folder', 'delete_folder', 'rename_folder', 'subscribe_folder', 'unsubscribe_folder', 'empty_folder'].includes(requestData.handler);
     
     let response;
     
     if (isWriteOperation) {
-      // POST operations
-      const params = new URLSearchParams({ action: requestData.action });
-      if (requestData.folder_name) params.append('folder_name', requestData.folder_name);
-      if (requestData.parent_folder) params.append('parent_folder', requestData.parent_folder);
-      if (requestData.old_name) params.append('old_name', requestData.old_name);
-      if (requestData.new_name) params.append('new_name', requestData.new_name);
-      if (requestData.force !== undefined) params.append('force', requestData.force.toString());
-      if (requestData.expunge !== undefined) params.append('expunge', requestData.expunge.toString());
+      // POST operations - API v2.0.0 uses JSON body
+      const requestBody: any = {
+        handler: requestData.handler
+      };
+      
+      if (requestData.folder_name) requestBody.folder_name = requestData.folder_name;
+      if (requestData.parent_folder) requestBody.parent_folder = requestData.parent_folder;
+      if (requestData.old_name) requestBody.old_name = requestData.old_name;
+      if (requestData.new_name) requestBody.new_name = requestData.new_name;
+      if (requestData.force !== undefined) requestBody.force = requestData.force;
+      if (requestData.expunge !== undefined) requestBody.expunge = requestData.expunge;
 
-      response = await fetch(`${baseUrl}/app.php?action=email_folder&${params}`, {
+      response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
     } else {
-      // GET operations
-      const params = new URLSearchParams({ action: requestData.action });
-      if (requestData.folder_name) params.append('folder_name', requestData.folder_name);
-      if (requestData.hierarchy !== undefined) params.append('hierarchy', requestData.hierarchy.toString());
-      if (requestData.include_counts !== undefined) params.append('include_counts', requestData.include_counts.toString());
+      // GET operations - API v2.0.0 uses JSON body
+      const requestBody: any = {
+        handler: requestData.handler
+      };
+      
+      if (requestData.folder_name) requestBody.folder_name = requestData.folder_name;
+      if (requestData.hierarchy !== undefined) requestBody.hierarchy = requestData.hierarchy;
+      if (requestData.include_counts !== undefined) requestBody.include_counts = requestData.include_counts;
 
-      response = await fetch(`${baseUrl}/app.php?action=email_folder&${params}`, {
-        method: 'GET',
+      response = await fetch(`${baseUrl}/app.php?action=email_folder`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${oauthToken}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify(requestBody)
       });
     }
 

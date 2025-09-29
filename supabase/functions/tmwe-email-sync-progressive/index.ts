@@ -69,18 +69,19 @@ serve(async (req) => {
       console.log(`📍 Offset: ${currentOffset}, Importate: ${totalImported}/${target_emails}`);
 
       try {
-        // Chiamata singola batch
-        const response = await fetch('https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-email-sync', {
+        // Chiamata diretta alla funzione tmwe-email-sync-batch
+        const response = await fetch('https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-email-sync-batch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
           },
           body: JSON.stringify({
-            action: 'batch_sync_single',
+            handler: 'batch_sync',
             folder_name: folder_name,
-            offset: currentOffset,
-            limit: batchSize
+            max_emails: batchSize,
+            batch_size: batchSize,
+            offset: currentOffset
           })
         });
 

@@ -74,46 +74,47 @@ export function CompactContactCard({
                     </div>
                   )}
                   
-                  {/* Contatti disponibili */}
+                  {/* Contatti disponibili - icone uniformi */}
                   <div className="flex items-center gap-1 ml-auto">
-                    {contact.email && <Mail className="h-3 w-3 text-blue-500" />}
-                    {(contact.phone || contact.cell) && <Phone className="h-3 w-3 text-green-500" />}
+                    {contact.email && <Mail className="h-4 w-4 text-blue-500" />}
+                    {(contact.phone || contact.cell) && <Phone className="h-4 w-4 text-green-500" />}
                   </div>
                 </div>
               </div>
               
-              {/* Azioni compatte */}
+              {/* Azioni compatte - icone uniformi */}
               <div className="flex items-center gap-1 ml-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onView}
-                  className="h-6 w-6 p-0 text-blue-500 hover:text-blue-600"
+                  className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
                 >
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onDelete}
-                  className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             
             {/* Persona di contatto se diversa dall'azienda */}
             {contact.name && contact.name !== contact.company_name && (
-              <div className="text-xs text-muted-foreground mt-1 truncate">
-                👤 {formatCellValue(contact.name)}
+              <div className="text-xs text-muted-foreground mt-1 truncate flex items-center gap-1">
+                <span className="text-sm">👤</span>
+                <span>{formatCellValue(contact.name)}</span>
               </div>
             )}
             
             {/* Origin badge se presente */}
             {contact.origin && (
               <div className="mt-1">
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 rounded">
                   {formatCellValue(contact.origin)}
                 </Badge>
               </div>

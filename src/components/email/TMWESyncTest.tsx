@@ -87,6 +87,37 @@ export function TMWESyncTest() {
     }
   };
 
+  const handleDownloadEmails = async () => {
+    setSyncLoading(true);
+    setSyncResult(null);
+    
+    try {
+      console.log('Download email tramite TMWE...');
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-email-download', {
+        body: { limit: 100, folder: 'INBOX' }
+      });
+
+      if (error) throw error;
+      
+      setSyncResult(data);
+      
+      if (data.success) {
+        toast.success(`Download completato! Trovate ${data.messages_found} email, inserite ${data.messages_inserted}, aggiornate ${data.messages_updated}`);
+      } else {
+        toast.error(`Errore download: ${data.error}`);
+      }
+      
+    } catch (error) {
+      console.error('Errore download:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      setSyncResult({ success: false, error: errorMessage });
+      toast.error(`Errore: ${errorMessage}`);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     setSendLoading(true);
     setSendResult(null);
@@ -170,20 +201,38 @@ export function TMWESyncTest() {
             </div>
           </div>
           
-          <Button 
-            onClick={handleSync} 
-            disabled={syncLoading}
-            className="w-full"
-          >
-            {syncLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sincronizzazione in corso...
-              </>
-            ) : (
-              'Avvia Sincronizzazione'
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSync} 
+              disabled={syncLoading}
+              className="flex-1"
+            >
+              {syncLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sincronizzazione...
+                </>
+              ) : (
+                'Avvia Sync'
+              )}
+            </Button>
+            
+            <Button 
+              onClick={handleDownloadEmails} 
+              disabled={syncLoading}
+              variant="outline"
+              className="flex-1"
+            >
+              {syncLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Download...
+                </>
+              ) : (
+                'Download 100 Email'
+              )}
+            </Button>
+          </div>
           
           {syncResult && (
             <div className="mt-4 p-4 rounded-lg border">

@@ -769,15 +769,13 @@ export default function RubricaAvanzata() {
       {isMobile ? (
         /* Mobile Card Layout */
         <div className="space-y-2">
-          {/* Header Mobile */}
-          <Card className="border-card shadow-soft">
-            <CardHeader className="pb-2 pt-3 px-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-4 w-4" />
-                Contatti ({filteredRecords.length})
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          {/* Header Mobile - Centrato */}
+          <div className="flex justify-center">
+            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Users className="h-4 w-4" />
+              Contatti ({filteredRecords.length})
+            </div>
+          </div>
 
           {loadingAllRecords ? (
             <Card className="border-card shadow-soft">

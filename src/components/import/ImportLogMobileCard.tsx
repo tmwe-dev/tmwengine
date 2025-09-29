@@ -99,17 +99,6 @@ export function ImportLogMobileCard({
               </div>
             </div>
             
-            <div className="rounded-lg p-3 border border-border">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-full border border-blue-200">
-                  <Users className="h-3 w-3 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{log.contatti_selezionati}</div>
-                  <div className="text-xs text-muted-foreground">Selezionati</div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Errors if any */}

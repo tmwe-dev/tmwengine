@@ -76,11 +76,8 @@ const CRMLayout = ({ children }) => {
           </Button>
           
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">CRM</span>
-            </div>
             <h1 className={cn("font-semibold text-foreground", isMobile ? "text-lg" : "text-xl")}>
-              {isMobile ? "CRM" : "Sistema CRM"}
+              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
             </h1>
           </div>
         </div>

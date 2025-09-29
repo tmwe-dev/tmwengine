@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
+import { MobileRecordDetailLayout } from './MobileRecordDetailLayout';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus } from 'lucide-react';
@@ -17,13 +18,18 @@ interface RecordDetailLayoutProps {
 }
 
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
+  const isMobile = useIsMobile();
+
+  // Use mobile layout for mobile devices
+  if (isMobile) {
+    return <MobileRecordDetailLayout record={record} formatCellValue={formatCellValue} />;
+  }
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // Function to get country code for flag
   const getCountryCode = (country: string) => {

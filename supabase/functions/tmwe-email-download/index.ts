@@ -58,25 +58,23 @@ serve(async (req: Request) => {
     // Use OAuth token if available, otherwise API key
     const apiKey = credentials.oauth_token?.trim() || credentials.api_key?.trim();
 
-    // TMWE API URL - use same endpoint as sync function
-    const tmweUrl = 'https://findair.it/erp/tmwe_json/app.php';
-
-    // Use same API endpoint pattern as tmwe-email-sync (that works!)
-    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
-
+    // TMWE API URL - esatto come tmwe-email-sync
+    const baseUrl = 'https://findair.it/erp/tmwe_json/app.php';
+    
     const requestParams = new URLSearchParams({
+      action: 'get_messages',
       api_key: apiKey,
       folder: folder,
       limit: limit.toString(),
       format: 'json'
     });
 
-    console.log(`Fetching emails from: ${apiUrl} with params:`, requestParams.toString());
+    console.log(`Fetching emails from: ${baseUrl}?${requestParams.toString()}`);
 
     let response;
     try {
       console.log("Tentativo connessione HTTPS a TMWE...");
-      response = await fetch(`${apiUrl}&${requestParams}`, {
+      response = await fetch(`${baseUrl}?${requestParams}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -86,8 +84,8 @@ serve(async (req: Request) => {
 
     } catch (httpsError) {
       console.log("HTTPS fallito, tentativo HTTP...");
-      const httpUrl = apiUrl.replace('https://', 'http://');
-      response = await fetch(`${httpUrl}&${requestParams}`, {
+      const httpUrl = baseUrl.replace('https://', 'http://');
+      response = await fetch(`${httpUrl}?${requestParams}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

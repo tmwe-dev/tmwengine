@@ -857,7 +857,7 @@ export default function RubricaAvanzata() {
            {/* Mobile Controls */}
                  {viewingRecords.length > 0 && (
                    <Card className="border-card shadow-soft">
-                    <CardContent className="p-2 space-y-2">
+                    <CardContent className="p-2 space-y-2 mb-4">
                       {/* Checkbox Seleziona tutto */}
                       <div className="flex items-center justify-between px-4">
                         <div className="flex items-center gap-3">

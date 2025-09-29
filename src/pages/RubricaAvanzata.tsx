@@ -845,40 +845,40 @@ export default function RubricaAvanzata() {
                           </Button>
                         )}
                       </div>
-                     {/* Checkbox Seleziona tutto */}
-                     <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                         <Checkbox
-                           checked={
-                             viewingRecords.length > 0 && 
-                             viewingRecords.every((_, index) => selectedRecords.has(currentPage * recordsPerPage + index))
-                           }
-                           onCheckedChange={(checked) => {
-                             if (checked) {
-                               const newSelected = new Set(selectedRecords);
-                               viewingRecords.forEach((_, index) => {
-                                 newSelected.add(currentPage * recordsPerPage + index);
-                               });
-                               setSelectedRecords(newSelected);
-                             } else {
-                               const newSelected = new Set(selectedRecords);
-                               viewingRecords.forEach((_, index) => {
-                                 newSelected.delete(currentPage * recordsPerPage + index);
-                               });
-                               setSelectedRecords(newSelected);
-                             }
-                           }}
-                         />
-                         <span className="text-sm font-medium">
-                           Seleziona tutti ({viewingRecords.length})
-                         </span>
-                       </div>
-                       {selectedRecords.size > 0 && (
-                         <span className="text-xs text-blue-600 font-medium">
-                           {selectedRecords.size} selezionati
-                         </span>
-                       )}
-                     </div>
+                      {/* Checkbox Seleziona tutto */}
+                      <div className="flex items-center justify-between px-4">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={
+                              viewingRecords.length > 0 && 
+                              viewingRecords.every((_, index) => selectedRecords.has(currentPage * recordsPerPage + index))
+                            }
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                const newSelected = new Set(selectedRecords);
+                                viewingRecords.forEach((_, index) => {
+                                  newSelected.add(currentPage * recordsPerPage + index);
+                                });
+                                setSelectedRecords(newSelected);
+                              } else {
+                                const newSelected = new Set(selectedRecords);
+                                viewingRecords.forEach((_, index) => {
+                                  newSelected.delete(currentPage * recordsPerPage + index);
+                                });
+                                setSelectedRecords(newSelected);
+                              }
+                            }}
+                          />
+                          <span className="text-sm font-medium">
+                            Full Page ({viewingRecords.length})
+                          </span>
+                        </div>
+                        {selectedRecords.size > 0 && (
+                          <span className="text-xs text-blue-600 font-medium">
+                            {selectedRecords.size} selezionati
+                          </span>
+                        )}
+                      </div>
                       
                       {/* Actions Bar Mobile */}
                       {selectedRecords.size > 0 && (

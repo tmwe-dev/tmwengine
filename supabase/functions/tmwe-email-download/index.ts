@@ -44,7 +44,7 @@ serve(async (req: Request) => {
       throw new Error('Provider email non trovato o non attivo');
     }
 
-    // Get the most recent credentials with API key or OAuth token
+    // Get the most recent credentials with API key or OAuth token - IDENTICO A SYNC
     const credentials = providers.email_provider_credenziali
       ?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       ?.find((cred: any) => cred.api_key?.trim() || cred.oauth_token?.trim());
@@ -55,14 +55,16 @@ serve(async (req: Request) => {
 
     console.log("Using TMWE credentials for download");
 
-    // Use OAuth token if available, otherwise API key
-    const apiKey = credentials.oauth_token?.trim() || credentials.api_key?.trim();
+    // ✅ PROBLEMA 1 RISOLTO: Usa oauthToken come sync (non apiKey)
+    const oauthToken = credentials.oauth_token?.trim() || credentials.api_key?.trim();
 
     // TMWE API URL - esatto come tmwe-email-sync che FUNZIONA
     const downloadUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
     const downloadBody = {
-      folder: folder,
-      limit: limit,
+      // ✅ PROBLEMA 3 RISOLTO: Aggiungi fallback INBOX come sync
+      folder: folder || 'INBOX',
+      // ✅ PROBLEMA 2 RISOLTO: Usa limite fisso 50 come sync (non parametrico)
+      limit: 50,
       include_body: true
     };
 
@@ -74,7 +76,7 @@ serve(async (req: Request) => {
       response = await fetch(downloadUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${oauthToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(downloadBody)
@@ -86,7 +88,7 @@ serve(async (req: Request) => {
       response = await fetch(httpUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${oauthToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(downloadBody)

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,19 +109,35 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   const onSubmit = async (data: EmailFormData) => {
     try {
-      // Simulazione invio email
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      console.log('Invio email tramite TMWE...', {
+        to: data.to,
+        subject: data.subject,
+        body_text: data.body
+      });
+
+      const { data: result, error } = await supabase.functions.invoke('tmwe-email-send', {
+        body: {
+          to: data.to,
+          subject: data.subject,
+          body: data.body
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Email inviata",
-        description: "L'email è stata inviata correttamente",
+        description: "L'email è stata inviata correttamente tramite TMWE",
       });
       
       onClose();
     } catch (error) {
+      console.error('Errore invio email:', error);
       toast({
         title: "Errore",
-        description: "Impossibile inviare l'email",
+        description: "Impossibile inviare l'email tramite TMWE",
         variant: "destructive",
       });
     }

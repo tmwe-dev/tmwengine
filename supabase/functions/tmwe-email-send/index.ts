@@ -136,7 +136,7 @@ serve(async (req) => {
     };
 
     console.log('=== CALLING TMWE API ===');
-    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=send_message';
+    const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message&action=send_message';
     console.log('URL completa:', apiUrl);
     console.log('Payload completo:', JSON.stringify(payload, null, 2));
 

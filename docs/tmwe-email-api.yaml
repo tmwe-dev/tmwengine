@@ -10,37 +10,15 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://erp.tmwe.it/erp/tmwe_json
-    description: Production server
-    variables:
-      protocol:
-        default: https
-        enum:
-          - https
-          - http
   - url: https://findair.it/erp/tmwe_json
-    description: Development server (findair.it)
-    variables:
-      protocol:
-        default: https
-        enum:
-          - https
-          - http
-  - url: http://localhost/erp/tmwe_json
-    description: Local development server
-    variables:
-      protocol:
-        default: http
-        enum:
-          - http
-          - https
+    description: TMWE ERP Email API Server
 
 security:
   - ApiKeyAuth: []
   - OAuth2: []
 
 paths:
-  /?app.php=get_email_list:
+  /app.php?action=get_email_list:
     get:
       tags:
         - Email List
@@ -94,7 +72,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /?app.php=get_email:
+  /app.php?action=get_email:
     get:
       tags:
         - Email Detail
@@ -124,7 +102,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /?app.php=email_account:
+  /app.php?action=email_account:
     get:
       tags:
         - Email Account
@@ -153,7 +131,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /?app.php=email_sync:
+  /app.php?action=email_sync:
     post:
       tags:
         - Email Sync
@@ -212,7 +190,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /?app.php=email_message:
+  /app.php?action=email_message:
     get:
       tags:
         - Email Messages
@@ -397,7 +375,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /?app.php=email_folder:
+  /app.php?action=email_folder:
     get:
       tags:
         - Email Folders
@@ -516,10 +494,10 @@ components:
       type: oauth2
       flows:
         authorizationCode:
-          authorizationUrl: "{server}/?app.php=auth"
-          tokenUrl: "{server}/?app.php=token"
-          revokeUrl: "{server}/?app.php=revoke"
-          introspectionUrl: "{server}/?app.php=introspect"
+          authorizationUrl: "{server}?action=auth"
+          tokenUrl: "{server}?action=token"
+          revokeUrl: "{server}?action=revoke"
+          introspectionUrl: "{server}?action=introspect"
           scopes:
             read: Email reading permissions
             write: Email writing permissions

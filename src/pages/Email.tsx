@@ -77,11 +77,13 @@ const Email = () => {
         .select('*')
         .order('data_ricezione', { ascending: false });
 
+      console.log('Query completed. Error:', error, 'Data count:', emailData?.length);
+
       if (error) {
         console.error('Errore recupero email:', error);
         toast({
           title: "Errore",
-          description: "Errore nel recupero delle email",
+          description: `Errore nel recupero delle email: ${error.message}`,
           variant: "destructive"
         });
         return;
@@ -130,7 +132,7 @@ const Email = () => {
 
   useEffect(() => {
     fetchEmails();
-  }, [toast]);
+  }, []);
 
   const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||

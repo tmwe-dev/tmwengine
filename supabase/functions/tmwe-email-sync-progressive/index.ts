@@ -53,7 +53,7 @@ serve(async (req) => {
       .from('email_sync_logs')
       .insert({
         provider_id: providerData.id,
-        tipo_sync: 'incremental_sync',
+        tipo_sync: 'manuale',
         stato: 'in_corso'
       })
       .select()

@@ -6,17 +6,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle, Download, Scissors } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
 import { EmailImportAnimation } from "@/components/email/EmailImportAnimation";
+import { BackgroundRemovalProcessor } from "@/components/email/BackgroundRemovalProcessor";
 import { useEmailImport } from "@/hooks/useEmailImport";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ const Email = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
+  const [showBackgroundRemovalDialog, setShowBackgroundRemovalDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -323,8 +325,16 @@ const Email = () => {
             variant="secondary"
             className="w-full sm:w-auto justify-center"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <Download className="mr-2 h-4 w-4" />
             Importa Email
+          </Button>
+          <Button 
+            onClick={() => setShowBackgroundRemovalDialog(true)}
+            variant="outline"
+            className="w-full sm:w-auto justify-center"
+          >
+            <Scissors className="mr-2 h-4 w-4" />
+            Background Removal
           </Button>
         </div>
       </div>
@@ -625,6 +635,19 @@ const Email = () => {
             <DialogTitle>Nuova Email</DialogTitle>
           </DialogHeader>
           <EmailComposer onClose={() => setShowComposer(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Background Removal Dialog */}
+      <Dialog open={showBackgroundRemovalDialog} onOpenChange={setShowBackgroundRemovalDialog}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Background Removal Processor</DialogTitle>
+            <DialogDescription>
+              Remove backgrounds from images automatically using AI
+            </DialogDescription>
+          </DialogHeader>
+          <BackgroundRemovalProcessor />
         </DialogContent>
       </Dialog>
 

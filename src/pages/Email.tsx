@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
@@ -67,76 +68,64 @@ const Email = () => {
     aiClassified: 0
   });
 
-  // Mock data per demo
+  // Recupera email reali dal database
   useEffect(() => {
-    const mockEmails: Email[] = [
-      {
-        id: '1',
-        from: 'cliente@esempio.com',
-        to: 'info@azienda.com',
-        subject: 'Richiesta informazioni prodotto',
-        body: 'Buongiorno, vorrei ricevere maggiori informazioni sui vostri prodotti per ufficio...',
-        date: '2024-01-15T10:30:00Z',
-        status: 'unread',
-        priority: 'high',
-        category: 'vendite',
-        aiClassification: {
-          intent: 'richiesta_informazioni',
-          priority: 'high',
-          category: 'vendite',
-          suggestedActions: ['Invia catalogo prodotti', 'Programma chiamata'],
-          confidence: 0.92
-        },
-        contactId: '1'
-      },
-      {
-        id: '2',
-        from: 'supporto@fornitore.com',
-        to: 'acquisti@azienda.com',
-        subject: 'Aggiornamento ordine #12345',
-        body: 'Il vostro ordine è stato spedito e arriverà entro domani...',
-        date: '2024-01-15T09:15:00Z',
-        status: 'read',
-        priority: 'medium',
-        category: 'ordini',
-        aiClassification: {
-          intent: 'aggiornamento_stato',
-          priority: 'medium',
-          category: 'ordini',
-          suggestedActions: ['Aggiorna sistema CRM', 'Notifica team'],
-          confidence: 0.89
-        }
-      },
-      {
-        id: '3',
-        from: 'hr@partner.com',
-        to: 'admin@azienda.com',
-        subject: 'Proposta collaborazione',
-        body: 'Siamo interessati a una partnership strategica...',
-        date: '2024-01-14T16:45:00Z',
-        status: 'replied',
-        priority: 'low',
-        category: 'partnership',
-        aiClassification: {
-          intent: 'proposta_business',
-          priority: 'low',
-          category: 'partnership',
-          suggestedActions: ['Inoltra al management', 'Richiedi presentazione'],
-          confidence: 0.85
-        }
-      }
-    ];
+    const fetchEmails = async () => {
+      try {
+        const { data: emailData, error } = await supabase
+          .from('email_messages')
+          .select('*')
+          .order('data_ricezione', { ascending: false });
 
-    setEmails(mockEmails);
-    setStats({
-      total: mockEmails.length,
-      unread: mockEmails.filter(e => e.status === 'unread').length,
-      replied: mockEmails.filter(e => e.status === 'replied').length,
-      archived: mockEmails.filter(e => e.status === 'archived').length,
-      avgResponseTime: '2h 30m',
-      aiClassified: mockEmails.filter(e => e.aiClassification).length
-    });
-  }, []);
+        if (error) {
+          console.error('Errore recupero email:', error);
+          toast({
+            title: "Errore",
+            description: "Errore nel recupero delle email",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Converte i dati del database al formato dell'interfaccia
+        const convertedEmails: Email[] = emailData?.map(email => ({
+          id: email.id,
+          from: email.from_email,
+          to: email.to_email,
+          subject: email.subject || 'Nessun oggetto',
+          body: email.body_text || email.body_html || 'Nessun contenuto',
+          date: email.data_ricezione,
+          status: email.stato === 'nuovo' ? 'unread' : 
+                 email.stato === 'letto' ? 'read' : 
+                 email.stato === 'risposto' ? 'replied' : 'archived',
+          priority: 'medium', // Default, può essere esteso
+          category: email.cartella?.toLowerCase() || 'general'
+        })) || [];
+
+        setEmails(convertedEmails);
+        setStats({
+          total: convertedEmails.length,
+          unread: convertedEmails.filter(e => e.status === 'unread').length,
+          replied: convertedEmails.filter(e => e.status === 'replied').length,
+          archived: convertedEmails.filter(e => e.status === 'archived').length,
+          avgResponseTime: '2h 30m',
+          aiClassified: 0
+        });
+
+        console.log(`Caricate ${convertedEmails.length} email dal database`);
+        
+      } catch (error) {
+        console.error('Errore imprevisto nel recupero email:', error);
+        toast({
+          title: "Errore",
+          description: "Errore imprevisto nel recupero delle email",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchEmails();
+  }, [toast]);
 
   const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||

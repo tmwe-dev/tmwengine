@@ -90,7 +90,7 @@ export default function Attivita() {
     priorita: '',
     scadenza: ''
   });
-  const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
+  const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);

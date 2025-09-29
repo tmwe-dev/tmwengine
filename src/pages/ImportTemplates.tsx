@@ -2766,61 +2766,64 @@ export default function ImportTemplates() {
                        
                        {/* Mobile Action Buttons as Icons */}
                        {selectedRecords.size > 0 && (
-                         <div className="flex items-center justify-center gap-4">
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={() => setShowMultipleActivityDialog(true)}
-                                   className="p-2"
-                                 >
-                                   <FileText className="h-4 w-4 text-blue-500" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Crea attività multiple</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
+                          <div className="flex items-center justify-between">
+                            {/* Icona multipla all'estrema sinistra */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setShowMultipleActivityDialog(true)}
+                                    className="p-2"
+                                  >
+                                    <FileText className="h-4 w-4 text-blue-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Crea attività multiple</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
 
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={importSelectedRecords}
-                                   className="p-2"
-                                 >
-                                   <Database className="h-4 w-4 text-green-500" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Importa in rubrica</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
+                            {/* Bottone centrale */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={importSelectedRecords}
+                                    className="p-2"
+                                  >
+                                    <Database className="h-4 w-4 text-green-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Importa in rubrica</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
 
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={deleteSelectedRecords}
-                                   className="p-2"
-                                 >
-                                   <Trash2 className="h-4 w-4 text-red-500" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Elimina selezionati</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         </div>
+                            {/* Cestino all'estrema destra */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={deleteSelectedRecords}
+                                    className="p-2"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Elimina selezionati</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                        )}
                        
                        {/* Mobile Pagination */}

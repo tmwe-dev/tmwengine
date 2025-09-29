@@ -46,10 +46,16 @@ serve(async (req) => {
         .eq('attivo', true)
         .maybeSingle();
       
-      if (provider?.email_provider_credenziali?.[0]) {
-        // Cerca prima in oauth_token poi in api_key come fallback
-        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
-                     provider.email_provider_credenziali[0].api_key;
+      if (provider?.email_provider_credenziali) {
+        // Trova credenziali con api_key valido (non vuoto)
+        const validCredentials = provider.email_provider_credenziali.find(
+          (cred: any) => cred.api_key && cred.api_key.trim() !== ''
+        );
+        
+        if (validCredentials) {
+          // Cerca prima in oauth_token poi in api_key come fallback
+          oauthToken = validCredentials.oauth_token || validCredentials.api_key;
+        }
       }
     }
     

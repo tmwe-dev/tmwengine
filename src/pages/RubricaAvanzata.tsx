@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -605,6 +605,13 @@ export default function RubricaAvanzata() {
       <Card className="border-card shadow-soft">
         <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
           <div className="flex items-center gap-3">
+            {/* Contatti counter - Mobile */}
+            {isMobile && (
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Users className="h-4 w-4" />
+                Contatti ({filteredRecords.length})
+              </div>
+            )}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
               <Input
@@ -769,13 +776,65 @@ export default function RubricaAvanzata() {
       {isMobile ? (
         /* Mobile Card Layout */
         <div className="space-y-2">
-          {/* Header Mobile - Centrato */}
-          <div className="flex justify-center">
-            <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Users className="h-4 w-4" />
-              ({filteredRecords.length})
+          {/* Sort Dropdown - Center */}
+          {viewingRecords.length > 0 && (
+            <div className="flex justify-center">
+              <Card className="border-card shadow-soft w-fit">
+                <CardContent className="p-2">
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                    <Select
+                      value={sortConfig.primary?.column || ""}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setSortConfig({
+                            primary: { column: value, direction: 'asc' },
+                            secondary: null
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-auto min-w-[120px]">
+                        <SelectValue placeholder="Ordina per" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="azienda">Azienda</SelectItem>
+                        <SelectItem value="nome">Nome</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="telefono">Telefono</SelectItem>
+                        <SelectItem value="citta">Città</SelectItem>
+                        <SelectItem value="paese">Paese</SelectItem>
+                        <SelectItem value="created_at">Data creazione</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {sortConfig.primary && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          if (sortConfig.primary) {
+                            setSortConfig({
+                              primary: {
+                                ...sortConfig.primary,
+                                direction: sortConfig.primary.direction === 'asc' ? 'desc' : 'asc'
+                              },
+                              secondary: sortConfig.secondary
+                            });
+                          }
+                        }}
+                      >
+                        {sortConfig.primary.direction === 'asc' ? 
+                          <ArrowUp className="h-3 w-3" /> : 
+                          <ArrowDown className="h-3 w-3" />
+                        }
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
+          )}
 
           {loadingAllRecords ? (
             <Card className="border-card shadow-soft">
@@ -795,56 +854,10 @@ export default function RubricaAvanzata() {
             </Card>
            ) : (
              <>
-          {/* Mobile Controls */}
+           {/* Mobile Controls */}
                  {viewingRecords.length > 0 && (
                    <Card className="border-card shadow-soft">
                     <CardContent className="p-2 space-y-2">
-                      {/* Mobile Sort Dropdown */}
-                      <div className="flex items-center gap-2">
-                        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                        <Select
-                          value={sortConfig.primary?.column || ""}
-                          onValueChange={(value) => {
-                            if (value) {
-                              setSortConfig({
-                                primary: { column: value, direction: 'asc' },
-                                secondary: null
-                              });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-8 text-xs w-auto min-w-[120px]">
-                            <SelectValue placeholder="Seleziona" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="azienda">Azienda</SelectItem>
-                            <SelectItem value="nome">Nome</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="telefono">Telefono</SelectItem>
-                            <SelectItem value="citta">Città</SelectItem>
-                            <SelectItem value="paese">Paese</SelectItem>
-                            <SelectItem value="created_at">Data creazione</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {sortConfig.primary && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSortConfig(prev => ({
-                                ...prev,
-                                primary: prev.primary ? {
-                                  ...prev.primary,
-                                  direction: prev.primary.direction === 'asc' ? 'desc' : 'asc'
-                                } : null
-                              }));
-                            }}
-                            className="h-8 px-2"
-                          >
-                            {sortConfig.primary.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          </Button>
-                        )}
-                      </div>
                       {/* Checkbox Seleziona tutto */}
                       <div className="flex items-center justify-between px-4">
                         <div className="flex items-center gap-3">

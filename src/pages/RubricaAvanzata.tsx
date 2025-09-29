@@ -710,7 +710,6 @@ export default function RubricaAvanzata() {
 
             {/* Column Visibility Controls */}
             <div className={cn(isMobile ? "py-1" : "lg:col-span-2")}>
-              <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Colonne</label>
               <div className={cn("flex gap-1", isMobile && "justify-center")}>
                 <Button
                   variant={visibleColumns.company ? "default" : "outline"}

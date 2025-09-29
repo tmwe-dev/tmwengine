@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ const Email = () => {
   });
 
   // Recupera email reali dal database
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     try {
       console.log('Fetching emails from database...');
       const { data: emailData, error } = await supabase
@@ -119,6 +119,10 @@ const Email = () => {
       });
 
       console.log(`Caricate ${convertedEmails.length} email dal database`);
+      toast({
+        title: "Email ricaricate",
+        description: `Caricate ${convertedEmails.length} email dal database`,
+      });
       
     } catch (error) {
       console.error('Errore imprevisto nel recupero email:', error);
@@ -128,11 +132,11 @@ const Email = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchEmails();
-  }, []);
+  }, [fetchEmails]);
 
   const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||

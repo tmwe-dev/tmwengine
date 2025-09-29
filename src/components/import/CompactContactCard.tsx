@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Trash2, Eye } from 'lucide-react';
+import { Phone, Mail, MapPin, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -76,16 +76,8 @@ export function CompactContactCard({
                 </div>
               </div>
               
-              {/* Azioni compatte - icone uniformi */}
+              {/* Azioni compatte */}
               <div className="flex items-center gap-1 ml-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onView}
-                  className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

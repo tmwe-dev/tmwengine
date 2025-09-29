@@ -163,15 +163,13 @@ serve(async (req) => {
           })
           .eq('id', progressRecord?.id);
 
-        // Chiama API per lista messaggi con batch size completo
-        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
+        // Chiama API corretta per lista messaggi con paginazione
+        const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
         const listBody = {
-          handler: 'get_messages',
           folder: folder_name,
-          limit: batch_size,  // Usa il batch_size completo
+          criteria: 'ALL',
           offset: currentOffset,
-          include_attachments: false,
-          format: 'text'
+          limit: Math.min(batch_size, 50)  // L'API ha limite 10 di default, testiamo con 50
         };
 
         console.log(`🌐 Chiamata API batch ${batchNumber}:`, listBody);
@@ -196,21 +194,21 @@ serve(async (req) => {
           const listText = await listResponse.text();
           const listResult = JSON.parse(listText);
           
-          // Debug: mostra la risposta completa
+          // Debug: mostra la risposta completa dell'endpoint corretto
           console.log(`📊 Batch ${batchNumber} API Response:`, { 
             success: listResult.success,
-            total: listResult.total,
-            count: listResult.count,
-            messages_length: listResult.messages?.length 
+            results_length: listResult.results?.length,
+            endpoint: 'get_email_list'
           });
           
-          if (!listResult.messages || !Array.isArray(listResult.messages)) {
-            console.log(`⚠️ Batch ${batchNumber}: Nessun messaggio ricevuto o formato errato`);
+          // L'endpoint get_email_list usa "results" invece di "messages"
+          if (!listResult.results || !Array.isArray(listResult.results)) {
+            console.log(`⚠️ Batch ${batchNumber}: Nessun risultato ricevuto o formato errato`);
             break;
           }
           
-          // Se non ci sono messaggi, incrementa contatore vuoti
-          if (listResult.messages.length === 0) {
+          // Se non ci sono risultati, incrementa contatore vuoti
+          if (listResult.results.length === 0) {
             consecutiveEmptyBatches++;
             console.log(`🔄 Batch ${batchNumber}: Vuoto (${consecutiveEmptyBatches}/${maxEmptyBatches})`);
             // Se abbiamo 2 batch vuoti consecutivi, probabilmente abbiamo finito
@@ -219,19 +217,19 @@ serve(async (req) => {
               break;
             }
             // Avanza offset per batch vuoti
-            currentOffset += batch_size;
+            currentOffset += Math.min(batch_size, 50);
             batchNumber++;
             continue;
           } else {
-            // Reset contatore se troviamo messaggi
+            // Reset contatore se troviamo risultati
             consecutiveEmptyBatches = 0;
           }
 
-          console.log(`📧 Batch ${batchNumber}: Ricevuti ${listResult.messages.length} messaggi`);
+          console.log(`📧 Batch ${batchNumber}: Ricevuti ${listResult.results.length} risultati`);
 
-          // STEP 3: Salva ogni messaggio del batch
+          // STEP 3: Salva ogni messaggio del batch (usa results invece di messages)
           let batchSaved = 0;
-          for (const email of listResult.messages) {
+          for (const email of listResult.results) {
             try {
               const messageId = `tmwe_${email.uid}`;
               
@@ -284,11 +282,11 @@ serve(async (req) => {
             }
           }
 
-          totalProcessed += listResult.messages.length;
+          totalProcessed += listResult.results.length;
           console.log(`✅ Batch ${batchNumber} completato: ${batchSaved} nuove, ${totalProcessed} totali processate`);
 
           // Aggiorna offset per prossimo batch
-          currentOffset += listResult.messages.length;  // Usa il numero effettivo di messaggi ricevuti
+          currentOffset += listResult.results.length;  // Usa il numero effettivo di risultati ricevuti
           batchNumber++;
 
           // Log di progresso continuo

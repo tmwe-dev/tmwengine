@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,6 +92,8 @@ export default function Attivita() {
   });
   const [statusFilter, setStatusFilter] = useState<string>('all'); // Nuovo filtro per i summary cards
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
+  const [currentPage, setCurrentPage] = useState(0);
+  const [recordsPerPage, setRecordsPerPage] = useState(25);
   const scrollPositionRef = useRef<number>(0);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -272,6 +274,13 @@ export default function Attivita() {
     const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     return sortDirection === 'asc' ? comparison : -comparison;
   });
+
+  // Paginazione
+  const totalPages = Math.ceil(filteredActivities.length / recordsPerPage);
+  const paginatedActivities = filteredActivities.slice(
+    currentPage * recordsPerPage,
+    (currentPage + 1) * recordsPerPage
+  );
 
   const checkScadenzaFilter = (scadenza: string | undefined, filter: string) => {
     if (!scadenza) return filter === 'senza_scadenza';
@@ -1044,7 +1053,7 @@ export default function Attivita() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredActivities.map((activity) => {
+                paginatedActivities.map((activity) => {
                   const ActivityIcon = getActivityIcon(activity.tipo);
                   const activityStatus = getActivityStatus(activity);
                   return (
@@ -1195,6 +1204,118 @@ export default function Attivita() {
               )}
             </TableBody>
           </Table>
+          
+          {/* Paginazione */}
+          {totalPages > 1 && (
+            <div className={cn(
+              "mt-4 px-4 pb-4",
+              isMobile ? "space-y-3" : "flex items-center justify-between"
+            )}>
+              {isMobile ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-text-secondary">Per pagina:</span>
+                    <Select 
+                      value={recordsPerPage.toString()} 
+                      onValueChange={(value) => {
+                        setRecordsPerPage(Number(value));
+                        setCurrentPage(0);
+                      }}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-center text-sm text-text-secondary">
+                    {filteredActivities.length} risultati totali
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                        disabled={currentPage === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm px-3 py-1 bg-muted rounded">
+                        {currentPage + 1} di {totalPages}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                        disabled={currentPage >= totalPages - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-text-secondary">Righe per pagina:</span>
+                    <Select 
+                      value={recordsPerPage.toString()} 
+                      onValueChange={(value) => {
+                        setRecordsPerPage(Number(value));
+                        setCurrentPage(0);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-sm text-text-secondary">
+                    Pagina {currentPage + 1} di {totalPages} 
+                    ({filteredActivities.length} risultati totali)
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                      disabled={currentPage === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Precedente
+                    </Button>
+                    <span className="text-sm px-3 py-1 bg-muted rounded">
+                      {currentPage + 1} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                      disabled={currentPage >= totalPages - 1}
+                    >
+                      Successiva
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
       )}

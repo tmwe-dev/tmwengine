@@ -592,9 +592,11 @@ export type Database = {
       }
       email_sync_logs: {
         Row: {
+          completed_batches: number | null
           created_at: string
           errori: Json | null
           id: string
+          last_processed_offset: number | null
           messaggi_aggiornati: number | null
           messaggi_nuovi: number | null
           messaggi_sincronizzati: number | null
@@ -603,11 +605,14 @@ export type Database = {
           sync_end: string | null
           sync_start: string
           tipo_sync: string
+          total_batches: number | null
         }
         Insert: {
+          completed_batches?: number | null
           created_at?: string
           errori?: Json | null
           id?: string
+          last_processed_offset?: number | null
           messaggi_aggiornati?: number | null
           messaggi_nuovi?: number | null
           messaggi_sincronizzati?: number | null
@@ -616,11 +621,14 @@ export type Database = {
           sync_end?: string | null
           sync_start?: string
           tipo_sync: string
+          total_batches?: number | null
         }
         Update: {
+          completed_batches?: number | null
           created_at?: string
           errori?: Json | null
           id?: string
+          last_processed_offset?: number | null
           messaggi_aggiornati?: number | null
           messaggi_nuovi?: number | null
           messaggi_sincronizzati?: number | null
@@ -629,6 +637,7 @@ export type Database = {
           sync_end?: string | null
           sync_start?: string
           tipo_sync?: string
+          total_batches?: number | null
         }
         Relationships: [
           {
@@ -636,6 +645,62 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sync_progress: {
+        Row: {
+          batch_size: number
+          completed_at: string | null
+          current_batch: number
+          errors: Json | null
+          folder_name: string
+          id: string
+          last_offset: number
+          processed_messages: number
+          started_at: string
+          status: string
+          sync_log_id: string | null
+          total_messages: number
+          updated_at: string
+        }
+        Insert: {
+          batch_size?: number
+          completed_at?: string | null
+          current_batch?: number
+          errors?: Json | null
+          folder_name: string
+          id?: string
+          last_offset?: number
+          processed_messages?: number
+          started_at?: string
+          status?: string
+          sync_log_id?: string | null
+          total_messages?: number
+          updated_at?: string
+        }
+        Update: {
+          batch_size?: number
+          completed_at?: string | null
+          current_batch?: number
+          errors?: Json | null
+          folder_name?: string
+          id?: string
+          last_offset?: number
+          processed_messages?: number
+          started_at?: string
+          status?: string
+          sync_log_id?: string | null
+          total_messages?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_progress_sync_log_id_fkey"
+            columns: ["sync_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_sync_logs"
             referencedColumns: ["id"]
           },
         ]

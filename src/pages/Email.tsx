@@ -19,6 +19,7 @@ import { AIClassificationPanel } from "@/components/email/AIClassificationPanel"
 import { EmailImportAnimation } from "@/components/email/EmailImportAnimation";
 import { BackgroundRemovalProcessor } from "@/components/email/BackgroundRemovalProcessor";
 import { EmailFolderDashboard } from "@/components/email/EmailFolderDashboard";
+import { EmailSyncMonitor } from "@/components/email/EmailSyncMonitor";
 import { useEmailImport } from "@/hooks/useEmailImport";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -289,355 +290,338 @@ const Email = () => {
         </div>
       </div>
       
-      {/* Header */}
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestione Email</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Gestisci le email con classificazione AI automatica ({emails.length} email dal DB)
-          </p>
-        </div>
-        
-        {/* Mobile Actions - Stack vertically on mobile */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-          <Button 
-            onClick={() => setShowAIPanel(true)} 
-            variant="outline" 
-            className="w-full sm:w-auto justify-center"
-          >
-            <Brain className="mr-2 h-4 w-4" />
-            AI Panel
-          </Button>
-          <Button 
-            onClick={() => setShowFilters(!showFilters)} 
-            variant="outline"
-            className="w-full sm:w-auto justify-center"
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            Filtri
-          </Button>
-          <Button 
-            onClick={fetchEmails} 
-            variant="outline"
-            className="w-full sm:w-auto justify-center"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Ricarica
-          </Button>
-          <Button 
-            onClick={() => setShowComposer(true)}
-            className="w-full sm:w-auto justify-center"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nuova Email
-          </Button>
-          <Button 
-            onClick={() => setShowImporter(true)}
-            variant="secondary"
-            className="w-full sm:w-auto justify-center"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Importa Email
-          </Button>
-          <Button 
-            onClick={() => setShowBackgroundRemovalDialog(true)}
-            variant="outline"
-            className="w-full sm:w-auto justify-center"
-          >
-            <Scissors className="mr-2 h-4 w-4" />
-            Background Removal
-          </Button>
-        </div>
-      </div>
+      {/* Tabs per diverse visualizzazioni */}
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="dashboard">Dashboard Cartelle</TabsTrigger>
+          <TabsTrigger value="monitor">Monitor Sync</TabsTrigger>
+          <TabsTrigger value="list">Lista Email</TabsTrigger>
+          <TabsTrigger value="tools">Strumenti</TabsTrigger>
+        </TabsList>
 
-      {/* Stats Cards - Mobile Optimized */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        <Card className="min-h-[100px]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Totali</CardTitle>
-            <Mail className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Email totali</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="dashboard" className="space-y-4">
+          <EmailFolderDashboard />
+        </TabsContent>
 
-        <Card className="min-h-[100px]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Non Lette</CardTitle>
-            <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold">{stats.unread}</div>
-            <p className="text-xs text-muted-foreground">Da processare</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="monitor" className="space-y-4">
+          <EmailSyncMonitor onSyncComplete={fetchEmails} />
+        </TabsContent>
 
-        <Card className="min-h-[100px]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Tempo Risposta</CardTitle>
-            <Clock className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold">{stats.avgResponseTime}</div>
-            <p className="text-xs text-muted-foreground">Tempo medio</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-h-[100px]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">AI Classificate</CardTitle>
-            <Brain className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold">{stats.aiClassified}</div>
-            <p className="text-xs text-muted-foreground">Automaticamente</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      {showFilters && <EmailFilters />}
-
-      {/* Main Content - Mobile Optimized */}
-      <div className="space-y-4 lg:space-y-0 lg:grid lg:gap-6 lg:grid-cols-3">
-        {/* Email List */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <CardTitle className="text-base md:text-lg">Email</CardTitle>
-                <Button variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* Search and Filters - Mobile Optimized */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutti</SelectItem>
-                    <SelectItem value="unread">Non lette</SelectItem>
-                    <SelectItem value="read">Lette</SelectItem>
-                    <SelectItem value="replied">Risposte</SelectItem>
-                    <SelectItem value="archived">Archiviate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="p-0">
-              <ScrollArea className="h-96 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {filteredEmails.map((email) => (
-                  <div
-                    key={email.id}
-                    className={`p-2 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
-                      selectedEmail?.id === email.id ? 'bg-muted' : ''
-                    }`}
-                    onClick={() => setSelectedEmail(email)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 mb-1">
-                          {getStatusIcon(email.status)}
-                          <span className={`font-medium truncate text-xs md:text-sm flex-1 ${email.status === 'unread' ? 'font-bold' : ''}`}>
-                            {email.from}
-                          </span>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Badge variant={getPriorityColor(email.priority)} className="text-xs px-1 py-0 h-4 min-w-0">
-                              {email.priority.charAt(0).toUpperCase()}
-                            </Badge>
-                            {email.aiClassification && (
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 min-w-0">
-                                <Brain className="w-2 h-2" />
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <h4 className={`text-xs md:text-sm truncate mb-1 ${email.status === 'unread' ? 'font-semibold' : ''}`}>
-                          {email.subject}
-                        </h4>
-                        
-                        <p className="text-xs text-muted-foreground truncate mb-2">
-                          {email.body}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(email.date).toLocaleDateString('it-IT')}
-                          </span>
-                          
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEmailAction(email.id, email.status === 'read' ? 'mark-unread' : 'mark-read');
-                              }}
-                            >
-                              {email.status === 'read' ? '●' : '○'}
-                            </Button>
-                            
-                            {!email.aiClassification && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAIClassification(email.id);
-                                }}
-                              >
-                                <Brain className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Email Detail - Mobile Optimized */}
-        <div className="lg:mt-0">
-          {selectedEmail ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <CardTitle className="text-base md:text-lg">Dettagli Email</CardTitle>
-                  <div className="flex space-x-1">
-                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                      <Reply className="h-4 w-4 mr-1 sm:mr-0" />
-                      <span className="sm:hidden">Rispondi</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                      <Forward className="h-4 w-4 mr-1 sm:mr-0" />
-                      <span className="sm:hidden">Inoltra</span>
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                          <Trash2 className="h-4 w-4 mr-1 sm:mr-0" />
-                          <span className="sm:hidden">Elimina</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Eliminare email?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Questa azione non può essere annullata.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annulla</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => {}}>
-                            Elimina
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
+        <TabsContent value="list" className="space-y-4">
+          {/* Stats Cards - Mobile Optimized */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            <Card className="min-h-[100px]">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Totali</CardTitle>
+                <Mail className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
               </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center space-x-2 mb-2 flex-wrap">
-                    <Badge variant={getPriorityColor(selectedEmail.priority)}>
-                      {selectedEmail.priority}
-                    </Badge>
-                    <Badge variant="outline">
-                      {selectedEmail.category}
-                    </Badge>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Email totali</p>
+              </CardContent>
+            </Card>
+
+            <Card className="min-h-[100px]">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Non Lette</CardTitle>
+                <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{stats.unread}</div>
+                <p className="text-xs text-muted-foreground">Da processare</p>
+              </CardContent>
+            </Card>
+
+            <Card className="min-h-[100px]">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">Tempo Risposta</CardTitle>
+                <Clock className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{stats.avgResponseTime}</div>
+                <p className="text-xs text-muted-foreground">Tempo medio</p>
+              </CardContent>
+            </Card>
+
+            <Card className="min-h-[100px]">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium">AI Classificate</CardTitle>
+                <Brain className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg md:text-2xl font-bold">{stats.aiClassified}</div>
+                <p className="text-xs text-muted-foreground">Automaticamente</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          {showFilters && <EmailFilters />}
+
+          {/* Main Content - Mobile Optimized */}
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:gap-6 lg:grid-cols-3">
+            {/* Email List */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <CardTitle className="text-base md:text-lg">Email</CardTitle>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <h3 className="font-semibold text-sm md:text-base">{selectedEmail.subject}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground break-all">
-                    Da: {selectedEmail.from}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground break-all">
-                    A: {selectedEmail.to}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    {new Date(selectedEmail.date).toLocaleString('it-IT')}
-                  </p>
-                </div>
+                  {/* Search and Filters - Mobile Optimized */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Cerca email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tutti</SelectItem>
+                        <SelectItem value="unread">Non lette</SelectItem>
+                        <SelectItem value="read">Lette</SelectItem>
+                        <SelectItem value="replied">Risposte</SelectItem>
+                        <SelectItem value="archived">Archiviate</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
                 
-                <Separator />
-                
-                <div>
-                  <p className="text-xs md:text-sm whitespace-pre-wrap break-words">{selectedEmail.body}</p>
-                </div>
-
-                {selectedEmail.aiClassification && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-semibold text-sm mb-2 flex items-center">
-                        <Brain className="w-4 h-4 mr-2" />
-                        Classificazione AI
-                      </h4>
-                      
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Intento:</span> {selectedEmail.aiClassification.intent}
-                        </div>
-                        <div>
-                          <span className="font-medium">Categoria:</span> {selectedEmail.aiClassification.category}
-                        </div>
-                        <div>
-                          <span className="font-medium">Confidenza:</span> {(selectedEmail.aiClassification.confidence * 100).toFixed(1)}%
-                        </div>
-                        
-                        <div>
-                          <span className="font-medium">Azioni suggerite:</span>
-                          <ul className="list-disc list-inside mt-1 text-xs">
-                            {selectedEmail.aiClassification.suggestedActions.map((action, index) => (
-                              <li key={index}>{action}</li>
-                            ))}
-                          </ul>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-96 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {filteredEmails.map((email) => (
+                      <div
+                        key={email.id}
+                        className={`p-2 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
+                          selectedEmail?.id === email.id ? 'bg-muted' : ''
+                        }`}
+                        onClick={() => setSelectedEmail(email)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-1">
+                              {getStatusIcon(email.status)}
+                              <span className={`font-medium truncate text-xs md:text-sm flex-1 ${email.status === 'unread' ? 'font-bold' : ''}`}>
+                                {email.from}
+                              </span>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Badge variant={getPriorityColor(email.priority)} className="text-xs px-1 py-0 h-4 min-w-0">
+                                  {email.priority.charAt(0).toUpperCase()}
+                                </Badge>
+                                {email.aiClassification && (
+                                  <Badge variant="outline" className="text-xs px-1 py-0 h-4 min-w-0">
+                                    <Brain className="w-2 h-2" />
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-xs md:text-sm font-medium mb-1 truncate">
+                              {email.subject}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {email.body.substring(0, 60)}...
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex-shrink-0">
+                            {new Date(email.date).toLocaleDateString('it-IT')}
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Email Detail Panel */}
+            {selectedEmail ? (
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base md:text-lg">Dettagli Email</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">DA</div>
+                      <div className="text-xs md:text-sm">{selectedEmail.from}</div>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">A</div>
+                      <div className="text-xs md:text-sm">{selectedEmail.to}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">OGGETTO</div>
+                      <div className="text-xs md:text-sm font-medium">{selectedEmail.subject}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">DATA</div>
+                      <div className="text-xs md:text-sm">
+                        {new Date(selectedEmail.date).toLocaleString('it-IT')}
+                      </div>
+                    </div>
+                    <Separator />
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">CONTENUTO</div>
+                      <ScrollArea className="h-32 text-xs md:text-sm">
+                        {selectedEmail.body}
+                      </ScrollArea>
+                    </div>
+                    
+                    {/* AI Classification Display */}
+                    {selectedEmail.aiClassification && (
+                      <>
+                        <Separator />
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground mb-2">
+                            CLASSIFICAZIONE AI
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                              <span>Intento:</span>
+                              <Badge variant="outline" className="text-xs">
+                                {selectedEmail.aiClassification.intent}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Priorità:</span>
+                              <Badge variant={getPriorityColor(selectedEmail.aiClassification.priority)} className="text-xs">
+                                {selectedEmail.aiClassification.priority}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span>Confidenza:</span>
+                              <span>{Math.round(selectedEmail.aiClassification.confidence * 100)}%</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium">Azioni suggerite:</div>
+                              {selectedEmail.aiClassification.suggestedActions.map((action, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs mr-1 mb-1">
+                                  {action}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    <Separator />
+                    <div className="space-y-2">
+                      <Button 
+                        size="sm" 
+                        className="w-full text-xs" 
+                        onClick={() => handleEmailAction(selectedEmail.id, 'reply')}
+                      >
+                        <Reply className="h-3 w-3 mr-1" />
+                        Rispondi
+                      </Button>
+                      <div className="grid grid-cols-2 gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => handleEmailAction(selectedEmail.id, 'mark-read')}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Letta
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-xs"
+                          onClick={() => handleEmailAction(selectedEmail.id, 'archive')}
+                        >
+                          <Archive className="h-3 w-3 mr-1" />
+                          Archivia
+                        </Button>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full text-xs"
+                        onClick={() => handleAIClassification(selectedEmail.id)}
+                        disabled={!!selectedEmail.aiClassification}
+                      >
+                        <Brain className="h-3 w-3 mr-1" />
+                        {selectedEmail.aiClassification ? 'Già classificata' : 'Classifica con AI'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardContent className="flex items-center justify-center h-96">
+                    <div className="text-center text-muted-foreground">
+                      <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-muted-foreground">
+                        Clicca su un'email per visualizzarne i dettagli
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+          </div>
+        </TabsContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardContent className="flex items-center justify-center h-96">
-                <div className="text-center">
-                  <Mail className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">Seleziona un'email</h3>
-                  <p className="text-muted-foreground">
-                    Clicca su un'email per visualizzarne i dettagli
-                  </p>
-                </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Importazione Email
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Sincronizza e importa email dal server TMWE con animazione Windows 95
+                </p>
+                <Button 
+                  onClick={() => setShowImporter(true)}
+                  className="w-full"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Avvia Importazione
+                </Button>
               </CardContent>
             </Card>
-          )}
-        </div>
-      </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Scissors className="h-5 w-5" />
+                  Rimozione Sfondi
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Rimuovi automaticamente gli sfondi dalle immagini usando AI
+                </p>
+                <Button 
+                  onClick={() => setShowBackgroundRemovalDialog(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Scissors className="mr-2 h-4 w-4" />
+                  Apri Processore
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <Dialog open={showComposer} onOpenChange={setShowComposer}>

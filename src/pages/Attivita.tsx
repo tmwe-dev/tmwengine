@@ -432,39 +432,47 @@ export default function Attivita() {
     if (!selectedActivity) return;
 
     try {
-      // Aggiorna sempre l'attività
+      // Separa i campi dell'attività da quelli della rubrica
+      const activityUpdates: any = { ...updates };
+      const rubricaUpdates: any = {};
+      
+      // Rimuovi i campi che non appartengono alla tabella attivita
+      if (activityUpdates.telefono !== undefined) {
+        rubricaUpdates.telefono = activityUpdates.telefono;
+        delete activityUpdates.telefono;
+      }
+      if (activityUpdates.cellulare !== undefined) {
+        rubricaUpdates.cellulare = activityUpdates.cellulare;
+        delete activityUpdates.cellulare;
+      }
+
+      // Aggiorna sempre l'attività (solo con i campi validi)
       const { error } = await supabase
         .from('attivita')
-        .update(updates)
+        .update(activityUpdates)
         .eq('id', selectedActivity.id);
 
       if (error) throw error;
 
       // Se richiesto, aggiorna anche l'azienda nella rubrica
-      if (updateCompany && selectedActivity.rubrica_id) {
-        const updateData: any = {};
-        if (updates.telefono !== undefined) updateData.telefono = updates.telefono;
-        if (updates.cellulare !== undefined) updateData.cellulare = updates.cellulare;
-        
-        if (Object.keys(updateData).length > 0) {
-          const { error: rubricaError } = await supabase
-            .from('rubrica')
-            .update(updateData)
-            .eq('id', selectedActivity.rubrica_id);
+      if (updateCompany && selectedActivity.rubrica_id && Object.keys(rubricaUpdates).length > 0) {
+        const { error: rubricaError } = await supabase
+          .from('rubrica')
+          .update(rubricaUpdates)
+          .eq('id', selectedActivity.rubrica_id);
 
-          if (rubricaError) {
-            console.error('Errore aggiornamento rubrica:', rubricaError);
-            toast({
-              title: "Attività aggiornata",
-              description: "L'attività è stata aggiornata ma non è stato possibile aggiornare l'azienda nella rubrica.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Aggiornamento completato",
-              description: "Attività e azienda aggiornate con successo.",
-            });
-          }
+        if (rubricaError) {
+          console.error('Errore aggiornamento rubrica:', rubricaError);
+          toast({
+            title: "Attività aggiornata",
+            description: "L'attività è stata aggiornata ma non è stato possibile aggiornare l'azienda nella rubrica.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Aggiornamento completato",
+            description: "Attività e azienda aggiornate con successo.",
+          });
         }
       } else {
         toast({

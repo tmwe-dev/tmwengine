@@ -26,8 +26,14 @@ serve(async (req) => {
   }
 
   try {
-    const { handler, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
-    console.log('TMWE Email Sync request:', { handler, folder_name, folders });
+    const requestData = await req.json();
+    console.log('TMWE Email Sync full request:', requestData);
+    
+    // Mappa i parametri dal client alla struttura richiesta dall'API TMWE
+    const { action, folder_name, folders, date_from, date_to, last_sync_date } = requestData;
+    const handler = action || requestData.handler; // Supporta entrambi i formati
+    
+    console.log('TMWE Email Sync mapped:', { handler, folder_name, folders });
 
     // Recupera le credenziali dal database usando la stessa logica di tmwe-email-send
     const { data: provider } = await supabase

@@ -314,55 +314,19 @@ paths:
         - Email Messages
       summary: Envío y manipulación de mensajes
       description: Envía mensajes, responde, reenvía, elimina o marca mensajes
-      parameters:
-        - name: action
-          in: query
-          description: Acción a realizar
-          required: true
-          schema:
-            type: string
-            enum: [send_message, reply_message, forward_message, delete_messages, move_messages, mark_messages]
-        - name: uid
-          in: query
-          description: UID del mensaje (para reply, forward)
-          required: false
-          schema:
-            type: string
-        - name: uids
-          in: query
-          description: UIDs de mensajes (para delete, move, mark)
-          required: false
-          schema:
-            type: string
-        - name: target_folder
-          in: query
-          description: Carpeta destino (para move_messages)
-          required: false
-          schema:
-            type: string
-        - name: expunge
-          in: query
-          description: Eliminar definitivamente (para delete_messages)
-          required: false
-          schema:
-            type: boolean
-        - name: read
-          in: query
-          description: Marcar como leído (para mark_messages)
-          required: false
-          schema:
-            type: boolean
-            default: true
       requestBody:
-        description: Datos del mensaje para envío, respuesta o reenvío
-        required: false
+        description: Datos para envío, respuesta, reenvío o manipulación de mensajes
+        required: true
         content:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/MessageData'
-                - $ref: '#/components/schemas/ReplyData'
-                - $ref: '#/components/schemas/ForwardData'
+                - $ref: '#/components/schemas/SendMessageRequest'
+                - $ref: '#/components/schemas/ReplyMessageRequest'
+                - $ref: '#/components/schemas/ForwardMessageRequest'
+                - $ref: '#/components/schemas/DeleteMessagesRequest'
+                - $ref: '#/components/schemas/MoveMessagesRequest'
+                - $ref: '#/components/schemas/MarkMessagesRequest'
       responses:
         '200':
           description: Operación realizada correctamente
@@ -856,6 +820,170 @@ components:
         affected:
           type: integer
           description: Número de elementos afectados
+
+    SendMessageRequest:
+      type: object
+      required:
+        - action
+        - to
+        - subject
+        - body
+      properties:
+        action:
+          type: string
+          enum: [send_message]
+        to:
+          type: string
+          description: Destinatarios (separados por coma)
+        cc:
+          type: string
+          description: Destinatarios en copia
+        bcc:
+          type: string
+          description: Destinatarios en copia oculta
+        subject:
+          type: string
+          description: Asunto del mensaje
+        body:
+          type: string
+          description: Cuerpo del mensaje en texto plano
+        body_html:
+          type: string
+          description: Cuerpo del mensaje en HTML
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    ReplyMessageRequest:
+      type: object
+      required:
+        - action
+        - uid
+        - body
+      properties:
+        action:
+          type: string
+          enum: [reply_message]
+        uid:
+          type: string
+          description: UID del mensaje a responder
+        body:
+          type: string
+          description: Cuerpo de la respuesta
+        body_html:
+          type: string
+          description: Cuerpo de la respuesta en HTML
+        reply_all:
+          type: boolean
+          description: Responder a todos
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    ForwardMessageRequest:
+      type: object
+      required:
+        - action
+        - uid
+        - to
+        - body
+      properties:
+        action:
+          type: string
+          enum: [forward_message]
+        uid:
+          type: string
+          description: UID del mensaje a reenviar
+        to:
+          type: string
+          description: Destinatarios del reenvío
+        cc:
+          type: string
+          description: Destinatarios en copia
+        bcc:
+          type: string
+          description: Destinatarios en copia oculta
+        body:
+          type: string
+          description: Cuerpo del reenvío
+        body_html:
+          type: string
+          description: Cuerpo del reenvío en HTML
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              content:
+                type: string
+                format: base64
+
+    DeleteMessagesRequest:
+      type: object
+      required:
+        - action
+        - uids
+      properties:
+        action:
+          type: string
+          enum: [delete_messages]
+        uids:
+          type: string
+          description: UIDs de mensajes a eliminar (separados por coma)
+        expunge:
+          type: boolean
+          description: Eliminar definitivamente
+          default: false
+
+    MoveMessagesRequest:
+      type: object
+      required:
+        - action
+        - uids
+        - target_folder
+      properties:
+        action:
+          type: string
+          enum: [move_messages]
+        uids:
+          type: string
+          description: UIDs de mensajes a mover (separados por coma)
+        target_folder:
+          type: string
+          description: Carpeta destino
+
+    MarkMessagesRequest:
+      type: object
+      required:
+        - action
+        - uids
+      properties:
+        action:
+          type: string
+          enum: [mark_messages]
+        uids:
+          type: string
+          description: UIDs de mensajes a marcar (separados por coma)
+        read:
+          type: boolean
+          description: Marcar como leído
+          default: true
 
     ErrorResponse:
       type: object

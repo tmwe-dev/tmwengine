@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon, EyeOff, Eye } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -644,19 +644,10 @@ export default function Attivita() {
     <div className={cn("section-spacing", isMobile && "space-y-4")}>
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
+        <div>
           <h1 className="text-heading-1 font-bold text-text-primary mb-2">
             Gestione Attività
           </h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-            className="text-text-secondary hover:text-text-primary transition-colors"
-            title={isHeaderCollapsed ? "Mostra sezione filtri" : "Nascondi sezione filtri"}
-          >
-            {isHeaderCollapsed ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </Button>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -683,6 +674,19 @@ export default function Attivita() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Controllo visibilità filtri - Centrato */}
+      <div className="flex justify-center mb-4">
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          className="text-text-secondary hover:text-text-primary transition-colors p-3"
+          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
+        >
+          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
+        </Button>
       </div>
 
       {/* Search and Filters - Collapsible */}

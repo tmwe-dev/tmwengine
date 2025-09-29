@@ -29,27 +29,34 @@ serve(async (req) => {
     const { handler, folder_name, folders, date_from, date_to, last_sync_date }: TMWEEmailSyncRequest = await req.json();
     console.log('TMWE Email Sync request:', { handler, folder_name, folders });
 
-    // Usa l'OAuth token dall'environment o dal database
-    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
-    
-    if (!oauthToken) {
-      // Fallback al database se non presente nell'environment
-      const { data: provider } = await supabase
-        .from('email_provider')
-        .select('email_provider_credenziali(*)')
-        .eq('provider', 'TMWE')
-        .eq('attivo', true)
-        .maybeSingle();
-      
-      if (provider?.email_provider_credenziali?.[0]) {
-        // Cerca prima in oauth_token poi in api_key come fallback
-        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
-                     provider.email_provider_credenziali[0].api_key;
+    // Recupera le credenziali dal database usando la stessa logica di tmwe-email-send
+    const { data: provider } = await supabase
+      .from('email_provider')
+      .select('email_provider_credenziali(*)')
+      .eq('provider', 'TMWE')
+      .eq('attivo', true)
+      .maybeSingle();
+
+    if (!provider?.email_provider_credenziali?.length) {
+      throw new Error('Nessuna configurazione TMWE trovata nel database');
+    }
+
+    // Trova la prima credenziale valida con OAuth token
+    let oauthToken = null;
+    for (const credential of provider.email_provider_credenziali) {
+      if (credential.oauth_token && credential.oauth_token.trim()) {
+        oauthToken = credential.oauth_token.trim();
+        break;
+      }
+      // Fallback ad api_key se disponibile
+      if (credential.api_key && credential.api_key.trim()) {
+        oauthToken = credential.api_key.trim();
+        break;
       }
     }
-    
+
     if (!oauthToken) {
-      throw new Error('TMWE OAuth token non configurato nel database o environment');
+      throw new Error('TMWE OAuth token non configurato nelle credenziali del database');
     }
 
     console.log('Using TMWE OAuth token');

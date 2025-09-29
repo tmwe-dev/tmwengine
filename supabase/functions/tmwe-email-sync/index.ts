@@ -69,19 +69,29 @@ serve(async (req) => {
 
     console.log('Starting sync with TMWE API...');
 
-    // Usa un UUID default per TMWE
-    const defaultProviderId = '00000000-0000-0000-0000-000000000000';
+    // Usa l'ID provider reale dal database TMWE
+    const { data: tmweProvider } = await supabase
+      .from('email_provider')
+      .select('id')
+      .eq('provider', 'TMWE')
+      .single();
+    
+    const providerId = tmweProvider?.id || null;
+    
+    if (!providerId) {
+      throw new Error('Provider TMWE non trovato nel database');
+    }
 
     // Avvia log di sincronizzazione
-    const { data: syncLog, error: logError } = await supabase
-      .from('email_sync_logs')
-      .insert({
-        provider_id: defaultProviderId,
-        tipo_sync: handler,
-        stato: 'in_corso'
-      })
-      .select()
-      .single();
+      const { data: syncLog, error: logError } = await supabase
+        .from('email_sync_logs')
+        .insert({
+          provider_id: providerId,
+          tipo_sync: handler,
+          stato: 'in_corso'
+        })
+        .select()
+        .single();
 
     if (logError) {
       console.error('Error creating sync log:', logError);
@@ -162,27 +172,23 @@ serve(async (req) => {
         throw new Error(`TMWE API returned invalid JSON. Response: ${responseText.substring(0, 200)}`);
       }
 
-      // Step 2: Se sync è riuscito, recupera e salva email nel database
+      // Step 2: La sincronizzazione è completata con successo!
       if (syncResult && syncResult.success) {
-        console.log('Step 2: Sincronizzazione TMWE completata, recuperando email dal database locale...');
+        console.log('Step 2: Sincronizzazione TMWE completata con successo!');
+        console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // Invece di chiamare di nuovo l'API, controlliamo se ci sono già email nel database
+        // Conta le email esistenti nel database per questo provider
         const { data: existingEmails, error: queryError } = await supabase
           .from('email_messages')
-          .select('id, subject, from_email, data_ricezione')
-          .eq('provider_id', defaultProviderId)
-          .order('data_ricezione', { ascending: false })
-          .limit(10);
+          .select('id', { count: 'exact' })
+          .eq('provider_id', providerId);
 
         if (queryError) {
           console.error('Errore query email:', queryError);
         } else {
-          console.log(`Trovate ${existingEmails?.length || 0} email nel database`);
+          console.log(`Totale email nel database: ${existingEmails?.length || 0}`);
           emailsSaved = existingEmails?.length || 0;
         }
-
-        // Se necessario, recupera nuove email dall'API (opzionale)
-        console.log('Step 3: Recupero completato');
       } else {
         console.log('Sincronizzazione TMWE non riuscita:', syncResult);
       }

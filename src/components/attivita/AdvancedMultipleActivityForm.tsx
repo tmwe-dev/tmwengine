@@ -277,83 +277,85 @@ export function AdvancedMultipleActivityForm({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
-        {contacts.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-heading-4 font-semibold text-text-primary flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
-            </h3>
-            
-            <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-4 bg-background-subtle">
-              <div className="space-y-2">
-                {contacts.map((contact) => (
-                  <div key={contact.id} className="flex items-center justify-between p-2 bg-background rounded border border-border">
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-sm">
-                        {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
-                      </span>
+    <div className="max-h-[80vh] overflow-y-auto">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-1">
+          {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
+          {contacts.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
+              </h3>
+              
+              <div className="max-h-24 overflow-y-auto border border-border rounded-lg p-3 bg-background-subtle">
+                <div className="space-y-2">
+                  {contacts.map((contact) => (
+                    <div key={contact.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 bg-background rounded border border-border gap-1">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium text-xs truncate">
+                          {contact.company_name || contact.company_alias || contact.name || 'Azienda non specificata'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate ml-5 sm:ml-0">
+                        {getContactInfo(contact)}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {getContactInfo(contact)}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Tipo di attività */}
-        <div className="space-y-4">
-          <h3 className="text-heading-4 font-semibold text-text-primary">
-            Tipo di Attività
-          </h3>
-          
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Invio Email
-              </TabsTrigger>
-              <TabsTrigger value="chiamata" className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Chiamata Programmata
-              </TabsTrigger>
-            </TabsList>
+          {/* Tipo di attività */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-text-primary">
+              Tipo di Attività
+            </h3>
+            
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-9">
+                <TabsTrigger value="email" className="flex items-center gap-1.5 text-xs">
+                  <Mail className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Invio </span>Email
+                </TabsTrigger>
+                <TabsTrigger value="chiamata" className="flex items-center gap-1.5 text-xs">
+                  <Phone className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Chiamata</span>
+                  <span className="sm:hidden">Call</span>
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Email Form */}
-            <TabsContent value="email" className="space-y-3 mt-4">
-              <div className="space-y-3 p-3 border border-border rounded-lg bg-background">
-                <div className="flex items-center gap-2 mb-2">
-                  <Mail className="h-4 w-4 text-blue-500" />
-                  <h4 className="font-medium text-sm">Configurazione Email</h4>
-                </div>
-
-                {/* Selezione Template */}
-                {emailTemplates.length > 0 && (
-                  <div className="mb-3">
-                    <label className="text-xs font-medium mb-1 block">Template Email (opzionale)</label>
-                    <Select onValueChange={handleTemplateSelect}>
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder="Seleziona un template..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {emailTemplates.map((template) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-3 w-3" />
-                              <span className="text-xs">{template.nome}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {/* Email Form */}
+              <TabsContent value="email" className="space-y-3 mt-3">
+                <div className="space-y-3 p-3 border border-border rounded-lg bg-background">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="h-4 w-4 text-blue-500" />
+                    <h4 className="font-medium text-sm">Configurazione Email</h4>
                   </div>
-                )}
+
+                  {/* Selezione Template */}
+                  {emailTemplates.length > 0 && (
+                    <div className="mb-3">
+                      <label className="text-xs font-medium mb-1 block">Template Email (opzionale)</label>
+                      <Select onValueChange={handleTemplateSelect}>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Seleziona un template..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {emailTemplates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3 w-3" />
+                                <span className="text-xs">{template.nome}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                 {/* Gestione Allegati Email */}
                 <div className="space-y-2 border border-border rounded p-2 bg-background-subtle">
@@ -467,44 +469,44 @@ export function AdvancedMultipleActivityForm({
                   </div>
                 </div>
                 
-                <FormField
-                  control={form.control}
-                  name="oggetto_email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Oggetto Email *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="es. Proposta commerciale - Seguimento"
-                          className="h-8"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="oggetto_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Oggetto Email *</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="es. Proposta commerciale - Seguimento"
+                            className="h-9 text-sm"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="testo_email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Testo Email *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Gentile [Nome], scrivo per..."
-                          className="min-h-[80px] text-xs"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Suggerimento: Usa [Nome], [Azienda], [Email] come placeholder che verranno sostituiti automaticamente
-                      </p>
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="testo_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Testo Email *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Gentile [Nome], scrivo per..."
+                            className="min-h-[80px] text-sm resize-none"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Suggerimento: Usa [Nome], [Azienda], [Email] come placeholder che verranno sostituiti automaticamente
+                        </p>
+                      </FormItem>
+                    )}
+                  />
                 
                 {/* Programma email futura */}
                 <div className="mt-4 p-4 border border-border rounded-lg bg-background-subtle">
@@ -531,101 +533,101 @@ export function AdvancedMultipleActivityForm({
                     )}
                   />
                   
-                  {form.watch('programma_email') && (
-                    <div className="space-y-4 mt-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="data_email_futura"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Data Email Futura</FormLabel>
-                              <FormControl>
-                                <div className="flex gap-2">
-                                  <div className="relative flex-1">
-                                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input {...field} type="date" className="pl-10" />
+                    {form.watch('programma_email') && (
+                      <div className="space-y-3 mt-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <FormField
+                            control={form.control}
+                            name="data_email_futura"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Data Email Futura</FormLabel>
+                                <FormControl>
+                                  <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                      <Input {...field} type="date" className="pl-9 h-9 text-sm" />
+                                    </div>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="outline" size="sm" type="button" className="h-9 w-9 p-0">
+                                          <CalendarIcon className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <CalendarComponent
+                                          mode="single"
+                                          selected={field.value ? new Date(field.value) : undefined}
+                                          onSelect={(date) => {
+                                            if (date) {
+                                              field.onChange(format(date, 'yyyy-MM-dd'));
+                                            }
+                                          }}
+                                          disabled={(date) => date < new Date()}
+                                          initialFocus
+                                          className={cn("p-3 pointer-events-auto")}
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="outline" size="icon" type="button">
-                                        <CalendarIcon className="h-4 w-4" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                      <CalendarComponent
-                                        mode="single"
-                                        selected={field.value ? new Date(field.value) : undefined}
-                                        onSelect={(date) => {
-                                          if (date) {
-                                            field.onChange(format(date, 'yyyy-MM-dd'));
-                                          }
-                                        }}
-                                        disabled={(date) => date < new Date()}
-                                        initialFocus
-                                        className={cn("p-3 pointer-events-auto")}
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name="ora_email_futura"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Ora Email (opzionale)</FormLabel>
-                              <FormControl>
-                                <div className="relative">
-                                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  <Input
-                                    {...field}
-                                    type="time"
-                                    className="pl-10"
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                          <FormField
+                            control={form.control}
+                            name="ora_email_futura"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Ora Email (opzionale)</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                    <Input
+                                      {...field}
+                                      type="time"
+                                      className="pl-9 h-9 text-sm"
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       
-                      {/* Template per email futura */}
-                      {emailTemplates.length > 0 && (
-                        <FormField
-                          control={form.control}
-                          name="template_email_futura"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Template per Email Futura (opzionale)</FormLabel>
-                              <FormControl>
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Seleziona un template per l'email futura..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {emailTemplates.map((template) => (
-                                      <SelectItem key={template.id} value={template.id}>
-                                        <div className="flex items-center gap-2">
-                                          <FileText className="h-4 w-4" />
-                                          {template.nome}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
+                        {/* Template per email futura */}
+                        {emailTemplates.length > 0 && (
+                          <FormField
+                            control={form.control}
+                            name="template_email_futura"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Template per Email Futura (opzionale)</FormLabel>
+                                <FormControl>
+                                  <Select value={field.value} onValueChange={field.onChange}>
+                                    <SelectTrigger className="h-9 text-sm">
+                                      <SelectValue placeholder="Seleziona un template per l'email futura..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-60">
+                                      {emailTemplates.map((template) => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                          <div className="flex items-center gap-2">
+                                            <FileText className="h-3.5 w-3.5" />
+                                            <span className="text-sm">{template.nome}</span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                     </div>
                   )}
                 </div>
@@ -852,17 +854,18 @@ export function AdvancedMultipleActivityForm({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Annulla
-          </Button>
-          <Button type="submit" className="shadow-soft" disabled={isSubmitting}>
-            {isSubmitting ? 'Creazione in corso...' : 
-             `Registra ${contacts.length} Attività ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-border sticky bottom-0 bg-background">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="order-2 sm:order-1">
+              Annulla
+            </Button>
+            <Button type="submit" className="shadow-soft order-1 sm:order-2" disabled={isSubmitting}>
+              {isSubmitting ? 'Creazione...' : 
+               `Registra ${contacts.length} ${watchTipo === 'email' ? 'Email' : 'Chiamata'}`}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }

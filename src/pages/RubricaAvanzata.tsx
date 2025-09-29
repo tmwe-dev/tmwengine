@@ -1429,34 +1429,38 @@ export default function RubricaAvanzata() {
           document.body.removeAttribute('data-scroll-locked');
         }
       }}>
-        <DialogContent className="max-w-2xl" onCloseAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Crea Attività Multiple</DialogTitle>
-            <DialogDescription>
-              Crea una nuova attività per tutte le aziende selezionate
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[95vh] overflow-hidden p-0" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <div className="p-6 pb-0">
+            <DialogHeader>
+              <DialogTitle>Crea Attività Multiple</DialogTitle>
+              <DialogDescription>
+                Crea una nuova attività per tutte le aziende selezionate
+              </DialogDescription>
+            </DialogHeader>
+          </div>
           
-          {showMultipleActivityDialog && (
-            <AdvancedMultipleActivityForm
-              contacts={Array.from(selectedRecords).map(index => {
-                const record = allRecords[index];
-                return {
-                  id: record.id,
-                  company_name: record.azienda,
-                  company_alias: record.alias,
-                  name: record.nome,
-                  alias: record.responsabile,
-                  email: record.email,
-                  phone: record.telefono,
-                  cell: record.cellulare
-                };
-              })}
-              onSubmit={handleCreateMultipleActivities}
-              onCancel={() => setShowMultipleActivityDialog(false)}
-              isSubmitting={creatingMultipleActivities}
-            />
-          )}
+          <div className="px-6 pb-6">
+            {showMultipleActivityDialog && (
+              <AdvancedMultipleActivityForm
+                contacts={Array.from(selectedRecords).map(index => {
+                  const record = allRecords[index];
+                  return {
+                    id: record.id,
+                    company_name: record.azienda,
+                    company_alias: record.alias,
+                    name: record.nome,
+                    alias: record.responsabile,
+                    email: record.email,
+                    phone: record.telefono,
+                    cell: record.cellulare
+                  };
+                })}
+                onSubmit={handleCreateMultipleActivities}
+                onCancel={() => setShowMultipleActivityDialog(false)}
+                isSubmitting={creatingMultipleActivities}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

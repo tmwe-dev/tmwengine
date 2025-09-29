@@ -18,6 +18,7 @@ import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
 import { EmailImportAnimation } from "@/components/email/EmailImportAnimation";
 import { BackgroundRemovalProcessor } from "@/components/email/BackgroundRemovalProcessor";
+import { EmailFolderDashboard } from "@/components/email/EmailFolderDashboard";
 import { useEmailImport } from "@/hooks/useEmailImport";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -277,6 +278,16 @@ const Email = () => {
           <p>Caricamento email dal database...</p>
         </div>
       )}
+      
+      {/* Header */}
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestione Email</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Dashboard completa per la gestione email con cartelle e dati reali
+          </p>
+        </div>
+      </div>
       
       {/* Header */}
       <div className="space-y-4">

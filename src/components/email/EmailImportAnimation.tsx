@@ -190,7 +190,7 @@ export const EmailImportAnimation: React.FC<EmailImportAnimationProps> = ({
         )}
 
         {/* Windows 95 Style Animation Area */}
-        <div className="relative h-48 bg-gray-100 border-2 border-gray-300 rounded-lg overflow-hidden">
+        <div className="relative h-48 rounded-lg overflow-hidden">
           {/* Source Folder */}
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
             <div className="relative">

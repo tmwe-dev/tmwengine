@@ -171,7 +171,11 @@ serve(async (req) => {
           limit: 10,  // LIMITE FISSO API TMWE - non può essere più alto
           offset: currentOffset,
           include_attachments: false,
-          format: 'text'
+          format: 'text',
+          // Aggiungi parametri per email storiche - prova range temporale più ampio
+          date_from: '2020-01-01',  // Data molto indietro
+          date_to: new Date().toISOString().split('T')[0], // Oggi
+          sort: 'date_desc'  // Ordina per data decrescente
         };
 
         console.log(`🌐 Chiamata API batch ${batchNumber}:`, listBody);

@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -245,7 +245,7 @@ serve(async (req) => {
                       flags: email.flags || [],
                       attachments: email.attachments || []
                     }, {
-                      onConflict: 'message_id,provider_id'
+                      ignoreDuplicates: true
                     });
 
                   if (insertError) {

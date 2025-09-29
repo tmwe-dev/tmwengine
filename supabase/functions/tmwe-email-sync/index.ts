@@ -177,8 +177,9 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // SOLUZIONE: usa l'endpoint corretto get_email_list
-        console.log('Step 3: Ottieni lista messaggi con get_email_list...');
+        // SOLUZIONE: usa l'endpoint API TMWE corretto get_email_list
+        console.log('Step 3: Ottieni lista messaggi con API TMWE get_email_list...');
+        console.log('URL chiamata:', 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list');
         const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_email_list';
         const listBody = {
           folder: folder_name || 'INBOX',

@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
+import { EmailImportAnimation } from "@/components/email/EmailImportAnimation";
+import { useEmailImport } from "@/hooks/useEmailImport";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +59,7 @@ const Email = () => {
   const [showComposer, setShowComposer] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showImporter, setShowImporter] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -68,6 +71,9 @@ const Email = () => {
     avgResponseTime: '2h 30m',
     aiClassified: 0
   });
+  
+  // Hook per gestire l'importazione email
+  const emailImport = useEmailImport();
 
   // Recupera email reali dal database
   const fetchEmails = useCallback(async () => {
@@ -311,6 +317,14 @@ const Email = () => {
           >
             <Plus className="mr-2 h-4 w-4" />
             Nuova Email
+          </Button>
+          <Button 
+            onClick={() => setShowImporter(true)}
+            variant="secondary"
+            className="w-full sm:w-auto justify-center"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Importa Email
           </Button>
         </div>
       </div>
@@ -620,6 +634,31 @@ const Email = () => {
             <DialogTitle>Pannello Classificazione AI</DialogTitle>
           </DialogHeader>
           <AIClassificationPanel emails={emails} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Import Dialog */}
+      <Dialog open={showImporter} onOpenChange={setShowImporter}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Email Import Manager</DialogTitle>
+          </DialogHeader>
+          <EmailImportAnimation
+            isImporting={emailImport.status.isImporting}
+            totalEmails={emailImport.status.totalEmails}
+            importedEmails={emailImport.status.importedEmails}
+            sourceFolder={emailImport.status.sourceFolder}
+            destinationFolder={emailImport.status.destinationFolder}
+            estimatedTimeMs={emailImport.status.estimatedTimeMs}
+            startTime={emailImport.status.startTime}
+            onStartImport={() => {
+              emailImport.startImport('INBOX').then(() => {
+                // Ricarica le email dopo l'importazione
+                fetchEmails();
+              }).catch(console.error);
+            }}
+            onCancelImport={emailImport.cancelImport}
+          />
         </DialogContent>
       </Dialog>
     </div>

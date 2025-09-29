@@ -270,4 +270,41 @@ Tutti i colori DEVONO essere HSL.
       @apply flex-row justify-between;
     }
   }
+
+  /* === WINDOWS 95 STYLE ANIMATIONS === */
+  .bg-dashed-line {
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent,
+      transparent 5px,
+      currentColor 5px,
+      currentColor 10px
+    );
+    animation: dash-move 2s linear infinite;
+  }
+  
+  @keyframes dash-move {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 0; }
+  }
+
+  /* === EMAIL FLYING ANIMATION === */
+  @keyframes email-fly {
+    0% {
+      transform: translateX(0) translateY(-50%) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translateX(200px) translateY(-60%) scale(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(400px) translateY(-50%) scale(1);
+      opacity: 0;
+    }
+  }
+
+  .email-flying {
+    animation: email-fly 3s ease-in-out forwards;
+  }
 }

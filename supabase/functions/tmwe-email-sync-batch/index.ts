@@ -148,9 +148,12 @@ serve(async (req) => {
       console.log(`🔢 Step 2: Avviando importazione completa (10 email per batch - limite API TMWE)`);
       
       let consecutiveEmptyBatches = 0;
-      const maxEmptyBatches = 2;  // Se ricevi 2 batch vuoti consecutivi, fermati
+      const maxEmptyBatches = 5;  // Aumenta tolleranza per batch vuoti
       
-      while (consecutiveEmptyBatches < maxEmptyBatches) {
+      // STRATEGIA: Se l'offset normale non funziona dopo un certo punto,
+      // prova approcci alternativi per recuperare TUTTE le email
+      
+      while (consecutiveEmptyBatches < maxEmptyBatches && totalProcessed < max_total_emails) {
         console.log(`📦 Batch ${batchNumber} - Offset: ${currentOffset}, Size: ${batch_size}, Empty: ${consecutiveEmptyBatches}/${maxEmptyBatches}`);
         
         // Aggiorna progress
@@ -165,18 +168,32 @@ serve(async (req) => {
 
         // Chiama API per lista messaggi - TMWE ha limite fisso di 10 email per chiamata
         const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
-        const listBody = {
-          handler: 'get_messages',
-          folder: folder_name,
-          limit: 10,  // LIMITE FISSO API TMWE - non può essere più alto
-          offset: currentOffset,
-          include_attachments: false,
-          format: 'text',
-          // Aggiungi parametri per email storiche - prova range temporale più ampio
-          date_from: '2020-01-01',  // Data molto indietro
-          date_to: new Date().toISOString().split('T')[0], // Oggi
-          sort: 'date_desc'  // Ordina per data decrescente
-        };
+        // STRATEGIA DINAMICA: Se l'offset normale fallisce, prova approcci alternativi
+        let listBody;
+        
+        if (currentOffset > 500) {
+          // Dopo offset 500, l'API TMWE sembra non funzionare - prova approccio alternativo
+          listBody = {
+            handler: 'get_messages',
+            folder: folder_name,
+            limit: 50,  // Prova batch più grandi
+            offset: 0,  // Riparti da 0
+            include_attachments: false,
+            format: 'text',
+            // Usa filtri diversi per recuperare email che potrebbero essere saltate
+            uid_range: `${6000 + batchNumber}:${6100 + batchNumber}`, // Range UID
+            sort: 'uid_desc'
+          };
+        } else {
+          listBody = {
+            handler: 'get_messages',
+            folder: folder_name,
+            limit: 50,  // Aumenta limite se possibile
+            offset: currentOffset,
+            include_attachments: false,
+            format: 'text'
+          };
+        }
 
         console.log(`🌐 Chiamata API batch ${batchNumber}:`, listBody);
 

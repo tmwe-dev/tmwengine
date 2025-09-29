@@ -198,7 +198,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             <div>
               <label className="text-sm font-medium">Cartella</label>
               <select 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.folder}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, folder: e.target.value }))}
                 disabled={isRunning}
@@ -212,7 +212,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               <label className="text-sm font-medium">Batch Size</label>
               <input 
                 type="number" 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.batchSize}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, batchSize: parseInt(e.target.value) }))}
                 disabled={isRunning}
@@ -224,7 +224,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               <label className="text-sm font-medium">Max Email</label>
               <input 
                 type="number" 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.maxEmails}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, maxEmails: parseInt(e.target.value) }))}
                 disabled={isRunning}
@@ -279,7 +279,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           <CardContent>
             <div className="space-y-3">
               {sourceFolders.map((folder) => (
-                <div key={folder.name} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={folder.name} className="flex items-center justify-between p-3 border rounded-lg bg-transparent">
                   <div className="flex items-center gap-3">
                     <Folder className={cn("h-5 w-5", folder.iconColor)} />
                     <div>
@@ -318,7 +318,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           <CardContent>
             <div className="space-y-3">
               {destinationStats.length > 0 ? destinationStats.map((folder) => (
-                <div key={folder.name} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={folder.name} className="flex items-center justify-between p-3 border rounded-lg bg-transparent">
                   <div className="flex items-center gap-3">
                     <Database className={cn("h-5 w-5", folder.iconColor)} />
                     <div>
@@ -370,7 +370,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-64 w-full border rounded-md p-4">
+          <ScrollArea className="h-64 w-full border rounded-md p-4 bg-transparent">
             {logs.length > 0 ? (
               <div className="space-y-1">
                 {logs.map((log, index) => (

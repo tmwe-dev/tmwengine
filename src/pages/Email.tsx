@@ -52,6 +52,7 @@ interface EmailStats {
 const Email = () => {
   const { toast } = useToast();
   const [emails, setEmails] = useState<Email[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [showComposer, setShowComposer] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -70,17 +71,19 @@ const Email = () => {
 
   // Recupera email reali dal database
   const fetchEmails = useCallback(async () => {
+    setLoading(true);
     try {
-      console.log('Fetching emails from database...');
+      console.log('=== INIZIO FETCH EMAILS ===');
       const { data: emailData, error } = await supabase
         .from('email_messages')
         .select('*')
         .order('data_ricezione', { ascending: false });
 
-      console.log('Query completed. Error:', error, 'Data count:', emailData?.length);
+      console.log('Query risultato - Error:', error, 'Data:', emailData);
 
       if (error) {
-        console.error('Errore recupero email:', error);
+        console.error('ERRORE nella query:', error);
+        setLoading(false);
         toast({
           title: "Errore",
           description: `Errore nel recupero delle email: ${error.message}`,
@@ -89,25 +92,33 @@ const Email = () => {
         return;
       }
 
-      console.log('Raw email data from database:', emailData);
+      console.log('DATI GREZZI dal DB:', emailData);
+      console.log('NUMERO EMAIL TROVATE:', emailData?.length || 0);
 
-      // Converte i dati del database al formato dell'interfaccia
-      const convertedEmails: Email[] = emailData?.map(email => ({
-        id: email.id,
-        from: email.from_email,
-        to: email.to_email,
-        subject: email.subject || 'Nessun oggetto',
-        body: email.body_text || email.body_html || 'Nessun contenuto',
-        date: email.data_ricezione,
-        status: email.stato === 'nuovo' ? 'unread' : 
-               email.stato === 'letto' ? 'read' : 
-               email.stato === 'risposto' ? 'replied' : 'archived',
-        priority: 'medium', // Default, può essere esteso
-        category: email.cartella?.toLowerCase() || 'general'
-      })) || [];
+      // RESET TOTALE - cancella completamente l'array emails prima di aggiungere i nuovi
+      setEmails([]);
+      // Conversione FORZATA - nessun dato mock
+      const convertedEmails: Email[] = emailData?.map(email => {
+        console.log('Convertendo email:', email.subject, 'da:', email.from_email);
+        return {
+          id: email.id,
+          from: email.from_email,
+          to: email.to_email,
+          subject: email.subject || 'Nessun oggetto',
+          body: email.body_text || email.body_html || 'Nessun contenuto',
+          date: email.data_ricezione,
+          status: email.stato === 'nuovo' ? 'unread' : 
+                 email.stato === 'letto' ? 'read' : 
+                 email.stato === 'risposto' ? 'replied' : 'archived',
+          priority: 'medium' as const,
+          category: email.cartella?.toLowerCase() || 'general'
+        };
+      }) || [];
 
-      console.log('Converted emails:', convertedEmails);
+      console.log('EMAIL CONVERTITE FINALI:', convertedEmails);
+      console.log('IMPOSTANDO EMAILS A:', convertedEmails.length, 'elementi');
       
+      // FORZATURA: cancella tutto e imposta solo le email dal DB
       setEmails(convertedEmails);
       setStats({
         total: convertedEmails.length,
@@ -118,14 +129,16 @@ const Email = () => {
         aiClassified: 0
       });
 
-      console.log(`Caricate ${convertedEmails.length} email dal database`);
+      console.log(`=== COMPLETATO: ${convertedEmails.length} EMAIL DAL DATABASE ===`);
+      setLoading(false);
       toast({
-        title: "Email ricaricate",
-        description: `Caricate ${convertedEmails.length} email dal database`,
+        title: "Email caricate",
+        description: `${convertedEmails.length} email dal database (NO MOCK)`,
       });
       
     } catch (error) {
-      console.error('Errore imprevisto nel recupero email:', error);
+      console.error('ERRORE CRITICO nel recupero email:', error);
+      setLoading(false);
       toast({
         title: "Errore",
         description: "Errore imprevisto nel recupero delle email",
@@ -250,12 +263,19 @@ const Email = () => {
 
   return (
     <div className="flex-1 space-y-4 p-3 md:p-6 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {loading && (
+        <div className="text-center p-4">
+          <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+          <p>Caricamento email dal database...</p>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestione Email</h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Gestisci le email con classificazione AI automatica
+            Gestisci le email con classificazione AI automatica ({emails.length} email dal DB)
           </p>
         </div>
         

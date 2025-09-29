@@ -931,7 +931,42 @@ export default function RubricaAvanzata() {
                      )}
                    </CardContent>
                  </Card>
-               )}
+                )}
+                
+                {/* Mobile Pagination - Top */}
+                {totalPages > 1 && (
+                  <Card className="border-card shadow-soft">
+                    <CardContent className="p-2">
+                      <div className="flex flex-col gap-2">
+                        <div className="text-xs text-text-secondary text-center">
+                          Pagina {currentPage + 1} di {totalPages} ({filteredRecords.length} risultati)
+                        </div>
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                            disabled={currentPage === 0}
+                            className="h-8 text-xs"
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Precedente
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                            disabled={currentPage >= totalPages - 1}
+                            className="h-8 text-xs"
+                          >
+                            Successiva
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {viewingRecords.map((record, index) => {
               const actualIndex = currentPage * recordsPerPage + index;

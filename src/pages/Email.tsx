@@ -249,74 +249,86 @@ const Email = () => {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className="flex-1 space-y-4 p-3 md:p-6 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestione Email</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Gestione Email</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Gestisci le email con classificazione AI automatica
           </p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setShowAIPanel(true)} variant="outline">
-            <Brain className="mr-1 h-4 w-4" />
+        {/* Mobile Actions - Stack vertically on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+          <Button 
+            onClick={() => setShowAIPanel(true)} 
+            variant="outline" 
+            className="w-full sm:w-auto justify-center"
+          >
+            <Brain className="mr-2 h-4 w-4" />
             AI Panel
           </Button>
-          <Button onClick={() => setShowFilters(!showFilters)} variant="outline">
-            <Filter className="mr-1 h-4 w-4" />
+          <Button 
+            onClick={() => setShowFilters(!showFilters)} 
+            variant="outline"
+            className="w-full sm:w-auto justify-center"
+          >
+            <Filter className="mr-2 h-4 w-4" />
             Filtri
           </Button>
-          <Button onClick={() => setShowComposer(true)}>
-            <Plus className="mr-1 h-4 w-4" />
+          <Button 
+            onClick={() => setShowComposer(true)}
+            className="w-full sm:w-auto justify-center"
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Nuova Email
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      {/* Stats Cards - Mobile Optimized */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <Card className="min-h-[100px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Totali</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Totali</CardTitle>
+            <Mail className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">Email totali</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-h-[100px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Non Lette</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Non Lette</CardTitle>
+            <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.unread}</div>
+            <div className="text-lg md:text-2xl font-bold">{stats.unread}</div>
             <p className="text-xs text-muted-foreground">Da processare</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-h-[100px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tempo Risposta</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">Tempo Risposta</CardTitle>
+            <Clock className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.avgResponseTime}</div>
+            <div className="text-lg md:text-2xl font-bold">{stats.avgResponseTime}</div>
             <p className="text-xs text-muted-foreground">Tempo medio</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-h-[100px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Classificate</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs md:text-sm font-medium">AI Classificate</CardTitle>
+            <Brain className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.aiClassified}</div>
+            <div className="text-lg md:text-2xl font-bold">{stats.aiClassified}</div>
             <p className="text-xs text-muted-foreground">Automaticamente</p>
           </CardContent>
         </Card>
@@ -325,21 +337,21 @@ const Email = () => {
       {/* Filters */}
       {showFilters && <EmailFilters />}
 
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Main Content - Mobile Optimized */}
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:gap-6 lg:grid-cols-3">
         {/* Email List */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <CardTitle>Email</CardTitle>
+                <CardTitle className="text-base md:text-lg">Email</CardTitle>
                 <Button variant="outline" size="sm">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
               
-              {/* Search and Filters */}
-              <div className="flex space-x-2">
+              {/* Search and Filters - Mobile Optimized */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -350,7 +362,7 @@ const Email = () => {
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-full sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -369,16 +381,16 @@ const Email = () => {
                 {filteredEmails.map((email) => (
                   <div
                     key={email.id}
-                    className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
+                    className={`p-3 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
                       selectedEmail?.id === email.id ? 'bg-muted' : ''
                     }`}
                     onClick={() => setSelectedEmail(email)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
+                        <div className="flex items-center space-x-2 mb-1 flex-wrap">
                           {getStatusIcon(email.status)}
-                          <span className={`font-medium truncate ${email.status === 'unread' ? 'font-bold' : ''}`}>
+                          <span className={`font-medium truncate text-sm md:text-base ${email.status === 'unread' ? 'font-bold' : ''}`}>
                             {email.from}
                           </span>
                           <Badge variant={getPriorityColor(email.priority)} className="text-xs">
@@ -440,24 +452,27 @@ const Email = () => {
           </Card>
         </div>
 
-        {/* Email Detail */}
-        <div>
+        {/* Email Detail - Mobile Optimized */}
+        <div className="lg:mt-0">
           {selectedEmail ? (
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Dettagli Email</CardTitle>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <CardTitle className="text-base md:text-lg">Dettagli Email</CardTitle>
                   <div className="flex space-x-1">
-                    <Button variant="outline" size="sm">
-                      <Reply className="h-4 w-4" />
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                      <Reply className="h-4 w-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden">Rispondi</span>
                     </Button>
-                    <Button variant="outline" size="sm">
-                      <Forward className="h-4 w-4" />
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                      <Forward className="h-4 w-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden">Inoltra</span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                          <Trash2 className="h-4 w-4 mr-1 sm:mr-0" />
+                          <span className="sm:hidden">Elimina</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -481,7 +496,7 @@ const Email = () => {
               
               <CardContent className="space-y-4">
                 <div>
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex items-center space-x-2 mb-2 flex-wrap">
                     <Badge variant={getPriorityColor(selectedEmail.priority)}>
                       {selectedEmail.priority}
                     </Badge>
@@ -490,14 +505,14 @@ const Email = () => {
                     </Badge>
                   </div>
                   
-                  <h3 className="font-semibold">{selectedEmail.subject}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="font-semibold text-sm md:text-base">{selectedEmail.subject}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground break-all">
                     Da: {selectedEmail.from}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground break-all">
                     A: {selectedEmail.to}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     {new Date(selectedEmail.date).toLocaleString('it-IT')}
                   </p>
                 </div>
@@ -505,7 +520,7 @@ const Email = () => {
                 <Separator />
                 
                 <div>
-                  <p className="text-sm whitespace-pre-wrap">{selectedEmail.body}</p>
+                  <p className="text-xs md:text-sm whitespace-pre-wrap break-words">{selectedEmail.body}</p>
                 </div>
 
                 {selectedEmail.aiClassification && (

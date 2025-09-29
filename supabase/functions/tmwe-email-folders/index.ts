@@ -114,6 +114,7 @@ serve(async (req) => {
 
     const result = await response.json();
     console.log('TMWE API Response received');
+    console.log('TMWE Folders Response:', JSON.stringify(result, null, 2));
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

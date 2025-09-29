@@ -12,6 +12,7 @@ import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, Chevro
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayout';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
@@ -233,8 +234,8 @@ export default function RubricaAvanzata() {
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   
-  // Stato per nascondere/mostrare sezione superiore
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
+  // Stato per nascondere/mostrare sezione superiore - non più necessario
+  // const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
 
   // Mobile hook
   const isMobile = useIsMobile();
@@ -621,154 +622,155 @@ export default function RubricaAvanzata() {
                 className={cn("pl-10", isMobile ? "h-8" : "h-9")}
               />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-              className="text-text-secondary hover:text-text-primary transition-colors p-2 shrink-0"
-              title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
-            >
-              {isHeaderCollapsed ? <SearchCheck className="h-5 w-5" /> : <SearchX className="h-5 w-5" />}
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-text-secondary hover:text-text-primary transition-colors p-2 shrink-0"
+                  title="Filtri avanzati"
+                >
+                  <Filter className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <Card className="border-0 shadow-none">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filtri Avanzati
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Filter Controls */}
+                    <div className="grid gap-3">
+                      {/* Origin Filter */}
+                      <div>
+                        <label className="text-xs font-medium mb-1 block">Origine</label>
+                        <Select value={originFilter} onValueChange={setOriginFilter}>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Tutte" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutte le origini</SelectItem>
+                            {getUniqueValues('origine').map((origin) => (
+                              <SelectItem key={origin} value={origin}>
+                                {origin}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Country Filter */}
+                      <div>
+                        <label className="text-xs font-medium mb-1 block">Paese</label>
+                        <Select value={countryFilter} onValueChange={setCountryFilter}>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Tutti" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                            {getUniqueValues('paese').map((country) => (
+                              <SelectItem key={country} value={country}>
+                                {getCountryFlag(country)} {getCountryFullName(country)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Records Per Page */}
+                      <div>
+                        <label className="text-xs font-medium mb-1 block">Per pagina</label>
+                        <Select value={recordsPerPage.toString()} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="200">200</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Compact Stats */}
+                    <div className="grid grid-cols-4 gap-2 py-2 border-t border-border">
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-text-primary">{allRecords.length}</div>
+                        <div className="text-xs text-text-secondary">Totali</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-primary">{filteredRecords.length}</div>
+                        <div className="text-xs text-text-secondary">Filtrati</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-text-primary">{allRecords.filter(c => c.azienda).length}</div>
+                        <div className="text-xs text-text-secondary">Aziende</div>
+                      </div>
+                      <div className="text-center">
+                        <div className={cn("text-sm font-bold", selectedRecords.size > 0 ? "text-blue-600" : "text-accent")}>{selectedRecords.size}</div>
+                        <div className="text-xs text-text-secondary">Selez.</div>
+                      </div>
+                    </div>
+
+                    {/* Column Visibility Controls */}
+                    <div className="pt-2 border-t border-border">
+                      <label className="text-xs font-medium mb-2 block">Colonne visibili</label>
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          variant={visibleColumns.company ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleColumnVisibility('company')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <Building className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant={visibleColumns.details ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleColumnVisibility('details')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <Phone className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant={visibleColumns.metadata ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleColumnVisibility('metadata')}
+                          className="h-7 px-2 text-xs"
+                        >
+                          <Database className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Active Filters */}
+                    {activeFilters.length > 0 && (
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <span className="text-xs font-medium text-text-secondary">Filtri attivi:</span>
+                          {activeFilters.map((filter, index) => (
+                            <Badge key={index} variant="secondary" className="cursor-pointer text-xs h-6" onClick={() => removeFilter(index)}>
+                              {filter.displayValue} ×
+                            </Badge>
+                          ))}
+                          <Button variant="outline" size="sm" onClick={clearAllFilters} className="h-6 px-2 text-xs">
+                            Pulisci tutti
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </PopoverContent>
+            </Popover>
           </div>
         </CardContent>
       </Card>
-
-      {/* Filters - Collapsible */}
-      {!isHeaderCollapsed && (
-      <div className="animate-fade-in">
-      {/* Compact Filters Section */}
-      <Card className="border-card shadow-soft">
-        <CardContent className={cn(isMobile ? "space-y-2 pt-3 px-3 pb-3" : "space-y-3 pt-6")}>
-          {/* Filters and Stats Row */}
-          <div className={cn("grid gap-2 items-end", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12")}>
-            {/* Filter Controls */}
-            <div className={cn("grid gap-2", isMobile ? "grid-cols-3" : "lg:col-span-6 grid-cols-1 sm:grid-cols-3")}>
-              {/* Origin Filter */}
-              <div>
-                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Origine</label>
-                <Select value={originFilter} onValueChange={setOriginFilter}>
-                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
-                    <SelectValue placeholder="Tutte" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Tutte le origini</SelectItem>
-                    {getUniqueValues('origine').map((origin) => (
-                      <SelectItem key={origin} value={origin}>
-                        {origin}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Country Filter */}
-              <div>
-                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Paese</label>
-                <Select value={countryFilter} onValueChange={setCountryFilter}>
-                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
-                    <SelectValue placeholder="Tutti" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                    {getUniqueValues('paese').map((country) => (
-                      <SelectItem key={country} value={country}>
-                        {getCountryFlag(country)} {getCountryFullName(country)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Records Per Page */}
-              <div>
-                <label className={cn("font-medium mb-1 block", isMobile ? "text-xs" : "text-xs")}>Per pagina</label>
-                <Select value={recordsPerPage.toString()} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                  <SelectTrigger className={cn(isMobile ? "h-7 text-xs" : "h-8 text-sm")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                    <SelectItem value="200">200</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Compact Stats */}
-            <div className={cn(isMobile ? "grid grid-cols-4 gap-1 py-2" : "lg:col-span-4 grid grid-cols-4 gap-2")}>
-              <div className="text-center">
-                <div className={cn("font-bold text-text-primary", isMobile ? "text-base" : "text-lg")}>{allRecords.length}</div>
-                <div className="text-xs text-text-secondary">Totali</div>
-              </div>
-              <div className="text-center">
-                <div className={cn("font-bold text-primary", isMobile ? "text-base" : "text-lg")}>{filteredRecords.length}</div>
-                <div className="text-xs text-text-secondary">Filtrati</div>
-              </div>
-              <div className="text-center">
-                <div className={cn("font-bold text-text-primary", isMobile ? "text-base" : "text-lg")}>{allRecords.filter(c => c.azienda).length}</div>
-                <div className="text-xs text-text-secondary">Aziende</div>
-              </div>
-              <div className="text-center">
-                <div className={cn("font-bold", selectedRecords.size > 0 ? "text-blue-600" : "text-accent", isMobile ? "text-base" : "text-lg")}>{selectedRecords.size}</div>
-                <div className="text-xs text-text-secondary">Selez.</div>
-              </div>
-            </div>
-
-            {/* Column Visibility Controls */}
-            <div className={cn(isMobile ? "py-1" : "lg:col-span-2")}>
-              <div className={cn("flex gap-1", isMobile && "justify-center")}>
-                <Button
-                  variant={visibleColumns.company ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleColumnVisibility('company')}
-                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
-                >
-                  <Building className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant={visibleColumns.details ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleColumnVisibility('details')}
-                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
-                >
-                  <Phone className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant={visibleColumns.metadata ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleColumnVisibility('metadata')}
-                  className={cn(isMobile ? "h-7 px-2 text-xs" : "h-8 px-2 text-xs")}
-                >
-                  <Database className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Active Filters */}
-          {activeFilters.length > 0 && (
-            <div className="pt-2 border-t">
-              <div className="flex flex-wrap gap-1 items-center">
-                <span className="text-xs font-medium text-text-secondary">Filtri attivi:</span>
-                {activeFilters.map((filter, index) => (
-                  <Badge key={index} variant="secondary" className="cursor-pointer text-xs h-6" onClick={() => removeFilter(index)}>
-                    {filter.displayValue} ×
-                  </Badge>
-                ))}
-                <Button variant="outline" size="sm" onClick={clearAllFilters} className="h-6 px-2 text-xs">
-                  Pulisci tutti
-                </Button>
-              </div>
-            </div>
-          )}
-
-        </CardContent>
-      </Card>
-      </div>
-      )}
 
 
       {/* Data */}

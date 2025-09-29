@@ -47,16 +47,11 @@ serve(async (req) => {
       throw new Error('Nessuna configurazione TMWE trovata nel database');
     }
 
-    // Trova la prima credenziale valida con OAuth token
+    // Trova la prima credenziale valida con OAuth token SOLO
     let oauthToken = null;
     for (const credential of provider.email_provider_credenziali) {
       if (credential.oauth_token && credential.oauth_token.trim()) {
         oauthToken = credential.oauth_token.trim();
-        break;
-      }
-      // Fallback ad api_key se disponibile
-      if (credential.api_key && credential.api_key.trim()) {
-        oauthToken = credential.api_key.trim();
         break;
       }
     }

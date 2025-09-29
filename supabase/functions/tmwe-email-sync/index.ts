@@ -177,15 +177,17 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // SOLUZIONE: usa l'endpoint email_message con handler get_messages
-        console.log('Step 3: Ottieni lista messaggi con email_message API...');
+        // SOLUZIONE: usa l'endpoint email_message con handler get_messages (API v2.0.0)
+        console.log('Step 3: Ottieni lista messaggi con email_message API v2.0.0...');
         console.log('URL chiamata:', 'https://findair.it/erp/tmwe_json/app.php?action=email_message');
         const listUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
         const listBody = {
           handler: 'get_messages',
           folder: folder_name || 'INBOX',
           limit: 50,
-          offset: 0
+          offset: 0,
+          include_attachments: true,
+          format: 'html'
         };
 
         let listResponse;
@@ -194,7 +196,8 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-API-Key': oauthToken // Aggiungi anche X-API-Key header per compatibilità
             },
             body: JSON.stringify(listBody)
           });
@@ -206,7 +209,8 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-API-Key': oauthToken // Aggiungi anche X-API-Key header per compatibilità
             },
             body: JSON.stringify(listBody)
           });
@@ -220,8 +224,11 @@ serve(async (req) => {
         if (listResponse.ok) {
           try {
             const listResult = JSON.parse(listText);
-            if (listResult.success && listResult.results) {
-              const emailsList = listResult.results;
+            console.log('Parsed list result:', listResult);
+            
+            // Gestisci il formato di risposta secondo OpenAPI v2.0.0
+            if (listResult.success && listResult.messages) {
+              const emailsList = listResult.messages;
               console.log(`Trovati ${emailsList.length} messaggi nella lista`);
 
               // Step 4: Salva ogni messaggio nel database

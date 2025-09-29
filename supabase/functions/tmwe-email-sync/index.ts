@@ -177,10 +177,98 @@ serve(async (req) => {
         console.log('Step 2: Sincronizzazione TMWE completata con successo!');
         console.log(`Processati ${syncResult.data?.result?.messages_processed || 0} messaggi`);
         
-        // ✅ Usa il numero di messaggi processati dalla sincronizzazione TMWE
-        emailsSaved = syncResult.data?.result?.messages_processed || 0;
-        console.log(`Email sincronizzate: ${emailsSaved}`);
+        // Step 3: Scarica le email dall'API TMWE e salvale nel database
+        console.log('Step 3: Scaricando email dall\'API TMWE...');
+        const downloadUrl = 'https://findair.it/erp/tmwe_json/app.php?action=get_messages';
+        const downloadBody = {
+          folder: folder_name || 'INBOX',
+          limit: 50,
+          include_body: true
+        };
+
+        let downloadResponse;
+        try {
+          downloadResponse = await fetch(downloadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(downloadBody)
+          });
+        } catch (httpsError) {
+          console.log('HTTPS fallito per download, tentando HTTP...');
+          const httpDownloadUrl = downloadUrl.replace('https://', 'http://');
+          downloadResponse = await fetch(httpDownloadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(downloadBody)
+          });
+        }
+
+        const downloadText = await downloadResponse.text();
+        console.log('Download response (primi 300 caratteri):', downloadText.substring(0, 300));
+
+        if (downloadResponse.ok) {
+          try {
+            const downloadResult = JSON.parse(downloadText);
+            if (downloadResult.success && downloadResult.data?.messages) {
+              const messages = downloadResult.data.messages;
+              console.log(`Trovati ${messages.length} messaggi da salvare nel database`);
+
+              // Step 4: Salva ogni messaggio nel database
+              for (const msg of messages) {
+                try {
+                  const { error: insertError } = await supabase
+                    .from('email_messages')
+                    .insert({
+                      message_id: msg.id || msg.message_id || `tmwe_${Date.now()}_${Math.random()}`,
+                      provider_id: providerId,
+                      subject: msg.subject || '',
+                      from_email: msg.from || '',
+                      to_email: msg.to || '',
+                      cc_email: msg.cc || null,
+                      bcc_email: msg.bcc || null,
+                      body_text: msg.body_text || msg.text || null,
+                      body_html: msg.body_html || msg.html || null,
+                      data_ricezione: msg.date ? new Date(msg.date) : new Date(),
+                      data_invio: msg.sent_date ? new Date(msg.sent_date) : null,
+                      cartella: folder_name || 'INBOX',
+                      direzione: 'in',
+                      stato: 'nuovo',
+                      flags: msg.flags || [],
+                      attachments: msg.attachments || []
+                    });
+
+                  if (!insertError) {
+                    emailsSaved++;
+                  } else if (insertError.code !== '23505') { // Ignora duplicati
+                    console.error('Errore inserimento:', insertError);
+                  }
+                } catch (msgError) {
+                  console.error('Errore processamento messaggio:', msgError);
+                }
+              }
+              console.log(`Step 4: Salvati ${emailsSaved} nuovi messaggi nel database`);
+            } else {
+              console.log('Nessun messaggio trovato nella response download:', downloadResult);
+            }
+          } catch (parseError) {
+            console.error('Errore parsing download response:', parseError);
+          }
+        } else {
+          console.error('Errore download messaggi:', downloadText.substring(0, 200));
+        }
+
+        // Se non sono state salvate nuove email, usa il conteggio dalla sincronizzazione
+        if (emailsSaved === 0) {
+          emailsSaved = syncResult.data?.result?.messages_processed || 0;
+        }
         
+        console.log(`Email sincronizzate: ${emailsSaved}`);
       } else {
         console.log('Sincronizzazione TMWE non riuscita:', syncResult);
       }

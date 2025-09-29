@@ -931,11 +931,11 @@ export default function RubricaAvanzata() {
                       </div>
                    </CardContent>
                  </Card>
-                )}
+                 )}
                 
                 {/* Mobile Pagination - Top */}
                 {totalPages > 1 && (
-                  <Card className="border-card shadow-soft">
+                  <Card className="border-card shadow-soft mt-1">
                     <CardContent className="p-2">
                       <div className="flex flex-col gap-1">
                         <div className="text-xs text-text-secondary text-center">

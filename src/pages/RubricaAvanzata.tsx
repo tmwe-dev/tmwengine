@@ -754,44 +754,6 @@ export default function RubricaAvanzata() {
             </div>
           )}
 
-          {/* Actions Bar */}
-          {selectedRecords.size > 0 && (
-            <div className="pt-2 border-t">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">
-                  {selectedRecords.size} contatto/i selezionato/i
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setShowMultipleActivityDialog(true)}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <FileText className="h-3 w-3 mr-1" />
-                    Crea Attività
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={deleteSelectedContacts}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Elimina Selezionati
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedRecords(new Set())}
-                    className="h-7 px-2 text-xs"
-                  >
-                    Deseleziona Tutti
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -829,7 +791,7 @@ export default function RubricaAvanzata() {
              <>
                {/* Mobile Selection Controls */}
                 {viewingRecords.length > 0 && (
-                  <Card className="border-card shadow-soft bg-yellow-500/20 border-yellow-500">
+                  <Card className="border-card shadow-soft">
                    <CardContent className="p-3 space-y-3">
                      {/* Checkbox Seleziona tutto */}
                      <div className="flex items-center justify-between">

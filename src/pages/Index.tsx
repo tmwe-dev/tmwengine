@@ -37,7 +37,7 @@ const Index = () => {
           </Link>
         </div>
 
-        <Link to="/dashboard">
+        <Link to="/auth">
           <Button size="lg" className="gap-2">
             Accedi al CRM
             <ArrowRight className="h-4 w-4" />

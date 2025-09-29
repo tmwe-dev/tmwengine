@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
 import Dashboard from "./pages/Dashboard";
@@ -20,26 +23,65 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<CRMLayout><Dashboard /></CRMLayout>} />
-          <Route path="/settings" element={<CRMLayout><Settings /></CRMLayout>} />
-          <Route path="/rubrica" element={<CRMLayout><Rubrica /></CRMLayout>} />
-          <Route path="/rubrica-avanzata" element={<CRMLayout><RubricaAvanzata /></CRMLayout>} />
-          <Route path="/attivita" element={<CRMLayout><Attivita /></CRMLayout>} />
-          <Route path="/campagne" element={<CRMLayout><Campagne /></CRMLayout>} />
-          <Route path="/email" element={<CRMLayout><Email /></CRMLayout>} />
-          <Route path="/chat" element={<CRMLayout><Chat /></CRMLayout>} />
-          <Route path="/import-templates" element={<CRMLayout><ImportTemplates /></CRMLayout>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <CRMLayout><Dashboard /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <CRMLayout><Settings /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/rubrica" element={
+              <ProtectedRoute>
+                <CRMLayout><Rubrica /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/rubrica-avanzata" element={
+              <ProtectedRoute>
+                <CRMLayout><RubricaAvanzata /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/attivita" element={
+              <ProtectedRoute>
+                <CRMLayout><Attivita /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/campagne" element={
+              <ProtectedRoute>
+                <CRMLayout><Campagne /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/email" element={
+              <ProtectedRoute>
+                <CRMLayout><Email /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <CRMLayout><Chat /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/import-templates" element={
+              <ProtectedRoute>
+                <CRMLayout><ImportTemplates /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

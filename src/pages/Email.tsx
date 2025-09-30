@@ -89,7 +89,8 @@ const Email = () => {
       const { data: emailData, error } = await supabase
         .from('email_messages')
         .select('*')
-        .order('data_ricezione', { ascending: false });
+        .order('data_ricezione', { ascending: false })
+        .limit(1000); // Assicuriamo di prendere fino a 1000 email
 
       console.log('Query risultato - Error:', error, 'Data:', emailData);
 
@@ -132,6 +133,10 @@ const Email = () => {
       
       // FORZATURA: cancella tutto e imposta solo le email dal DB
       setEmails(convertedEmails);
+      console.log('=== STATO FINALE ===');
+      console.log('EMAILS IMPOSTATE NELLO STATE:', convertedEmails.length);
+      console.log('PRIME 5 EMAIL:', convertedEmails.slice(0, 5).map(e => e.subject));
+      
       setStats({
         total: convertedEmails.length,
         unread: convertedEmails.filter(e => e.status === 'unread').length,

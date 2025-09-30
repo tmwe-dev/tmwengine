@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle, Download, Scissors } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle, Download, Scissors, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
@@ -67,6 +67,8 @@ const Email = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [emailsPerPage] = useState(50);
   const [stats, setStats] = useState<EmailStats>({
     total: 0,
     unread: 0,
@@ -170,6 +172,12 @@ const Email = () => {
     
     return matchesSearch && matchesStatus && matchesCategory;
   });
+
+  // Paginazione
+  const totalPages = Math.ceil(filteredEmails.length / emailsPerPage);
+  const startIndex = (currentPage - 1) * emailsPerPage;
+  const endIndex = startIndex + emailsPerPage;
+  const currentEmails = filteredEmails.slice(startIndex, endIndex);
 
   const handleEmailAction = async (emailId: string, action: string) => {
     try {
@@ -364,11 +372,16 @@ const Email = () => {
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <CardTitle className="text-base md:text-lg">Email</CardTitle>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CardTitle className="text-base md:text-lg">Email</CardTitle>
+                      <Badge variant="outline" className="text-xs">
+                        {filteredEmails.length} totali / {currentEmails.length} mostrate
+                      </Badge>
+                      <Button variant="outline" size="sm" onClick={fetchEmails}>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   
                   {/* Search and Filters - Mobile Optimized */}
@@ -397,9 +410,10 @@ const Email = () => {
                   </div>
                 </CardHeader>
                 
+                
                 <CardContent className="p-0">
                   <ScrollArea className="h-96 touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    {filteredEmails.map((email) => (
+                    {currentEmails.map((email) => (
                       <div
                         key={email.id}
                         className={`p-2 md:p-4 border-b cursor-pointer hover:bg-muted/50 ${
@@ -437,9 +451,39 @@ const Email = () => {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </ScrollArea>
-                </CardContent>
+                      ))}
+                    </ScrollArea>
+                    
+                    {/* Controlli di paginazione */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between p-4 border-t">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Precedente
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Pagina {currentPage} di {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Successiva
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Mostrando {startIndex + 1}-{Math.min(endIndex, filteredEmails.length)} di {filteredEmails.length} email
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
               </Card>
             </div>
 

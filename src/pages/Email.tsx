@@ -86,20 +86,45 @@ const Email = () => {
     setLoading(true);
     try {
       console.log('=== INIZIO FETCH EMAILS ===');
-      const { data: emailData, error } = await supabase
-        .from('email_messages')
-        .select('*')
-        .order('data_ricezione', { ascending: false })
-        .limit(1000); // Assicuriamo di prendere fino a 1000 email
+      // CARICAMENTO COMPLETO - NESSUN LIMITE
+      let allEmails: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
 
-      console.log('Query risultato - Error:', error, 'Data:', emailData);
+      while (hasMore) {
+        const { data: emailBatch, error } = await supabase
+          .from('email_messages')
+          .select('*')
+          .order('data_ricezione', { ascending: false })
+          .range(from, from + batchSize - 1);
 
-      if (error) {
-        console.error('ERRORE nella query:', error);
+        if (error) {
+          console.error('ERRORE nella query batch:', error);
+          throw error;
+        }
+
+        if (emailBatch && emailBatch.length > 0) {
+          allEmails = [...allEmails, ...emailBatch];
+          from += batchSize;
+          hasMore = emailBatch.length === batchSize;
+          console.log(`📥 Caricato batch: ${emailBatch.length} email, totale: ${allEmails.length}`);
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`🎉 CARICAMENTO COMPLETATO: ${allEmails.length} email totali`);
+      const emailData = allEmails;
+
+      console.log('Query risultato - EmailData length:', emailData?.length || 0);
+
+      if (!emailData) {
+        console.error('NESSUN DATO ricevuto dal database');
         setLoading(false);
         toast({
           title: "Errore",
-          description: `Errore nel recupero delle email: ${error.message}`,
+          description: "Nessun dato ricevuto dal database",
           variant: "destructive"
         });
         return;

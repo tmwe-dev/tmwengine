@@ -155,30 +155,39 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const startSync = async () => {
     try {
       setIsRunning(true);
-      addLog(`🚀 Avviando sincronizzazione progressiva cartella ${syncConfig.folder}`);
-      addLog(`🎯 Target: TUTTE le email disponibili (3769)`);
-      addLog(`⏱️ Modalità: Sequenziale con pausa 2s tra batch`);
-
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-progressive', {
-        body: {
+      addLog('🚀 Avvio sincronizzazione intelligente...');
+      addLog('🧠 Modalità AUTO: rileva automaticamente cosa fare');
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+        body: { 
+          mode: 'auto', // Modalità intelligente automatica
           folder_name: syncConfig.folder,
-          target_emails: 3769, // Target tutte le email
-          batch_delay: 2000    // 2 secondi di pausa tra batch
+          max_emails: syncConfig.maxEmails || 0,
+          force_full: false
         }
       });
 
       if (error) throw error;
 
-      addLog(`✅ Sincronizzazione progressiva completata!`);
-      addLog(`📊 Risultato: ${data.total_imported} email importate`);
-      addLog(`🔄 Batch processati: ${data.batches_processed}`);
-      addLog(`📍 Offset finale: ${data.final_offset}`);
+      addLog(`✅ ${data.message}`);
+      addLog(`📊 Modalità utilizzata: ${data.mode_used}`);
+      addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
+      addLog(`📚 Totale in database: ${data.total_emails_in_db}`);
       
+      if (data.next_sync_recommended) {
+        addLog(`⏰ Prossima sync consigliata: ${data.next_sync_recommended}`);
+      }
+
       if (onSyncComplete) {
         onSyncComplete();
       }
 
       await fetchFolderStats();
+
+      toast({
+        title: "Sincronizzazione completata",
+        description: `${data.emails_downloaded} email scaricate. Totale: ${data.total_emails_in_db}`
+      });
 
     } catch (error) {
       addLog(`❌ Errore sincronizzazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
@@ -269,7 +278,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Monitor Sincronizzazione Email
+            Sincronizzazione Master - Intelligente
             {isRunning && (
               <Badge variant="secondary" className="animate-pulse">
                 <Zap className="h-3 w-3 mr-1" />
@@ -277,6 +286,9 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               </Badge>
             )}
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Sync intelligente che rileva automaticamente se fare sync iniziale, incrementale o continua
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -323,9 +335,9 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 Scopri Cartelle
               </Button>
               {!isRunning ? (
-                <Button onClick={startSync} className="flex-1">
+                <Button onClick={startSync} className="flex-1 bg-gradient-to-r from-primary to-blue-600">
                   <Play className="h-4 w-4 mr-2" />
-                  Avvia Sync
+                  Sync Master
                 </Button>
               ) : (
                 <Button onClick={stopSync} variant="destructive" className="flex-1">

@@ -141,18 +141,20 @@ serve(async (req) => {
       console.log(`\n📦 BATCH ${batch}/${maxBatches} (offset: ${currentOffset})`);
 
       try {
-        // Chiamata all'API TMWE per email
-        const emailResponse = await fetch('https://findair.it/erp/tmwe_json/app.php?action=email_message', {
+        // Chiamata all'API TMWE per email (corretta come in batch)
+        const emailResponse = await fetch('https://findair.it/erp/tmwe_json/app.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${oauthToken}`
           },
           body: JSON.stringify({
-            handler: 'list',
-            folder_name: folder_name,
+            handler: 'get_messages',
+            folder: folder_name,
             limit: batchSize,
-            offset: currentOffset
+            offset: currentOffset,
+            include_attachments: false,
+            format: 'text'
           })
         });
 
@@ -163,6 +165,8 @@ serve(async (req) => {
 
         const emailData = await emailResponse.json();
         const messages = emailData?.messages || [];
+        
+        console.log(`📊 API Response: total=${emailData?.total}, count=${emailData?.count}, messages=${messages.length}, offset_richiesto=${currentOffset}`);
 
         console.log(`📧 Ricevuti ${messages.length} messaggi`);
 

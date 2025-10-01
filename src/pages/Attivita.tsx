@@ -316,12 +316,30 @@ export default function Attivita() {
 
   const handleAddActivity = async (activityData: any) => {
     try {
+      console.log('📝 Tentativo creazione attività:', activityData);
+      
       let descrizione = '';
       let tipo = activityData.tipo;
       
       if (activityData.tipo === 'email') {
+        if (!activityData.oggetto_email || !activityData.testo_email) {
+          toast({
+            title: "Campi mancanti",
+            description: "Compila oggetto e testo dell'email per continuare.",
+            variant: "destructive"
+          });
+          return;
+        }
         descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
       } else if (activityData.tipo === 'chiamata') {
+        if (!activityData.note_generali || activityData.note_generali.trim().length === 0) {
+          toast({
+            title: "Campi mancanti",
+            description: "Compila le note della chiamata per continuare.",
+            variant: "destructive"
+          });
+          return;
+        }
         descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
       }
 
@@ -334,11 +352,17 @@ export default function Attivita() {
           scadenza: null,
           priorita: activityData.priorita || 'media',
           assegnato_a: null,
-          creato_da: null
+          creato_da: null,
+          rubrica_id: null
         }])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Errore creazione attività:', error);
+        throw error;
+      }
+      
+      console.log('✅ Attività creata con successo:', data);
       
       setIsFormOpen(false);
       setSelectedActivity(null);
@@ -349,6 +373,7 @@ export default function Attivita() {
         description: "L'attività è stata creata con successo.",
       });
     } catch (error: any) {
+      console.error('❌ Errore catch:', error);
       toast({
         title: "Errore",
         description: error.message || "Si è verificato un errore durante la creazione dell'attività.",

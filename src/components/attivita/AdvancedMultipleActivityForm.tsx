@@ -258,6 +258,21 @@ export function AdvancedMultipleActivityForm({
   };
 
   const handleSubmit = (data: AdvancedActivityFormData) => {
+    console.log('📋 Form submit con dati:', data);
+    
+    // Validazione esplicita prima dell'invio
+    if (data.tipo === 'email') {
+      if (!data.oggetto_email || !data.testo_email) {
+        console.error('❌ Validazione fallita: email senza oggetto o testo');
+        return;
+      }
+    } else if (data.tipo === 'chiamata') {
+      if (!data.note_generali || data.note_generali.trim().length === 0) {
+        console.error('❌ Validazione fallita: chiamata senza note');
+        return;
+      }
+    }
+    
     // I dati vengono passati così come sono - la logica di creazione attività è gestita dal parent
     onSubmit(data);
   };

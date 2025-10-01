@@ -220,12 +220,13 @@ serve(async (req) => {
           break;
         }
         
-        if (!listData.success) {
+        // L'API ritorna success=false solo in caso di errore
+        if (listData.success === false) {
           console.error(`❌ API returned success=false:`, listData);
           break;
         }
 
-        const emails = listData.results || [];
+        const emails = listData.messages || [];
         
         if (emails.length === 0) {
           console.log(`✅ Fine lista UID a offset ${listOffset}`);

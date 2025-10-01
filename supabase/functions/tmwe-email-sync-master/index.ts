@@ -157,9 +157,9 @@ serve(async (req) => {
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
 
-      // STEP 1: Scarica TUTTI gli UID disponibili con paginazione
+      // STEP 1: Scarica TUTTI gli UID disponibili con paginazione aggressiva
       const allUIDs: Array<{uid: string, subject: string, from: string, date: string}> = [];
-      const listBatchSize = 100;
+      const listBatchSize = 500; // Provo con un limite più alto
       let listOffset = 0;
       let hasMore = true;
       
@@ -250,20 +250,22 @@ serve(async (req) => {
 
         console.log(`✅ Recuperati ${emails.length} UID (totale: ${allUIDs.length})`);
         
-        // Se abbiamo ricevuto meno email del batch size, abbiamo finito
-        if (emails.length < listBatchSize) {
+        // Continua finché l'API ritorna messaggi
+        // L'API sembra avere un limite interno, quindi continuo con offset incrementale
+        if (emails.length === 0) {
           hasMore = false;
-          console.log(`✅ Ultima pagina ricevuta`);
+          console.log(`✅ Nessun altro messaggio da recuperare`);
+        } else {
+          // Incremento offset del numero effettivo di messaggi ricevuti
+          listOffset += emails.length;
         }
-
-        listOffset += listBatchSize;
         
-        // Delay tra batch
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Delay tra batch per non sovraccaricare il server
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Safety limit
-        if (listOffset >= 10000) {
-          console.log(`⚠️ Limite safety 10000 raggiunto`);
+        // Safety limit aumentato per supportare migliaia di email
+        if (allUIDs.length >= max_emails) {
+          console.log(`⚠️ Limite massimo ${max_emails} raggiunto`);
           hasMore = false;
         }
       }

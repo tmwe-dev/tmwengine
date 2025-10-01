@@ -149,13 +149,13 @@ serve(async (req) => {
 
     if (syncLogError) throw syncLogError;
 
-    // DOWNLOAD EMAIL CON API GET + QUERY STRING (formato corretto TMWE ERP)
+    // API v2.0.0: POST con body JSON
     let totalImported = 0;
 
     console.log(`🎯 STEP 1: Recupero lista completa UID da ${folder_name}`);
 
     try {
-      const baseUrl = 'https://erp.tmwe.it/erp/tmwe_json';
+      const baseUrl = 'https://findair.it/erp/tmwe_json';
 
       // STEP 1: Scarica TUTTI gli UID disponibili con paginazione
       const allUIDs: Array<{uid: string, subject: string, from: string, date: string}> = [];
@@ -164,38 +164,53 @@ serve(async (req) => {
       let hasMore = true;
       
       while (hasMore) {
-        // GET con query string (formato corretto!)
-        const listUrl = `${baseUrl}/?app.php=get_email_list&folder=${folder_name}&offset=${listOffset}&limit=${listBatchSize}`;
+        // POST con body JSON (API v2.0.0)
+        const listUrl = `${baseUrl}/app.php?action=get_email_list`;
 
         console.log(`📋 Batch lista: offset=${listOffset}, limit=${listBatchSize}`);
 
         let listResponse;
         try {
           listResponse = await fetch(listUrl, {
-            method: 'GET',
+            method: 'POST',
             headers: {
-              'X-API-Key': oauthToken
-            }
+              'X-API-Key': oauthToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              folder: folder_name,
+              criteria: 'ALL',
+              offset: listOffset,
+              limit: listBatchSize
+            })
           });
         } catch (error) {
           const httpUrl = listUrl.replace('https://', 'http://');
           listResponse = await fetch(httpUrl, {
-            method: 'GET',
+            method: 'POST',
             headers: {
-              'X-API-Key': oauthToken
-            }
+              'X-API-Key': oauthToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              folder: folder_name,
+              criteria: 'ALL',
+              offset: listOffset,
+              limit: listBatchSize
+            })
           });
         }
 
         if (!listResponse.ok) {
-          console.error(`❌ Errore recupero lista a offset ${listOffset}: ${listResponse.status}`);
+          const errorText = await listResponse.text();
+          console.error(`❌ Errore HTTP ${listResponse.status}: ${errorText}`);
           break;
         }
 
         const listData = await listResponse.json();
         
         if (!listData.success) {
-          console.error(`❌ API returned success=false`);
+          console.error(`❌ API returned success=false:`, listData);
           break;
         }
 
@@ -232,7 +247,7 @@ serve(async (req) => {
         // Delay tra batch
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Safety limit per test
+        // Safety limit
         if (listOffset >= 10000) {
           console.log(`⚠️ Limite safety 10000 raggiunto`);
           hasMore = false;
@@ -261,26 +276,40 @@ serve(async (req) => {
           continue;
         }
 
-        // Email NON presente, scaricala con GET
+        // Email NON presente, scaricala con POST + JSON body
         console.log(`📥 Email ${i + 1}/${allUIDs.length}: Download ${uid} - "${emailInfo.subject}"`);
 
-        const messageUrl = `${baseUrl}/?app.php=get_email&uid=${uid}`;
+        const messageUrl = `${baseUrl}/app.php?action=email_message`;
 
         let messageResponse;
         try {
           messageResponse = await fetch(messageUrl, {
-            method: 'GET',
+            method: 'POST',
             headers: {
-              'X-API-Key': oauthToken
-            }
+              'X-API-Key': oauthToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              handler: 'get_message',
+              uid: uid,
+              include_attachments: true,
+              format: 'text'
+            })
           });
         } catch (error) {
           const httpUrl = messageUrl.replace('https://', 'http://');
           messageResponse = await fetch(httpUrl, {
-            method: 'GET',
+            method: 'POST',
             headers: {
-              'X-API-Key': oauthToken
-            }
+              'X-API-Key': oauthToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              handler: 'get_message',
+              uid: uid,
+              include_attachments: true,
+              format: 'text'
+            })
           });
         }
 
@@ -314,7 +343,7 @@ serve(async (req) => {
             flags: { seen: msgData.seen, flagged: msgData.flagged },
             direzione: 'inbound',
             stato: msgData.seen ? 'letto' : 'nuovo',
-            body_text: msgData.body || 'Contenuto da recuperare',
+            body_text: msgData.body || msgData.body_text || 'Contenuto da recuperare',
             body_html: msgData.body_html,
             attachments: msgData.attachments || [],
             data_invio: new Date(msgData.date || emailInfo.date || Date.now()).toISOString()
@@ -338,7 +367,7 @@ serve(async (req) => {
             .eq('id', syncLog.id);
         }
 
-        // Delay tra email per non sovraccaricare
+        // Delay tra email
         await new Promise(resolve => setTimeout(resolve, 200));
 
         // Safety limit

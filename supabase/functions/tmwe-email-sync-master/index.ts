@@ -171,6 +171,7 @@ serve(async (req) => {
         console.log(`📋 TEST: offset=${listOffset}, limit=${listBatchSize}`);
         
         const requestId = crypto.randomUUID();
+        const timestamp = new Date().toISOString();
         const requestBody = {
           handler: 'get_messages',
           folder: folder_name,
@@ -183,7 +184,7 @@ serve(async (req) => {
         console.log(`\n`);
         console.log(`========== NUOVA CHIAMATA API TMWE ==========`);
         console.log(`🆔 Request ID: ${requestId}`);
-        console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+        console.log(`⏰ Timestamp: ${timestamp}`);
         console.log(`📤 REQUEST URL: ${listUrl}`);
         console.log(`📤 REQUEST METHOD: POST`);
         console.log(`📤 REQUEST BODY:`);
@@ -191,6 +192,9 @@ serve(async (req) => {
         console.log(`📤 REQUEST HEADERS:`);
         console.log(`   Authorization: Bearer ${oauthToken.substring(0, 30)}...${oauthToken.substring(oauthToken.length - 10)}`);
         console.log(`   Content-Type: application/json`);
+        console.log(`   X-Request-ID: ${requestId}`);
+        console.log(`   X-Timestamp: ${timestamp}`);
+        console.log(`   X-Source: Lovable-CRM-Sync`);
         console.log(`=============================================\n`);
 
         let listResponse;
@@ -199,7 +203,10 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Request-ID': requestId,
+              'X-Timestamp': timestamp,
+              'X-Source': 'Lovable-CRM-Sync'
             },
             body: JSON.stringify(requestBody)
           });
@@ -210,7 +217,10 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Request-ID': requestId,
+              'X-Timestamp': timestamp,
+              'X-Source': 'Lovable-CRM-Sync'
             },
             body: JSON.stringify(requestBody)
           });

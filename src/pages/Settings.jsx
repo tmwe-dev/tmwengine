@@ -117,7 +117,8 @@ const Settings = () => {
         .maybeSingle();
 
       if (emailData) {
-        const creds = emailData.email_provider_credenziali?.[0];
+        // email_provider_credenziali è un oggetto singolo, NON un array (relazione 1:1)
+        const creds = emailData.email_provider_credenziali;
         setEmailConfig({
           id: emailData.id,
           provider: emailData.provider,

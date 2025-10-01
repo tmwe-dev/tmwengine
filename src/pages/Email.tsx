@@ -11,16 +11,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle, Download, Scissors, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, Trash2, Reply, Forward, Star, Tag, Brain, Users, BarChart3, Filter, Search, Plus, RefreshCw, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { EmailComposer } from "@/components/email/EmailComposer";
 import { EmailFilters } from "@/components/email/EmailFilters";
 import { AIClassificationPanel } from "@/components/email/AIClassificationPanel";
-import { EmailImportAnimation } from "@/components/email/EmailImportAnimation";
-import { BackgroundRemovalProcessor } from "@/components/email/BackgroundRemovalProcessor";
 import { EmailFolderDashboard } from "@/components/email/EmailFolderDashboard";
 import { EmailSyncMonitor } from "@/components/email/EmailSyncMonitor";
-import { useEmailImport } from "@/hooks/useEmailImport";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -63,8 +60,6 @@ const Email = () => {
   const [showComposer, setShowComposer] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [showImporter, setShowImporter] = useState(false);
-  const [showBackgroundRemovalDialog, setShowBackgroundRemovalDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -79,9 +74,6 @@ const Email = () => {
     avgResponseTime: '2h 30m',
     aiClassified: 0
   });
-  
-  // Hook per gestire l'importazione email
-  const emailImport = useEmailImport();
 
   // Recupera email reali dal database
   const fetchEmails = useCallback(async () => {
@@ -690,49 +682,8 @@ const Email = () => {
         </TabsContent>
 
         <TabsContent value="tools" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  Importazione Email
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Sincronizza e importa email dal server TMWE con animazione Windows 95
-                </p>
-                <Button 
-                  onClick={() => setShowImporter(true)}
-                  className="w-full"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Avvia Importazione
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Scissors className="h-5 w-5" />
-                  Rimozione Sfondi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Rimuovi automaticamente gli sfondi dalle immagini usando AI
-                </p>
-                <Button 
-                  onClick={() => setShowBackgroundRemovalDialog(true)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Scissors className="mr-2 h-4 w-4" />
-                  Apri Processore
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Strumenti email rimossi</p>
           </div>
         </TabsContent>
       </Tabs>
@@ -747,50 +698,12 @@ const Email = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Background Removal Dialog */}
-      <Dialog open={showBackgroundRemovalDialog} onOpenChange={setShowBackgroundRemovalDialog}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Background Removal Processor</DialogTitle>
-            <DialogDescription>
-              Remove backgrounds from images automatically using AI
-            </DialogDescription>
-          </DialogHeader>
-          <BackgroundRemovalProcessor />
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={showAIPanel} onOpenChange={setShowAIPanel}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Pannello Classificazione AI</DialogTitle>
           </DialogHeader>
           <AIClassificationPanel emails={emails} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Email Import Dialog */}
-      <Dialog open={showImporter} onOpenChange={setShowImporter}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>Email Import Manager</DialogTitle>
-          </DialogHeader>
-          <EmailImportAnimation
-            isImporting={emailImport.status.isImporting}
-            totalEmails={emailImport.status.totalEmails}
-            importedEmails={emailImport.status.importedEmails}
-            sourceFolder={emailImport.status.sourceFolder}
-            destinationFolder={emailImport.status.destinationFolder}
-            estimatedTimeMs={emailImport.status.estimatedTimeMs}
-            startTime={emailImport.status.startTime}
-            onStartImport={() => {
-              emailImport.startImport('INBOX').then(() => {
-                // Ricarica le email dopo l'importazione
-                fetchEmails();
-              }).catch(console.error);
-            }}
-            onCancelImport={emailImport.cancelImport}
-          />
         </DialogContent>
       </Dialog>
     </div>

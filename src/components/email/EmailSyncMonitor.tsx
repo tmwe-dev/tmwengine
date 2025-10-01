@@ -57,57 +57,12 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   };
 
   const discoverFolders = async () => {
-    try {
-      addLog('🔍 Ricerca cartelle disponibili sul server TMWE...');
-      
-      const { data, error } = await supabase.functions.invoke('tmwe-email-folders', {
-        body: { 
-          handler: 'get_folders',
-          include_counts: true,
-          hierarchy: true
-        }
-      });
-
-      if (error) {
-        console.error('Errore ricerca cartelle:', error);
-        addLog('❌ Errore durante la ricerca cartelle');
-        toast({
-          title: "Errore",
-          description: "Impossibile recuperare l'elenco delle cartelle",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('Cartelle trovate:', data);
-      console.log('Struttura completa:', JSON.stringify(data, null, 2));
-      
-      // Gestisce diversi formati possibili della risposta
-      let folders = data?.folders || data?.data?.folders || data || [];
-      if (!Array.isArray(folders)) {
-        folders = [];
-      }
-      
-      addLog(`✅ Trovate ${folders.length} cartelle sul server`);
-      
-      if (folders.length > 0) {
-        const folderList = folders.map((folder: any) => 
-          `📁 ${folder.name || folder.folder_name || folder} (${folder.messages || folder.message_count || folder.count || '?'} email)`
-        ).join('\n');
-        addLog(`Cartelle disponibili:\n${folderList}`);
-      } else {
-        addLog('🔍 Nessuna cartella trovata. Struttura risposta nel console.');
-      }
-
-      toast({
-        title: "Cartelle trovate",
-        description: `Scoperte ${data?.folders?.length || 0} cartelle. Controlla i log per i dettagli.`
-      });
-
-    } catch (error) {
-      console.error('Errore:', error);
-      addLog('❌ Errore di connessione durante la ricerca cartelle');
-    }
+    addLog('⚠️ Funzione ricerca cartelle non disponibile - funzione eliminata');
+    toast({
+      title: "Funzione non disponibile",
+      description: "La ricerca cartelle è stata rimossa",
+      variant: "destructive"
+    });
   };
 
   const fetchFolderStats = async () => {

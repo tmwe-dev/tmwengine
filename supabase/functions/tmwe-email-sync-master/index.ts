@@ -56,12 +56,17 @@ serve(async (req) => {
       console.log('📊 Provider error:', provErr);
       console.log('📊 Credenziali array:', provider?.email_provider_credenziali);
       
-      if (provider?.email_provider_credenziali?.[0]) {
-        console.log('📊 Prima credenziale:', provider.email_provider_credenziali[0]);
-        // Cerca prima oauth_token poi api_key come fallback
-        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
-                     provider.email_provider_credenziali[0].api_key;
+      // Trova la credenziale con token NON vuoto
+      const validCredential = provider?.email_provider_credenziali?.find(
+        cred => cred.oauth_token || cred.api_key
+      );
+      
+      if (validCredential) {
+        console.log('📊 Credenziale valida trovata:', validCredential);
+        oauthToken = validCredential.oauth_token || validCredential.api_key;
         console.log('📊 Token estratto:', oauthToken ? 'TROVATO' : 'NULL');
+      } else {
+        console.log('❌ Nessuna credenziale valida trovata');
       }
     }
     

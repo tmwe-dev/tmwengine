@@ -375,8 +375,8 @@ export const EmailFolderDashboard: React.FC = () => {
             </TabsList>
 
             <TabsContent value="emails" className="space-y-4">
-              <div className="rounded-lg border border-border">
-                <div className="flex flex-col space-y-1.5 p-6">
+              <div className="rounded-lg border border-border" style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}>
+                <div className="flex flex-col space-y-1.5 p-6" style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}>
                   <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center justify-between">
                     <span>Email in cartella: {selectedFolder}</span>
                     <Badge variant="outline">
@@ -384,8 +384,8 @@ export const EmailFolderDashboard: React.FC = () => {
                     </Badge>
                   </h3>
                 </div>
-                <div className="p-0" style={{ backgroundColor: 'hsl(240 10% 3.9%)' }}>
-                  <ScrollArea className="h-[500px] !bg-[hsl(240_10%_3.9%)]" style={{ backgroundColor: 'hsl(240 10% 3.9%)' }}>
+                <div className="p-0" style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}>
+                  <ScrollArea className="h-[500px]" style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}>
                     {loading ? (
                       <div className="p-8 text-center text-muted-foreground">
                         Caricamento email...
@@ -395,16 +395,12 @@ export const EmailFolderDashboard: React.FC = () => {
                         Nessuna email in questa cartella
                       </div>
                     ) : (
-                      <div className="divide-y divide-border" style={{ backgroundColor: 'hsl(240 10% 3.9%)' }}>
+                      <div className="divide-y divide-border" style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}>
                         {emails.map((email) => (
                           <div
                             key={email.id}
-                            style={{ backgroundColor: 'hsl(240 10% 3.9%) !important' }}
-                            className={cn(
-                              "p-4 cursor-pointer transition-colors relative !bg-[hsl(240_10%_3.9%)]",
-                              "hover:border-l-2 hover:border-primary",
-                              selectedEmail?.id === email.id && "border-l-4 border-primary"
-                            )}
+                            style={{ backgroundColor: 'hsl(240, 10%, 3.9%)' }}
+                            className="p-4 cursor-pointer transition-colors relative hover:border-l-2 hover:border-primary"
                             onClick={() => setSelectedEmail(email)}
                           >
                             <div className="flex items-start justify-between gap-4 pb-6">

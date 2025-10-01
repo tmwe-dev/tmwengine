@@ -141,25 +141,30 @@ serve(async (req) => {
       console.log(`\n📦 BATCH ${batch}/${maxBatches} (offset: ${currentOffset})`);
 
       try {
-        // Chiamata all'API TMWE con endpoint corretto v2.0.0
+        // USA LO STESSO APPROCCIO DI tmwe-email-messages CHE FUNZIONA!
+        const requestBody = {
+          handler: 'get_messages',
+          folder: folder_name,
+          limit: batchSize,
+          offset: currentOffset,
+          include_attachments: false,
+          format: 'text'
+        };
+
         const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
         
+        console.log('🔌 Chiamata API TMWE:', apiUrl);
+        console.log('📦 Body:', JSON.stringify(requestBody));
+
         let emailResponse;
         try {
           emailResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${oauthToken}`
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              handler: 'get_messages',
-              folder: folder_name,
-              limit: batchSize,
-              offset: currentOffset,
-              include_attachments: false,
-              format: 'text'
-            })
+            body: JSON.stringify(requestBody)
           });
         } catch (httpsError) {
           console.log('HTTPS fallito, provo HTTP...');
@@ -167,17 +172,10 @@ serve(async (req) => {
           emailResponse = await fetch(httpUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${oauthToken}`
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              handler: 'get_messages',
-              folder: folder_name,
-              limit: batchSize,
-              offset: currentOffset,
-              include_attachments: false,
-              format: 'text'
-            })
+            body: JSON.stringify(requestBody)
           });
         }
 

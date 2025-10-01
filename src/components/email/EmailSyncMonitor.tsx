@@ -47,7 +47,8 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const [syncConfig, setSyncConfig] = useState({
     folder: 'INBOX',
     batchSize: 100,
-    maxEmails: 10000  // Limite molto alto per importare tutto
+    maxEmails: 10000,
+    targetEmails: 50000  // Target per importazione completa
   });
 
   const addLog = (message: string) => {
@@ -201,6 +202,49 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     }
   };
 
+  const startFullImport = async () => {
+    try {
+      setIsRunning(true);
+      addLog('📥 Avvio IMPORTAZIONE COMPLETA di tutte le email...');
+      addLog(`🎯 Target: ${syncConfig.targetEmails} email`);
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-progressive', {
+        body: { 
+          folder_name: syncConfig.folder,
+          target_emails: syncConfig.targetEmails,
+          batch_delay: 1000  // 1 secondo tra i batch
+        }
+      });
+
+      if (error) throw error;
+
+      addLog(`✅ Importazione completata!`);
+      addLog(`📥 Email importate: ${data.total_imported}`);
+      addLog(`📊 Batch processati: ${data.batches_processed}`);
+      
+      if (onSyncComplete) {
+        onSyncComplete();
+      }
+
+      await fetchFolderStats();
+
+      toast({
+        title: "Importazione completata",
+        description: `${data.total_imported} email importate con successo`
+      });
+
+    } catch (error) {
+      addLog(`❌ Errore importazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+      toast({
+        title: "Errore Importazione",
+        description: error instanceof Error ? error.message : 'Errore sconosciuto',
+        variant: "destructive"
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   const stopSync = () => {
     setIsRunning(false);
     stopRealTimeTracking();
@@ -318,7 +362,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Max Email (0 = Tutte)</label>
+              <label className="text-sm font-medium">Max Email Sync</label>
               <input 
                 type="number" 
                 className="w-full p-2 border rounded bg-transparent"
@@ -326,26 +370,46 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, maxEmails: parseInt(e.target.value) }))}
                 disabled={isRunning}
                 min="0"
-                max="50000"
+                max="10000"
               />
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={discoverFolders} variant="outline" className="flex-1">
-                <FolderOpen className="h-4 w-4 mr-2" />
-                Scopri Cartelle
-              </Button>
-              {!isRunning ? (
-                <Button onClick={startSync} className="flex-1 bg-gradient-to-r from-primary to-blue-600">
-                  <Play className="h-4 w-4 mr-2" />
-                  Sync Master
-                </Button>
-              ) : (
-                <Button onClick={stopSync} variant="destructive" className="flex-1">
-                  <Pause className="h-4 w-4 mr-2" />
-                  Ferma Sync
-                </Button>
-              )}
+            <div>
+              <label className="text-sm font-medium">Target Importazione Completa</label>
+              <input 
+                type="number" 
+                className="w-full p-2 border rounded bg-transparent"
+                value={syncConfig.targetEmails}
+                onChange={(e) => setSyncConfig(prev => ({ ...prev, targetEmails: parseInt(e.target.value) }))}
+                disabled={isRunning}
+                min="1000"
+                max="100000"
+              />
             </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button onClick={discoverFolders} variant="outline" disabled={isRunning}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Scopri Cartelle
+            </Button>
+            
+            {!isRunning ? (
+              <>
+                <Button onClick={startSync} className="bg-gradient-to-r from-primary to-blue-600">
+                  <Play className="h-4 w-4 mr-2" />
+                  Sync Intelligente
+                </Button>
+                <Button onClick={startFullImport} className="bg-gradient-to-r from-green-600 to-emerald-600">
+                  <Download className="h-4 w-4 mr-2" />
+                  Importa TUTTE le Email
+                </Button>
+              </>
+            ) : (
+              <Button onClick={stopSync} variant="destructive" className="md:col-span-2">
+                <Pause className="h-4 w-4 mr-2" />
+                Ferma Sync
+              </Button>
+            )}
           </div>
 
           {/* Progress Bar con dettagli reali */}

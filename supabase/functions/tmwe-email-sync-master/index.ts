@@ -149,48 +149,32 @@ serve(async (req) => {
 
     if (syncLogError) throw syncLogError;
 
-    // SYNC PROCESS - L'API restituisce MAX 10 EMAIL per chiamata
+    // SYNC PROCESS - DOWNLOAD SEQUENZIALE EMAIL SINGOLE
     let totalImported = 0;
-    let currentOffset = 0;
-    let consecutiveEmpty = 0;
+    let consecutiveErrors = 0;
+    let emailNumber = 1;
+    const maxConsecutiveErrors = 5;
 
-    console.log(`🎯 Inizio sync: max ${maxBatches} batch di ${batchSize} email`);
+    console.log(`🎯 Inizio download sequenziale email da ${folder_name}`);
+    console.log(`📧 Scarico UNA email per volta fino a esaurimento`);
 
-    // NUOVO APPROCCIO: SCARICA PER INTERVALLI DI DATE
-    console.log(`\n🚀 DOWNLOAD PER INTERVALLI TEMPORALI: ${folder_name}`);
-    
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
-      
-      // Scarica email degli ultimi 365 giorni, 30 giorni alla volta
-      const daysToSync = 365;
-      const daysPerBatch = 30;
-      const totalBatches = Math.ceil(daysToSync / daysPerBatch);
-      
-      console.log(`📅 Sincronizzazione ultimi ${daysToSync} giorni in batch da ${daysPerBatch} giorni`);
-      
-      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
-        const daysAgo = batchNum * daysPerBatch;
-        const dateFrom = new Date();
-        dateFrom.setDate(dateFrom.getDate() - daysAgo - daysPerBatch);
-        const dateTo = new Date();
-        dateTo.setDate(dateTo.getDate() - daysAgo);
+      const messagesUrl = `${baseUrl}/app.php?action=email_message`;
+
+      // Loop infinito fino a quando non ci sono più email
+      while (consecutiveErrors < maxConsecutiveErrors) {
+        console.log(`\n📨 TENTATIVO EMAIL #${emailNumber}`);
         
-        const dateFromStr = dateFrom.toISOString().split('T')[0];
-        const dateToStr = dateTo.toISOString().split('T')[0];
-        
-        console.log(`\n📆 BATCH ${batchNum + 1}/${totalBatches}: ${dateFromStr} → ${dateToStr}`);
-        
-        const messagesUrl = `${baseUrl}/app.php?action=email_message`;
-        const searchBody = {
-          handler: 'search_messages',
+        // Richiesta per scaricare UNA singola email
+        const messageBody = {
+          handler: 'get_messages',
           folder: folder_name,
-          search_date_from: dateFromStr,
-          search_date_to: dateToStr,
-          limit: 1000
+          limit: 1,  // UNA email per volta
+          offset: emailNumber - 1  // Salta quelle già scaricate
         };
 
-        console.log('🔍 Ricerca email:', JSON.stringify(searchBody));
+        console.log(`🔍 Richiesta: ${JSON.stringify(messageBody)}`);
 
         let messagesResponse;
         try {
@@ -200,7 +184,7 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(searchBody)
+            body: JSON.stringify(messageBody)
           });
         } catch (error) {
           const httpUrl = messagesUrl.replace('https://', 'http://');
@@ -210,77 +194,100 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(searchBody)
+            body: JSON.stringify(messageBody)
           });
         }
 
         if (!messagesResponse.ok) {
-          console.error('❌ Errore ricerca messaggi');
+          console.error(`❌ Errore HTTP ${messagesResponse.status}`);
+          consecutiveErrors++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
 
-        const searchData = await messagesResponse.json();
-        const messages = searchData?.results || searchData?.messages || [];
+        const messageData = await messagesResponse.json();
+        const messages = messageData?.messages || messageData?.results || [];
         
-        console.log(`📊 Trovate ${messages.length} email in questo periodo`);
+        console.log(`📊 API ha restituito ${messages.length} email`);
 
+        // Se non ci sono più email, termina
         if (messages.length === 0) {
-          console.log('⏭️ Nessuna email in questo periodo, continuo...');
-          continue;
+          console.log('✅ NESSUNA ALTRA EMAIL DISPONIBILE - Fine scaricamento');
+          break;
         }
 
-        let newEmailsInBatch = 0;
+        // Reset errori consecutivi se abbiamo ricevuto dati
+        consecutiveErrors = 0;
 
-        // Processa ogni email
-        for (const message of messages) {
-          try {
-            const { count: existingCount } = await supabase
+        // Processa l'email ricevuta
+        const message = messages[0];
+        
+        try {
+          // Controlla se esiste già
+          const { count: existingCount } = await supabase
+            .from('email_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('message_id', message.uid || message.msgno);
+
+          if (existingCount === 0) {
+            // Inserisci la nuova email
+            const { error: insertError } = await supabase
               .from('email_messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('message_id', message.uid || message.msgno);
+              .insert({
+                message_id: message.uid || message.msgno,
+                subject: message.subject || 'Senza oggetto',
+                from_email: message.from || '',
+                to_email: message.to || '',
+                data_ricezione: new Date(message.date || Date.now()).toISOString(),
+                cartella: folder_name,
+                provider_id: providerData.id,
+                flags: { seen: message.seen, flagged: message.flagged },
+                direzione: 'inbound',
+                stato: message.seen ? 'letto' : 'nuovo',
+                body_text: message.body_text || 'Contenuto da recuperare',
+                body_html: message.body_html,
+                data_invio: new Date(message.date || Date.now()).toISOString()
+              });
 
-            if (existingCount === 0) {
-              const { error: insertError } = await supabase
-                .from('email_messages')
-                .insert({
-                  message_id: message.uid || message.msgno,
-                  subject: message.subject || 'Senza oggetto',
-                  from_email: message.from || '',
-                  to_email: message.to || '',
-                  data_ricezione: new Date(message.date || Date.now()).toISOString(),
-                  cartella: folder_name,
-                  provider_id: providerData.id,
-                  flags: { seen: message.seen, flagged: message.flagged },
-                  direzione: 'inbound',
-                  stato: message.seen ? 'letto' : 'nuovo',
-                  body_text: 'Contenuto da recuperare',
-                  data_invio: new Date(message.date || Date.now()).toISOString()
-                });
-
-              if (!insertError) {
-                newEmailsInBatch++;
-                totalImported++;
-              }
+            if (!insertError) {
+              totalImported++;
+              console.log(`✅ Email #${emailNumber} salvata (NUOVA) - Totale: ${totalImported}`);
+            } else {
+              console.error(`❌ Errore inserimento:`, insertError);
             }
-          } catch (msgError) {
-            console.error('❌ Errore processamento messaggio:', msgError);
+          } else {
+            console.log(`⏭️ Email #${emailNumber} già esistente - Skip`);
           }
+
+          // Aggiorna progresso ogni 10 email
+          if (emailNumber % 10 === 0) {
+            await supabase
+              .from('email_sync_logs')
+              .update({
+                messaggi_nuovi: totalImported,
+                messaggi_sincronizzati: emailNumber
+              })
+              .eq('id', syncLog.id);
+          }
+
+        } catch (msgError) {
+          console.error(`❌ Errore processamento email #${emailNumber}:`, msgError);
         }
 
-        console.log(`✅ Salvate ${newEmailsInBatch} nuove email in questo periodo`);
-        console.log(`📈 TOTALE importate finora: ${totalImported}`);
+        emailNumber++;
 
-        // Aggiorna progresso
-        await supabase
-          .from('email_sync_logs')
-          .update({
-            messaggi_nuovi: totalImported,
-            messaggi_sincronizzati: batchNum + 1
-          })
-          .eq('id', syncLog.id);
+        // Piccolo delay tra richieste
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Delay tra batch
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Safety: limite massimo per evitare loop infiniti
+        if (emailNumber > targetEmails) {
+          console.log(`⚠️ Raggiunto limite massimo ${targetEmails} email`);
+          break;
+        }
+      }
+
+      if (consecutiveErrors >= maxConsecutiveErrors) {
+        console.log(`⚠️ Troppi errori consecutivi (${consecutiveErrors}), interrompo`);
       }
 
     } catch (syncError) {

@@ -375,8 +375,8 @@ export const EmailFolderDashboard: React.FC = () => {
             </TabsList>
 
             <TabsContent value="emails" className="space-y-4">
-              <Card>
-                <CardHeader>
+              <Card className="bg-background">
+                <CardHeader className="bg-background">
                   <CardTitle className="flex items-center justify-between">
                     <span>Email in cartella: {selectedFolder}</span>
                     <Badge variant="outline">
@@ -384,8 +384,8 @@ export const EmailFolderDashboard: React.FC = () => {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[500px]">
+                <CardContent className="p-0 bg-background">
+                  <ScrollArea className="h-[500px] bg-background">
                     {loading ? (
                       <div className="p-8 text-center text-muted-foreground">
                         Caricamento email...
@@ -395,12 +395,12 @@ export const EmailFolderDashboard: React.FC = () => {
                         Nessuna email in questa cartella
                       </div>
                     ) : (
-                      <div className="divide-y divide-border">
+                      <div className="divide-y divide-border bg-background">
                         {emails.map((email) => (
                           <div
                             key={email.id}
                             className={cn(
-                              "p-4 cursor-pointer transition-colors relative",
+                              "p-4 cursor-pointer transition-colors relative bg-background",
                               "hover:border-l-2 hover:border-primary",
                               selectedEmail?.id === email.id && "border-l-4 border-primary"
                             )}

@@ -197,8 +197,14 @@ serve(async (req) => {
         console.log(`   X-Source: Lovable-CRM-Sync`);
         console.log(`=============================================\n`);
 
+        console.log(`🚀 STO PER ESEGUIRE FETCH VERSO: ${listUrl}`);
+        console.log(`⏰ Pre-fetch timestamp: ${Date.now()}`);
+        
         let listResponse;
         try {
+          console.log(`📡 Eseguendo fetch HTTPS...`);
+          const fetchStartTime = Date.now();
+          
           listResponse = await fetch(listUrl, {
             method: 'POST',
             headers: {
@@ -210,9 +216,23 @@ serve(async (req) => {
             },
             body: JSON.stringify(requestBody)
           });
-        } catch (error) {
-          console.log(`⚠️ HTTPS fallito, provo HTTP...`);
+          
+          const fetchEndTime = Date.now();
+          console.log(`✅ Fetch completato in ${fetchEndTime - fetchStartTime}ms`);
+          console.log(`📊 Response object:`, {
+            ok: listResponse.ok,
+            status: listResponse.status,
+            statusText: listResponse.statusText,
+            url: listResponse.url,
+            redirected: listResponse.redirected
+          });
+        } catch (fetchError) {
+          console.log(`❌ HTTPS fallito con errore: ${fetchError}`);
+          console.log(`⚠️ Tentativo fallback HTTP...`);
           const httpUrl = listUrl.replace('https://', 'http://');
+          console.log(`📡 Eseguendo fetch HTTP verso: ${httpUrl}`);
+          
+          const fetchStartTime = Date.now();
           listResponse = await fetch(httpUrl, {
             method: 'POST',
             headers: {
@@ -224,6 +244,8 @@ serve(async (req) => {
             },
             body: JSON.stringify(requestBody)
           });
+          const fetchEndTime = Date.now();
+          console.log(`✅ Fetch HTTP completato in ${fetchEndTime - fetchStartTime}ms`);
         }
 
         if (!listResponse.ok) {

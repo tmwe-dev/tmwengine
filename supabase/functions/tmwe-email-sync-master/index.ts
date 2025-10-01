@@ -159,183 +159,126 @@ serve(async (req) => {
 
     console.log(`🎯 Inizio sync: max ${maxBatches} batch di ${batchSize} email`);
 
-    // USA L'API DI SYNC DEDICATA INVECE DI GET_MESSAGES
-    console.log(`\n🚀 AVVIO SINCRONIZZAZIONE COMPLETA CARTELLA: ${folder_name}`);
+    // IGNORA L'API SYNC, USA DIRETTAMENTE GET_MESSAGES CON PAGINAZIONE AGGRESSIVA
+    console.log(`\n🚀 DOWNLOAD DIRETTO CON PAGINAZIONE: ${folder_name}`);
     
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
-      const apiUrl = `${baseUrl}/app.php?action=email_sync`;
-      
-      const requestBody = {
-        handler: 'sync_folder',
-        folder_name: folder_name,
-        folders: folder_name
-      };
+      let hasMore = true;
+      let currentBatch = 0;
+      consecutiveEmpty = 0;
 
-      console.log('🔌 API Sync Request:', apiUrl);
-      console.log('📋 Payload:', requestBody);
-
-      let syncResponse;
-      try {
-        syncResponse = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${oauthToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-      } catch (error) {
-        console.log('HTTPS failed, trying HTTP:', error);
-        const httpUrl = apiUrl.replace('https://', 'http://');
-        syncResponse = await fetch(httpUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${oauthToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-
-      console.log('Response status:', syncResponse.status, syncResponse.statusText);
-
-      if (!syncResponse.ok) {
-        const errorText = await syncResponse.text();
-        console.error('❌ Errore API TMWE Sync:', syncResponse.status, errorText);
-        throw new Error(`API sync failed: ${errorText}`);
-      }
-
-      const syncData = await syncResponse.json();
-      console.log('📊 Sync Response:', JSON.stringify(syncData, null, 2));
-
-      // Se la risposta include messaggi sincronizzati
-      if (syncData.success) {
-        console.log('✅ Sync completata con successo');
+      while (hasMore && currentBatch < maxBatches && consecutiveEmpty < 3) {
+        currentBatch++;
+        console.log(`\n📦 BATCH ${currentBatch}/${maxBatches} (offset: ${currentOffset})`);
         
-        // Ora scarica tutti i messaggi con get_messages usando la paginazione corretta
-        let hasMore = true;
-        let currentBatch = 0;
-        
-        while (hasMore && currentBatch < maxBatches) {
-          currentBatch++;
-          console.log(`\n📦 BATCH ${currentBatch}/${maxBatches} (offset: ${currentOffset})`);
-          
-          const messagesUrl = `${baseUrl}/app.php?action=email_message`;
-          const messagesBody = {
-            handler: 'get_messages',
-            folder: folder_name,
-            limit: batchSize,
-            offset: currentOffset,
-            include_attachments: false,
-            format: 'text'
-          };
+        const messagesUrl = `${baseUrl}/app.php?action=email_message`;
+        const messagesBody = {
+          handler: 'get_messages',
+          folder: folder_name,
+          limit: batchSize,
+          offset: currentOffset,
+          include_attachments: false,
+          format: 'text'
+        };
 
-          let messagesResponse;
-          try {
-            messagesResponse = await fetch(messagesUrl, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${oauthToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(messagesBody)
-            });
-          } catch (error) {
-            const httpUrl = messagesUrl.replace('https://', 'http://');
-            messagesResponse = await fetch(httpUrl, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${oauthToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(messagesBody)
-            });
-          }
-
-          if (!messagesResponse.ok) {
-            console.error('❌ Errore scaricamento messaggi');
-            break;
-          }
-
-          const emailData = await messagesResponse.json();
-          const messages = emailData?.messages || [];
-          
-          console.log(`📊 Ricevuti ${messages.length} messaggi`);
-
-          if (messages.length === 0) {
-            consecutiveEmpty++;
-            console.log(`⚠️ Batch vuoto (${consecutiveEmpty}/3)`);
-            if (consecutiveEmpty >= 3) {
-              hasMore = false;
-              break;
-            }
-            currentOffset += batchSize;
-            continue;
-          }
-
-          consecutiveEmpty = 0;
-          let newEmailsInBatch = 0;
-
-          // Processa ogni email
-          for (const message of messages) {
-            try {
-              const { count: existingCount } = await supabase
-                .from('email_messages')
-                .select('*', { count: 'exact', head: true })
-                .eq('message_id', message.uid || message.msgno);
-
-              if (existingCount === 0) {
-                const { error: insertError } = await supabase
-                  .from('email_messages')
-                  .insert({
-                    message_id: message.uid || message.msgno,
-                    subject: message.subject || 'Senza oggetto',
-                    from_email: message.from || '',
-                    to_email: message.to || '',
-                    data_ricezione: new Date(message.date || Date.now()).toISOString(),
-                    cartella: folder_name,
-                    provider_id: providerData.id,
-                    flags: { seen: message.seen, flagged: message.flagged },
-                    direzione: 'inbound',
-                    stato: message.seen ? 'letto' : 'nuovo',
-                    body_text: 'Contenuto da recuperare',
-                    data_invio: new Date(message.date || Date.now()).toISOString()
-                  });
-
-                if (!insertError) {
-                  newEmailsInBatch++;
-                  totalImported++;
-                }
-              }
-            } catch (msgError) {
-              console.error('❌ Errore processamento messaggio:', msgError);
-            }
-          }
-
-          console.log(`✅ Salvate ${newEmailsInBatch} nuove email in questo batch`);
-          currentOffset += batchSize;
-
-          // Aggiorna progresso
-          await supabase
-            .from('email_sync_logs')
-            .update({
-              messaggi_nuovi: totalImported,
-              messaggi_sincronizzati: currentBatch
-            })
-            .eq('id', syncLog.id);
-
-          // Se abbiamo ricevuto meno messaggi del limite, abbiamo finito
-          if (messages.length < batchSize) {
-            hasMore = false;
-          }
-
-          // Delay tra batch
-          await new Promise(resolve => setTimeout(resolve, 300));
+        let messagesResponse;
+        try {
+          messagesResponse = await fetch(messagesUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(messagesBody)
+          });
+        } catch (error) {
+          const httpUrl = messagesUrl.replace('https://', 'http://');
+          messagesResponse = await fetch(httpUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(messagesBody)
+          });
         }
-      } else {
-        console.error('❌ Sync failed:', syncData);
-        throw new Error('Sync operation failed');
+
+        if (!messagesResponse.ok) {
+          console.error('❌ Errore scaricamento messaggi');
+          consecutiveEmpty++;
+          currentOffset += batchSize;
+          continue;
+        }
+
+        const emailData = await messagesResponse.json();
+        const messages = emailData?.messages || [];
+        
+        console.log(`📊 Ricevuti ${messages.length} messaggi dal server`);
+
+        if (messages.length === 0) {
+          consecutiveEmpty++;
+          console.log(`⚠️ Batch vuoto (${consecutiveEmpty}/3)`);
+          currentOffset += batchSize;
+          continue;
+        }
+
+        consecutiveEmpty = 0;
+        let newEmailsInBatch = 0;
+
+        // Processa ogni email
+        for (const message of messages) {
+          try {
+            const { count: existingCount } = await supabase
+              .from('email_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('message_id', message.uid || message.msgno);
+
+            if (existingCount === 0) {
+              const { error: insertError } = await supabase
+                .from('email_messages')
+                .insert({
+                  message_id: message.uid || message.msgno,
+                  subject: message.subject || 'Senza oggetto',
+                  from_email: message.from || '',
+                  to_email: message.to || '',
+                  data_ricezione: new Date(message.date || Date.now()).toISOString(),
+                  cartella: folder_name,
+                  provider_id: providerData.id,
+                  flags: { seen: message.seen, flagged: message.flagged },
+                  direzione: 'inbound',
+                  stato: message.seen ? 'letto' : 'nuovo',
+                  body_text: 'Contenuto da recuperare',
+                  data_invio: new Date(message.date || Date.now()).toISOString()
+                });
+
+              if (!insertError) {
+                newEmailsInBatch++;
+                totalImported++;
+              }
+            }
+          } catch (msgError) {
+            console.error('❌ Errore processamento messaggio:', msgError);
+          }
+        }
+
+        console.log(`✅ Salvate ${newEmailsInBatch} nuove email in questo batch`);
+        currentOffset += batchSize;
+
+        // Aggiorna progresso
+        await supabase
+          .from('email_sync_logs')
+          .update({
+            messaggi_nuovi: totalImported,
+            messaggi_sincronizzati: currentBatch
+          })
+          .eq('id', syncLog.id);
+
+        // Se abbiamo ricevuto meno messaggi del limite, continuiamo comunque
+        // perché potrebbe essere che il server ha un limite ma ci sono ancora email
+        
+        // Delay tra batch per non sovraccaricare
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
     } catch (syncError) {

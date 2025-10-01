@@ -209,7 +209,9 @@ serve(async (req) => {
 
         // Prendi prima il testo per debug
         const responseText = await listResponse.text();
-        console.log(`📄 Response (primi 500 char): ${responseText.substring(0, 500)}`);
+        console.log(`📄 Response status: ${listResponse.status}`);
+        console.log(`📄 Response headers:`, Object.fromEntries(listResponse.headers.entries()));
+        console.log(`📄 RISPOSTA COMPLETA API:`, responseText);
         
         let listData;
         try {

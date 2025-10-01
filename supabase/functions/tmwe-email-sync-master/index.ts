@@ -166,12 +166,13 @@ serve(async (req) => {
       let hasMore = true;
       
       while (hasMore) {
-        const listUrl = `${baseUrl}/app.php?action=email_message`;
-
-        console.log(`📋 TEST: offset=${listOffset}, limit=${listBatchSize}`);
-        
         const requestId = crypto.randomUUID();
         const timestamp = new Date().toISOString();
+        const timestampMs = Date.now();
+        
+        // Aggiungi parametro state per evitare cache
+        const listUrl = `${baseUrl}/app.php?action=email_message&state=${timestampMs}`;
+        
         const requestBody = {
           handler: 'get_messages',
           folder: folder_name,

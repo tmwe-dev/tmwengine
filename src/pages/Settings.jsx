@@ -202,6 +202,8 @@ const Settings = () => {
             api_key: emailConfig.apiKey,
             oauth_token: emailConfig.apiKey,
             webhook_secret: emailConfig.webhookSecret
+          }, {
+            onConflict: 'provider_id'
           });
 
         if (credError) throw credError;
@@ -225,11 +227,13 @@ const Settings = () => {
         // Crea credenziali
         const { error: credError } = await supabase
           .from('email_provider_credenziali')
-          .insert({
+          .upsert({
             provider_id: emailProviderId,
             api_key: emailConfig.apiKey,
             oauth_token: emailConfig.apiKey,
             webhook_secret: emailConfig.webhookSecret
+          }, {
+            onConflict: 'provider_id'
           });
 
         if (credError) throw credError;

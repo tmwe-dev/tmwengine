@@ -174,7 +174,7 @@ serve(async (req) => {
           listResponse = await fetch(listUrl, {
             method: 'POST',
             headers: {
-              'X-API-Key': oauthToken,
+              'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -189,7 +189,7 @@ serve(async (req) => {
           listResponse = await fetch(httpUrl, {
             method: 'POST',
             headers: {
-              'X-API-Key': oauthToken,
+              'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -286,7 +286,7 @@ serve(async (req) => {
           messageResponse = await fetch(messageUrl, {
             method: 'POST',
             headers: {
-              'X-API-Key': oauthToken,
+              'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -301,7 +301,7 @@ serve(async (req) => {
           messageResponse = await fetch(httpUrl, {
             method: 'POST',
             headers: {
-              'X-API-Key': oauthToken,
+              'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({

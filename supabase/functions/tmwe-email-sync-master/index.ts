@@ -141,22 +141,45 @@ serve(async (req) => {
       console.log(`\n📦 BATCH ${batch}/${maxBatches} (offset: ${currentOffset})`);
 
       try {
-        // Chiamata all'API TMWE per email (corretta come in batch)
-        const emailResponse = await fetch('https://findair.it/erp/tmwe_json/app.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${oauthToken}`
-          },
-          body: JSON.stringify({
-            handler: 'get_messages',
-            folder: folder_name,
-            limit: batchSize,
-            offset: currentOffset,
-            include_attachments: false,
-            format: 'text'
-          })
-        });
+        // Chiamata all'API TMWE con endpoint corretto v2.0.0
+        const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
+        
+        let emailResponse;
+        try {
+          emailResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${oauthToken}`
+            },
+            body: JSON.stringify({
+              handler: 'get_messages',
+              folder: folder_name,
+              limit: batchSize,
+              offset: currentOffset,
+              include_attachments: false,
+              format: 'text'
+            })
+          });
+        } catch (httpsError) {
+          console.log('HTTPS fallito, provo HTTP...');
+          const httpUrl = apiUrl.replace('https://', 'http://');
+          emailResponse = await fetch(httpUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${oauthToken}`
+            },
+            body: JSON.stringify({
+              handler: 'get_messages',
+              folder: folder_name,
+              limit: batchSize,
+              offset: currentOffset,
+              include_attachments: false,
+              format: 'text'
+            })
+          });
+        }
 
         if (!emailResponse.ok) {
           console.error('❌ Errore API TMWE:', emailResponse.status);

@@ -220,15 +220,17 @@ serve(async (req) => {
           break;
         }
         
-        // Controlla se c'è un errore esplicito dall'API
+        // L'API ritorna success: false SOLO in caso di errore
+        // Quando funziona, ritorna direttamente { messages: [...], total: N, from: N, to: N }
         if (listData.success === false) {
-          console.error(`❌ API returned success=false:`, listData);
+          console.error(`❌ Errore API:`, listData);
           break;
         }
 
-        // Controlla se l'API ha ritornato i messaggi
+        // Verifica che ci siano messages
         if (!listData.messages || !Array.isArray(listData.messages)) {
-          console.error(`❌ API non ha ritornato messages validi:`, listData);
+          console.log(`⚠️ Nessun messaggio trovato o formato non valido`);
+          hasMore = false;
           break;
         }
 

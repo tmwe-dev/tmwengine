@@ -56,6 +56,7 @@ interface EmailStats {
 
 const Email = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
@@ -69,6 +70,7 @@ const Email = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [emailsPerPage] = useState(50);
+  const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [stats, setStats] = useState<EmailStats>({
     total: 0,
     unread: 0,
@@ -329,13 +331,50 @@ const Email = () => {
       </div>
       
       {/* Tabs per diverse visualizzazioni */}
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">Dashboard Cartelle</TabsTrigger>
-          <TabsTrigger value="monitor">Monitor Sync</TabsTrigger>
-          <TabsTrigger value="list">Lista Email</TabsTrigger>
-          <TabsTrigger value="tools">Strumenti</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+        {/* Dropdown mobile per selezione sezione */}
+        {isMobile ? (
+          <div className="mb-4">
+            <Select value={activeSection} onValueChange={setActiveSection}>
+              <SelectTrigger className="w-full h-11 bg-background border-border shadow-sm">
+                <SelectValue placeholder="Seleziona sezione" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border z-50">
+                <SelectItem value="dashboard">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Dashboard Cartelle</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="monitor">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Monitor Sync</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="list">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    <span>Lista Email</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="tools">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    <span>Strumenti</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">Dashboard Cartelle</TabsTrigger>
+            <TabsTrigger value="monitor">Monitor Sync</TabsTrigger>
+            <TabsTrigger value="list">Lista Email</TabsTrigger>
+            <TabsTrigger value="tools">Strumenti</TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="dashboard" className="space-y-4">
           <EmailFolderDashboard />

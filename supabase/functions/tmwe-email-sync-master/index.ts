@@ -157,17 +157,17 @@ serve(async (req) => {
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
 
-      // STEP 1: Scarica TUTTI gli UID disponibili con paginazione aggressiva
+      // STEP 1: TEST con offset=40 e limit=50
       const allUIDs: Array<{uid: string, subject: string, from: string, date: string}> = [];
-      const listBatchSize = 500; // Provo con un limite più alto
-      let listOffset = 0;
+      const listBatchSize = 50; // TEST: limit=50
+      let listOffset = 40; // TEST: offset=40
       let hasMore = true;
       
       while (hasMore) {
         // USA L'API CORRETTA: email_message con handler get_messages
         const listUrl = `${baseUrl}/app.php?action=email_message`;
 
-        console.log(`📋 Batch lista: offset=${listOffset}, limit=${listBatchSize}`);
+        console.log(`📋 TEST: offset=${listOffset}, limit=${listBatchSize}`);
 
         let listResponse;
         try {
@@ -252,15 +252,9 @@ serve(async (req) => {
 
         console.log(`✅ Recuperati ${emails.length} UID (totale: ${allUIDs.length})`);
         
-        // Continua finché l'API ritorna messaggi
-        // L'API sembra avere un limite interno, quindi continuo con offset incrementale
-        if (emails.length === 0) {
-          hasMore = false;
-          console.log(`✅ Nessun altro messaggio da recuperare`);
-        } else {
-          // Incremento offset del numero effettivo di messaggi ricevuti
-          listOffset += emails.length;
-        }
+        // TEST: ferma dopo il primo batch per vedere la risposta
+        console.log(`🛑 TEST completato - fermato dopo primo batch`);
+        hasMore = false;
         
         // Delay tra batch per non sovraccaricare il server
         await new Promise(resolve => setTimeout(resolve, 200));

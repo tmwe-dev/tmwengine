@@ -246,6 +246,9 @@ const Settings = () => {
         title: "Successo",
         description: "Configurazione email salvata con successo",
       });
+      
+      // Ricarica le configurazioni per mostrare il token salvato
+      await loadConfigurations();
     } catch (error) {
       console.error('Errore salvataggio email config:', error);
       toast({

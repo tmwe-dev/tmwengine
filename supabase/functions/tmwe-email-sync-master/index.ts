@@ -40,27 +40,37 @@ serve(async (req) => {
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
 
     // USA ESATTAMENTE IL METODO DI tmwe-email-messages CHE FUNZIONA!
+    console.log('🔍 Cerco token TMWE_OAUTH_TOKEN in environment...');
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
     
     if (!oauthToken) {
-      const { data: provider } = await supabase
+      console.log('❌ Token non in environment, cerco nel database...');
+      const { data: provider, error: provErr } = await supabase
         .from('email_provider')
         .select('email_provider_credenziali(*)')
         .eq('provider', 'TMWE')
         .eq('attivo', true)
         .maybeSingle();
       
+      console.log('📊 Provider data:', provider);
+      console.log('📊 Provider error:', provErr);
+      console.log('📊 Credenziali array:', provider?.email_provider_credenziali);
+      
       if (provider?.email_provider_credenziali?.[0]) {
+        console.log('📊 Prima credenziale:', provider.email_provider_credenziali[0]);
+        // Cerca prima oauth_token poi api_key come fallback
         oauthToken = provider.email_provider_credenziali[0].oauth_token || 
                      provider.email_provider_credenziali[0].api_key;
+        console.log('📊 Token estratto:', oauthToken ? 'TROVATO' : 'NULL');
       }
     }
     
     if (!oauthToken) {
+      console.error('❌ NESSUN TOKEN TROVATO!');
       throw new Error('TMWE OAuth token non configurato nel database o environment');
     }
 
-    console.log('✅ Token trovato');
+    console.log('✅ Token trovato, lunghezza:', oauthToken.length);
 
     // Get provider ID
     const { data: providerData } = await supabase

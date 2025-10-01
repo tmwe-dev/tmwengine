@@ -164,8 +164,8 @@ serve(async (req) => {
       let hasMore = true;
       
       while (hasMore) {
-        // POST con body JSON (API v2.0.0)
-        const listUrl = `${baseUrl}/app.php?action=get_email_list`;
+        // USA L'API CORRETTA: email_message con handler get_messages
+        const listUrl = `${baseUrl}/app.php?action=email_message`;
 
         console.log(`📋 Batch lista: offset=${listOffset}, limit=${listBatchSize}`);
 
@@ -178,8 +178,8 @@ serve(async (req) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+              handler: 'get_messages',
               folder: folder_name,
-              criteria: 'ALL',
               offset: listOffset,
               limit: listBatchSize
             })
@@ -193,8 +193,8 @@ serve(async (req) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+              handler: 'get_messages',
               folder: folder_name,
-              criteria: 'ALL',
               offset: listOffset,
               limit: listBatchSize
             })

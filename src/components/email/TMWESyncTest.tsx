@@ -52,56 +52,19 @@ export function TMWESyncTest() {
     body_text: 'Questo è un test di invio email tramite API TMWE'
   });
 
-  const handleSync = async () => {
-    setSyncLoading(true);
-    setSyncResult(null);
-    
-    try {
-      console.log('Avvio sincronizzazione TMWE...', { syncAction, folderName });
-      
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync', {
-        body: {
-          action: syncAction,
-          folder_name: folderName,
-          date_from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Last 7 days
-          date_to: new Date().toISOString()
-        }
-      });
-
-      if (error) throw error;
-      
-      setSyncResult(data);
-      
-      if (data.success) {
-        toast.success(`Sincronizzazione completata! ${data.emails_nuove || 0} nuove email`);
-      } else {
-        toast.error(`Errore sincronizzazione: ${data.error}`);
-      }
-      
-    } catch (error) {
-      console.error('Errore sync:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-      setSyncResult({ success: false, error: errorMessage });
-      toast.error(`Errore: ${errorMessage}`);
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-
   const handleDownloadEmails = async () => {
     setSyncLoading(true);
     setSyncResult(null);
     
     try {
-      console.log('Download email tramite tmwe-email-sync esistente...');
+      console.log('Download email tramite tmwe-email-sync-master...');
       
-      // USA LA FUNZIONE SYNC CHE GIÀ FUNZIONA - niente edge function separata!
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync', {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
         body: { 
-          action: 'incremental_sync',
-          folder_name: 'INBOX',
-          date_from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
-          date_to: new Date().toISOString()
+          mode: 'initial',
+          folder_name: folderName,
+          max_emails: 1000,
+          force_full: false
         }
       });
 
@@ -109,14 +72,14 @@ export function TMWESyncTest() {
       
       setSyncResult({
         success: data.success,
-        emails_sincronizzate: data.messages_synced || data.emails_downloaded || 0,
-        emails_nuove: data.messages_new || data.emails_nuove || 0,
+        emails_sincronizzate: data.emails_downloaded || 0,
+        emails_nuove: data.emails_downloaded || 0,
         sync_log_id: data.sync_log_id,
         messages_found: data.emails_downloaded || 0
       });
       
       if (data.success) {
-        toast.success(`Download completato! Scaricate ${data.emails_downloaded || data.messages_synced || 0} email tramite sync esistente`);
+        toast.success(`Download completato! ${data.emails_downloaded} email scaricate`);
       } else {
         toast.error(`Errore download: ${data.error}`);
       }
@@ -180,72 +143,37 @@ export function TMWESyncTest() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Test Sincronizzazione TMWE
+            Test Download Email TMWE
           </CardTitle>
           <CardDescription>
-            Testa la sincronizzazione email tramite API TMWE con certificati SSL auto-firmati accettati
+            Testa il download email tramite API TMWE
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="syncAction">Tipo Sincronizzazione</Label>
-              <Select value={syncAction} onValueChange={setSyncAction}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full_sync">Sincronizzazione Completa</SelectItem>
-                  <SelectItem value="incremental_sync">Sincronizzazione Incrementale</SelectItem>
-                  <SelectItem value="sync_folder">Sincronizza Cartella</SelectItem>
-                  <SelectItem value="get_sync_status">Stato Sincronizzazione</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="folderName">Cartella</Label>
-              <Input
-                id="folderName"
-                value={folderName}
-                onChange={(e) => setFolderName(e.target.value)}
-                placeholder="INBOX"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="folderName">Cartella</Label>
+            <Input
+              id="folderName"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              placeholder="INBOX"
+            />
           </div>
           
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleSync} 
-              disabled={syncLoading}
-              className="flex-1"
-            >
-              {syncLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sincronizzazione...
-                </>
-              ) : (
-                'Avvia Sync'
-              )}
-            </Button>
-            
-              <Button 
-                onClick={handleDownloadEmails} 
-                disabled={syncLoading}
-                variant="outline"
-                className="flex-1"
-              >
-                {syncLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Download...
-                  </>
-                ) : (
-                  'Download Email (via Sync)'
-                )}
-              </Button>
-          </div>
+          <Button 
+            onClick={handleDownloadEmails} 
+            disabled={syncLoading}
+            className="w-full"
+          >
+            {syncLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Download in corso...
+              </>
+            ) : (
+              'Scarica Email'
+            )}
+          </Button>
           
           {syncResult && (
             <div className="mt-4 p-4 rounded-lg border">

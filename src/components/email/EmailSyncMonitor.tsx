@@ -153,31 +153,27 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     }
   };
 
-  const startSync = async () => {
+  const downloadEmails = async () => {
     try {
       setIsRunning(true);
-      addLog('🚀 Avvio sincronizzazione intelligente...');
-      addLog('🧠 Modalità AUTO: rileva automaticamente cosa fare');
+      addLog('📥 Avvio download email...');
+      addLog(`📁 Cartella: ${syncConfig.folder}`);
+      addLog(`🎯 Limite: ${syncConfig.maxEmails || 'nessun limite'}`);
       
       const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
         body: { 
-          mode: 'auto', // Modalità intelligente automatica
+          mode: 'initial',
           folder_name: syncConfig.folder,
-          max_emails: syncConfig.maxEmails || 0,
+          max_emails: syncConfig.maxEmails || 5000,
           force_full: false
         }
       });
 
       if (error) throw error;
 
-      addLog(`✅ ${data.message}`);
-      addLog(`📊 Modalità utilizzata: ${data.mode_used}`);
+      addLog(`✅ Download completato!`);
       addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
       addLog(`📚 Totale in database: ${data.total_emails_in_db}`);
-      
-      if (data.next_sync_recommended) {
-        addLog(`⏰ Prossima sync consigliata: ${data.next_sync_recommended}`);
-      }
 
       if (onSyncComplete) {
         onSyncComplete();
@@ -186,64 +182,14 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       await fetchFolderStats();
 
       toast({
-        title: "Sincronizzazione completata",
+        title: "Download completato",
         description: `${data.emails_downloaded} email scaricate. Totale: ${data.total_emails_in_db}`
       });
 
     } catch (error) {
-      addLog(`❌ Errore sincronizzazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+      addLog(`❌ Errore download: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
       toast({
-        title: "Errore Sincronizzazione",
-        description: error instanceof Error ? error.message : 'Errore sconosciuto',
-        variant: "destructive"
-      });
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const startFullImport = async () => {
-    try {
-      setIsRunning(true);
-      addLog('📥 Avvio IMPORTAZIONE COMPLETA di tutte le email...');
-      addLog(`🎯 Target: ${syncConfig.targetEmails} email dalla cartella ${syncConfig.folder}`);
-      addLog('⚙️ Usando modalità INITIAL per importazione massiva...');
-      
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-        body: { 
-          mode: 'initial',  // Modalità initial per import massivo
-          folder_name: syncConfig.folder,
-          max_emails: syncConfig.targetEmails,  // Usa il target completo
-          force_full: true  // Forza import completo
-        }
-      });
-
-      if (error) throw error;
-
-      addLog(`✅ Importazione completata!`);
-      addLog(`📊 Modalità utilizzata: ${data.mode_used}`);
-      addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
-      addLog(`📚 Totale in database: ${data.total_emails_in_db}`);
-      
-      if (data.next_sync_recommended) {
-        addLog(`⏰ Prossima sync consigliata: ${data.next_sync_recommended}`);
-      }
-
-      if (onSyncComplete) {
-        onSyncComplete();
-      }
-
-      await fetchFolderStats();
-
-      toast({
-        title: "Importazione completata",
-        description: `${data.emails_downloaded} nuove email importate. Totale: ${data.total_emails_in_db}`
-      });
-
-    } catch (error) {
-      addLog(`❌ Errore importazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
-      toast({
-        title: "Errore Importazione",
+        title: "Errore Download",
         description: error instanceof Error ? error.message : 'Errore sconosciuto',
         variant: "destructive"
       });
@@ -328,21 +274,21 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Sincronizzazione Master - Intelligente
+            <Download className="h-5 w-5" />
+            Download Email TMWE
             {isRunning && (
               <Badge variant="secondary" className="animate-pulse">
                 <Zap className="h-3 w-3 mr-1" />
-                In Esecuzione
+                In Corso
               </Badge>
             )}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Sync intelligente che rileva automaticamente se fare sync iniziale, incrementale o continua
+            Scarica email dalla cartella selezionata
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="text-sm font-medium">Cartella</label>
               <select 
@@ -357,19 +303,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Batch Size</label>
-              <input 
-                type="number" 
-                className="w-full p-2 border rounded bg-transparent"
-                value={syncConfig.batchSize}
-                onChange={(e) => setSyncConfig(prev => ({ ...prev, batchSize: parseInt(e.target.value) }))}
-                disabled={isRunning}
-                min="50"
-                max="1000"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Max Email Sync</label>
+              <label className="text-sm font-medium">Max Email</label>
               <input 
                 type="number" 
                 className="w-full p-2 border rounded bg-transparent"
@@ -378,43 +312,26 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 disabled={isRunning}
                 min="0"
                 max="10000"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Target Importazione Completa</label>
-              <input 
-                type="number" 
-                className="w-full p-2 border rounded bg-transparent"
-                value={syncConfig.targetEmails}
-                onChange={(e) => setSyncConfig(prev => ({ ...prev, targetEmails: parseInt(e.target.value) }))}
-                disabled={isRunning}
-                min="1000"
-                max="100000"
+                placeholder="0 = tutte"
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button onClick={discoverFolders} variant="outline" disabled={isRunning}>
               <FolderOpen className="h-4 w-4 mr-2" />
               Scopri Cartelle
             </Button>
             
             {!isRunning ? (
-              <>
-                <Button onClick={startSync} className="bg-gradient-to-r from-primary to-blue-600">
-                  <Play className="h-4 w-4 mr-2" />
-                  Sync Intelligente
-                </Button>
-                <Button onClick={startFullImport} className="bg-gradient-to-r from-green-600 to-emerald-600">
-                  <Download className="h-4 w-4 mr-2" />
-                  Importa TUTTE le Email
-                </Button>
-              </>
+              <Button onClick={downloadEmails} className="bg-gradient-to-r from-primary to-blue-600">
+                <Download className="h-4 w-4 mr-2" />
+                Scarica Email
+              </Button>
             ) : (
-              <Button onClick={stopSync} variant="destructive" className="md:col-span-2">
+              <Button onClick={stopSync} variant="destructive">
                 <Pause className="h-4 w-4 mr-2" />
-                Ferma Sync
+                Ferma Download
               </Button>
             )}
           </div>

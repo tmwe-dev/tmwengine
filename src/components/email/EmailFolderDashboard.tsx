@@ -395,17 +395,18 @@ export const EmailFolderDashboard: React.FC = () => {
                         Nessuna email in questa cartella
                       </div>
                     ) : (
-                      <div className="divide-y">
+                      <div className="divide-y divide-border">
                         {emails.map((email) => (
                           <div
                             key={email.id}
                             className={cn(
-                              "p-4 cursor-pointer hover:bg-muted/50 transition-colors relative",
-                              selectedEmail?.id === email.id && "bg-muted"
+                              "p-4 cursor-pointer transition-colors relative",
+                              "hover:border-l-2 hover:border-primary",
+                              selectedEmail?.id === email.id && "border-l-4 border-primary"
                             )}
                             onClick={() => setSelectedEmail(email)}
                           >
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start justify-between gap-4 pb-6">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   {getStatusIcon(email.stato)}
@@ -433,7 +434,7 @@ export const EmailFolderDashboard: React.FC = () => {
                                 {formatDate(email.data_ricezione)}
                               </div>
                             </div>
-                            {/* Indicatore email non letta */}
+                            {/* Indicatore email non letta - icona rossa in basso a destra */}
                             {email.stato === 'nuovo' && (
                               <div className="absolute bottom-2 right-2">
                                 <Mail className="h-4 w-4 text-red-600 fill-red-600" />

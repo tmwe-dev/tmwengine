@@ -73,6 +73,7 @@ export const EmailFolderDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('emails');
 
   const getFolderIcon = (folderName: string) => {
     switch (folderName.toLowerCase()) {
@@ -368,7 +369,7 @@ export const EmailFolderDashboard: React.FC = () => {
 
         {/* Area Principale */}
         <div className="col-span-12 md:col-span-9">
-          <Tabs value="emails" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="emails">Email in {selectedFolder}</TabsTrigger>
               <TabsTrigger value="details">Dettagli Email</TabsTrigger>

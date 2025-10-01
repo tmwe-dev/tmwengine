@@ -207,7 +207,18 @@ serve(async (req) => {
           break;
         }
 
-        const listData = await listResponse.json();
+        // Prendi prima il testo per debug
+        const responseText = await listResponse.text();
+        console.log(`📄 Response (primi 500 char): ${responseText.substring(0, 500)}`);
+        
+        let listData;
+        try {
+          listData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(`❌ Errore parsing JSON: ${parseError}`);
+          console.error(`📄 Response completa: ${responseText}`);
+          break;
+        }
         
         if (!listData.success) {
           console.error(`❌ API returned success=false:`, listData);

@@ -6,11 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
 interface SyncRequest {
   mode?: 'auto' | 'initial' | 'incremental' | 'continuous';
   folder_name?: string;
@@ -34,6 +29,12 @@ serve(async (req) => {
   }
 
   try {
+    // CREA SUPABASE CLIENT DENTRO LA FUNZIONE!
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);

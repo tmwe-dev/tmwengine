@@ -164,10 +164,22 @@ serve(async (req) => {
       let hasMore = true;
       
       while (hasMore) {
-        // USA L'API CORRETTA: email_message con handler get_messages
         const listUrl = `${baseUrl}/app.php?action=email_message`;
 
         console.log(`📋 TEST: offset=${listOffset}, limit=${listBatchSize}`);
+        
+        const requestBody = {
+          handler: 'get_messages',
+          folder: folder_name,
+          limit: listBatchSize,
+          offset: listOffset,
+          include_attachments: true,
+          format: 'text'
+        };
+        
+        console.log(`📤 REQUEST URL: ${listUrl}`);
+        console.log(`📤 REQUEST BODY:`, JSON.stringify(requestBody, null, 2));
+        console.log(`📤 REQUEST HEADERS: Authorization: Bearer ${oauthToken.substring(0, 20)}...`);
 
         let listResponse;
         try {
@@ -177,16 +189,10 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              handler: 'get_messages',
-              folder: folder_name,
-              limit: listBatchSize,
-              offset: listOffset,
-              include_attachments: true,
-              format: 'text'
-            })
+            body: JSON.stringify(requestBody)
           });
         } catch (error) {
+          console.log(`⚠️ HTTPS fallito, provo HTTP...`);
           const httpUrl = listUrl.replace('https://', 'http://');
           listResponse = await fetch(httpUrl, {
             method: 'POST',
@@ -194,14 +200,7 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              handler: 'get_messages',
-              folder: folder_name,
-              limit: listBatchSize,
-              offset: listOffset,
-              include_attachments: true,
-              format: 'text'
-            })
+            body: JSON.stringify(requestBody)
           });
         }
 
@@ -211,18 +210,23 @@ serve(async (req) => {
           break;
         }
 
-        // Prendi prima il testo per debug
+        // Leggi la risposta completa
         const responseText = await listResponse.text();
-        console.log(`📄 Response status: ${listResponse.status}`);
-        console.log(`📄 Response headers:`, Object.fromEntries(listResponse.headers.entries()));
-        console.log(`📄 RISPOSTA COMPLETA API:`, responseText);
+        console.log(`📥 RESPONSE STATUS: ${listResponse.status}`);
+        console.log(`📥 RESPONSE HEADERS:`, JSON.stringify(Object.fromEntries(listResponse.headers.entries()), null, 2));
+        console.log(`📥 RESPONSE BODY COMPLETO:`);
+        console.log(responseText);
+        console.log(`📥 FINE RESPONSE BODY`);
         
         let listData;
         try {
           listData = JSON.parse(responseText);
+          console.log(`✅ JSON parsato correttamente`);
+          console.log(`📊 Numero messaggi nella risposta: ${listData.messages?.length || 0}`);
+          console.log(`📊 Total dall'API: ${listData.total}`);
+          console.log(`📊 From: ${listData.from}, To: ${listData.to}`);
         } catch (parseError) {
           console.error(`❌ Errore parsing JSON: ${parseError}`);
-          console.error(`📄 Response completa: ${responseText}`);
           break;
         }
         

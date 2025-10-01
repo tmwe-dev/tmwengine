@@ -9,7 +9,6 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
-import { TMWESyncTest } from '@/components/email/TMWESyncTest';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Key, 
@@ -728,13 +727,6 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Test TMWE Integration */}
-        {activeSection === 'email' && (
-          <div className="mt-6">
-            <TMWESyncTest />
-          </div>
         )}
 
         {/* Configurazione Telefono & WhatsApp */}

@@ -375,17 +375,17 @@ export const EmailFolderDashboard: React.FC = () => {
             </TabsList>
 
             <TabsContent value="emails" className="space-y-4">
-              <Card className="bg-background">
-                <CardHeader className="bg-background">
-                  <CardTitle className="flex items-center justify-between">
+              <div className="rounded-lg border border-border">
+                <div className="flex flex-col space-y-1.5 p-6">
+                  <h3 className="text-2xl font-semibold leading-none tracking-tight flex items-center justify-between">
                     <span>Email in cartella: {selectedFolder}</span>
                     <Badge variant="outline">
                       {emails.length} messaggi
                     </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 bg-background">
-                  <ScrollArea className="h-[500px] bg-background">
+                  </h3>
+                </div>
+                <div className="p-0">
+                  <ScrollArea className="h-[500px]">
                     {loading ? (
                       <div className="p-8 text-center text-muted-foreground">
                         Caricamento email...
@@ -395,12 +395,12 @@ export const EmailFolderDashboard: React.FC = () => {
                         Nessuna email in questa cartella
                       </div>
                     ) : (
-                      <div className="divide-y divide-border bg-background">
+                      <div className="divide-y divide-border">
                         {emails.map((email) => (
                           <div
                             key={email.id}
                             className={cn(
-                              "p-4 cursor-pointer transition-colors relative bg-background",
+                              "p-4 cursor-pointer transition-colors relative",
                               "hover:border-l-2 hover:border-primary",
                               selectedEmail?.id === email.id && "border-l-4 border-primary"
                             )}
@@ -445,8 +445,8 @@ export const EmailFolderDashboard: React.FC = () => {
                       </div>
                     )}
                   </ScrollArea>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="details" className="space-y-4">

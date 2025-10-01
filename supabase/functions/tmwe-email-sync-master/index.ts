@@ -149,36 +149,156 @@ serve(async (req) => {
 
     if (syncLogError) throw syncLogError;
 
-    // SYNC PROCESS - DOWNLOAD SEQUENZIALE EMAIL SINGOLE
+    // NUOVO APPROCCIO: SCARICA LISTA COMPLETA UID, POI SCARICA SOLO MANCANTI
     let totalImported = 0;
-    let consecutiveErrors = 0;
-    let emailNumber = 1;
-    const maxConsecutiveErrors = 5;
 
-    console.log(`🎯 Inizio download sequenziale email da ${folder_name}`);
-    console.log(`📧 Scarico UNA email per volta fino a esaurimento`);
+    console.log(`🎯 STEP 1: Recupero informazioni cartella ${folder_name}`);
 
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
-      const messagesUrl = `${baseUrl}/app.php?action=email_message`;
 
-      // Loop infinito fino a quando non ci sono più email
-      while (consecutiveErrors < maxConsecutiveErrors) {
-        console.log(`\n📨 TENTATIVO EMAIL #${emailNumber}`);
-        
-        // Richiesta per scaricare UNA singola email
-        const messageBody = {
-          handler: 'get_messages',
+      // STEP 1: Ottieni info cartella per sapere quante email ci sono
+      const folderInfoUrl = `${baseUrl}/app.php?action=email_folder`;
+      const folderInfoBody = {
+        handler: 'get_folder_info',
+        folder_name: folder_name
+      };
+
+      console.log(`📊 Richiesta info cartella: ${JSON.stringify(folderInfoBody)}`);
+
+      let folderResponse;
+      try {
+        folderResponse = await fetch(folderInfoUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(folderInfoBody)
+        });
+      } catch (error) {
+        const httpUrl = folderInfoUrl.replace('https://', 'http://');
+        folderResponse = await fetch(httpUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oauthToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(folderInfoBody)
+        });
+      }
+
+      if (!folderResponse.ok) {
+        throw new Error(`Errore info cartella: ${folderResponse.status}`);
+      }
+
+      const folderData = await folderResponse.json();
+      const totalMessages = folderData.total_messages || folderData.messages || 0;
+      console.log(`📬 Cartella ${folder_name}: ${totalMessages} email totali disponibili`);
+
+      // STEP 2: Scarica TUTTI gli UID disponibili con paginazione
+      console.log(`\n🎯 STEP 2: Recupero lista completa UID`);
+      
+      const allUIDs: string[] = [];
+      const listBatchSize = 100; // Prendi 100 UID per volta
+      let listOffset = 0;
+      
+      while (listOffset < totalMessages) {
+        const listUrl = `${baseUrl}/app.php?action=get_email_list`;
+        const listBody = {
           folder: folder_name,
-          limit: 1,  // UNA email per volta
-          offset: emailNumber - 1  // Salta quelle già scaricate
+          criteria: 'ALL',
+          offset: listOffset,
+          limit: listBatchSize
         };
 
-        console.log(`🔍 Richiesta: ${JSON.stringify(messageBody)}`);
+        console.log(`📋 Batch lista: offset=${listOffset}, limit=${listBatchSize}`);
 
-        let messagesResponse;
+        let listResponse;
         try {
-          messagesResponse = await fetch(messagesUrl, {
+          listResponse = await fetch(listUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listBody)
+          });
+        } catch (error) {
+          const httpUrl = listUrl.replace('https://', 'http://');
+          listResponse = await fetch(httpUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oauthToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listBody)
+          });
+        }
+
+        if (!listResponse.ok) {
+          console.error(`❌ Errore recupero lista a offset ${listOffset}`);
+          break;
+        }
+
+        const listData = await listResponse.json();
+        const emails = listData.results || listData.emails || [];
+        
+        if (emails.length === 0) {
+          console.log(`✅ Fine lista UID a offset ${listOffset}`);
+          break;
+        }
+
+        // Estrai gli UID
+        for (const email of emails) {
+          if (email.uid) {
+            allUIDs.push(email.uid);
+          }
+        }
+
+        console.log(`✅ Recuperati ${emails.length} UID (totale: ${allUIDs.length})`);
+        
+        listOffset += listBatchSize;
+        
+        // Delay tra batch
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      console.log(`\n📊 TOTALE UID RECUPERATI: ${allUIDs.length}`);
+
+      // STEP 3: Per ogni UID, controlla se esiste nel DB, altrimenti scaricalo
+      console.log(`\n🎯 STEP 3: Download email mancanti`);
+
+      for (let i = 0; i < allUIDs.length; i++) {
+        const uid = allUIDs[i];
+        
+        // Controlla se esiste già
+        const { count: existingCount } = await supabase
+          .from('email_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('message_id', uid);
+
+        if (existingCount && existingCount > 0) {
+          if (i % 100 === 0) {
+            console.log(`⏭️ Email ${i + 1}/${allUIDs.length}: ${uid} già presente`);
+          }
+          continue;
+        }
+
+        // Email NON presente, scaricala
+        console.log(`📥 Email ${i + 1}/${allUIDs.length}: Download ${uid}`);
+
+        const messageUrl = `${baseUrl}/app.php?action=email_message`;
+        const messageBody = {
+          handler: 'get_message',
+          uid: uid,
+          folder: folder_name,
+          format: 'text'
+        };
+
+        let messageResponse;
+        try {
+          messageResponse = await fetch(messageUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
@@ -187,8 +307,8 @@ serve(async (req) => {
             body: JSON.stringify(messageBody)
           });
         } catch (error) {
-          const httpUrl = messagesUrl.replace('https://', 'http://');
-          messagesResponse = await fetch(httpUrl, {
+          const httpUrl = messageUrl.replace('https://', 'http://');
+          messageResponse = await fetch(httpUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${oauthToken}`,
@@ -198,96 +318,61 @@ serve(async (req) => {
           });
         }
 
-        if (!messagesResponse.ok) {
-          console.error(`❌ Errore HTTP ${messagesResponse.status}`);
-          consecutiveErrors++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!messageResponse.ok) {
+          console.error(`❌ Errore download ${uid}`);
           continue;
         }
 
-        const messageData = await messagesResponse.json();
-        const messages = messageData?.messages || messageData?.results || [];
-        
-        console.log(`📊 API ha restituito ${messages.length} email`);
+        const message = await messageResponse.json();
+        const msgData = message.result || message;
 
-        // Se non ci sono più email, termina
-        if (messages.length === 0) {
-          console.log('✅ NESSUNA ALTRA EMAIL DISPONIBILE - Fine scaricamento');
-          break;
+        // Inserisci nel database
+        const { error: insertError } = await supabase
+          .from('email_messages')
+          .insert({
+            message_id: uid,
+            subject: msgData.subject || 'Senza oggetto',
+            from_email: msgData.from || '',
+            to_email: msgData.to || '',
+            cc_email: msgData.cc,
+            bcc_email: msgData.bcc,
+            data_ricezione: new Date(msgData.date || Date.now()).toISOString(),
+            cartella: folder_name,
+            provider_id: providerData.id,
+            flags: { seen: msgData.seen, flagged: msgData.flagged },
+            direzione: 'inbound',
+            stato: msgData.seen ? 'letto' : 'nuovo',
+            body_text: msgData.body || 'Contenuto da recuperare',
+            body_html: msgData.body_html,
+            data_invio: new Date(msgData.date || Date.now()).toISOString()
+          });
+
+        if (!insertError) {
+          totalImported++;
+          console.log(`✅ Salvata email ${totalImported}: ${msgData.subject}`);
+        } else {
+          console.error(`❌ Errore inserimento ${uid}:`, insertError);
         }
 
-        // Reset errori consecutivi se abbiamo ricevuto dati
-        consecutiveErrors = 0;
-
-        // Processa l'email ricevuta
-        const message = messages[0];
-        
-        try {
-          // Controlla se esiste già
-          const { count: existingCount } = await supabase
-            .from('email_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('message_id', message.uid || message.msgno);
-
-          if (existingCount === 0) {
-            // Inserisci la nuova email
-            const { error: insertError } = await supabase
-              .from('email_messages')
-              .insert({
-                message_id: message.uid || message.msgno,
-                subject: message.subject || 'Senza oggetto',
-                from_email: message.from || '',
-                to_email: message.to || '',
-                data_ricezione: new Date(message.date || Date.now()).toISOString(),
-                cartella: folder_name,
-                provider_id: providerData.id,
-                flags: { seen: message.seen, flagged: message.flagged },
-                direzione: 'inbound',
-                stato: message.seen ? 'letto' : 'nuovo',
-                body_text: message.body_text || 'Contenuto da recuperare',
-                body_html: message.body_html,
-                data_invio: new Date(message.date || Date.now()).toISOString()
-              });
-
-            if (!insertError) {
-              totalImported++;
-              console.log(`✅ Email #${emailNumber} salvata (NUOVA) - Totale: ${totalImported}`);
-            } else {
-              console.error(`❌ Errore inserimento:`, insertError);
-            }
-          } else {
-            console.log(`⏭️ Email #${emailNumber} già esistente - Skip`);
-          }
-
-          // Aggiorna progresso ogni 10 email
-          if (emailNumber % 10 === 0) {
-            await supabase
-              .from('email_sync_logs')
-              .update({
-                messaggi_nuovi: totalImported,
-                messaggi_sincronizzati: emailNumber
-              })
-              .eq('id', syncLog.id);
-          }
-
-        } catch (msgError) {
-          console.error(`❌ Errore processamento email #${emailNumber}:`, msgError);
+        // Aggiorna progresso ogni 10 email
+        if (totalImported % 10 === 0) {
+          await supabase
+            .from('email_sync_logs')
+            .update({
+              messaggi_nuovi: totalImported,
+              messaggi_sincronizzati: i + 1
+            })
+            .eq('id', syncLog.id);
         }
 
-        emailNumber++;
-
-        // Piccolo delay tra richieste
+        // Delay tra email
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Safety: limite massimo per evitare loop infiniti
-        if (emailNumber > targetEmails) {
-          console.log(`⚠️ Raggiunto limite massimo ${targetEmails} email`);
+        // Safety limit
+        if (i >= targetEmails) {
+          console.log(`⚠️ Raggiunto limite ${targetEmails} email elaborate`);
           break;
         }
-      }
-
-      if (consecutiveErrors >= maxConsecutiveErrors) {
-        console.log(`⚠️ Troppi errori consecutivi (${consecutiveErrors}), interrompo`);
       }
 
     } catch (syncError) {

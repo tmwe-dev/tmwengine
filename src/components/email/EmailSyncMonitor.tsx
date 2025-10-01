@@ -115,16 +115,38 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       addLog(`📁 Cartella: ${syncConfig.folder}`);
       addLog(`🎯 Limite: ${syncConfig.maxEmails || 'nessun limite'}`);
       
+      const requestBody = { 
+        mode: 'initial',
+        folder_name: syncConfig.folder,
+        max_emails: syncConfig.maxEmails || 5000,
+        force_full: false
+      };
+      
+      addLog('');
+      addLog('========== PARAMETRI RICHIESTA ==========');
+      addLog(`URL Edge Function: tmwe-email-sync-master`);
+      addLog(`Body:`);
+      addLog(JSON.stringify(requestBody, null, 2));
+      addLog('==========================================');
+      addLog('');
+      addLog('⏳ Invio richiesta...');
+      
       const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-        body: { 
-          mode: 'initial',
-          folder_name: syncConfig.folder,
-          max_emails: syncConfig.maxEmails || 5000,
-          force_full: false
-        }
+        body: requestBody
       });
 
-      if (error) throw error;
+      addLog('');
+      addLog('========== RISPOSTA RICEVUTA ==========');
+      if (error) {
+        addLog(`❌ ERRORE:`);
+        addLog(JSON.stringify(error, null, 2));
+        throw error;
+      }
+      addLog(`✅ Success: true`);
+      addLog(`Dati:`);
+      addLog(JSON.stringify(data, null, 2));
+      addLog('=======================================');
+      addLog('');
 
       addLog(`✅ Download completato!`);
       addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
@@ -144,7 +166,14 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       });
 
     } catch (error) {
-      addLog(`❌ Errore download: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+      addLog('');
+      addLog('========== ERRORE ==========');
+      addLog(`❌ ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+      if (error instanceof Error && error.stack) {
+        addLog(`Stack: ${error.stack}`);
+      }
+      addLog('============================');
+      
       toast({
         title: "Errore Download",
         description: error instanceof Error ? error.message : 'Errore sconosciuto',

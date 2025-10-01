@@ -117,14 +117,15 @@ const Settings = () => {
         .maybeSingle();
 
       if (emailData) {
+        const creds = emailData.email_provider_credenziali?.[0];
         setEmailConfig({
           id: emailData.id,
           provider: emailData.provider,
           dominioInvio: emailData.dominio_invio || '',
           inboundRoute: emailData.inbound_route || '',
           outboundEndpoint: emailData.outbound_endpoint || '',
-          apiKey: emailData.email_provider_credenziali?.[0]?.api_key || '',
-          webhookSecret: emailData.email_provider_credenziali?.[0]?.webhook_secret || '',
+          apiKey: creds?.oauth_token || creds?.api_key || '',
+          webhookSecret: creds?.webhook_secret || '',
           attivo: emailData.attivo
         });
       }

@@ -137,8 +137,10 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       await fetchFolderStats();
 
       toast({
-        title: "Download completato",
-        description: `${data.emails_downloaded} email scaricate. Totale: ${data.total_emails_in_db}`
+        title: data.emails_downloaded > 0 ? "Nuove email scaricate!" : "Nessuna nuova email",
+        description: data.emails_downloaded > 0 
+          ? `${data.emails_downloaded} nuove email importate` 
+          : `Nessuna nuova email trovata. Database: ${data.total_emails_in_db} email`
       });
 
     } catch (error) {

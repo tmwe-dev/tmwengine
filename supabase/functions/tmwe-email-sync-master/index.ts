@@ -38,6 +38,8 @@ serve(async (req) => {
     const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
+    console.log('🆔 Request ID:', crypto.randomUUID());
+    console.log('⏰ Timestamp:', new Date().toISOString());
 
     // USA ESATTAMENTE IL METODO DI tmwe-email-messages CHE FUNZIONA!
     console.log('🔍 Cerco token TMWE_OAUTH_TOKEN in environment...');
@@ -168,6 +170,7 @@ serve(async (req) => {
 
         console.log(`📋 TEST: offset=${listOffset}, limit=${listBatchSize}`);
         
+        const requestId = crypto.randomUUID();
         const requestBody = {
           handler: 'get_messages',
           folder: folder_name,
@@ -177,9 +180,18 @@ serve(async (req) => {
           format: 'text'
         };
         
+        console.log(`\n`);
+        console.log(`========== NUOVA CHIAMATA API TMWE ==========`);
+        console.log(`🆔 Request ID: ${requestId}`);
+        console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
         console.log(`📤 REQUEST URL: ${listUrl}`);
-        console.log(`📤 REQUEST BODY:`, JSON.stringify(requestBody, null, 2));
-        console.log(`📤 REQUEST HEADERS: Authorization: Bearer ${oauthToken.substring(0, 20)}...`);
+        console.log(`📤 REQUEST METHOD: POST`);
+        console.log(`📤 REQUEST BODY:`);
+        console.log(JSON.stringify(requestBody, null, 2));
+        console.log(`📤 REQUEST HEADERS:`);
+        console.log(`   Authorization: Bearer ${oauthToken.substring(0, 30)}...${oauthToken.substring(oauthToken.length - 10)}`);
+        console.log(`   Content-Type: application/json`);
+        console.log(`=============================================\n`);
 
         let listResponse;
         try {
@@ -212,21 +224,26 @@ serve(async (req) => {
 
         // Leggi la risposta completa
         const responseText = await listResponse.text();
-        console.log(`📥 RESPONSE STATUS: ${listResponse.status}`);
-        console.log(`📥 RESPONSE HEADERS:`, JSON.stringify(Object.fromEntries(listResponse.headers.entries()), null, 2));
-        console.log(`📥 RESPONSE BODY COMPLETO:`);
+        
+        console.log(`\n`);
+        console.log(`========== RISPOSTA API TMWE ==========`);
+        console.log(`🆔 Request ID: ${requestId}`);
+        console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+        console.log(`📥 RESPONSE STATUS: ${listResponse.status} ${listResponse.statusText}`);
+        console.log(`📥 RESPONSE HEADERS:`);
+        for (const [key, value] of listResponse.headers.entries()) {
+          console.log(`   ${key}: ${value}`);
+        }
+        console.log(`📥 RESPONSE BODY (${responseText.length} caratteri):`);
         console.log(responseText);
-        console.log(`📥 FINE RESPONSE BODY`);
+        console.log(`=======================================\n`);
         
         let listData;
         try {
           listData = JSON.parse(responseText);
-          console.log(`✅ JSON parsato correttamente`);
-          console.log(`📊 Numero messaggi nella risposta: ${listData.messages?.length || 0}`);
-          console.log(`📊 Total dall'API: ${listData.total}`);
-          console.log(`📊 From: ${listData.from}, To: ${listData.to}`);
+          console.log(`✅ JSON parsato: ${listData.messages?.length || 0} messaggi, total=${listData.total}`);
         } catch (parseError) {
-          console.error(`❌ Errore parsing JSON: ${parseError}`);
+          console.error(`❌ ERRORE parsing JSON: ${parseError}`);
           break;
         }
         

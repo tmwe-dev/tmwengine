@@ -399,6 +399,7 @@ export const EmailFolderDashboard: React.FC = () => {
                         {emails.map((email) => (
                           <div
                             key={email.id}
+                            style={{ backgroundColor: 'hsl(240 10% 3.9%)' }}
                             className={cn(
                               "p-4 cursor-pointer transition-colors relative",
                               "hover:border-l-2 hover:border-primary",

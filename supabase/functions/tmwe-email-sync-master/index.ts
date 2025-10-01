@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
 interface SyncRequest {
   mode?: 'auto' | 'initial' | 'incremental' | 'continuous';
   folder_name?: string;
@@ -29,63 +34,64 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
 
-    // Recupera credenziali TMWE - USA LO STESSO METODO DELLE FUNZIONI CHE FUNZIONANO!
-    const { data: providerData, error: providerError } = await supabase
-      .from('email_provider')
-      .select('*, email_provider_credenziali(*)')
-      .eq('provider', 'TMWE')
-      .eq('attivo', true)
-      .maybeSingle();
-
-    if (providerError || !providerData) {
-      throw new Error('Provider TMWE non trovato o non attivo');
-    }
-
-    // ESATTAMENTE come tmwe-email-messages che FUNZIONA!
-    let oauthToken = null;
-    if (providerData?.email_provider_credenziali?.[0]) {
-      // Cerca prima oauth_token poi api_key come fallback
-      oauthToken = providerData.email_provider_credenziali[0].oauth_token || 
-                   providerData.email_provider_credenziali[0].api_key;
+    // USA ESATTAMENTE IL METODO DI tmwe-email-messages CHE FUNZIONA!
+    let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
+    
+    if (!oauthToken) {
+      const { data: provider } = await supabase
+        .from('email_provider')
+        .select('email_provider_credenziali(*)')
+        .eq('provider', 'TMWE')
+        .eq('attivo', true)
+        .maybeSingle();
+      
+      if (provider?.email_provider_credenziali?.[0]) {
+        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
+                     provider.email_provider_credenziali[0].api_key;
+      }
     }
     
     if (!oauthToken) {
       throw new Error('TMWE OAuth token non configurato nel database o environment');
     }
 
-    console.log('✅ Token trovato, inizio sync');
+    console.log('✅ Token trovato');
 
-    // 🧠 INTELLIGENZA: Determina modalità automatica
+    // Get provider ID
+    const { data: providerData } = await supabase
+      .from('email_provider')
+      .select('id')
+      .eq('provider', 'TMWE')
+      .eq('attivo', true)
+      .maybeSingle();
+
+    if (!providerData) {
+      throw new Error('Provider TMWE non trovato');
+    }
+
+    // Determina modalità automatica
     let actualMode = mode;
     if (mode === 'auto') {
-      // Controlla quante email esistono nel database
       const { count: existingEmails } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
         .eq('cartella', folder_name);
 
-      // Controlla l'ultima sync
       const { data: lastSync } = await supabase
         .from('email_sync_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const hoursSinceLastSync = lastSync 
         ? (Date.now() - new Date(lastSync.created_at).getTime()) / (1000 * 60 * 60)
         : 999;
 
-      // 🎯 LOGICA INTELLIGENTE
       if (existingEmails === 0 || force_full) {
         actualMode = 'initial';
         console.log('📥 Modalità rilevata: INITIAL (primo import)');
@@ -98,22 +104,22 @@ serve(async (req) => {
       }
     }
 
-    // 📊 PARAMETRI DINAMICI
+    // Parametri dinamici
     let batchSize = 50;
     let targetEmails = max_emails;
     let syncType = 'manuale';
 
     if (actualMode === 'initial') {
       batchSize = 100;
-      targetEmails = targetEmails || 5000; // Default alto per import iniziale
+      targetEmails = targetEmails || 5000;
       syncType = 'full_sync';
     } else if (actualMode === 'incremental') {
       batchSize = 25;
-      targetEmails = targetEmails || 200; // Default basso per incrementale
+      targetEmails = targetEmails || 200;
       syncType = 'incremental_sync';
     } else if (actualMode === 'continuous') {
       batchSize = 10;
-      targetEmails = 50; // Sempre piccolo per continuous
+      targetEmails = 50;
       syncType = 'automatica';
     }
 
@@ -132,7 +138,7 @@ serve(async (req) => {
 
     if (syncLogError) throw syncLogError;
 
-    // 🔄 SYNC PROCESS
+    // SYNC PROCESS
     let totalImported = 0;
     let currentOffset = 0;
     const maxBatches = Math.ceil(targetEmails / batchSize);
@@ -144,7 +150,10 @@ serve(async (req) => {
       console.log(`\n📦 BATCH ${batch}/${maxBatches} (offset: ${currentOffset})`);
 
       try {
-        // USA LO STESSO APPROCCIO DI tmwe-email-messages CHE FUNZIONA!
+        // USA ESATTAMENTE IL METODO DI tmwe-email-messages!
+        const baseUrl = 'https://findair.it/erp/tmwe_json';
+        const apiUrl = `${baseUrl}/app.php?action=email_message`;
+        
         const requestBody = {
           handler: 'get_messages',
           folder: folder_name,
@@ -154,10 +163,7 @@ serve(async (req) => {
           format: 'text'
         };
 
-        const apiUrl = 'https://findair.it/erp/tmwe_json/app.php?action=email_message';
-        
-        console.log('🔌 Chiamata API TMWE:', apiUrl);
-        console.log('📦 Body:', JSON.stringify(requestBody));
+        console.log('🔌 API Request:', apiUrl);
 
         let emailResponse;
         try {
@@ -169,8 +175,8 @@ serve(async (req) => {
             },
             body: JSON.stringify(requestBody)
           });
-        } catch (httpsError) {
-          console.log('HTTPS fallito, provo HTTP...');
+        } catch (error) {
+          console.log('HTTPS falló, intentando HTTP:', error);
           const httpUrl = apiUrl.replace('https://', 'http://');
           emailResponse = await fetch(httpUrl, {
             method: 'POST',
@@ -182,17 +188,18 @@ serve(async (req) => {
           });
         }
 
+        console.log('Response status:', emailResponse.status, emailResponse.statusText);
+
         if (!emailResponse.ok) {
-          console.error('❌ Errore API TMWE:', emailResponse.status);
+          const errorText = await emailResponse.text();
+          console.error('❌ Errore API TMWE:', emailResponse.status, errorText);
           break;
         }
 
         const emailData = await emailResponse.json();
         const messages = emailData?.messages || [];
         
-        console.log(`📊 API Response: total=${emailData?.total}, count=${emailData?.count}, messages=${messages.length}, offset_richiesto=${currentOffset}`);
-
-        console.log(`📧 Ricevuti ${messages.length} messaggi`);
+        console.log(`📊 Ricevuti ${messages.length} messaggi`);
 
         if (messages.length === 0) {
           consecutiveEmpty++;
@@ -207,14 +214,12 @@ serve(async (req) => {
         // Processa ogni email
         for (const message of messages) {
           try {
-            // Controlla se email esiste già
             const { count: existingCount } = await supabase
               .from('email_messages')
               .select('*', { count: 'exact', head: true })
               .eq('message_id', message.uid || message.msgno);
 
             if (existingCount === 0) {
-              // Inserisci nuova email
               const { error: insertError } = await supabase
                 .from('email_messages')
                 .insert({
@@ -227,7 +232,9 @@ serve(async (req) => {
                   provider_id: providerData.id,
                   flags: { seen: message.seen, flagged: message.flagged },
                   direzione: 'inbound',
-                  stato: 'nuovo'
+                  stato: 'nuovo',
+                  body_text: 'Contenuto da recuperare',
+                  data_invio: new Date(message.date || Date.now()).toISOString()
                 });
 
               if (!insertError) {
@@ -273,7 +280,6 @@ serve(async (req) => {
       })
       .eq('id', syncLog.id);
 
-    // Conta totale email nel database
     const { count: totalInDb } = await supabase
       .from('email_messages')
       .select('*', { count: 'exact', head: true })
@@ -283,7 +289,6 @@ serve(async (req) => {
     console.log(`📊 Email importate: ${totalImported}`);
     console.log(`📚 Totale in database: ${totalInDb}`);
 
-    // 🕐 PROSSIMA SYNC RACCOMANDATA
     let nextSyncRecommended = '';
     if (actualMode === 'initial') {
       nextSyncRecommended = 'Imposta sync automatica ogni 4 ore per incrementale';

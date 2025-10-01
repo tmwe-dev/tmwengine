@@ -180,8 +180,10 @@ serve(async (req) => {
             body: JSON.stringify({
               handler: 'get_messages',
               folder: folder_name,
+              limit: listBatchSize,
               offset: listOffset,
-              limit: listBatchSize
+              include_attachments: true,
+              format: 'text'
             })
           });
         } catch (error) {
@@ -195,8 +197,10 @@ serve(async (req) => {
             body: JSON.stringify({
               handler: 'get_messages',
               folder: folder_name,
+              limit: listBatchSize,
               offset: listOffset,
-              limit: listBatchSize
+              include_attachments: true,
+              format: 'text'
             })
           });
         }

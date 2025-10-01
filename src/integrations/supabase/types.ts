@@ -554,7 +554,7 @@ export type Database = {
           {
             foreignKeyName: "email_provider_credenziali_provider_id_fkey"
             columns: ["provider_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "email_provider"
             referencedColumns: ["id"]
           },

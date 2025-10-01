@@ -220,21 +220,15 @@ serve(async (req) => {
           break;
         }
         
-        // L'API ritorna success: false SOLO in caso di errore
-        // Quando funziona, ritorna direttamente { messages: [...], total: N, from: N, to: N }
-        if (listData.success === false) {
-          console.error(`❌ Errore API:`, listData);
+        // L'API può ritornare success: false MA includere comunque i messages
+        // Errore vero = success: false E nessun message
+        if (listData.success === false && (!listData.messages || listData.messages.length === 0)) {
+          console.error(`❌ Errore API senza messages:`, listData);
           break;
         }
 
-        // Verifica che ci siano messages
-        if (!listData.messages || !Array.isArray(listData.messages)) {
-          console.log(`⚠️ Nessun messaggio trovato o formato non valido`);
-          hasMore = false;
-          break;
-        }
-
-        const emails = listData.messages;
+        // Altrimenti processa i messages (anche se success è false)
+        const emails = listData.messages || [];
         
         if (emails.length === 0) {
           console.log(`✅ Fine lista UID a offset ${listOffset}`);

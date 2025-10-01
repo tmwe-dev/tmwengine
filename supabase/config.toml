@@ -183,3 +183,9 @@ verify_jwt = true
 
 [functions.tmwe-email-list]
 verify_jwt = true
+
+[functions.tmwe-test-folder-info]
+verify_jwt = true
+
+[functions.tmwe-email-sync-master]
+verify_jwt = true

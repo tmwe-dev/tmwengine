@@ -103,7 +103,7 @@ export function AdvancedMultipleActivityForm({
   isSubmitting, 
   showSaveToRubrica = false 
 }: AdvancedMultipleActivityFormProps) {
-  const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>('email');
+  const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>('chiamata');
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -113,7 +113,7 @@ export function AdvancedMultipleActivityForm({
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
     defaultValues: {
-      tipo: 'email',
+      tipo: 'chiamata',
       priorita: 'media',
       oggetto_email: '',
       testo_email: '',
@@ -336,13 +336,13 @@ export function AdvancedMultipleActivityForm({
             
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Invio Email
-                </TabsTrigger>
                 <TabsTrigger value="chiamata" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Chiamata Programmata
+                </TabsTrigger>
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Invio Email
                 </TabsTrigger>
               </TabsList>
 

@@ -400,9 +400,8 @@ export const EmailFolderDashboard: React.FC = () => {
                           <div
                             key={email.id}
                             className={cn(
-                              "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
-                              selectedEmail?.id === email.id && "bg-muted",
-                              email.stato === 'nuovo' && "bg-blue-50/50"
+                              "p-4 cursor-pointer hover:bg-muted/50 transition-colors relative",
+                              selectedEmail?.id === email.id && "bg-muted"
                             )}
                             onClick={() => setSelectedEmail(email)}
                           >
@@ -434,6 +433,12 @@ export const EmailFolderDashboard: React.FC = () => {
                                 {formatDate(email.data_ricezione)}
                               </div>
                             </div>
+                            {/* Indicatore email non letta */}
+                            {email.stato === 'nuovo' && (
+                              <div className="absolute bottom-2 right-2">
+                                <Mail className="h-4 w-4 text-red-600 fill-red-600" />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

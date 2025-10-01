@@ -40,10 +40,11 @@ serve(async (req) => {
         .eq('attivo', true)
         .maybeSingle();
       
-      if (provider?.email_provider_credenziali?.[0]) {
+      // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+      const creds = provider?.email_provider_credenziali;
+      if (creds) {
         // Cerca prima in oauth_token poi in api_key come fallback
-        oauthToken = provider.email_provider_credenziali[0].oauth_token || 
-                     provider.email_provider_credenziali[0].api_key;
+        oauthToken = creds.oauth_token || creds.api_key;
       }
     }
     

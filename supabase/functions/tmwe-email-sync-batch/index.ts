@@ -57,18 +57,15 @@ serve(async (req) => {
       .eq('attivo', true)
       .maybeSingle();
 
-    if (!provider?.email_provider_credenziali?.length) {
+    // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+    const creds = provider?.email_provider_credenziali;
+    
+    if (!creds || (!creds.oauth_token && !creds.api_key)) {
       throw new Error('Nessuna configurazione TMWE trovata nel database');
     }
 
-    let oauthToken = null;
-    for (const credential of provider.email_provider_credenziali) {
-      if (credential.oauth_token && credential.oauth_token.trim()) {
-        oauthToken = credential.oauth_token.trim();
-        break;
-      }
-    }
-
+    const oauthToken = (creds.oauth_token || creds.api_key)?.trim();
+    
     if (!oauthToken) {
       throw new Error('TMWE OAuth token non configurato nelle credenziali del database');
     }

@@ -37,16 +37,15 @@ serve(async (req) => {
       throw new Error('Provider TMWE non trovato o non attivo');
     }
 
-    // Trova credenziali con api_key valido (non vuoto)
-    const validCredentials = providerData.email_provider_credenziali?.find(
-      (cred: any) => cred.api_key && cred.api_key.trim() !== ''
-    );
+    // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+    const creds = providerData.email_provider_credenziali;
     
-    if (!validCredentials?.api_key) {
+    if (!creds || (!creds.api_key?.trim() && !creds.oauth_token?.trim())) {
       throw new Error('Token OAuth TMWE non trovato o vuoto');
     }
 
-    const oauthToken = validCredentials.api_key;
+    const oauthToken = creds.oauth_token || creds.api_key;
+
 
     // Crea log di sincronizzazione
     const { data: syncLog, error: syncLogError } = await supabase

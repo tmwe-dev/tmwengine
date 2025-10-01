@@ -46,16 +46,12 @@ serve(async (req) => {
         .eq('attivo', true)
         .maybeSingle();
       
-      if (provider?.email_provider_credenziali) {
-        // Trova credenziali con api_key valido (non vuoto)
-        const validCredentials = provider.email_provider_credenziali.find(
-          (cred: any) => cred.api_key && cred.api_key.trim() !== ''
-        );
-        
-        if (validCredentials) {
-          // Cerca prima in oauth_token poi in api_key come fallback
-          oauthToken = validCredentials.oauth_token || validCredentials.api_key;
-        }
+      // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+      const creds = provider?.email_provider_credenziali;
+      
+      if (creds && (creds.api_key?.trim() || creds.oauth_token?.trim())) {
+        // Cerca prima in oauth_token poi in api_key come fallback
+        oauthToken = creds.oauth_token || creds.api_key;
       }
     }
     

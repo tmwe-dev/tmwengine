@@ -117,26 +117,24 @@ serve(async (req) => {
       }
     }
 
-    // Parametri dinamici
-    let batchSize = 50;
+    // Parametri dinamici - L'API TMWE ha un LIMITE DI 10 EMAIL PER BATCH!
+    let batchSize = 10; // FISSO A 10 - l'API ignora valori più alti
     let targetEmails = max_emails;
     let syncType = 'manuale';
 
     if (actualMode === 'initial') {
-      batchSize = 100;
       targetEmails = targetEmails || 5000;
       syncType = 'full_sync';
     } else if (actualMode === 'incremental') {
-      batchSize = 25;
       targetEmails = targetEmails || 200;
       syncType = 'incremental_sync';
     } else if (actualMode === 'continuous') {
-      batchSize = 10;
       targetEmails = 50;
       syncType = 'automatica';
     }
 
-    console.log(`📋 Parametri: modalità=${actualMode}, batch=${batchSize}, target=${targetEmails}`);
+    const maxBatches = Math.ceil(targetEmails / batchSize);
+    console.log(`📋 Parametri: modalità=${actualMode}, batch=${batchSize}, target=${targetEmails}, maxBatches=${maxBatches}`);
 
     // Crea log di sincronizzazione
     const { data: syncLog, error: syncLogError } = await supabase
@@ -151,10 +149,9 @@ serve(async (req) => {
 
     if (syncLogError) throw syncLogError;
 
-    // SYNC PROCESS
+    // SYNC PROCESS - L'API restituisce MAX 10 EMAIL per chiamata
     let totalImported = 0;
     let currentOffset = 0;
-    const maxBatches = Math.ceil(targetEmails / batchSize);
     let consecutiveEmpty = 0;
 
     console.log(`🎯 Inizio sync: max ${maxBatches} batch di ${batchSize} email`);

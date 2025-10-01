@@ -94,52 +94,27 @@ serve(async (req) => {
     // Recuperar configuración TMWE
     const { data: provider, error: providerError } = await supabase
       .from('email_provider')
-      .select('*, email_provider_credenziali(*)')
+      .select('email_provider_credenziali(*)')
       .eq('provider', 'TMWE')
       .eq('attivo', true)
-      .limit(1);
+      .maybeSingle();
 
     if (providerError) {
       throw new Error(`Database error: ${providerError.message}`);
     }
 
-    if (!provider || !provider[0]) {
+    if (!provider) {
       throw new Error('Provider TMWE no encontrado o inactivo');
     }
 
-    const credentials = provider[0].email_provider_credenziali;
-    console.log('Credentials found:', credentials?.length || 0);
+    // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+    const creds = provider.email_provider_credenziali;
     
-    if (!credentials || credentials.length === 0) {
-      throw new Error('Credenciales TMWE no configuradas');
+    if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
+      throw new Error('Credenciales TMWE no configuradas o vacías');
     }
 
-    // Buscar la credencial más reciente con token válido
-    let validCredential = null;
-    for (const cred of credentials) {
-      console.log('Checking credential:', { 
-        id: cred.id, 
-        has_oauth: !!cred.oauth_token, 
-        has_api_key: !!cred.api_key,
-        oauth_length: cred.oauth_token?.length,
-        api_key_length: cred.api_key?.length,
-        created_at: cred.created_at
-      });
-      
-      if ((cred.oauth_token && cred.oauth_token.trim() !== '') || 
-          (cred.api_key && cred.api_key.trim() !== '')) {
-        if (!validCredential || new Date(cred.created_at) > new Date(validCredential.created_at)) {
-          validCredential = cred;
-          console.log('Found valid credential:', validCredential.id);
-        }
-      }
-    }
-
-    if (!validCredential) {
-      throw new Error('Credenciales TMWE válidas no encontradas');
-    }
-
-    const oauthToken = validCredential.oauth_token || validCredential.api_key;
+    const oauthToken = creds.oauth_token || creds.api_key;
     console.log('Using token length:', oauthToken?.length);
     
     if (!oauthToken || oauthToken.trim() === '') {

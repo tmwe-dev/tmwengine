@@ -35,7 +35,7 @@ serve(async (req) => {
     
     console.log('TMWE Email Sync mapped:', { handler, folder_name, folders });
 
-    // Recupera le credenziali dal database usando la stessa logica di tmwe-email-send
+    // Recupera le credenziali dal database
     const { data: provider } = await supabase
       .from('email_provider')
       .select('email_provider_credenziali(*)')
@@ -43,29 +43,18 @@ serve(async (req) => {
       .eq('attivo', true)
       .maybeSingle();
 
-    if (!provider?.email_provider_credenziali?.length) {
+    // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
+    const creds = provider?.email_provider_credenziali;
+    
+    if (!creds || (!creds.oauth_token?.trim() && !creds.api_key?.trim())) {
       throw new Error('Nessuna configurazione TMWE trovata nel database');
     }
 
-    // Trova la prima credenziale valida con API key o OAuth token
-    let authToken = null;
-    for (const credential of provider.email_provider_credenziali) {
-      // Prova prima con API key (preferito per TMWE)
-      if (credential.api_key && credential.api_key.trim()) {
-        authToken = credential.api_key.trim();
-        console.log('Using TMWE API key');
-        break;
-      }
-      // Fallback su OAuth token se non c'è API key
-      if (credential.oauth_token && credential.oauth_token.trim()) {
-        authToken = credential.oauth_token.trim();
-        console.log('Using TMWE OAuth token');
-        break;
-      }
-    }
+    const authToken = (creds.oauth_token || creds.api_key).trim();
+    console.log('Using TMWE token, length:', authToken.length);
 
     if (!authToken) {
-      throw new Error('TMWE API key o OAuth token non configurato nelle credenziali del database');
+      throw new Error('TMWE OAuth token non configurato nelle credenziali del database');
     }
 
     console.log('Starting sync with TMWE API...');

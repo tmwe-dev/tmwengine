@@ -47,20 +47,26 @@ serve(async (req) => {
       throw new Error('Nessuna configurazione TMWE trovata nel database');
     }
 
-    // Trova la prima credenziale valida con OAuth token SOLO
-    let oauthToken = null;
+    // Trova la prima credenziale valida con API key o OAuth token
+    let authToken = null;
     for (const credential of provider.email_provider_credenziali) {
+      // Prova prima con API key (preferito per TMWE)
+      if (credential.api_key && credential.api_key.trim()) {
+        authToken = credential.api_key.trim();
+        console.log('Using TMWE API key');
+        break;
+      }
+      // Fallback su OAuth token se non c'è API key
       if (credential.oauth_token && credential.oauth_token.trim()) {
-        oauthToken = credential.oauth_token.trim();
+        authToken = credential.oauth_token.trim();
+        console.log('Using TMWE OAuth token');
         break;
       }
     }
 
-    if (!oauthToken) {
-      throw new Error('TMWE OAuth token non configurato nelle credenziali del database');
+    if (!authToken) {
+      throw new Error('TMWE API key o OAuth token non configurato nelle credenziali del database');
     }
-
-    console.log('Using TMWE OAuth token');
 
     console.log('Starting sync with TMWE API...');
 
@@ -117,7 +123,7 @@ serve(async (req) => {
         syncResponse = await fetch(syncUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${oauthToken}`,
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(syncBody)
@@ -131,7 +137,7 @@ serve(async (req) => {
           syncResponse = await fetch(httpSyncUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${oauthToken}`,
+              'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify(syncBody)
@@ -190,9 +196,9 @@ serve(async (req) => {
           listResponse = await fetch(listUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${oauthToken}`,
+              'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
-              'X-API-Key': oauthToken // Aggiungi anche X-API-Key header per compatibilità
+              'X-API-Key': authToken // Aggiungi anche X-API-Key header per compatibilità
             },
             body: JSON.stringify(listBody)
           });
@@ -203,9 +209,9 @@ serve(async (req) => {
           listResponse = await fetch(httpListUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${oauthToken}`,
+              'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
-              'X-API-Key': oauthToken // Aggiungi anche X-API-Key header per compatibilità
+              'X-API-Key': authToken // Aggiungi anche X-API-Key header per compatibilità
             },
             body: JSON.stringify(listBody)
           });

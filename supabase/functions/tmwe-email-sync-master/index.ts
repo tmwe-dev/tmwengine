@@ -156,28 +156,41 @@ serve(async (req) => {
 
     console.log(`🎯 Inizio sync: max ${maxBatches} batch di ${batchSize} email`);
 
-    // IGNORA L'API SYNC, USA DIRETTAMENTE GET_MESSAGES CON PAGINAZIONE AGGRESSIVA
-    console.log(`\n🚀 DOWNLOAD DIRETTO CON PAGINAZIONE: ${folder_name}`);
+    // NUOVO APPROCCIO: SCARICA PER INTERVALLI DI DATE
+    console.log(`\n🚀 DOWNLOAD PER INTERVALLI TEMPORALI: ${folder_name}`);
     
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
-      let hasMore = true;
-      let currentBatch = 0;
-      consecutiveEmpty = 0;
-
-      while (hasMore && currentBatch < maxBatches && consecutiveEmpty < 3) {
-        currentBatch++;
-        console.log(`\n📦 BATCH ${currentBatch}/${maxBatches} (offset: ${currentOffset})`);
+      
+      // Scarica email degli ultimi 365 giorni, 30 giorni alla volta
+      const daysToSync = 365;
+      const daysPerBatch = 30;
+      const totalBatches = Math.ceil(daysToSync / daysPerBatch);
+      
+      console.log(`📅 Sincronizzazione ultimi ${daysToSync} giorni in batch da ${daysPerBatch} giorni`);
+      
+      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+        const daysAgo = batchNum * daysPerBatch;
+        const dateFrom = new Date();
+        dateFrom.setDate(dateFrom.getDate() - daysAgo - daysPerBatch);
+        const dateTo = new Date();
+        dateTo.setDate(dateTo.getDate() - daysAgo);
+        
+        const dateFromStr = dateFrom.toISOString().split('T')[0];
+        const dateToStr = dateTo.toISOString().split('T')[0];
+        
+        console.log(`\n📆 BATCH ${batchNum + 1}/${totalBatches}: ${dateFromStr} → ${dateToStr}`);
         
         const messagesUrl = `${baseUrl}/app.php?action=email_message`;
-        const messagesBody = {
-          handler: 'get_messages',
+        const searchBody = {
+          handler: 'search_messages',
           folder: folder_name,
-          limit: batchSize,
-          offset: currentOffset,
-          include_attachments: false,
-          format: 'text'
+          search_date_from: dateFromStr,
+          search_date_to: dateToStr,
+          limit: 1000
         };
+
+        console.log('🔍 Ricerca email:', JSON.stringify(searchBody));
 
         let messagesResponse;
         try {
@@ -187,7 +200,7 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(messagesBody)
+            body: JSON.stringify(searchBody)
           });
         } catch (error) {
           const httpUrl = messagesUrl.replace('https://', 'http://');
@@ -197,54 +210,25 @@ serve(async (req) => {
               'Authorization': `Bearer ${oauthToken}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(messagesBody)
+            body: JSON.stringify(searchBody)
           });
         }
 
         if (!messagesResponse.ok) {
-          console.error('❌ Errore scaricamento messaggi');
-          consecutiveEmpty++;
-          currentOffset += batchSize;
+          console.error('❌ Errore ricerca messaggi');
           continue;
         }
 
-        const emailData = await messagesResponse.json();
-        const messages = emailData?.messages || [];
-        const totalAvailable = emailData?.total || 0;
-        const countReturned = emailData?.count || messages.length;
+        const searchData = await messagesResponse.json();
+        const messages = searchData?.results || searchData?.messages || [];
         
-        console.log(`📊 RISPOSTA API COMPLETA:`, JSON.stringify({
-          total: totalAvailable,
-          count: countReturned,
-          messages_length: messages.length,
-          offset: currentOffset,
-          limit: batchSize,
-          total_imported_so_far: totalImported
-        }));
-
-        // Se l'API ci dice quante email totali ci sono, usiamo quella info
-        if (totalAvailable > 0) {
-          console.log(`📈 Progresso: ${totalImported}/${totalAvailable} email importate`);
-          // Se abbiamo raggiunto il totale, fermiamoci
-          if (totalImported >= totalAvailable) {
-            console.log('✅ Raggiunto il totale delle email disponibili');
-            hasMore = false;
-            break;
-          }
-        }
+        console.log(`📊 Trovate ${messages.length} email in questo periodo`);
 
         if (messages.length === 0) {
-          consecutiveEmpty++;
-          console.log(`⚠️ Batch vuoto (${consecutiveEmpty}/3)`);
-          // Se non ci sono messaggi MA l'API dice che ce ne sono, forse c'è un problema di offset
-          if (totalAvailable > 0 && totalImported < totalAvailable) {
-            console.log(`⚠️ ATTENZIONE: API dice total=${totalAvailable} ma restituisce 0 messaggi`);
-          }
-          currentOffset += batchSize;
+          console.log('⏭️ Nessuna email in questo periodo, continuo...');
           continue;
         }
 
-        consecutiveEmpty = 0;
         let newEmailsInBatch = 0;
 
         // Processa ogni email
@@ -283,23 +267,20 @@ serve(async (req) => {
           }
         }
 
-        console.log(`✅ Salvate ${newEmailsInBatch} nuove email in questo batch`);
-        currentOffset += batchSize;
+        console.log(`✅ Salvate ${newEmailsInBatch} nuove email in questo periodo`);
+        console.log(`📈 TOTALE importate finora: ${totalImported}`);
 
         // Aggiorna progresso
         await supabase
           .from('email_sync_logs')
           .update({
             messaggi_nuovi: totalImported,
-            messaggi_sincronizzati: currentBatch
+            messaggi_sincronizzati: batchNum + 1
           })
           .eq('id', syncLog.id);
 
-        // Se abbiamo ricevuto meno messaggi del limite, continuiamo comunque
-        // perché potrebbe essere che il server ha un limite ma ci sono ancora email
-        
-        // Delay tra batch per non sovraccaricare
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Delay tra batch
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
     } catch (syncError) {

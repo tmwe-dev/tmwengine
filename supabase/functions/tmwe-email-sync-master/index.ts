@@ -38,28 +38,31 @@ serve(async (req) => {
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
 
-    // Recupera credenziali TMWE
+    // Recupera credenziali TMWE - USA LO STESSO METODO DELLE FUNZIONI CHE FUNZIONANO!
     const { data: providerData, error: providerError } = await supabase
       .from('email_provider')
       .select('*, email_provider_credenziali(*)')
       .eq('provider', 'TMWE')
       .eq('attivo', true)
-      .single();
+      .maybeSingle();
 
     if (providerError || !providerData) {
       throw new Error('Provider TMWE non trovato o non attivo');
     }
 
-    // Trova credenziali valide
-    const validCredentials = providerData.email_provider_credenziali?.find(
-      (cred: any) => cred.api_key && cred.api_key.trim() !== ''
-    );
+    // ESATTAMENTE come tmwe-email-messages che FUNZIONA!
+    let oauthToken = null;
+    if (providerData?.email_provider_credenziali?.[0]) {
+      // Cerca prima oauth_token poi api_key come fallback
+      oauthToken = providerData.email_provider_credenziali[0].oauth_token || 
+                   providerData.email_provider_credenziali[0].api_key;
+    }
     
-    if (!validCredentials?.api_key) {
-      throw new Error('Token OAuth TMWE non trovato o vuoto');
+    if (!oauthToken) {
+      throw new Error('TMWE OAuth token non configurato nel database o environment');
     }
 
-    const oauthToken = validCredentials.api_key;
+    console.log('✅ Token trovato, inizio sync');
 
     // 🧠 INTELLIGENZA: Determina modalità automatica
     let actualMode = mode;

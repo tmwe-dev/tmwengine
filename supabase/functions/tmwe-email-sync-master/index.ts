@@ -213,12 +213,36 @@ serve(async (req) => {
 
         const emailData = await messagesResponse.json();
         const messages = emailData?.messages || [];
+        const totalAvailable = emailData?.total || 0;
+        const countReturned = emailData?.count || messages.length;
         
-        console.log(`📊 Ricevuti ${messages.length} messaggi dal server`);
+        console.log(`📊 RISPOSTA API COMPLETA:`, JSON.stringify({
+          total: totalAvailable,
+          count: countReturned,
+          messages_length: messages.length,
+          offset: currentOffset,
+          limit: batchSize,
+          total_imported_so_far: totalImported
+        }));
+
+        // Se l'API ci dice quante email totali ci sono, usiamo quella info
+        if (totalAvailable > 0) {
+          console.log(`📈 Progresso: ${totalImported}/${totalAvailable} email importate`);
+          // Se abbiamo raggiunto il totale, fermiamoci
+          if (totalImported >= totalAvailable) {
+            console.log('✅ Raggiunto il totale delle email disponibili');
+            hasMore = false;
+            break;
+          }
+        }
 
         if (messages.length === 0) {
           consecutiveEmpty++;
           console.log(`⚠️ Batch vuoto (${consecutiveEmpty}/3)`);
+          // Se non ci sono messaggi MA l'API dice che ce ne sono, forse c'è un problema di offset
+          if (totalAvailable > 0 && totalImported < totalAvailable) {
+            console.log(`⚠️ ATTENZIONE: API dice total=${totalAvailable} ma restituisce 0 messaggi`);
+          }
           currentOffset += batchSize;
           continue;
         }

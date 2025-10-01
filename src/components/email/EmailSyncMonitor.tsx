@@ -206,22 +206,29 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     try {
       setIsRunning(true);
       addLog('📥 Avvio IMPORTAZIONE COMPLETA di tutte le email...');
-      addLog(`🎯 Target: ${syncConfig.targetEmails} email`);
+      addLog(`🎯 Target: ${syncConfig.targetEmails} email dalla cartella ${syncConfig.folder}`);
+      addLog('⚙️ Usando modalità INITIAL per importazione massiva...');
       
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-progressive', {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
         body: { 
+          mode: 'initial',  // Modalità initial per import massivo
           folder_name: syncConfig.folder,
-          target_emails: syncConfig.targetEmails,
-          batch_delay: 1000  // 1 secondo tra i batch
+          max_emails: syncConfig.targetEmails,  // Usa il target completo
+          force_full: true  // Forza import completo
         }
       });
 
       if (error) throw error;
 
       addLog(`✅ Importazione completata!`);
-      addLog(`📥 Email importate: ${data.total_imported}`);
-      addLog(`📊 Batch processati: ${data.batches_processed}`);
+      addLog(`📊 Modalità utilizzata: ${data.mode_used}`);
+      addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
+      addLog(`📚 Totale in database: ${data.total_emails_in_db}`);
       
+      if (data.next_sync_recommended) {
+        addLog(`⏰ Prossima sync consigliata: ${data.next_sync_recommended}`);
+      }
+
       if (onSyncComplete) {
         onSyncComplete();
       }
@@ -230,7 +237,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
       toast({
         title: "Importazione completata",
-        description: `${data.total_imported} email importate con successo`
+        description: `${data.emails_downloaded} nuove email importate. Totale: ${data.total_emails_in_db}`
       });
 
     } catch (error) {

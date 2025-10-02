@@ -2657,6 +2657,19 @@ export default function ImportTemplates() {
                 </>
               )}
               
+              {/* Pulsante Solo con note - sempre visibile al centro */}
+              {hasNotesFilter && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setHasNotesFilter(false)}
+                  className="h-10 px-4 flex items-center gap-2"
+                >
+                  Solo con note ({filteredRecords.length})
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              
             </div>
           )}
 

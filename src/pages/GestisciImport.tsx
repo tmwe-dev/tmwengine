@@ -183,11 +183,9 @@ export default function GestisciImport() {
         creato_da: activityData.creato_da || null
       }));
 
-      // TODO: Fix types issue with attivita table
-      // const { error } = await supabase
-      //   .from('attivita')
-      //   .insert(activities);
-      const error = null; // Temporary - will be fixed when types are updated
+      const { error } = await supabase
+        .from('attivita')
+        .insert(activities);
 
       if (error) throw error;
 
@@ -1024,17 +1022,21 @@ export default function GestisciImport() {
                           : hasOpenActivities 
                           ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
                           : '';
+                        
+                        const rowOverlayStyle = (hasOverdueActivities || hasOpenActivities) ? {
+                          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)',
+                          opacity: 0.2
+                        } : {};
                           
                         return (
-                          <TableRow key={record.id} className={cn("relative", rowBgColor)}>
-                            {(hasOverdueActivities || hasOpenActivities) && (
-                              <div 
-                                className="absolute inset-0 opacity-20 pointer-events-none" 
-                                style={{
-                                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
-                                }} 
-                              />
-                            )}
+                          <TableRow 
+                            key={record.id} 
+                            className={cn("relative", rowBgColor)}
+                            style={{
+                              backgroundImage: rowOverlayStyle.backgroundImage,
+                              backgroundSize: '100% 100%'
+                            }}
+                          >
                             <TableCell>
                               <Checkbox
                                 className="relative z-10"

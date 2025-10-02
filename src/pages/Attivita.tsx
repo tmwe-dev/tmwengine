@@ -1226,6 +1226,11 @@ export default function Attivita() {
                     ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
                     : '';
                   
+                  const rowOverlayStyle = (isOverdue || isOpen) ? {
+                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)',
+                    opacity: 0.2
+                  } : {};
+                  
                   return (
                      <TableRow 
                       key={activity.id} 
@@ -1235,15 +1240,11 @@ export default function Attivita() {
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
+                      style={{
+                        backgroundImage: rowOverlayStyle.backgroundImage,
+                        backgroundSize: '100% 100%'
+                      }}
                     >
-                      {(isOverdue || isOpen) && (
-                        <div 
-                          className="absolute inset-0 opacity-20 pointer-events-none" 
-                          style={{
-                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
-                          }} 
-                        />
-                      )}
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">

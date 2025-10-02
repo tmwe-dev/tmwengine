@@ -34,8 +34,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
   
-  // Stati per modifica campi principali
-  const [isEditing, setIsEditing] = useState(false);
+  // Modalità modifica sempre attiva - rimosso isEditing
   const [editValues, setEditValues] = useState({
     address: record.address || record.indirizzo || '',
     city: record.city || record.citta || '',
@@ -44,6 +43,13 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
     email: record.email || '',
     phone: record.phone || record.telefono || '',
     cell: record.cell || record.cellulare || '',
+    company_name: record.company_name || record.azienda || '',
+    company_alias: record.company_alias || '',
+    name: record.name || record.nome || '',
+    alias: record.alias || '',
+    title: record.title || '',
+    position: record.position || '',
+    origin: record.origin || record.origine || '',
   });
 
   // Recupera le attività del contatto
@@ -230,21 +236,35 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       const updateData: any = {};
       
       if (isImportedContact) {
-        if (editValues.address) updateData.address = editValues.address;
-        if (editValues.city) updateData.city = editValues.city;
-        if (editValues.zip_code) updateData.zip_code = editValues.zip_code;
-        if (editValues.country) updateData.country = editValues.country;
-        if (editValues.email) updateData.email = editValues.email;
-        if (editValues.phone) updateData.phone = editValues.phone;
-        if (editValues.cell) updateData.cell = editValues.cell;
+        updateData.address = editValues.address;
+        updateData.city = editValues.city;
+        updateData.zip_code = editValues.zip_code;
+        updateData.country = editValues.country;
+        updateData.email = editValues.email;
+        updateData.phone = editValues.phone;
+        updateData.cell = editValues.cell;
+        updateData.company_name = editValues.company_name;
+        updateData.company_alias = editValues.company_alias;
+        updateData.name = editValues.name;
+        updateData.alias = editValues.alias;
+        updateData.title = editValues.title;
+        updateData.position = editValues.position;
+        updateData.origin = editValues.origin;
       } else {
-        if (editValues.address) updateData.indirizzo = editValues.address;
-        if (editValues.city) updateData.citta = editValues.city;
-        if (editValues.zip_code) updateData.zip_code = editValues.zip_code;
-        if (editValues.country) updateData.paese = editValues.country;
-        if (editValues.email) updateData.email = editValues.email;
-        if (editValues.phone) updateData.telefono = editValues.phone;
-        if (editValues.cell) updateData.cellulare = editValues.cell;
+        updateData.indirizzo = editValues.address;
+        updateData.citta = editValues.city;
+        updateData.zip_code = editValues.zip_code;
+        updateData.paese = editValues.country;
+        updateData.email = editValues.email;
+        updateData.telefono = editValues.phone;
+        updateData.cellulare = editValues.cell;
+        updateData.azienda = editValues.company_name;
+        updateData.company_alias = editValues.company_alias;
+        updateData.nome = editValues.name;
+        updateData.alias = editValues.alias;
+        updateData.title = editValues.title;
+        updateData.position = editValues.position;
+        updateData.origine = editValues.origin;
       }
 
       const { error } = await supabase
@@ -265,6 +285,13 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         record.email = editValues.email;
         record.phone = editValues.phone;
         record.cell = editValues.cell;
+        record.company_name = editValues.company_name;
+        record.company_alias = editValues.company_alias;
+        record.name = editValues.name;
+        record.alias = editValues.alias;
+        record.title = editValues.title;
+        record.position = editValues.position;
+        record.origin = editValues.origin;
       } else {
         record.indirizzo = editValues.address;
         record.citta = editValues.city;
@@ -273,9 +300,14 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         record.email = editValues.email;
         record.telefono = editValues.phone;
         record.cellulare = editValues.cell;
+        record.azienda = editValues.company_name;
+        record.company_alias = editValues.company_alias;
+        record.nome = editValues.name;
+        record.alias = editValues.alias;
+        record.title = editValues.title;
+        record.position = editValues.position;
+        record.origine = editValues.origin;
       }
-      
-      setIsEditing(false);
       
       toast({
         title: "Modifiche salvate",
@@ -357,7 +389,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Toolbar di modifica */}
+      {/* Toolbar di aggiornamento - eliminato il tasto Modifica */}
       <div className="flex justify-between items-center pb-2 border-b">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           <span>{record.country || record.paese || "N/A"}</span>
@@ -366,38 +398,12 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </div>
         <div className="flex gap-2">
           <Button
-            variant={isEditing ? "default" : "outline"}
+            variant="default"
             size="sm"
-            onClick={() => {
-              if (isEditing) {
-                handleSaveFields();
-              } else {
-                setIsEditing(true);
-              }
-            }}
+            onClick={handleSaveFields}
           >
-            {isEditing ? 'Salva modifiche' : 'Modifica dati'}
+            Aggiorna
           </Button>
-          {isEditing && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setEditValues({
-                  address: record.address || record.indirizzo || '',
-                  city: record.city || record.citta || '',
-                  zip_code: record.zip_code || '',
-                  country: record.country || record.paese || '',
-                  email: record.email || '',
-                  phone: record.phone || record.telefono || '',
-                  cell: record.cell || record.cellulare || '',
-                });
-                setIsEditing(false);
-              }}
-            >
-              Annulla
-            </Button>
-          )}
         </div>
       </div>
       
@@ -455,39 +461,42 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </h3>
         <div className="flex items-start gap-4 pl-7">
           
-          {/* Company fields + Origin allineati subito a destra dell'icona */}
-          {(record.company_name !== undefined || record.azienda !== undefined) && (
-            <div className="max-w-[200px] min-w-[200px]">
-              <FieldRenderer 
-                field={record.company_name !== undefined ? "company_name" : "azienda"} 
-                value={record.company_name || record.azienda} 
-                formatCellValue={formatCellValue}
+          {/* Company fields + Origin sempre modificabili */}
+          <div className="max-w-[200px] min-w-[200px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Company Name</Label>
+              <Input
+                value={editValues.company_name}
+                onChange={(e) => setEditValues(prev => ({ ...prev, company_name: e.target.value }))}
+                placeholder="Nome Azienda"
               />
             </div>
-          )}
+          </div>
           
-          {record.company_alias !== undefined && (
-            <div className="min-w-[200px]">
-              <FieldRenderer 
-                field="company_alias" 
-                value={record.company_alias} 
-                formatCellValue={formatCellValue}
+          <div className="min-w-[200px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Company Alias</Label>
+              <Input
+                value={editValues.company_alias}
+                onChange={(e) => setEditValues(prev => ({ ...prev, company_alias: e.target.value }))}
+                placeholder="Alias Azienda"
               />
             </div>
-          )}
+          </div>
           
           <div className="flex-1"></div>
           
           {/* Origin */}
-          {(record.origin !== undefined || record.origine !== undefined) && (
-            <div className="min-w-[140px]">
-              <FieldRenderer 
-                field={record.origin !== undefined ? "origin" : "origine"} 
-                value={record.origin || record.origine} 
-                formatCellValue={formatCellValue}
+          <div className="min-w-[140px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Origin</Label>
+              <Input
+                value={editValues.origin}
+                onChange={(e) => setEditValues(prev => ({ ...prev, origin: e.target.value }))}
+                placeholder="Origine"
               />
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -499,36 +508,39 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </h3>
         <div className="flex items-start gap-4 pl-7">
           
-          {/* Name, Title, Alias allineati subito a destra dell'icona */}
-          {(record.name !== undefined || record.nome !== undefined) && (
-            <div className="max-w-[200px] min-w-[180px]">
-              <FieldRenderer 
-                field={record.name !== undefined ? "name" : "nome"} 
-                value={record.name || record.nome} 
-                formatCellValue={formatCellValue}
+          {/* Name, Title, Alias sempre modificabili */}
+          <div className="max-w-[200px] min-w-[180px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Name</Label>
+              <Input
+                value={editValues.name}
+                onChange={(e) => setEditValues(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nome"
               />
             </div>
-          )}
+          </div>
           
-          {record.title !== undefined && (
-            <div className="min-w-[160px]">
-              <FieldRenderer 
-                field="title" 
-                value={record.title} 
-                formatCellValue={formatCellValue}
+          <div className="min-w-[160px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Title</Label>
+              <Input
+                value={editValues.title}
+                onChange={(e) => setEditValues(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Titolo"
               />
             </div>
-          )}
+          </div>
           
-          {record.alias !== undefined && (
-            <div className="min-w-[140px]">
-              <FieldRenderer 
-                field="alias" 
-                value={record.alias} 
-                formatCellValue={formatCellValue}
+          <div className="min-w-[140px]">
+            <div>
+              <Label className="text-xs text-blue-600 mb-1">Alias</Label>
+              <Input
+                value={editValues.alias}
+                onChange={(e) => setEditValues(prev => ({ ...prev, alias: e.target.value }))}
+                placeholder="Alias"
               />
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -540,82 +552,48 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </h3>
         <div className="flex items-start gap-4 pl-7">
           
-          {/* Campi contatti con icone */}
-          {(record.email !== undefined || isEditing) && (
-            <div className="flex-1 min-w-[250px] flex items-start gap-2">
-              <Mail className="h-4 w-4 text-blue-500 mt-5" />
-              {isEditing ? (
-                <div className="flex-1">
-                  <Label className="text-xs text-blue-600 mb-1">Email</Label>
-                  <Input
-                    value={editValues.email}
-                    onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Email"
-                    type="email"
-                  />
-                </div>
-              ) : (
-                <FieldRenderer 
-                  field="email" 
-                  value={record.email} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              )}
+          {/* Campi contatti con icone - sempre modificabili */}
+          <div className="flex-1 min-w-[250px] flex items-start gap-2">
+            <Mail className="h-4 w-4 text-blue-500 mt-5" />
+            <div className="flex-1">
+              <Label className="text-xs text-blue-600 mb-1">Email</Label>
+              <Input
+                value={editValues.email}
+                onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email"
+                type="email"
+              />
             </div>
-          )}
+          </div>
           
-          {((record.phone !== undefined || record.telefono !== undefined) || isEditing) && (
-            <div className="min-w-[150px] flex items-start gap-2">
-              <Phone className="h-4 w-4 text-green-500 mt-5" />
-              {isEditing ? (
-                <div className="flex-1">
-                  <Label className="text-xs text-blue-600 mb-1">Phone</Label>
-                  <Input
-                    value={editValues.phone}
-                    onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Telefono"
-                  />
-                </div>
-              ) : (
-                <FieldRenderer 
-                  field={record.phone !== undefined ? "phone" : "telefono"} 
-                  value={record.phone || record.telefono} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              )}
+          <div className="min-w-[150px] flex items-start gap-2">
+            <Phone className="h-4 w-4 text-green-500 mt-5" />
+            <div className="flex-1">
+              <Label className="text-xs text-blue-600 mb-1">Phone</Label>
+              <Input
+                value={editValues.phone}
+                onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Telefono"
+              />
             </div>
-          )}
+          </div>
           
-          {((record.cell !== undefined || record.cellulare !== undefined) || isEditing) && (
-            <div className="min-w-[150px] flex items-start gap-2">
-              <Phone className="h-4 w-4 text-orange-500 mt-5" />
-              {isEditing ? (
-                <div className="flex-1">
-                  <Label className="text-xs text-blue-600 mb-1">Cell</Label>
-                  <Input
-                    value={editValues.cell}
-                    onChange={(e) => setEditValues(prev => ({ ...prev, cell: e.target.value }))}
-                    placeholder="Cellulare"
-                  />
-                </div>
-              ) : (
-                <FieldRenderer 
-                  field={record.cell !== undefined ? "cell" : "cellulare"} 
-                  value={record.cell || record.cellulare} 
-                  formatCellValue={formatCellValue}
-                  className="flex-1"
-                />
-              )}
+          <div className="min-w-[150px] flex items-start gap-2">
+            <Phone className="h-4 w-4 text-orange-500 mt-5" />
+            <div className="flex-1">
+              <Label className="text-xs text-blue-600 mb-1">Cell</Label>
+              <Input
+                value={editValues.cell}
+                onChange={(e) => setEditValues(prev => ({ ...prev, cell: e.target.value }))}
+                placeholder="Cellulare"
+              />
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Sezione Ubicazione */}
-      {(record.city !== undefined || record.citta !== undefined || record.zip_code !== undefined || record.address !== undefined || record.indirizzo !== undefined || isEditing) && (
-        <div className="space-y-4">
+      {/* Sezione Ubicazione - sempre visibile */}
+      <div className="space-y-4">
           <div className="flex items-start gap-4">
             <button 
               onClick={() => setShowLocationDetails(!showLocationDetails)}
@@ -630,93 +608,52 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {showLocationDetails && (
             <div className="flex items-start gap-4 ml-9">
-              {((record.city !== undefined || record.citta !== undefined) || isEditing) && (
-                <div className="max-w-[200px] min-w-[200px]">
-                  {isEditing ? (
-                    <div>
-                      <Label className="text-xs text-blue-600 mb-1">City</Label>
-                      <Input
-                        value={editValues.city}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, city: e.target.value }))}
-                        placeholder="Città"
-                      />
-                    </div>
-                  ) : (
-                    <FieldRenderer 
-                      field={record.city !== undefined ? "city" : "citta"} 
-                      value={record.city || record.citta} 
-                      formatCellValue={formatCellValue}
-                    />
-                  )}
+              <div className="max-w-[200px] min-w-[200px]">
+                <div>
+                  <Label className="text-xs text-blue-600 mb-1">City</Label>
+                  <Input
+                    value={editValues.city}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Città"
+                  />
                 </div>
-              )}
+              </div>
               
-              {(record.zip_code !== undefined || isEditing) && (
-                <div className="max-w-[200px] min-w-[100px]">
-                  {isEditing ? (
-                    <div>
-                      <Label className="text-xs text-blue-600 mb-1">Zip Code</Label>
-                      <Input
-                        value={editValues.zip_code}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, zip_code: e.target.value }))}
-                        placeholder="CAP"
-                      />
-                    </div>
-                  ) : (
-                    <FieldRenderer 
-                      field="zip_code" 
-                      value={record.zip_code} 
-                      formatCellValue={formatCellValue}
-                    />
-                  )}
+              <div className="max-w-[200px] min-w-[100px]">
+                <div>
+                  <Label className="text-xs text-blue-600 mb-1">Zip Code</Label>
+                  <Input
+                    value={editValues.zip_code}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, zip_code: e.target.value }))}
+                    placeholder="CAP"
+                  />
                 </div>
-              )}
+              </div>
               
-              {((record.address !== undefined || record.indirizzo !== undefined) || isEditing) && (
-                <div className="max-w-[200px] min-w-[200px]">
-                  {isEditing ? (
-                    <div>
-                      <Label className="text-xs text-blue-600 mb-1">Address</Label>
-                      <Input
-                        value={editValues.address}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, address: e.target.value }))}
-                        placeholder="Indirizzo"
-                      />
-                    </div>
-                  ) : (
-                    <FieldRenderer 
-                      field={record.address !== undefined ? "address" : "indirizzo"} 
-                      value={record.address || record.indirizzo} 
-                      formatCellValue={formatCellValue}
-                    />
-                  )}
+              <div className="max-w-[200px] min-w-[200px]">
+                <div>
+                  <Label className="text-xs text-blue-600 mb-1">Address</Label>
+                  <Input
+                    value={editValues.address}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Indirizzo"
+                  />
                 </div>
-              )}
+              </div>
               
-              {((record.country !== undefined || record.paese !== undefined) || isEditing) && (
-                <div className="max-w-[200px] min-w-[150px]">
-                  {isEditing ? (
-                    <div>
-                      <Label className="text-xs text-blue-600 mb-1">Country</Label>
-                      <Input
-                        value={editValues.country}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, country: e.target.value }))}
-                        placeholder="Paese"
-                      />
-                    </div>
-                  ) : (
-                    <FieldRenderer 
-                      field={record.country !== undefined ? "country" : "paese"} 
-                      value={record.country || record.paese} 
-                      formatCellValue={formatCellValue}
-                    />
-                  )}
+              <div className="max-w-[200px] min-w-[150px]">
+                <div>
+                  <Label className="text-xs text-blue-600 mb-1">Country</Label>
+                  <Input
+                    value={editValues.country}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, country: e.target.value }))}
+                    placeholder="Paese"
+                  />
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
-      )}
 
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (

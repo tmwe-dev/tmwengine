@@ -320,6 +320,7 @@ export default function ImportTemplates() {
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
+  const [shouldShowBlackScreen, setShouldShowBlackScreen] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -338,6 +339,11 @@ export default function ImportTemplates() {
   // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
   useEffect(() => {
     if (location.state?.openRecordsDialog) {
+      // Se arriva con showBlackScreen, attiva lo schermo nero interno
+      if (location.state?.showBlackScreen) {
+        setShouldShowBlackScreen(true);
+      }
+      
       setIsLoadingDialog(true);
       // Aspetta che i dati siano caricati
       if (importLogs.length > 0) {
@@ -347,6 +353,8 @@ export default function ImportTemplates() {
           setShowRecordsDialog(true);
           loadAllRecords(recentImport).then(() => {
             setIsLoadingDialog(false);
+            // Rimuovi lo schermo nero solo quando il caricamento è completato
+            setShouldShowBlackScreen(false);
           });
           // Pulisci lo stato per evitare di riaprire il dialog
           navigate(location.pathname, { replace: true, state: {} });
@@ -1752,9 +1760,8 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo caricando il dialog o arrivando da Attività con showBlackScreen, mostra schermo nero
-  // Lo schermo nero rimane finché il dialog non è completamente caricato (isLoadingDialog === false)
-  if (location.state?.showBlackScreen && (isLoadingDialog || !showRecordsDialog)) {
+  // Se shouldShowBlackScreen è attivo, mostra schermo nero finché il dialog non è completamente caricato
+  if (shouldShowBlackScreen) {
     return <div className="fixed inset-0 bg-black"></div>;
   }
 

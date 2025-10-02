@@ -210,52 +210,52 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                  <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Users className="h-4 w-4 text-primary" />
                     Informazioni Contatto
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{companyInfo.nome}</span>
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-white">{companyInfo.nome}</span>
                     </div>
                     {companyInfo.email && (
                       <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{companyInfo.email}</span>
+                        <Mail className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-white">{companyInfo.email}</span>
                       </div>
                     )}
                     {companyInfo.telefono && (
                       <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{companyInfo.telefono}</span>
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-white">{companyInfo.telefono}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                  <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" />
                     Localizzazione
                   </h3>
                   <div className="space-y-2">
                     {companyInfo.citta && (
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{companyInfo.citta}</span>
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-white">{companyInfo.citta}</span>
                       </div>
                     )}
                     {companyInfo.paese && (
                       <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{companyInfo.paese}</span>
+                        <Globe className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-white">{companyInfo.paese}</span>
                       </div>
                     )}
                     {companyInfo.origine && (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Origine:</span>
-                        <span className="text-sm">{companyInfo.origine}</span>
+                        <span className="text-sm text-gray-400">Origine:</span>
+                        <span className="text-sm text-white">{companyInfo.origine}</span>
                       </div>
                     )}
                   </div>
@@ -266,17 +266,17 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
 
           {/* Elenco Attività */}
           <div>
-            <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2 text-lg">
+            <h3 className="font-semibold text-white mb-4 flex items-center gap-2 text-lg">
               <FileText className="h-5 w-5 text-primary" />
               Attività Associate ({activities.length})
             </h3>
             
             {isLoading ? (
-              <div className="text-center py-8 text-text-secondary">
+              <div className="text-center py-8 text-white">
                 Caricamento attività...
               </div>
             ) : activities.length === 0 ? (
-              <div className="text-center py-8 text-text-secondary">
+              <div className="text-center py-8 text-white">
                 Nessuna attività trovata per questa azienda
               </div>
             ) : (
@@ -296,10 +296,10 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <h4 className="font-medium text-text-primary truncate">
+                                <h4 className="font-medium text-white truncate">
                                   {TIPO_LABELS[activity.tipo]}
                                 </h4>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-gray-300 mt-1">
                                   {activity.descrizione}
                                 </p>
                               </div>
@@ -324,7 +324,7 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                                 {PRIORITA_LABELS[activity.priorita]}
                               </Badge>
                               {activity.scadenza && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-300">
                                   Scadenza: {format(new Date(activity.scadenza), 'dd MMM HH:mm')}
                                 </span>
                               )}

@@ -2410,113 +2410,107 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex justify-between items-center gap-2 py-4 border-b">
+            <div className="flex justify-between items-center gap-2 py-2 border-b">
               <div className="flex items-center gap-2">
-                {/* Spazio per eventuali controlli futuri */}
+                {/* Desktop Action Buttons as Icons */}
+                {selectedRecords.size > 0 && (
+                  <>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowMultipleActivityDialog(true)}
+                            className="text-xs px-2"
+                          >
+                            <FileText className="h-4 w-4 text-blue-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Crea attività multiple</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={importSelectedRecords}
+                            className="text-xs px-2"
+                          >
+                            <Database className="h-4 w-4 text-green-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Importa {selectedRecords.size} record in rubrica</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                )}
               </div>
                
-               <div className="flex items-center gap-2">
-                 {/* Desktop Action Buttons as Icons */}
-                 {selectedRecords.size > 0 && (
-                   <>
-                     <TooltipProvider>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => setShowMultipleActivityDialog(true)}
-                             className="text-xs px-2"
-                           >
-                             <FileText className="h-4 w-4 text-blue-500" />
-                           </Button>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Crea attività multiple</p>
-                         </TooltipContent>
-                       </Tooltip>
-                     </TooltipProvider>
-                     
-                     <TooltipProvider>
-                       <Tooltip>
-                         <TooltipTrigger asChild>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={importSelectedRecords}
-                             className="text-xs px-2"
-                           >
-                             <Database className="h-4 w-4 text-green-500" />
-                           </Button>
-                         </TooltipTrigger>
-                         <TooltipContent>
-                           <p>Importa {selectedRecords.size} record in rubrica</p>
-                         </TooltipContent>
-                       </Tooltip>
-                     </TooltipProvider>
-                    </>
-                  )}
-                </div>
-               
-               <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={visibleColumns.company ? "default" : "outline"}
-                onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
-                className="text-xs"
-              >
-                Azienda & Contatti
-              </Button>
-              <Button
-                size="sm"
-                variant={visibleColumns.details ? "default" : "outline"}
-                onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-                className="text-xs"
-              >
-                Dettagli Commerciali
-              </Button>
-              <Button
-                size="sm"
-                variant={visibleColumns.metadata ? "default" : "outline"}
-                onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-                className="text-xs"
-              >
-                Metadata & Sistema
-              </Button>
-              
-              {/* Bulk delete button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={deleteSelectedRecords}
-                      disabled={selectedRecords.size === 0}
-                      className="text-xs px-2"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      {selectedRecords.size === 0 
-                        ? 'Seleziona record da eliminare' 
-                        : `Elimina ${selectedRecords.size} record selezionati`
-                      }
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={visibleColumns.company ? "default" : "outline"}
+                  onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
+                  className="text-xs"
+                >
+                  Azienda & Contatti
+                </Button>
+                <Button
+                  size="sm"
+                  variant={visibleColumns.details ? "default" : "outline"}
+                  onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                  className="text-xs"
+                >
+                  Dettagli Commerciali
+                </Button>
+                <Button
+                  size="sm"
+                  variant={visibleColumns.metadata ? "default" : "outline"}
+                  onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                  className="text-xs"
+                >
+                  Metadata & Sistema
+                </Button>
+                
+                {/* Bulk delete button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={deleteSelectedRecords}
+                        disabled={selectedRecords.size === 0}
+                        className="text-xs px-2"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        {selectedRecords.size === 0 
+                          ? 'Seleziona record da eliminare' 
+                          : `Elimina ${selectedRecords.size} record selezionati`
+                        }
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           )}
 
-
-          
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (
-            <div className="space-y-2">
+            <div className="py-2">
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-sm font-medium">Filtri attivi:</span>
                 {activeFilters.map((filter, index) => (
@@ -2540,9 +2534,9 @@ export default function ImportTemplates() {
                 >
                   Rimuovi tutti
                 </Button>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {filteredRecords.length} record corrispondenti
+                <span className="text-xs text-muted-foreground ml-2">
+                  {filteredRecords.length} record corrispondenti
+                </span>
               </div>
             </div>
            )}
@@ -2555,10 +2549,10 @@ export default function ImportTemplates() {
               </div>
             </div>
            ) : filteredRecords.length > 0 ? (
-             <div className="space-y-4 flex flex-col min-h-0 flex-1">
+             <div className="flex flex-col min-h-0 flex-1">
                 {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
                 {!isMobile && (
-                  <div className="flex items-center space-x-2 pl-4">
+                  <div className="flex items-center space-x-2 pl-4 pb-2">
                     <Checkbox
                       id="has-notes-filter-desktop"
                       checked={hasNotesFilter}

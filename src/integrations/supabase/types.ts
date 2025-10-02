@@ -14,6 +14,239 @@ export type Database = {
   }
   public: {
     Tables: {
+      archivio_attivita: {
+        Row: {
+          archiviato_da: string | null
+          archivio_indirizzo_id: string | null
+          assegnato_a: string | null
+          attivita_originale_id: string
+          created_at: string
+          creato_da: string | null
+          data_archiviazione: string
+          data_creazione: string | null
+          data_ultima_modifica: string | null
+          dati_completi: Json | null
+          descrizione: string
+          id: string
+          modifiche_log: Json | null
+          note: string | null
+          ora_creazione: string | null
+          priorita: string
+          rubrica_id: string | null
+          scadenza: string | null
+          stato: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          archiviato_da?: string | null
+          archivio_indirizzo_id?: string | null
+          assegnato_a?: string | null
+          attivita_originale_id: string
+          created_at?: string
+          creato_da?: string | null
+          data_archiviazione?: string
+          data_creazione?: string | null
+          data_ultima_modifica?: string | null
+          dati_completi?: Json | null
+          descrizione: string
+          id?: string
+          modifiche_log?: Json | null
+          note?: string | null
+          ora_creazione?: string | null
+          priorita: string
+          rubrica_id?: string | null
+          scadenza?: string | null
+          stato: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          archiviato_da?: string | null
+          archivio_indirizzo_id?: string | null
+          assegnato_a?: string | null
+          attivita_originale_id?: string
+          created_at?: string
+          creato_da?: string | null
+          data_archiviazione?: string
+          data_creazione?: string | null
+          data_ultima_modifica?: string | null
+          dati_completi?: Json | null
+          descrizione?: string
+          id?: string
+          modifiche_log?: Json | null
+          note?: string | null
+          ora_creazione?: string | null
+          priorita?: string
+          rubrica_id?: string | null
+          scadenza?: string | null
+          stato?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archivio_attivita_archivio_indirizzo_id_fkey"
+            columns: ["archivio_indirizzo_id"]
+            isOneToOne: false
+            referencedRelation: "archivio_indirizzi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archivio_indirizzi: {
+        Row: {
+          alias: string | null
+          archiviato_da: string | null
+          azienda: string | null
+          cellulare: string | null
+          citta: string | null
+          client_code: string | null
+          company_alias: string | null
+          completed: boolean | null
+          created_at: string
+          created_by: string | null
+          data_archiviazione: string
+          dati_completi: Json | null
+          email: string | null
+          has_actions: boolean | null
+          id: string
+          indirizzo: string | null
+          last_contact: string | null
+          meta_air_freight: boolean | null
+          meta_client: boolean | null
+          meta_contact_required_email: boolean | null
+          meta_exclient: boolean | null
+          meta_express: boolean | null
+          meta_exworks: boolean | null
+          meta_hight_value_customer: boolean | null
+          meta_interested: boolean | null
+          meta_presentation: boolean | null
+          meta_reception_required_email: boolean | null
+          meta_rejected: boolean | null
+          meta_sea_freight: boolean | null
+          meta_tutorial: boolean | null
+          meta_wca: boolean | null
+          motivo_archiviazione: string | null
+          next_contact_date: string | null
+          nome: string | null
+          note: string | null
+          origine: string | null
+          paese: string | null
+          position: string | null
+          record_originale_id: string
+          responsabile: string | null
+          scheduled_contact: string | null
+          stato: string | null
+          tags: string[] | null
+          telefono: string | null
+          tipo_origine: string
+          title: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          alias?: string | null
+          archiviato_da?: string | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          dati_completi?: Json | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          record_originale_id: string
+          responsabile?: string | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          tipo_origine: string
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          alias?: string | null
+          archiviato_da?: string | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          dati_completi?: Json | null
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          record_originale_id?: string
+          responsabile?: string | null
+          scheduled_contact?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          tipo_origine?: string
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       attivita: {
         Row: {
           assegnato_a: string | null
@@ -1164,6 +1397,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archivia_contatto_importato: {
+        Args: {
+          _imported_contact_id: string
+          _motivo?: string
+          _user_id?: string
+        }
+        Returns: Json
+      }
+      archivia_contatto_rubrica: {
+        Args: { _motivo?: string; _rubrica_id: string; _user_id?: string }
+        Returns: Json
+      }
       check_temp_table_exists: {
         Args: { table_name: string }
         Returns: boolean

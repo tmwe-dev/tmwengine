@@ -664,34 +664,37 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </h3>
           <div className="flex items-start gap-4 pl-7">
             
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               {record.last_contact !== undefined && (
-                <div className="min-w-[150px] max-w-[150px]">
-                  <FieldRenderer 
-                    field="last_contact" 
-                    value={record.last_contact} 
-                    formatCellValue={formatCellValue}
-                  />
+                <div className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Last Contact
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record.last_contact, 'last_contact')}
+                  </div>
                 </div>
               )}
               
               {record.next_contact_date !== undefined && (
-                <div className="min-w-[150px] max-w-[150px]">
-                  <FieldRenderer 
-                    field="next_contact_date" 
-                    value={record.next_contact_date} 
-                    formatCellValue={formatCellValue}
-                  />
+                <div className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Next Contact Date
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record.next_contact_date, 'next_contact_date')}
+                  </div>
                 </div>
               )}
               
               {record.scheduled_contact !== undefined && (
-                <div className="min-w-[150px] max-w-[150px]">
-                  <FieldRenderer 
-                    field="scheduled_contact" 
-                    value={record.scheduled_contact} 
-                    formatCellValue={formatCellValue}
-                  />
+                <div className="text-left">
+                  <div className="text-sm font-medium text-blue-600 mb-1">
+                    Scheduled Contact
+                  </div>
+                  <div className="text-sm text-foreground">
+                    {formatCellValue(record.scheduled_contact, 'scheduled_contact')}
+                  </div>
                 </div>
               )}
               

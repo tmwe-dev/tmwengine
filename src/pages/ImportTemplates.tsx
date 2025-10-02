@@ -2619,30 +2619,54 @@ export default function ImportTemplates() {
                               </TooltipProvider>
                             </TableHead>
                            {(() => {
-                             const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
-                             const visibleCols = getVisibleColumns(allColumns);
-                             return visibleCols.map((key) => (
-                                 <TableHead 
-                                   key={key} 
-                                    className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
-                                      key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                      key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
-                                      key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                      key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
-                                      (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
-                                      'min-w-[120px]'
-                                    }`}
-                                  onClick={() => handleColumnSort(key)}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                    {getSortIcon(key)}
-                                  </div>
-                                </TableHead>
-                              ));
+                              const allColumns = Object.keys(filteredRecords[0] || {}).filter(key => key !== 'id' && key !== 'import_log_id');
+                              const visibleCols = getVisibleColumns(allColumns);
+                              
+                              // Trova l'indice di company_name
+                              const companyNameIndex = visibleCols.indexOf('company_name');
+                              
+                              // Se company_name esiste, inserisci la colonna Attività prima di essa
+                              const headers = [];
+                              for (let i = 0; i < visibleCols.length; i++) {
+                                if (i === companyNameIndex) {
+                                  // Prima di company_name, inserisci la colonna Attività
+                                  headers.push(
+                                    <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
+                                  );
+                                }
+                                
+                                const key = visibleCols[i];
+                                headers.push(
+                                  <TableHead 
+                                    key={key} 
+                                     className={`bg-background border-b cursor-pointer hover:bg-accent/50 px-4 py-[10px] ${
+                                       key === 'country' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                       key === 'title' ? 'w-20 min-w-[80px] max-w-[80px]' : 
+                                       key === 'stato' ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                       key === 'agent_id' ? 'w-22 min-w-[84px] max-w-[84px]' :
+                                       (key === 'email' || key === 'phone' || key === 'cell') ? 'w-20 min-w-[80px] max-w-[80px] text-center' :
+                                       'min-w-[120px]'
+                                     }`}
+                                   onClick={() => handleColumnSort(key)}
+                                 >
+                                   <div className="flex items-center gap-1">
+                                     <span>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                     {getSortIcon(key)}
+                                   </div>
+                                 </TableHead>
+                                );
+                              }
+                              
+                              // Se company_name non c'è, aggiungi Attività all'inizio
+                              if (companyNameIndex === -1) {
+                                headers.unshift(
+                                  <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
+                                );
+                              }
+                              
+                              return headers;
                              })()}
-                             <TableHead className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
-                             <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
+                              <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2680,7 +2704,44 @@ export default function ImportTemplates() {
                             {(() => {
                               const allColumns = Object.keys(record).filter(key => key !== 'id' && key !== 'import_log_id');
                               const visibleCols = getVisibleColumns(allColumns);
-                              return visibleCols.map((key) => (
+                              
+                              // Trova l'indice di company_name
+                              const companyNameIndex = visibleCols.indexOf('company_name');
+                              
+                              // Se company_name esiste, inserisci la cella Attività prima di essa
+                              const cells = [];
+                              for (let i = 0; i < visibleCols.length; i++) {
+                                if (i === companyNameIndex) {
+                                  // Prima di company_name, inserisci la cella Attività
+                                  cells.push(
+                                    <TableCell key="attivita" className="w-20 px-4 py-[10px] text-center">
+                                      {getActivityCount(record.id) > 0 && (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  navigate('/attivita', { state: { filterByContact: record.id } });
+                                                }}
+                                                className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                                              >
+                                                <Activity className="h-3 w-3" />
+                                                <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
+                                              </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                    </TableCell>
+                                  );
+                                }
+                                
+                                const key = visibleCols[i];
+                                cells.push(
                                   <TableCell 
                                     key={key} 
                                     className={`truncate transition-colors px-4 py-[10px] ${
@@ -2695,103 +2756,112 @@ export default function ImportTemplates() {
                                         : 'cursor-pointer hover:bg-accent/50'
                                     }`}
                                    onClick={() => {
-                                     if (key === 'name') {
-                                       openRecordDetail(record, actualIndex);
-                                     } else {
-                                       addFilter(key, record[key]);
-                                     }
-                                   }}
-                                    title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
-                                  >
-                                     {key === 'country' ? (
-                                       <div className="flex items-center gap-1">
-                                         <span className="text-base">{getCountryFlag(record[key])}</span>
-                                         <span>{formatCellValue(record[key], key)}</span>
-                                       </div>
-                                     ) : key === 'company_name' ? (
-                                       <div className="flex items-center gap-2">
-                                         <span>{formatCellValue(record[key], key)}</span>
-                                         <ActivityIndicators 
-                                           companyId={record.id} 
-                                           activities={getCompanyActivities(record.id)}
-                                           size="sm"
-                                         />
-                                       </div>
-                                     ) : key === 'email' && record[key] ? (
-                                       <TooltipProvider>
-                                         <Tooltip>
-                                           <TooltipTrigger asChild>
-                                             <div className="flex items-center justify-center cursor-pointer">
-                                               <Mail className="h-4 w-4 text-blue-500" />
-                                             </div>
-                                           </TooltipTrigger>
-                                           <TooltipContent>
-                                             <p>{formatCellValue(record[key], key)}</p>
-                                           </TooltipContent>
-                                         </Tooltip>
-                                       </TooltipProvider>
-                                     ) : (key === 'phone' || key === 'cell') && record[key] ? (
-                                       <TooltipProvider>
-                                         <Tooltip>
-                                           <TooltipTrigger asChild>
-                                             <div className="flex items-center justify-center cursor-pointer">
-                                               <Phone className="h-4 w-4 text-blue-500" />
-                                             </div>
-                                           </TooltipTrigger>
-                                           <TooltipContent>
-                                             <p>{formatCellValue(record[key], key)}</p>
-                                           </TooltipContent>
-                                         </Tooltip>
-                                       </TooltipProvider>
-                                     ) : (
-                                       formatCellValue(record[key], key)
-                                     )}
-                                   </TableCell>
-                                ));
-                              })()}
-                              <TableCell className="w-20 px-4 py-[10px] text-center">
-                                {getActivityCount(record.id) > 0 && (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate('/attivita', { state: { filterByContact: record.id } });
-                                          }}
-                                          className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
-                                        >
-                                          <Activity className="h-3 w-3" />
-                                          <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Visualizza {getActivityCount(record.id)} attività</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                              </TableCell>
+                                      if (key === 'name') {
+                                        openRecordDetail(record, actualIndex);
+                                      } else {
+                                        addFilter(key, record[key]);
+                                      }
+                                    }}
+                                     title={key === 'name' ? 'Clicca per aprire dettaglio record' : 'Clicca per filtrare per questo valore'}
+                                   >
+                                      {key === 'country' ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-base">{getCountryFlag(record[key])}</span>
+                                          <span>{formatCellValue(record[key], key)}</span>
+                                        </div>
+                                      ) : key === 'company_name' ? (
+                                        <div className="flex items-center gap-2">
+                                          <span>{formatCellValue(record[key], key)}</span>
+                                          <ActivityIndicators 
+                                            companyId={record.id} 
+                                            activities={getCompanyActivities(record.id)}
+                                            size="sm"
+                                          />
+                                        </div>
+                                      ) : key === 'email' && record[key] ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center cursor-pointer">
+                                                <Mail className="h-4 w-4 text-blue-500" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{formatCellValue(record[key], key)}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : (key === 'phone' || key === 'cell') && record[key] ? (
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center cursor-pointer">
+                                                <Phone className="h-4 w-4 text-blue-500" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{formatCellValue(record[key], key)}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      ) : (
+                                        formatCellValue(record[key], key)
+                                      )}
+                                    </TableCell>
+                                );
+                              }
+                              
+                              // Se company_name non c'è, aggiungi Attività all'inizio
+                              if (companyNameIndex === -1) {
+                                cells.unshift(
+                                  <TableCell key="attivita" className="w-20 px-4 py-[10px] text-center">
+                                    {getActivityCount(record.id) > 0 && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate('/attivita', { state: { filterByContact: record.id } });
+                                              }}
+                                              className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                                            >
+                                              <Activity className="h-3 w-3" />
+                                              <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                  </TableCell>
+                                );
+                              }
+                              
+                              return cells;
+                             })()}
                               <TableCell className="w-16 px-4 py-[10px] text-center">
                                <TooltipProvider>
-                                 <Tooltip>
-                                   <TooltipTrigger asChild>
-                                     <button
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         deleteImportedContact(record.id, actualIndex);
-                                       }}
-                                       className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
-                                     >
-                                       <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
-                                     </button>
-                                   </TooltipTrigger>
-                                   <TooltipContent>
-                                     <p>Elimina record</p>
-                                   </TooltipContent>
-                                 </Tooltip>
-                               </TooltipProvider>
-                             </TableCell>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteImportedContact(record.id, actualIndex);
+                                        }}
+                                        className="flex items-center justify-center cursor-pointer hover:bg-red-100 rounded-full p-1 transition-colors"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Elimina record</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </TableCell>
                            </TableRow>
                           );
                         })}

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
@@ -2394,26 +2394,50 @@ export default function ImportTemplates() {
                     </DialogTitle>
                   </div>
                   
-                  {/* Toggle per nascondere/mostrare area filtri - posizionato accanto alla X */}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setShowFiltersArea(!showFiltersArea)}
-                          className="absolute top-0 right-8 h-8 px-2 gap-1"
-                        >
-                          <Monitor className="h-4 w-4" />
-                          {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          <span className="text-xs">{showFiltersArea ? 'Full screen' : 'Show filters'}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{showFiltersArea ? 'Nascondi filtri' : 'Mostra filtri'}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  {/* Pulsanti in alto a destra */}
+                  <div className="flex items-center gap-2">
+                    {/* Pulsante Refresh */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => selectedImport && loadAllRecords(selectedImport)}
+                            className="h-8 px-2 gap-1"
+                            disabled={loadingAllRecords}
+                          >
+                            <RefreshCw className={cn("h-4 w-4", loadingAllRecords && "animate-spin")} />
+                            <span className="text-xs">Refresh</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ricarica i dati</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    {/* Toggle Full screen */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setShowFiltersArea(!showFiltersArea)}
+                            className="h-8 px-2 gap-1"
+                          >
+                            <Monitor className="h-4 w-4" />
+                            {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            <span className="text-xs">{showFiltersArea ? 'Full screen' : 'Show filters'}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{showFiltersArea ? 'Nascondi filtri' : 'Mostra filtri'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
                 
                 {/* Desktop Search and Filter Controls */}

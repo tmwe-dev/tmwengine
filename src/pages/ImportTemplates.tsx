@@ -2384,9 +2384,6 @@ export default function ImportTemplates() {
                     <DialogTitle>
                       Record Importati - {selectedImport?.file_name}
                     </DialogTitle>
-                    <DialogDescription>
-                      Visualizza e gestisci i contatti importati da questo file.
-                    </DialogDescription>
                   </div>
                   
                   {/* Toggle per nascondere/mostrare area filtri - posizionato accanto alla X */}

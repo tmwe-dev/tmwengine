@@ -258,8 +258,17 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
               <div className="space-y-3">
                 {activities.map((activity) => {
                   const ActivityIcon = getActivityIcon(activity.tipo);
+                  const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date();
+                  const isOpen = activity.stato === 'aperta';
+                  
+                  const bgColor = isOverdue 
+                    ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' 
+                    : isOpen 
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                    : '';
+                  
                   return (
-                    <Card key={activity.id} className="border-card shadow-soft">
+                    <Card key={activity.id} className={`border-card shadow-soft ${bgColor}`}>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">

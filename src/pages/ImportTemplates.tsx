@@ -2562,7 +2562,7 @@ export default function ImportTemplates() {
                               className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
                             >
                               <X className="h-3 w-3" />
-                              Solo note
+                              Solo note {selectedRecords.size}
                             </Button>
                             
                             <TooltipProvider>

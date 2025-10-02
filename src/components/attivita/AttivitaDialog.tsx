@@ -54,6 +54,8 @@ interface AttivitaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   filterByContactId?: string | null;
+  showBackButton?: boolean;
+  onBackToRecords?: () => void;
 }
 
 const TIPO_LABELS = {
@@ -76,7 +78,7 @@ const PRIORITA_LABELS = {
   bassa: 'Bassa'
 };
 
-export function AttivitaDialog({ open, onOpenChange, filterByContactId }: AttivitaDialogProps) {
+export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBackButton = false, onBackToRecords }: AttivitaDialogProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -282,6 +284,19 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId }: Attivi
   return (
     <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
+        {/* Pulsante Indietro */}
+        {showBackButton && onBackToRecords && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBackToRecords}
+            className="gap-2 self-start mb-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Indietro
+          </Button>
+        )}
+        
         <DialogTitle className="flex items-center justify-between">
           <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>

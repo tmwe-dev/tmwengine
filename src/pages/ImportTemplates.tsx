@@ -2580,6 +2580,21 @@ export default function ImportTemplates() {
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
             <div className="flex items-center justify-center py-4 border-b relative">
+              {/* Filtro "Solo con note" - a sinistra */}
+              <div className="absolute left-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has-notes-filter-desktop"
+                    checked={hasNotesFilter}
+                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                  />
+                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                    <StickyNote className="h-4 w-4 text-blue-500" />
+                    Solo con note
+                  </Label>
+                </div>
+              </div>
+
               {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
                 <>
@@ -2701,22 +2716,7 @@ export default function ImportTemplates() {
               </div>
             </div>
            ) : filteredRecords.length > 0 ? (
-             <div className="flex flex-col min-h-0 flex-1">
-                {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
-                {!isMobile && (
-                  <div className="flex items-center space-x-2 pl-4 pb-1 pt-1">
-                    <Checkbox
-                      id="has-notes-filter-desktop"
-                      checked={hasNotesFilter}
-                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                    />
-                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
-                      <StickyNote className="h-4 w-4 text-blue-500" />
-                      Solo con note
-                    </Label>
-                  </div>
-                )}
-                
+              <div className="flex flex-col min-h-0 flex-1">
                 {isMobile ? (
                   /* Mobile View - Ultra-Compact Cards */
                   <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Phone, Mail, Users, FileText, MapPin, Globe, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ActivityCard } from './ActivityCard';
 
 interface CompanyInfo {
   id: string;
@@ -261,18 +262,8 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                   const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date();
                   const isOpen = activity.stato === 'aperta';
                   
-                  const bgColor = isOverdue 
-                    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30 border-red-700 dark:border-red-800' 
-                    : isOpen 
-                    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30 border-green-700 dark:border-green-800'
-                    : '';
-                  
                   return (
-                    <Card key={activity.id} className={`border-card shadow-soft ${bgColor} relative overflow-hidden`}>
-                      <div className="absolute inset-0 opacity-20" style={{
-                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
-                      }} />
-                      <CardContent className="p-4 relative z-10">
+                    <ActivityCard key={activity.id} isOverdue={isOverdue} isOpen={isOpen}>
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
                             <ActivityIcon className="h-5 w-5 text-blue-500" />
@@ -316,8 +307,7 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                             </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                    </ActivityCard>
                   );
                 })}
               </div>

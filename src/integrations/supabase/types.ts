@@ -72,15 +72,7 @@ export type Database = {
           tipo?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "attivita_rubrica_id_fkey"
-            columns: ["rubrica_id"]
-            isOneToOne: false
-            referencedRelation: "rubrica"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       chat_conversations: {
         Row: {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,12 +99,24 @@ export default function Attivita() {
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);
   const scrollPositionRef = useRef<number>(0);
+  const [filterByContactId, setFilterByContactId] = useState<string | null>(null);
+  const location = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     loadActivities();
-  }, []);
+    
+    // Gestione filtro per contatto dalla navigazione
+    if (location.state?.filterByContact) {
+      setFilterByContactId(location.state.filterByContact);
+      setStatusFilter('all'); // Mostra tutte le attività per questo contatto
+      toast({
+        title: "Filtro applicato",
+        description: "Visualizzazione attività per contatto selezionato",
+      });
+    }
+  }, [location.state]);
 
   const loadActivities = async () => {
     try {
@@ -287,6 +300,9 @@ export default function Attivita() {
       activity.rubrica_citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    // Filtro per contatto specifico
+    const matchesContact = !filterByContactId || activity.rubrica_id === filterByContactId;
+
     // Gestione filtro stato multiplo (es: "aperta,in_corso") o "all"
     const matchesStato = !filters.stato || filters.stato === 'all' || 
       filters.stato.split(',').includes(activity.stato);
@@ -301,7 +317,7 @@ export default function Attivita() {
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
 
-    return matchesSearch && matchesFilters && matchesDateFilter;
+    return matchesSearch && matchesContact && matchesFilters && matchesDateFilter;
   });
 
   // Filtri completi (includendo statusFilter dalle card) per la visualizzazione
@@ -811,6 +827,29 @@ export default function Attivita() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Badge filtro contatto attivo */}
+              {filterByContactId && (
+                <div className="mt-3 flex items-center justify-center">
+                  <Badge variant="secondary" className="flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    Filtrato per contatto
+                    <button
+                      onClick={() => {
+                        setFilterByContactId(null);
+                        setStatusFilter('future');
+                        toast({
+                          title: "Filtro rimosso",
+                          description: "Visualizzazione di tutte le attività",
+                        });
+                      }}
+                      className="ml-1 hover:bg-background/50 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                </div>
+              )}
 
               <div className="flex gap-3 mt-4 justify-center">
                 <Popover>

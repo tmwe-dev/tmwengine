@@ -1053,9 +1053,15 @@ export default function ImportTemplates() {
     
     // Se c'è solo ordinamento primario, ordina normalmente
     if (!sorting.secondary) {
-      return [...records].sort((a, b) => 
-        compareValues(a[sorting.primary!.column], b[sorting.primary!.column], sorting.primary!.direction)
-      );
+      return [...records].sort((a, b) => {
+        // Gestione speciale per la colonna "attivita"
+        if (sorting.primary!.column === 'attivita') {
+          const aCount = getActivityCount(a.id);
+          const bCount = getActivityCount(b.id);
+          return sorting.primary!.direction === 'asc' ? aCount - bCount : bCount - aCount;
+        }
+        return compareValues(a[sorting.primary!.column], b[sorting.primary!.column], sorting.primary!.direction);
+      });
     }
     
     // Ordinamento gerarchico: raggruppa per colonna primaria, ordina gruppi, poi ordina all'interno
@@ -1063,7 +1069,13 @@ export default function ImportTemplates() {
     
     // Raggruppa i record per il valore della colonna primaria
     records.forEach(record => {
-      const primaryValue = String(record[sorting.primary!.column] || '').toLowerCase();
+      let primaryValue: string;
+      // Gestione speciale per la colonna "attivita"
+      if (sorting.primary!.column === 'attivita') {
+        primaryValue = String(getActivityCount(record.id));
+      } else {
+        primaryValue = String(record[sorting.primary!.column] || '').toLowerCase();
+      }
       if (!groups.has(primaryValue)) {
         groups.set(primaryValue, []);
       }
@@ -1072,6 +1084,12 @@ export default function ImportTemplates() {
     
     // Ordina le chiavi dei gruppi (ordinamento primario)
     const sortedGroupKeys = Array.from(groups.keys()).sort((a, b) => {
+      // Per la colonna attivita, converti a numero
+      if (sorting.primary!.column === 'attivita') {
+        const aNum = Number(a);
+        const bNum = Number(b);
+        return sorting.primary!.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
       return compareValues(a, b, sorting.primary!.direction);
     });
     
@@ -1079,9 +1097,15 @@ export default function ImportTemplates() {
     const result: ImportedContact[] = [];
     sortedGroupKeys.forEach(groupKey => {
       const groupRecords = groups.get(groupKey)!;
-      const sortedGroupRecords = groupRecords.sort((a, b) => 
-        compareValues(a[sorting.secondary!.column], b[sorting.secondary!.column], sorting.secondary!.direction)
-      );
+      const sortedGroupRecords = groupRecords.sort((a, b) => {
+        // Gestione speciale per la colonna "attivita" come secondaria
+        if (sorting.secondary!.column === 'attivita') {
+          const aCount = getActivityCount(a.id);
+          const bCount = getActivityCount(b.id);
+          return sorting.secondary!.direction === 'asc' ? aCount - bCount : bCount - aCount;
+        }
+        return compareValues(a[sorting.secondary!.column], b[sorting.secondary!.column], sorting.secondary!.direction);
+      });
       result.push(...sortedGroupRecords);
     });
     
@@ -2631,7 +2655,12 @@ export default function ImportTemplates() {
                                 if (i === companyNameIndex) {
                                   // Prima di company_name, inserisci la colonna Attività
                                   headers.push(
-                                    <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
+                                    <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
+                                      <div className="flex items-center justify-center gap-1">
+                                        <span>Attività</span>
+                                        {getSortIcon('attivita')}
+                                      </div>
+                                    </TableHead>
                                   );
                                 }
                                 
@@ -2660,7 +2689,12 @@ export default function ImportTemplates() {
                               // Se company_name non c'è, aggiungi Attività all'inizio
                               if (companyNameIndex === -1) {
                                 headers.unshift(
-                                  <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
+                                  <TableHead key="attivita" className="w-20 bg-background border-b px-4 py-[10px] text-center cursor-pointer hover:bg-accent/50" onClick={() => handleColumnSort('attivita')}>
+                                    <div className="flex items-center justify-center gap-1">
+                                      <span>Attività</span>
+                                      {getSortIcon('attivita')}
+                                    </div>
+                                  </TableHead>
                                 );
                               }
                               

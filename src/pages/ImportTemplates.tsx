@@ -2392,6 +2392,24 @@ export default function ImportTemplates() {
                            <Button
                              size="sm"
                              variant="outline"
+                             onClick={() => setShowMultipleActivityDialog(true)}
+                             className="text-xs px-2"
+                           >
+                             <FileText className="h-4 w-4 text-blue-500" />
+                           </Button>
+                         </TooltipTrigger>
+                         <TooltipContent>
+                           <p>Crea attività multiple</p>
+                         </TooltipContent>
+                       </Tooltip>
+                     </TooltipProvider>
+                     
+                     <TooltipProvider>
+                       <Tooltip>
+                         <TooltipTrigger asChild>
+                           <Button
+                             size="sm"
+                             variant="outline"
                              onClick={importSelectedRecords}
                              className="text-xs px-2"
                            >

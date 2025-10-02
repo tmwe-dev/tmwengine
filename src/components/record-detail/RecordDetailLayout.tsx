@@ -65,6 +65,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const getCountryCode = (country: string) => {
     if (!country) return 'UN'; // United Nations flag as default
     
+    // Se è già un codice ISO di 2 lettere, usalo direttamente
+    if (country.length === 2) {
+      return country.toUpperCase();
+    }
+    
     const countryMap: { [key: string]: string } = {
       'italy': 'IT',
       'italia': 'IT',
@@ -147,7 +152,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
     };
     
     const lowerCountry = country.toLowerCase().trim();
-    return countryMap[lowerCountry] || 'UN';
+    return countryMap[lowerCountry] || country.toUpperCase().substring(0, 2);
   };
 
   const handleImportToRubrica = async () => {

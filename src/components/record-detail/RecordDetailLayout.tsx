@@ -396,9 +396,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           <span className="text-base">
             {(() => {
               const countryCode = getCountryCode(record.country || record.paese || '');
-              return countryCode === 'UN' 
-                ? '🌐' 
-                : String.fromCodePoint(...[...countryCode].map(c => c.charCodeAt(0) + 127397));
+              if (countryCode === 'UN') return '🌐';
+              // Converti il codice ISO in emoji bandiera (es. IT -> 🇮🇹)
+              return String.fromCodePoint(
+                ...[...countryCode.toUpperCase()].map(char => 127397 + char.charCodeAt(0))
+              );
             })()}
           </span>
           <span>{record.country || record.paese || "N/A"}</span>

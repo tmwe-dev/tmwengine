@@ -2390,7 +2390,7 @@ export default function ImportTemplates() {
                 {/* Desktop Search and Filter Controls */}
                 <div className="flex flex-col gap-3">
                   {/* Prima riga - Dropdowns */}
-                  <div className="flex gap-2 items-end flex-row">
+                  <div className="flex gap-2 items-end flex-row justify-center">
                     <div className="w-48">
                       <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
                       <Select value={originFilter} onValueChange={setOriginFilter}>

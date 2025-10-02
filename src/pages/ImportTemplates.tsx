@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { CompactContactCard } from '@/components/import/CompactContactCard';
@@ -315,8 +316,9 @@ export default function ImportTemplates() {
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('templates');
   const [showFilters, setShowFilters] = useState(false);
-  const { getCompanyActivities, hasActivities, refreshActivities } = useCompanyActivities();
+  const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadEmailTemplates();
@@ -2598,9 +2600,10 @@ export default function ImportTemplates() {
                                   </div>
                                 </TableHead>
                               ));
-                            })()}
-                            <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
-                        </TableRow>
+                             })()}
+                             <TableHead className="w-20 bg-background border-b px-4 py-[10px] text-center">Attività</TableHead>
+                             <TableHead className="w-16 bg-background border-b px-4 py-[10px] text-center">Azioni</TableHead>
+                         </TableRow>
                       </TableHeader>
                       <TableBody>
                          {viewingRecords.map((record, viewIndex) => {
@@ -2703,10 +2706,33 @@ export default function ImportTemplates() {
                                      ) : (
                                        formatCellValue(record[key], key)
                                      )}
-                                  </TableCell>
-                               ));
-                             })()}
-                             <TableCell className="w-16 px-4 py-[10px] text-center">
+                                   </TableCell>
+                                ));
+                              })()}
+                              <TableCell className="w-20 px-4 py-[10px] text-center">
+                                {getActivityCount(record.id) > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate('/attivita', { state: { filterByContact: record.id } });
+                                          }}
+                                          className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                                        >
+                                          <Activity className="h-3 w-3" />
+                                          <span className="text-xs font-medium">{getActivityCount(record.id)}</span>
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </TableCell>
+                              <TableCell className="w-16 px-4 py-[10px] text-center">
                                <TooltipProvider>
                                  <Tooltip>
                                    <TooltipTrigger asChild>

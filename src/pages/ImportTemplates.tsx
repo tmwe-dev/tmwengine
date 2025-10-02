@@ -2632,40 +2632,38 @@ export default function ImportTemplates() {
             </div>
           )}
 
-          {/* Area filtri attivi - altezza minima fissa per evitare spostamenti */}
-          <div className="min-h-[40px]">
-            {activeFilters.length > 0 && (
-              <div className="py-2">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm font-medium">Filtri attivi:</span>
-                  {activeFilters.map((filter, index) => (
-                    <Badge 
-                      key={`${filter.field}-${filter.value}-${index}`}
-                      variant="outline" 
-                      className="text-blue-600 border-blue-200 bg-transparent cursor-pointer flex items-center gap-1"
-                      onClick={() => removeFilter(filter)}
-                    >
-                      <span className="capitalize">
-                        {filter.field.replace(/_/g, ' ')}: {filter.displayValue}
-                      </span>
-                      <X className="h-3 w-3" />
-                    </Badge>
-                  ))}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearAllFilters}
-                    className="text-xs text-muted-foreground hover:text-destructive"
+          {/* Area filtri attivi */}
+          {activeFilters.length > 0 && (
+            <div className="py-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium">Filtri attivi:</span>
+                {activeFilters.map((filter, index) => (
+                  <Badge 
+                    key={`${filter.field}-${filter.value}-${index}`}
+                    variant="outline" 
+                    className="text-blue-600 border-blue-200 bg-transparent cursor-pointer flex items-center gap-1"
+                    onClick={() => removeFilter(filter)}
                   >
-                    Rimuovi tutti
-                  </Button>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {filteredRecords.length} record corrispondenti
-                  </span>
-                </div>
+                    <span className="capitalize">
+                      {filter.field.replace(/_/g, ' ')}: {filter.displayValue}
+                    </span>
+                    <X className="h-3 w-3" />
+                  </Badge>
+                ))}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Rimuovi tutti
+                </Button>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {filteredRecords.length} record corrispondenti
+                </span>
               </div>
-            )}
-          </div>
+            </div>
+           )}
           
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">

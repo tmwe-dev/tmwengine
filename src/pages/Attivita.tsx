@@ -775,25 +775,27 @@ export default function Attivita() {
   
   return (
     <div className={cn("section-spacing", isMobile && "space-y-4")}>
+      {/* Pulsante Indietro - Sempre visibile quando filterByContactId è attivo */}
+      {filterByContactId && (
+        <div className="mb-4">
+          <Button
+            variant="outline"
+            size="default"
+            onClick={handleBackNavigation}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Indietro ai Record Importati
+          </Button>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          {filterByContactId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackNavigation}
-              className="gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Indietro
-            </Button>
-          )}
-          <div>
-            <h1 className="text-heading-1 font-bold text-text-primary mb-2">
-              Gestione Attività
-            </h1>
-          </div>
+        <div>
+          <h1 className="text-heading-1 font-bold text-text-primary mb-2">
+            Gestione Attività
+          </h1>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

@@ -390,71 +390,82 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       </Breadcrumb>
 
       {/* Pulsanti azione centrali - sticky */}
-      <div className="sticky top-0 z-10 bg-background flex justify-center items-center gap-3 py-4 border-b">
-        {/* Pulsante Importa in Rubrica - solo per record importati */}
-        {record.hasOwnProperty('is_imported_to_rubrica') && (
-          <Button 
-            onClick={handleImportToRubrica}
-            disabled={isImporting || record.is_imported_to_rubrica}
-            className="flex items-center gap-2"
-            variant={record.is_imported_to_rubrica ? "outline" : "default"}
-            size="default"
-          >
-            <UserPlus className="h-4 w-4" />
-            {isImporting ? "Importando..." : 
-             record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-          </Button>
-        )}
-        
-        {/* Pulsante Crea Attività */}
-        <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant="default"
-              size="default"
+      <div className="sticky top-0 z-10 bg-background py-4 border-b">
+        {/* Info località */}
+        <div className="text-sm text-muted-foreground flex items-center justify-center gap-2 mb-3">
+          <span className="text-2xl">
+            {(() => {
+              const countryCode = getCountryCode(record.country || record.paese || '');
+              return countryCode === 'UN' 
+                ? '🌐' 
+                : String.fromCodePoint(...[...countryCode].map(c => c.charCodeAt(0) + 127397));
+            })()}
+          </span>
+          <span>{record.country || record.paese || "N/A"}</span>
+          <span>•</span>
+          <span>{record.city || record.citta || "N/A"}</span>
+        </div>
+
+        {/* Pulsanti */}
+        <div className="flex justify-center items-center gap-3">
+          {/* Pulsante Importa in Rubrica - solo per record importati */}
+          {record.hasOwnProperty('is_imported_to_rubrica') && (
+            <Button 
+              onClick={handleImportToRubrica}
+              disabled={isImporting || record.is_imported_to_rubrica}
               className="flex items-center gap-2"
+              variant={record.is_imported_to_rubrica ? "outline" : "default"}
+              size="default"
             >
-              <Plus className="h-4 w-4" />
-              Crea Attività
+              <UserPlus className="h-4 w-4" />
+              {isImporting ? "Importando..." : 
+               record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
             </Button>
-          </DialogTrigger>
-          <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle>Crea Nuova Attività</DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto">
-              <AdvancedMultipleActivityForm
-                contacts={[{
-                  id: record.id,
-                  company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                  email: record.email,
-                  phone: record.telefono || record.phone,
-                  cell: record.cellulare || record.cell
-                }]}
-                onSubmit={handleCreateActivity}
-                onCancel={() => setIsActivityDialogOpen(false)}
-                isSubmitting={false}
-                showSaveToRubrica={false}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+          )}
+          
+          {/* Pulsante Crea Attività */}
+          <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="default"
+                size="default"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Crea Attività
+              </Button>
+            </DialogTrigger>
+            <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
+              <DialogHeader className="flex-shrink-0">
+                <DialogTitle>Crea Nuova Attività</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto">
+                <AdvancedMultipleActivityForm
+                  contacts={[{
+                    id: record.id,
+                    company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                    email: record.email,
+                    phone: record.telefono || record.phone,
+                    cell: record.cellulare || record.cell
+                  }]}
+                  onSubmit={handleCreateActivity}
+                  onCancel={() => setIsActivityDialogOpen(false)}
+                  isSubmitting={false}
+                  showSaveToRubrica={false}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
 
-        {/* Pulsante Aggiorna */}
-        <Button
-          variant="default"
-          size="default"
-          onClick={handleSaveFields}
-        >
-          Aggiorna
-        </Button>
-      </div>
-
-      {/* Info località sotto i pulsanti */}
-      <div className="text-sm text-muted-foreground flex items-center gap-2 py-2">
-        <span>{record.country || record.paese || "N/A"}</span>
-        <span>•</span>
-        <span>{record.city || record.citta || "N/A"}</span>
+          {/* Pulsante Aggiorna */}
+          <Button
+            variant="default"
+            size="default"
+            onClick={handleSaveFields}
+          >
+            Aggiorna
+          </Button>
+        </div>
       </div>
       
       {/* Header con country e città - rimosso perché ora è nella toolbar */}

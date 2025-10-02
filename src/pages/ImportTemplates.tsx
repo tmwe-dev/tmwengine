@@ -1666,6 +1666,17 @@ export default function ImportTemplates() {
       
       // Reload the current import to show updated data
       if (selectedImport) {
+        // Reload import log data
+        const { data: updatedImportLog } = await supabase
+          .from('import_logs')
+          .select('*')
+          .eq('id', selectedImport.id)
+          .single();
+        
+        if (updatedImportLog) {
+          setSelectedImport(updatedImportLog);
+        }
+        
         const { data: updatedRecords } = await supabase
           .from('imported_contacts')
           .select('*')

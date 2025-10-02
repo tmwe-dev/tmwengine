@@ -2508,106 +2508,43 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Layout con campo cerca centrato e azioni */}
-                    <div className="flex items-center gap-4 w-full pt-2.5">
-                      {/* Pulsante Pulisci filtri e contatore a sinistra - larghezza fissa */}
-                      <div className="flex items-center gap-3 w-48">
-                        {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSearchQuery('');
-                                setOriginFilter('');
-                                setCountryFilter('');
-                                setHasNotesFilter(false);
-                              }}
-                              className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                            >
-                              <X className="h-3 w-3 mr-1" />
-                              Pulisci filtri
-                            </Button>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {filteredRecords.length} trovati
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Campo di ricerca centrato - flex-1 per prendere lo spazio disponibile */}
-                      <div className="flex-1 flex justify-center">
-                        <div className="w-96">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              id="search"
-                              placeholder="Cerca per nome azienda, alias, nome, città..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Azioni a destra - larghezza fissa */}
-                      <div className="flex items-center gap-2 w-48 justify-end">
-                        {hasNotesFilter && (
+                    {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
+                    <div className="flex justify-center items-center relative">
+                      {/* Pulsante Pulisci filtri e contatore a sinistra */}
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                        <div className="absolute left-0 flex items-center gap-3">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setHasNotesFilter(false)}
-                            className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setOriginFilter('');
+                              setCountryFilter('');
+                              setHasNotesFilter(false);
+                            }}
+                            className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                           >
-                            <X className="h-3 w-3" />
-                            Solo note
+                            <X className="h-3 w-3 mr-1" />
+                            Pulisci filtri
                           </Button>
-                        )}
-                        
-                        {selectedRecords.size > 0 && (
-                          <>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setShowMultipleActivityDialog(true)}
-                                    className="h-10 w-10 p-0"
-                                  >
-                                    <FileText className="h-4 w-4 text-blue-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Crea attività</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={importSelectedRecords}
-                                    className="h-10 w-10 p-0"
-                                  >
-                                    <Database className="h-4 w-4 text-green-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Importa {selectedRecords.size} in rubrica</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <Badge variant="default" className="text-sm px-3 py-1.5">
-                              {selectedRecords.size}
-                            </Badge>
-                          </>
-                        )}
+                          <span className="text-xs text-muted-foreground">
+                            {filteredRecords.length} trovati
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Campo di ricerca centrato */}
+                      <div className="w-96">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="search"
+                            placeholder="Cerca per nome azienda, alias, nome, città..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2640,6 +2577,88 @@ export default function ImportTemplates() {
           </DialogHeader>
 
 
+          {/* Controlli visibilità colonne - Solo desktop */}
+          {!isMobile && (
+            <div className="flex items-center justify-center py-4 border-b relative">
+              {/* Record selezionati e azioni - centrati */}
+              {selectedRecords.size > 0 && (
+                <>
+                  {/* Badge, X, FileText e Database al centro */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="text-sm px-4 py-2">
+                      {selectedRecords.size}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedRecords(new Set())}
+                      className="h-14 px-4 text-sm"
+                    >
+                      <X className="h-6 w-6" />
+                    </Button>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowMultipleActivityDialog(true)}
+                            className="h-14 w-14 p-0"
+                          >
+                            <FileText className="h-6 w-6 text-blue-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Crea attività</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={importSelectedRecords}
+                            className="h-14 w-14 p-0"
+                          >
+                            <Database className="h-6 w-6 text-green-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Importa {selectedRecords.size} in rubrica</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  {/* Solo Cestino a destra */}
+                  <div className="absolute right-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteSelectedRecords}
+                            className="h-14 w-14 p-0"
+                          >
+                            <Trash2 className="h-6 w-6 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina {selectedRecords.size} record</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </>
+              )}
+              
+            </div>
+          )}
 
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (
@@ -2685,39 +2704,16 @@ export default function ImportTemplates() {
              <div className="flex flex-col min-h-0 flex-1">
                 {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
                 {!isMobile && (
-                  <div className="flex items-center justify-between pl-4 pr-4 pb-1 pt-1">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="has-notes-filter-desktop"
-                        checked={hasNotesFilter}
-                        onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                      />
-                      <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
-                        <StickyNote className="h-4 w-4 text-blue-500" />
-                        Solo con note
-                      </Label>
-                    </div>
-                    
-                    {/* Cestino allineato a destra */}
-                    {selectedRecords.size > 0 && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={deleteSelectedRecords}
-                              className="h-14 w-14 p-0"
-                            >
-                              <Trash2 className="h-6 w-6 text-red-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Elimina {selectedRecords.size} record</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                  <div className="flex items-center space-x-2 pl-4 pb-1 pt-1">
+                    <Checkbox
+                      id="has-notes-filter-desktop"
+                      checked={hasNotesFilter}
+                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                    />
+                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                      <StickyNote className="h-4 w-4 text-blue-500" />
+                      Solo con note
+                    </Label>
                   </div>
                 )}
                 

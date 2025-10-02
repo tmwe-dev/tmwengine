@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
@@ -255,6 +255,7 @@ export default function ImportTemplates() {
   const [searchQuery, setSearchQuery] = useState('');
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
+  const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
@@ -358,6 +359,11 @@ export default function ImportTemplates() {
       result = result.filter(record => record.country === countryFilter);
     }
     
+    // Apply notes filter
+    if (hasNotesFilter) {
+      result = result.filter(record => record.note && record.note.trim() !== '');
+    }
+    
     // Apply legacy filters
     result = applyFilters(result, activeFilters);
     
@@ -370,12 +376,12 @@ export default function ImportTemplates() {
     const startIndex = currentPage * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     setViewingRecords(result.slice(startIndex, endIndex));
-  }, [allRecords, searchQuery, originFilter, countryFilter, recordsPerPage, activeFilters, sortConfig, currentPage]);
+  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, recordsPerPage, activeFilters, sortConfig, currentPage]);
 
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -1439,6 +1445,7 @@ export default function ImportTemplates() {
       setSearchQuery('');
       setOriginFilter('');
       setCountryFilter('');
+      setHasNotesFilter(false);
       setSelectedRecords(new Set());
       setCurrentPage(0);
     } catch (error) {
@@ -2150,6 +2157,7 @@ export default function ImportTemplates() {
           setSearchQuery('');
           setOriginFilter('');
           setCountryFilter('');
+          setHasNotesFilter(false);
         }
       }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] flex flex-col mx-auto my-auto overflow-hidden">
@@ -2193,51 +2201,65 @@ export default function ImportTemplates() {
                       </div>
                       
                       {/* Quick Filters Row */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <Select value={originFilter} onValueChange={setOriginFilter}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Origine" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Tutte</SelectItem>
-                            {getUniqueValues('origin').map((origin) => (
-                              <SelectItem key={origin} value={String(origin)}>
-                                {String(origin)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <Select value={originFilter} onValueChange={setOriginFilter}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Origine" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">Tutte</SelectItem>
+                              {getUniqueValues('origin').map((origin) => (
+                                <SelectItem key={origin} value={String(origin)}>
+                                  {String(origin)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select value={countryFilter} onValueChange={setCountryFilter}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Paese" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">Tutti</SelectItem>
+                              {getUniqueValues('country').map((country) => (
+                                <SelectItem key={country} value={String(country)}>
+                                  {getCountryFullName(String(country))}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="25">25</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         
-                        <Select value={countryFilter} onValueChange={setCountryFilter}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Paese" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Tutti</SelectItem>
-                            {getUniqueValues('country').map((country) => (
-                              <SelectItem key={country} value={String(country)}>
-                                {getCountryFullName(String(country))}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="25">25</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="has-notes-filter-mobile"
+                            checked={hasNotesFilter}
+                            onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                          />
+                          <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 text-sm cursor-pointer">
+                            <StickyNote className="h-4 w-4 text-blue-500" />
+                            Solo con note
+                          </Label>
+                        </div>
                       </div>
                     </div>
                   )}
                   
                   {/* Active Filters Chips */}
-                  {(searchQuery || originFilter || countryFilter) && (
+                  {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                     <div className="flex flex-wrap gap-1">
                       {searchQuery && (
                         <Badge variant="secondary" className="text-xs">
@@ -2262,7 +2284,15 @@ export default function ImportTemplates() {
                             <X className="h-3 w-3" />
                           </Button>
                         </Badge>
-                       )}
+                      )}
+                      {hasNotesFilter && (
+                        <Badge variant="secondary" className="text-xs">
+                          📝 Con note
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )}
                      </div>
                    )}
                 </div>
@@ -2294,7 +2324,7 @@ export default function ImportTemplates() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 flex-row">
+                  <div className="flex gap-2 flex-row flex-wrap items-end">
                     <div className="w-48">
                       <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
                       <Select value={originFilter} onValueChange={setOriginFilter}>
@@ -2347,6 +2377,18 @@ export default function ImportTemplates() {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    <div className="flex items-center space-x-2 pb-1">
+                      <Checkbox
+                        id="has-notes-filter-desktop"
+                        checked={hasNotesFilter}
+                        onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                      />
+                      <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                        <StickyNote className="h-4 w-4 text-blue-500" />
+                        Solo con note
+                      </Label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2354,7 +2396,7 @@ export default function ImportTemplates() {
           </DialogHeader>
 
           {/* Clear filters section */}
-          {(searchQuery || originFilter || countryFilter) && (
+          {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
             <div className="p-4 border-b bg-muted/20">
               <div className="flex items-center gap-2">
                 <Button
@@ -2364,6 +2406,7 @@ export default function ImportTemplates() {
                     setSearchQuery('');
                     setOriginFilter('');
                     setCountryFilter('');
+                    setHasNotesFilter(false);
                   }}
                   className="text-xs"
                 >

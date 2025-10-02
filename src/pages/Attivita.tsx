@@ -812,7 +812,7 @@ export default function Attivita() {
                 </Select>
               </div>
 
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-3 mt-4 justify-center">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2">

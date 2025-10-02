@@ -439,24 +439,22 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Pulsante Aggiorna */}
+        <Button
+          variant="default"
+          size="default"
+          onClick={handleSaveFields}
+        >
+          Aggiorna
+        </Button>
       </div>
 
-      {/* Toolbar di aggiornamento */}
-      <div className="flex justify-between items-center pb-2 border-b">
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <span>{record.country || record.paese || "N/A"}</span>
-          <span>•</span>
-          <span>{record.city || record.citta || "N/A"}</span>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSaveFields}
-          >
-            Aggiorna
-          </Button>
-        </div>
+      {/* Info località sotto i pulsanti */}
+      <div className="text-sm text-muted-foreground flex items-center gap-2 py-2">
+        <span>{record.country || record.paese || "N/A"}</span>
+        <span>•</span>
+        <span>{record.city || record.citta || "N/A"}</span>
       </div>
       
       {/* Header con country e città - rimosso perché ora è nella toolbar */}

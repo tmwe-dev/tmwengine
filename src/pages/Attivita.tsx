@@ -119,15 +119,12 @@ export default function Attivita() {
     }
   }, [location.state]);
 
-  // Funzione per tornare indietro
+  // Funzione per tornare a Record Importati
   const handleBackNavigation = () => {
-    if (location.state?.returnPath) {
-      navigate(-1);
-    } else {
-      setFilterByContactId(null);
-      setStatusFilter('future');
-      navigate(location.pathname, { replace: true, state: {} });
-    }
+    // Torna sempre alla pagina import-templates con openRecordsDialog
+    navigate('/import-templates', { 
+      state: { openRecordsDialog: true }
+    });
   };
 
   const loadActivities = async () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1342,16 +1342,17 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          className="relative z-10"
-                          variant={
-                            activityStatus === 'in sospeso' ? 'secondary' :
-                            activityStatus === 'completata' ? 'default' :
-                            activityStatus === 'scaduta' ? 'destructive' : 'outline'
-                          }
-                        >
-                          {activityStatus}
-                        </Badge>
+                        <div className="relative z-10">
+                          {activityStatus === 'in sospeso' ? (
+                            <Clock className="h-5 w-5 text-yellow-500" />
+                          ) : activityStatus === 'completata' ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : activityStatus === 'scaduta' ? (
+                            <AlertCircle className="h-5 w-5 text-red-500" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-text-secondary text-sm relative z-10">

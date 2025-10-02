@@ -316,7 +316,7 @@ export default function ImportTemplates() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
-  const [activeSection, setActiveSection] = useState('templates');
+  const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();

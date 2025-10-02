@@ -268,8 +268,11 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                     : '';
                   
                   return (
-                    <Card key={activity.id} className={`border-card shadow-soft ${bgColor}`}>
-                      <CardContent className="p-4">
+                    <Card key={activity.id} className={`border-card shadow-soft ${bgColor} relative overflow-hidden`}>
+                      <div className="absolute inset-0 opacity-20" style={{
+                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+                      }} />
+                      <CardContent className="p-4 relative z-10">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
                             <ActivityIcon className="h-5 w-5 text-blue-500" />

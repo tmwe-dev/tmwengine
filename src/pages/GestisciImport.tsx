@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ interface ImportLog {
 }
 
 export default function GestisciImport() {
+  const navigate = useNavigate();
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [monitoringImportId, setMonitoringImportId] = useState<string | null>(null);
@@ -95,10 +97,9 @@ export default function GestisciImport() {
     }
   };
 
-  const viewImportRecords = async (log: ImportLog) => {
-    // Qui puoi implementare la logica per visualizzare i record
-    // Per ora, solo mostriamo un toast
-    toast.info('Funzionalità in sviluppo');
+  const viewImportRecords = (log: ImportLog) => {
+    // Naviga alla pagina Import Templates con il parametro per aprire la dialog
+    navigate(`/import-templates?openImport=${log.id}`);
   };
 
   const deleteImportFile = async (log: ImportLog) => {

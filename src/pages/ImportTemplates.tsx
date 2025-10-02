@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -230,6 +231,7 @@ interface FilterTag {
 }
 
 export default function ImportTemplates() {
+  const [searchParams] = useSearchParams();
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -323,6 +325,17 @@ export default function ImportTemplates() {
     loadEmailAttachments();
     loadImportLogs();
   }, []);
+
+  // Check URL params to automatically open import dialog
+  useEffect(() => {
+    const openImportId = searchParams.get('openImport');
+    if (openImportId && importLogs.length > 0) {
+      const importLog = importLogs.find(log => log.id === openImportId);
+      if (importLog) {
+        viewImportRecords(importLog);
+      }
+    }
+  }, [searchParams, importLogs]);
 
   // Apply search and filters to records
   useEffect(() => {

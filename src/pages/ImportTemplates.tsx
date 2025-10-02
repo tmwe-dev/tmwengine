@@ -2407,35 +2407,12 @@ export default function ImportTemplates() {
             )}
           </DialogHeader>
 
-          {/* Clear filters section */}
-          {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-            <div className="p-4 border-b bg-muted/20">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setOriginFilter('');
-                    setCountryFilter('');
-                    setHasNotesFilter(false);
-                  }}
-                  className="text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Pulisci filtri
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  {filteredRecords.length} record trovati
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex justify-between items-center gap-2 py-2 border-b">
-              <div className="flex items-center gap-2">
+            <div className="flex justify-between items-center gap-4 py-2 border-b">
+              {/* Prima colonna - Record selezionati e azioni */}
+              <div className="flex items-center gap-2 flex-1">
                 {/* Indicatore record selezionati */}
                 {selectedRecords.size > 0 && (
                   <>
@@ -2494,8 +2471,32 @@ export default function ImportTemplates() {
                     </TooltipProvider>
                   </>
                 )}
+                
+                {/* Filtri attivi */}
+                {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setOriginFilter('');
+                        setCountryFilter('');
+                        setHasNotesFilter(false);
+                      }}
+                      className="text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Pulisci filtri
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {filteredRecords.length} record trovati
+                    </span>
+                  </>
+                )}
               </div>
                
+              {/* Seconda colonna - Pulsanti visibilità colonne */}
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"

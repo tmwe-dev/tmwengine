@@ -2586,7 +2586,7 @@ export default function ImportTemplates() {
               {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
                 <>
-                  {/* Badge, X, FileText e Cestino al centro */}
+                  {/* Badge, X, FileText e Database al centro */}
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="text-sm px-4 py-2">
                       {selectedRecords.size}
@@ -2624,27 +2624,6 @@ export default function ImportTemplates() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={deleteSelectedRecords}
-                            className="h-14 w-14 p-0"
-                          >
-                            <Trash2 className="h-6 w-6 text-red-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Elimina {selectedRecords.size} record</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  
-                  {/* Importa allineato a destra */}
-                  <div className="absolute right-4">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
                             onClick={importSelectedRecords}
                             className="h-14 w-14 p-0"
                           >
@@ -2653,6 +2632,27 @@ export default function ImportTemplates() {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Importa {selectedRecords.size} in rubrica</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  {/* Solo Cestino a destra */}
+                  <div className="absolute right-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteSelectedRecords}
+                            className="h-14 w-14 p-0"
+                          >
+                            <Trash2 className="h-6 w-6 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina {selectedRecords.size} record</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

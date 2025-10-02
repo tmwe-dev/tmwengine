@@ -12,23 +12,73 @@ interface SmartImportUploaderProps {
 }
 
 export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderProps) {
+  const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [storedFilePath, setStoredFilePath] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
     headers: string[];
     sampleRows: any[];
     fileName: string;
   } | null>(null);
 
-  const parseFilePreview = async (file: File) => {
+  const uploadToStorage = async (file: File) => {
+    setIsUploading(true);
     try {
+      const timestamp = Date.now();
+      const filePath = `imports/${timestamp}_${file.name}`;
+      
+      console.log('📤 Uploading file to Storage:', filePath);
+      
+      const { data, error } = await supabase.storage
+        .from('import-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+
+      console.log('✅ File uploaded successfully:', data.path);
+      setStoredFilePath(data.path);
+      toast.success('File caricato su Storage!');
+      
+      // Ora leggi il file da Storage per mostrare l'anteprima
+      await parseFileFromStorage(data.path, file.name);
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Errore durante il caricamento del file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const parseFileFromStorage = async (filePath: string, fileName: string) => {
+    try {
+      console.log('📖 Reading file from Storage:', filePath);
+      
+      const { data, error } = await supabase.storage
+        .from('import-files')
+        .download(filePath);
+
+      if (error) {
+        console.error('Storage download error:', error);
+        throw error;
+      }
+
+      console.log('✅ File downloaded from Storage');
+      
       let headers: string[] = [];
       let sampleRows: any[] = [];
 
       // Parse in base al tipo di file
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        const arrayBuffer = await data.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
         
@@ -40,8 +90,8 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else if (file.name.endsWith('.csv')) {
-        const text = await file.text();
+      } else if (fileName.endsWith('.csv')) {
+        const text = await data.text();
         const lines = text.split('\n').filter(line => line.trim());
         
         const firstLine = lines[0];
@@ -57,8 +107,8 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else if (file.name.endsWith('.txt')) {
-        const text = await file.text();
+      } else if (fileName.endsWith('.txt')) {
+        const text = await data.text();
         const lines = text.split('\n').filter(line => line.trim());
         
         const separator = lines[0].includes('\t') ? '\t' : /\s{2,}/;
@@ -76,15 +126,17 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
         return;
       }
 
+      console.log('📊 File parsed:', { headers, sampleRowsCount: sampleRows.length });
+
       setPreview({
         headers,
         sampleRows,
-        fileName: file.name
+        fileName
       });
       
-      toast.success('File caricato! Controlla l\'anteprima dei dati.');
+      toast.success('File analizzato! Controlla l\'anteprima dei dati.');
     } catch (error) {
-      console.error('Error parsing file:', error);
+      console.error('Error parsing file from storage:', error);
       toast.error('Errore durante la lettura del file');
     }
   };
@@ -203,7 +255,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setUploadedFile(file);
-      parseFilePreview(file);
+      uploadToStorage(file);
     }
   }, []);
 
@@ -241,41 +293,59 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
                 ? 'border-primary bg-primary/5' 
                 : 'border-border hover:border-primary/50 hover:bg-accent/50'
               }
+              ${isUploading ? 'pointer-events-none opacity-50' : ''}
             `}
           >
             <input {...getInputProps()} />
             
-            <div className="flex justify-center gap-4 mb-4">
-              <FileSpreadsheet className="h-12 w-12 text-green-500" />
-              <FileText className="h-12 w-12 text-blue-500" />
-              <FileType className="h-12 w-12 text-orange-500" />
-            </div>
-            
-            <p className="text-lg font-medium mb-2">
-              {isDragActive 
-                ? 'Rilascia il file qui...' 
-                : 'Trascina qui il file o clicca per selezionare'
-              }
-            </p>
-            
-            <p className="text-sm text-muted-foreground">
-              Formati supportati: Excel (.xlsx, .xls), CSV, TXT
-            </p>
-            
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Seleziona File
-            </Button>
+            {isUploading ? (
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div>
+                  <p className="text-lg font-medium">Caricamento in corso...</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Sto salvando il file: {uploadedFile?.name}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center gap-4 mb-4">
+                  <FileSpreadsheet className="h-12 w-12 text-green-500" />
+                  <FileText className="h-12 w-12 text-blue-500" />
+                  <FileType className="h-12 w-12 text-orange-500" />
+                </div>
+                
+                <p className="text-lg font-medium mb-2">
+                  {isDragActive 
+                    ? 'Rilascia il file qui...' 
+                    : 'Trascina qui il file o clicca per selezionare'
+                  }
+                </p>
+                
+                <p className="text-sm text-muted-foreground">
+                  Formati supportati: Excel (.xlsx, .xls), CSV, TXT
+                </p>
+                
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Seleziona File
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">📄 File: {preview.fileName}</h3>
+              <h3 className="font-semibold mb-2">✅ File caricato su Storage</h3>
+              <p className="text-sm text-muted-foreground mb-1">
+                📄 {preview.fileName}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {preview.headers.length} colonne rilevate • {preview.sampleRows.length} righe di esempio
+                {preview.headers.length} colonne • {preview.sampleRows.length} righe di esempio
               </p>
             </div>
 
@@ -345,6 +415,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
                 onClick={() => {
                   setPreview(null);
                   setUploadedFile(null);
+                  setStoredFilePath(null);
                 }}
               >
                 Cambia File

@@ -2436,6 +2436,13 @@ export default function ImportTemplates() {
           {!isMobile && (
             <div className="flex justify-between items-center gap-2 py-2 border-b">
               <div className="flex items-center gap-2">
+                {/* Indicatore record selezionati */}
+                {selectedRecords.size > 0 && (
+                  <Badge variant="default" className="text-sm px-3 py-1">
+                    {selectedRecords.size} record selezionati
+                  </Badge>
+                )}
+                
                 {/* Desktop Action Buttons as Icons */}
                 {selectedRecords.size > 0 && (
                   <>

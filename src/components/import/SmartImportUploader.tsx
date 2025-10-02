@@ -27,32 +27,28 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
     console.log('🔄 Starting upload process for:', file.name);
     
     try {
-      const timestamp = Date.now();
-      const filePath = `imports/${timestamp}_${file.name}`;
+      // Upload file direttamente a Storage (come in ImportTemplates)
+      const fileName = `${Date.now()}_${file.name}`;
       
-      console.log('📤 Uploading file to Storage:', filePath);
+      console.log('📤 Uploading file to Storage:', fileName);
       console.log('📦 File size:', file.size, 'bytes');
-      console.log('📝 File type:', file.type);
       
-      const { data, error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('import-files')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+        .upload(fileName, file);
 
-      if (error) {
-        console.error('❌ Storage upload error:', error);
-        toast.error(`Errore upload: ${error.message}`);
-        throw error;
+      if (uploadError) {
+        console.error('❌ Storage upload error:', uploadError);
+        toast.error(`Errore upload: ${uploadError.message}`);
+        throw uploadError;
       }
 
-      console.log('✅ File uploaded successfully:', data.path);
-      setStoredFilePath(data.path);
+      console.log('✅ File uploaded successfully:', fileName);
+      setStoredFilePath(fileName);
       toast.success('File caricato su Storage!');
       
       // Ora leggi il file da Storage per mostrare l'anteprima
-      await parseFileFromStorage(data.path, file.name);
+      await parseFileFromStorage(fileName, file.name);
       
     } catch (error: any) {
       console.error('❌ Error uploading file:', error);

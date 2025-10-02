@@ -2583,9 +2583,10 @@ export default function ImportTemplates() {
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
             <div className="flex items-center justify-center py-4 border-b relative">
-              {/* Record selezionati e azioni - centrati e raddoppiati */}
+              {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
                 <>
+                  {/* Badge, X e FileText al centro */}
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="text-sm px-4 py-2">
                       {selectedRecords.size}
@@ -2598,24 +2599,6 @@ export default function ImportTemplates() {
                     >
                       <X className="h-6 w-6" />
                     </Button>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={deleteSelectedRecords}
-                            className="h-14 w-14 p-0"
-                          >
-                            <Trash2 className="h-6 w-6 text-red-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Elimina {selectedRecords.size} record</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                     
                     <TooltipProvider>
                       <Tooltip>
@@ -2636,8 +2619,26 @@ export default function ImportTemplates() {
                     </TooltipProvider>
                   </div>
                   
-                  {/* Pulsante importa allineato a destra */}
-                  <div className="absolute right-4">
+                  {/* Cestino e Importa allineati a destra */}
+                  <div className="absolute right-4 flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteSelectedRecords}
+                            className="h-14 w-14 p-0"
+                          >
+                            <Trash2 className="h-6 w-6 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina {selectedRecords.size} record</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

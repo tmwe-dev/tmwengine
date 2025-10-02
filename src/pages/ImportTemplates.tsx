@@ -2508,97 +2508,103 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Campo di ricerca e azioni sulla stessa riga */}
-                    <div className="flex justify-center items-center gap-4 relative">
-                      {/* Pulsante Pulisci filtri e contatore a sinistra */}
-                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                        <div className="absolute left-0 flex items-center gap-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSearchQuery('');
-                              setOriginFilter('');
-                              setCountryFilter('');
-                              setHasNotesFilter(false);
-                            }}
-                            className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Pulisci filtri
-                          </Button>
-                          <span className="text-xs text-muted-foreground">
-                            {filteredRecords.length} trovati
-                          </span>
-                        </div>
-                      )}
+                    {/* Seconda riga - Layout con campo cerca centrato e azioni */}
+                    <div className="flex items-center gap-4 w-full">
+                      {/* Pulsante Pulisci filtri e contatore a sinistra - larghezza fissa */}
+                      <div className="flex items-center gap-3 w-48">
+                        {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSearchQuery('');
+                                setOriginFilter('');
+                                setCountryFilter('');
+                                setHasNotesFilter(false);
+                              }}
+                              className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Pulisci filtri
+                            </Button>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {filteredRecords.length} trovati
+                            </span>
+                          </>
+                        )}
+                      </div>
                       
-                      {/* Campo di ricerca */}
-                      <div className="w-96">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="search"
-                            placeholder="Cerca per nome azienda, alias, nome, città..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                          />
+                      {/* Campo di ricerca centrato - flex-1 per prendere lo spazio disponibile */}
+                      <div className="flex-1 flex justify-center">
+                        <div className="w-96">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="search"
+                              placeholder="Cerca per nome azienda, alias, nome, città..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Azioni a destra del campo cerca */}
-                      {selectedRecords.size > 0 && (
-                        <div className="flex items-center gap-2 ml-4">
-                          <Badge variant="default" className="text-sm px-4 py-2">
-                            {selectedRecords.size}
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setSelectedRecords(new Set())}
-                            className="h-10 px-2 text-sm"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setShowMultipleActivityDialog(true)}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <FileText className="h-4 w-4 text-blue-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Crea attività</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                          
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={importSelectedRecords}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <Database className="h-4 w-4 text-green-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Importa {selectedRecords.size} in rubrica</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      )}
+                      {/* Azioni a destra - larghezza fissa */}
+                      <div className="flex items-center gap-2 w-48 justify-end">
+                        {selectedRecords.size > 0 && (
+                          <>
+                            <Badge variant="default" className="text-sm px-4 py-2">
+                              {selectedRecords.size}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setSelectedRecords(new Set())}
+                              className="h-10 px-2 text-sm"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setShowMultipleActivityDialog(true)}
+                                    className="h-10 w-10 p-0"
+                                  >
+                                    <FileText className="h-4 w-4 text-blue-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Crea attività</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={importSelectedRecords}
+                                    className="h-10 w-10 p-0"
+                                  >
+                                    <Database className="h-4 w-4 text-green-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Importa {selectedRecords.size} in rubrica</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

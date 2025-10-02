@@ -2,12 +2,15 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { StickyNote } from 'lucide-react';
 
 interface Filters {
   tag: string;
   citta: string;
   nazione: string;
   hasActivities: boolean;
+  hasNotes: boolean;
 }
 
 interface ContactFiltersProps {
@@ -29,11 +32,12 @@ export function ContactFilters({ filters, onFiltersChange, onClose }: ContactFil
       tag: '',
       citta: '',
       nazione: '',
-      hasActivities: false
+      hasActivities: false,
+      hasNotes: false
     });
   };
 
-  const hasActiveFilters = filters.tag.trim() !== '' || filters.citta.trim() !== '' || filters.nazione.trim() !== '' || filters.hasActivities;
+  const hasActiveFilters = filters.tag.trim() !== '' || filters.citta.trim() !== '' || filters.nazione.trim() !== '' || filters.hasActivities || filters.hasNotes;
 
   return (
     <div className="space-y-6">
@@ -66,6 +70,18 @@ export function ContactFilters({ filters, onFiltersChange, onClose }: ContactFil
             onChange={(e) => handleFilterChange('nazione', e.target.value)}
             placeholder="Filtra per nazione..."
           />
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="has-notes"
+            checked={filters.hasNotes}
+            onCheckedChange={(checked) => onFiltersChange({...filters, hasNotes: checked as boolean})}
+          />
+          <Label htmlFor="has-notes" className="flex items-center gap-2 text-sm cursor-pointer">
+            <StickyNote className="h-4 w-4 text-blue-500" />
+            Solo contatti con note
+          </Label>
         </div>
       </div>
 

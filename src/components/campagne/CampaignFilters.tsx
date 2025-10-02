@@ -2,10 +2,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { StickyNote } from 'lucide-react';
 
 interface Filters {
   stato: string;
   periodo: string;
+  hasNotes: boolean;
 }
 
 interface CampaignFiltersProps {
@@ -25,11 +28,12 @@ export function CampaignFilters({ filters, onFiltersChange, onClose }: CampaignF
   const clearFilters = () => {
     onFiltersChange({
       stato: '',
-      periodo: ''
+      periodo: '',
+      hasNotes: false
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value.trim() !== '');
+  const hasActiveFilters = filters.stato.trim() !== '' || filters.periodo.trim() !== '' || filters.hasNotes;
 
   return (
     <div className="space-y-6">
@@ -62,6 +66,18 @@ export function CampaignFilters({ filters, onFiltersChange, onClose }: CampaignF
               <SelectItem value="passate">Campagne Passate</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="has-notes-campaign"
+            checked={filters.hasNotes}
+            onCheckedChange={(checked) => onFiltersChange({...filters, hasNotes: checked as boolean})}
+          />
+          <Label htmlFor="has-notes-campaign" className="flex items-center gap-2 text-sm cursor-pointer">
+            <StickyNote className="h-4 w-4 text-blue-500" />
+            Solo campagne con note
+          </Label>
         </div>
       </div>
 

@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { X, CalendarIcon, Filter, RotateCcw, Search, Tag } from 'lucide-react';
+import { X, CalendarIcon, Filter, RotateCcw, Search, Tag, StickyNote } from 'lucide-react';
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ interface FilterState {
   keywords: string;
   minLength: number;
   maxLength: number;
+  hasNotes: boolean;
 }
 
 export const EmailFilters: React.FC<EmailFiltersProps> = ({
@@ -50,7 +51,8 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
     readStatus: 'all',
     keywords: '',
     minLength: 0,
-    maxLength: 10000
+    maxLength: 10000,
+    hasNotes: false
   });
 
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
@@ -103,6 +105,7 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
     if (updatedFilters.readStatus !== 'all') count++;
     if (updatedFilters.keywords.trim()) count++;
     if (updatedFilters.minLength > 0 || updatedFilters.maxLength < 10000) count++;
+    if (updatedFilters.hasNotes) count++;
     
     setActiveFiltersCount(count);
     onFiltersChange?.(updatedFilters);
@@ -120,7 +123,8 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
       readStatus: 'all',
       keywords: '',
       minLength: 0,
-      maxLength: 10000
+      maxLength: 10000,
+      hasNotes: false
     };
     
     setFilters(clearedFilters);
@@ -502,6 +506,18 @@ export const EmailFilters: React.FC<EmailFiltersProps> = ({
               />
             </div>
           )}
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="has-notes-email" className="text-sm flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-blue-500" />
+              Solo email con note
+            </Label>
+            <Switch
+              id="has-notes-email"
+              checked={filters.hasNotes}
+              onCheckedChange={(checked) => updateFilters({ hasNotes: checked })}
+            />
+          </div>
 
           <div>
             <Label htmlFor="read-status" className="text-sm">Stato di lettura</Label>

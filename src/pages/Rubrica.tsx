@@ -47,7 +47,8 @@ export default function Rubrica() {
     tag: '',
     citta: '',
     nazione: '',
-    hasActivities: false
+    hasActivities: false,
+    hasNotes: false
   });
   
   const { toast } = useToast();
@@ -99,7 +100,8 @@ export default function Rubrica() {
       (!filters.tag || contact.tags?.includes(filters.tag)) &&
       (!filters.citta || contact.citta?.toLowerCase().includes(filters.citta.toLowerCase())) &&
       (!filters.nazione || contact.paese?.toLowerCase().includes(filters.nazione.toLowerCase())) &&
-      (!filters.hasActivities || getActivityCount(contact.id) > 0);
+      (!filters.hasActivities || getActivityCount(contact.id) > 0) &&
+      (!filters.hasNotes || (contact.note && contact.note.trim() !== ''));
 
     return matchesSearch && matchesFilters;
   });

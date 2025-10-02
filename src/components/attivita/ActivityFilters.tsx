@@ -2,12 +2,15 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { StickyNote } from 'lucide-react';
 
 interface Filters {
   stato: string;
   tipo: string;
   priorita: string;
   scadenza: string;
+  hasNotes: boolean;
 }
 
 interface ActivityFiltersProps {
@@ -29,11 +32,12 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
       stato: 'all',
       tipo: 'all',
       priorita: 'all',
-      scadenza: 'all'
+      scadenza: 'all',
+      hasNotes: false
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value.trim() !== '' && value !== 'all');
+  const hasActiveFilters = filters.stato !== 'all' || filters.tipo !== 'all' || filters.priorita !== 'all' || filters.scadenza !== 'all' || filters.hasNotes;
 
   return (
     <div className="space-y-6">
@@ -100,6 +104,18 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectItem value="senza_scadenza">Senza scadenza</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="has-notes-activity"
+            checked={filters.hasNotes}
+            onCheckedChange={(checked) => onFiltersChange({...filters, hasNotes: checked as boolean})}
+          />
+          <Label htmlFor="has-notes-activity" className="flex items-center gap-2 text-sm cursor-pointer">
+            <StickyNote className="h-4 w-4 text-blue-500" />
+            Solo attività con note
+          </Label>
         </div>
       </div>
 

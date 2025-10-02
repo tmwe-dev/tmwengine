@@ -38,7 +38,8 @@ export default function Campagne() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     stato: '',
-    periodo: ''
+    periodo: '',
+    hasNotes: false
   });
   const { toast } = useToast();
   const isMobile = useIsMobile();

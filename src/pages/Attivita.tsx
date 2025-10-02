@@ -90,7 +90,8 @@ export default function Attivita() {
     stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
     priorita: '',
-    scadenza: ''
+    scadenza: '',
+    hasNotes: false
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
@@ -293,7 +294,8 @@ export default function Attivita() {
       matchesStato &&
       (!filters.tipo || filters.tipo === 'all' || activity.tipo === filters.tipo) &&
       (!filters.priorita || filters.priorita === 'all' || activity.priorita === filters.priorita) &&
-      (!filters.scadenza || filters.scadenza === 'all' || checkScadenzaFilter(activity.scadenza, filters.scadenza));
+      (!filters.scadenza || filters.scadenza === 'all' || checkScadenzaFilter(activity.scadenza, filters.scadenza)) &&
+      (!filters.hasNotes || (activity.note && activity.note.trim() !== ''));
 
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));

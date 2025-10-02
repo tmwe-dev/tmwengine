@@ -2401,7 +2401,7 @@ export default function ImportTemplates() {
                         >
                           <Monitor className="h-4 w-4" />
                           {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          <span className="text-xs">Full screen</span>
+                          <span className="text-xs">{showFiltersArea ? 'Full screen' : 'Show filters'}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>

@@ -1255,7 +1255,7 @@ export default function Attivita() {
                           }} 
                         />
                       )}
-                      <TableCell className="w-16">
+                      <TableCell className="w-16 align-middle">
                         <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">
                             #{paginatedActivities.indexOf(activity) + 1 + currentPage * recordsPerPage}
@@ -1267,7 +1267,7 @@ export default function Attivita() {
                           />
                         </div>
                        </TableCell>
-                       <TableCell>
+                       <TableCell className="align-middle">
                          <div 
                            className={cn(
                              "flex items-center justify-center gap-2 relative z-10",
@@ -1316,7 +1316,7 @@ export default function Attivita() {
           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         {activity.scadenza ? (
                           <div className="space-y-1 relative z-10">
             <div className="font-semibold text-blue-600">
@@ -1330,7 +1330,7 @@ export default function Attivita() {
                           <span className="text-text-secondary">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <div className="space-y-1 relative z-10">
           <div className="font-semibold text-blue-600">
             {format(new Date(activity.data_creazione), 'dd MMM')}
@@ -1342,8 +1342,8 @@ export default function Attivita() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="relative z-10">
+                      <TableCell className="text-center align-middle">
+                        <div className="relative z-10 flex justify-center">
                           {activityStatus === 'in sospeso' ? (
                             <Clock className="h-5 w-5 text-yellow-500" />
                           ) : activityStatus === 'completata' ? (
@@ -1355,12 +1355,12 @@ export default function Attivita() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <span className="text-text-secondary text-sm relative z-10">
                           {activity.rubrica_origine || '-'}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <div className="flex items-center gap-2 relative z-10">
                           {activity.rubrica_paese && (
                             <img 
@@ -1377,18 +1377,18 @@ export default function Attivita() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <span className="text-text-secondary text-sm relative z-10">
                           {activity.rubrica_citta || '-'}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="align-middle">
                         <Badge variant={getPrioritaBadgeVariant(activity.priorita)} className="relative z-10">
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1 relative z-10">
+                      <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
+                        <div className="flex items-center justify-center gap-1 relative z-10">
                           <Button
                             variant="outline"
                             size="sm"

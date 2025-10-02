@@ -271,24 +271,27 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId }: Attivi
 
   if (isLoading) {
     return (
-      <DialogContent className="max-w-7xl max-h-[90vh]">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Caricamento attività...</div>
-        </div>
-      </DialogContent>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-7xl max-h-[90vh]">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-muted-foreground">Caricamento attività...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="flex items-center justify-between">
-          <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogTitle>
-      </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
 
       <div className="space-y-4">
         {/* Search and Filters */}
@@ -459,5 +462,6 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId }: Attivi
         )}
       </div>
     </DialogContent>
+  </Dialog>
   );
 }

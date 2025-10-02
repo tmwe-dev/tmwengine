@@ -2579,16 +2579,16 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex items-center justify-center border-b relative">
+            <div className="flex items-center justify-center border-b relative py-3 min-h-[60px]">
               {/* Filtro "Solo con note" - a sinistra */}
-              <div className="absolute left-4">
+              <div className="absolute left-4 z-10 bg-background px-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="has-notes-filter-desktop"
                     checked={hasNotesFilter}
                     onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
                   />
-                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
                     <StickyNote className="h-4 w-4 text-blue-500" />
                     Solo con note
                   </Label>
@@ -2597,7 +2597,7 @@ export default function ImportTemplates() {
 
               {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
-                <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center w-full px-48">
                   {/* Badge, X, FileText e Database al centro */}
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="text-sm px-4 py-2">

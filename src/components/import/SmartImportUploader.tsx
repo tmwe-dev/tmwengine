@@ -14,17 +14,19 @@ interface SmartImportUploaderProps {
 export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{
+    headers: string[];
+    sampleRows: any[];
+    fileName: string;
+  } | null>(null);
 
-  const analyzeFile = async (file: File) => {
-    setIsAnalyzing(true);
-    
+  const parseFilePreview = async (file: File) => {
     try {
       let headers: string[] = [];
       let sampleRows: any[] = [];
 
       // Parse in base al tipo di file
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        // Excel
         const data = await file.arrayBuffer();
         const workbook = XLSX.read(data);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -39,11 +41,9 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           return obj;
         });
       } else if (file.name.endsWith('.csv')) {
-        // CSV
         const text = await file.text();
         const lines = text.split('\n').filter(line => line.trim());
         
-        // Detect separator
         const firstLine = lines[0];
         const separator = firstLine.includes(';') ? ';' : 
                          firstLine.includes('\t') ? '\t' : ',';
@@ -58,7 +58,6 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           return obj;
         });
       } else if (file.name.endsWith('.txt')) {
-        // TXT - assume tab-separated or space-separated
         const text = await file.text();
         const lines = text.split('\n').filter(line => line.trim());
         
@@ -72,19 +71,30 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else if (file.name.endsWith('.pdf')) {
-        toast.error('PDF non ancora supportato. Usa Excel, CSV o TXT per ora.');
-        setIsAnalyzing(false);
-        return;
       } else {
-        toast.error('Formato file non supportato. Usa Excel, CSV, TXT o PDF.');
-        setIsAnalyzing(false);
+        toast.error('Formato file non supportato. Usa Excel, CSV o TXT.');
         return;
       }
 
-      console.log('📊 File parsed:', { headers, sampleRows });
+      setPreview({
+        headers,
+        sampleRows,
+        fileName: file.name
+      });
+      
+      toast.success('File caricato! Controlla l\'anteprima dei dati.');
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      toast.error('Errore durante la lettura del file');
+    }
+  };
 
-      // Chiama l'AI per analizzare
+  const analyzeWithAI = async () => {
+    if (!preview) return;
+    
+    setIsAnalyzing(true);
+    
+    try {
       const systemPrompt = `Sei un esperto di data mapping per sistemi CRM.
 
 **Schema Database Target:**
@@ -151,7 +161,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
       const { data, error } = await supabase.functions.invoke('chat-with-openai', {
         body: {
           requestType: 'import-analysis',
-          prompt: JSON.stringify({ headers, sampleRows }),
+          prompt: JSON.stringify({ headers: preview.headers, sampleRows: preview.sampleRows }),
           systemPrompt: systemPrompt
         }
       });
@@ -163,10 +173,8 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
 
       console.log('🤖 AI Response:', data);
 
-      // Parse la risposta AI
       let aiResponse = data.response;
       
-      // Rimuovi eventuali markdown code blocks
       if (aiResponse.includes('```json')) {
         aiResponse = aiResponse.split('```json')[1].split('```')[0].trim();
       } else if (aiResponse.includes('```')) {
@@ -178,9 +186,9 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
       toast.success('Analisi completata! Controlla il mapping suggerito.');
       onAnalysisComplete({
         ...analysisResult,
-        headers,
-        sampleRows,
-        fileName: file.name
+        headers: preview.headers,
+        sampleRows: preview.sampleRows,
+        fileName: preview.fileName
       });
 
     } catch (error) {
@@ -195,9 +203,9 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setUploadedFile(file);
-      analyzeFile(file);
+      parseFilePreview(file);
     }
-  }, [analyzeFile]);
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -223,70 +231,139 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div
-          {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
-            transition-all duration-200
-            ${isDragActive 
-              ? 'border-primary bg-primary/5' 
-              : 'border-border hover:border-primary/50 hover:bg-accent/50'
-            }
-            ${isAnalyzing ? 'pointer-events-none opacity-50' : ''}
-          `}
-        >
-          <input {...getInputProps()} />
-          
-          {isAnalyzing ? (
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <div>
-                <p className="text-lg font-medium">Analisi in corso...</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  L'AI sta analizzando il file: {uploadedFile?.name}
-                </p>
+        {!preview ? (
+          <div
+            {...getRootProps()}
+            className={`
+              border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
+              transition-all duration-200
+              ${isDragActive 
+                ? 'border-primary bg-primary/5' 
+                : 'border-border hover:border-primary/50 hover:bg-accent/50'
+              }
+            `}
+          >
+            <input {...getInputProps()} />
+            
+            <div className="flex justify-center gap-4 mb-4">
+              <FileSpreadsheet className="h-12 w-12 text-green-500" />
+              <FileText className="h-12 w-12 text-blue-500" />
+              <FileType className="h-12 w-12 text-orange-500" />
+            </div>
+            
+            <p className="text-lg font-medium mb-2">
+              {isDragActive 
+                ? 'Rilascia il file qui...' 
+                : 'Trascina qui il file o clicca per selezionare'
+              }
+            </p>
+            
+            <p className="text-sm text-muted-foreground">
+              Formati supportati: Excel (.xlsx, .xls), CSV, TXT
+            </p>
+            
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Seleziona File
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">📄 File: {preview.fileName}</h3>
+              <p className="text-sm text-muted-foreground">
+                {preview.headers.length} colonne rilevate • {preview.sampleRows.length} righe di esempio
+              </p>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-muted p-2">
+                <p className="text-sm font-medium">Colonne rilevate:</p>
+              </div>
+              <div className="p-4 space-y-2">
+                {preview.headers.map((header, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-mono">
+                      {idx + 1}
+                    </span>
+                    <span className="font-medium">{header}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <>
-              <div className="flex justify-center gap-4 mb-4">
-                <FileSpreadsheet className="h-12 w-12 text-green-500" />
-                <FileText className="h-12 w-12 text-blue-500" />
-                <FileType className="h-12 w-12 text-orange-500" />
-              </div>
-              
-              <p className="text-lg font-medium mb-2">
-                {isDragActive 
-                  ? 'Rilascia il file qui...' 
-                  : 'Trascina qui il file o clicca per selezionare'
-                }
-              </p>
-              
-              <p className="text-sm text-muted-foreground">
-                Formati supportati: Excel (.xlsx, .xls), CSV, TXT, PDF
-              </p>
-              
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Seleziona File
-              </Button>
-            </>
-          )}
-        </div>
 
-        <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Come funziona:</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Carica il file con i contatti</li>
-            <li>L'AI analizza automaticamente le colonne</li>
-            <li>Ricevi suggerimenti intelligenti per il mapping</li>
-            <li>Conferma o modifica il mapping</li>
-            <li>Importa i dati trasformati nel CRM</li>
-          </ul>
-        </div>
+            <div className="border rounded-lg overflow-x-auto">
+              <div className="bg-muted p-2">
+                <p className="text-sm font-medium">Prime 5 righe:</p>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    {preview.headers.map((header, idx) => (
+                      <th key={idx} className="px-3 py-2 text-left font-medium whitespace-nowrap">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.sampleRows.map((row, rowIdx) => (
+                    <tr key={rowIdx} className="border-t">
+                      {preview.headers.map((header, colIdx) => (
+                        <td key={colIdx} className="px-3 py-2 whitespace-nowrap">
+                          <span className={row[header] ? '' : 'text-muted-foreground italic'}>
+                            {row[header] || 'vuoto'}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={analyzeWithAI}
+                disabled={isAnalyzing}
+                className="flex-1"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analisi in corso...
+                  </>
+                ) : (
+                  'Analizza con AI'
+                )}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setPreview(null);
+                  setUploadedFile(null);
+                }}
+              >
+                Cambia File
+              </Button>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm">
+              <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                💡 Cosa farà l'AI:
+              </p>
+              <ul className="text-blue-800 dark:text-blue-200 space-y-1 ml-4 list-disc">
+                <li>Suggerirà il mapping delle colonne ai campi CRM</li>
+                <li>Indicherà i livelli di confidenza</li>
+                <li>Segnalerà valori dubbi o problematici</li>
+                <li>Proporrà trasformazioni necessarie</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

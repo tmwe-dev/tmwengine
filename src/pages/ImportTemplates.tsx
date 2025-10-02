@@ -2650,7 +2650,7 @@ export default function ImportTemplates() {
              <div className="flex flex-col min-h-0 flex-1">
                 {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
                 {!isMobile && (
-                  <div className="flex items-center space-x-2 pl-4 pb-2">
+                  <div className="flex items-center space-x-2 pl-4 pb-1 pt-1">
                     <Checkbox
                       id="has-notes-filter-desktop"
                       checked={hasNotesFilter}

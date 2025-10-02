@@ -1752,9 +1752,9 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo caricando il dialog, mostra solo uno schermo vuoto
-  if (isLoadingDialog || (location.state?.openRecordsDialog && !showRecordsDialog)) {
-    return <div className="flex items-center justify-center h-screen"></div>;
+  // Se stiamo caricando il dialog o arrivando da Attività con showBlackScreen, mostra schermo nero
+  if (isLoadingDialog || (location.state?.showBlackScreen && !showRecordsDialog)) {
+    return <div className="fixed inset-0 bg-black"></div>;
   }
 
   return (

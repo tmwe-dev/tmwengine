@@ -121,9 +121,12 @@ export default function Attivita() {
 
   // Funzione per tornare a Record Importati
   const handleBackNavigation = () => {
-    // Torna sempre alla pagina import-templates con openRecordsDialog
+    // Torna sempre alla pagina import-templates con openRecordsDialog e showBlackScreen
     navigate('/import-templates', { 
-      state: { openRecordsDialog: true }
+      state: { 
+        openRecordsDialog: true,
+        showBlackScreen: true 
+      }
     });
   };
 

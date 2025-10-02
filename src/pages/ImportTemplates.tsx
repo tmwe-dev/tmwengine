@@ -2369,7 +2369,7 @@ export default function ImportTemplates() {
                     Record Importati - {selectedImport?.file_name}
                   </DialogTitle>
                   <DialogDescription>
-                    Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
+                    Visualizza e gestisci i contatti importati da questo file.
                   </DialogDescription>
                 </div>
                 

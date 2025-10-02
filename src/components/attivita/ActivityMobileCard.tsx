@@ -1,10 +1,11 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Phone, Mail, Users, FileText, Settings, Trash2, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Phone, Mail, Users, FileText, Settings, Trash2, Clock, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface Activity {
@@ -31,10 +32,12 @@ interface Activity {
   selezionata?: boolean;
   cellulare?: string;
   telefono?: string;
+  contact_source?: 'rubrica' | 'imported_contacts';
 }
 
 interface ActivityMobileCardProps {
   activity: Activity;
+  index: number;
   isSelected: boolean;
   onSelect: (id: string, selected: boolean) => void;
   onPhoneClick: () => void;
@@ -65,6 +68,7 @@ const PRIORITA_LABELS = {
 
 export function ActivityMobileCard({
   activity,
+  index,
   isSelected,
   onSelect,
   onPhoneClick,
@@ -121,38 +125,56 @@ export function ActivityMobileCard({
   const activityStatus = getActivityStatus(activity);
 
   return (
-    <Card className={cn(
-      "border-card shadow-soft transition-all duration-200",
-      isSelected && "ring-2 ring-primary border-primary"
-    )}>
-      <CardContent className="p-4 space-y-3">
-        {/* Header con checkbox e tipo */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect(activity.id, !!checked)}
-            />
-            <div 
-              className={cn(
-                "flex items-center gap-2 p-2 rounded-md",
-                activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50"
+    <TooltipProvider>
+      <Card className={cn(
+        "border-card shadow-soft transition-all duration-200",
+        isSelected && "ring-2 ring-primary border-primary"
+      )}>
+        <CardContent className="p-4 space-y-3">
+          {/* Header con numero, checkbox e tipo */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground font-mono">
+                #{index + 1}
+              </span>
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelect(activity.id, !!checked)}
+              />
+              <div 
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded-md",
+                  activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50"
+                )}
+                onClick={() => {
+                  if (activity.tipo === 'chiamata' && activity.rubrica_id) {
+                    onPhoneClick();
+                  }
+                }}
+              >
+                <ActivityIcon className="h-5 w-5 text-primary" />
+                <span className="font-medium text-sm">{TIPO_LABELS[activity.tipo]}</span>
+              </div>
+              {activity.contact_source && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    {activity.contact_source === 'rubrica' ? (
+                      <Database className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-orange-600" />
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {activity.contact_source === 'rubrica' ? 'Contatto in Rubrica' : 'Contatto Importato'}
+                  </TooltipContent>
+                </Tooltip>
               )}
-              onClick={() => {
-                if (activity.tipo === 'chiamata' && activity.rubrica_id) {
-                  onPhoneClick();
-                }
-              }}
-            >
-              <ActivityIcon className="h-5 w-5 text-primary" />
-              <span className="font-medium text-sm">{TIPO_LABELS[activity.tipo]}</span>
             </div>
+            
+            <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
+              {PRIORITA_LABELS[activity.priorita]}
+            </Badge>
           </div>
-          
-          <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
-            {PRIORITA_LABELS[activity.priorita]}
-          </Badge>
-        </div>
 
         {/* Contatto/Azienda */}
         <div 
@@ -254,7 +276,8 @@ export function ActivityMobileCard({
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

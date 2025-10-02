@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { ActivityMobileCard } from '@/components/attivita/ActivityMobileCard';
@@ -46,6 +47,7 @@ interface Activity {
   selezionata?: boolean;
   cellulare?: string;
   telefono?: string;
+  contact_source?: 'rubrica' | 'imported_contacts';
 }
 
 const TIPO_LABELS = {
@@ -117,7 +119,7 @@ export default function Attivita() {
       // Recupera tutti i contatti (sia da rubrica che imported_contacts)
       const rubricaIds = [...new Set(attivitaData?.map(a => a.rubrica_id).filter(Boolean))];
       
-      let contactsMap = new Map();
+      let contactsMap = new Map<string, {contact: any, source: 'rubrica' | 'imported_contacts'}>();
       
       if (rubricaIds.length > 0) {
         // Carica da rubrica
@@ -127,31 +129,40 @@ export default function Attivita() {
           .in('id', rubricaIds);
         
         rubricaData?.forEach(contact => {
-          contactsMap.set(contact.id, contact);
+          contactsMap.set(contact.id, { contact, source: 'rubrica' });
         });
         
-        // Carica da imported_contacts
-        const { data: importedData } = await supabase
-          .from('imported_contacts')
-          .select('id, name, company_name, origin, country, city, phone, cell')
-          .in('id', rubricaIds);
+        // Carica da imported_contacts (solo quelli non trovati in rubrica)
+        const notFoundInRubrica = rubricaIds.filter(id => !contactsMap.has(id));
         
-        importedData?.forEach(contact => {
-          contactsMap.set(contact.id, {
-            id: contact.id,
-            nome: contact.name,
-            azienda: contact.company_name,
-            origine: contact.origin,
-            paese: contact.country,
-            citta: contact.city,
-            telefono: contact.phone,
-            cellulare: contact.cell
+        if (notFoundInRubrica.length > 0) {
+          const { data: importedData } = await supabase
+            .from('imported_contacts')
+            .select('id, name, company_name, origin, country, city, phone, cell')
+            .in('id', notFoundInRubrica);
+          
+          importedData?.forEach(contact => {
+            contactsMap.set(contact.id, {
+              contact: {
+                id: contact.id,
+                nome: contact.name,
+                azienda: contact.company_name,
+                origine: contact.origin,
+                paese: contact.country,
+                citta: contact.city,
+                telefono: contact.phone,
+                cellulare: contact.cell
+              },
+              source: 'imported_contacts'
+            });
           });
-        });
+        }
       }
 
       const formattedActivities: Activity[] = (attivitaData || []).map(activity => {
-        const contact = activity.rubrica_id ? contactsMap.get(activity.rubrica_id) : null;
+        const contactData = activity.rubrica_id ? contactsMap.get(activity.rubrica_id) : null;
+        const contact = contactData?.contact;
+        const source = contactData?.source;
         
         return {
           id: activity.id,
@@ -163,6 +174,7 @@ export default function Attivita() {
           rubrica_citta: contact?.citta,
           telefono: contact?.telefono,
           cellulare: contact?.cellulare,
+          contact_source: source,
           tipo: activity.tipo as Activity['tipo'],
           descrizione: activity.descrizione,
           stato: activity.stato as Activity['stato'],
@@ -973,6 +985,7 @@ export default function Attivita() {
               <ActivityMobileCard
                 key={activity.id}
                 activity={activity}
+                index={paginatedActivities.indexOf(activity) + currentPage * recordsPerPage}
                 isSelected={selectedActivities.includes(activity.id)}
                 onSelect={handleActivitySelect}
                 onPhoneClick={() => handlePhoneClick(activity)}
@@ -1205,7 +1218,7 @@ export default function Attivita() {
                   const ActivityIcon = getActivityIcon(activity.tipo);
                   const activityStatus = getActivityStatus(activity);
                   return (
-                    <TableRow 
+                     <TableRow 
                       key={activity.id} 
                       className={cn(
                         "hover:bg-muted/50 cursor-pointer",
@@ -1213,17 +1226,22 @@ export default function Attivita() {
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedActivities.includes(activity.id)}
-                          onCheckedChange={(checked) => handleActivitySelect(activity.id, !!checked)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                      <TableCell className="w-16">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground font-mono">
+                            #{paginatedActivities.indexOf(activity) + 1 + currentPage * recordsPerPage}
+                          </span>
+                          <Checkbox
+                            checked={selectedActivities.includes(activity.id)}
+                            onCheckedChange={(checked) => handleActivitySelect(activity.id, !!checked)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                       </TableCell>
                        <TableCell>
                          <div 
                            className={cn(
-                             "flex items-center justify-center",
+                             "flex items-center justify-center gap-2",
                              activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50 rounded p-1"
                            )}
                            onClick={(e) => {
@@ -1234,6 +1252,20 @@ export default function Attivita() {
                            }}
                          >
                            <ActivityIcon className="h-5 w-5 text-blue-500" />
+                           {activity.contact_source && (
+                             <Tooltip>
+                               <TooltipTrigger>
+                                 {activity.contact_source === 'rubrica' ? (
+                                   <Database className="h-4 w-4 text-green-600" />
+                                 ) : (
+                                   <FileText className="h-4 w-4 text-orange-600" />
+                                 )}
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 {activity.contact_source === 'rubrica' ? 'Contatto in Rubrica' : 'Contatto Importato'}
+                               </TooltipContent>
+                             </Tooltip>
+                           )}
                          </div>
                        </TableCell>
                        <TableCell 

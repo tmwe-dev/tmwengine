@@ -2511,8 +2511,27 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Campo di ricerca centrato */}
-                    <div className="flex justify-center">
+                    {/* Seconda riga - Pulisci filtri e Campo di ricerca */}
+                    <div className="flex justify-center items-center gap-2">
+                      {/* Pulsante Pulisci filtri a sinistra */}
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setOriginFilter('');
+                            setCountryFilter('');
+                            setHasNotesFilter(false);
+                          }}
+                          className="h-10 px-2 text-xs"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Pulisci filtri
+                        </Button>
+                      )}
+                      
+                      {/* Campo di ricerca */}
                       <div className="w-96">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2607,23 +2626,9 @@ export default function ImportTemplates() {
                 </div>
               )}
               
-              {/* Filtri attivi - compatti */}
+              {/* Contatore record trovati - compatto */}
               {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                 <div className="flex items-center gap-1 ml-auto">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setOriginFilter('');
-                      setCountryFilter('');
-                      setHasNotesFilter(false);
-                    }}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Pulisci filtri
-                  </Button>
                   <span className="text-xs text-muted-foreground">
                     {filteredRecords.length} trovati
                   </span>

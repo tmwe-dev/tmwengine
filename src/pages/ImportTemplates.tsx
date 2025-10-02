@@ -2389,59 +2389,100 @@ export default function ImportTemplates() {
                 
                 {/* Desktop Search and Filter Controls */}
                 <div className="flex flex-col gap-3">
-                  {/* Prima riga - Dropdowns */}
-                  <div className="flex gap-2 items-end flex-row justify-center">
-                    <div className="w-48">
-                      <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
-                      <Select value={originFilter} onValueChange={setOriginFilter}>
-                        <SelectTrigger id="origin-filter">
-                          <SelectValue placeholder="Tutte le origini" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Tutte le origini</SelectItem>
-                          {getUniqueValues('origin').map((origin) => (
-                            <SelectItem key={origin} value={String(origin)}>
-                              {String(origin)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Prima riga - Dropdowns centrati con azioni a destra */}
+                  <div className="flex items-end justify-center relative">
+                    {/* Dropdowns centrati */}
+                    <div className="flex gap-2 items-end">
+                      <div className="w-48">
+                        <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                        <Select value={originFilter} onValueChange={setOriginFilter}>
+                          <SelectTrigger id="origin-filter">
+                            <SelectValue placeholder="Tutte le origini" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutte le origini</SelectItem>
+                            {getUniqueValues('origin').map((origin) => (
+                              <SelectItem key={origin} value={String(origin)}>
+                                {String(origin)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="w-48">
+                        <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                        <Select value={countryFilter} onValueChange={setCountryFilter}>
+                          <SelectTrigger id="country-filter">
+                            <SelectValue placeholder="Tutti i paesi" />
+                          </SelectTrigger>
+                          <SelectContent className="z-50">
+                            <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                            {getUniqueValues('country').map((country) => (
+                              <SelectItem key={country} value={String(country)}>
+                                {getCountryFullName(String(country))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="w-32">
+                        <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
+                        <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                          setRecordsPerPage(Number(value));
+                        }}>
+                          <SelectTrigger id="records-per-page">
+                            <SelectValue placeholder={`${recordsPerPage}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="250">250</SelectItem>
+                            <SelectItem value="500">500</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     
-                    <div className="w-48">
-                      <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
-                      <Select value={countryFilter} onValueChange={setCountryFilter}>
-                        <SelectTrigger id="country-filter">
-                          <SelectValue placeholder="Tutti i paesi" />
-                        </SelectTrigger>
-                        <SelectContent className="z-50">
-                          <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                          {getUniqueValues('country').map((country) => (
-                            <SelectItem key={country} value={String(country)}>
-                              {getCountryFullName(String(country))}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="w-36">
-                      <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
-                      <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                        console.log('Changing records per page to:', value);
-                        setRecordsPerPage(Number(value));
-                      }}>
-                        <SelectTrigger id="records-per-page">
-                          <SelectValue placeholder={`${recordsPerPage} record`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                          <SelectItem value="250">250</SelectItem>
-                          <SelectItem value="500">500</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    {/* Azioni a destra - compatte */}
+                    <div className="absolute right-0 flex items-center gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant={visibleColumns.details ? "default" : "outline"}
+                              onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Briefcase className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Dettagli Commerciali</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant={visibleColumns.metadata ? "default" : "outline"}
+                              onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Metadata & Sistema</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                   
@@ -2468,144 +2509,100 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex justify-between items-center gap-4 py-2 border-b">
-              {/* Prima colonna - Record selezionati e azioni */}
-              <div className="flex items-center gap-2 flex-1">
-                {/* Indicatore record selezionati */}
-                {selectedRecords.size > 0 && (
-                  <>
-                    <Badge variant="default" className="text-sm px-3 py-1">
-                      {selectedRecords.size} record selezionati
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedRecords(new Set())}
-                      className="text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Deseleziona tutti
-                    </Button>
-                    
-                    {/* Bulk delete button - Spostato qui in alto */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={deleteSelectedRecords}
-                            className="text-xs px-2"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Elimina {selectedRecords.size} record selezionati</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowMultipleActivityDialog(true)}
-                            className="text-xs px-2"
-                          >
-                            <FileText className="h-4 w-4 text-blue-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Crea attività multiple</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={importSelectedRecords}
-                            className="text-xs px-2"
-                          >
-                            <Database className="h-4 w-4 text-green-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Importa {selectedRecords.size} record in rubrica</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
-                )}
-                
-                {/* Filtri attivi */}
-                {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setOriginFilter('');
-                        setCountryFilter('');
-                        setHasNotesFilter(false);
-                      }}
-                      className="text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Pulisci filtri
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      {filteredRecords.length} record trovati
-                    </span>
-                  </>
-                )}
-              </div>
-               
-              {/* Seconda colonna - Pulsanti visibilità colonne (solo icone) */}
-              <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant={visibleColumns.details ? "default" : "outline"}
-                        onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-                        className="text-xs px-2"
-                      >
-                        <Briefcase className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Dettagli Commerciali</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant={visibleColumns.metadata ? "default" : "outline"}
-                        onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-                        className="text-xs px-2"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Metadata & Sistema</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+            <div className="flex items-center gap-2 py-2 border-b">
+              {/* Record selezionati e azioni - compatti */}
+              {selectedRecords.size > 0 && (
+                <div className="flex items-center gap-1">
+                  <Badge variant="default" className="text-xs px-2 py-1">
+                    {selectedRecords.size}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedRecords(new Set())}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={deleteSelectedRecords}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Elimina {selectedRecords.size} record</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowMultipleActivityDialog(true)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <FileText className="h-3 w-3 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Crea attività</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={importSelectedRecords}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Database className="h-3 w-3 text-green-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Importa {selectedRecords.size} in rubrica</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
+              
+              {/* Filtri attivi - compatti */}
+              {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setOriginFilter('');
+                      setCountryFilter('');
+                      setHasNotesFilter(false);
+                    }}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Pulisci filtri
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredRecords.length} trovati
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

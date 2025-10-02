@@ -2515,7 +2515,7 @@ export default function ImportTemplates() {
                     <div className="flex justify-center items-center relative">
                       {/* Pulsante Pulisci filtri e contatore a sinistra */}
                       {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                        <div className="absolute left-0 flex items-center gap-2">
+                        <div className="absolute left-0 flex items-center gap-3">
                           <Button
                             variant="ghost"
                             size="sm"

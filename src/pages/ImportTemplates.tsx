@@ -1677,6 +1677,12 @@ export default function ImportTemplates() {
           setSelectedImport(updatedImportLog);
         }
         
+        // Get updated count
+        const { count: updatedCount } = await supabase
+          .from('imported_contacts')
+          .select('*', { count: 'exact', head: true })
+          .eq('import_log_id', selectedImport.id);
+        
         const { data: updatedRecords } = await supabase
           .from('imported_contacts')
           .select('*')
@@ -1686,6 +1692,7 @@ export default function ImportTemplates() {
         if (updatedRecords) {
           setAllRecords(updatedRecords);
           setViewingRecords(updatedRecords);
+          setTotalRecords(updatedCount || 0);
         }
       }
       

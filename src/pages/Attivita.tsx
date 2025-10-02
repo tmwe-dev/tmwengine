@@ -1229,8 +1229,8 @@ export default function Attivita() {
                   const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata';
                   const isOpen = activity.stato === 'aperta';
                   
-                  // Usa le stesse classi di ActivityCard
-                  const rowBgColor = isOverdue 
+                  // Applica stile come ActivityCard
+                  const bgColor = isOverdue 
                     ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30 border-red-700 dark:border-red-800' 
                     : isOpen 
                     ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30 border-green-700 dark:border-green-800'
@@ -1240,12 +1240,21 @@ export default function Attivita() {
                      <TableRow 
                       key={activity.id} 
                       className={cn(
-                        "hover:bg-muted/50 cursor-pointer relative",
-                        rowBgColor, // APPLICA IL GRADIENTE
+                        "hover:bg-muted/50 cursor-pointer relative overflow-hidden",
+                        bgColor,
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >
+                      {/* Retino come overlay - uguale a ActivityCard */}
+                      {(isOverdue || isOpen) && (
+                        <div 
+                          className="absolute inset-0 opacity-20 pointer-events-none" 
+                          style={{
+                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+                          }} 
+                        />
+                      )}
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">

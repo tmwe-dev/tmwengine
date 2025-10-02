@@ -2524,7 +2524,7 @@ export default function ImportTemplates() {
                             setCountryFilter('');
                             setHasNotesFilter(false);
                           }}
-                          className="absolute left-0 h-10 px-2 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200"
+                          className="absolute left-0 h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                         >
                           <X className="h-3 w-3 mr-1" />
                           Pulisci filtri

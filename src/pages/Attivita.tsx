@@ -835,7 +835,7 @@ export default function Attivita() {
                   <Badge 
                     variant="secondary" 
                     className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
-                    onClick={() => navigate('/import-templates')}
+                    onClick={() => navigate('/gestisci-import')}
                   >
                     <User className="h-4 w-4" />
                     <span className="hover:underline font-medium">Filtrato per contatto - Torna a Record Importati</span>

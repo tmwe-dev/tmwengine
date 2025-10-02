@@ -962,7 +962,9 @@ export default function GestisciImport() {
                       {paginatedRecords.map((record, index) => {
                         const actualIndex = currentPage * recordsPerPage + index;
                         const activities = getCompanyActivities(record.id);
-                        const hasOpenActivities = activities.some((a: any) => a.stato === 'aperta');
+                        const hasOpenActivities = activities.some((a: any) => 
+                          a.stato === 'aperta' || a.stato === 'in_corso'
+                        );
                         const hasOverdueActivities = activities.some((a: any) => 
                           a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata'
                         );

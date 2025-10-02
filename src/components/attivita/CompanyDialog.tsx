@@ -262,9 +262,9 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                   const isOpen = activity.stato === 'aperta';
                   
                   const bgColor = isOverdue 
-                    ? 'bg-red-50/10 dark:bg-red-950/10 border-red-200 dark:border-red-800' 
+                    ? 'bg-gradient-to-r from-red-50/10 from-20% to-black/20 to-60% dark:from-red-950/10 dark:to-black/30 border-red-200 dark:border-red-800' 
                     : isOpen 
-                    ? 'bg-green-50/10 dark:bg-green-950/10 border-green-200 dark:border-green-800'
+                    ? 'bg-gradient-to-r from-green-50/10 from-20% to-black/20 to-60% dark:from-green-950/10 dark:to-black/30 border-green-200 dark:border-green-800'
                     : '';
                   
                   return (

@@ -310,6 +310,18 @@ export default function GestisciImport() {
 
   const deleteImportedContact = async (contactId: string) => {
     try {
+      // Prima elimina le attività associate
+      const { error: activitiesError } = await supabase
+        .from('attivita')
+        .delete()
+        .eq('rubrica_id', contactId);
+        
+      if (activitiesError) {
+        console.error('Error deleting activities:', activitiesError);
+        // Continua comunque con l'eliminazione del contatto
+      }
+
+      // Poi elimina il contatto importato
       const { error } = await supabase
         .from('imported_contacts')
         .delete()
@@ -321,7 +333,7 @@ export default function GestisciImport() {
       setAllRecords(newAllRecords);
       setSelectedRecords(new Set());
       
-      toast.success('Record eliminato con successo');
+      toast.success('Record e attività associate eliminati con successo');
     } catch (error) {
       console.error('Errore nell\'eliminazione del record:', error);
       toast.error('Errore nell\'eliminazione del record');
@@ -346,7 +358,19 @@ export default function GestisciImport() {
         toast.error('Nessun record valido selezionato');
         return;
       }
+
+      // Prima elimina le attività associate
+      const { error: activitiesError } = await supabase
+        .from('attivita')
+        .delete()
+        .in('rubrica_id', recordsToDelete);
+        
+      if (activitiesError) {
+        console.error('Error deleting activities:', activitiesError);
+        // Continua comunque con l'eliminazione dei contatti
+      }
       
+      // Poi elimina i contatti importati
       const { error } = await supabase
         .from('imported_contacts')
         .delete()
@@ -360,7 +384,7 @@ export default function GestisciImport() {
       setAllRecords(newAllRecords);
       setSelectedRecords(new Set());
       
-      toast.success(`${recordsToDelete.length} record eliminati con successo`);
+      toast.success(`${recordsToDelete.length} record e attività associate eliminati con successo`);
     } catch (error) {
       console.error('Errore nell\'eliminazione dei record:', error);
       toast.error('Errore nell\'eliminazione dei record');

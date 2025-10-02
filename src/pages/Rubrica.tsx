@@ -203,6 +203,18 @@ export default function Rubrica() {
 
   const handleDeleteContact = async (contactId: string) => {
     try {
+      // Prima elimina le attività associate
+      const { error: activitiesError } = await supabase
+        .from('attivita')
+        .delete()
+        .eq('rubrica_id', contactId);
+
+      if (activitiesError) {
+        console.error('Error deleting activities:', activitiesError);
+        // Continua comunque con l'eliminazione del contatto
+      }
+
+      // Poi elimina il contatto
       const { error } = await supabase
         .from('rubrica')
         .delete()
@@ -219,9 +231,10 @@ export default function Rubrica() {
       }
 
       setContacts(prev => prev.filter(contact => contact.id !== contactId));
+      await refreshActivities();
       toast({
         title: "Successo",
-        description: "Contatto eliminato con successo"
+        description: "Contatto e attività associate eliminati con successo"
       });
     } catch (error) {
       toast({

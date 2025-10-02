@@ -18,6 +18,7 @@ import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayou
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ContactMobileCard } from '@/components/rubrica/ContactMobileCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
 
 // Utility function to format empty values
@@ -239,6 +240,9 @@ export default function RubricaAvanzata() {
 
   // Mobile hook
   const isMobile = useIsMobile();
+
+  // Activities hook
+  const { getCompanyActivities } = useCompanyActivities();
 
   useEffect(() => {
     loadContacts();
@@ -968,6 +972,7 @@ export default function RubricaAvanzata() {
                   index={actualIndex}
                   isSelected={selectedRecords.has(actualIndex)}
                   visibleColumns={visibleColumns}
+                  getCompanyActivities={getCompanyActivities}
                   onSelect={(index, selected) => {
                     const newSelected = new Set(selectedRecords);
                     if (selected) {

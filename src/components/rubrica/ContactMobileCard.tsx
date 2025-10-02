@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { cn } from '@/lib/utils';
 
 interface Contact {
@@ -17,6 +18,7 @@ interface ContactMobileCardProps {
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onCreateActivity: () => void;
+  getCompanyActivities: (companyId: string) => any[];
   visibleColumns?: {
     company: boolean;
     details: boolean;
@@ -54,6 +56,7 @@ export function ContactMobileCard({
   onSelect,
   onView,
   onCreateActivity,
+  getCompanyActivities,
   visibleColumns = { company: true, details: true, metadata: true }
 }: ContactMobileCardProps) {
   
@@ -89,6 +92,13 @@ export function ContactMobileCard({
                   {formatCellValue(contact.nome)}
                 </div>
               )}
+              <div className="flex items-center gap-2 mt-2">
+                <ActivityIndicators 
+                  companyId={contact.id} 
+                  activities={getCompanyActivities(contact.id)}
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
           

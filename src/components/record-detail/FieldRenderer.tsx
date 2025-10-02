@@ -19,8 +19,8 @@ export function FieldRenderer({
   valueClassName = ""
 }: FieldRendererProps) {
   return (
-    <div className={`space-y-1 ${className}`}>
-      <Label className={`text-sm font-medium text-muted-foreground ${labelClassName}`}>
+    <div className={`${className}`}>
+      <Label variant="field" className={labelClassName}>
         {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
       </Label>
       <div className={`p-2 bg-muted/50 rounded-md min-h-[36px] flex items-center ${valueClassName}`}>

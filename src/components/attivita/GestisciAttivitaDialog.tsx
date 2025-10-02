@@ -177,7 +177,7 @@ export function GestisciAttivitaDialog({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
             <div>
-              <Label className="text-xs text-muted-foreground">CREATA IL</Label>
+              <Label variant="field">Creata il</Label>
               <div className="font-semibold text-blue-600">
                 {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
               </div>
@@ -190,7 +190,7 @@ export function GestisciAttivitaDialog({
             
             {activity.data_ultima_modifica && (
               <div>
-                <Label className="text-xs text-muted-foreground">ULTIMA MODIFICA</Label>
+                <Label variant="field">Ultima modifica</Label>
                 <div className="font-medium">
                   {format(new Date(activity.data_ultima_modifica), 'dd/MM/yyyy HH:mm')}
                 </div>

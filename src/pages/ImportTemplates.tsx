@@ -1753,7 +1753,8 @@ export default function ImportTemplates() {
   };
 
   // Se stiamo caricando il dialog o arrivando da Attività con showBlackScreen, mostra schermo nero
-  if (isLoadingDialog || (location.state?.showBlackScreen && !showRecordsDialog)) {
+  // Lo schermo nero rimane finché il dialog non è completamente caricato (isLoadingDialog === false)
+  if (location.state?.showBlackScreen && (isLoadingDialog || !showRecordsDialog)) {
     return <div className="fixed inset-0 bg-black"></div>;
   }
 

@@ -1752,13 +1752,19 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo aprendo il dialog dei record dalla navigazione, mostra solo sfondo nero
-  if (location.state?.openRecordsDialog && !showRecordsDialog) {
-    return <div className="fixed inset-0 bg-black"></div>;
-  }
+  // Rendering condizionale: se stiamo navigando dai record, mostra SOLO lo sfondo nero + dialog
+  const isNavigatingFromRecords = location.state?.openRecordsDialog;
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* Sfondo nero quando navighi dalla pagina Attività */}
+      {isNavigatingFromRecords && (
+        <div className="fixed inset-0 bg-black z-40" />
+      )}
+      
+      {/* Contenuto principale - nascosto se navighi da Attività */}
+      <div className={cn("space-y-6", isNavigatingFromRecords && "invisible")}>
+
       {/* Header with Dropdown Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
@@ -3387,6 +3393,7 @@ export default function ImportTemplates() {
           setSelectedContactIdForActivities(null);
         }}
       />
-    </div>
+      </div>
+    </>
   );
 }

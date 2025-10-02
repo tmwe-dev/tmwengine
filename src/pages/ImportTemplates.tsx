@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -231,7 +230,6 @@ interface FilterTag {
 }
 
 export default function ImportTemplates() {
-  const [searchParams] = useSearchParams();
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -321,28 +319,9 @@ export default function ImportTemplates() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const loadData = async () => {
-      await loadEmailTemplates();
-      await loadEmailAttachments();
-      await loadImportLogs();
-      
-      // Check URL params to automatically open import dialog
-      const openImportId = searchParams.get('openImport');
-      if (openImportId) {
-        // Find the import log after loading
-        const { data } = await supabase
-          .from('import_logs')
-          .select('*')
-          .eq('id', openImportId)
-          .single();
-        
-        if (data) {
-          viewImportRecords(data);
-        }
-      }
-    };
-    
-    loadData();
+    loadEmailTemplates();
+    loadEmailAttachments();
+    loadImportLogs();
   }, []);
 
   // Apply search and filters to records
@@ -1682,6 +1661,12 @@ export default function ImportTemplates() {
                   Importa Contatti
                 </div>
               </SelectItem>
+              <SelectItem value="manage">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Gestisci Import
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -2017,6 +2002,137 @@ export default function ImportTemplates() {
             </CardContent>
           </Card>
         )}
+
+        {activeSection === 'manage' && (
+          <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Gestisci Import
+              </CardTitle>
+              <CardDescription>
+                Visualizza e gestisci i file importati. Seleziona i contatti da trasferire nella rubrica principale.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isMobile ? (
+                /* Mobile View - Cards */
+                <div className="space-y-3">
+                  {importLogs.map((log) => (
+                    <ImportLogMobileCard
+                      key={log.id}
+                      log={log}
+                      onProcess={() => processFile(log.id)}
+                      onViewRecords={() => viewImportRecords(log)}
+                      onDelete={() => deleteImportFile(log)}
+                      getStatusBadge={getStatusBadge}
+                      isProcessing={importProgress.isProcessing}
+                      isLoading={loadingAllRecords && selectedImport?.id === log.id}
+                      isSelected={selectedImport?.id === log.id}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* Desktop View - Table */
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-background">
+                    <TableRow>
+                       <TableHead>Data</TableHead>
+                       <TableHead>File</TableHead>
+                       <TableHead>Stato</TableHead>
+                       <TableHead>Record</TableHead>
+                       <TableHead>Errori</TableHead>
+                       <TableHead>Selezionati</TableHead>
+                       <TableHead>Azioni</TableHead>
+                       <TableHead className="w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          {new Date(log.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{log.file_name}</TableCell>
+                        <TableCell>{getStatusBadge(log.stato)}</TableCell>
+                         <TableCell>
+                           <div className="flex items-center gap-1">
+                             <span className="font-medium text-primary">{log.righe_totali}</span>
+                             <span className="text-sm text-muted-foreground">record</span>
+                           </div>
+                         </TableCell>
+                        <TableCell className="text-red-600">{log.righe_errori}</TableCell>
+                        <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
+                        <TableCell>
+                           <div className="flex gap-1">
+                              {/* Pulsante per processare file salvati */}
+                              {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
+                                <Button 
+                                  variant="default" 
+                                  size="sm"
+                                  onClick={() => processFile(log.id)}
+                                  disabled={importProgress.isProcessing}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Upload className="h-4 w-4 mr-1" />
+                                  Elabora
+                                </Button>
+                              )}
+                              
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => viewImportRecords(log)}
+                                disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
+                              >
+                                <Users className="h-4 w-4" />
+                                {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
+                              </Button>
+                               
+                               {log.trasferiti_rubrica && (
+                                 <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
+                                   Trasferiti
+                                 </Badge>
+                               )}
+                            </div>
+                         </TableCell>
+                         <TableCell>
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => deleteImportFile(log)}
+                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </TableCell>
+                       </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              
+              {importLogs.length === 0 && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nessun file importato
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Monitor progresso importazione */}
+          {monitoringImportId && (
+            <ImportProgressMonitor
+              importLogId={monitoringImportId}
+              onComplete={() => {
+                loadImportLogs(); // Ricarica la lista
+                setMonitoringImportId(null); // Nascondi il monitor
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Dialog per visualizzare i record importati */}
       <Dialog open={showRecordsDialog} onOpenChange={(open) => {

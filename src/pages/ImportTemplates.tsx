@@ -257,6 +257,7 @@ export default function ImportTemplates() {
   const [countryFilter, setCountryFilter] = useState('');
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
+  const [showFiltersArea, setShowFiltersArea] = useState(true);
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
   
@@ -2378,130 +2379,153 @@ export default function ImportTemplates() {
             ) : (
               /* Desktop Header - Original */
               <div className="flex flex-col gap-4">
-                <div className="flex-1">
-                  <DialogTitle>
-                    Record Importati - {selectedImport?.file_name}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Visualizza e gestisci i contatti importati da questo file.
-                  </DialogDescription>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <DialogTitle>
+                      Record Importati - {selectedImport?.file_name}
+                    </DialogTitle>
+                    <DialogDescription>
+                      Visualizza e gestisci i contatti importati da questo file.
+                    </DialogDescription>
+                  </div>
+                  
+                  {/* Toggle per nascondere/mostrare area filtri */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setShowFiltersArea(!showFiltersArea)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{showFiltersArea ? 'Nascondi filtri' : 'Mostra filtri'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 
                 {/* Desktop Search and Filter Controls */}
-                <div className="flex flex-col gap-3">
-                  {/* Prima riga - Dropdowns centrati con azioni a destra */}
-                  <div className="flex items-end justify-center relative">
-                    {/* Dropdowns centrati */}
-                    <div className="flex gap-2 items-end">
-                      <div className="w-48">
-                        <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
-                        <Select value={originFilter} onValueChange={setOriginFilter}>
-                          <SelectTrigger id="origin-filter">
-                            <SelectValue placeholder="Tutte le origini" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Tutte le origini</SelectItem>
-                            {getUniqueValues('origin').map((origin) => (
-                              <SelectItem key={origin} value={String(origin)}>
-                                {String(origin)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                {showFiltersArea && (
+                  <div className="flex flex-col gap-3">
+                    {/* Prima riga - Dropdowns centrati con azioni a destra */}
+                    <div className="flex items-end justify-center relative">
+                      {/* Dropdowns centrati */}
+                      <div className="flex gap-2 items-end">
+                        <div className="w-48">
+                          <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                          <Select value={originFilter} onValueChange={setOriginFilter}>
+                            <SelectTrigger id="origin-filter">
+                              <SelectValue placeholder="Tutte le origini" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">Tutte le origini</SelectItem>
+                              {getUniqueValues('origin').map((origin) => (
+                                <SelectItem key={origin} value={String(origin)}>
+                                  {String(origin)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="w-48">
+                          <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                          <Select value={countryFilter} onValueChange={setCountryFilter}>
+                            <SelectTrigger id="country-filter">
+                              <SelectValue placeholder="Tutti i paesi" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50">
+                              <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                              {getUniqueValues('country').map((country) => (
+                                <SelectItem key={country} value={String(country)}>
+                                  {getCountryFullName(String(country))}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="w-32">
+                          <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
+                          <Select value={String(recordsPerPage)} onValueChange={(value) => {
+                            setRecordsPerPage(Number(value));
+                          }}>
+                            <SelectTrigger id="records-per-page">
+                              <SelectValue placeholder={`${recordsPerPage}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="25">25</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                              <SelectItem value="250">250</SelectItem>
+                              <SelectItem value="500">500</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       
-                      <div className="w-48">
-                        <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
-                        <Select value={countryFilter} onValueChange={setCountryFilter}>
-                          <SelectTrigger id="country-filter">
-                            <SelectValue placeholder="Tutti i paesi" />
-                          </SelectTrigger>
-                          <SelectContent className="z-50">
-                            <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                            {getUniqueValues('country').map((country) => (
-                              <SelectItem key={country} value={String(country)}>
-                                {getCountryFullName(String(country))}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="w-32">
-                        <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
-                        <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                          setRecordsPerPage(Number(value));
-                        }}>
-                          <SelectTrigger id="records-per-page">
-                            <SelectValue placeholder={`${recordsPerPage}`} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="25">25</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                            <SelectItem value="250">250</SelectItem>
-                            <SelectItem value="500">500</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      {/* Azioni a destra - compatte */}
+                      <div className="absolute right-0 flex items-center gap-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.details ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Briefcase className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Dettagli Commerciali</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant={visibleColumns.metadata ? "default" : "outline"}
+                                onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Metadata & Sistema</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                     
-                    {/* Azioni a destra - compatte */}
-                    <div className="absolute right-0 flex items-center gap-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant={visibleColumns.details ? "default" : "outline"}
-                              onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Briefcase className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Dettagli Commerciali</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant={visibleColumns.metadata ? "default" : "outline"}
-                              onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Metadata & Sistema</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
-                  
-                  {/* Seconda riga - Campo di ricerca centrato */}
-                  <div className="flex justify-center">
-                    <div className="w-96">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="search"
-                          placeholder="Cerca per nome azienda, alias, nome, città..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
-                        />
+                    {/* Seconda riga - Campo di ricerca centrato */}
+                    <div className="flex justify-center">
+                      <div className="w-96">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="search"
+                            placeholder="Cerca per nome azienda, alias, nome, città..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </DialogHeader>

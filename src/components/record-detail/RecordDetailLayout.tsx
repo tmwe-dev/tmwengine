@@ -398,7 +398,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       <div className="sticky top-0 z-10 bg-background py-4 border-b">
         {/* Info località */}
         <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-          <span className="text-base">
+          <span className="text-2xl">
             {(() => {
               const countryCode = getCountryCode(record.country || record.paese || '');
               if (countryCode === 'UN') return '🌐';

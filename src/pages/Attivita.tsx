@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +101,7 @@ export default function Attivita() {
   const scrollPositionRef = useRef<number>(0);
   const [filterByContactId, setFilterByContactId] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -831,11 +832,16 @@ export default function Attivita() {
               {/* Badge filtro contatto attivo */}
               {filterByContactId && (
                 <div className="mt-3 flex items-center justify-center">
-                  <Badge variant="secondary" className="flex items-center gap-2">
+                  <Badge 
+                    variant="secondary" 
+                    className="flex items-center gap-2 cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() => navigate('/import-templates')}
+                  >
                     <User className="h-3 w-3" />
-                    Filtrato per contatto
+                    <span className="hover:underline">Filtrato per contatto - Torna a Record Importati</span>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setFilterByContactId(null);
                         setStatusFilter('future');
                         toast({

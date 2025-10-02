@@ -17,6 +17,7 @@ import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { CompactContactCard } from '@/components/import/CompactContactCard';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
+import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -319,6 +320,8 @@ export default function ImportTemplates() {
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
+  const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
+  const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -2943,7 +2946,8 @@ export default function ImportTemplates() {
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  navigate('/attivita', { state: { filterByContact: record.id } });
+                                                  setSelectedContactIdForActivities(record.id);
+                                                  setIsAttivitaDialogOpen(true);
                                                 }}
                                                 className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                               >
@@ -3043,7 +3047,8 @@ export default function ImportTemplates() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate('/attivita', { state: { filterByContact: record.id } });
+                                                setSelectedContactIdForActivities(record.id);
+                                                setIsAttivitaDialogOpen(true);
                                               }}
                                               className="flex items-center justify-center gap-1 px-2 py-1 rounded hover:bg-primary/10 text-primary transition-colors"
                                             >
@@ -3354,6 +3359,13 @@ export default function ImportTemplates() {
           mimeType={viewingDocument.mime_type}
         />
       )}
+
+      {/* Dialog Attività */}
+      <AttivitaDialog 
+        open={isAttivitaDialogOpen}
+        onOpenChange={setIsAttivitaDialogOpen}
+        filterByContactId={selectedContactIdForActivities}
+      />
     </div>
   );
 }

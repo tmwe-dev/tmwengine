@@ -2553,18 +2553,20 @@ export default function ImportTemplates() {
                       
                       {/* Azioni a destra - larghezza fissa */}
                       <div className="flex items-center gap-2 w-48 justify-end">
+                        {hasNotesFilter && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setHasNotesFilter(false)}
+                            className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
+                          >
+                            <X className="h-3 w-3" />
+                            Solo note {filteredRecords.length}
+                          </Button>
+                        )}
+                        
                         {selectedRecords.size > 0 && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setHasNotesFilter(false)}
-                              className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
-                            >
-                              <X className="h-3 w-3" />
-                              Solo note {selectedRecords.size}
-                            </Button>
-                            
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>

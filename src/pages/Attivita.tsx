@@ -105,50 +105,80 @@ export default function Attivita() {
   const loadActivities = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Carica le attività
+      const { data: attivitaData, error: attivitaError } = await supabase
         .from('attivita')
-        .select(`
-          *,
-          rubrica (
-            id,
-            nome,
-            azienda,
-            origine,
-            paese,
-            citta,
-            telefono,
-            cellulare
-          )
-        `)
+        .select('*')
         .order('data_creazione', { ascending: false });
 
-      if (error) throw error;
+      if (attivitaError) throw attivitaError;
 
-      const formattedActivities: Activity[] = (data || []).map(activity => ({
-        id: activity.id,
-        rubrica_id: activity.rubrica_id,
-        rubrica_nome: activity.rubrica?.nome,
-        rubrica_azienda: activity.rubrica?.azienda,
-        rubrica_origine: activity.rubrica?.origine,
-        rubrica_paese: activity.rubrica?.paese,
-        rubrica_citta: activity.rubrica?.citta,
-        telefono: activity.rubrica?.telefono,
-        cellulare: activity.rubrica?.cellulare,
-        tipo: activity.tipo as Activity['tipo'],
-        descrizione: activity.descrizione,
-        stato: activity.stato as Activity['stato'],
-        scadenza: activity.scadenza,
-        priorita: activity.priorita as Activity['priorita'],
-        assegnato_a: activity.assegnato_a,
-        assegnato_nome: null,
-        creato_da: activity.creato_da,
-        data_creazione: activity.data_creazione,
-        note: activity.note,
-        ora_creazione: activity.ora_creazione,
-        data_ultima_modifica: activity.data_ultima_modifica,
-        modifiche_log: Array.isArray(activity.modifiche_log) ? activity.modifiche_log : [],
-        selezionata: activity.selezionata || false
-      }));
+      // Recupera tutti i contatti (sia da rubrica che imported_contacts)
+      const rubricaIds = [...new Set(attivitaData?.map(a => a.rubrica_id).filter(Boolean))];
+      
+      let contactsMap = new Map();
+      
+      if (rubricaIds.length > 0) {
+        // Carica da rubrica
+        const { data: rubricaData } = await supabase
+          .from('rubrica')
+          .select('id, nome, azienda, origine, paese, citta, telefono, cellulare')
+          .in('id', rubricaIds);
+        
+        rubricaData?.forEach(contact => {
+          contactsMap.set(contact.id, contact);
+        });
+        
+        // Carica da imported_contacts
+        const { data: importedData } = await supabase
+          .from('imported_contacts')
+          .select('id, name, company_name, origin, country, city, phone, cell')
+          .in('id', rubricaIds);
+        
+        importedData?.forEach(contact => {
+          contactsMap.set(contact.id, {
+            id: contact.id,
+            nome: contact.name,
+            azienda: contact.company_name,
+            origine: contact.origin,
+            paese: contact.country,
+            citta: contact.city,
+            telefono: contact.phone,
+            cellulare: contact.cell
+          });
+        });
+      }
+
+      const formattedActivities: Activity[] = (attivitaData || []).map(activity => {
+        const contact = activity.rubrica_id ? contactsMap.get(activity.rubrica_id) : null;
+        
+        return {
+          id: activity.id,
+          rubrica_id: activity.rubrica_id,
+          rubrica_nome: contact?.nome,
+          rubrica_azienda: contact?.azienda,
+          rubrica_origine: contact?.origine,
+          rubrica_paese: contact?.paese,
+          rubrica_citta: contact?.citta,
+          telefono: contact?.telefono,
+          cellulare: contact?.cellulare,
+          tipo: activity.tipo as Activity['tipo'],
+          descrizione: activity.descrizione,
+          stato: activity.stato as Activity['stato'],
+          scadenza: activity.scadenza,
+          priorita: activity.priorita as Activity['priorita'],
+          assegnato_a: activity.assegnato_a,
+          assegnato_nome: null,
+          creato_da: activity.creato_da,
+          data_creazione: activity.data_creazione,
+          note: activity.note,
+          ora_creazione: activity.ora_creazione,
+          data_ultima_modifica: activity.data_ultima_modifica,
+          modifiche_log: Array.isArray(activity.modifiche_log) ? activity.modifiche_log : [],
+          selezionata: activity.selezionata || false
+        };
+      });
 
       setActivities(formattedActivities);
     } catch (error: any) {

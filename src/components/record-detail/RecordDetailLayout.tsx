@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -25,6 +25,7 @@ interface RecordDetailLayoutProps {
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const { getCompanyActivities, getActivityCount } = useCompanyActivities();
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
@@ -914,7 +915,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+              onClick={() => navigate('/attivita', { state: { filterByContact: record.id, returnPath: location.pathname } })}
               className="ml-auto text-xs"
             >
               Vai ad Attività
@@ -927,7 +928,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 <div 
                   key={activity.id} 
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer"
-                  onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                  onClick={() => navigate('/attivita', { state: { filterByContact: record.id, returnPath: location.pathname } })}
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Badge variant={

@@ -119,6 +119,17 @@ export default function Attivita() {
     }
   }, [location.state]);
 
+  // Funzione per tornare indietro
+  const handleBackNavigation = () => {
+    if (location.state?.returnPath) {
+      navigate(-1);
+    } else {
+      setFilterByContactId(null);
+      setStatusFilter('future');
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  };
+
   const loadActivities = async () => {
     try {
       setIsLoading(true);
@@ -835,7 +846,7 @@ export default function Attivita() {
                   <Badge 
                     variant="secondary" 
                     className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
-                    onClick={() => navigate('/import-templates', { state: { openRecordsDialog: true, contactId: filterByContactId } })}
+                    onClick={handleBackNavigation}
                   >
                     <User className="h-4 w-4" />
                     <span className="hover:underline font-medium">Filtrato per contatto - Torna a Record Importati</span>

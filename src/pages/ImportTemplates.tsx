@@ -2739,7 +2739,7 @@ export default function ImportTemplates() {
                   </div>
                ) : (
                  /* Desktop View - Table */
-                 <div className="overflow-auto flex-1 border rounded-md">
+                 <div className="overflow-x-scroll overflow-y-auto flex-1 border rounded-md">
                     <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>

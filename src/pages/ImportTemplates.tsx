@@ -2438,9 +2438,20 @@ export default function ImportTemplates() {
               <div className="flex items-center gap-2">
                 {/* Indicatore record selezionati */}
                 {selectedRecords.size > 0 && (
-                  <Badge variant="default" className="text-sm px-3 py-1">
-                    {selectedRecords.size} record selezionati
-                  </Badge>
+                  <>
+                    <Badge variant="default" className="text-sm px-3 py-1">
+                      {selectedRecords.size} record selezionati
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedRecords(new Set())}
+                      className="text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Deseleziona tutti
+                    </Button>
+                  </>
                 )}
                 
                 {/* Desktop Action Buttons as Icons */}

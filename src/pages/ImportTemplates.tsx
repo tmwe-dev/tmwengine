@@ -2397,7 +2397,7 @@ export default function ImportTemplates() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setShowFiltersArea(!showFiltersArea)}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 -mr-5"
                         >
                           {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>

@@ -24,11 +24,15 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
 
   const uploadToStorage = async (file: File) => {
     setIsUploading(true);
+    console.log('🔄 Starting upload process for:', file.name);
+    
     try {
       const timestamp = Date.now();
       const filePath = `imports/${timestamp}_${file.name}`;
       
       console.log('📤 Uploading file to Storage:', filePath);
+      console.log('📦 File size:', file.size, 'bytes');
+      console.log('📝 File type:', file.type);
       
       const { data, error } = await supabase.storage
         .from('import-files')
@@ -38,7 +42,8 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
         });
 
       if (error) {
-        console.error('Storage upload error:', error);
+        console.error('❌ Storage upload error:', error);
+        toast.error(`Errore upload: ${error.message}`);
         throw error;
       }
 
@@ -49,9 +54,9 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
       // Ora leggi il file da Storage per mostrare l'anteprima
       await parseFileFromStorage(data.path, file.name);
       
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error('Errore durante il caricamento del file');
+    } catch (error: any) {
+      console.error('❌ Error uploading file:', error);
+      toast.error(`Errore durante il caricamento: ${error.message || 'Errore sconosciuto'}`);
     } finally {
       setIsUploading(false);
     }

@@ -2508,32 +2508,30 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Pulisci filtri, Campo cerca e azioni */}
-                    <div className="flex justify-between items-center gap-4">
+                    {/* Seconda riga - Campo di ricerca centrato */}
+                    <div className="flex justify-center items-center relative">
                       {/* Pulsante Pulisci filtri e contatore a sinistra */}
-                      <div className="flex items-center gap-3">
-                        {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSearchQuery('');
-                                setOriginFilter('');
-                                setCountryFilter('');
-                                setHasNotesFilter(false);
-                              }}
-                              className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                            >
-                              <X className="h-3 w-3 mr-1" />
-                              Pulisci filtri
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                              {filteredRecords.length} trovati
-                            </span>
-                          </>
-                        )}
-                      </div>
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                        <div className="absolute left-0 flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setOriginFilter('');
+                              setCountryFilter('');
+                              setHasNotesFilter(false);
+                            }}
+                            className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Pulisci filtri
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            {filteredRecords.length} trovati
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Campo di ricerca centrato */}
                       <div className="w-96">
@@ -2548,9 +2546,6 @@ export default function ImportTemplates() {
                           />
                         </div>
                       </div>
-                      
-                      {/* Spazio per le azioni a destra */}
-                      <div className="flex-1"></div>
                     </div>
                   </div>
                 )}
@@ -2584,11 +2579,10 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex items-center justify-end gap-2 py-4 border-b relative pr-4">
-              {/* Record selezionati e azioni - a destra del campo cerca sulla stessa riga */}
+            <div className="flex items-center justify-center py-4 border-b">
+              {/* Record selezionati e azioni - centrati (senza cestino) */}
               {selectedRecords.size > 0 && (
-                <>
-                  {/* Badge, X, FileText e Database - a destra */}
+                <div className="flex items-center gap-2">
                   <Badge variant="default" className="text-sm px-4 py-2">
                     {selectedRecords.size}
                   </Badge>
@@ -2636,26 +2630,7 @@ export default function ImportTemplates() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
-                  {/* Solo Cestino */}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={deleteSelectedRecords}
-                          className="h-14 w-14 p-0"
-                        >
-                          <Trash2 className="h-6 w-6 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Elimina {selectedRecords.size} record</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </>
+                </div>
               )}
               
             </div>
@@ -2705,16 +2680,39 @@ export default function ImportTemplates() {
              <div className="flex flex-col min-h-0 flex-1">
                 {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
                 {!isMobile && (
-                  <div className="flex items-center space-x-2 pl-4 pb-1 pt-1">
-                    <Checkbox
-                      id="has-notes-filter-desktop"
-                      checked={hasNotesFilter}
-                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                    />
-                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
-                      <StickyNote className="h-4 w-4 text-blue-500" />
-                      Solo con note
-                    </Label>
+                  <div className="flex items-center justify-between pl-4 pr-4 pb-1 pt-1">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has-notes-filter-desktop"
+                        checked={hasNotesFilter}
+                        onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                      />
+                      <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                        <StickyNote className="h-4 w-4 text-blue-500" />
+                        Solo con note
+                      </Label>
+                    </div>
+                    
+                    {/* Cestino allineato a destra */}
+                    {selectedRecords.size > 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={deleteSelectedRecords}
+                              className="h-14 w-14 p-0"
+                            >
+                              <Trash2 className="h-6 w-6 text-red-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Elimina {selectedRecords.size} record</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 )}
                 

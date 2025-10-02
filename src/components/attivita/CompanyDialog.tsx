@@ -73,14 +73,47 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
     try {
       setIsLoading(true);
       
-      // Carica info azienda
-      const { data: companyData, error: companyError } = await supabase
+      // Prova prima in rubrica
+      const { data: rubricaData, error: rubricaError } = await supabase
         .from('rubrica')
         .select('*')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
-      if (companyError) throw companyError;
+      let companyData: CompanyInfo | null = null;
+
+      if (rubricaData) {
+        companyData = rubricaData as CompanyInfo;
+      } else {
+        // Se non trovato in rubrica, cerca in imported_contacts
+        const { data: importedData, error: importedError } = await supabase
+          .from('imported_contacts')
+          .select('*')
+          .eq('id', companyId)
+          .maybeSingle();
+
+        if (importedData) {
+          // Mappa i campi da imported_contacts a formato rubrica
+          companyData = {
+            id: importedData.id,
+            nome: importedData.name || '',
+            azienda: importedData.company_name || '',
+            email: importedData.email,
+            telefono: importedData.phone,
+            cellulare: importedData.cell,
+            indirizzo: importedData.address,
+            citta: importedData.city,
+            paese: importedData.country,
+            origine: importedData.origin
+          };
+        }
+      }
+
+      if (!companyData) {
+        console.error('Contatto non trovato');
+        return;
+      }
+
       setCompanyInfo(companyData);
 
       // Carica attività dell'azienda

@@ -319,6 +319,20 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId }: Attivi
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Badge filtro contatto attivo */}
+            {filterByContactId && (
+              <div className="mt-4 flex items-center justify-center">
+                <Badge 
+                  variant="secondary" 
+                  className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
+                  onClick={() => onOpenChange(false)}
+                >
+                  <X className="h-4 w-4" />
+                  Filtrato per contatto - Clicca per tornare indietro
+                </Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
 

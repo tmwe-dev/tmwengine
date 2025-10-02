@@ -1177,6 +1177,20 @@ export default function ImportTemplates() {
         !recordsToDelete.includes(record.id)
       );
       setAllRecords(newAllRecords);
+      setViewingRecords(newAllRecords);
+      
+      // Update total count in real-time
+      setTotalRecords(newAllRecords.length);
+      
+      // Update import_logs with new count
+      if (selectedImport) {
+        await supabase
+          .from('import_logs')
+          .update({
+            righe_importate: newAllRecords.length
+          })
+          .eq('id', selectedImport.id);
+      }
       
       // Clear selected records
       setSelectedRecords(new Set());

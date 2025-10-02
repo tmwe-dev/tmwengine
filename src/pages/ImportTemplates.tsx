@@ -1752,12 +1752,12 @@ export default function ImportTemplates() {
     }
   };
 
-  // BLOCCO TOTALE: quando navighi da Attività, mostra SOLO sfondo nero
-  if (location.state?.openRecordsDialog) {
-    return <div className="fixed inset-0 bg-black" />;
-  }
-
-  return (
+  // Rendering principale
+  const mainContent = location.state?.openRecordsDialog ? (
+    // Se navighi da Attività: SOLO sfondo nero
+    <div className="fixed inset-0 bg-black z-40" />
+  ) : (
+    // Altrimenti: pagina normale ImportTemplates
     <div className="space-y-6">
 
       {/* Header with Dropdown Navigation */}
@@ -2265,21 +2265,21 @@ export default function ImportTemplates() {
 
       {/* Dialog per visualizzare i record importati */}
       <Dialog open={showRecordsDialog} onOpenChange={(open) => {
-        if (!open) {
-          setShowRecordsDialog(false);
-          setSelectedImport(null);
-          setAllRecords([]);
-          setViewingRecords([]);
-          setFilteredRecords([]);
-          setCurrentPage(0);
-          setSelectedRecords(new Set());
-          setActiveFilters([]);
-          setSearchQuery('');
-          setOriginFilter('');
-          setCountryFilter('');
-          setHasNotesFilter(false);
-        }
-      }}>
+          if (!open) {
+            setShowRecordsDialog(false);
+            setSelectedImport(null);
+            setAllRecords([]);
+            setViewingRecords([]);
+            setFilteredRecords([]);
+            setCurrentPage(0);
+            setSelectedRecords(new Set());
+            setActiveFilters([]);
+            setSearchQuery('');
+            setOriginFilter('');
+            setCountryFilter('');
+            setHasNotesFilter(false);
+          }
+        }}>
         <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] flex flex-col mx-auto my-auto overflow-hidden animate-in zoom-in-95 duration-300">
           <DialogHeader>
             {isMobile ? (
@@ -3276,8 +3276,8 @@ export default function ImportTemplates() {
                    <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>
                  </div>
                )}
-             </DialogContent>
-           </Dialog>
+           </DialogContent>
+         </Dialog>
 
       {/* Dialog per dettaglio record singolo */}
       <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
@@ -3389,5 +3389,12 @@ export default function ImportTemplates() {
         }}
       />
     </div>
+  );
+
+  // Ritorna il contenuto + SEMPRE i Dialog (così si renderizzano anche con sfondo nero)
+  return (
+    <>
+      {mainContent}
+    </>
   );
 }

@@ -320,7 +320,6 @@ export default function ImportTemplates() {
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
-  const [shouldShowBlackScreen, setShouldShowBlackScreen] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -331,49 +330,30 @@ export default function ImportTemplates() {
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      await loadEmailTemplates();
-      await loadEmailAttachments();
-      await loadImportLogs();
-      
-      // DOPO che importLogs è caricato, controlla se devo aprire il dialog
-      if (location.state?.openRecordsDialog) {
-        handleAutoOpenDialog();
-      }
-    };
-    
-    loadData();
+    loadEmailTemplates();
+    loadEmailAttachments();
+    loadImportLogs();
   }, []);
   
-  // Funzione per aprire automaticamente il dialog
-  const handleAutoOpenDialog = async () => {
-    const { data: logs } = await supabase
-      .from('import_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1);
-    
-    if (logs && logs.length > 0) {
-      const recentImport = logs[0];
-      
-      // Se arriva con showBlackScreen, attiva lo schermo nero interno
-      if (location.state?.showBlackScreen) {
-        setShouldShowBlackScreen(true);
-      }
-      
+  // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
+  useEffect(() => {
+    if (location.state?.openRecordsDialog) {
       setIsLoadingDialog(true);
-      setSelectedImport(recentImport);
-      setShowRecordsDialog(true);
-      
-      await loadAllRecords(recentImport);
-      
-      setIsLoadingDialog(false);
-      setShouldShowBlackScreen(false);
-      
-      // Pulisci lo stato per evitare di riaprire il dialog
-      navigate(location.pathname, { replace: true, state: {} });
+      // Aspetta che i dati siano caricati
+      if (importLogs.length > 0) {
+        const recentImport = importLogs[0];
+        if (recentImport) {
+          setSelectedImport(recentImport);
+          setShowRecordsDialog(true);
+          loadAllRecords(recentImport).then(() => {
+            setIsLoadingDialog(false);
+          });
+          // Pulisci lo stato per evitare di riaprire il dialog
+          navigate(location.pathname, { replace: true, state: {} });
+        }
+      }
     }
-  };
+  }, [location.state, importLogs]);
 
   // Apply search and filters to records
   useEffect(() => {
@@ -1772,9 +1752,9 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se shouldShowBlackScreen è attivo, mostra schermo nero finché il dialog non è completamente caricato
-  if (shouldShowBlackScreen) {
-    return <div className="fixed inset-0 bg-black"></div>;
+  // Se stiamo caricando il dialog, mostra solo uno schermo vuoto
+  if (isLoadingDialog || (location.state?.openRecordsDialog && !showRecordsDialog)) {
+    return <div className="flex items-center justify-center h-screen"></div>;
   }
 
   return (

@@ -186,6 +186,7 @@ import { RecordDetailLayout } from '@/components/record-detail/RecordDetailLayou
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { DocumentViewer } from '@/components/email/DocumentViewer';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
+import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
 
 interface EmailTemplate {
   id: string;
@@ -323,6 +324,10 @@ export default function ImportTemplates() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Stati per il dialog delle attività
+  const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
+  const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
 
   useEffect(() => {
     loadEmailTemplates();
@@ -2993,11 +2998,20 @@ export default function ImportTemplates() {
                                       ) : key === 'company_name' ? (
                                         <div className="flex items-center gap-2">
                                           <span>{formatCellValue(record[key], key)}</span>
-                                          <ActivityIndicators 
-                                            companyId={record.id} 
-                                            activities={getCompanyActivities(record.id)}
-                                            size="sm"
-                                          />
+                                          <div 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedContactIdForActivities(record.id);
+                                              setIsAttivitaDialogOpen(true);
+                                            }}
+                                            className="cursor-pointer"
+                                          >
+                                            <ActivityIndicators 
+                                              companyId={record.id} 
+                                              activities={getCompanyActivities(record.id)}
+                                              size="sm"
+                                            />
+                                          </div>
                                         </div>
                                       ) : key === 'email' && record[key] ? (
                                         <TooltipProvider>
@@ -3354,6 +3368,23 @@ export default function ImportTemplates() {
           mimeType={viewingDocument.mime_type}
         />
       )}
+      
+      {/* Dialog per gestione attività con pulsante indietro */}
+      <AttivitaDialog
+        open={isAttivitaDialogOpen}
+        onOpenChange={(open) => {
+          setIsAttivitaDialogOpen(open);
+          if (!open) {
+            setSelectedContactIdForActivities(null);
+          }
+        }}
+        filterByContactId={selectedContactIdForActivities}
+        showBackButton={true}
+        onBackToRecords={() => {
+          setIsAttivitaDialogOpen(false);
+          setSelectedContactIdForActivities(null);
+        }}
+      />
     </div>
   );
 }

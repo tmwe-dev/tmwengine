@@ -2511,9 +2511,9 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Pulisci filtri e Campo di ricerca */}
-                    <div className="flex justify-center items-center gap-2">
-                      {/* Pulsante Pulisci filtri a sinistra */}
+                    {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
+                    <div className="flex justify-center items-center relative">
+                      {/* Pulsante Pulisci filtri a sinistra assoluto */}
                       {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                         <Button
                           variant="ghost"
@@ -2524,14 +2524,14 @@ export default function ImportTemplates() {
                             setCountryFilter('');
                             setHasNotesFilter(false);
                           }}
-                          className="h-10 px-2 text-xs"
+                          className="absolute left-0 h-10 px-2 text-xs"
                         >
                           <X className="h-3 w-3 mr-1" />
                           Pulisci filtri
                         </Button>
                       )}
                       
-                      {/* Campo di ricerca */}
+                      {/* Campo di ricerca centrato */}
                       <div className="w-96">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

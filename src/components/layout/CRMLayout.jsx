@@ -42,6 +42,11 @@ const CRMLayout = ({ children }) => {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+  
+  // Se stiamo navigando con openRecordsDialog, nascondi tutto e mostra schermo nero
+  if (location.state?.openRecordsDialog && location.pathname === '/import-templates') {
+    return <div className="fixed inset-0 bg-black z-50"></div>;
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

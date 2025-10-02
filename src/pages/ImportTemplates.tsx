@@ -2579,7 +2579,7 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex items-center justify-center py-4 border-b relative">
+            <div className="flex items-center justify-center border-b relative">
               {/* Filtro "Solo con note" - a sinistra */}
               <div className="absolute left-4">
                 <div className="flex items-center space-x-2">
@@ -2597,7 +2597,7 @@ export default function ImportTemplates() {
 
               {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
-                <>
+                <div className="py-4 flex items-center justify-center w-full">
                   {/* Badge, X, FileText e Database al centro */}
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="text-sm px-4 py-2">
@@ -2669,7 +2669,7 @@ export default function ImportTemplates() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                </>
+                </div>
               )}
               
             </div>

@@ -3001,8 +3001,10 @@ export default function ImportTemplates() {
                                           <div 
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              console.log('Clicked on activity indicator for record:', record.id);
                                               setSelectedContactIdForActivities(record.id);
                                               setIsAttivitaDialogOpen(true);
+                                              console.log('Opening dialog with showBackButton=true');
                                             }}
                                             className="cursor-pointer"
                                           >

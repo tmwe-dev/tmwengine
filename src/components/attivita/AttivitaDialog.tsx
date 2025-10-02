@@ -79,6 +79,7 @@ const PRIORITA_LABELS = {
 };
 
 export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBackButton, onBackToRecords }: AttivitaDialogProps) {
+  console.log('AttivitaDialog props:', { open, filterByContactId, showBackButton, hasOnBackToRecords: !!onBackToRecords });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);

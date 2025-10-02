@@ -118,7 +118,7 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
 
       setCompanyInfo(companyData);
 
-      // Carica attività dell'azienda
+      // Carica attività dell'azienda - ordine decrescente (più recente prima)
       const { data: activitiesData, error: activitiesError } = await supabase
         .from('attivita')
         .select('*')
@@ -305,11 +305,11 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                               </div>
                               
                               <div className="flex-shrink-0 text-right">
-                                <div className="text-sm font-semibold text-blue-600">
+                                <div className="text-lg font-bold text-blue-600">
                                   {format(new Date(activity.data_creazione), 'dd MMM')}
                                 </div>
                                 {activity.ora_creazione && (
-                                  <div className="text-xs text-blue-500">
+                                  <div className="text-base font-semibold text-blue-500">
                                     {activity.ora_creazione.substring(0, 5)}
                                   </div>
                                 )}

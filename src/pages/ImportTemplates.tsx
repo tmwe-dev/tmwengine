@@ -573,6 +573,14 @@ export default function ImportTemplates() {
       toast.success(successMessage);
       setShowMultipleActivityDialog(false);
       setSelectedRecords(new Set());
+      
+      // Refresh dei record importati per aggiornare gli indicatori di attività
+      if (selectedImport) {
+        await loadAllRecords(selectedImport);
+      }
+      
+      // Refresh delle attività
+      refreshActivities();
     } catch (error) {
       console.error('Error creating multiple activities:', error);
       toast.error('Errore durante la creazione delle attività');

@@ -4,12 +4,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus, Edit } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus, Edit, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface MobileRecordDetailLayoutProps {
@@ -18,13 +20,20 @@ interface MobileRecordDetailLayoutProps {
 }
 
 export function MobileRecordDetailLayout({ record, formatCellValue }: MobileRecordDetailLayoutProps) {
+  const navigate = useNavigate();
+  const { getCompanyActivities, getActivityCount } = useCompanyActivities();
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
   const [showMetaDetails, setShowMetaDetails] = useState(false);
+  const [showActivities, setShowActivities] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+
+  // Recupera le attività del contatto
+  const activities = getCompanyActivities(record.id);
+  const activityCount = getActivityCount(record.id);
 
   // Function to get country flag emoji
   const getCountryFlag = (countryName: string): string => {
@@ -651,6 +660,62 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
                     </span>
                   </div>
                 ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sezione Attività */}
+      {activityCount > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4" />
+                Attività ({activityCount})
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                className="text-xs h-7"
+              >
+                Vai ad Attività
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {activities.slice(0, 3).map((activity: any) => (
+                <div 
+                  key={activity.id} 
+                  className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+                  onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <Badge variant={
+                      activity.stato === 'aperta' ? 'default' : 
+                      activity.stato === 'in_corso' ? 'secondary' : 
+                      'outline'
+                    } className="text-xs">
+                      {activity.tipo}
+                    </Badge>
+                    <span className="text-xs text-foreground truncate">
+                      {activity.descrizione}
+                    </span>
+                  </div>
+                  {activity.scadenza && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {new Date(activity.scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {activityCount > 3 && (
+                <div className="text-xs text-center text-muted-foreground pt-1">
+                  + altre {activityCount - 3} attività
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

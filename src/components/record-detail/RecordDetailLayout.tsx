@@ -3,14 +3,17 @@ import { FieldRenderer } from './FieldRenderer';
 import { MobileRecordDetailLayout } from './MobileRecordDetailLayout';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus } from 'lucide-react';
+import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -19,12 +22,19 @@ interface RecordDetailLayoutProps {
 
 export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayoutProps) {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { getCompanyActivities, getActivityCount } = useCompanyActivities();
   const [showLocationDetails, setShowLocationDetails] = useState(false);
   const [showSystemDetails, setShowSystemDetails] = useState(false);
+  const [showActivities, setShowActivities] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+
+  // Recupera le attività del contatto
+  const activities = getCompanyActivities(record.id);
+  const activityCount = getActivityCount(record.id);
 
   // Use mobile layout for mobile devices
   if (isMobile) {
@@ -727,6 +737,64 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </div>
         </div>
       </div>
+
+      {/* Sezione Attività */}
+      {activityCount > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <button 
+              onClick={() => setShowActivities(!showActivities)}
+              className="h-5 w-5 text-primary mt-1 hover:text-primary/80 transition-colors"
+            >
+              {showActivities ? <ChevronDown /> : <ChevronRight />}
+            </button>
+            <div className="flex items-center gap-2 mt-1">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">
+                Attività ({activityCount})
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+              className="ml-auto text-xs"
+            >
+              Vai ad Attività
+            </Button>
+          </div>
+          
+          {showActivities && (
+            <div className="ml-9 space-y-2">
+              {activities.map((activity: any) => (
+                <div 
+                  key={activity.id} 
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer"
+                  onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <Badge variant={
+                      activity.stato === 'aperta' ? 'default' : 
+                      activity.stato === 'in_corso' ? 'secondary' : 
+                      'outline'
+                    }>
+                      {activity.tipo}
+                    </Badge>
+                    <span className="text-sm text-foreground">
+                      {activity.descrizione}
+                    </span>
+                  </div>
+                  {activity.scadenza && (
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(activity.scadenza).toLocaleDateString('it-IT')}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Sezione Meta Flags - organizzata per colonne specifiche e spostata in fondo */}
       {Object.keys(record).some(key => key.startsWith('meta_')) && (

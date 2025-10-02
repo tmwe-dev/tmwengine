@@ -1421,26 +1421,48 @@ export default function RubricaAvanzata() {
                             </>
                           )}
                           <TableCell>
-                            {getActivityCount(record.id) > 0 && (
+                            <div className="flex gap-1 relative z-10">
+                              {getActivityCount(record.id) > 0 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                                        className="h-7 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                                      >
+                                        <Activity className="h-3 w-3 mr-1" />
+                                        {getActivityCount(record.id)}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
-                                      size="sm"
-                                      onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
-                                      className="h-7 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                                      size="icon"
+                                      className="h-7 w-7 text-blue-500 hover:text-blue-700 hover:bg-blue-500/10"
+                                      onClick={() => {
+                                        setSelectedRecords(new Set([actualIndex]));
+                                        setShowMultipleActivityDialog(true);
+                                      }}
                                     >
-                                      <Activity className="h-3 w-3 mr-1" />
-                                      {getActivityCount(record.id)}
+                                      <FileText className="h-3 w-3" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                    <p>Crea nuova attività</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">

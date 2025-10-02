@@ -2509,7 +2509,7 @@ export default function ImportTemplates() {
                     </div>
                     
                     {/* Seconda riga - Layout con campo cerca centrato e azioni */}
-                    <div className="flex items-center gap-4 w-full">
+                    <div className="flex items-center gap-4 w-full pt-2.5">
                       {/* Pulsante Pulisci filtri e contatore a sinistra - larghezza fissa */}
                       <div className="flex items-center gap-3 w-48">
                         {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (

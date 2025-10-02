@@ -2556,7 +2556,7 @@ export default function ImportTemplates() {
                         {selectedRecords.size > 0 && (
                           <>
                             <Badge variant="default" className="text-sm px-4 py-2">
-                              {selectedRecords.size}
+                              Solo note
                             </Badge>
                             <Button
                               size="sm"

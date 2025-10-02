@@ -2377,18 +2377,6 @@ export default function ImportTemplates() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <div className="flex items-center space-x-2 pb-1">
-                      <Checkbox
-                        id="has-notes-filter-desktop"
-                        checked={hasNotesFilter}
-                        onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                      />
-                      <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
-                        <StickyNote className="h-4 w-4 text-blue-500" />
-                        Solo con note
-                      </Label>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2557,7 +2545,7 @@ export default function ImportTemplates() {
                 {filteredRecords.length} record corrispondenti
               </div>
             </div>
-          )}
+           )}
           
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
@@ -2568,6 +2556,21 @@ export default function ImportTemplates() {
             </div>
            ) : filteredRecords.length > 0 ? (
              <div className="space-y-4 flex flex-col min-h-0 flex-1">
+                {/* Filtro "Con note" - Solo Desktop - Sopra la tabella */}
+                {!isMobile && (
+                  <div className="flex items-center space-x-2 pl-4">
+                    <Checkbox
+                      id="has-notes-filter-desktop"
+                      checked={hasNotesFilter}
+                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                    />
+                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer">
+                      <StickyNote className="h-4 w-4 text-blue-500" />
+                      Solo con note
+                    </Label>
+                  </div>
+                )}
+                
                 {isMobile ? (
                   /* Mobile View - Ultra-Compact Cards */
                   <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>

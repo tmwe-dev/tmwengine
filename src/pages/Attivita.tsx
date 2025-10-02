@@ -22,7 +22,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { getActivityStyles } from '@/lib/activityStyles';
 
 interface Activity {
   id: string;
@@ -1230,18 +1229,27 @@ export default function Attivita() {
                   const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata';
                   const isOpen = activity.stato === 'aperta';
                   
-                  // Usa la stessa utility di ActivityCard per gli stili
-                  const { bgColor, combinedStyle } = getActivityStyles({ isOverdue: !!isOverdue, isOpen });
+                  const rowBgColor = isOverdue 
+                    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30' 
+                    : isOpen 
+                    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
+                    : '';
+                  
+                  const rowOverlayStyle = (isOverdue || isOpen) ? {
+                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)',
+                    opacity: 0.2
+                  } : {};
                   
                   return (
                      <TableRow 
                       key={activity.id} 
                       className={cn(
                         "hover:bg-muted/50 cursor-pointer relative",
+                        rowBgColor,
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
-                      style={Object.keys(combinedStyle).length > 0 ? combinedStyle : undefined}
+                      style={rowOverlayStyle}
                     >
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">

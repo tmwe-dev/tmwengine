@@ -712,13 +712,13 @@ export default function Attivita() {
   };
 
   const getStatsData = () => {
-    const totali = activities.length;
-    const future = activities.filter(a => isActivityFuture(a)).length;
-    const completate = activities.filter(a => a.stato === 'completata').length;
-    const in_corso = activities.filter(a => a.stato === 'in_corso').length;
+    const totali = filteredActivities.length;
+    const future = filteredActivities.filter(a => isActivityFuture(a)).length;
+    const completate = filteredActivities.filter(a => a.stato === 'completata').length;
+    const in_corso = filteredActivities.filter(a => a.stato === 'in_corso').length;
     
     const today = new Date();
-    const scadute = activities.filter(a => {
+    const scadute = filteredActivities.filter(a => {
       if (!a.scadenza) return false;
       return new Date(a.scadenza) < today && a.stato !== 'completata';
     }).length;

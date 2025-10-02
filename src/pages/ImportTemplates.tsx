@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
@@ -2468,12 +2468,26 @@ export default function ImportTemplates() {
                       <X className="h-3 w-3 mr-1" />
                       Deseleziona tutti
                     </Button>
-                  </>
-                )}
-                
-                {/* Desktop Action Buttons as Icons */}
-                {selectedRecords.size > 0 && (
-                  <>
+                    
+                    {/* Bulk delete button - Spostato qui in alto */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteSelectedRecords}
+                            className="text-xs px-2"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina {selectedRecords.size} record selezionati</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -2536,54 +2550,40 @@ export default function ImportTemplates() {
                 )}
               </div>
                
-              {/* Seconda colonna - Pulsanti visibilità colonne */}
+              {/* Seconda colonna - Pulsanti visibilità colonne (solo icone) */}
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={visibleColumns.company ? "default" : "outline"}
-                  onClick={() => setVisibleColumns(prev => ({ ...prev, company: !prev.company }))}
-                  className="text-xs"
-                >
-                  Azienda & Contatti
-                </Button>
-                <Button
-                  size="sm"
-                  variant={visibleColumns.details ? "default" : "outline"}
-                  onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-                  className="text-xs"
-                >
-                  Dettagli Commerciali
-                </Button>
-                <Button
-                  size="sm"
-                  variant={visibleColumns.metadata ? "default" : "outline"}
-                  onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-                  className="text-xs"
-                >
-                  Metadata & Sistema
-                </Button>
-                
-                {/* Bulk delete button */}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={deleteSelectedRecords}
-                        disabled={selectedRecords.size === 0}
+                        variant={visibleColumns.details ? "default" : "outline"}
+                        onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
                         className="text-xs px-2"
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Briefcase className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>
-                        {selectedRecords.size === 0 
-                          ? 'Seleziona record da eliminare' 
-                          : `Elimina ${selectedRecords.size} record selezionati`
-                        }
-                      </p>
+                      <p>Dettagli Commerciali</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant={visibleColumns.metadata ? "default" : "outline"}
+                        onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
+                        className="text-xs px-2"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Metadata & Sistema</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

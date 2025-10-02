@@ -1752,7 +1752,10 @@ export default function ImportTemplates() {
     }
   };
 
-  // Rimosso il check che causava il flash nero - ora il dialog si apre in overlay
+  // Se stiamo aprendo il dialog dei record dalla navigazione, mostra solo sfondo nero
+  if (location.state?.openRecordsDialog && !showRecordsDialog) {
+    return <div className="fixed inset-0 bg-black"></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -2276,7 +2279,7 @@ export default function ImportTemplates() {
           setHasNotesFilter(false);
         }
       }}>
-        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] flex flex-col mx-auto my-auto overflow-hidden">
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] flex flex-col mx-auto my-auto overflow-hidden animate-in zoom-in-95 duration-300">
           <DialogHeader>
             {isMobile ? (
               /* Mobile Header - Compact */

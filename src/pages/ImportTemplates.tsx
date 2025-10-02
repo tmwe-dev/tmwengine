@@ -2388,21 +2388,9 @@ export default function ImportTemplates() {
                 </div>
                 
                 {/* Desktop Search and Filter Controls */}
-                <div className="flex gap-2 items-end flex-row">
-                  <div className="w-64">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="search"
-                        placeholder="Cerca per nome azienda, alias, nome, città..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 flex-row flex-wrap items-end">
+                <div className="flex flex-col gap-3">
+                  {/* Prima riga - Dropdowns */}
+                  <div className="flex gap-2 items-end flex-row">
                     <div className="w-48">
                       <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
                       <Select value={originFilter} onValueChange={setOriginFilter}>
@@ -2454,6 +2442,22 @@ export default function ImportTemplates() {
                           <SelectItem value="500">500</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Seconda riga - Campo di ricerca centrato */}
+                  <div className="flex justify-center">
+                    <div className="w-96">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="search"
+                          placeholder="Cerca per nome azienda, alias, nome, città..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -2552,6 +2552,29 @@ export default function ImportTemplates() {
                     </div>
                   </div>
                 )}
+                
+                {/* Pulsante Pulisci filtri quando i filtri sono nascosti ma attivi */}
+                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                  <div className="flex justify-start items-center gap-3 mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setOriginFilter('');
+                        setCountryFilter('');
+                        setHasNotesFilter(false);
+                      }}
+                      className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Pulisci filtri
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {filteredRecords.length} trovati
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </DialogHeader>

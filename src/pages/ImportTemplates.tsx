@@ -2508,8 +2508,8 @@ export default function ImportTemplates() {
                       </div>
                     </div>
                     
-                    {/* Seconda riga - Campo di ricerca centrato */}
-                    <div className="flex justify-center items-center relative">
+                    {/* Seconda riga - Campo di ricerca e azioni sulla stessa riga */}
+                    <div className="flex justify-center items-center gap-4 relative">
                       {/* Pulsante Pulisci filtri e contatore a sinistra */}
                       {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                         <div className="absolute left-0 flex items-center gap-3">
@@ -2533,7 +2533,7 @@ export default function ImportTemplates() {
                         </div>
                       )}
                       
-                      {/* Campo di ricerca centrato */}
+                      {/* Campo di ricerca */}
                       <div className="w-96">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2546,6 +2546,59 @@ export default function ImportTemplates() {
                           />
                         </div>
                       </div>
+                      
+                      {/* Azioni a destra del campo cerca */}
+                      {selectedRecords.size > 0 && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <Badge variant="default" className="text-sm px-4 py-2">
+                            {selectedRecords.size}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedRecords(new Set())}
+                            className="h-10 px-2 text-sm"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setShowMultipleActivityDialog(true)}
+                                  className="h-10 w-10 p-0"
+                                >
+                                  <FileText className="h-4 w-4 text-blue-500" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Crea attività</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={importSelectedRecords}
+                                  className="h-10 w-10 p-0"
+                                >
+                                  <Database className="h-4 w-4 text-green-500" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Importa {selectedRecords.size} in rubrica</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2577,64 +2630,6 @@ export default function ImportTemplates() {
           </DialogHeader>
 
 
-          {/* Controlli visibilità colonne - Solo desktop */}
-          {!isMobile && (
-            <div className="flex items-center justify-center py-4 border-b">
-              {/* Record selezionati e azioni - centrati (senza cestino) */}
-              {selectedRecords.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="default" className="text-sm px-4 py-2">
-                    {selectedRecords.size}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedRecords(new Set())}
-                    className="h-14 px-4 text-sm"
-                  >
-                    <X className="h-6 w-6" />
-                  </Button>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowMultipleActivityDialog(true)}
-                          className="h-14 w-14 p-0"
-                        >
-                          <FileText className="h-6 w-6 text-blue-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Crea attività</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={importSelectedRecords}
-                          className="h-14 w-14 p-0"
-                        >
-                          <Database className="h-6 w-6 text-green-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Importa {selectedRecords.size} in rubrica</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-              
-            </div>
-          )}
 
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (

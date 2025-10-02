@@ -2579,12 +2579,12 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex items-center justify-center py-4 border-b relative">
-              {/* Record selezionati e azioni - centrati */}
+            <div className="flex items-center py-4 border-b relative">
+              {/* Record selezionati e azioni - a destra del campo cerca */}
               {selectedRecords.size > 0 && (
                 <>
-                  {/* Badge, X, FileText e Database al centro */}
-                  <div className="flex items-center gap-2">
+                  {/* Badge, X, FileText e Database - centrati nello spazio a destra del campo cerca */}
+                  <div className="flex items-center gap-2 absolute left-1/2 transform translate-x-1/4">
                     <Badge variant="default" className="text-sm px-4 py-2">
                       {selectedRecords.size}
                     </Badge>

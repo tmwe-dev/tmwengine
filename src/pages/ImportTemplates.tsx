@@ -1641,13 +1641,20 @@ export default function ImportTemplates() {
         }
       }
 
-      // Update import log
+      // Update import log and recalculate counts
       if (selectedImport) {
+        // Count remaining records
+        const { count: remainingCount } = await supabase
+          .from('imported_contacts')
+          .select('*', { count: 'exact', head: true })
+          .eq('import_log_id', selectedImport.id);
+        
         await supabase
           .from('import_logs')
           .update({
             trasferiti_rubrica: true,
-            contatti_selezionati: selectedRecords.size
+            contatti_selezionati: successCount,
+            righe_importate: remainingCount || 0
           })
           .eq('id', selectedImport.id);
       }

@@ -2558,17 +2558,11 @@ export default function ImportTemplates() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-10 px-4 text-sm bg-blue-500 text-white hover:bg-blue-600"
+                              onClick={() => setHasNotesFilter(false)}
+                              className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
                             >
+                              <X className="h-3 w-3" />
                               Solo note
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setSelectedRecords(new Set())}
-                              className="h-10 px-2 text-sm"
-                            >
-                              <X className="h-4 w-4" />
                             </Button>
                             
                             <TooltipProvider>

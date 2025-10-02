@@ -232,10 +232,6 @@ interface FilterTag {
 }
 
 export default function ImportTemplates() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isMobile = useIsMobile();
-  
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -325,6 +321,9 @@ export default function ImportTemplates() {
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Stati per il dialog delle attività
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
@@ -1753,9 +1752,9 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo arrivando da Attività, mostra solo sfondo nero (il dialog si aprirà sopra)
-  if (location.state?.openRecordsDialog && !showRecordsDialog) {
-    return <div className="fixed inset-0 bg-black" />;
+  // Se stiamo caricando il dialog, mostra solo uno schermo vuoto
+  if (isLoadingDialog || (location.state?.openRecordsDialog && !showRecordsDialog)) {
+    return <div className="flex items-center justify-center h-screen"></div>;
   }
 
   return (

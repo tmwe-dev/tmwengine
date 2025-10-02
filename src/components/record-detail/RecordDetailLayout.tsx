@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus, Calendar } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
@@ -337,6 +338,25 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink className="text-sm cursor-pointer" onClick={() => navigate('/gestisci-import')}>
+              Record Importati
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator>
+            <ChevronRight className="h-4 w-4" />
+          </BreadcrumbSeparator>
+          <BreadcrumbItem>
+            <BreadcrumbPage className="text-sm font-medium">
+              {record.company_name || record.azienda || 'Dettaglio Record'}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Toolbar di modifica */}
       <div className="flex justify-between items-center pb-2 border-b">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -429,8 +449,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Informazioni Azienda */}
       <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Building className="h-5 w-5 text-primary mt-5" />
+        <h3 className="font-semibold text-text-primary flex items-center gap-2 text-lg">
+          <Building className="h-5 w-5 text-primary" />
+          Informazioni Azienda
+        </h3>
+        <div className="flex items-start gap-4 pl-7">
           
           {/* Company fields + Origin allineati subito a destra dell'icona */}
           {(record.company_name !== undefined || record.azienda !== undefined) && (
@@ -470,8 +493,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Informazioni Contatto */}
       <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Users className="h-5 w-5 text-primary mt-5" />
+        <h3 className="font-semibold text-text-primary flex items-center gap-2 text-lg">
+          <Users className="h-5 w-5 text-primary" />
+          Informazioni Contatto
+        </h3>
+        <div className="flex items-start gap-4 pl-7">
           
           {/* Name, Title, Alias allineati subito a destra dell'icona */}
           {(record.name !== undefined || record.nome !== undefined) && (
@@ -508,7 +534,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Contatti */}
       <div className="space-y-4">
-        <div className="flex items-start gap-4">
+        <h3 className="font-semibold text-text-primary flex items-center gap-2 text-lg">
+          <Mail className="h-5 w-5 text-primary" />
+          Contatti
+        </h3>
+        <div className="flex items-start gap-4 pl-7">
           
           {/* Campi contatti con icone */}
           {(record.email !== undefined || isEditing) && (
@@ -691,8 +721,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       {/* Sezione Date e Programmazioni */}
       {(record.last_contact !== undefined || record.next_contact_date !== undefined || record.scheduled_contact !== undefined) && (
         <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <Clock className="h-5 w-5 text-primary mt-5" />
+          <h3 className="font-semibold text-text-primary flex items-center gap-2 text-lg">
+            <Calendar className="h-5 w-5 text-primary" />
+            Programmazioni Contatto
+          </h3>
+          <div className="flex items-start gap-4 pl-7">
             
             <div className="flex gap-4">
               {record.last_contact !== undefined && (
@@ -820,8 +853,11 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
       {/* Sezione Note */}
       <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <FileText className="h-5 w-5 text-primary mt-5" />
+        <h3 className="font-semibold text-text-primary flex items-center gap-2 text-lg">
+          <FileText className="h-5 w-5 text-primary" />
+          Note
+        </h3>
+        <div className="flex items-start gap-4 pl-7">
           
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Edit3, History, Save, X, Phone } from 'lucide-react';
+import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -134,12 +135,28 @@ export function GestisciAttivitaDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-4 sm:p-6">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 space-y-3">
+          {/* Breadcrumb */}
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink className="text-sm">Attività</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-medium">Gestione Attività</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          {/* Titolo */}
           <DialogTitle className="flex items-center gap-3">
             <span className="text-2xl">{getActivityIcon(activity.tipo)}</span>
             <div>
               <div className="flex items-center gap-2">
-                Gestisci Attività
+                <span className="text-xl">Gestisci Attività</span>
                 <Badge variant={getStatoBadgeVariant(activity.stato)}>
                   {activity.stato.replace('_', ' ').toUpperCase()}
                 </Badge>
@@ -153,7 +170,12 @@ export function GestisciAttivitaDialog({
 
         <div className="flex-1 overflow-y-auto space-y-6">
           {/* Informazioni di base */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-text-primary flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              Informazioni di Base
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
             <div>
               <Label className="text-xs text-muted-foreground">CREATA IL</Label>
               <div className="font-semibold text-blue-600">
@@ -191,10 +213,16 @@ export function GestisciAttivitaDialog({
                 </Badge>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Form di modifica */}
-          <div className="space-y-4 px-1">
+          <div className="space-y-2">
+            <h3 className="font-semibold text-text-primary flex items-center gap-2">
+              <Edit3 className="h-4 w-4 text-primary" />
+              Modifica Dettagli
+            </h3>
+            <div className="space-y-4 px-1">
             <div>
               <Label htmlFor="descrizione">Descrizione</Label>
               <Textarea
@@ -320,6 +348,7 @@ export function GestisciAttivitaDialog({
                   placeholder="Inserisci numero di cellulare..."
                 />
               </div>
+            </div>
             </div>
           </div>
 

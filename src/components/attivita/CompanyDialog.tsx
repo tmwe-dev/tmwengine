@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Phone, Mail, Users, FileText, MapPin, Globe, Building } from 'lucide-react';
+import { Phone, Mail, Users, FileText, MapPin, Globe, Building, ChevronRight } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
 import { ActivityCard } from './ActivityCard';
 
@@ -180,10 +181,26 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 space-y-3">
+          {/* Breadcrumb */}
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink className="text-sm">Attività</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-medium">Dettaglio Azienda</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          {/* Titolo */}
           <DialogTitle className="flex items-center gap-3">
-            <Building className="h-5 w-5 text-blue-500" />
-            {companyInfo.azienda}
+            <Building className="h-5 w-5 text-primary" />
+            <span className="text-xl">{companyInfo.azienda}</span>
           </DialogTitle>
         </DialogHeader>
         
@@ -193,7 +210,10 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-3">Informazioni Contatto</h3>
+                  <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    Informazioni Contatto
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-gray-500" />
@@ -215,7 +235,10 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold text-text-primary mb-3">Localizzazione</h3>
+                  <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Localizzazione
+                  </h3>
                   <div className="space-y-2">
                     {companyInfo.citta && (
                       <div className="flex items-center gap-2">
@@ -243,8 +266,9 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
 
           {/* Elenco Attività */}
           <div>
-            <h3 className="font-semibold text-text-primary mb-4">
-              Attività ({activities.length})
+            <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-primary" />
+              Attività Associate ({activities.length})
             </h3>
             
             {isLoading ? (

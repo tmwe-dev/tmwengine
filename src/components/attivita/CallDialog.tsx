@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, MessageCircle, X, Edit, Save, Smartphone, AlertCircle, CheckCircle } from 'lucide-react';
+import { Phone, MessageCircle, X, Edit, Save, Smartphone, AlertCircle, CheckCircle, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -102,10 +103,26 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md w-[95vw] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="space-y-3">
+          {/* Breadcrumb */}
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink className="text-sm">Attività</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-medium">Contatta</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          {/* Titolo */}
           <DialogTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Contatta
+            <Phone className="h-5 w-5 text-primary" />
+            <span className="text-xl">Contatta {contact.nome || 'Contatto'}</span>
           </DialogTitle>
         </DialogHeader>
         

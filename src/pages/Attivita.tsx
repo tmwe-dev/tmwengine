@@ -1414,14 +1414,7 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell 
-                        className="text-center align-middle cursor-pointer hover:bg-muted/30 transition-colors"
-                        onMouseEnter={() => {
-                          toast({
-                            title: "Stato attività",
-                            description: STATO_LABELS[activity.stato],
-                            duration: 2000,
-                          });
-                        }}
+                        className="text-center align-middle"
                       >
                         <div className="flex justify-center">
                           {activityStatus === 'in sospeso' ? (

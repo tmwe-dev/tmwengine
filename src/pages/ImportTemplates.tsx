@@ -2740,7 +2740,7 @@ export default function ImportTemplates() {
                ) : (
                  /* Desktop View - Table */
                  <div className="overflow-x-scroll overflow-y-auto flex-1 border rounded-md">
-                    <Table>
+                    <Table className="min-w-max">
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
                            <TableHead className="w-12 bg-background border-b px-4 py-[10px]">

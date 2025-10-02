@@ -321,21 +321,29 @@ export default function ImportTemplates() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    loadEmailTemplates();
-    loadEmailAttachments();
-    loadImportLogs();
-  }, []);
-
-  // Check URL params to automatically open import dialog
-  useEffect(() => {
-    const openImportId = searchParams.get('openImport');
-    if (openImportId && importLogs.length > 0) {
-      const importLog = importLogs.find(log => log.id === openImportId);
-      if (importLog) {
-        viewImportRecords(importLog);
+    const loadData = async () => {
+      await loadEmailTemplates();
+      await loadEmailAttachments();
+      await loadImportLogs();
+      
+      // Check URL params to automatically open import dialog
+      const openImportId = searchParams.get('openImport');
+      if (openImportId) {
+        // Find the import log after loading
+        const { data } = await supabase
+          .from('import_logs')
+          .select('*')
+          .eq('id', openImportId)
+          .single();
+        
+        if (data) {
+          viewImportRecords(data);
+        }
       }
-    }
-  }, [searchParams, importLogs]);
+    };
+    
+    loadData();
+  }, []);
 
   // Apply search and filters to records
   useEffect(() => {

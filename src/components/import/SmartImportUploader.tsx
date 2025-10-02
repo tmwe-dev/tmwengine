@@ -12,72 +12,52 @@ interface SmartImportUploaderProps {
 }
 
 export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderProps) {
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [storedFilePath, setStoredFilePath] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [storedFileName, setStoredFileName] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
     headers: string[];
     sampleRows: any[];
     fileName: string;
   } | null>(null);
 
-  // Funzione per caricare il file e mostrare l'anteprima
-  const handleFileUpload = async (file: File) => {
-    setIsUploading(true);
-    console.log('🔄 Starting upload for:', file.name);
+  const handleFileUpload = async () => {
+    if (!importFile) {
+      toast.error('Seleziona un file');
+      return;
+    }
+
+    setUploadingFile(true);
 
     try {
-      // Upload file to storage (stesso metodo di ImportTemplates)
-      const fileName = `${Date.now()}_${file.name}`;
-      console.log('📤 Uploading to Storage:', fileName);
-      
+      // ESATTAMENTE come ImportTemplates (riga 880-883)
+      const fileName = `${Date.now()}_${importFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('import-files')
-        .upload(fileName, file);
+        .upload(fileName, importFile);
 
-      if (uploadError) {
-        console.error('❌ Upload error:', uploadError);
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      console.log('✅ File uploaded:', fileName);
-      setStoredFilePath(fileName);
-      toast.success('File caricato!');
-      
-      // Ora leggi e mostra anteprima
-      await parseFileFromStorage(fileName, file.name);
-      
-    } catch (error: any) {
-      console.error('❌ Error:', error);
-      toast.error(`Errore: ${error.message}`);
-    } finally {
-      setIsUploading(false);
-    }
-  };
+      console.log('✅ File caricato su Storage:', fileName);
+      setStoredFileName(fileName);
+      toast.success('File caricato! Caricamento anteprima...');
 
-
-  const parseFileFromStorage = async (filePath: string, fileName: string) => {
-    try {
-      console.log('📖 Reading file from Storage:', filePath);
-      
-      const { data, error } = await supabase.storage
+      // Ora leggi il file da Storage per mostrare l'anteprima
+      const { data: fileData, error: downloadError } = await supabase.storage
         .from('import-files')
-        .download(filePath);
+        .download(fileName);
 
-      if (error) {
-        console.error('Storage download error:', error);
-        throw error;
-      }
+      if (downloadError) throw downloadError;
 
-      console.log('✅ File downloaded from Storage');
-      
+      console.log('✅ File scaricato da Storage');
+
+      // Parse del file
       let headers: string[] = [];
       let sampleRows: any[] = [];
 
-      // Parse in base al tipo di file
-      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        const arrayBuffer = await data.arrayBuffer();
+      if (importFile.name.endsWith('.xlsx') || importFile.name.endsWith('.xls')) {
+        const arrayBuffer = await fileData.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
@@ -90,8 +70,8 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else if (fileName.endsWith('.csv')) {
-        const text = await data.text();
+      } else if (importFile.name.endsWith('.csv')) {
+        const text = await fileData.text();
         const lines = text.split('\n').filter(line => line.trim());
         
         const firstLine = lines[0];
@@ -107,8 +87,8 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else if (fileName.endsWith('.txt')) {
-        const text = await data.text();
+      } else if (importFile.name.endsWith('.txt')) {
+        const text = await fileData.text();
         const lines = text.split('\n').filter(line => line.trim());
         
         const separator = lines[0].includes('\t') ? '\t' : /\s{2,}/;
@@ -121,28 +101,28 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
           });
           return obj;
         });
-      } else {
-        toast.error('Formato file non supportato. Usa Excel, CSV o TXT.');
-        return;
       }
 
-      console.log('📊 File parsed:', { headers, sampleRowsCount: sampleRows.length });
+      console.log('📊 Anteprima:', { headers, sampleRowsCount: sampleRows.length });
 
       setPreview({
         headers,
         sampleRows,
-        fileName
+        fileName: importFile.name
       });
-      
-      toast.success('File analizzato! Controlla l\'anteprima dei dati.');
-    } catch (error) {
-      console.error('Error parsing file from storage:', error);
-      toast.error('Errore durante la lettura del file');
+
+      toast.success('Anteprima pronta! Controlla i dati.');
+
+    } catch (error: any) {
+      console.error('❌ Errore:', error);
+      toast.error(`Errore: ${error.message}`);
+    } finally {
+      setUploadingFile(false);
     }
   };
 
   const analyzeWithAI = async () => {
-    if (!preview) return;
+    if (!preview || !storedFileName) return;
     
     setIsAnalyzing(true);
     
@@ -193,14 +173,6 @@ Analizza le colonne fornite e restituisci un JSON con questa struttura ESATTA:
 - "lowercase": converte in minuscolo
 - "trim": rimuove spazi iniziali e finali
 
-**Esempi Mapping:**
-- "Company Name" / "Ragione Sociale" / "Azienda" → company_name (confidence: 0.95)
-- "Tel." / "Phone" / "Telefono" → phone (confidence: 0.90, transform: "normalize_phone")
-- "Cell" / "Mobile" / "Cellulare" → cell (confidence: 0.90, transform: "normalize_phone")
-- "Email" / "E-mail" / "Mail" → email (confidence: 0.95, transform: "normalize_email")
-- "Country" / "Paese" / "Nazione" → country (confidence: 0.90)
-- "Contact" / "Responsabile" / "Nome" → name (confidence: 0.85)
-
 **IMPORTANTE:**
 - Se una colonna contiene numeri di telefono, usa "normalize_phone"
 - Se contiene email, usa "normalize_email"  
@@ -223,8 +195,6 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
         throw new Error('Errore durante l\'analisi AI');
       }
 
-      console.log('🤖 AI Response:', data);
-
       let aiResponse = data.response;
       
       if (aiResponse.includes('```json')) {
@@ -235,7 +205,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
 
       const analysisResult = JSON.parse(aiResponse);
 
-      toast.success('Analisi completata! Controlla il mapping suggerito.');
+      toast.success('Analisi completata!');
       onAnalysisComplete({
         ...analysisResult,
         headers: preview.headers,
@@ -244,8 +214,8 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
       });
 
     } catch (error) {
-      console.error('Error analyzing file:', error);
-      toast.error('Errore durante l\'analisi del file');
+      console.error('Error analyzing:', error);
+      toast.error('Errore durante l\'analisi');
     } finally {
       setIsAnalyzing(false);
     }
@@ -254,8 +224,9 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      setUploadedFile(file);
-      handleFileUpload(file);
+      setImportFile(file);
+      setPreview(null);
+      setStoredFileName(null);
     }
   }, []);
 
@@ -265,8 +236,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
       'application/vnd.ms-excel': ['.xls'],
       'text/csv': ['.csv'],
-      'text/plain': ['.txt'],
-      'application/pdf': ['.pdf']
+      'text/plain': ['.txt']
     },
     maxFiles: 1
   });
@@ -279,162 +249,161 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
           Import Intelligente
         </CardTitle>
         <CardDescription>
-          Trascina qui il tuo file. L'AI analizzerà le colonne e suggerirà il mapping automatico.
+          Trascina qui il tuo file. Verrà caricato su Supabase e l'AI lo analizzerà.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {!preview ? (
+        <div className="space-y-4">
+          {/* Dropzone */}
           <div
             {...getRootProps()}
             className={`
-              border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
+              border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
               transition-all duration-200
               ${isDragActive 
                 ? 'border-primary bg-primary/5' 
                 : 'border-border hover:border-primary/50 hover:bg-accent/50'
               }
-              ${isUploading ? 'pointer-events-none opacity-50' : ''}
             `}
           >
             <input {...getInputProps()} />
             
-            {isUploading ? (
-              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <div>
-                  <p className="text-lg font-medium">Caricamento in corso...</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Sto salvando il file: {uploadedFile?.name}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-center gap-4 mb-4">
-                  <FileSpreadsheet className="h-12 w-12 text-green-500" />
-                  <FileText className="h-12 w-12 text-blue-500" />
-                  <FileType className="h-12 w-12 text-orange-500" />
-                </div>
-                
-                <p className="text-lg font-medium mb-2">
-                  {isDragActive 
-                    ? 'Rilascia il file qui...' 
-                    : 'Trascina qui il file o clicca per selezionare'
-                  }
-                </p>
-                
-                <p className="text-sm text-muted-foreground">
-                  Formati supportati: Excel (.xlsx, .xls), CSV, TXT
-                </p>
-                
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Seleziona File
-                </Button>
-              </>
-            )}
+            <div className="flex justify-center gap-4 mb-4">
+              <FileSpreadsheet className="h-10 w-10 text-green-500" />
+              <FileText className="h-10 w-10 text-blue-500" />
+              <FileType className="h-10 w-10 text-orange-500" />
+            </div>
+            
+            <p className="text-base font-medium mb-2">
+              {isDragActive 
+                ? 'Rilascia il file qui...' 
+                : importFile ? `📄 ${importFile.name}` : 'Trascina qui il file o clicca per selezionare'
+              }
+            </p>
+            
+            <p className="text-sm text-muted-foreground">
+              Formati: Excel (.xlsx, .xls), CSV, TXT
+            </p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">✅ File caricato su Storage</h3>
-              <p className="text-sm text-muted-foreground mb-1">
-                📄 {preview.fileName}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {preview.headers.length} colonne • {preview.sampleRows.length} righe di esempio
-              </p>
-            </div>
 
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-muted p-2">
-                <p className="text-sm font-medium">Colonne rilevate:</p>
-              </div>
-              <div className="p-4 space-y-2">
-                {preview.headers.map((header, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="bg-primary/10 text-primary px-2 py-1 rounded text-sm font-mono">
-                      {idx + 1}
-                    </span>
-                    <span className="font-medium">{header}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Pulsante Upload */}
+          {importFile && !preview && (
+            <Button 
+              onClick={handleFileUpload}
+              disabled={uploadingFile}
+              className="w-full"
+            >
+              {uploadingFile ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Caricamento su Storage...
+                </>
+              ) : (
+                'Carica su Supabase Storage'
+              )}
+            </Button>
+          )}
 
-            <div className="border rounded-lg overflow-x-auto">
-              <div className="bg-muted p-2">
-                <p className="text-sm font-medium">Prime 5 righe:</p>
+          {/* Anteprima */}
+          {preview && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">✅ File su Storage: {storedFileName}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {preview.headers.length} colonne • {preview.sampleRows.length} righe di esempio
+                </p>
               </div>
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    {preview.headers.map((header, idx) => (
-                      <th key={idx} className="px-3 py-2 text-left font-medium whitespace-nowrap">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.sampleRows.map((row, rowIdx) => (
-                    <tr key={rowIdx} className="border-t">
-                      {preview.headers.map((header, colIdx) => (
-                        <td key={colIdx} className="px-3 py-2 whitespace-nowrap">
-                          <span className={row[header] ? '' : 'text-muted-foreground italic'}>
-                            {row[header] || 'vuoto'}
-                          </span>
-                        </td>
+
+              {/* Colonne */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-2">
+                  <p className="text-sm font-medium">Colonne rilevate:</p>
+                </div>
+                <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {preview.headers.map((header, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <span className="bg-primary/10 text-primary px-2 py-1 rounded font-mono text-xs">
+                        {idx + 1}
+                      </span>
+                      <span className="truncate">{header}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prime 5 righe */}
+              <div className="border rounded-lg overflow-x-auto">
+                <div className="bg-muted p-2">
+                  <p className="text-sm font-medium">Prime 5 righe:</p>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      {preview.headers.map((header, idx) => (
+                        <th key={idx} className="px-3 py-2 text-left font-medium whitespace-nowrap text-xs">
+                          {header}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {preview.sampleRows.map((row, rowIdx) => (
+                      <tr key={rowIdx} className="border-t">
+                        {preview.headers.map((header, colIdx) => (
+                          <td key={colIdx} className="px-3 py-2 whitespace-nowrap text-xs">
+                            <span className={row[header] ? '' : 'text-muted-foreground italic'}>
+                              {row[header] || 'vuoto'}
+                            </span>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="flex gap-2">
-              <Button 
-                onClick={analyzeWithAI}
-                disabled={isAnalyzing}
-                className="flex-1"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analisi in corso...
-                  </>
-                ) : (
-                  'Analizza con AI'
-                )}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setPreview(null);
-                  setUploadedFile(null);
-                  setStoredFilePath(null);
-                }}
-              >
-                Cambia File
-              </Button>
-            </div>
+              {/* Pulsanti */}
+              <div className="flex gap-2">
+                <Button 
+                  onClick={analyzeWithAI}
+                  disabled={isAnalyzing}
+                  className="flex-1"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analisi AI in corso...
+                    </>
+                  ) : (
+                    'Analizza con AI'
+                  )}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setPreview(null);
+                    setImportFile(null);
+                    setStoredFileName(null);
+                  }}
+                >
+                  Rimuovi
+                </Button>
+              </div>
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm">
-              <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                💡 Cosa farà l'AI:
-              </p>
-              <ul className="text-blue-800 dark:text-blue-200 space-y-1 ml-4 list-disc">
-                <li>Suggerirà il mapping delle colonne ai campi CRM</li>
-                <li>Indicherà i livelli di confidenza</li>
-                <li>Segnalerà valori dubbi o problematici</li>
-                <li>Proporrà trasformazioni necessarie</li>
-              </ul>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                  💡 Cosa farà l'AI:
+                </p>
+                <ul className="text-blue-800 dark:text-blue-200 space-y-1 ml-4 list-disc text-xs">
+                  <li>Suggerirà il mapping delle colonne ai campi CRM</li>
+                  <li>Indicherà i livelli di confidenza</li>
+                  <li>Segnalerà valori dubbi o problematici</li>
+                  <li>Proporrà trasformazioni necessarie</li>
+                </ul>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );

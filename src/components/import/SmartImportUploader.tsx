@@ -22,41 +22,40 @@ export function SmartImportUploader({ onAnalysisComplete }: SmartImportUploaderP
     fileName: string;
   } | null>(null);
 
-  const uploadToStorage = async (file: File) => {
+  // Funzione per caricare il file e mostrare l'anteprima
+  const handleFileUpload = async (file: File) => {
     setIsUploading(true);
-    console.log('🔄 Starting upload process for:', file.name);
-    
+    console.log('🔄 Starting upload for:', file.name);
+
     try {
-      // Upload file direttamente a Storage (come in ImportTemplates)
+      // Upload file to storage (stesso metodo di ImportTemplates)
       const fileName = `${Date.now()}_${file.name}`;
-      
-      console.log('📤 Uploading file to Storage:', fileName);
-      console.log('📦 File size:', file.size, 'bytes');
+      console.log('📤 Uploading to Storage:', fileName);
       
       const { error: uploadError } = await supabase.storage
         .from('import-files')
         .upload(fileName, file);
 
       if (uploadError) {
-        console.error('❌ Storage upload error:', uploadError);
-        toast.error(`Errore upload: ${uploadError.message}`);
+        console.error('❌ Upload error:', uploadError);
         throw uploadError;
       }
 
-      console.log('✅ File uploaded successfully:', fileName);
+      console.log('✅ File uploaded:', fileName);
       setStoredFilePath(fileName);
-      toast.success('File caricato su Storage!');
+      toast.success('File caricato!');
       
-      // Ora leggi il file da Storage per mostrare l'anteprima
+      // Ora leggi e mostra anteprima
       await parseFileFromStorage(fileName, file.name);
       
     } catch (error: any) {
-      console.error('❌ Error uploading file:', error);
-      toast.error(`Errore durante il caricamento: ${error.message || 'Errore sconosciuto'}`);
+      console.error('❌ Error:', error);
+      toast.error(`Errore: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   const parseFileFromStorage = async (filePath: string, fileName: string) => {
     try {
@@ -256,7 +255,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setUploadedFile(file);
-      uploadToStorage(file);
+      handleFileUpload(file);
     }
   }, []);
 

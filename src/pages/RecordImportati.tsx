@@ -533,38 +533,143 @@ const RecordImportati = () => {
           </div>
         </CardHeader>
         
-        <CardContent>
-          {/* Table placeholder - la logica completa sarà aggiunta in seguito */}
-          <div className="text-center py-8 text-muted-foreground">
-            Implementazione tabella in corso...
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={viewingRecords.length > 0 && viewingRecords.every((_, idx) => selectedRecords.has(currentPage * recordsPerPage + idx))}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleColumnSort('company_name')}>
+                    <div className="flex items-center gap-1">
+                      Azienda {getSortIcon('company_name')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleColumnSort('country')}>
+                    <div className="flex items-center gap-1">
+                      Paese {getSortIcon('country')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefono</TableHead>
+                  <TableHead className="text-center">
+                    <Activity className="h-4 w-4 mx-auto" />
+                  </TableHead>
+                  <TableHead className="w-20">Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingAllRecords ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      Caricamento...
+                    </TableCell>
+                  </TableRow>
+                ) : viewingRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      Nessun record trovato
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  viewingRecords.map((record, idx) => {
+                    const globalIndex = currentPage * recordsPerPage + idx;
+                    const activityCount = getActivityCount(record.id);
+                    
+                    return (
+                      <TableRow key={record.id} className={selectedRecords.has(globalIndex) ? 'bg-muted/50' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedRecords.has(globalIndex)}
+                            onCheckedChange={() => toggleRecordSelection(globalIndex)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{record.company_name || '-'}</div>
+                          {record.company_alias && (
+                            <div className="text-xs text-muted-foreground">{record.company_alias}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div>{record.name || '-'}</div>
+                          {record.position && (
+                            <div className="text-xs text-muted-foreground">{record.position}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {record.country ? getCountryFullName(record.country) : '-'}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {record.email || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {record.phone || record.cell || '-'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div 
+                            className="flex items-center justify-center gap-1 cursor-pointer"
+                            onClick={() => {
+                              setSelectedContactIdForActivities(record.id);
+                              setIsAttivitaDialogOpen(true);
+                            }}
+                          >
+                            <ActivityIndicators
+                              companyId={record.id}
+                              activities={getCompanyActivities(record.id)}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteImportedContact(record.id, globalIndex)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
           
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Precedente
-            </Button>
-            
-            <span className="text-sm text-muted-foreground">
-              Pagina {currentPage + 1} di {totalPages}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage >= totalPages - 1}
-            >
-              Successiva
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Precedente
+              </Button>
+              
+              <span className="text-sm text-muted-foreground">
+                Pagina {currentPage + 1} di {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                Successiva
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

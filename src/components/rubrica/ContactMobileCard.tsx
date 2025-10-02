@@ -76,9 +76,12 @@ export function ContactMobileCard({
       isSelected && "ring-2 ring-primary border-primary"
     )}>
       <CardContent className="p-4 space-y-3">
-        {/* Header con checkbox e azienda */}
+        {/* Header con numero, checkbox e azienda */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
+            <span className="text-xs text-muted-foreground font-mono">
+              #{index + 1}
+            </span>
             <Checkbox
               checked={isSelected}
               onCheckedChange={(checked) => onSelect(index, !!checked)}

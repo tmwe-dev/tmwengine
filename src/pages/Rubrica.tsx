@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2, FileText, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,12 +46,14 @@ export default function Rubrica() {
   const [filters, setFilters] = useState({
     tag: '',
     citta: '',
-    nazione: ''
+    nazione: '',
+    hasActivities: false
   });
   
   const { toast } = useToast();
-  const { getCompanyActivities, refreshActivities } = useCompanyActivities();
+  const { getCompanyActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Carica i contatti dal database
   useEffect(() => {
@@ -95,7 +98,8 @@ export default function Rubrica() {
     const matchesFilters = 
       (!filters.tag || contact.tags?.includes(filters.tag)) &&
       (!filters.citta || contact.citta?.toLowerCase().includes(filters.citta.toLowerCase())) &&
-      (!filters.nazione || contact.paese?.toLowerCase().includes(filters.nazione.toLowerCase()));
+      (!filters.nazione || contact.paese?.toLowerCase().includes(filters.nazione.toLowerCase())) &&
+      (!filters.hasActivities || getActivityCount(contact.id) > 0);
 
     return matchesSearch && matchesFilters;
   });
@@ -327,11 +331,25 @@ export default function Rubrica() {
                 <DialogHeader>
                   <DialogTitle>Filtri Avanzati</DialogTitle>
                 </DialogHeader>
-                <ContactFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onClose={() => setIsFiltersOpen(false)}
-                />
+                <div className="space-y-4">
+                  <ContactFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onClose={() => setIsFiltersOpen(false)}
+                  />
+                  <div className="flex items-center space-x-2 pt-4 border-t">
+                    <input
+                      type="checkbox"
+                      id="hasActivities"
+                      checked={filters.hasActivities}
+                      onChange={(e) => setFilters({...filters, hasActivities: e.target.checked})}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor="hasActivities" className="text-sm font-medium">
+                      Solo contatti con attività associate
+                    </label>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -416,12 +434,15 @@ export default function Rubrica() {
             </CardContent>
           </Card>
         ) : (
-          filteredContacts.map((contact) => (
+          filteredContacts.map((contact, index) => (
             <Card key={contact.id} className="border-card shadow-soft hover:shadow-medium transition-shadow">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        #{index + 1}
+                      </span>
                       {contact.note && (
                         <TooltipProvider>
                           <Tooltip>
@@ -457,6 +478,26 @@ export default function Rubrica() {
                      )}
                   </div>
                   <div className="flex gap-2">
+                    {getActivityCount(contact.id) > 0 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate('/attivita', { state: { filterByContact: contact.id } })}
+                              className="h-8 w-8"
+                            >
+                              <Activity className="h-4 w-4 text-primary" />
+                              <span className="ml-1 text-xs">{getActivityCount(contact.id)}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Visualizza {getActivityCount(contact.id)} attività</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

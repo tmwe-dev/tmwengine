@@ -8,7 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown, ArrowUp, ArrowDown, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -206,6 +207,7 @@ export default function RubricaAvanzata() {
   const [searchQuery, setSearchQuery] = useState('');
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
+  const [hasActivitiesFilter, setHasActivitiesFilter] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [allRecords, setAllRecords] = useState<Contact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
@@ -242,7 +244,10 @@ export default function RubricaAvanzata() {
   const isMobile = useIsMobile();
 
   // Activities hook
-  const { getCompanyActivities } = useCompanyActivities();
+  const { getCompanyActivities, getActivityCount } = useCompanyActivities();
+  
+  // Navigation
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadContacts();
@@ -280,6 +285,11 @@ export default function RubricaAvanzata() {
       result = result.filter(record => record.paese === countryFilter);
     }
     
+    // Apply activities filter
+    if (hasActivitiesFilter) {
+      result = result.filter(record => getActivityCount(record.id) > 0);
+    }
+    
     // Apply legacy filters
     result = applyFilters(result, activeFilters);
     
@@ -297,7 +307,7 @@ export default function RubricaAvanzata() {
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasActivitiesFilter, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -698,6 +708,20 @@ export default function RubricaAvanzata() {
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      {/* Activities Filter */}
+                      <div className="flex items-center space-x-2 pt-2 border-t">
+                        <input
+                          type="checkbox"
+                          id="hasActivitiesRubricaAvanzata"
+                          checked={hasActivitiesFilter}
+                          onChange={(e) => setHasActivitiesFilter(e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <label htmlFor="hasActivitiesRubricaAvanzata" className="text-xs font-medium">
+                          Solo con attività associate
+                        </label>
+                      </div>
                     </div>
 
                     {/* Compact Stats */}
@@ -1086,6 +1110,7 @@ export default function RubricaAvanzata() {
                           }}
                         />
                       </TableHead>
+                      <TableHead className="w-16">#</TableHead>
                       <TableHead>
                         <div className="flex items-center gap-1">
                           <TooltipProvider>
@@ -1172,6 +1197,7 @@ export default function RubricaAvanzata() {
                           <TableHead>Stato</TableHead>
                         </>
                       )}
+                      <TableHead className="w-20">Attività</TableHead>
                       <TableHead className="w-24">Azioni</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1196,6 +1222,9 @@ export default function RubricaAvanzata() {
                                 setSelectedRecords(newSelected);
                               }}
                             />
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground font-mono">
+                            #{actualIndex + 1}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -1368,6 +1397,28 @@ export default function RubricaAvanzata() {
                               </TableCell>
                             </>
                           )}
+                          <TableCell>
+                            {getActivityCount(record.id) > 0 && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                                      className="h-7 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                                    >
+                                      <Activity className="h-3 w-3 mr-1" />
+                                      {getActivityCount(record.id)}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <TooltipProvider>

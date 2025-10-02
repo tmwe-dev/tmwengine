@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database } from 'lucide-react';
+import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import {
@@ -113,6 +115,8 @@ export default function GestisciImport() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [importToDelete, setImportToDelete] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const { getActivityCount } = useCompanyActivities();
+  const navigate = useNavigate();
 
   // States for record viewing dialog
   const [showRecordsDialog, setShowRecordsDialog] = useState(false);
@@ -130,6 +134,7 @@ export default function GestisciImport() {
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [hasActivitiesFilter, setHasActivitiesFilter] = useState(false);
   
   // Column visibility
   const [visibleColumns] = useState({
@@ -178,9 +183,14 @@ export default function GestisciImport() {
       result = result.filter(record => String(record.country) === countryFilter);
     }
     
+    // Apply activities filter
+    if (hasActivitiesFilter) {
+      result = result.filter(record => getActivityCount(record.id) > 0);
+    }
+    
     setFilteredRecords(result);
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, allRecords]);
+  }, [searchQuery, originFilter, countryFilter, hasActivitiesFilter, allRecords]);
 
   const loadImportLogs = async () => {
     try {
@@ -725,6 +735,20 @@ export default function GestisciImport() {
                           </SelectContent>
                         </Select>
                       </div>
+                      
+                      {/* Activities Filter */}
+                      <div className="flex items-center space-x-2 pt-2 border-t mt-2">
+                        <input
+                          type="checkbox"
+                          id="hasActivitiesGestisci"
+                          checked={hasActivitiesFilter}
+                          onChange={(e) => setHasActivitiesFilter(e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <label htmlFor="hasActivitiesGestisci" className="text-xs font-medium">
+                          Solo con attività associate
+                        </label>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -901,35 +925,37 @@ export default function GestisciImport() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={paginatedRecords.length > 0 && paginatedRecords.every((_, idx) => 
-                              selectedRecords.has(currentPage * recordsPerPage + idx)
-                            )}
-                            onCheckedChange={(checked) => {
-                              const newSelected = new Set(selectedRecords);
-                              paginatedRecords.forEach((_, idx) => {
-                                const actualIndex = currentPage * recordsPerPage + idx;
-                                if (checked) {
-                                  newSelected.add(actualIndex);
-                                } else {
-                                  newSelected.delete(actualIndex);
-                                }
-                              });
-                              setSelectedRecords(newSelected);
-                            }}
-                          />
-                        </TableHead>
-                        <TableHead>Azienda</TableHead>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={paginatedRecords.length > 0 && paginatedRecords.every((_, idx) => 
+                            selectedRecords.has(currentPage * recordsPerPage + idx)
+                          )}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedRecords);
+                            paginatedRecords.forEach((_, idx) => {
+                              const actualIndex = currentPage * recordsPerPage + idx;
+                              if (checked) {
+                                newSelected.add(actualIndex);
+                              } else {
+                                newSelected.delete(actualIndex);
+                              }
+                            });
+                            setSelectedRecords(newSelected);
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead className="w-16">#</TableHead>
+                      <TableHead>Azienda</TableHead>
                         <TableHead>Nome</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefono</TableHead>
                         <TableHead>Paese</TableHead>
-                        <TableHead>Città</TableHead>
-                        <TableHead>Indirizzo</TableHead>
-                        <TableHead>Origine</TableHead>
-                        <TableHead className="w-20">Azioni</TableHead>
-                      </TableRow>
+                      <TableHead>Città</TableHead>
+                      <TableHead>Indirizzo</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead className="w-20">Attività</TableHead>
+                      <TableHead className="w-20">Azioni</TableHead>
+                    </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedRecords.map((record, index) => {
@@ -950,6 +976,9 @@ export default function GestisciImport() {
                                 }}
                               />
                             </TableCell>
+                            <TableCell className="text-xs text-muted-foreground font-mono">
+                              #{actualIndex + 1}
+                            </TableCell>
                             <TableCell>{formatCellValue(record.company_name)}</TableCell>
                             <TableCell>{formatCellValue(record.name)}</TableCell>
                             <TableCell>{formatCellValue(record.email)}</TableCell>
@@ -963,6 +992,28 @@ export default function GestisciImport() {
                             <TableCell>{formatCellValue(record.city)}</TableCell>
                             <TableCell>{formatCellValue(record.address)}</TableCell>
                             <TableCell>{formatCellValue(record.origin)}</TableCell>
+                            <TableCell>
+                              {getActivityCount(record.id) > 0 && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => navigate('/attivita', { state: { filterByContact: record.id } })}
+                                        className="h-7 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                                      >
+                                        <Activity className="h-3 w-3 mr-1" />
+                                        {getActivityCount(record.id)}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Visualizza {getActivityCount(record.id)} attività</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Button

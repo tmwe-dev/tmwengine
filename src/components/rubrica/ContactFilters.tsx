@@ -7,6 +7,7 @@ interface Filters {
   tag: string;
   citta: string;
   nazione: string;
+  hasActivities: boolean;
 }
 
 interface ContactFiltersProps {
@@ -27,11 +28,12 @@ export function ContactFilters({ filters, onFiltersChange, onClose }: ContactFil
     onFiltersChange({
       tag: '',
       citta: '',
-      nazione: ''
+      nazione: '',
+      hasActivities: false
     });
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value.trim() !== '');
+  const hasActiveFilters = filters.tag.trim() !== '' || filters.citta.trim() !== '' || filters.nazione.trim() !== '' || filters.hasActivities;
 
   return (
     <div className="space-y-6">

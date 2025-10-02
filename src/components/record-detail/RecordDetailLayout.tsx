@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FieldRenderer } from './FieldRenderer';
 import { MobileRecordDetailLayout } from './MobileRecordDetailLayout';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Building, Users, Mail, Phone, MapPin, Database, Clock, Settings, Search, Award, Apple, ChevronDown, ChevronRight, UserPlus, FileText, Plus, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,18 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  
+  // Stati per modifica campi principali
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState({
+    address: record.address || record.indirizzo || '',
+    city: record.city || record.citta || '',
+    zip_code: record.zip_code || '',
+    country: record.country || record.paese || '',
+    email: record.email || '',
+    phone: record.phone || record.telefono || '',
+    cell: record.cell || record.cellulare || '',
+  });
 
   // Recupera le attività del contatto
   const activities = getCompanyActivities(record.id);
@@ -206,6 +219,77 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
     }
   };
 
+  const handleSaveFields = async () => {
+    try {
+      // Determina la tabella in base ai campi presenti nel record
+      const isImportedContact = record.hasOwnProperty('import_log_id');
+      const tableName = isImportedContact ? 'imported_contacts' : 'rubrica';
+      
+      // Prepara l'oggetto di aggiornamento con i campi corretti per la tabella
+      const updateData: any = {};
+      
+      if (isImportedContact) {
+        if (editValues.address) updateData.address = editValues.address;
+        if (editValues.city) updateData.city = editValues.city;
+        if (editValues.zip_code) updateData.zip_code = editValues.zip_code;
+        if (editValues.country) updateData.country = editValues.country;
+        if (editValues.email) updateData.email = editValues.email;
+        if (editValues.phone) updateData.phone = editValues.phone;
+        if (editValues.cell) updateData.cell = editValues.cell;
+      } else {
+        if (editValues.address) updateData.indirizzo = editValues.address;
+        if (editValues.city) updateData.citta = editValues.city;
+        if (editValues.zip_code) updateData.zip_code = editValues.zip_code;
+        if (editValues.country) updateData.paese = editValues.country;
+        if (editValues.email) updateData.email = editValues.email;
+        if (editValues.phone) updateData.telefono = editValues.phone;
+        if (editValues.cell) updateData.cellulare = editValues.cell;
+      }
+
+      const { error } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq('id', record.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Aggiorna il record locale
+      if (isImportedContact) {
+        record.address = editValues.address;
+        record.city = editValues.city;
+        record.zip_code = editValues.zip_code;
+        record.country = editValues.country;
+        record.email = editValues.email;
+        record.phone = editValues.phone;
+        record.cell = editValues.cell;
+      } else {
+        record.indirizzo = editValues.address;
+        record.citta = editValues.city;
+        record.zip_code = editValues.zip_code;
+        record.paese = editValues.country;
+        record.email = editValues.email;
+        record.telefono = editValues.phone;
+        record.cellulare = editValues.cell;
+      }
+      
+      setIsEditing(false);
+      
+      toast({
+        title: "Modifiche salvate",
+        description: "I dati sono stati aggiornati con successo.",
+      });
+    } catch (error) {
+      console.error('Error saving fields:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio dei dati.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateActivity = async (activityData: any) => {
     try {
       // Crea l'attività basata sul tipo selezionato
@@ -253,14 +337,52 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   
   return (
     <div className="space-y-6">
-      {/* Header con country e città */}
-      <div className="flex justify-end">
+      {/* Toolbar di modifica */}
+      <div className="flex justify-between items-center pb-2 border-b">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           <span>{record.country || record.paese || "N/A"}</span>
           <span>•</span>
           <span>{record.city || record.citta || "N/A"}</span>
         </div>
+        <div className="flex gap-2">
+          <Button
+            variant={isEditing ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (isEditing) {
+                handleSaveFields();
+              } else {
+                setIsEditing(true);
+              }
+            }}
+          >
+            {isEditing ? 'Salva modifiche' : 'Modifica dati'}
+          </Button>
+          {isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditValues({
+                  address: record.address || record.indirizzo || '',
+                  city: record.city || record.citta || '',
+                  zip_code: record.zip_code || '',
+                  country: record.country || record.paese || '',
+                  email: record.email || '',
+                  phone: record.phone || record.telefono || '',
+                  cell: record.cell || record.cellulare || '',
+                });
+                setIsEditing(false);
+              }}
+            >
+              Annulla
+            </Button>
+          )}
+        </div>
       </div>
+      
+      {/* Header con country e città - rimosso perché ora è nella toolbar */}
+      
       {/* Sezione Date Sistema - in alto sotto i selettori */}
       {(record.created_at !== undefined || record.updated_at !== undefined) && (
         <div className="space-y-4">
@@ -389,46 +511,80 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         <div className="flex items-start gap-4">
           
           {/* Campi contatti con icone */}
-          {record.email !== undefined && (
+          {(record.email !== undefined || isEditing) && (
             <div className="flex-1 min-w-[250px] flex items-start gap-2">
               <Mail className="h-4 w-4 text-blue-500 mt-5" />
-              <FieldRenderer 
-                field="email" 
-                value={record.email} 
-                formatCellValue={formatCellValue}
-                className="flex-1"
-              />
+              {isEditing ? (
+                <div className="flex-1">
+                  <Label className="text-xs text-blue-600 mb-1">Email</Label>
+                  <Input
+                    value={editValues.email}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Email"
+                    type="email"
+                  />
+                </div>
+              ) : (
+                <FieldRenderer 
+                  field="email" 
+                  value={record.email} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              )}
             </div>
           )}
           
-          {(record.phone !== undefined || record.telefono !== undefined) && (
+          {((record.phone !== undefined || record.telefono !== undefined) || isEditing) && (
             <div className="min-w-[150px] flex items-start gap-2">
               <Phone className="h-4 w-4 text-green-500 mt-5" />
-              <FieldRenderer 
-                field={record.phone !== undefined ? "phone" : "telefono"} 
-                value={record.phone || record.telefono} 
-                formatCellValue={formatCellValue}
-                className="flex-1"
-              />
+              {isEditing ? (
+                <div className="flex-1">
+                  <Label className="text-xs text-blue-600 mb-1">Phone</Label>
+                  <Input
+                    value={editValues.phone}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Telefono"
+                  />
+                </div>
+              ) : (
+                <FieldRenderer 
+                  field={record.phone !== undefined ? "phone" : "telefono"} 
+                  value={record.phone || record.telefono} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              )}
             </div>
           )}
           
-          {(record.cell !== undefined || record.cellulare !== undefined) && (
+          {((record.cell !== undefined || record.cellulare !== undefined) || isEditing) && (
             <div className="min-w-[150px] flex items-start gap-2">
               <Phone className="h-4 w-4 text-orange-500 mt-5" />
-              <FieldRenderer 
-                field={record.cell !== undefined ? "cell" : "cellulare"} 
-                value={record.cell || record.cellulare} 
-                formatCellValue={formatCellValue}
-                className="flex-1"
-              />
+              {isEditing ? (
+                <div className="flex-1">
+                  <Label className="text-xs text-blue-600 mb-1">Cell</Label>
+                  <Input
+                    value={editValues.cell}
+                    onChange={(e) => setEditValues(prev => ({ ...prev, cell: e.target.value }))}
+                    placeholder="Cellulare"
+                  />
+                </div>
+              ) : (
+                <FieldRenderer 
+                  field={record.cell !== undefined ? "cell" : "cellulare"} 
+                  value={record.cell || record.cellulare} 
+                  formatCellValue={formatCellValue}
+                  className="flex-1"
+                />
+              )}
             </div>
           )}
         </div>
       </div>
 
       {/* Sezione Ubicazione */}
-      {(record.city !== undefined || record.citta !== undefined || record.zip_code !== undefined || record.address !== undefined || record.indirizzo !== undefined) && (
+      {(record.city !== undefined || record.citta !== undefined || record.zip_code !== undefined || record.address !== undefined || record.indirizzo !== undefined || isEditing) && (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <button 
@@ -444,43 +600,87 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           
           {showLocationDetails && (
             <div className="flex items-start gap-4 ml-9">
-              {(record.city !== undefined || record.citta !== undefined) && (
+              {((record.city !== undefined || record.citta !== undefined) || isEditing) && (
                 <div className="max-w-[200px] min-w-[200px]">
-                  <FieldRenderer 
-                    field={record.city !== undefined ? "city" : "citta"} 
-                    value={record.city || record.citta} 
-                    formatCellValue={formatCellValue}
-                  />
+                  {isEditing ? (
+                    <div>
+                      <Label className="text-xs text-blue-600 mb-1">City</Label>
+                      <Input
+                        value={editValues.city}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, city: e.target.value }))}
+                        placeholder="Città"
+                      />
+                    </div>
+                  ) : (
+                    <FieldRenderer 
+                      field={record.city !== undefined ? "city" : "citta"} 
+                      value={record.city || record.citta} 
+                      formatCellValue={formatCellValue}
+                    />
+                  )}
                 </div>
               )}
               
-              {record.zip_code !== undefined && (
+              {(record.zip_code !== undefined || isEditing) && (
                 <div className="max-w-[200px] min-w-[100px]">
-                  <FieldRenderer 
-                    field="zip_code" 
-                    value={record.zip_code} 
-                    formatCellValue={formatCellValue}
-                  />
+                  {isEditing ? (
+                    <div>
+                      <Label className="text-xs text-blue-600 mb-1">Zip Code</Label>
+                      <Input
+                        value={editValues.zip_code}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, zip_code: e.target.value }))}
+                        placeholder="CAP"
+                      />
+                    </div>
+                  ) : (
+                    <FieldRenderer 
+                      field="zip_code" 
+                      value={record.zip_code} 
+                      formatCellValue={formatCellValue}
+                    />
+                  )}
                 </div>
               )}
               
-              {(record.address !== undefined || record.indirizzo !== undefined) && (
+              {((record.address !== undefined || record.indirizzo !== undefined) || isEditing) && (
                 <div className="max-w-[200px] min-w-[200px]">
-                  <FieldRenderer 
-                    field={record.address !== undefined ? "address" : "indirizzo"} 
-                    value={record.address || record.indirizzo} 
-                    formatCellValue={formatCellValue}
-                  />
+                  {isEditing ? (
+                    <div>
+                      <Label className="text-xs text-blue-600 mb-1">Address</Label>
+                      <Input
+                        value={editValues.address}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, address: e.target.value }))}
+                        placeholder="Indirizzo"
+                      />
+                    </div>
+                  ) : (
+                    <FieldRenderer 
+                      field={record.address !== undefined ? "address" : "indirizzo"} 
+                      value={record.address || record.indirizzo} 
+                      formatCellValue={formatCellValue}
+                    />
+                  )}
                 </div>
               )}
               
-              {(record.country !== undefined || record.paese !== undefined) && (
+              {((record.country !== undefined || record.paese !== undefined) || isEditing) && (
                 <div className="max-w-[200px] min-w-[150px]">
-                  <FieldRenderer 
-                    field={record.country !== undefined ? "country" : "paese"} 
-                    value={record.country || record.paese} 
-                    formatCellValue={formatCellValue}
-                  />
+                  {isEditing ? (
+                    <div>
+                      <Label className="text-xs text-blue-600 mb-1">Country</Label>
+                      <Input
+                        value={editValues.country}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, country: e.target.value }))}
+                        placeholder="Paese"
+                      />
+                    </div>
+                  ) : (
+                    <FieldRenderer 
+                      field={record.country !== undefined ? "country" : "paese"} 
+                      value={record.country || record.paese} 
+                      formatCellValue={formatCellValue}
+                    />
+                  )}
                 </div>
               )}
             </div>

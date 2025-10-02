@@ -1555,6 +1555,7 @@ export default function ImportTemplates() {
     setImportingSelected(true);
     let successCount = 0;
     let errorCount = 0;
+    const totalRecords = selectedRecords.size;
 
     try {
       // Ottieni i record selezionati usando gli indici corretti da allRecords (non viewingRecords)
@@ -1564,6 +1565,9 @@ export default function ImportTemplates() {
           selectedData.push(allRecords[selectedIndex]);
         }
       }
+      
+      // Show progress toast
+      toast.info(`Importazione di ${totalRecords} record in corso...`);
       
       for (const record of selectedData) {
         try {
@@ -1626,6 +1630,11 @@ export default function ImportTemplates() {
               .delete()
               .eq('id', record.id);
           }
+          
+          // Update progress every 10 records
+          if ((successCount + errorCount) % 10 === 0) {
+            toast.info(`Progresso: ${successCount + errorCount}/${totalRecords} record processati`);
+          }
         } catch (error) {
           console.error('Errore elaborazione record:', error);
           errorCount++;
@@ -1643,15 +1652,25 @@ export default function ImportTemplates() {
           .eq('id', selectedImport.id);
       }
 
-      toast.success(`Importati ${successCount} contatti${errorCount > 0 ? `. ${errorCount} errori.` : ''}`);
+      toast.success(`Importazione completata: ${successCount} contatti importati${errorCount > 0 ? `, ${errorCount} errori` : ''}`);
       
-      // Refresh import logs
+      // Refresh data to show real updated state
       await loadImportLogs();
       
-      // Close dialog
-      setShowRecordsDialog(false);
-      setSelectedImport(null);
-      setViewingRecords([]);
+      // Reload the current import to show updated data
+      if (selectedImport) {
+        const { data: updatedRecords } = await supabase
+          .from('imported_contacts')
+          .select('*')
+          .eq('import_log_id', selectedImport.id)
+          .order('row_number', { ascending: true });
+        
+        if (updatedRecords) {
+          setAllRecords(updatedRecords);
+          setViewingRecords(updatedRecords);
+        }
+      }
+      
       setSelectedRecords(new Set());
       
     } catch (error) {

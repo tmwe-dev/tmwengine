@@ -1108,36 +1108,39 @@ export default function Attivita() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12 text-center">Attività</TableHead>
-                <TableHead className="w-12">
-                   <Checkbox
-                     checked={
-                       paginatedActivities.length > 0 && 
-                       paginatedActivities.every(activity => selectedActivities.includes(activity.id))
-                     }
-                     onCheckedChange={(checked) => {
-                       if (checked) {
-                         // Seleziona tutti gli elementi della pagina corrente
-                         const newSelected = [...selectedActivities];
-                         paginatedActivities.forEach(activity => {
-                           if (!newSelected.includes(activity.id)) {
-                             newSelected.push(activity.id);
-                           }
-                         });
-                         setSelectedActivities(newSelected);
-                       } else {
-                         // Deseleziona tutti gli elementi della pagina corrente
-                         const pageActivityIds = paginatedActivities.map(activity => activity.id);
-                         setSelectedActivities(selectedActivities.filter(id => !pageActivityIds.includes(id)));
-                       }
-                     }}
-                  />
+                <TableHead className="w-16 text-center">Attività</TableHead>
+                <TableHead className="w-16">
+                  <div className="flex items-center gap-2">
+                    <span>#</span>
+                    <Checkbox
+                      checked={
+                        paginatedActivities.length > 0 && 
+                        paginatedActivities.every(activity => selectedActivities.includes(activity.id))
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          // Seleziona tutti gli elementi della pagina corrente
+                          const newSelected = [...selectedActivities];
+                          paginatedActivities.forEach(activity => {
+                            if (!newSelected.includes(activity.id)) {
+                              newSelected.push(activity.id);
+                            }
+                          });
+                          setSelectedActivities(newSelected);
+                        } else {
+                          // Deseleziona tutti gli elementi della pagina corrente
+                          const pageActivityIds = paginatedActivities.map(activity => activity.id);
+                          setSelectedActivities(selectedActivities.filter(id => !pageActivityIds.includes(id)));
+                        }
+                      }}
+                    />
+                  </div>
                 </TableHead>
                 <TableHead 
-                  className="cursor-pointer hover:bg-muted/50 w-16" 
+                  className="cursor-pointer hover:bg-muted/50 w-20 text-center" 
                   onClick={() => handleSort('tipo')}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     Tipo
                     {sortField === 'tipo' && (
                       sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />

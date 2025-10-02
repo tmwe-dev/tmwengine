@@ -771,6 +771,8 @@ export default function Attivita() {
     );
   }
 
+  console.log('🔴 ATTIVITA PAGE - filterByContactId:', filterByContactId);
+  
   return (
     <div className={cn("section-spacing", isMobile && "space-y-4")}>
       {/* Header */}

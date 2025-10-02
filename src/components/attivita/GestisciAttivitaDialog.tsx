@@ -234,14 +234,14 @@ export function GestisciAttivitaDialog({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="group">
                 <Label htmlFor="stato">Stato</Label>
                 <Select 
                   value={formData.stato} 
                   onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="group-hover:ring-2 group-hover:ring-primary/50 transition-all">
+                    <SelectValue className="group-hover:font-semibold group-hover:text-primary" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="aperta">Aperta</SelectItem>

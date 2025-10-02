@@ -11,6 +11,7 @@ export interface ActivityStyleConfig {
 export interface ActivityStyles {
   bgColor: string;
   overlayStyle: React.CSSProperties;
+  combinedStyle?: React.CSSProperties; // Per la tabella: combina gradiente + retino
 }
 
 export function getActivityStyles({ isOverdue, isOpen }: ActivityStyleConfig): ActivityStyles {
@@ -25,5 +26,15 @@ export function getActivityStyles({ isOverdue, isOpen }: ActivityStyleConfig): A
     opacity: 0.2
   } : {};
 
-  return { bgColor, overlayStyle };
+  // Per la tabella: combina il gradiente CSS con il retino
+  const combinedStyle = (isOverdue || isOpen) ? {
+    backgroundImage: `
+      repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px),
+      linear-gradient(to bottom left, 
+        ${isOverdue ? 'rgba(153, 27, 27, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%' : 'rgba(22, 101, 52, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%'}
+      )
+    `.trim()
+  } : {};
+
+  return { bgColor, overlayStyle, combinedStyle };
 }

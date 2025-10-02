@@ -1231,22 +1231,18 @@ export default function Attivita() {
                   const isOpen = activity.stato === 'aperta';
                   
                   // Usa la stessa utility di ActivityCard per gli stili
-                  const { bgColor, overlayStyle } = getActivityStyles({ isOverdue: !!isOverdue, isOpen });
+                  const { bgColor, combinedStyle } = getActivityStyles({ isOverdue: !!isOverdue, isOpen });
                   
                   return (
                      <TableRow 
                       key={activity.id} 
                       className={cn(
-                        "hover:bg-muted/50 cursor-pointer relative overflow-hidden",
-                        bgColor,
+                        "hover:bg-muted/50 cursor-pointer relative",
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
+                      style={combinedStyle}
                     >
-                      {/* Retino trasparente (come in ActivityCard) - fuori dalle celle */}
-                      {(isOverdue || isOpen) && (
-                        <div className="absolute inset-0 pointer-events-none" style={overlayStyle} />
-                      )}
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">

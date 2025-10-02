@@ -775,10 +775,23 @@ export default function Attivita() {
     <div className={cn("section-spacing", isMobile && "space-y-4")}>
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-heading-1 font-bold text-text-primary mb-2">
-            Gestione Attività
-          </h1>
+        <div className="flex items-center gap-3">
+          {filterByContactId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackNavigation}
+              className="gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Indietro
+            </Button>
+          )}
+          <div>
+            <h1 className="text-heading-1 font-bold text-text-primary mb-2">
+              Gestione Attività
+            </h1>
+          </div>
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

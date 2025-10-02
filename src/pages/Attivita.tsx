@@ -1108,6 +1108,7 @@ export default function Attivita() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12 text-center">Attività</TableHead>
                 <TableHead className="w-12">
                    <Checkbox
                      checked={
@@ -1237,7 +1238,7 @@ export default function Attivita() {
             <TableBody>
               {filteredActivities.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12">
+                  <TableCell colSpan={12} className="text-center py-12">
                     {activities.length === 0 ? (
                       <div className="text-text-secondary">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -1294,6 +1295,9 @@ export default function Attivita() {
                           }} 
                         />
                       )}
+                      <TableCell className="w-16 align-middle text-center">
+                        <span className="text-sm font-semibold text-primary relative z-10">1</span>
+                      </TableCell>
                       <TableCell className="w-16 align-middle">
                         <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">

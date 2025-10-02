@@ -337,14 +337,24 @@ export default function ImportTemplates() {
   
   // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
   useEffect(() => {
+    console.log('🔵 ImportTemplates useEffect - openRecordsDialog:', {
+      hasState: !!location.state?.openRecordsDialog,
+      importLogsLength: importLogs.length,
+      isLoadingDialog
+    });
+    
     if (location.state?.openRecordsDialog) {
       setIsLoadingDialog(true);
+      console.log('🔵 Set isLoadingDialog = true');
+      
       // Aspetta che i dati siano caricati
       if (importLogs.length > 0) {
         const recentImport = importLogs[0];
+        console.log('🔵 Found recent import:', recentImport.id);
         if (recentImport) {
           setSelectedImport(recentImport);
           loadAllRecords(recentImport).then(() => {
+            console.log('🔵 Records loaded, opening dialog');
             setShowRecordsDialog(true);
             setIsLoadingDialog(false);
           });
@@ -1754,8 +1764,11 @@ export default function ImportTemplates() {
 
   // Se stiamo caricando il dialog, mostra schermo nero
   if (isLoadingDialog) {
+    console.log('🔵 ImportTemplates: Showing BLACK SCREEN (isLoadingDialog)');
     return <div className="fixed inset-0 bg-black z-50"></div>;
   }
+  
+  console.log('🔵 ImportTemplates: Rendering normal content');
 
   return (
     <div className="space-y-6">

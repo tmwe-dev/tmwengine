@@ -271,197 +271,193 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId }: Attivi
 
   if (isLoading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-7xl max-h-[90vh]">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-muted-foreground">Caricamento attività...</div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DialogContent className="max-w-7xl max-h-[90vh]">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Caricamento attività...</div>
+        </div>
+      </DialogContent>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
+    <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle className="flex items-center justify-between">
+          <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </DialogTitle>
+      </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Search and Filters */}
-          <Card className="border-card shadow-soft">
-            <CardContent className="p-4">
-              <div className="flex gap-3 flex-col sm:flex-row">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca per descrizione o contatto..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <Select
-                  value={filters.stato}
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
-                >
-                  <SelectTrigger className="flex-1 min-w-[200px]">
-                    <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutte ({activities.length})</SelectItem>
-                    <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
-                    <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
-                  </SelectContent>
-                </Select>
+      <div className="space-y-4">
+        {/* Search and Filters */}
+        <Card className="border-card shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex gap-3 flex-col sm:flex-row">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cerca per descrizione o contatto..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
+              
+              <Select
+                value={filters.stato}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
+              >
+                <SelectTrigger className="flex-1 min-w-[200px]">
+                  <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte ({activities.length})</SelectItem>
+                  <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
+                  <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              {/* Badge filtro contatto attivo */}
-              {filterByContactId && (
-                <div className="mt-4 flex items-center justify-center">
-                  <Badge 
-                    variant="secondary" 
-                    className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
-                    onClick={() => onOpenChange(false)}
-                  >
-                    <X className="h-4 w-4" />
-                    Filtrato per contatto - Clicca per tornare indietro
-                  </Badge>
-                </div>
-              )}
+            {/* Badge filtro contatto attivo */}
+            {filterByContactId && (
+              <div className="mt-4 flex items-center justify-center">
+                <Badge 
+                  variant="secondary" 
+                  className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
+                  onClick={() => onOpenChange(false)}
+                >
+                  <X className="h-4 w-4" />
+                  Filtrato per contatto - Clicca per tornare indietro
+                </Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card className={cn("cursor-pointer transition-all", statusFilter === 'all' && "ring-2 ring-primary")} onClick={() => setStatusFilter('all')}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{stats.totali}</div>
+              <div className="text-sm text-muted-foreground">Totali</div>
             </CardContent>
           </Card>
+          <Card className={cn("cursor-pointer transition-all", statusFilter === 'future' && "ring-2 ring-primary")} onClick={() => setStatusFilter('future')}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{stats.future}</div>
+              <div className="text-sm text-muted-foreground">Future</div>
+            </CardContent>
+          </Card>
+          <Card className={cn("cursor-pointer transition-all", statusFilter === 'completate' && "ring-2 ring-primary")} onClick={() => setStatusFilter('completate')}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{stats.completate}</div>
+              <div className="text-sm text-muted-foreground">Completate</div>
+            </CardContent>
+          </Card>
+          <Card className={cn("cursor-pointer transition-all", statusFilter === 'in_corso' && "ring-2 ring-primary")} onClick={() => setStatusFilter('in_corso')}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{stats.in_corso}</div>
+              <div className="text-sm text-muted-foreground">In Corso</div>
+            </CardContent>
+          </Card>
+          <Card className={cn("cursor-pointer transition-all", statusFilter === 'scadute' && "ring-2 ring-primary")} onClick={() => setStatusFilter('scadute')}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold">{stats.scadute}</div>
+              <div className="text-sm text-muted-foreground">Scadute</div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Card className={cn("cursor-pointer transition-all", statusFilter === 'all' && "ring-2 ring-primary")} onClick={() => setStatusFilter('all')}>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{stats.totali}</div>
-                <div className="text-sm text-muted-foreground">Totali</div>
-              </CardContent>
-            </Card>
-            <Card className={cn("cursor-pointer transition-all", statusFilter === 'future' && "ring-2 ring-primary")} onClick={() => setStatusFilter('future')}>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{stats.future}</div>
-                <div className="text-sm text-muted-foreground">Future</div>
-              </CardContent>
-            </Card>
-            <Card className={cn("cursor-pointer transition-all", statusFilter === 'completate' && "ring-2 ring-primary")} onClick={() => setStatusFilter('completate')}>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{stats.completate}</div>
-                <div className="text-sm text-muted-foreground">Completate</div>
-              </CardContent>
-            </Card>
-            <Card className={cn("cursor-pointer transition-all", statusFilter === 'in_corso' && "ring-2 ring-primary")} onClick={() => setStatusFilter('in_corso')}>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{stats.in_corso}</div>
-                <div className="text-sm text-muted-foreground">In Corso</div>
-              </CardContent>
-            </Card>
-            <Card className={cn("cursor-pointer transition-all", statusFilter === 'scadute' && "ring-2 ring-primary")} onClick={() => setStatusFilter('scadute')}>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{stats.scadute}</div>
-                <div className="text-sm text-muted-foreground">Scadute</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Activities Table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
+        {/* Activities Table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Descrizione</TableHead>
+                    <TableHead>Contatto</TableHead>
+                    <TableHead>Stato</TableHead>
+                    <TableHead>Priorità</TableHead>
+                    <TableHead>Scadenza</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedActivities.length === 0 ? (
                     <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Descrizione</TableHead>
-                      <TableHead>Contatto</TableHead>
-                      <TableHead>Stato</TableHead>
-                      <TableHead>Priorità</TableHead>
-                      <TableHead>Scadenza</TableHead>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        Nessuna attività trovata
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedActivities.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          Nessuna attività trovata
+                  ) : (
+                    paginatedActivities.map((activity) => (
+                      <TableRow key={activity.id}>
+                        <TableCell>
+                          <Badge variant="outline">{TIPO_LABELS[activity.tipo]}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{activity.descrizione}</TableCell>
+                        <TableCell>{activity.rubrica_azienda || activity.rubrica_nome || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            activity.stato === 'aperta' ? 'default' :
+                            activity.stato === 'in_corso' ? 'secondary' :
+                            activity.stato === 'completata' ? 'default' :
+                            'destructive'
+                          }>
+                            {STATO_LABELS[activity.stato]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            activity.priorita === 'alta' ? 'destructive' :
+                            activity.priorita === 'media' ? 'secondary' :
+                            'outline'
+                          }>
+                            {PRIORITA_LABELS[activity.priorita]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {activity.scadenza ? format(new Date(activity.scadenza), 'dd/MM/yyyy') : '-'}
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      paginatedActivities.map((activity) => (
-                        <TableRow key={activity.id}>
-                          <TableCell>
-                            <Badge variant="outline">{TIPO_LABELS[activity.tipo]}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">{activity.descrizione}</TableCell>
-                          <TableCell>{activity.rubrica_azienda || activity.rubrica_nome || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              activity.stato === 'aperta' ? 'default' :
-                              activity.stato === 'in_corso' ? 'secondary' :
-                              activity.stato === 'completata' ? 'default' :
-                              'destructive'
-                            }>
-                              {STATO_LABELS[activity.stato]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              activity.priorita === 'alta' ? 'destructive' :
-                              activity.priorita === 'media' ? 'secondary' :
-                              'outline'
-                            }>
-                              {PRIORITA_LABELS[activity.priorita]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {activity.scadenza ? format(new Date(activity.scadenza), 'dd/MM/yyyy') : '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Pagina {currentPage + 1} di {totalPages}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                  disabled={currentPage === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                  disabled={currentPage === totalPages - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </CardContent>
+        </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Pagina {currentPage + 1} di {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage === totalPages - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </DialogContent>
   );
 }

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Eye, PlayCircle, RefreshCw } from 'lucide-react';
+import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
+import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import {
   Table,
   TableBody,
@@ -25,6 +26,67 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MobileRecordDetailLayout } from '@/components/record-detail/MobileRecordDetailLayout';
+import countriesData from '@/data/countries.json';
+
+// Utility functions
+const formatCellValue = (value: any, fieldKey?: string): string => {
+  if (value === null || value === undefined || value === '' || value === false || value === '-') {
+    return '-';
+  }
+  
+  if (typeof value === 'boolean') {
+    return value ? 'Sì' : 'No';
+  }
+  
+  if (fieldKey && (fieldKey.includes('date') || fieldKey === 'scheduled_contact' || fieldKey === 'last_contact' || fieldKey === 'next_contact_date')) {
+    if (value && value !== '-') {
+      try {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('it-IT');
+        }
+      } catch (e) {
+        return String(value);
+      }
+    }
+  }
+  
+  return String(value);
+};
+
+const getCountryFlag = (countryName: string): string => {
+  if (!countryName) return '';
+  
+  // Map country code to flag emoji
+  const countryFlags: { [key: string]: string } = {
+    'IT': '🇮🇹', 'FR': '🇫🇷', 'DE': '🇩🇪', 'ES': '🇪🇸', 'GB': '🇬🇧',
+    'US': '🇺🇸', 'CN': '🇨🇳', 'JP': '🇯🇵', 'NL': '🇳🇱', 'BE': '🇧🇪',
+    'CH': '🇨🇭', 'AT': '🇦🇹', 'PL': '🇵🇱', 'PT': '🇵🇹', 'GR': '🇬🇷',
+  };
+  
+  const code = countryName.toUpperCase();
+  return countryFlags[code] || '🌍';
+};
 
 interface ImportLog {
   id: string;
@@ -40,6 +102,10 @@ interface ImportLog {
   created_at: string;
 }
 
+interface ImportedContact {
+  [key: string]: any;
+}
+
 export default function GestisciImport() {
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,9 +114,73 @@ export default function GestisciImport() {
   const [importToDelete, setImportToDelete] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
+  // States for record viewing dialog
+  const [showRecordsDialog, setShowRecordsDialog] = useState(false);
+  const [selectedImport, setSelectedImport] = useState<ImportLog | null>(null);
+  const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
+  const [filteredRecords, setFilteredRecords] = useState<ImportedContact[]>([]);
+  const [loadingAllRecords, setLoadingAllRecords] = useState(false);
+  const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [recordsPerPage, setRecordsPerPage] = useState(50);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [originFilter, setOriginFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Column visibility
+  const [visibleColumns] = useState({
+    company: true,
+    details: false,
+    metadata: false
+  });
+  
+  // Record detail dialog
+  const [showRecordDetail, setShowRecordDetail] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ImportedContact | null>(null);
+
   useEffect(() => {
     loadImportLogs();
   }, []);
+
+  // Apply search and filters
+  useEffect(() => {
+    let result = [...allRecords];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(record => {
+        const searchFields = [
+          record.company_name,
+          record.company_alias,
+          record.name,
+          record.alias,
+          record.city
+        ];
+        
+        return searchFields.some(field => 
+          field && String(field).toLowerCase().includes(query)
+        );
+      });
+    }
+    
+    // Apply origin filter
+    if (originFilter && originFilter !== '__all__') {
+      result = result.filter(record => String(record.origin) === originFilter);
+    }
+    
+    // Apply country filter
+    if (countryFilter && countryFilter !== '__all__') {
+      result = result.filter(record => String(record.country) === countryFilter);
+    }
+    
+    setFilteredRecords(result);
+    setCurrentPage(0);
+  }, [searchQuery, originFilter, countryFilter, allRecords]);
 
   const loadImportLogs = async () => {
     try {
@@ -112,6 +242,198 @@ export default function GestisciImport() {
     }
   };
 
+  const viewImportRecords = async (importLog: ImportLog) => {
+    setLoadingAllRecords(true);
+    setSelectedImport(importLog);
+
+    try {
+      console.log('Caricamento tutti i record da imported_contacts per import_log_id:', importLog.id);
+      
+      const { count } = await supabase
+        .from('imported_contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLog.id);
+      
+      console.log('Totale record nel database:', count);
+      
+      const allRecordsData = [];
+      const batchSize = 1000;
+      let from = 0;
+      
+      while (from < (count || 0)) {
+        const to = Math.min(from + batchSize - 1, (count || 0) - 1);
+        
+        console.log(`Caricamento batch: ${from}-${to}`);
+        
+        const { data: batchData, error } = await supabase
+          .from('imported_contacts')
+          .select('*')
+          .eq('import_log_id', importLog.id)
+          .range(from, to);
+        
+        if (error) {
+          console.error('Errore nel batch', from, to, error);
+          throw error;
+        }
+        
+        if (batchData) {
+          allRecordsData.push(...batchData);
+          console.log(`Batch caricato: ${batchData.length} record, totale: ${allRecordsData.length}`);
+        }
+        
+        from += batchSize;
+        
+        if (!batchData || batchData.length < batchSize) {
+          break;
+        }
+      }
+      
+      console.log('Record effettivamente caricati:', allRecordsData.length, 'di', count);
+      
+      setAllRecords(allRecordsData);
+      setTotalRecords(count || 0);
+      setShowRecordsDialog(true);
+      
+      setSearchQuery('');
+      setOriginFilter('');
+      setCountryFilter('');
+      setSelectedRecords(new Set());
+      setCurrentPage(0);
+    } catch (error) {
+      console.error('Errore nel caricamento record:', error);
+      toast.error('Errore nel caricamento dei record');
+      setAllRecords([]);
+    } finally {
+      setLoadingAllRecords(false);
+    }
+  };
+
+  const deleteImportedContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('imported_contacts')
+        .delete()
+        .eq('id', contactId);
+        
+      if (error) throw error;
+      
+      const newAllRecords = allRecords.filter(record => record.id !== contactId);
+      setAllRecords(newAllRecords);
+      setSelectedRecords(new Set());
+      
+      toast.success('Record eliminato con successo');
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del record:', error);
+      toast.error('Errore nell\'eliminazione del record');
+    }
+  };
+
+  const deleteSelectedRecords = async () => {
+    if (selectedRecords.size === 0) {
+      toast.error('Nessun record selezionato');
+      return;
+    }
+    
+    try {
+      const recordsToDelete = Array.from(selectedRecords).map(index => {
+        if (index >= 0 && index < allRecords.length) {
+          return allRecords[index]?.id;
+        }
+        return null;
+      }).filter(Boolean);
+      
+      if (recordsToDelete.length === 0) {
+        toast.error('Nessun record valido selezionato');
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('imported_contacts')
+        .delete()
+        .in('id', recordsToDelete);
+        
+      if (error) throw error;
+      
+      const newAllRecords = allRecords.filter(record => 
+        !recordsToDelete.includes(record.id)
+      );
+      setAllRecords(newAllRecords);
+      setSelectedRecords(new Set());
+      
+      toast.success(`${recordsToDelete.length} record eliminati con successo`);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione dei record:', error);
+      toast.error('Errore nell\'eliminazione dei record');
+    }
+  };
+
+  const importSelectedRecords = async () => {
+    if (selectedRecords.size === 0) {
+      toast.error('Nessun record selezionato');
+      return;
+    }
+
+    try {
+      const recordsToImport = Array.from(selectedRecords).map(index => allRecords[index]);
+      
+      const contactsToTransfer = recordsToImport.map(record => ({
+        nome: record.name || '',
+        azienda: record.company_name || '',
+        company_alias: record.company_alias || '',
+        email: record.email || '',
+        telefono: record.phone || '',
+        cellulare: record.cell || '',
+        indirizzo: record.address || '',
+        citta: record.city || '',
+        paese: record.country || '',
+        zip_code: record.zip_code || '',
+        origine: record.origin || 'imported',
+        responsabile: '',
+        position: record.position || '',
+        title: record.title || '',
+        alias: record.alias || '',
+      }));
+
+      const { error } = await supabase
+        .from('rubrica')
+        .insert(contactsToTransfer);
+
+      if (error) throw error;
+
+      await supabase
+        .from('imported_contacts')
+        .update({ is_imported_to_rubrica: true })
+        .in('id', recordsToImport.map(r => r.id));
+
+      toast.success(`${contactsToTransfer.length} contatti importati in rubrica`);
+      
+      loadImportLogs();
+      setShowRecordsDialog(false);
+      setSelectedImport(null);
+      setAllRecords([]);
+      setSelectedRecords(new Set());
+      
+    } catch (error) {
+      console.error('Errore importazione:', error);
+      toast.error('Errore durante l\'importazione');
+    }
+  };
+
+  const getCountryFullName = (countryCode: string): string => {
+    if (!countryCode) return '';
+    const country = countriesData.find(
+      c => c.code.toLowerCase() === countryCode.toLowerCase() || 
+           c.name.toLowerCase() === countryCode.toLowerCase()
+    );
+    return country?.name || countryCode;
+  };
+
+  const getUniqueValues = (field: string) => {
+    const values = [...new Set(allRecords.map(record => record[field]))]
+      .filter(value => value !== null && value !== undefined && value !== '');
+    return values;
+  };
+
   const getStateBadgeColor = (stato: string) => {
     switch (stato) {
       case 'completato':
@@ -133,6 +455,14 @@ export default function GestisciImport() {
       </span>
     );
   };
+
+  // Pagination
+  const paginatedRecords = filteredRecords.slice(
+    currentPage * recordsPerPage,
+    (currentPage + 1) * recordsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
 
   if (loading) {
     return (
@@ -181,9 +511,7 @@ export default function GestisciImport() {
                 <ImportLogMobileCard
                   key={log.id}
                   log={log}
-                  onViewRecords={() => {
-                    window.location.href = `/import-templates?openImport=${log.id}`;
-                  }}
+                  onViewRecords={() => viewImportRecords(log)}
                   onProcess={() => processFile(log.id)}
                   onDelete={() => {
                     setImportToDelete(log.id);
@@ -191,8 +519,8 @@ export default function GestisciImport() {
                   }}
                   getStatusBadge={getStatusBadge}
                   isProcessing={monitoringImportId === log.id}
-                  isLoading={false}
-                  isSelected={false}
+                  isLoading={loadingAllRecords && selectedImport?.id === log.id}
+                  isSelected={selectedImport?.id === log.id}
                 />
               ))}
             </div>
@@ -218,13 +546,7 @@ export default function GestisciImport() {
                       {new Date(log.created_at).toLocaleDateString('it-IT')}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${getStateBadgeColor(
-                          log.stato
-                        )}`}
-                      >
-                        {log.stato}
-                      </span>
+                      {getStatusBadge(log.stato)}
                     </TableCell>
                     <TableCell className="text-right">{log.righe_totali}</TableCell>
                     <TableCell className="text-right">{log.righe_importate}</TableCell>
@@ -237,9 +559,8 @@ export default function GestisciImport() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            window.location.href = `/import-templates?openImport=${log.id}`;
-                          }}
+                          onClick={() => viewImportRecords(log)}
+                          disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -273,13 +594,13 @@ export default function GestisciImport() {
         </CardContent>
       </Card>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
             <AlertDialogDescription>
-              Sei sicuro di voler eliminare questo import? Questa azione non può essere
-              annullata.
+              Sei sicuro di voler eliminare questo import? Questa azione non può essere annullata.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -288,6 +609,410 @@ export default function GestisciImport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Records Dialog */}
+      <Dialog open={showRecordsDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowRecordsDialog(false);
+          setSelectedImport(null);
+          setAllRecords([]);
+          setFilteredRecords([]);
+          setCurrentPage(0);
+          setSelectedRecords(new Set());
+          setSearchQuery('');
+          setOriginFilter('');
+          setCountryFilter('');
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[85vh] flex flex-col mx-auto my-auto overflow-hidden">
+          <DialogHeader>
+            {isMobile ? (
+              <div className="space-y-3">
+                <DialogTitle className="text-lg font-semibold">
+                  {selectedImport?.file_name}
+                </DialogTitle>
+                <div className="text-sm text-muted-foreground">
+                  <span className="text-primary font-medium">{filteredRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> contatti
+                </div>
+                
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="w-full justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filtri e Ricerca
+                    </div>
+                    {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                  
+                  {showFilters && (
+                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Cerca..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 h-9"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <Select value={originFilter} onValueChange={setOriginFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Origine" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutte</SelectItem>
+                            {getUniqueValues('origin').map((origin) => (
+                              <SelectItem key={String(origin)} value={String(origin)}>
+                                {String(origin)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={countryFilter} onValueChange={setCountryFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Paese" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Tutti</SelectItem>
+                            {getUniqueValues('country').map((country) => (
+                              <SelectItem key={String(country)} value={String(country)}>
+                                {getCountryFullName(String(country))}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex-1">
+                  <DialogTitle>
+                    Record Importati - {selectedImport?.file_name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Visualizza e gestisci <span className="text-lg font-semibold text-blue-600">{filteredRecords.length}</span> di <span className="text-lg font-semibold text-blue-600">{totalRecords}</span> contatti importati da questo file.
+                  </DialogDescription>
+                </div>
+                
+                <div className="flex gap-2 items-end flex-row">
+                  <div className="w-64">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Cerca per nome azienda, alias, nome, città..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-row">
+                    <div className="w-48">
+                      <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
+                      <Select value={originFilter} onValueChange={setOriginFilter}>
+                        <SelectTrigger id="origin-filter">
+                          <SelectValue placeholder="Tutte le origini" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">Tutte le origini</SelectItem>
+                          {getUniqueValues('origin').map((origin) => (
+                            <SelectItem key={String(origin)} value={String(origin)}>
+                              {String(origin)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="w-48">
+                      <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
+                      <Select value={countryFilter} onValueChange={setCountryFilter}>
+                        <SelectTrigger id="country-filter">
+                          <SelectValue placeholder="Tutti i paesi" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">Tutti i paesi</SelectItem>
+                          {getUniqueValues('country').map((country) => (
+                            <SelectItem key={String(country)} value={String(country)}>
+                              {getCountryFullName(String(country))}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="w-36">
+                      <Label htmlFor="records-per-page" className="text-sm font-medium">Record/pagina</Label>
+                      <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                        <SelectTrigger id="records-per-page">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+
+          {!isMobile && (
+            <div className="flex justify-between items-center gap-2 py-4 border-b">
+              <div className="flex items-center gap-2">
+                {selectedRecords.size > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={importSelectedRecords}
+                          className="text-xs px-2"
+                        >
+                          <Database className="h-4 w-4 text-green-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Importa {selectedRecords.size} record in rubrica</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={deleteSelectedRecords}
+                        disabled={selectedRecords.size === 0}
+                        className="text-xs px-2"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>
+                        {selectedRecords.size === 0 
+                          ? 'Seleziona record da eliminare' 
+                          : `Elimina ${selectedRecords.size} record selezionati`
+                        }
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          )}
+
+          {loadingAllRecords ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-auto">
+                {isMobile ? (
+                  <div className="space-y-3 p-4">
+                    {paginatedRecords.map((record, index) => {
+                      const actualIndex = currentPage * recordsPerPage + index;
+                      return (
+                        <ImportedContactMobileCard
+                          key={record.id}
+                          contact={record}
+                          index={actualIndex}
+                          isSelected={selectedRecords.has(actualIndex)}
+                          onSelect={(idx, selected) => {
+                            const newSelected = new Set(selectedRecords);
+                            if (selected) {
+                              newSelected.add(actualIndex);
+                            } else {
+                              newSelected.delete(actualIndex);
+                            }
+                            setSelectedRecords(newSelected);
+                          }}
+                          onView={() => {
+                            setSelectedRecord(record);
+                            setShowRecordDetail(true);
+                          }}
+                          onDelete={() => deleteImportedContact(record.id)}
+                          getCompanyActivities={() => []}
+                          getCountryFlag={getCountryFlag}
+                          formatCellValue={formatCellValue}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={paginatedRecords.length > 0 && paginatedRecords.every((_, idx) => 
+                              selectedRecords.has(currentPage * recordsPerPage + idx)
+                            )}
+                            onCheckedChange={(checked) => {
+                              const newSelected = new Set(selectedRecords);
+                              paginatedRecords.forEach((_, idx) => {
+                                const actualIndex = currentPage * recordsPerPage + idx;
+                                if (checked) {
+                                  newSelected.add(actualIndex);
+                                } else {
+                                  newSelected.delete(actualIndex);
+                                }
+                              });
+                              setSelectedRecords(newSelected);
+                            }}
+                          />
+                        </TableHead>
+                        <TableHead>Azienda</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Telefono</TableHead>
+                        <TableHead>Paese</TableHead>
+                        <TableHead>Città</TableHead>
+                        <TableHead>Indirizzo</TableHead>
+                        <TableHead>Origine</TableHead>
+                        <TableHead className="w-20">Azioni</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedRecords.map((record, index) => {
+                        const actualIndex = currentPage * recordsPerPage + index;
+                        return (
+                          <TableRow key={record.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedRecords.has(actualIndex)}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedRecords);
+                                  if (checked) {
+                                    newSelected.add(actualIndex);
+                                  } else {
+                                    newSelected.delete(actualIndex);
+                                  }
+                                  setSelectedRecords(newSelected);
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>{formatCellValue(record.company_name)}</TableCell>
+                            <TableCell>{formatCellValue(record.name)}</TableCell>
+                            <TableCell>{formatCellValue(record.email)}</TableCell>
+                            <TableCell>{formatCellValue(record.phone)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <span className="text-base">{getCountryFlag(record.country)}</span>
+                                <span>{formatCellValue(record.country)}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatCellValue(record.city)}</TableCell>
+                            <TableCell>{formatCellValue(record.address)}</TableCell>
+                            <TableCell>{formatCellValue(record.origin)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedRecord(record);
+                                    setShowRecordDetail(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteImportedContact(record.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Pagina {currentPage + 1} di {totalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                      disabled={currentPage === 0}
+                    >
+                      Precedente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                      disabled={currentPage >= totalPages - 1}
+                    >
+                      Successiva
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Detail Dialog */}
+      <Dialog open={showRecordDetail} onOpenChange={setShowRecordDetail}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dettaglio Record</DialogTitle>
+          </DialogHeader>
+          {selectedRecord && (
+            <MobileRecordDetailLayout 
+              record={selectedRecord} 
+              formatCellValue={formatCellValue} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

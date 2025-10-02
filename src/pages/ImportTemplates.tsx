@@ -232,6 +232,15 @@ interface FilterTag {
 }
 
 export default function ImportTemplates() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  // EARLY RETURN: Se arriva da Attivita con openRecordsDialog, mostra solo sfondo nero
+  if (location.state?.openRecordsDialog) {
+    return <div className="fixed inset-0 bg-black" />;
+  }
+  
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -321,9 +330,6 @@ export default function ImportTemplates() {
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
-  const isMobile = useIsMobile();
-  const navigate = useNavigate();
-  const location = useLocation();
   
   // Stati per il dialog delle attività
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);

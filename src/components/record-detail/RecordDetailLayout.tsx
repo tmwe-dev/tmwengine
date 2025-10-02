@@ -376,7 +376,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   return (
     <div className="space-y-6">
       {/* Sezione sticky con navigazione e info località */}
-      <div className="sticky top-0 z-10 bg-background py-4 border-b">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b shadow-sm">
         {/* Breadcrumb */}
         <div className="mb-3">
           <Breadcrumb>

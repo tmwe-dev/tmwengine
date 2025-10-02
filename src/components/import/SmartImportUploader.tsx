@@ -197,7 +197,7 @@ Rispondi SOLO con JSON valido, senza markdown o altro testo.`;
       setUploadedFile(file);
       analyzeFile(file);
     }
-  }, []);
+  }, [analyzeFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

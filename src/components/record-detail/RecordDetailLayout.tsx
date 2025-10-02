@@ -389,26 +389,8 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Toolbar di aggiornamento */}
-      <div className="flex justify-between items-center pb-2 border-b">
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <span>{record.country || record.paese || "N/A"}</span>
-          <span>•</span>
-          <span>{record.city || record.citta || "N/A"}</span>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSaveFields}
-          >
-            Aggiorna
-          </Button>
-        </div>
-      </div>
-
-      {/* Pulsanti azione centrali */}
-      <div className="flex justify-center items-center gap-3 py-4">
+      {/* Pulsanti azione centrali - sticky */}
+      <div className="sticky top-0 z-10 bg-background flex justify-center items-center gap-3 py-4 border-b">
         {/* Pulsante Importa in Rubrica - solo per record importati */}
         {record.hasOwnProperty('is_imported_to_rubrica') && (
           <Button 
@@ -457,6 +439,24 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Toolbar di aggiornamento */}
+      <div className="flex justify-between items-center pb-2 border-b">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <span>{record.country || record.paese || "N/A"}</span>
+          <span>•</span>
+          <span>{record.city || record.citta || "N/A"}</span>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSaveFields}
+          >
+            Aggiorna
+          </Button>
+        </div>
       </div>
       
       {/* Header con country e città - rimosso perché ora è nella toolbar */}

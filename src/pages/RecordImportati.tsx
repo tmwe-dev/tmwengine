@@ -572,8 +572,6 @@ const RecordImportati = () => {
         open={isAttivitaDialogOpen}
         onOpenChange={setIsAttivitaDialogOpen}
         filterByContactId={selectedContactIdForActivities}
-        showBackButton={true}
-        onBackToRecords={() => setIsAttivitaDialogOpen(false)}
       />
     </div>
   );

@@ -1229,32 +1229,22 @@ export default function Attivita() {
                   const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata';
                   const isOpen = activity.stato === 'aperta';
                   
+                  // Usa le stesse classi di ActivityCard
                   const rowBgColor = isOverdue 
-                    ? 'border-red-700 dark:border-red-800' 
+                    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30 border-red-700 dark:border-red-800' 
                     : isOpen 
-                    ? 'border-green-700 dark:border-green-800'
+                    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30 border-green-700 dark:border-green-800'
                     : '';
-                  
-                  // Combina retino + gradiente VISIBILE in un unico backgroundImage
-                  const rowOverlayStyle = (isOverdue || isOpen) ? {
-                    backgroundImage: [
-                      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.08) 10px, rgba(0, 0, 0, 0.08) 20px)',
-                      isOverdue
-                        ? 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(185, 28, 28, 0.15) 30%, rgba(127, 29, 29, 0.1) 70%, transparent 100%)'
-                        : 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.15) 30%, rgba(21, 128, 61, 0.1) 70%, transparent 100%)'
-                    ].join(', ')
-                  } : {};
                   
                   return (
                      <TableRow 
                       key={activity.id} 
                       className={cn(
                         "hover:bg-muted/50 cursor-pointer relative",
-                        rowBgColor,
+                        rowBgColor, // APPLICA IL GRADIENTE
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
-                      style={rowOverlayStyle}
                     >
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">

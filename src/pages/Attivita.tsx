@@ -1235,13 +1235,13 @@ export default function Attivita() {
                     ? 'border-green-700 dark:border-green-800'
                     : '';
                   
-                  // Combina retino + gradiente in un unico backgroundImage (NO opacity sulla row!)
+                  // Combina retino + gradiente VISIBILE in un unico backgroundImage
                   const rowOverlayStyle = (isOverdue || isOpen) ? {
                     backgroundImage: [
-                      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px)',
+                      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.08) 10px, rgba(0, 0, 0, 0.08) 20px)',
                       isOverdue
-                        ? 'linear-gradient(to bottom left, rgba(153, 27, 27, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
-                        : 'linear-gradient(to bottom left, rgba(22, 101, 52, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
+                        ? 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(185, 28, 28, 0.15) 30%, rgba(127, 29, 29, 0.1) 70%, transparent 100%)'
+                        : 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.15) 30%, rgba(21, 128, 61, 0.1) 70%, transparent 100%)'
                     ].join(', ')
                   } : {};
                   

@@ -331,37 +331,49 @@ export default function ImportTemplates() {
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEmailTemplates();
-    loadEmailAttachments();
-    loadImportLogs();
+    const loadData = async () => {
+      await loadEmailTemplates();
+      await loadEmailAttachments();
+      await loadImportLogs();
+      
+      // DOPO che importLogs è caricato, controlla se devo aprire il dialog
+      if (location.state?.openRecordsDialog) {
+        handleAutoOpenDialog();
+      }
+    };
+    
+    loadData();
   }, []);
   
-  // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
-  useEffect(() => {
-    if (location.state?.openRecordsDialog) {
+  // Funzione per aprire automaticamente il dialog
+  const handleAutoOpenDialog = async () => {
+    const { data: logs } = await supabase
+      .from('import_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (logs && logs.length > 0) {
+      const recentImport = logs[0];
+      
       // Se arriva con showBlackScreen, attiva lo schermo nero interno
       if (location.state?.showBlackScreen) {
         setShouldShowBlackScreen(true);
       }
       
       setIsLoadingDialog(true);
-      // Aspetta che i dati siano caricati
-      if (importLogs.length > 0) {
-        const recentImport = importLogs[0];
-        if (recentImport) {
-          setSelectedImport(recentImport);
-          setShowRecordsDialog(true);
-          loadAllRecords(recentImport).then(() => {
-            setIsLoadingDialog(false);
-            // Rimuovi lo schermo nero solo quando il caricamento è completato
-            setShouldShowBlackScreen(false);
-          });
-          // Pulisci lo stato per evitare di riaprire il dialog
-          navigate(location.pathname, { replace: true, state: {} });
-        }
-      }
+      setSelectedImport(recentImport);
+      setShowRecordsDialog(true);
+      
+      await loadAllRecords(recentImport);
+      
+      setIsLoadingDialog(false);
+      setShouldShowBlackScreen(false);
+      
+      // Pulisci lo stato per evitare di riaprire il dialog
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, importLogs]);
+  };
 
   // Apply search and filters to records
   useEffect(() => {

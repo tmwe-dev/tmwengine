@@ -18,6 +18,7 @@ import Campagne from "./pages/Campagne";
 import Email from "./pages/Email";
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
+import GestisciImport from "./pages/GestisciImport";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,11 @@ const App = () => (
             <Route path="/import-templates" element={
               <ProtectedRoute>
                 <CRMLayout><ImportTemplates /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/gestisci-import" element={
+              <ProtectedRoute>
+                <CRMLayout><GestisciImport /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

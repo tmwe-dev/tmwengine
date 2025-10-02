@@ -121,7 +121,6 @@ export default function Attivita() {
 
   // Funzione per tornare a Record Importati
   const handleBackNavigation = () => {
-    console.log('🔴 CLICKING BACK BUTTON - navigating to import-templates with openRecordsDialog: true');
     // Torna sempre alla pagina import-templates con openRecordsDialog
     navigate('/import-templates', { 
       state: { openRecordsDialog: true }
@@ -779,10 +778,7 @@ export default function Attivita() {
           <Button
             variant="outline"
             size="default"
-            onClick={() => {
-              console.log('🔴 BACK BUTTON CLICKED');
-              handleBackNavigation();
-            }}
+            onClick={handleBackNavigation}
             className="gap-2"
           >
             <ChevronLeft className="h-4 w-4" />

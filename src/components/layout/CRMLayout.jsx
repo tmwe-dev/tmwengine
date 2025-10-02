@@ -38,22 +38,10 @@ const CRMLayout = ({ children }) => {
   const location = useLocation();
   const { user, isAdmin, signOut } = useAuth();
 
-  console.log('🟢 CRMLayout render:', {
-    pathname: location.pathname,
-    hasOpenRecordsDialog: !!location.state?.openRecordsDialog,
-    shouldShowBlackScreen: location.state?.openRecordsDialog && location.pathname === '/import-templates'
-  });
-
   // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
-  
-  // Se stiamo navigando con openRecordsDialog, nascondi tutto e mostra schermo nero
-  if (location.state?.openRecordsDialog && location.pathname === '/import-templates') {
-    console.log('🟢 CRMLayout: Showing BLACK SCREEN');
-    return <div className="fixed inset-0 bg-black z-50"></div>;
-  }
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

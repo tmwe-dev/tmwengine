@@ -1752,10 +1752,7 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo caricando il dialog, mostra solo uno schermo vuoto
-  if (isLoadingDialog || (location.state?.openRecordsDialog && !showRecordsDialog)) {
-    return <div className="flex items-center justify-center h-screen"></div>;
-  }
+  // Rimosso il check che causava il flash nero - ora il dialog si apre in overlay
 
   return (
     <div className="space-y-6">

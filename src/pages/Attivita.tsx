@@ -1283,26 +1283,17 @@ export default function Attivita() {
                      <TableRow 
                       key={activity.id} 
                       className={cn(
-                        "hover:bg-muted/50 cursor-pointer relative overflow-hidden",
+                        "hover:bg-muted/50 cursor-pointer",
                         bgColor,
-                        selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
+                        selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >
-                      {/* Retino come overlay - uguale a ActivityCard */}
-                      {(isOverdue || isOpen) && (
-                        <div 
-                          className="absolute inset-0 opacity-20 pointer-events-none" 
-                          style={{
-                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
-                          }} 
-                        />
-                      )}
                       <TableCell className="w-16 align-middle text-center">
-                        <span className="text-sm font-semibold text-primary relative z-10">1</span>
+                        <span className="text-sm font-semibold text-primary">1</span>
                       </TableCell>
                       <TableCell className="w-16 align-middle">
-                        <div className="flex items-center gap-2 relative z-10">
+                        <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground font-mono">
                             #{paginatedActivities.indexOf(activity) + 1 + currentPage * recordsPerPage}
                           </span>
@@ -1316,7 +1307,7 @@ export default function Attivita() {
                        <TableCell className="align-middle">
                          <div 
                            className={cn(
-                             "flex items-center justify-center gap-2 relative z-10",
+                             "flex items-center justify-center gap-2",
                              activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50 rounded p-1"
                            )}
                            onClick={(e) => {
@@ -1344,7 +1335,7 @@ export default function Attivita() {
                          </div>
                        </TableCell>
                        <TableCell 
-                         className="max-w-[280px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none relative z-10"
+                         className="max-w-[280px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
                          tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1364,7 +1355,7 @@ export default function Attivita() {
                       </TableCell>
                       <TableCell className="align-middle">
                         {activity.scadenza ? (
-                          <div className="space-y-1 relative z-10">
+                          <div className="space-y-1">
             <div className="font-semibold text-blue-600">
               {format(new Date(activity.scadenza), 'dd MMM')}
             </div>
@@ -1377,7 +1368,7 @@ export default function Attivita() {
                         )}
                       </TableCell>
                       <TableCell className="align-middle">
-                        <div className="space-y-1 relative z-10">
+                        <div className="space-y-1">
           <div className="font-semibold text-blue-600">
             {format(new Date(activity.data_creazione), 'dd MMM')}
           </div>
@@ -1389,7 +1380,7 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center align-middle">
-                        <div className="relative z-10 flex justify-center">
+                        <div className="flex justify-center">
                           {activityStatus === 'in sospeso' ? (
                             <Clock className="h-5 w-5 text-yellow-500" />
                           ) : activityStatus === 'completata' ? (
@@ -1402,12 +1393,12 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell className="align-middle">
-                        <span className="text-text-secondary text-sm relative z-10">
+                        <span className="text-text-secondary text-sm">
                           {activity.rubrica_origine || '-'}
                         </span>
                       </TableCell>
                       <TableCell className="align-middle">
-                        <div className="flex items-center gap-2 relative z-10">
+                        <div className="flex items-center gap-2">
                           {activity.rubrica_paese && (
                             <img 
                               src={`https://flagcdn.com/16x12/${activity.rubrica_paese.toLowerCase()}.png`}
@@ -1424,17 +1415,17 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell className="align-middle">
-                        <span className="text-text-secondary text-sm relative z-10">
+                        <span className="text-text-secondary text-sm">
                           {activity.rubrica_citta || '-'}
                         </span>
                       </TableCell>
                       <TableCell className="align-middle">
-                        <Badge variant={getPrioritaBadgeVariant(activity.priorita)} className="relative z-10">
+                        <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
-                        <div className="flex items-center justify-center gap-1 relative z-10">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="outline"
                             size="sm"

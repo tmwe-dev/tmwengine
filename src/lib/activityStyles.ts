@@ -26,14 +26,15 @@ export function getActivityStyles({ isOverdue, isOpen }: ActivityStyleConfig): A
     opacity: 0.2
   } : {};
 
-  // Per la tabella: UN SOLO backgroundImage che combina retino + gradiente
+  // Per la tabella: UN SOLO backgroundImage con retino (più visibile) + gradiente
   const combinedStyle = (isOverdue || isOpen) ? {
     backgroundImage: [
-      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px)',
+      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)',
       isOverdue 
         ? 'linear-gradient(to bottom left, rgba(153, 27, 27, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
         : 'linear-gradient(to bottom left, rgba(22, 101, 52, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
-    ].join(', ')
+    ].join(', '),
+    opacity: 1
   } : {};
 
   return { bgColor, overlayStyle, combinedStyle };

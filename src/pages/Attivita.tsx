@@ -1241,7 +1241,7 @@ export default function Attivita() {
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
-                      style={combinedStyle}
+                      style={Object.keys(combinedStyle).length > 0 ? combinedStyle : undefined}
                     >
                       <TableCell className="w-16">
                         <div className="flex items-center gap-2 relative z-10">

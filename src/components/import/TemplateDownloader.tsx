@@ -223,7 +223,7 @@ export function TemplateDownloader() {
             </ol>
           </div>
 
-          <Alert variant="default" className="bg-blue-50 border-blue-200">
+          <Alert variant="default" className="">
             <Info className="h-4 w-4 text-blue-500" />
             <AlertDescription className="text-sm">
               <strong>Consiglio:</strong> Anche se modifichi i nomi delle colonne o usi un formato diverso,

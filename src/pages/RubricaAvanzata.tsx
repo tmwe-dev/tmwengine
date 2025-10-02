@@ -1204,13 +1204,34 @@ export default function RubricaAvanzata() {
                   <TableBody>
                     {viewingRecords.map((record, index) => {
                       const actualIndex = currentPage * recordsPerPage + index;
+                      const activities = getCompanyActivities(record.id);
+                      const hasOpenActivities = activities.some((a: any) => a.stato === 'aperta');
+                      const hasOverdueActivities = activities.some((a: any) => 
+                        a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata'
+                      );
+                      
+                      const rowBgColor = hasOverdueActivities 
+                        ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30' 
+                        : hasOpenActivities 
+                        ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
+                        : '';
+                        
                       return (
                         <TableRow 
                           key={record.id || index}
-                          className="hover:bg-muted/50"
+                          className={cn("hover:bg-muted/50 relative", rowBgColor)}
                         >
+                          {(hasOverdueActivities || hasOpenActivities) && (
+                            <div 
+                              className="absolute inset-0 opacity-20 pointer-events-none" 
+                              style={{
+                                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+                              }} 
+                            />
+                          )}
                           <TableCell>
                             <Checkbox
+                              className="relative z-10"
                               checked={selectedRecords.has(actualIndex)}
                               onCheckedChange={(checked) => {
                                 const newSelected = new Set(selectedRecords);
@@ -1223,11 +1244,11 @@ export default function RubricaAvanzata() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground font-mono">
+                          <TableCell className="text-xs text-muted-foreground font-mono relative z-10">
                             #{actualIndex + 1}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 relative z-10">
                               {record.note && (
                                 <TooltipProvider>
                                   <Tooltip>
@@ -1247,7 +1268,7 @@ export default function RubricaAvanzata() {
                                 </TooltipProvider>
                               )}
                               <div 
-                                className="flex flex-col cursor-pointer hover:bg-primary/10 text-primary font-medium rounded p-1" 
+                                className="flex flex-col cursor-pointer hover:bg-primary/10 text-primary font-medium rounded p-1 relative z-10"
                                 onClick={() => handleRecordClick(record, index)}
                                 title="Clicca per aprire dettaglio record"
                               >
@@ -1260,10 +1281,10 @@ export default function RubricaAvanzata() {
                           </TableCell>
                           {visibleColumns.company && (
                             <TableCell>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="cursor-pointer" onClick={() => addFilter('azienda', record.azienda)}>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="cursor-pointer relative z-10" onClick={() => addFilter('azienda', record.azienda)}>
                                       {formatCellValue(record.azienda)}
                                     </div>
                                   </TooltipTrigger>
@@ -1275,19 +1296,19 @@ export default function RubricaAvanzata() {
                             </TableCell>
                           )}
                           <TableCell>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 relative z-10">
                               <Mail className="h-3 w-3 text-text-secondary" />
                               {formatCellValue(record.email)}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 relative z-10">
                               <Phone className="h-3 w-3 text-text-secondary" />
                               {formatCellValue(record.telefono)}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 relative z-10">
                               <Phone className="h-3 w-3 text-text-secondary" />
                               {formatCellValue(record.cellulare)}
                             </div>

@@ -1217,17 +1217,35 @@ export default function Attivita() {
                 paginatedActivities.map((activity) => {
                   const ActivityIcon = getActivityIcon(activity.tipo);
                   const activityStatus = getActivityStatus(activity);
+                  const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata';
+                  const isOpen = activity.stato === 'aperta';
+                  
+                  const rowBgColor = isOverdue 
+                    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30' 
+                    : isOpen 
+                    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
+                    : '';
+                  
                   return (
                      <TableRow 
                       key={activity.id} 
                       className={cn(
-                        "hover:bg-muted/50 cursor-pointer",
+                        "hover:bg-muted/50 cursor-pointer relative",
+                        rowBgColor,
                         selectedActivities.includes(activity.id) && selectedActivities.length > 0 && "!border-2 !border-red-500 relative z-10"
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >
+                      {(isOverdue || isOpen) && (
+                        <div 
+                          className="absolute inset-0 opacity-20 pointer-events-none" 
+                          style={{
+                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+                          }} 
+                        />
+                      )}
                       <TableCell className="w-16">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 relative z-10">
                           <span className="text-xs text-muted-foreground font-mono">
                             #{paginatedActivities.indexOf(activity) + 1 + currentPage * recordsPerPage}
                           </span>
@@ -1237,11 +1255,11 @@ export default function Attivita() {
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
-                      </TableCell>
+                       </TableCell>
                        <TableCell>
                          <div 
                            className={cn(
-                             "flex items-center justify-center gap-2",
+                             "flex items-center justify-center gap-2 relative z-10",
                              activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50 rounded p-1"
                            )}
                            onClick={(e) => {
@@ -1269,7 +1287,7 @@ export default function Attivita() {
                          </div>
                        </TableCell>
                        <TableCell 
-                         className="max-w-[280px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
+                         className="max-w-[280px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none relative z-10"
                          tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1289,7 +1307,7 @@ export default function Attivita() {
                       </TableCell>
                       <TableCell>
                         {activity.scadenza ? (
-                          <div className="space-y-1">
+                          <div className="space-y-1 relative z-10">
             <div className="font-semibold text-blue-600">
               {format(new Date(activity.scadenza), 'dd MMM')}
             </div>
@@ -1302,7 +1320,7 @@ export default function Attivita() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
+                        <div className="space-y-1 relative z-10">
           <div className="font-semibold text-blue-600">
             {format(new Date(activity.data_creazione), 'dd MMM')}
           </div>
@@ -1315,6 +1333,7 @@ export default function Attivita() {
                       </TableCell>
                       <TableCell>
                         <Badge 
+                          className="relative z-10"
                           variant={
                             activityStatus === 'in sospeso' ? 'secondary' :
                             activityStatus === 'completata' ? 'default' :
@@ -1325,12 +1344,12 @@ export default function Attivita() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-text-secondary text-sm">
+                        <span className="text-text-secondary text-sm relative z-10">
                           {activity.rubrica_origine || '-'}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 relative z-10">
                           {activity.rubrica_paese && (
                             <img 
                               src={`https://flagcdn.com/16x12/${activity.rubrica_paese.toLowerCase()}.png`}
@@ -1347,17 +1366,17 @@ export default function Attivita() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-text-secondary text-sm">
+                        <span className="text-text-secondary text-sm relative z-10">
                           {activity.rubrica_citta || '-'}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
+                        <Badge variant={getPrioritaBadgeVariant(activity.priorita)} className="relative z-10">
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 relative z-10">
                           <Button
                             variant="outline"
                             size="sm"

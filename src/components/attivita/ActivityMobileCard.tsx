@@ -3,10 +3,10 @@ import { format } from 'date-fns';
 import { Phone, Mail, Users, FileText, Settings, Trash2, Clock, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { ActivityCard } from './ActivityCard';
 
 interface Activity {
   id: string;
@@ -123,14 +123,20 @@ export function ActivityMobileCard({
   const ActivityIcon = getActivityIcon(activity.tipo);
   const StatoIcon = getStatoIcon(activity.stato);
   const activityStatus = getActivityStatus(activity);
+  const isOverdue = activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata';
+  const isOpen = activity.stato === 'aperta';
 
   return (
     <TooltipProvider>
-      <Card className={cn(
-        "border-card shadow-soft transition-all duration-200",
-        isSelected && "ring-2 ring-primary border-primary"
-      )}>
-        <CardContent className="p-4 space-y-3">
+      <ActivityCard 
+        isOverdue={!!isOverdue}
+        isOpen={isOpen}
+        className={cn(
+          "transition-all duration-200",
+          isSelected && "ring-2 ring-primary border-primary"
+        )}
+      >
+        <div className="space-y-3">
           {/* Header con numero, checkbox e tipo */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -276,8 +282,8 @@ export function ActivityMobileCard({
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ActivityCard>
     </TooltipProvider>
   );
 }

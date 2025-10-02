@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -115,7 +116,7 @@ export default function GestisciImport() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [importToDelete, setImportToDelete] = useState<string | null>(null);
   const isMobile = useIsMobile();
-  const { getActivityCount } = useCompanyActivities();
+  const { getActivityCount, getCompanyActivities } = useCompanyActivities();
   const navigate = useNavigate();
 
   // States for record viewing dialog
@@ -960,10 +961,31 @@ export default function GestisciImport() {
                     <TableBody>
                       {paginatedRecords.map((record, index) => {
                         const actualIndex = currentPage * recordsPerPage + index;
+                        const activities = getCompanyActivities(record.id);
+                        const hasOpenActivities = activities.some((a: any) => a.stato === 'aperta');
+                        const hasOverdueActivities = activities.some((a: any) => 
+                          a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata'
+                        );
+                        
+                        const rowBgColor = hasOverdueActivities 
+                          ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30' 
+                          : hasOpenActivities 
+                          ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30'
+                          : '';
+                          
                         return (
-                          <TableRow key={record.id}>
+                          <TableRow key={record.id} className={cn("relative", rowBgColor)}>
+                            {(hasOverdueActivities || hasOpenActivities) && (
+                              <div 
+                                className="absolute inset-0 opacity-20 pointer-events-none" 
+                                style={{
+                                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+                                }} 
+                              />
+                            )}
                             <TableCell>
                               <Checkbox
+                                className="relative z-10"
                                 checked={selectedRecords.has(actualIndex)}
                                 onCheckedChange={(checked) => {
                                   const newSelected = new Set(selectedRecords);
@@ -976,7 +998,7 @@ export default function GestisciImport() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground font-mono">
+                            <TableCell className="text-xs text-muted-foreground font-mono relative z-10">
                               #{actualIndex + 1}
                             </TableCell>
                             <TableCell>{formatCellValue(record.company_name)}</TableCell>

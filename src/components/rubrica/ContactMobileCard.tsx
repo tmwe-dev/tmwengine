@@ -70,12 +70,33 @@ export function ContactMobileCard({
     return String(value);
   };
 
+  const activities = getCompanyActivities(contact.id);
+  const hasOpenActivities = activities.some((a: any) => a.stato === 'aperta');
+  const hasOverdueActivities = activities.some((a: any) => 
+    a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata'
+  );
+  
+  const cardBgColor = hasOverdueActivities
+    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30 border-red-700 dark:border-red-800' 
+    : hasOpenActivities 
+    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30 border-green-700 dark:border-green-800'
+    : '';
+
   return (
     <Card className={cn(
-      "border-card shadow-soft transition-all duration-200",
+      "border-card shadow-soft transition-all duration-200 relative overflow-hidden",
+      cardBgColor,
       isSelected && "ring-2 ring-primary border-primary"
     )}>
-      <CardContent className="p-4 space-y-3">
+      {(hasOverdueActivities || hasOpenActivities) && (
+        <div 
+          className="absolute inset-0 opacity-20 pointer-events-none" 
+          style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
+          }} 
+        />
+      )}
+      <CardContent className="p-4 space-y-3 relative z-10">
         {/* Header con numero, checkbox e azienda */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">

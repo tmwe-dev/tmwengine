@@ -273,15 +273,18 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
 
   if (isLoading) {
     return (
-      <DialogContent className="max-w-7xl max-h-[90vh]">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Caricamento attività...</div>
-        </div>
-      </DialogContent>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-7xl max-h-[90vh]">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-muted-foreground">Caricamento attività...</div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="flex items-center justify-between">
@@ -474,5 +477,6 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
         )}
       </div>
     </DialogContent>
+    </Dialog>
   );
 }

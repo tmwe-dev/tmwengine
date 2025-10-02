@@ -831,14 +831,14 @@ export default function Attivita() {
 
               {/* Badge filtro contatto attivo */}
               {filterByContactId && (
-                <div className="mt-3 flex items-center justify-center">
+                <div className="mt-6 mb-6 flex items-center justify-center">
                   <Badge 
                     variant="secondary" 
-                    className="flex items-center gap-2 cursor-pointer hover:bg-secondary/80 transition-colors"
+                    className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
                     onClick={() => navigate('/import-templates')}
                   >
-                    <User className="h-3 w-3" />
-                    <span className="hover:underline">Filtrato per contatto - Torna a Record Importati</span>
+                    <User className="h-4 w-4" />
+                    <span className="hover:underline font-medium">Filtrato per contatto - Torna a Record Importati</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -849,9 +849,9 @@ export default function Attivita() {
                           description: "Visualizzazione di tutte le attività",
                         });
                       }}
-                      className="ml-1 hover:bg-background/50 rounded-full p-0.5"
+                      className="ml-1 hover:bg-white/20 rounded-full p-1"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </button>
                   </Badge>
                 </div>

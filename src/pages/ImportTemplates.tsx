@@ -2586,7 +2586,7 @@ export default function ImportTemplates() {
               {/* Record selezionati e azioni - centrati */}
               {selectedRecords.size > 0 && (
                 <>
-                  {/* Badge, X e FileText al centro */}
+                  {/* Badge, X, FileText e Cestino al centro */}
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="text-sm px-4 py-2">
                       {selectedRecords.size}
@@ -2617,10 +2617,7 @@ export default function ImportTemplates() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </div>
-                  
-                  {/* Cestino e Importa allineati a destra */}
-                  <div className="absolute right-4 flex items-center gap-2">
+                    
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -2638,7 +2635,10 @@ export default function ImportTemplates() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    
+                  </div>
+                  
+                  {/* Importa allineato a destra */}
+                  <div className="absolute right-4">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

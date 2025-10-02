@@ -2379,7 +2379,7 @@ export default function ImportTemplates() {
             ) : (
               /* Desktop Header - Original */
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between -mt-2">
+                <div className="flex items-start justify-between relative">
                   <div className="flex-1">
                     <DialogTitle>
                       Record Importati - {selectedImport?.file_name}
@@ -2389,7 +2389,7 @@ export default function ImportTemplates() {
                     </DialogDescription>
                   </div>
                   
-                  {/* Toggle per nascondere/mostrare area filtri - allineato al pulsante chiudi */}
+                  {/* Toggle per nascondere/mostrare area filtri - posizionato accanto alla X */}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2397,7 +2397,7 @@ export default function ImportTemplates() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setShowFiltersArea(!showFiltersArea)}
-                          className="h-8 px-2 gap-1 -mr-9"
+                          className="absolute top-0 right-8 h-8 px-2 gap-1"
                         >
                           {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           <span className="text-xs">Full screen</span>

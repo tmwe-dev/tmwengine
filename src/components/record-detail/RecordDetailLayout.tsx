@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const [editingNote, setEditingNote] = useState(false);
   const [noteValue, setNoteValue] = useState(record.note || record.notes || '');
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
   
   // Modalità modifica sempre attiva - rimosso isEditing
   const [editValues, setEditValues] = useState({
@@ -915,7 +917,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/attivita', { state: { filterByContact: record.id, returnPath: location.pathname } })}
+              onClick={() => setIsAttivitaDialogOpen(true)}
               className="ml-auto text-xs"
             >
               Vai ad Attività
@@ -928,7 +930,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                 <div 
                   key={activity.id} 
                   className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer"
-                  onClick={() => navigate('/attivita', { state: { filterByContact: record.id, returnPath: location.pathname } })}
+                  onClick={() => setIsAttivitaDialogOpen(true)}
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Badge variant={
@@ -1054,6 +1056,13 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           </div>
         </div>
       )}
+
+      {/* Dialog Attività */}
+      <AttivitaDialog 
+        open={isAttivitaDialogOpen}
+        onOpenChange={setIsAttivitaDialogOpen}
+        filterByContactId={record.id}
+      />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import countriesData from '@/data/countries.json';
 import { SmartImportUploader } from '@/components/import/SmartImportUploader';
 import { MappingPreview } from '@/components/import/MappingPreview';
+import { TemplateDownloader } from '@/components/import/TemplateDownloader';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -1854,9 +1855,17 @@ export default function ImportTemplates() {
       {activeSection === 'smart-import' && (
         <div className="space-y-6">
           {!smartImportAnalysis ? (
-            <SmartImportUploader 
-              onAnalysisComplete={(result) => setSmartImportAnalysis(result)}
-            />
+            <>
+              <div className={cn(
+                "grid gap-6",
+                isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+              )}>
+                <TemplateDownloader />
+                <SmartImportUploader 
+                  onAnalysisComplete={(result) => setSmartImportAnalysis(result)}
+                />
+              </div>
+            </>
           ) : (
             <MappingPreview
               mapping={smartImportAnalysis.mapping}

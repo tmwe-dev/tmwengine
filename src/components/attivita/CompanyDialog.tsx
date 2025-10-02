@@ -36,6 +36,14 @@ interface CompanyDialogProps {
   isOpen: boolean;
   companyId: string | null;
   onClose: () => void;
+  filters?: {
+    stato: string;
+    tipo: string;
+    priorita: string;
+    scadenza: string;
+    hasNotes: boolean;
+  };
+  statusFilter?: string;
 }
 
 const TIPO_LABELS = {
@@ -58,7 +66,7 @@ const PRIORITA_LABELS = {
   bassa: 'Bassa'
 };
 
-export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps) {
+export function CompanyDialog({ isOpen, companyId, onClose, filters, statusFilter }: CompanyDialogProps) {
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,7 +135,7 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
 
       if (activitiesError) throw activitiesError;
       
-      const formattedActivities: Activity[] = (activitiesData || []).map(activity => ({
+      let formattedActivities: Activity[] = (activitiesData || []).map(activity => ({
         id: activity.id,
         tipo: activity.tipo as Activity['tipo'],
         descrizione: activity.descrizione,
@@ -137,6 +145,44 @@ export function CompanyDialog({ isOpen, companyId, onClose }: CompanyDialogProps
         data_creazione: activity.data_creazione,
         ora_creazione: activity.ora_creazione
       }));
+      
+      // Applica i filtri se forniti
+      if (filters) {
+        formattedActivities = formattedActivities.filter(activity => {
+          // Filtro stato
+          const matchesStato = !filters.stato || filters.stato === 'all' || 
+            filters.stato.split(',').includes(activity.stato);
+          
+          // Filtro tipo
+          const matchesTipo = !filters.tipo || filters.tipo === 'all' || activity.tipo === filters.tipo;
+          
+          // Filtro priorità
+          const matchesPriorita = !filters.priorita || filters.priorita === 'all' || 
+            activity.priorita === filters.priorita;
+          
+          // Filtro note
+          const matchesNotes = !filters.hasNotes; // CompanyDialog non ha accesso alle note
+          
+          return matchesStato && matchesTipo && matchesPriorita && matchesNotes;
+        });
+      }
+      
+      // Applica statusFilter se fornito
+      if (statusFilter && statusFilter !== 'all') {
+        formattedActivities = formattedActivities.filter(activity => {
+          const isActivityFuture = activity.scadenza && new Date(activity.scadenza) > new Date();
+          
+          if (statusFilter === 'future') return isActivityFuture;
+          if (statusFilter === 'completate') return activity.stato === 'completata';
+          if (statusFilter === 'in_corso') return activity.stato === 'in_corso';
+          if (statusFilter === 'scadute') {
+            return activity.scadenza && new Date(activity.scadenza) < new Date() && 
+              activity.stato !== 'completata';
+          }
+          
+          return true;
+        });
+      }
       
       setActivities(formattedActivities);
 

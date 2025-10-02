@@ -1590,6 +1590,8 @@ export default function Attivita() {
         isOpen={isCompanyDialogOpen}
         companyId={selectedCompanyId}
         onClose={() => setIsCompanyDialogOpen(false)}
+        filters={filters}
+        statusFilter={statusFilter}
       />
 
       {/* Dialog Chiamate */}

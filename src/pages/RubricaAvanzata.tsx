@@ -1066,6 +1066,51 @@ export default function RubricaAvanzata() {
                 <Users className="h-5 w-5" />
                 Contatti Rubrica ({filteredRecords.length})
               </CardTitle>
+              
+              {/* Barra azioni multiple - solo quando ci sono record selezionati */}
+              {selectedRecords.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm">
+                    {selectedRecords.size} selezionati
+                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowMultipleActivityDialog(true)}
+                          className="h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Crea Attività
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Crea attività per {selectedRecords.size} contatti</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={deleteSelectedContacts}
+                          className="h-9 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Elimina
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Elimina {selectedRecords.size} contatti</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>

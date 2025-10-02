@@ -375,27 +375,29 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink className="text-sm cursor-pointer" onClick={() => navigate('/gestisci-import')}>
-              Record Importati
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator>
-            <ChevronRight className="h-4 w-4" />
-          </BreadcrumbSeparator>
-          <BreadcrumbItem>
-            <BreadcrumbPage className="text-sm font-medium">
-              {record.company_name || record.azienda || 'Dettaglio Record'}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Pulsanti azione centrali - sticky */}
+      {/* Sezione sticky con navigazione e info località */}
       <div className="sticky top-0 z-10 bg-background py-4 border-b">
+        {/* Breadcrumb */}
+        <div className="mb-3">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink className="text-sm cursor-pointer" onClick={() => navigate('/gestisci-import')}>
+                  Record Importati
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="text-sm font-medium">
+                  {record.company_name || record.azienda || 'Dettaglio Record'}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* Info località */}
         <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
           <span className="text-2xl">

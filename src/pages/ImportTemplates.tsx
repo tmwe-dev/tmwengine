@@ -2561,7 +2561,7 @@ export default function ImportTemplates() {
                             className="h-10 px-3 text-sm bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2"
                           >
                             <X className="h-3 w-3" />
-                            Solo note {filteredRecords.length}
+                            Solo note
                           </Button>
                         )}
                         
@@ -2602,6 +2602,10 @@ export default function ImportTemplates() {
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
+                            
+                            <Badge variant="default" className="text-sm px-3 py-1.5">
+                              {selectedRecords.size}
+                            </Badge>
                           </>
                         )}
                       </div>

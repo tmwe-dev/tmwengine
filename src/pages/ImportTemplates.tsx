@@ -318,6 +318,7 @@ export default function ImportTemplates() {
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoadingDialog, setIsLoadingDialog] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -331,15 +332,20 @@ export default function ImportTemplates() {
   
   // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
   useEffect(() => {
-    if (location.state?.openRecordsDialog && importLogs.length > 0) {
-      // Trova l'import log più recente o quello associato al contatto
-      const recentImport = importLogs[0];
-      if (recentImport) {
-        setSelectedImport(recentImport);
-        setShowRecordsDialog(true);
-        loadAllRecords(recentImport);
-        // Pulisci lo stato per evitare di riaprire il dialog
-        navigate(location.pathname, { replace: true, state: {} });
+    if (location.state?.openRecordsDialog) {
+      setIsLoadingDialog(true);
+      // Aspetta che i dati siano caricati
+      if (importLogs.length > 0) {
+        const recentImport = importLogs[0];
+        if (recentImport) {
+          setSelectedImport(recentImport);
+          setShowRecordsDialog(true);
+          loadAllRecords(recentImport).then(() => {
+            setIsLoadingDialog(false);
+          });
+          // Pulisci lo stato per evitare di riaprire il dialog
+          navigate(location.pathname, { replace: true, state: {} });
+        }
       }
     }
   }, [location.state, importLogs]);
@@ -1740,6 +1746,11 @@ export default function ImportTemplates() {
       setImportingSelected(false);
     }
   };
+
+  // Se stiamo caricando il dialog, mostra solo uno schermo vuoto
+  if (isLoadingDialog || (location.state?.openRecordsDialog && !showRecordsDialog)) {
+    return <div className="flex items-center justify-center h-screen"></div>;
+  }
 
   return (
     <div className="space-y-6">

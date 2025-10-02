@@ -863,21 +863,7 @@ export default function Attivita() {
                     onClick={handleBackNavigation}
                   >
                     <User className="h-4 w-4" />
-                    <span className="hover:underline font-medium">Filtrato per contatto - Torna a Record Importati</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFilterByContactId(null);
-                        setStatusFilter('future');
-                        toast({
-                          title: "Filtro rimosso",
-                          description: "Visualizzazione di tutte le attività",
-                        });
-                      }}
-                      className="ml-1 hover:bg-white/20 rounded-full p-1"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <span className="hover:underline font-medium">Filtrato per contatto - Clicca per tornare a Record Importati</span>
                   </Badge>
                 </div>
               )}

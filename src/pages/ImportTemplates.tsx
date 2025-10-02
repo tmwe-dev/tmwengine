@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { CompactContactCard } from '@/components/import/CompactContactCard';
@@ -321,12 +321,28 @@ export default function ImportTemplates() {
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     loadEmailTemplates();
     loadEmailAttachments();
     loadImportLogs();
   }, []);
+  
+  // Effetto per aprire automaticamente il dialog dei record quando si naviga dalla pagina Attività
+  useEffect(() => {
+    if (location.state?.openRecordsDialog && importLogs.length > 0) {
+      // Trova l'import log più recente o quello associato al contatto
+      const recentImport = importLogs[0];
+      if (recentImport) {
+        setSelectedImport(recentImport);
+        setShowRecordsDialog(true);
+        loadAllRecords(recentImport);
+        // Pulisci lo stato per evitare di riaprire il dialog
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, importLogs]);
 
   // Apply search and filters to records
   useEffect(() => {

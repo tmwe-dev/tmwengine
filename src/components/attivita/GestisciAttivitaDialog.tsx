@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -37,17 +37,13 @@ interface GestisciAttivitaDialogProps {
   activity: Activity | null;
   onClose: () => void;
   onSave: (updatedActivity: Partial<Activity>, updateCompany?: boolean) => void;
-  showBackButton?: boolean;
-  onBack?: () => void;
 }
 
 export function GestisciAttivitaDialog({ 
   isOpen, 
   activity, 
   onClose, 
-  onSave,
-  showBackButton = false,
-  onBack
+  onSave 
 }: GestisciAttivitaDialogProps) {
   const [formData, setFormData] = useState<Partial<Activity>>({});
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -140,19 +136,6 @@ export function GestisciAttivitaDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0 space-y-3">
-          {/* Pulsante Indietro */}
-          {showBackButton && onBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="gap-2 self-start"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Indietro
-            </Button>
-          )}
-
           {/* Breadcrumb */}
           <Breadcrumb>
             <BreadcrumbList>

@@ -17,13 +17,16 @@ interface ActivityCardProps {
  * - Retino diagonale trasparente al 20%
  */
 export function ActivityCard({ isOverdue, isOpen, children, className = '' }: ActivityCardProps) {
-  const { bgColor, combinedStyle } = getActivityStyles({ isOverdue, isOpen });
+  const { bgColor, overlayStyle } = getActivityStyles({ isOverdue, isOpen });
 
   return (
-    <Card 
-      className={`border-card shadow-soft ${bgColor} relative overflow-hidden ${className}`}
-      style={combinedStyle}
-    >
+    <Card className={`border-card shadow-soft ${bgColor} relative overflow-hidden ${className}`}>
+      {(isOverdue || isOpen) && (
+        <div 
+          className="absolute inset-0" 
+          style={overlayStyle}
+        />
+      )}
       <CardContent className="p-4 relative z-10">
         {children}
       </CardContent>

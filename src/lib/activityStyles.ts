@@ -16,9 +16,9 @@ export interface ActivityStyles {
 
 export function getActivityStyles({ isOverdue, isOpen }: ActivityStyleConfig): ActivityStyles {
   const bgColor = isOverdue 
-    ? 'border-red-700 dark:border-red-800' 
+    ? 'bg-gradient-to-bl from-red-800/10 from-20% to-black/20 to-60% dark:from-red-900/10 dark:to-black/30 border-red-700 dark:border-red-800' 
     : isOpen 
-    ? 'border-green-700 dark:border-green-800'
+    ? 'bg-gradient-to-bl from-green-800/10 from-20% to-black/20 to-60% dark:from-green-900/10 dark:to-black/30 border-green-700 dark:border-green-800'
     : '';
 
   const overlayStyle = (isOverdue || isOpen) ? {
@@ -26,13 +26,13 @@ export function getActivityStyles({ isOverdue, isOpen }: ActivityStyleConfig): A
     opacity: 0.2
   } : {};
 
-  // Per la tabella: combina il gradiente + retino in backgroundImage multiplo con colori VISIBILI
+  // Per la tabella: UN SOLO backgroundImage che combina retino + gradiente
   const combinedStyle = (isOverdue || isOpen) ? {
     backgroundImage: [
-      'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02) 10px, rgba(0, 0, 0, 0.1) 10px, rgba(0, 0, 0, 0.1) 20px)',
+      'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px)',
       isOverdue 
-        ? 'linear-gradient(to bottom left, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 30%, rgba(185, 28, 28, 0.15) 70%, rgba(127, 29, 29, 0.1) 100%)'
-        : 'linear-gradient(to bottom left, rgba(74, 222, 128, 0.25) 0%, rgba(34, 197, 94, 0.2) 30%, rgba(22, 163, 74, 0.15) 70%, rgba(21, 128, 61, 0.1) 100%)'
+        ? 'linear-gradient(to bottom left, rgba(153, 27, 27, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
+        : 'linear-gradient(to bottom left, rgba(22, 101, 52, 0.1) 20%, rgba(0, 0, 0, 0.2) 60%)'
     ].join(', ')
   } : {};
 

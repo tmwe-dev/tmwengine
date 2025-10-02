@@ -204,6 +204,46 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
     }
   };
 
+  const handleGestisciActivity = async (updatedData: Partial<Activity>, updateCompany?: boolean) => {
+    if (!selectedActivity) return;
+
+    try {
+      const { error } = await supabase
+        .from('attivita')
+        .update(updatedData)
+        .eq('id', selectedActivity.id);
+
+      if (error) throw error;
+
+      if (updateCompany && selectedActivity.rubrica_id && (updatedData.telefono || updatedData.cellulare)) {
+        const updateData: any = {};
+        if (updatedData.telefono) updateData.telefono = updatedData.telefono;
+        if (updatedData.cellulare) updateData.cellulare = updatedData.cellulare;
+
+        const tableName = selectedActivity.contact_source === 'imported_contacts' ? 'imported_contacts' : 'rubrica';
+        await supabase
+          .from(tableName)
+          .update(updateData)
+          .eq('id', selectedActivity.rubrica_id);
+      }
+
+      await loadActivities();
+      setIsGestisciOpen(false);
+      setSelectedActivity(null);
+      
+      toast({
+        title: "Attività aggiornata",
+        description: "Le modifiche sono state salvate con successo.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const isActivityFuture = (activity: Activity) => {
     if (!activity.scadenza) return false;
     return new Date(activity.scadenza) > new Date();
@@ -409,7 +449,14 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
                     </TableRow>
                   ) : (
                     paginatedActivities.map((activity) => (
-                      <TableRow key={activity.id}>
+                      <TableRow 
+                        key={activity.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setSelectedActivity(activity);
+                          setIsGestisciOpen(true);
+                        }}
+                      >
                         <TableCell>
                           <Badge variant="outline">{TIPO_LABELS[activity.tipo]}</Badge>
                         </TableCell>
@@ -473,6 +520,22 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
           </div>
         )}
       </div>
+
+      {/* Dialog Gestisci Attività */}
+      <GestisciAttivitaDialog
+        isOpen={isGestisciOpen}
+        activity={selectedActivity}
+        onClose={() => {
+          setIsGestisciOpen(false);
+          setSelectedActivity(null);
+        }}
+        onSave={handleGestisciActivity}
+        showBackButton={showBackButton}
+        onBack={() => {
+          setIsGestisciOpen(false);
+          setSelectedActivity(null);
+        }}
+      />
     </DialogContent>
   );
 }

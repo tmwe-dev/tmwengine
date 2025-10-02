@@ -1439,6 +1439,7 @@ export default function ImportTemplates() {
           .from('imported_contacts')
           .select('*')
           .eq('import_log_id', importLog.id)
+          .order('row_number', { ascending: true })
           .range(from, to);
         
         if (error) {
@@ -1452,11 +1453,6 @@ export default function ImportTemplates() {
         }
         
         from += batchSize;
-        
-        // Break se non ci sono più dati
-        if (!batchData || batchData.length < batchSize) {
-          break;
-        }
       }
       
       console.log('Record effettivamente caricati:', allRecords.length, 'di', count);

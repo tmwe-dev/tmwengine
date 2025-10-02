@@ -2513,22 +2513,27 @@ export default function ImportTemplates() {
                     
                     {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
                     <div className="flex justify-center items-center relative">
-                      {/* Pulsante Pulisci filtri a sinistra assoluto */}
+                      {/* Pulsante Pulisci filtri e contatore a sinistra */}
                       {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSearchQuery('');
-                            setOriginFilter('');
-                            setCountryFilter('');
-                            setHasNotesFilter(false);
-                          }}
-                          className="absolute left-0 h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Pulisci filtri
-                        </Button>
+                        <div className="absolute left-0 flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setOriginFilter('');
+                              setCountryFilter('');
+                              setHasNotesFilter(false);
+                            }}
+                            className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Pulisci filtri
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            {filteredRecords.length} trovati
+                          </span>
+                        </div>
                       )}
                       
                       {/* Campo di ricerca centrato */}
@@ -2626,14 +2631,6 @@ export default function ImportTemplates() {
                 </div>
               )}
               
-              {/* Contatore record trovati - compatto */}
-              {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                <div className="flex items-center gap-1 ml-auto">
-                  <span className="text-xs text-muted-foreground">
-                    {filteredRecords.length} trovati
-                  </span>
-                </div>
-              )}
             </div>
           )}
 

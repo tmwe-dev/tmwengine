@@ -18,7 +18,12 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, systemPrompt, conversationId } = await req.json();
+    const { 
+      prompt, 
+      systemPrompt, 
+      conversationId,
+      requestType = 'chat' // Default: chat normale
+    } = await req.json();
     const startTime = Date.now();
 
     if (!prompt) {
@@ -135,7 +140,9 @@ serve(async (req) => {
     }
 
     // Determina se la domanda richiede strumenti CRM
-    const requiresCRMTools = isCRMRelatedQuery(prompt, systemPrompt);
+    const requiresCRMTools = requestType === 'import-analysis' 
+      ? false // Import analysis non usa CRM tools 
+      : isCRMRelatedQuery(prompt, systemPrompt);
     console.log(`CRM tools required: ${requiresCRMTools}`);
 
     // Definisci gli strumenti CRM disponibili per ChatGPT
@@ -368,8 +375,8 @@ serve(async (req) => {
     const tokensOutput = data.usage?.completion_tokens || 0;
     const responseTime = Date.now() - startTime;
 
-    // Save messages to database
-    if (conversationId) {
+    // Save messages to database (solo per chat normali, non per import-analysis)
+    if (conversationId && requestType === 'chat') {
       try {
         // Save user message first
         await supabase

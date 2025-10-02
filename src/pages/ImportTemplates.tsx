@@ -1752,18 +1752,13 @@ export default function ImportTemplates() {
     }
   };
 
-  // Rendering condizionale: se stiamo navigando dai record, mostra SOLO lo sfondo nero + dialog
-  const isNavigatingFromRecords = location.state?.openRecordsDialog;
+  // BLOCCO TOTALE: quando navighi da Attività, mostra SOLO sfondo nero
+  if (location.state?.openRecordsDialog) {
+    return <div className="fixed inset-0 bg-black" />;
+  }
 
   return (
-    <>
-      {/* Sfondo nero quando navighi dalla pagina Attività */}
-      {isNavigatingFromRecords && (
-        <div className="fixed inset-0 bg-black z-40" />
-      )}
-      
-      {/* Contenuto principale - nascosto se navighi da Attività */}
-      <div className={cn("space-y-6", isNavigatingFromRecords && "invisible")}>
+    <div className="space-y-6">
 
       {/* Header with Dropdown Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
@@ -3393,7 +3388,6 @@ export default function ImportTemplates() {
           setSelectedContactIdForActivities(null);
         }}
       />
-      </div>
-    </>
+    </div>
   );
 }

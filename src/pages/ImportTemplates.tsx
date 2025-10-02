@@ -2555,9 +2555,13 @@ export default function ImportTemplates() {
                       <div className="flex items-center gap-2 w-48 justify-end">
                         {selectedRecords.size > 0 && (
                           <>
-                            <Badge variant="default" className="text-sm px-4 py-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-10 px-4 text-sm bg-blue-500 text-white hover:bg-blue-600"
+                            >
                               Solo note
-                            </Badge>
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"

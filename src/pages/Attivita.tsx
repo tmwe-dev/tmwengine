@@ -280,7 +280,8 @@ export default function Attivita() {
     setFilterDate(date);
   };
 
-  const filteredActivities = activities.filter(activity => {
+  // Filtri base (escludendo statusFilter dalle card) per calcolare le statistiche
+  const baseFilteredActivities = activities.filter(activity => {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -300,14 +301,19 @@ export default function Attivita() {
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
 
-    // Nuovo filtro per status dalla card summary
+    return matchesSearch && matchesFilters && matchesDateFilter;
+  });
+
+  // Filtri completi (includendo statusFilter dalle card) per la visualizzazione
+  const filteredActivities = baseFilteredActivities.filter(activity => {
+    // Filtro per status dalla card summary
     const matchesStatusFilter = statusFilter === 'all' || 
       (statusFilter === 'future' && isActivityFuture(activity)) ||
       (statusFilter === 'completate' && activity.stato === 'completata') ||
       (statusFilter === 'in_corso' && activity.stato === 'in_corso') ||
       (statusFilter === 'scadute' && activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata');
 
-    return matchesSearch && matchesFilters && matchesDateFilter && matchesStatusFilter;
+    return matchesStatusFilter;
   }).sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
@@ -712,13 +718,14 @@ export default function Attivita() {
   };
 
   const getStatsData = () => {
-    const totali = filteredActivities.length;
-    const future = filteredActivities.filter(a => isActivityFuture(a)).length;
-    const completate = filteredActivities.filter(a => a.stato === 'completata').length;
-    const in_corso = filteredActivities.filter(a => a.stato === 'in_corso').length;
+    // Usa baseFilteredActivities per le statistiche (esclude il filtro statusFilter dalle card)
+    const totali = baseFilteredActivities.length;
+    const future = baseFilteredActivities.filter(a => isActivityFuture(a)).length;
+    const completate = baseFilteredActivities.filter(a => a.stato === 'completata').length;
+    const in_corso = baseFilteredActivities.filter(a => a.stato === 'in_corso').length;
     
     const today = new Date();
-    const scadute = filteredActivities.filter(a => {
+    const scadute = baseFilteredActivities.filter(a => {
       if (!a.scadenza) return false;
       return new Date(a.scadenza) < today && a.stato !== 'completata';
     }).length;

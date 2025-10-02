@@ -389,7 +389,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Toolbar di aggiornamento - eliminato il tasto Modifica */}
+      {/* Toolbar di aggiornamento */}
       <div className="flex justify-between items-center pb-2 border-b">
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           <span>{record.country || record.paese || "N/A"}</span>
@@ -405,6 +405,58 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
             Aggiorna
           </Button>
         </div>
+      </div>
+
+      {/* Pulsanti azione centrali */}
+      <div className="flex justify-center items-center gap-3 py-4">
+        {/* Pulsante Importa in Rubrica - solo per record importati */}
+        {record.hasOwnProperty('is_imported_to_rubrica') && (
+          <Button 
+            onClick={handleImportToRubrica}
+            disabled={isImporting || record.is_imported_to_rubrica}
+            className="flex items-center gap-2"
+            variant={record.is_imported_to_rubrica ? "outline" : "default"}
+            size="default"
+          >
+            <UserPlus className="h-4 w-4" />
+            {isImporting ? "Importando..." : 
+             record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+          </Button>
+        )}
+        
+        {/* Pulsante Crea Attività */}
+        <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="default"
+              size="default"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Crea Attività
+            </Button>
+          </DialogTrigger>
+          <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>Crea Nuova Attività</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto">
+              <AdvancedMultipleActivityForm
+                contacts={[{
+                  id: record.id,
+                  company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
+                  email: record.email,
+                  phone: record.telefono || record.phone,
+                  cell: record.cellulare || record.cell
+                }]}
+                onSubmit={handleCreateActivity}
+                onCancel={() => setIsActivityDialogOpen(false)}
+                isSubmitting={false}
+                showSaveToRubrica={false}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {/* Header con country e città - rimosso perché ora è nella toolbar */}
@@ -695,95 +747,6 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
                   <div className="text-sm text-foreground">
                     {formatCellValue(record.scheduled_contact, 'scheduled_contact')}
                   </div>
-                </div>
-              )}
-              
-              {/* Pulsanti azione - solo per record importati */}
-              {record.hasOwnProperty('is_imported_to_rubrica') && (
-                <div className="min-w-[200px] flex items-end gap-2">
-                  <Button 
-                    onClick={handleImportToRubrica}
-                    disabled={isImporting || record.is_imported_to_rubrica}
-                    className="flex items-center gap-2 mt-5"
-                    variant={record.is_imported_to_rubrica ? "outline" : "default"}
-                    size="sm"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    {isImporting ? "Importando..." : 
-                     record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-                  </Button>
-                  
-                  {/* Pulsante Crea Attività */}
-                  <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2 mt-5"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Crea Attività
-                      </Button>
-                    </DialogTrigger>
-                     <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
-                      <DialogHeader className="flex-shrink-0">
-                        <DialogTitle>Crea Nuova Attività</DialogTitle>
-                      </DialogHeader>
-                      <div className="flex-1 overflow-y-auto">
-                        <AdvancedMultipleActivityForm
-                          contacts={[{
-                            id: record.id,
-                            company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                            email: record.email,
-                            phone: record.telefono || record.phone,
-                            cell: record.cellulare || record.cell
-                          }]}
-                          onSubmit={handleCreateActivity}
-                          onCancel={() => setIsActivityDialogOpen(false)}
-                          isSubmitting={false}
-                          showSaveToRubrica={false}
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              )}
-              
-              {/* Pulsante Crea Attività per record rubrica */}
-              {!record.hasOwnProperty('is_imported_to_rubrica') && (
-                <div className="min-w-[200px] flex items-end">
-                  <Dialog open={isActivityDialogOpen} onOpenChange={setIsActivityDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="flex items-center gap-2 mt-5"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Crea Attività
-                      </Button>
-                    </DialogTrigger>
-                     <DialogContent className={cn("max-h-[85vh] flex flex-col", isMobile ? "max-w-[95vw] p-4" : "max-w-4xl")}>
-                       <DialogHeader className="flex-shrink-0">
-                         <DialogTitle>Crea Nuova Attività</DialogTitle>
-                       </DialogHeader>
-                       <div className="flex-1 overflow-y-auto">
-                         <AdvancedMultipleActivityForm
-                           contacts={[{
-                             id: record.id,
-                             company_name: record.company_name || record.azienda || record.name || 'Azienda non specificata',
-                             email: record.email,
-                             phone: record.telefono || record.phone,
-                             cell: record.cellulare || record.cell
-                           }]}
-                           onSubmit={handleCreateActivity}
-                           onCancel={() => setIsActivityDialogOpen(false)}
-                           isSubmitting={false}
-                           showSaveToRubrica={false}
-                         />
-                       </div>
-                     </DialogContent>
-                  </Dialog>
                 </div>
               )}
             </div>

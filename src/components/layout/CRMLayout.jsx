@@ -38,12 +38,10 @@ const CRMLayout = ({ children }) => {
   const location = useLocation();
   const { user, isAdmin, signOut } = useAuth();
 
-  // Chiudi automaticamente la sidebar su mobile quando cambia la rotta
+  // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
-    if (isMobile && sidebarOpen) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, isMobile]);
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

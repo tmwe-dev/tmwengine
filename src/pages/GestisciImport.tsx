@@ -83,6 +83,18 @@ const getCountryFlag = (countryName: string): string => {
   return '🌍';
 };
 
+// Function to get full country name from code
+const getCountryFullName = (countryCode: string): string => {
+  if (!countryCode) return '';
+  
+  const country = countriesData.find(
+    c => c.code.toLowerCase() === countryCode.toLowerCase() || 
+         c.name.toLowerCase() === countryCode.toLowerCase()
+  );
+  
+  return country ? `${getCountryFlag(country.code)} ${country.name}` : countryCode;
+};
+
 interface ImportLog {
   id: string;
   file_name: string;
@@ -736,6 +748,73 @@ export default function GestisciImport() {
                   <p className="text-sm text-muted-foreground mb-2">
                     Mostrando {currentPage * recordsPerPage + 1}-{Math.min((currentPage + 1) * recordsPerPage, filteredRecords.length)} di {filteredRecords.length} record
                   </p>
+                  
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">#</TableHead>
+                        <TableHead>Azienda</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Telefono</TableHead>
+                        <TableHead>Paese</TableHead>
+                        <TableHead>Città</TableHead>
+                        <TableHead>Indirizzo</TableHead>
+                        <TableHead>Origine</TableHead>
+                        <TableHead className="text-right">Azioni</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {viewingRecords.map((record, viewIndex) => {
+                        const actualIndex = currentPage * recordsPerPage + viewIndex;
+                        return (
+                          <TableRow key={viewIndex}>
+                            <TableCell className="font-mono text-xs">{actualIndex + 1}</TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px]">
+                                <div className="font-medium truncate">{formatCellValue(record.company_name)}</div>
+                                {record.company_alias && (
+                                  <div className="text-xs text-muted-foreground truncate">{formatCellValue(record.company_alias)}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[150px] truncate">{formatCellValue(record.name)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px] truncate">{formatCellValue(record.email)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[120px] truncate">{formatCellValue(record.phone)}</div>
+                            </TableCell>
+                            <TableCell>
+                              {record.country && (
+                                <span>{getCountryFlag(record.country)} {formatCellValue(record.country)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[150px] truncate">{formatCellValue(record.city)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px] truncate">{formatCellValue(record.address)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[120px] truncate">{formatCellValue(record.origin)}</div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteImportedContact(record.id, actualIndex)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
               

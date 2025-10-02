@@ -1752,8 +1752,8 @@ export default function ImportTemplates() {
     }
   };
 
-  // Se stiamo caricando il dialog, mostra solo schermo nero
-  if (isLoadingDialog) {
+  // Se stiamo arrivando da Attività O stiamo caricando il dialog, mostra solo schermo nero
+  if (location.state?.openRecordsDialog || isLoadingDialog) {
     return <div className="fixed inset-0 bg-black z-50"></div>;
   }
 

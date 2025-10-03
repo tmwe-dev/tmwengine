@@ -18,17 +18,6 @@ interface Email {
   hasAttachments: boolean;
 }
 
-interface EmailDetail {
-  id: string;
-  subject: string;
-  from: string;
-  to: string[];
-  cc: string[];
-  date: string;
-  body: string;
-  attachments: any[];
-}
-
 interface EmailListProps {
   emails: Email[];
   selectedEmailId: string | null;
@@ -37,8 +26,6 @@ interface EmailListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
-  emailDetail?: EmailDetail | null;
-  isLoadingDetail?: boolean;
 }
 
 type ViewMode = 'list' | 'grid' | 'single';
@@ -50,9 +37,7 @@ export const EmailList = ({
   loading,
   onLoadMore,
   hasMore,
-  isLoadingMore,
-  emailDetail,
-  isLoadingDetail
+  isLoadingMore
 }: EmailListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -240,14 +225,18 @@ export const EmailList = ({
     if (!currentEmail) return null;
 
     return (
-      <div className="py-2 px-[28px] flex gap-4">
+      <div className="py-2 px-[28px]">
         <Card
           className={cn(
-            'cursor-pointer border-l-4 p-4 transition-all duration-200 w-[250px] h-[250px] flex flex-col flex-shrink-0',
+            'cursor-pointer border-l-4 p-4 transition-all duration-200 w-[250px] h-[250px] flex flex-col',
             currentEmail.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',
-            selectedEmailId === currentEmail.id && '!border-red-500'
+            selectedEmailId === currentEmail.id && (
+              currentEmail.read 
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
+            )
           )}
           onClick={() => onEmailSelect(currentEmail.id)}
         >
@@ -291,53 +280,11 @@ export const EmailList = ({
             </div>
           </div>
         </Card>
-
-        {/* Email content preview - 500x500 fixed */}
-        <Card className="w-[500px] h-[500px] flex-shrink-0 overflow-hidden">
-          {isLoadingDetail ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : emailDetail && selectedEmailId === currentEmail.id ? (
-            <ScrollArea className="h-full">
-              <div className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold">{emailDetail.subject}</h2>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p><strong>From:</strong> {emailDetail.from}</p>
-                    {emailDetail.to && emailDetail.to.length > 0 && (
-                      <p><strong>To:</strong> {emailDetail.to.join(', ')}</p>
-                    )}
-                    {emailDetail.cc && emailDetail.cc.length > 0 && (
-                      <p><strong>CC:</strong> {emailDetail.cc.join(', ')}</p>
-                    )}
-                    <p><strong>Date:</strong> {formatDistanceToNow(new Date(emailDetail.date), { addSuffix: true })}</p>
-                  </div>
-                </div>
-                <div 
-                  className="prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: emailDetail.body }}
-                />
-              </div>
-            </ScrollArea>
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p className="text-sm">Click on an email to view its content</p>
-            </div>
-          )}
-        </Card>
-
-        <div className="flex flex-col items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 mt-4">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              const newPage = Math.max(0, currentPage - 1);
-              setCurrentPage(newPage);
-              if (emails[newPage]) {
-                onEmailSelect(emails[newPage].id);
-              }
-            }}
+            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
             disabled={currentPage === 0}
           >
             Previous
@@ -348,13 +295,7 @@ export const EmailList = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              const newPage = Math.min(emails.length - 1, currentPage + 1);
-              setCurrentPage(newPage);
-              if (emails[newPage]) {
-                onEmailSelect(emails[newPage].id);
-              }
-            }}
+            onClick={() => setCurrentPage(prev => Math.min(emails.length - 1, prev + 1))}
             disabled={currentPage === emails.length - 1}
           >
             Next

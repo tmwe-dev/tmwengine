@@ -247,43 +247,41 @@ const EmailDashboard = () => {
 
   // Swipe/drag handlers for laptop
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isMobile) return; // Only on desktop
+    if (isMobile) return;
+    // Only start drag if clicking in empty areas (not on buttons, links, etc.)
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select')) return;
+    
     setDragStartX(e.clientX);
     setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || dragStartX === null || isMobile) return;
+    
+    e.preventDefault();
     setDragCurrentX(e.clientX);
   };
 
   const handleMouseUp = () => {
-    if (!isDragging || dragStartX === null || dragCurrentX === null || isMobile) {
+    if (!isDragging || dragStartX === null || isMobile) {
       setIsDragging(false);
       setDragStartX(null);
       setDragCurrentX(null);
       return;
     }
 
-    const dragDistance = dragCurrentX - dragStartX;
-    const threshold = 100; // minimum drag distance to trigger navigation
+    const dragDistance = dragCurrentX !== null ? dragCurrentX - dragStartX : 0;
+    const threshold = 80; // Reduced threshold for easier navigation
 
-    // Swipe right: go back (close detail view or show sidebar)
-    if (dragDistance > threshold) {
-      if (selectedEmailId) {
-        setSelectedEmailId(null);
-      } else {
-        setSidebarOpen(true);
-      }
+    // Swipe right: go back (close detail view)
+    if (dragDistance > threshold && selectedEmailId) {
+      setSelectedEmailId(null);
     }
     
-    // Swipe left: go forward (close sidebar or open detail)
-    if (dragDistance < -threshold) {
-      if (sidebarOpen) {
-        setSidebarOpen(false);
-      } else if (emails.length > 0 && !selectedEmailId) {
-        handleEmailSelect(emails[0].id);
-      }
+    // Swipe left: go forward (open first email if none selected)
+    if (dragDistance < -threshold && !selectedEmailId && emails.length > 0) {
+      handleEmailSelect(emails[0].id);
     }
 
     setIsDragging(false);
@@ -301,7 +299,7 @@ const EmailDashboard = () => {
 
   // Calculate drag offset for visual feedback
   const dragOffset = isDragging && dragStartX !== null && dragCurrentX !== null
-    ? Math.max(-200, Math.min(200, dragCurrentX - dragStartX))
+    ? Math.max(-150, Math.min(150, dragCurrentX - dragStartX))
     : 0;
 
   return (
@@ -322,23 +320,22 @@ const EmailDashboard = () => {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         style={{
-          cursor: isDragging ? 'grabbing' : 'default',
-          userSelect: isDragging ? 'none' : 'auto',
+          cursor: isDragging ? 'grabbing' : 'grab',
         }}
       >
         {/* Drag indicator */}
-        {isDragging && Math.abs(dragOffset) > 20 && (
+        {isDragging && Math.abs(dragOffset) > 30 && (
           <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-background/90 backdrop-blur-sm border rounded-lg px-4 py-2 text-sm font-medium pointer-events-none"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/90 text-primary-foreground backdrop-blur-sm rounded-full px-6 py-3 text-sm font-medium pointer-events-none shadow-lg"
           >
-            {dragOffset > 0 ? '← Indietro' : 'Avanti →'}
+            {dragOffset > 0 ? '← Chiudi email' : 'Apri email →'}
           </div>
         )}
         
         <div 
-          className="flex flex-1 transition-transform"
+          className="flex flex-1 transition-transform pointer-events-none"
           style={{
-            transform: `translateX(${dragOffset}px)`,
+            transform: `translateX(${dragOffset * 0.3}px)`,
             transition: isDragging ? 'none' : 'transform 0.3s ease-out',
           }}
         >
@@ -374,7 +371,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 overflow-hidden",
+          "flex-1 overflow-hidden pointer-events-auto",
           isMobile && !showEmailList && "hidden"
         )}>
           <EmailList
@@ -393,7 +390,7 @@ const EmailDashboard = () => {
 
           {/* Email Detail - Full screen on mobile when email is selected */}
           {isMobile && !showEmailList && selectedEmail && (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden pointer-events-auto">
               <EmailDetail
                 email={selectedEmail}
                 onReply={handleReply}

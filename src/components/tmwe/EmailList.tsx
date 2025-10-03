@@ -157,24 +157,26 @@ export const EmailList = ({
                 </div>
               </div>
               {selectedEmailId === email.id && emailDetail && (
-                <div className="w-full mt-3 pt-3 border-t relative min-h-[200px] pb-12">
-                  <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 500) + (emailDetail.body.length > 500 ? '...' : '')
-                    }}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="absolute bottom-2 left-2"
-                  >
-                    <Maximize2 className="h-5 w-5" />
-                  </Button>
+                <div className="w-full mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -225,24 +227,26 @@ export const EmailList = ({
                 {email.subject || '(No Subject)'}
               </h3>
               {selectedEmailId === email.id && emailDetail ? (
-                <div className="mt-3 pt-3 border-t relative min-h-[300px] pb-12">
-                  <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 800) + (emailDetail.body.length > 800 ? '...' : '')
-                    }}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="absolute bottom-2 left-2"
-                  >
-                    <Maximize2 className="h-5 w-5" />
-                  </Button>
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-3"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 300) + (emailDetail.body.length > 300 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="line-clamp-2 text-sm text-muted-foreground">
@@ -277,8 +281,7 @@ export const EmailList = ({
       <div className="py-2 px-[28px]">
         <Card
           className={cn(
-            'cursor-pointer border-l-4 p-4 transition-all duration-200 flex flex-col',
-            selectedEmailId === currentEmail.id ? 'w-full min-h-[400px]' : 'w-[250px] h-[250px]',
+            'cursor-pointer border-l-4 p-4 transition-all duration-200 w-[250px] h-[250px] flex flex-col',
             currentEmail.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',
@@ -312,24 +315,26 @@ export const EmailList = ({
                 {currentEmail.subject || '(No Subject)'}
               </h3>
               {selectedEmailId === currentEmail.id && emailDetail ? (
-                <div className="mt-3 pt-3 border-t relative min-h-[250px] pb-12">
-                  <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 600) + (emailDetail.body.length > 600 ? '...' : '')
-                    }}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="absolute bottom-2 left-2"
-                  >
-                    <Maximize2 className="h-5 w-5" />
-                  </Button>
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-2"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <p className="line-clamp-2 text-sm text-muted-foreground">
@@ -337,21 +342,19 @@ export const EmailList = ({
                 </p>
               )}
             </div>
-            {!selectedEmailId || selectedEmailId !== currentEmail.id ? (
-              <div className="flex flex-col items-end gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(currentEmail.date), { addSuffix: true })}
-                </span>
-                <div className="flex gap-1">
-                  {currentEmail.starred && (
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  )}
-                  {currentEmail.hasAttachments && (
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
+            <div className="flex flex-col items-end gap-2">
+              <span className="whitespace-nowrap text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(currentEmail.date), { addSuffix: true })}
+              </span>
+              <div className="flex gap-1">
+                {currentEmail.starred && (
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                )}
+                {currentEmail.hasAttachments && (
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
-            ) : null}
+            </div>
           </div>
         </Card>
         <div className="flex items-center justify-center gap-2 mt-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
@@ -25,12 +25,6 @@ const EmailDashboard = () => {
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
-  
-  // Drag state for swipe navigation
-  const [dragStartX, setDragStartX] = useState<number | null>(null);
-  const [dragCurrentX, setDragCurrentX] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset selected email when folder changes
   useEffect(() => {
@@ -245,63 +239,6 @@ const EmailDashboard = () => {
     setReplyTo(undefined);
   };
 
-  // Swipe/drag handlers for laptop
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isMobile) return;
-    // Only start drag if clicking in empty areas (not on buttons, links, etc.)
-    const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, textarea, select')) return;
-    
-    setDragStartX(e.clientX);
-    setIsDragging(true);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || dragStartX === null || isMobile) return;
-    
-    e.preventDefault();
-    setDragCurrentX(e.clientX);
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging || dragStartX === null || isMobile) {
-      setIsDragging(false);
-      setDragStartX(null);
-      setDragCurrentX(null);
-      return;
-    }
-
-    const dragDistance = dragCurrentX !== null ? dragCurrentX - dragStartX : 0;
-    const threshold = 80; // Reduced threshold for easier navigation
-
-    // Swipe right: go back (close detail view)
-    if (dragDistance > threshold && selectedEmailId) {
-      setSelectedEmailId(null);
-    }
-    
-    // Swipe left: go forward (open first email if none selected)
-    if (dragDistance < -threshold && !selectedEmailId && emails.length > 0) {
-      handleEmailSelect(emails[0].id);
-    }
-
-    setIsDragging(false);
-    setDragStartX(null);
-    setDragCurrentX(null);
-  };
-
-  const handleMouseLeave = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      setDragStartX(null);
-      setDragCurrentX(null);
-    }
-  };
-
-  // Calculate drag offset for visual feedback
-  const dragOffset = isDragging && dragStartX !== null && dragCurrentX !== null
-    ? Math.max(-150, Math.min(150, dragCurrentX - dragStartX))
-    : 0;
-
   return (
     <div className="flex h-screen flex-col">
       <EmailHeader 
@@ -312,33 +249,7 @@ const EmailDashboard = () => {
         isMobile={isMobile}
       />
       
-      <div 
-        ref={containerRef}
-        className="flex flex-1 overflow-hidden relative"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          cursor: isDragging ? 'grabbing' : 'grab',
-        }}
-      >
-        {/* Drag indicator */}
-        {isDragging && Math.abs(dragOffset) > 30 && (
-          <div 
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/90 text-primary-foreground backdrop-blur-sm rounded-full px-6 py-3 text-sm font-medium pointer-events-none shadow-lg"
-          >
-            {dragOffset > 0 ? '← Chiudi email' : 'Apri email →'}
-          </div>
-        )}
-        
-        <div 
-          className="flex flex-1 transition-transform pointer-events-none"
-          style={{
-            transform: `translateX(${dragOffset * 0.3}px)`,
-            transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-          }}
-        >
+      <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar
@@ -371,7 +282,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 overflow-hidden pointer-events-auto",
+          "flex-1 overflow-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           <EmailList
@@ -388,20 +299,19 @@ const EmailDashboard = () => {
           />
         </div>
 
-          {/* Email Detail - Full screen on mobile when email is selected */}
-          {isMobile && !showEmailList && selectedEmail && (
-            <div className="flex-1 flex flex-col overflow-hidden pointer-events-auto">
-              <EmailDetail
-                email={selectedEmail}
-                onReply={handleReply}
-                onReplyAll={handleReplyAll}
-                onForward={handleForward}
-                onBack={handleBackToList}
-                isMobile={true}
-              />
-            </div>
-          )}
-        </div>
+        {/* Email Detail - Full screen on mobile when email is selected */}
+        {isMobile && !showEmailList && selectedEmail && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EmailDetail
+              email={selectedEmail}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onBack={handleBackToList}
+              isMobile={true}
+            />
+          </div>
+        )}
       </div>
 
       <ComposeDialog

@@ -165,33 +165,30 @@ export default function Tables() {
 
   if (selectedTable && tableData) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedTable(null)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Torna all'elenco
-            </Button>
-            <h1 className="text-3xl font-bold">Tabella: {selectedTable}</h1>
-          </div>
+      <div className="container mx-auto p-6 space-y-4">
+        <div className="flex items-center gap-4">
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedTable(null)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Indietro
+          </Button>
+          <h1 className="text-2xl font-bold">Tabella: {selectedTable}</h1>
+          <Button
+            variant="ghost"
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Aggiorna
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
               {tableData.rows.length} record{tableData.rows.length !== 1 ? 's' : ''}
             </CardTitle>
           </CardHeader>
@@ -237,19 +234,8 @@ export default function Tables() {
   const categorizedTables = getCategorizedTables();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Tabelle Database</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Aggiorna
-        </Button>
-      </div>
+    <div className="container mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-bold">Tabelle Database</h1>
 
       {loading ? (
         <div className="text-center py-12">
@@ -257,30 +243,27 @@ export default function Tables() {
           <p className="text-muted-foreground">Caricamento tabelle...</p>
         </div>
       ) : (
-        <div className="max-w-3xl space-y-6">
+        <div className="max-w-3xl space-y-4">
           {categorizedTables.map((category) => (
-            <div key={category.name} className="space-y-3">
-              <h2 className="text-xl font-semibold text-foreground border-b pb-2">
+            <div key={category.name} className="space-y-2">
+              <h2 className="text-lg font-semibold text-foreground border-b pb-1">
                 {category.name}
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {category.tables.map((table) => (
                   <Card
                     key={table.table_name}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => setSelectedTable(table.table_name)}
                   >
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <Database className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">{table.table_name}</span>
+                    <CardContent className="flex items-center justify-between p-3">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{table.table_name}</span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold">{table.row_count}</div>
-                        <p className="text-xs text-muted-foreground">
-                          record{table.row_count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
+                      <span className="text-sm font-semibold">
+                        {table.row_count} record{table.row_count !== 1 ? 's' : ''}
+                      </span>
                     </CardContent>
                   </Card>
                 ))}

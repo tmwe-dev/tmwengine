@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -2753,36 +2753,106 @@ export default function ImportTemplates() {
 
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
-            <div className="flex items-center justify-center border-b relative py-3 min-h-[60px]">
+            <div className="flex items-center justify-between border-b relative py-3 min-h-[60px] px-4">
               {/* Filtro "Solo con note" e Switch - a sinistra */}
-              <div className="absolute left-4 z-10 bg-background px-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="has-notes-filter-desktop"
-                      checked={hasNotesFilter}
-                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                    />
-                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                      <StickyNote className="h-4 w-4 text-blue-500" />
-                      Solo con note
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="hide-today-activities"
-                      checked={hideContactsWithTodayActivities}
-                      onCheckedChange={setHideContactsWithTodayActivities}
-                    />
-                    <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer whitespace-nowrap">
-                      Nascondi attività oggi
-                    </Label>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has-notes-filter-desktop"
+                    checked={hasNotesFilter}
+                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                  />
+                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+                    <StickyNote className="h-4 w-4 text-blue-500" />
+                    Solo con note
+                  </Label>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="hide-today-activities"
+                    checked={hideContactsWithTodayActivities}
+                    onCheckedChange={setHideContactsWithTodayActivities}
+                  />
+                  <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer whitespace-nowrap">
+                    Nascondi attività oggi
+                  </Label>
                 </div>
               </div>
 
-              
+              {/* Blocco azioni record selezionati - a destra */}
+              {selectedRecords.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="text-sm px-4 py-2">
+                    {selectedRecords.size}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedRecords(new Set())}
+                    className="h-10 px-4 text-sm"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowMultipleActivityDialog(true)}
+                          className="h-10 w-10 p-0"
+                        >
+                          <FileText className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Crea attività</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={importSelectedRecords}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Database className="h-4 w-4 text-green-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Importa {selectedRecords.size} in rubrica</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            const allRecordIds = allRecords.map(r => r.id);
+                            setSelectedRecords(new Set(allRecordIds));
+                          }}
+                          className="h-10 w-10 p-0"
+                        >
+                          <ListChecks className="h-4 w-4 text-purple-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Seleziona tutti i record filtrati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
           )}
 

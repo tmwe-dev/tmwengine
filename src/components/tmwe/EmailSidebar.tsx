@@ -154,7 +154,7 @@ export const EmailSidebar = ({
           <Icon className={cn("h-4 w-4 flex-shrink-0", isCollapsed ? "" : "mr-3")} />
           {!isCollapsed && (
             <span className="truncate">
-              {folder.name} {totalMessages > 0 && `(${totalMessages.toLocaleString()})`}
+              {folder.name}
             </span>
           )}
         </div>

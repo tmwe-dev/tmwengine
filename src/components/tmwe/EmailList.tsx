@@ -341,111 +341,115 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 p-2 px-4 border-b overflow-x-auto">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="unread-only"
-              checked={showUnreadOnly}
-              onCheckedChange={setShowUnreadOnly}
-            />
-            <Label htmlFor="unread-only" className="text-sm cursor-pointer">
-              Solo non lette
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="multi-select"
-              checked={multiSelectMode}
-              onCheckedChange={setMultiSelectMode}
-            />
-            <Label htmlFor="multi-select" className="text-sm cursor-pointer">
-              Selezione multipla
-            </Label>
-          </div>
-
-          {multiSelectMode && (
+      <div className="flex flex-col gap-2 p-2 px-4 border-b">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Select value={bulkAction} onValueChange={setBulkAction}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Azione" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="delete">
-                    <div className="flex items-center gap-2">
-                      <Trash2 className="h-3 w-3" />
-                      <span className="text-xs">Elimina</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="archive">
-                    <div className="flex items-center gap-2">
-                      <Archive className="h-3 w-3" />
-                      <span className="text-xs">Archivia</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="forward">
-                    <div className="flex items-center gap-2">
-                      <Forward className="h-3 w-3" />
-                      <span className="text-xs">Inoltra</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="mark-read">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3" />
-                      <span className="text-xs">Segna come letta</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="move">
-                    <div className="flex items-center gap-2">
-                      <FolderInput className="h-3 w-3" />
-                      <span className="text-xs">Sposta in cartella</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Switch
+                id="unread-only"
+                checked={showUnreadOnly}
+                onCheckedChange={setShowUnreadOnly}
+              />
+              <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
+                Solo non lette
+              </Label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Switch
+                id="multi-select"
+                checked={multiSelectMode}
+                onCheckedChange={setMultiSelectMode}
+              />
+              <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
+                Selezione multipla
+              </Label>
+            </div>
 
-              {bulkAction === 'move' && (
-                <Select value={targetFolder} onValueChange={setTargetFolder}>
-                  <SelectTrigger className="w-[110px] h-8 text-xs">
-                    <SelectValue />
+            {multiSelectMode && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <Select value={bulkAction} onValueChange={setBulkAction}>
+                  <SelectTrigger className="w-[100px] h-7 text-[11px]">
+                    <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    <SelectItem value="INBOX">Inbox</SelectItem>
-                    <SelectItem value="Sent">Inviati</SelectItem>
-                    <SelectItem value="Drafts">Bozze</SelectItem>
-                    <SelectItem value="Spam">Spam</SelectItem>
-                    <SelectItem value="Trash">Cestino</SelectItem>
+                    <SelectItem value="delete">
+                      <div className="flex items-center gap-1.5">
+                        <Trash2 className="h-3 w-3" />
+                        <span className="text-xs">Elimina</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="archive">
+                      <div className="flex items-center gap-1.5">
+                        <Archive className="h-3 w-3" />
+                        <span className="text-xs">Archivia</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="forward">
+                      <div className="flex items-center gap-1.5">
+                        <Forward className="h-3 w-3" />
+                        <span className="text-xs">Inoltra</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="mark-read">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span className="text-xs">Letta</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="move">
+                      <div className="flex items-center gap-1.5">
+                        <FolderInput className="h-3 w-3" />
+                        <span className="text-xs">Sposta</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-              )}
 
-              <Button
-                onClick={handleExecuteBulkAction}
-                disabled={selectedEmailIds.size === 0 || !bulkAction}
-                size="sm"
-                className="h-8 text-xs px-3"
-              >
-                Esegui ({selectedEmailIds.size})
-              </Button>
-            </div>
-          )}
-        </div>
+                {bulkAction === 'move' && (
+                  <Select value={targetFolder} onValueChange={setTargetFolder}>
+                    <SelectTrigger className="w-[90px] h-7 text-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="INBOX">Inbox</SelectItem>
+                      <SelectItem value="Sent">Inviati</SelectItem>
+                      <SelectItem value="Drafts">Bozze</SelectItem>
+                      <SelectItem value="Spam">Spam</SelectItem>
+                      <SelectItem value="Trash">Cestino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
+                <Button
+                  onClick={handleExecuteBulkAction}
+                  disabled={selectedEmailIds.size === 0 || !bulkAction}
+                  size="sm"
+                  className="h-7 text-[11px] px-2"
+                >
+                  Esegui ({selectedEmailIds.size})
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
       <ScrollArea className="h-full" ref={scrollRef}>

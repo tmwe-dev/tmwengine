@@ -205,3 +205,6 @@ import_map = """
   }
 }
 """
+
+[functions.tmwe-api-proxy]
+verify_jwt = false

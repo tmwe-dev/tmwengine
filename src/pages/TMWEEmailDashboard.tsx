@@ -362,7 +362,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" key={selectedEmailId}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
@@ -372,18 +372,20 @@ const EmailDashboard = () => {
                 <p className="text-muted-foreground">Caricamento...</p>
               </div>
             ) : selectedEmail ? (
-              <EmailDetail
-                email={selectedEmail}
-                onReply={handleReply}
-                onReplyAll={handleReplyAll}
-                onForward={handleForward}
-                onDelete={handleDelete}
-                onPrevious={handlePreviousEmail}
-                onNext={handleNextEmail}
-                hasPrevious={hasPreviousEmail()}
-                hasNext={hasNextEmail()}
-                onMarkAsRead={handleMarkAsRead}
-              />
+              <div key={selectedEmailId}>
+                <EmailDetail
+                  email={selectedEmail}
+                  onReply={handleReply}
+                  onReplyAll={handleReplyAll}
+                  onForward={handleForward}
+                  onDelete={handleDelete}
+                  onPrevious={handlePreviousEmail}
+                  onNext={handleNextEmail}
+                  hasPrevious={hasPreviousEmail()}
+                  hasNext={hasNextEmail()}
+                  onMarkAsRead={handleMarkAsRead}
+                />
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground">No email selected</p>

@@ -7,12 +7,14 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 const EmailDashboard = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [detailPopupOpen, setDetailPopupOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -225,7 +227,7 @@ const EmailDashboard = () => {
           onSync={handleSync}
         />
 
-        <div className="flex-1 border-r">
+        <div className="flex-1">
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}
@@ -234,51 +236,10 @@ const EmailDashboard = () => {
             onLoadMore={fetchNextPage}
             hasMore={hasNextPage}
             isLoadingMore={isFetchingNextPage}
+            emailDetail={selectedEmail}
+            isLoadingDetail={isLoadingDetail}
+            onOpenDetailPopup={() => setDetailPopupOpen(true)}
           />
-        </div>
-
-        <div className="flex-1">
-          {isLoadingDetail ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <p className="text-sm text-muted-foreground">Loading email...</p>
-              </div>
-            </div>
-          ) : detailError ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="text-center space-y-4 p-8">
-                <p className="text-destructive font-medium text-lg">Failed to load email</p>
-                <p className="text-sm text-muted-foreground">
-                  {detailError instanceof Error ? detailError.message : 'The email content could not be retrieved'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  This might be due to an empty response from the server
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSelectedEmailId(null);
-                    setTimeout(() => setSelectedEmailId(selectedEmailId), 100);
-                  }}
-                >
-                  Try Again
-                </Button>
-              </div>
-            </div>
-          ) : selectedEmail ? (
-            <EmailDetail
-              email={selectedEmail}
-              onReply={handleReply}
-              onReplyAll={handleReplyAll}
-              onForward={handleForward}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p>Select an email to view</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -288,6 +249,27 @@ const EmailDashboard = () => {
         onSent={() => queryClient.invalidateQueries({ queryKey: ['messages'] })}
         replyTo={replyTo}
       />
+
+      <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Email Detail</DialogTitle>
+          </DialogHeader>
+          {selectedEmail ? (
+            <EmailDetail
+              email={selectedEmail}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <p className="text-muted-foreground">No email selected</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

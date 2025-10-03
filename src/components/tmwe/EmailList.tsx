@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Square } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Square, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,14 @@ interface EmailListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  emailDetail?: {
+    id: string;
+    subject: string;
+    from: string;
+    body: string;
+  } | null;
+  isLoadingDetail?: boolean;
+  onOpenDetailPopup?: () => void;
 }
 
 type ViewMode = 'list' | 'grid' | 'single';
@@ -37,7 +45,10 @@ export const EmailList = ({
   loading,
   onLoadMore,
   hasMore,
-  isLoadingMore
+  isLoadingMore,
+  emailDetail,
+  isLoadingDetail,
+  onOpenDetailPopup
 }: EmailListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -145,11 +156,29 @@ export const EmailList = ({
                   )}
                 </div>
               </div>
-              <div className="w-[90%]">
-                <p className="truncate text-sm text-muted-foreground/60">
-                  {email.preview || 'No preview available'}
-                </p>
-              </div>
+              {selectedEmailId === email.id && emailDetail && (
+                <div className="w-full mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -197,9 +226,33 @@ export const EmailList = ({
               )}>
                 {email.subject || '(No Subject)'}
               </h3>
-              <p className="line-clamp-2 text-sm text-muted-foreground">
-                {email.preview}
-              </p>
+              {selectedEmailId === email.id && emailDetail ? (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-3"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 300) + (emailDetail.body.length > 300 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="line-clamp-2 text-sm text-muted-foreground">
+                  {email.preview}
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               <span className="whitespace-nowrap text-xs text-muted-foreground">
@@ -261,9 +314,33 @@ export const EmailList = ({
               )}>
                 {currentEmail.subject || '(No Subject)'}
               </h3>
-              <p className="line-clamp-2 text-sm text-muted-foreground">
-                {currentEmail.preview}
-              </p>
+              {selectedEmailId === currentEmail.id && emailDetail ? (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-start justify-between gap-2">
+                    <div 
+                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-2"
+                      dangerouslySetInnerHTML={{ 
+                        __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="line-clamp-2 text-sm text-muted-foreground">
+                  {currentEmail.preview}
+                </p>
+              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               <span className="whitespace-nowrap text-xs text-muted-foreground">

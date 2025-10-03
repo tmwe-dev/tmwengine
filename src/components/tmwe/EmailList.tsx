@@ -88,7 +88,7 @@ export const EmailList = ({
 
   return (
     <ScrollArea className="h-full" ref={scrollRef}>
-      <div className="space-y-3 py-2 px-[18px]">
+      <div className="space-y-3 py-2 px-[28px]">
         {emails.map((email, index) => (
           <Card
             key={email.id}

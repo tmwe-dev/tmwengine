@@ -96,12 +96,12 @@ export const EmailList = ({
             className={cn(
               'cursor-pointer border-l-4 p-4 transition-all duration-200',
               email.read 
-                ? 'border-l-transparent bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent hover:from-purple-500/15 hover:via-purple-500/8 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] hover:scale-[1.02]'
-                : 'border-l-orange-500/50 bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent hover:from-orange-500/15 hover:via-orange-500/8 hover:shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:scale-[1.02]',
+                ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[0_0_20px_rgba(216,180,254,0.25)] hover:scale-[1.02]'
+                : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[0_0_20px_rgba(253,186,116,0.3)] hover:scale-[1.02]',
               selectedEmailId === email.id && (
                 email.read 
-                  ? 'bg-gradient-to-l from-purple-500/20 via-purple-500/10 via-35% to-transparent border-purple-500/30 shadow-md scale-[1.02]'
-                  : 'bg-gradient-to-l from-orange-500/20 via-orange-500/10 via-35% to-transparent border-orange-500/50 shadow-md scale-[1.02]'
+                  ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-md scale-[1.02]'
+                  : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-md scale-[1.02]'
               )
             )}
             onClick={() => onEmailSelect(email.id)}

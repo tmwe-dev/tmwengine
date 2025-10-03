@@ -419,18 +419,7 @@ const RecordImportati = () => {
             </div>
             
             {showFiltersArea && (
-              <div className="flex flex-col gap-4">
-                {/* Switch per nascondere contatti con attività completate oggi */}
-                <div className="flex items-center justify-center gap-3 py-3 px-4 bg-card/50 rounded-lg border">
-                  <Label htmlFor="hide-today-activities" className="text-sm font-medium cursor-pointer">
-                    Nascondi contatti con attività eseguite oggi
-                  </Label>
-                  <Switch
-                    id="hide-today-activities"
-                    checked={hideContactsWithTodayActivities}
-                    onCheckedChange={setHideContactsWithTodayActivities}
-                  />
-                </div>
+              <div className="flex flex-col gap-3">
                 
                 <div className="flex items-end justify-center relative">
                   <div className="flex gap-2 items-end">
@@ -561,6 +550,32 @@ const RecordImportati = () => {
                         className="pl-10"
                       />
                     </div>
+                  </div>
+                </div>
+                
+                {/* Checkbox e Switch sotto la barra di ricerca */}
+                <div className="flex items-center justify-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="hasNotes"
+                      checked={hasNotesFilter}
+                      onCheckedChange={(checked) => setHasNotesFilter(checked === true)}
+                    />
+                    <Label htmlFor="hasNotes" className="text-sm cursor-pointer flex items-center gap-1">
+                      <StickyNote className="h-4 w-4" />
+                      Solo con note
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="hide-today-activities"
+                      checked={hideContactsWithTodayActivities}
+                      onCheckedChange={setHideContactsWithTodayActivities}
+                    />
+                    <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer">
+                      Nascondi attività eseguite oggi
+                    </Label>
                   </div>
                 </div>
               </div>

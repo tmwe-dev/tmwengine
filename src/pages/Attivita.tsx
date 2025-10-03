@@ -969,11 +969,42 @@ export default function Attivita() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <Button 
+                  size={isMobile ? "default" : "sm"}
+                  onClick={async () => {
+                    try {
+                      const { error } = await supabase
+                        .from('attivita')
+                        .update({ stato: 'completata' })
+                        .in('id', selectedActivities);
+                      
+                      if (error) throw error;
+                      
+                      toast({
+                        title: "Successo",
+                        description: `${selectedActivities.length} attività ${selectedActivities.length === 1 ? 'completata' : 'completate'}`,
+                      });
+                      
+                      setSelectedActivities([]);
+                      loadActivities();
+                    } catch (error: any) {
+                      toast({
+                        title: "Errore",
+                        description: error.message,
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Completa
+                </Button>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button size={isMobile ? "default" : "sm"} className="bg-blue-600 hover:bg-blue-700">
                       <Calendar className="h-4 w-4 mr-1" />
-                      {isMobile ? "Riprogramma" : "Riprogramma"}
+                      Riprogramma
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">

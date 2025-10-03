@@ -23,6 +23,7 @@ import EmailProvider from "./pages/EmailProvider";
 import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
+import Tables from "./pages/Tables";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,11 @@ const App = () => (
             <Route path="/record-importati" element={
               <ProtectedRoute>
                 <CRMLayout><RecordImportati /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/tables" element={
+              <ProtectedRoute>
+                <CRMLayout><Tables /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

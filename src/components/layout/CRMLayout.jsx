@@ -53,6 +53,7 @@ const CRMLayout = ({ children }) => {
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },
     { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
+    { name: 'Tables', href: '/tables', icon: Database },
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 

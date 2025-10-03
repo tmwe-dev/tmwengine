@@ -511,23 +511,56 @@ export default function ImportTemplates() {
 
       // Crea le attività per ogni azienda selezionata
       const activities = [];
+      const emailSendPromises = [];
       
-      selectedCompanies.forEach(company => {
+      for (const company of selectedCompanies) {
         // ATTIVITÀ IMMEDIATA (quello che ho fatto ora)
         let descrizione = '';
+        let emailSendResult = null;
         
         if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
-          descrizione = `Email: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+          // Se è email, invia tramite TMWE
+          if (company.record.email) {
+            try {
+              console.log(`📧 Invio email a ${company.record.email}...`);
+              const { data: sendResult, error: sendError } = await supabase.functions.invoke('tmwe-email-send', {
+                body: {
+                  to: company.record.email,
+                  subject: activityData.oggetto_email,
+                  body_text: activityData.testo_email,
+                  body_html: activityData.testo_email.replace(/\n/g, '<br>')
+                }
+              });
+              
+              if (sendError) {
+                console.error('❌ Errore invio email:', sendError);
+                descrizione = `❌ Email NON INVIATA - Errore: ${sendError.message}\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+              } else if (sendResult?.success) {
+                console.log('✅ Email inviata con successo:', sendResult.message_id);
+                emailSendResult = 'success';
+                descrizione = `✅ Email INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\nMessage ID: ${sendResult.message_id || 'N/A'}\n\nTesto inviato:\n${activityData.testo_email}`;
+              } else {
+                console.error('❌ Errore invio email - risposta:', sendResult);
+                descrizione = `❌ Email NON INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+              }
+            } catch (error) {
+              console.error('❌ Errore durante invio email:', error);
+              descrizione = `❌ Email NON INVIATA - Errore tecnico\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+            }
+          } else {
+            // Nessuna email disponibile
+            descrizione = `❌ Email NON INVIATA - Email mancante\n\nOggetto: ${activityData.oggetto_email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+          }
         } else if (activityData.tipo === 'chiamata' && activityData.note_generali) {
           descrizione = `Chiamata effettuata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNote:\n${activityData.note_generali}`;
         }
 
-        // Attività immediata (registrata nella tabella imported_contacts tramite rubrica_id)
+        // Attività immediata - stato 'completata' solo se email inviata con successo
         activities.push({
           rubrica_id: company.id,
           tipo: activityData.tipo,
           descrizione: descrizione,
-          stato: 'aperta',
+          stato: (activityData.tipo === 'email' && emailSendResult === 'success') ? 'completata' : 'aperta',
           scadenza: null,
           priorita: activityData.priorita || 'media',
           assegnato_a: activityData.assegnato_a || null,
@@ -592,7 +625,7 @@ export default function ImportTemplates() {
             creato_da: activityData.creato_da || null
           });
         }
-      });
+      }
 
       // Inserisci le attività nel database usando SQL diretto
       const { error } = await supabase

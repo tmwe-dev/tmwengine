@@ -212,9 +212,9 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Descrizione - metà pagina, 250px altezza, allineata a destra e in alto */}
-              <div className="flex justify-end -mt-[180px]">
-                <div className="w-1/2 relative right-[-40px]">
+              {/* Descrizione - metà pagina, 250px altezza, centrata */}
+              <div className="flex justify-center">
+                <div className="w-1/2">
                   <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
                   <Textarea
                     id="descrizione"

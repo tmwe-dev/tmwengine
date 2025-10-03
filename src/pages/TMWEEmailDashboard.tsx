@@ -213,6 +213,35 @@ const EmailDashboard = () => {
     }
   };
 
+  const handleBulkDelete = (emailIds: string[]) => {
+    deleteMutation.mutate(emailIds);
+  };
+
+  const handleBulkArchive = (emailIds: string[]) => {
+    toast.info('Archivio non ancora implementato');
+    console.log('Archive emails:', emailIds);
+  };
+
+  const handleBulkForward = (emailIds: string[]) => {
+    toast.info('Inoltro multiplo non ancora implementato');
+    console.log('Forward emails:', emailIds);
+  };
+
+  const handleBulkMarkAsRead = async (emailIds: string[]) => {
+    try {
+      await Promise.all(emailIds.map(id => emailMessageApi.getMessage(id, true)));
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      toast.success('Email segnate come lette');
+    } catch (error) {
+      toast.error('Errore durante la marcatura');
+    }
+  };
+
+  const handleBulkMoveToFolder = (emailIds: string[], folder: string) => {
+    toast.info(`Spostamento in ${folder} non ancora implementato`);
+    console.log('Move emails to folder:', emailIds, folder);
+  };
+
   const handleReply = () => {
     if (selectedEmail) {
       setReplyTo({
@@ -331,6 +360,11 @@ const EmailDashboard = () => {
             emailDetail={selectedEmail}
             isLoadingDetail={isLoadingDetail}
             onOpenDetailPopup={() => setDetailPopupOpen(true)}
+            onBulkDelete={handleBulkDelete}
+            onBulkArchive={handleBulkArchive}
+            onBulkForward={handleBulkForward}
+            onBulkMarkAsRead={handleBulkMarkAsRead}
+            onBulkMoveToFolder={handleBulkMoveToFolder}
           />
         </div>
 

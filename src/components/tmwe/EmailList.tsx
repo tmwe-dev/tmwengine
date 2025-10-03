@@ -3,10 +3,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2 } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface Email {
@@ -36,6 +38,11 @@ interface EmailListProps {
   } | null;
   isLoadingDetail?: boolean;
   onOpenDetailPopup?: () => void;
+  onBulkDelete?: (emailIds: string[]) => void;
+  onBulkArchive?: (emailIds: string[]) => void;
+  onBulkForward?: (emailIds: string[]) => void;
+  onBulkMarkAsRead?: (emailIds: string[]) => void;
+  onBulkMoveToFolder?: (emailIds: string[], folder: string) => void;
 }
 
 type ViewMode = 'list' | 'grid';
@@ -50,15 +57,67 @@ export const EmailList = ({
   isLoadingMore,
   emailDetail,
   isLoadingDetail,
-  onOpenDetailPopup
+  onOpenDetailPopup,
+  onBulkDelete,
+  onBulkArchive,
+  onBulkForward,
+  onBulkMarkAsRead,
+  onBulkMoveToFolder
 }: EmailListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastEmailRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string>('');
+  const [targetFolder, setTargetFolder] = useState<string>('INBOX');
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
+
+  const handleToggleEmailSelection = (emailId: string) => {
+    const newSelected = new Set(selectedEmailIds);
+    if (newSelected.has(emailId)) {
+      newSelected.delete(emailId);
+    } else {
+      newSelected.add(emailId);
+    }
+    setSelectedEmailIds(newSelected);
+  };
+
+  const handleExecuteBulkAction = () => {
+    const emailIds = Array.from(selectedEmailIds);
+    if (emailIds.length === 0) return;
+
+    switch (bulkAction) {
+      case 'delete':
+        onBulkDelete?.(emailIds);
+        break;
+      case 'archive':
+        onBulkArchive?.(emailIds);
+        break;
+      case 'forward':
+        onBulkForward?.(emailIds);
+        break;
+      case 'mark-read':
+        onBulkMarkAsRead?.(emailIds);
+        break;
+      case 'move':
+        onBulkMoveToFolder?.(emailIds, targetFolder);
+        break;
+    }
+    setSelectedEmailIds(new Set());
+    setBulkAction('');
+  };
+
+  // Reset selection when multi-select mode is disabled
+  useEffect(() => {
+    if (!multiSelectMode) {
+      setSelectedEmailIds(new Set());
+      setBulkAction('');
+    }
+  }, [multiSelectMode]);
 
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const [target] = entries;
@@ -122,11 +181,21 @@ export const EmailList = ({
               email.read 
                 ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
                 : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
-            )
+            ),
+            selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
           )}
-          onClick={() => onEmailSelect(email.id)}
+          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
           <div className="flex items-stretch">
+            {multiSelectMode && (
+              <div className="flex items-center justify-center px-3">
+                <Checkbox
+                  checked={selectedEmailIds.has(email.id)}
+                  onCheckedChange={() => handleToggleEmailSelection(email.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div className="flex-1 min-w-0 p-3">
               <div className="flex items-center gap-4">
                 <div className="min-w-[200px]">
@@ -196,11 +265,21 @@ export const EmailList = ({
               email.read 
                 ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
                 : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
-            )
+            ),
+            selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
           )}
-          onClick={() => onEmailSelect(email.id)}
+          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
           <div className="flex items-stretch">
+            {multiSelectMode && (
+              <div className="flex items-center justify-center px-3">
+                <Checkbox
+                  checked={selectedEmailIds.has(email.id)}
+                  onCheckedChange={() => handleToggleEmailSelection(email.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div className="flex-1 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-1 overflow-hidden">
@@ -262,33 +341,112 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 p-2 px-[28px] border-b">
-        <div className="flex items-center gap-2">
-          <Switch
-            id="unread-only"
-            checked={showUnreadOnly}
-            onCheckedChange={setShowUnreadOnly}
-          />
-          <Label htmlFor="unread-only" className="text-sm cursor-pointer">
-            Solo non lette
-          </Label>
+      <div className="flex flex-col gap-2 p-2 px-[28px] border-b">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="unread-only"
+                checked={showUnreadOnly}
+                onCheckedChange={setShowUnreadOnly}
+              />
+              <Label htmlFor="unread-only" className="text-sm cursor-pointer">
+                Solo non lette
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="multi-select"
+                checked={multiSelectMode}
+                onCheckedChange={setMultiSelectMode}
+              />
+              <Label htmlFor="multi-select" className="text-sm cursor-pointer">
+                Selezione multipla
+              </Label>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-        </div>
+
+        {multiSelectMode && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={bulkAction} onValueChange={setBulkAction}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Seleziona azione" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="delete">
+                  <div className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    Elimina
+                  </div>
+                </SelectItem>
+                <SelectItem value="archive">
+                  <div className="flex items-center gap-2">
+                    <Archive className="h-4 w-4" />
+                    Archivia
+                  </div>
+                </SelectItem>
+                <SelectItem value="forward">
+                  <div className="flex items-center gap-2">
+                    <Forward className="h-4 w-4" />
+                    Inoltra
+                  </div>
+                </SelectItem>
+                <SelectItem value="mark-read">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Segna come letta
+                  </div>
+                </SelectItem>
+                <SelectItem value="move">
+                  <div className="flex items-center gap-2">
+                    <FolderInput className="h-4 w-4" />
+                    Sposta in cartella
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {bulkAction === 'move' && (
+              <Select value={targetFolder} onValueChange={setTargetFolder}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="INBOX">Inbox</SelectItem>
+                  <SelectItem value="Sent">Inviati</SelectItem>
+                  <SelectItem value="Drafts">Bozze</SelectItem>
+                  <SelectItem value="Spam">Spam</SelectItem>
+                  <SelectItem value="Trash">Cestino</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            <Button
+              onClick={handleExecuteBulkAction}
+              disabled={selectedEmailIds.size === 0 || !bulkAction}
+              size="sm"
+            >
+              Esegui ({selectedEmailIds.size})
+            </Button>
+          </div>
+        )}
       </div>
       <ScrollArea className="h-full" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}

@@ -2701,7 +2701,7 @@ export default function ImportTemplates() {
                             <X className="h-3 w-3 mr-1" />
                             Pulisci filtri
                           </Button>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-base font-bold text-orange-600">
                             {filteredRecords.length} trovati
                           </span>
                         </div>

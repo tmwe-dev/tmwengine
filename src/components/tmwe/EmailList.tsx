@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput } from 'lucide-react';
+import { SenderRulesPanel } from './SenderRulesPanel';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -75,6 +76,15 @@ export const EmailList = ({
   const [targetFolder, setTargetFolder] = useState<string>('INBOX');
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
+
+  // Extract unique senders from selected emails
+  const selectedSenders = Array.from(
+    new Set(
+      Array.from(selectedEmailIds)
+        .map(id => emails.find(e => e.id === id)?.from)
+        .filter(Boolean) as string[]
+    )
+  );
 
   const handleToggleEmailSelection = (emailId: string) => {
     const newSelected = new Set(selectedEmailIds);
@@ -341,6 +351,17 @@ export const EmailList = ({
 
   return (
     <>
+      {/* Sender Rules Panel */}
+      <div className="px-4 pt-3">
+        <SenderRulesPanel 
+          selectedSenders={multiSelectMode ? selectedSenders : []}
+          onRuleAssigned={() => {
+            setSelectedEmailIds(new Set());
+            setMultiSelectMode(false);
+          }}
+        />
+      </div>
+
       <div className="flex flex-col gap-2 p-2 px-4 border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">

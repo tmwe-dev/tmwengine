@@ -1307,6 +1307,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_tmwe_credentials: {
+        Row: {
+          access_token: string
+          client_id: string
+          client_secret: string
+          created_at: string | null
+          expires_at: number | null
+          id: string
+          refresh_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          client_secret: string
+          created_at?: string | null
+          expires_at?: number | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          client_secret?: string
+          created_at?: string | null
+          expires_at?: number | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

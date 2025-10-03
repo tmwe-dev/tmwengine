@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { setApiConfig } from '@/lib/tmwe-api';
+import { setApiConfigToDB } from '@/lib/tmwe-api-integrated';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-const AuthCallback = () => {
+const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -16,28 +16,25 @@ const AuthCallback = () => {
       const errorParam = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
 
-      // 📋 LOG: Parámetros recibidos en callback
-      console.group('🔐 OAuth2 Callback - Parámetros recibidos');
+      console.group('🔐 OAuth2 Callback - Integrated');
       console.log('code:', code);
       console.log('state:', state);
       console.log('error:', errorParam);
-      console.log('error_description:', errorDescription);
-      console.log('URL completa:', window.location.href);
       console.groupEnd();
 
-      // Check for errors from authorization server
+      // Check for errors
       if (errorParam) {
         const errorMsg = errorDescription || errorParam;
         setError(errorMsg);
         toast.error(`Authorization failed: ${errorMsg}`);
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/email-manager'), 3000);
         return;
       }
 
       if (!code) {
         setError('No authorization code received');
         toast.error('No authorization code received');
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/email-manager'), 3000);
         return;
       }
 
@@ -50,7 +47,7 @@ const AuthCallback = () => {
       if (!storedState || !clientId || !clientSecret || !redirectUri) {
         setError('Missing OAuth configuration');
         toast.error('Missing OAuth configuration');
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/email-manager'), 3000);
         return;
       }
 
@@ -58,7 +55,7 @@ const AuthCallback = () => {
       if (state !== storedState) {
         setError('State mismatch - possible CSRF attack');
         toast.error('Security validation failed');
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/email-manager'), 3000);
         return;
       }
 
@@ -71,14 +68,8 @@ const AuthCallback = () => {
         formData.append('code', code);
         formData.append('redirect_uri', redirectUri);
 
-        // 📤 LOG: Request de token exchange
-        console.group('📤 OAuth2 Token Exchange - Request');
-        console.log('URL:', 'https://findair.it/erp/tmwe_json/token');
-        console.log('grant_type:', 'authorization_code');
-        console.log('client_id:', clientId);
-        console.log('code:', code);
-        console.log('redirect_uri:', redirectUri);
-        console.log('Body completo:', formData.toString());
+        console.group('📤 OAuth2 Token Exchange');
+        console.log('Request to:', 'https://findair.it/erp/tmwe_json/token');
         console.groupEnd();
 
         const response = await fetch('https://findair.it/erp/tmwe_json/token', {
@@ -91,31 +82,20 @@ const AuthCallback = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          
-          // ❌ LOG: Error response
-          console.group('❌ OAuth2 Token Exchange - Error Response');
-          console.log('Status:', response.status);
-          console.log('Error data:', errorData);
-          console.groupEnd();
-          
+          console.error('❌ Token exchange error:', errorData);
           throw new Error(errorData.error_description || errorData.error || 'Token exchange failed');
         }
 
         const tokenData = await response.json();
         
-        // ✅ LOG: Token response exitosa
-        console.group('✅ OAuth2 Token Exchange - Response exitosa');
-        console.log('Token completo:', tokenData);
-        console.log('access_token:', tokenData.access_token);
-        console.log('refresh_token:', tokenData.refresh_token);
-        console.log('expires_in:', tokenData.expires_in);
-        console.log('token_type:', tokenData.token_type);
-        console.log('scope:', tokenData.scope);
+        console.group('✅ OAuth2 Token Received');
+        console.log('Token expires in:', tokenData.expires_in, 'seconds');
         console.groupEnd();
         
         const expiresAt = Date.now() + (tokenData.expires_in * 1000);
         
-        setApiConfig({
+        // Save credentials to Supabase database
+        await setApiConfigToDB({
           accessToken: tokenData.access_token,
           refreshToken: tokenData.refresh_token,
           expiresAt,
@@ -129,13 +109,13 @@ const AuthCallback = () => {
         sessionStorage.removeItem('oauth_client_secret');
         sessionStorage.removeItem('oauth_redirect_uri');
 
-        toast.success('Successfully authenticated!');
+        toast.success('TMWE account connected successfully!');
         navigate('/email-manager');
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Token exchange failed';
         setError(errorMsg);
         toast.error(errorMsg);
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate('/email-manager'), 3000);
       }
     };
 
@@ -150,7 +130,7 @@ const AuthCallback = () => {
             <p className="text-lg font-semibold">Authentication Error</p>
             <p className="text-sm text-muted-foreground">{error}</p>
           </div>
-          <p className="text-sm text-muted-foreground">Redirecting to login...</p>
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
         </div>
       </div>
     );
@@ -160,10 +140,10 @@ const AuthCallback = () => {
     <div className="flex min-h-screen items-center justify-center bg-gradient-subtle">
       <div className="text-center">
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">Completing authentication...</p>
+        <p className="mt-4 text-sm text-muted-foreground">Connecting TMWE account...</p>
       </div>
     </div>
   );
 };
 
-export default AuthCallback;
+export default TMWEAuthCallbackIntegrated;

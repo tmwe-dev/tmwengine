@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, LogOut } from 'lucide-react';
-import { clearApiConfig } from '@/lib/tmwe-api';
+import { clearApiConfigFromDB } from '@/lib/tmwe-api-integrated';
 import { useNavigate } from 'react-router-dom';
 
 interface EmailHeaderProps {
@@ -18,9 +18,9 @@ export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
     onSearch(searchQuery);
   };
 
-  const handleLogout = () => {
-    clearApiConfig();
-    navigate('/login');
+  const handleLogout = async () => {
+    await clearApiConfigFromDB();
+    navigate('/');
   };
 
   return (

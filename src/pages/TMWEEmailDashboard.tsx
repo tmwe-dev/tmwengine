@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api';
+import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';

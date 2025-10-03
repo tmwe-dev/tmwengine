@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { emailMessageApi } from '@/lib/tmwe-api';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { toast } from 'sonner';
 import { Send, X, Paperclip, FileIcon } from 'lucide-react';
 import { formatFileSize } from '@/lib/tmwe-fileUtils';

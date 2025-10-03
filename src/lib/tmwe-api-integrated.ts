@@ -91,7 +91,8 @@ export const initiateAuthorizationCodeFlow = (): void => {
   console.log('═══════════════════════════════════════════════════════');
   console.log('📋 Parámetros OAuth2:');
   console.log('  - client_id:', clientId.substring(0, 20) + '...');
-  console.log('  - redirect_uri:', redirectUri);
+  console.log('  - redirect_uri (original):', redirectUri);
+  console.log('  - redirect_uri (encoded):', encodeURIComponent(redirectUri));
   console.log('  - response_type:', 'code');
   console.log('  - state:', state);
   console.log('  - scope:', 'read write');
@@ -106,14 +107,15 @@ export const initiateAuthorizationCodeFlow = (): void => {
   
   // Build authorization URL según OpenAPI spec
   // Endpoint: GET /authorization
+  // IMPORTANTE: redirect_uri debe estar URL encoded
   const authUrl = new URL('https://findair.it/erp/tmwe_json/authorization');
   authUrl.searchParams.append('client_id', clientId);
-  authUrl.searchParams.append('redirect_uri', redirectUri);
-  authUrl.searchParams.append('response_type', 'code');  // Siempre 'code' para Authorization Code flow
+  authUrl.searchParams.append('redirect_uri', redirectUri);  // searchParams.append ya hace URL encoding automático
+  authUrl.searchParams.append('response_type', 'code');
   authUrl.searchParams.append('state', state);
   authUrl.searchParams.append('scope', 'read write');
   
-  console.log('🔗 Authorization URL:', authUrl.toString());
+  console.log('🔗 Authorization URL completa:', authUrl.toString());
   console.log('═══════════════════════════════════════════════════════');
   
   window.location.href = authUrl.toString();

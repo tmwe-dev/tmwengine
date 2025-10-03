@@ -167,13 +167,13 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-2 px-4 max-w-full overflow-x-hidden">
+    <div className="space-y-2 py-2 px-4 w-full max-w-full overflow-x-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200',
+            'cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full',
             email.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01]',
@@ -251,13 +251,13 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-3 py-2 px-4 max-w-full overflow-x-hidden">
+    <div className="space-y-3 py-2 px-4 w-full max-w-full overflow-x-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200',
+            'cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full',
             email.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',

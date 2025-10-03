@@ -195,3 +195,13 @@ verify_jwt = true
 
 [functions.generate-normalized-file]
 verify_jwt = true
+
+[functions.process-import-file-ai]
+verify_jwt = true
+import_map = """
+{
+  "imports": {
+    "xlsx/": "https://cdn.sheetjs.com/xlsx-0.20.3/package/"
+  }
+}
+"""

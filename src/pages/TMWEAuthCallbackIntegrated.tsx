@@ -121,55 +121,24 @@ const TMWEAuthCallbackIntegrated = () => {
         console.log('  - expires_in:', tokenData.expires_in, 'segundos');
         console.log('  - access_token presente:', !!tokenData.access_token);
         console.log('  - refresh_token presente:', !!tokenData.refresh_token);
+        console.log('  - email presente:', !!tokenData.email);
         
         const expiresAt = Date.now() + (tokenData.expires_in * 1000);
 
-        // Get user email from TMWE API usando el endpoint correcto
+        // Get user email from token response
         console.log('═══════════════════════════════════════════════════════');
-        console.log('📧 OBTENIENDO EMAIL DEL USUARIO');
+        console.log('📧 EXTRAYENDO EMAIL DE LA RESPUESTA DEL TOKEN');
         console.log('═══════════════════════════════════════════════════════');
         
-        let userEmail = null;
-        try {
-          // Usar el endpoint correcto para obtener información de la cuenta
-          const accountUrl = 'https://findair.it/erp/tmwe_json/email_account';
-          const accountBody = JSON.stringify({ handler: 'get_account_info' });
-          
-          console.log('📤 Request para obtener email:');
-          console.log('  - URL:', accountUrl);
-          console.log('  - Body:', accountBody);
-          
-          const accountResponse = await fetch(accountUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${tokenData.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: accountBody,
-          });
-
-          console.log('📥 Respuesta del servidor:');
-          console.log('  - Status:', accountResponse.status);
-          console.log('  - OK:', accountResponse.ok);
-
-          if (accountResponse.ok) {
-            const accountData = await accountResponse.json();
-            console.log('📦 Datos de cuenta recibidos:', accountData);
-            userEmail = accountData.email || accountData.username || accountData.account_email;
-            console.log('✅ Email del usuario:', userEmail);
-          } else {
-            const errorText = await accountResponse.text();
-            console.error('❌ Error obteniendo email:', errorText);
-          }
-        } catch (err) {
-          console.error('🔥 Excepción obteniendo email:', err);
-        }
-
-        // Si no se pudo obtener el email, usar un email genérico válido
+        let userEmail = tokenData.email;
+        
+        // Si no viene el email en la respuesta, usar un email genérico válido
         if (!userEmail) {
-          console.warn('⚠️ No se pudo obtener email del API, usando email genérico');
+          console.warn('⚠️ No se recibió email en la respuesta del token, usando email genérico');
           userEmail = `tmwe_${clientId.substring(0, 16)}@tmweauth.app`;
           console.log('📧 Email generado:', userEmail);
+        } else {
+          console.log('✅ Email del usuario:', userEmail);
         }
 
         // Sign in or sign up user in Supabase using the email from TMWE

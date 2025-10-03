@@ -314,37 +314,72 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
       {/* Available Source Columns */}
       <Card>
         <CardHeader>
-          <CardTitle>Colonne File Importato</CardTitle>
+          <CardTitle>Colonne Disponibili per il Mapping</CardTitle>
           <CardDescription>
-            Trascina queste colonne sulle zone target sopra
+            <strong>Come funziona:</strong> Clicca la <strong>X</strong> nelle card sopra per liberare una colonna, poi trascinala qui sotto sulla destinazione corretta
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {getUnmappedSourceColumns().map((column) => (
-              <div
-                key={column}
-                draggable
-                onDragStart={(e) => handleDragStart(e, column)}
-                onDragEnd={handleDragEnd}
-                className={cn(
-                  "px-4 py-2 rounded-lg border-2 cursor-move transition-all",
-                  "hover:shadow-md",
-                  draggedColumn === column && "opacity-50 scale-95"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-mono text-sm">{column}</span>
-                </div>
+        <CardContent className="space-y-4">
+          {/* Unmapped columns - ready to drag */}
+          {getUnmappedSourceColumns().length > 0 && (
+            <div>
+              <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Pronte da mappare</Badge>
               </div>
-            ))}
-            {getUnmappedSourceColumns().length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Tutte le colonne sono state mappate
-              </p>
-            )}
-          </div>
+              <div className="flex flex-wrap gap-2">
+                {getUnmappedSourceColumns().map((column) => (
+                  <div
+                    key={column}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, column)}
+                    onDragEnd={handleDragEnd}
+                    className={cn(
+                      "px-4 py-2 rounded-lg border-2 cursor-move transition-all",
+                      "border-green-500 bg-green-50 hover:shadow-md hover:scale-105",
+                      draggedColumn === column && "opacity-50 scale-95"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="h-4 w-4 text-green-700" />
+                      <span className="font-mono text-sm font-semibold text-green-700">{column}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Already mapped columns - for reference */}
+          {mappings.filter(m => m.sourceColumn).length > 0 && (
+            <div>
+              <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                <Badge variant="outline">Già mappate</Badge>
+                <span className="text-xs text-muted-foreground">(Clicca la X nella card sopra per liberarle)</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {mappings
+                  .filter(m => m.sourceColumn)
+                  .map((mapping) => (
+                    <div
+                      key={mapping.sourceColumn}
+                      className="px-4 py-2 rounded-lg border-2 border-gray-300 bg-gray-100 opacity-60"
+                    >
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-gray-500" />
+                        <span className="font-mono text-sm text-gray-600">{mapping.sourceColumn}</span>
+                        <span className="text-xs text-gray-500">→ {TARGET_SCHEMA.find(t => t.key === mapping.targetColumn)?.label}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {getUnmappedSourceColumns().length === 0 && mappings.filter(m => m.sourceColumn).length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nessuna colonna disponibile nel file
+            </p>
+          )}
         </CardContent>
       </Card>
 

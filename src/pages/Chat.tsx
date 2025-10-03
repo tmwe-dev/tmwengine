@@ -552,13 +552,12 @@ const Chat = () => {
             {showConversations && (
               <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                 {conversations.map((conversation) => (
-                  <Button
+                  <div
                     key={conversation.id}
-                    variant="outline"
-                    className={`w-full justify-start text-left h-auto p-3 transition-all ${
+                    className={`w-full text-left h-auto p-3 rounded-lg border transition-all cursor-pointer ${
                       currentConversationId === conversation.id 
                         ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20' 
-                        : 'bg-transparent hover:bg-gradient-to-l hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border-purple-500/30'
+                        : 'border-border bg-transparent hover:bg-gradient-to-l hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border-purple-500/30'
                     }`}
                     onClick={() => selectConversation(conversation.id)}
                   >
@@ -573,7 +572,7 @@ const Chat = () => {
                         }
                       </div>
                     </div>
-                  </Button>
+                  </div>
                 ))}
                 {conversations.length === 0 && (
                   <p className="text-muted-foreground text-center py-8 text-sm">

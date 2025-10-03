@@ -265,6 +265,9 @@ export default function ImportTemplates() {
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
   
+  // Switch per attivare/disattivare importazione AI
+  const [useAIImport, setUseAIImport] = useState(false);
+  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -2123,6 +2126,16 @@ export default function ImportTemplates() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <Switch 
+                  id="ai-import-switch" 
+                  checked={useAIImport}
+                  onCheckedChange={setUseAIImport}
+                />
+                <Label htmlFor="ai-import-switch" className="cursor-pointer">
+                  Usa Importazione AI
+                </Label>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="file-upload">File da Importare (.xlsx, .xls, .csv)</Label>
                 <Input

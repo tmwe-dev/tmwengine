@@ -221,10 +221,10 @@ export function MultipleActivityForm({ companies, onSubmit, onCancel, isSubmitti
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      Salva anche in Rubrica
+                      Salva anche in Rubrica Clienti
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      Trasferisci automaticamente tutte le aziende selezionate nella rubrica principale
+                      Trasferisci automaticamente tutte le aziende selezionate nella rubrica clienti
                     </p>
                   </div>
                 </FormItem>

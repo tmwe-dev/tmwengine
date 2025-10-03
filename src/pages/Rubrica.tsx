@@ -267,9 +267,9 @@ export default function Rubrica() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-heading-1 font-bold text-text-primary">Rubrica</h1>
+          <h1 className="text-heading-1 font-bold text-text-primary">Clienti</h1>
           <p className="text-body text-text-secondary">
-            Gestisci tutti i tuoi contatti e clienti
+            Gestisci tutti i tuoi clienti della rubrica
           </p>
         </div>
         
@@ -277,13 +277,13 @@ export default function Rubrica() {
           <DialogTrigger asChild>
             <Button onClick={openAddForm} className="shadow-soft">
               <Plus className="h-4 w-4" />
-              Nuovo Contatto
+              Nuovo Cliente
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {selectedContact ? 'Modifica Contatto' : 'Nuovo Contatto'}
+                {selectedContact ? 'Modifica Cliente' : 'Nuovo Cliente'}
               </DialogTitle>
             </DialogHeader>
             <ContactForm
@@ -414,13 +414,13 @@ export default function Rubrica() {
                 {contacts.length === 0 ? (
                   <>
                     <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-heading-3 font-semibold mb-2">Nessun contatto</h3>
+                    <h3 className="text-heading-3 font-semibold mb-2">Nessun cliente</h3>
                     <p className="text-body mb-4">
-                      Inizia aggiungendo il tuo primo contatto alla rubrica
+                      Inizia aggiungendo il tuo primo cliente alla rubrica
                     </p>
                     <Button onClick={openAddForm}>
                       <Plus className="h-4 w-4" />
-                      Aggiungi Primo Contatto
+                      Aggiungi Primo Cliente
                     </Button>
                   </>
                 ) : (

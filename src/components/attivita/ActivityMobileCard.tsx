@@ -171,7 +171,7 @@ export function ActivityMobileCard({
                     )}
                   </TooltipTrigger>
                   <TooltipContent>
-                    {activity.contact_source === 'rubrica' ? 'Contatto in Rubrica' : 'Contatto Importato'}
+                    {activity.contact_source === 'rubrica' ? 'Cliente in Rubrica' : 'Contatto Importato'}
                   </TooltipContent>
                 </Tooltip>
               )}

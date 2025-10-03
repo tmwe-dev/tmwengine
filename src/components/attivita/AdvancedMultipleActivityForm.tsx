@@ -876,10 +876,10 @@ export function AdvancedMultipleActivityForm({
                   <div className="space-y-1 leading-none">
                     <FormLabel className="flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Salva anche in Rubrica
+                      Salva anche in Rubrica Clienti
                     </FormLabel>
                     <p className="text-sm text-muted-foreground">
-                      Trasferisci automaticamente tutti i contatti selezionati nella rubrica principale prima di creare le attività
+                      Trasferisci automaticamente tutti i contatti selezionati nella rubrica clienti prima di creare le attività
                     </p>
                   </div>
                 </FormItem>

@@ -1061,8 +1061,8 @@ export default function RubricaAvanzata() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Contatti Rubrica ({filteredRecords.length})
+                <Database className="h-5 w-5" />
+                Commerciale ({filteredRecords.length})
               </CardTitle>
               
               {/* Barra azioni multiple - solo quando ci sono record selezionati */}

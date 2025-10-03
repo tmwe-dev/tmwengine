@@ -19,6 +19,10 @@ import Email from "./pages/Email";
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
+import EmailProvider from "./pages/EmailProvider";
+import AIConfig from "./pages/AIConfig";
+import GeneralConfig from "./pages/GeneralConfig";
+import RecordImportati from "./pages/RecordImportati";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +84,26 @@ const App = () => (
             <Route path="/gestisci-import" element={
               <ProtectedRoute>
                 <CRMLayout><GestisciImport /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/email-provider" element={
+              <ProtectedRoute>
+                <CRMLayout><EmailProvider /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/ai-config" element={
+              <ProtectedRoute>
+                <CRMLayout><AIConfig /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/general-config" element={
+              <ProtectedRoute>
+                <CRMLayout><GeneralConfig /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/record-importati" element={
+              <ProtectedRoute>
+                <CRMLayout><RecordImportati /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

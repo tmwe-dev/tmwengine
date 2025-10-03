@@ -213,7 +213,7 @@ export const EmailList = ({
                     )}
                   </div>
                   <h3 className={cn(
-                    'truncate text-base',
+                    'truncate text-base mt-1',
                     !email.read && 'font-semibold'
                   )}>
                     {email.subject || '(No Subject)'}
@@ -223,7 +223,7 @@ export const EmailList = ({
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 mt-1">
                     {email.starred && (
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     )}

@@ -107,18 +107,24 @@ export const initiateAuthorizationCodeFlow = (): void => {
   
   // Build authorization URL según OpenAPI spec
   // Endpoint: GET /authorization
-  // IMPORTANTE: redirect_uri debe estar URL encoded
-  const authUrl = new URL('https://findair.it/erp/tmwe_json/authorization');
-  authUrl.searchParams.append('client_id', clientId);
-  authUrl.searchParams.append('redirect_uri', redirectUri);  // searchParams.append ya hace URL encoding automático
-  authUrl.searchParams.append('response_type', 'code');
-  authUrl.searchParams.append('state', state);
-  authUrl.searchParams.append('scope', 'read write');
+  // IMPORTANTE: Construir URL manualmente para asegurar encoding correcto
+  const baseUrl = 'https://findair.it/erp/tmwe_json/authorization';
+  const params = [
+    `client_id=${encodeURIComponent(clientId)}`,
+    `redirect_uri=${encodeURIComponent(redirectUri)}`,
+    `response_type=${encodeURIComponent('code')}`,
+    `state=${encodeURIComponent(state)}`,
+    `scope=${encodeURIComponent('read write')}`
+  ];
   
-  console.log('🔗 Authorization URL completa:', authUrl.toString());
+  const authUrl = `${baseUrl}?${params.join('&')}`;
+  
+  console.log('🔗 Authorization URL completa:', authUrl);
+  console.log('📋 Verificación de encoding:');
+  console.log('  - redirect_uri debe contener %3A y %2F:', authUrl.includes('%3A') && authUrl.includes('%2F'));
   console.log('═══════════════════════════════════════════════════════');
   
-  window.location.href = authUrl.toString();
+  window.location.href = authUrl;
 };
 
 // Refresh access token

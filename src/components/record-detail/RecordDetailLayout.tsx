@@ -333,12 +333,49 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
 
   const handleCreateActivity = async (activityData: any) => {
     try {
+      console.log('🔍 DEBUG handleCreateActivity - activityData:', activityData);
+      console.log('🔍 DEBUG handleCreateActivity - record:', record);
+      
       // Crea l'attività basata sul tipo selezionato
       let descrizione = '';
       let tipo = activityData.tipo;
+      let emailSendResult = null;
       
       if (activityData.tipo === 'email') {
-        descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
+        // Invia la mail tramite TMWE
+        if (record.email && activityData.oggetto_email && activityData.testo_email) {
+          try {
+            console.log(`📧 Invio email a ${record.email}...`);
+            const { data: sendResult, error: sendError } = await supabase.functions.invoke('tmwe-email-send', {
+              body: {
+                to: record.email,
+                subject: activityData.oggetto_email,
+                body_text: activityData.testo_email,
+                body_html: activityData.testo_email.replace(/\n/g, '<br>')
+              }
+            });
+            
+            console.log('📧 Risultato invio email:', { sendResult, sendError });
+            
+            if (sendError) {
+              console.error('❌ Errore invio email:', sendError);
+              descrizione = `❌ Email NON INVIATA - Errore: ${sendError.message}\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
+            } else if (sendResult?.success) {
+              console.log('✅ Email inviata con successo:', sendResult.message_id);
+              emailSendResult = 'success';
+              descrizione = `✅ Email INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\nMessage ID: ${sendResult.message_id || 'N/A'}\n\nTesto inviato:\n${activityData.testo_email}`;
+            } else {
+              console.error('❌ Errore invio email - risposta:', sendResult);
+              descrizione = `❌ Email NON INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
+            }
+          } catch (error) {
+            console.error('❌ Errore durante invio email:', error);
+            descrizione = `❌ Email NON INVIATA - Errore tecnico\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
+          }
+        } else {
+          // Email mancante o dati incompleti
+          descrizione = `❌ Email NON INVIATA - Dati mancanti\n\nOggetto: ${activityData.oggetto_email || 'Nessun oggetto'}\nAzienda: ${record.company_name || record.azienda || ''}\n\nEmail destinatario: ${record.email || 'Non disponibile'}`;
+        }
       } else if (activityData.tipo === 'chiamata') {
         descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
       }
@@ -349,7 +386,7 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
           rubrica_id: record.id,
           tipo: tipo,
           descrizione: descrizione,
-          stato: 'aperta',
+          stato: (activityData.tipo === 'email' && emailSendResult === 'success') ? 'completata' : 'aperta',
           scadenza: null,
           priorita: activityData.priorita || 'media',
           assegnato_a: null,
@@ -361,10 +398,24 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       if (error) throw error;
       
       setIsActivityDialogOpen(false);
-      toast({
-        title: "Attività creata",
-        description: "L'attività è stata creata con successo.",
-      });
+      
+      if (emailSendResult === 'success') {
+        toast({
+          title: "Email inviata e attività creata",
+          description: "La mail è stata inviata con successo e l'attività registrata.",
+        });
+      } else if (activityData.tipo === 'email') {
+        toast({
+          title: "Attività creata (email NON inviata)",
+          description: "L'attività è stata registrata ma l'email non è stata inviata.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Attività creata",
+          description: "L'attività è stata creata con successo.",
+        });
+      }
     } catch (error) {
       console.error('Error creating activity:', error);
       toast({

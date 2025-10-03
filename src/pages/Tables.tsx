@@ -173,30 +173,33 @@ export default function Tables() {
     
     try {
       let totalDeleted = 0;
+      let hasErrors = false;
       
       for (const table of categoryTables) {
-        const { error, count } = await supabase
+        const { error } = await supabase
           .from(table.table_name as any)
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
         
         if (error) {
           console.error(`Errore eliminazione da ${table.table_name}:`, error);
-          toast.error(`Errore nell'eliminazione da ${table.table_name}`, { id: toastId });
-          return;
+          hasErrors = true;
+        } else {
+          totalDeleted += table.row_count;
         }
-        
-        totalDeleted += table.row_count;
       }
       
-      toast.success(`${totalDeleted} record eliminati con successo da ${categoryName}`, { id: toastId });
-      
-      // Reload tables to update counts
-      await loadTables();
+      if (hasErrors) {
+        toast.error(`Eliminazione completata con errori`, { id: toastId });
+      } else {
+        toast.success(`${totalDeleted} record eliminati con successo da ${categoryName}`, { id: toastId });
+      }
     } catch (error: any) {
       console.error('Errore eliminazione categoria:', error);
       toast.error('Errore durante l\'eliminazione', { id: toastId });
     } finally {
+      // Refresh data to update counts
+      await loadTables();
       setIsDeleting(false);
       setDeleteCategory(null);
     }

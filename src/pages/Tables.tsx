@@ -243,26 +243,26 @@ export default function Tables() {
           <p className="text-muted-foreground">Caricamento tabelle...</p>
         </div>
       ) : (
-        <div className="max-w-3xl space-y-4">
+        <div className="max-w-4xl space-y-4">
           {categorizedTables.map((category) => (
             <div key={category.name} className="space-y-2">
               <h2 className="text-lg font-semibold text-foreground border-b pb-1">
                 {category.name}
               </h2>
-              <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
                 {category.tables.map((table) => (
                   <Card
                     key={table.table_name}
                     className="cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => setSelectedTable(table.table_name)}
                   >
-                    <CardContent className="flex items-center justify-between p-3">
-                      <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">{table.table_name}</span>
+                    <CardContent className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Database className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{table.table_name}</span>
                       </div>
-                      <span className="text-sm font-semibold">
-                        {table.row_count} record{table.row_count !== 1 ? 's' : ''}
+                      <span className="text-sm font-semibold whitespace-nowrap ml-2">
+                        {table.row_count}
                       </span>
                     </CardContent>
                   </Card>

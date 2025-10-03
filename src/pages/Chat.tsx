@@ -555,7 +555,7 @@ const Chat = () => {
                   <Button
                     key={conversation.id}
                     variant={currentConversationId === conversation.id ? "default" : "ghost"}
-                    className="w-full justify-start text-left h-auto p-3"
+                    className="w-full justify-start text-left h-auto p-3 bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border border-purple-500/20"
                     onClick={() => selectConversation(conversation.id)}
                   >
                     <div className="w-full space-y-2">

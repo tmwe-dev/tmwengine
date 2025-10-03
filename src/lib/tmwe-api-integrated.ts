@@ -165,35 +165,57 @@ const fetchApi = async (endpoint: string, data: any) => {
     throw new Error('No valid token. Please login to TMWE first.');
   }
 
-  console.group(`📤 API REQUEST: ${endpoint}`);
-  console.log('Endpoint:', endpoint);
-  console.log('Data:', data);
-  console.groupEnd();
+  const requestBody = {
+    endpoint,
+    data,
+    bearerToken: accessToken
+  };
+
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📤 SOLICITUD AL API TMWE');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('⏰ Timestamp:', new Date().toISOString());
+  console.log('📍 Endpoint:', endpoint);
+  console.log('🎯 Handler:', data.handler);
+  console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
+  console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
+  console.log('═══════════════════════════════════════════════════════');
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: {
-        endpoint,
-        data,
-        bearerToken: accessToken
-      }
+      body: requestBody
     });
 
-    console.group(`📥 API RESPONSE: ${endpoint}`);
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📥 RESPUESTA DEL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
+    
     if (error) {
-      console.error('❌ Error Response:', error);
-      console.groupEnd();
+      console.error('❌ ERROR en la respuesta');
+      console.error('⚠️ Error Object:', error);
+      console.error('📄 Error Message:', error.message);
+      console.log('═══════════════════════════════════════════════════════');
       throw new Error(error.message || 'API request failed');
     }
 
-    console.log('✅ Success Response:', responseData);
-    console.groupEnd();
+    console.log('✅ RESPUESTA EXITOSA');
+    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
+    console.log('═══════════════════════════════════════════════════════');
 
     return responseData;
   } catch (error: any) {
-    console.group(`🔥 API ERROR: ${endpoint}`);
-    console.error('Error:', error);
-    console.groupEnd();
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('🔥 ERROR EN LA COMUNICACIÓN');
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('📍 Endpoint:', endpoint);
+    console.error('🎯 Handler:', data.handler);
+    console.error('⚠️ Error:', error);
+    console.error('📄 Error Message:', error.message);
+    console.error('📚 Stack Trace:', error.stack);
+    console.log('═══════════════════════════════════════════════════════');
     throw error;
   }
 };

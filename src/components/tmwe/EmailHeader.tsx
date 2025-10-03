@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Mail } from 'lucide-react';
+import { Search, Plus, RefreshCw, Mail } from 'lucide-react';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
@@ -26,9 +26,15 @@ export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) =
         <Button 
           onClick={onCompose} 
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 relative"
         >
-          <Plus className="h-4 w-4" />
+          <Mail 
+            className="h-4 w-4" 
+            style={{ 
+              filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
+              transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
+            }} 
+          />
         </Button>
         <Button 
           onClick={onSync} 
@@ -36,10 +42,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) =
           size="icon"
           className="h-8 w-8"
         >
-          <Mail className="h-4 w-4" style={{ 
-            filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.3))',
-            transform: 'rotateX(15deg) rotateY(-10deg)'
-          }} />
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 

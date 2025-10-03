@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, RefreshCw } from 'lucide-react';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
   onCompose: () => void;
+  onSync: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -28,6 +29,14 @@ export const EmailHeader = ({ onSearch, onCompose }: EmailHeaderProps) => {
           className="h-8 w-8"
         >
           <Plus className="h-4 w-4" />
+        </Button>
+        <Button 
+          onClick={onSync} 
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+        >
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 

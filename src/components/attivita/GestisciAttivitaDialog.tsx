@@ -166,6 +166,11 @@ export function GestisciAttivitaDialog({
                   {activity.rubrica_nome}
                 </div>
               )}
+              {/* Data creazione sotto il titolo */}
+              <div className="text-xs text-blue-600 font-medium mt-1">
+                Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
+                {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
+              </div>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -305,42 +310,27 @@ export function GestisciAttivitaDialog({
 
             {/* Colonna destra - Informazioni di base (min 500px altezza) */}
             <div className="bg-muted/30 rounded-lg p-3 min-h-[500px] flex flex-col">
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 Info Attività
               </h3>
-              <div className="space-y-4 flex-1">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Data Creazione</Label>
-                  <div className="font-medium text-blue-600 text-sm">
-                    {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
-                  </div>
-                  {activity.ora_creazione && (
-                    <div className="text-xs text-blue-500">
-                      ore {activity.ora_creazione}
-                    </div>
-                  )}
-                </div>
-                
+              <div className="space-y-6 flex-1">
                 <div>
                   <Label className="text-xs text-muted-foreground">Tipo</Label>
-                  <div className="font-medium text-sm">{activity.tipo.toUpperCase()}</div>
+                  <div className="font-medium text-sm mt-1">{activity.tipo.toUpperCase()}</div>
                 </div>
-                
+
                 <div>
-                  <Label className="text-xs text-muted-foreground">Priorità Iniziale</Label>
-                  <Badge variant={
-                    activity.priorita === 'alta' ? 'destructive' : 
-                    activity.priorita === 'media' ? 'secondary' : 'outline'
-                  } className="text-xs">
-                    {activity.priorita.toUpperCase()}
+                  <Label className="text-xs text-muted-foreground">Stato</Label>
+                  <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs mt-1">
+                    {activity.stato.replace('_', ' ').toUpperCase()}
                   </Badge>
                 </div>
 
                 {activity.data_ultima_modifica && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Ultima Modifica</Label>
-                    <div className="text-sm font-medium">
+                    <div className="text-sm font-medium mt-1">
                       {format(new Date(activity.data_ultima_modifica), 'dd/MM/yyyy HH:mm')}
                     </div>
                   </div>

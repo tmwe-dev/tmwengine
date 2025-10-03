@@ -93,8 +93,55 @@ const TMWEAuthCallbackIntegrated = () => {
         console.groupEnd();
         
         const expiresAt = Date.now() + (tokenData.expires_in * 1000);
+
+        // Get user email from TMWE API
+        let userEmail = null;
+        try {
+          const accountResponse = await fetch('https://findair.it/erp/tmwe_json/email/v1/account', {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (accountResponse.ok) {
+            const accountData = await accountResponse.json();
+            userEmail = accountData.email || accountData.username;
+          }
+        } catch (err) {
+          console.error('Failed to get user email:', err);
+        }
+
+        // Sign in or sign up user in Supabase using the email from TMWE
+        if (userEmail) {
+          const { supabase } = await import('@/integrations/supabase/client');
+          
+          // Try to sign in first
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: userEmail,
+            password: tokenData.access_token,
+          });
+
+          // If sign in fails, create new account
+          if (signInError) {
+            const { error: signUpError } = await supabase.auth.signUp({
+              email: userEmail,
+              password: tokenData.access_token,
+              options: {
+                emailRedirectTo: `${window.location.origin}/`,
+                data: {
+                  tmwe_authenticated: true,
+                }
+              }
+            });
+
+            if (signUpError) {
+              console.error('Supabase signup error:', signUpError);
+            }
+          }
+        }
         
-        // Save credentials to Supabase database
+        // Save TMWE credentials to Supabase database
         await setApiConfigToDB({
           accessToken: tokenData.access_token,
           refreshToken: tokenData.refresh_token,
@@ -109,8 +156,8 @@ const TMWEAuthCallbackIntegrated = () => {
         sessionStorage.removeItem('oauth_client_secret');
         sessionStorage.removeItem('oauth_redirect_uri');
 
-        toast.success('TMWE account connected successfully!');
-        navigate('/email-manager');
+        toast.success('Accesso effettuato con successo!');
+        navigate('/');
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Token exchange failed';
         setError(errorMsg);

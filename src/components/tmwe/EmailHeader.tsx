@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, LogOut } from 'lucide-react';
-import { clearApiConfigFromDB } from '@/lib/tmwe-api-integrated';
-import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
@@ -11,16 +8,10 @@ interface EmailHeaderProps {
 
 export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchQuery);
-  };
-
-  const handleLogout = async () => {
-    await clearApiConfigFromDB();
-    navigate('/');
   };
 
   return (
@@ -44,10 +35,6 @@ export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
         </div>
       </form>
 
-      <Button variant="ghost" size="sm" onClick={handleLogout}>
-        <LogOut className="mr-2 h-4 w-4" />
-        Logout
-      </Button>
     </header>
   );
 };

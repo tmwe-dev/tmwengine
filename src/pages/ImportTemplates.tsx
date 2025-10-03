@@ -10,10 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, CalendarIcon } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -260,10 +258,6 @@ export default function ImportTemplates() {
   const [searchQuery, setSearchQuery] = useState('');
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
-  const [statoFilter, setStatoFilter] = useState('');
-  const [prioritaFilter, setPrioritaFilter] = useState('');
-  const [createdDateFilter, setCreatedDateFilter] = useState<Date | undefined>();
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
@@ -411,31 +405,6 @@ export default function ImportTemplates() {
       result = result.filter(record => record.country === countryFilter);
     }
     
-    // Apply city filter
-    if (cityFilter && cityFilter !== '__all__') {
-      result = result.filter(record => record.city === cityFilter);
-    }
-    
-    // Apply stato filter
-    if (statoFilter && statoFilter !== '__all__') {
-      result = result.filter(record => record.stato === statoFilter);
-    }
-    
-    // Apply priorita filter
-    if (prioritaFilter && prioritaFilter !== '__all__') {
-      result = result.filter(record => record.priorita === prioritaFilter);
-    }
-    
-    // Apply created date filter
-    if (createdDateFilter) {
-      result = result.filter(record => {
-        if (!record.created_at) return false;
-        const recordDate = new Date(record.created_at);
-        const filterDate = new Date(createdDateFilter);
-        return recordDate.toDateString() === filterDate.toDateString();
-      });
-    }
-    
     // Apply notes filter
     if (hasNotesFilter) {
       result = result.filter(record => record.note && record.note.trim() !== '');
@@ -458,12 +427,12 @@ export default function ImportTemplates() {
     const startIndex = currentPage * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     setViewingRecords(result.slice(startIndex, endIndex));
-  }, [allRecords, searchQuery, originFilter, countryFilter, cityFilter, statoFilter, prioritaFilter, createdDateFilter, hasNotesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
+  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
 
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, cityFilter, statoFilter, prioritaFilter, createdDateFilter, hasNotesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -2546,15 +2515,15 @@ export default function ImportTemplates() {
                     {/* Prima riga - Dropdowns centrati con azioni a destra */}
                     <div className="flex items-end justify-center relative">
                       {/* Dropdowns centrati */}
-                      <div className="flex gap-2 items-end flex-wrap justify-center">
-                        <div className="w-40">
+                      <div className="flex gap-2 items-end">
+                        <div className="w-48">
                           <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
                           <Select value={originFilter} onValueChange={setOriginFilter}>
                             <SelectTrigger id="origin-filter">
-                              <SelectValue placeholder="Tutte" />
+                              <SelectValue placeholder="Tutte le origini" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                              <SelectItem value="__all__">Tutte le origini ({allRecords.length})</SelectItem>
                               {getUniqueValuesWithCount('origin').map(({ value, count }) => (
                                 <SelectItem key={value} value={value}>
                                   {value} ({count})
@@ -2564,14 +2533,14 @@ export default function ImportTemplates() {
                           </Select>
                         </div>
                         
-                        <div className="w-40">
+                        <div className="w-48">
                           <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
                           <Select value={countryFilter} onValueChange={setCountryFilter}>
                             <SelectTrigger id="country-filter">
-                              <SelectValue placeholder="Tutti" />
+                              <SelectValue placeholder="Tutti i paesi" />
                             </SelectTrigger>
                             <SelectContent className="z-50">
-                              <SelectItem value="__all__">Tutti</SelectItem>
+                              <SelectItem value="__all__">Tutti i paesi</SelectItem>
                               {getUniqueValues('country').map((country) => (
                                 <SelectItem key={country} value={String(country)}>
                                   {getCountryFullName(String(country))}
@@ -2581,86 +2550,7 @@ export default function ImportTemplates() {
                           </Select>
                         </div>
                         
-                        <div className="w-40">
-                          <Label htmlFor="city-filter" className="text-sm font-medium">Città</Label>
-                          <Select value={cityFilter} onValueChange={setCityFilter}>
-                            <SelectTrigger id="city-filter">
-                              <SelectValue placeholder="Tutte" />
-                            </SelectTrigger>
-                            <SelectContent className="z-50">
-                              <SelectItem value="__all__">Tutte</SelectItem>
-                              {getUniqueValuesWithCount('city').map(({ value, count }) => (
-                                <SelectItem key={value} value={value}>
-                                  {value} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
                         <div className="w-32">
-                          <Label htmlFor="stato-filter" className="text-sm font-medium">Stato</Label>
-                          <Select value={statoFilter} onValueChange={setStatoFilter}>
-                            <SelectTrigger id="stato-filter">
-                              <SelectValue placeholder="Tutti" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Tutti</SelectItem>
-                              {getUniqueValuesWithCount('stato').map(({ value, count }) => (
-                                <SelectItem key={value} value={value}>
-                                  {value} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="w-32">
-                          <Label htmlFor="priorita-filter" className="text-sm font-medium">Priorità</Label>
-                          <Select value={prioritaFilter} onValueChange={setPrioritaFilter}>
-                            <SelectTrigger id="priorita-filter">
-                              <SelectValue placeholder="Tutte" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Tutte</SelectItem>
-                              {getUniqueValuesWithCount('priorita').map(({ value, count }) => (
-                                <SelectItem key={value} value={value}>
-                                  {value} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="w-40">
-                          <Label htmlFor="created-date-filter" className="text-sm font-medium">Data creazione</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                id="created-date-filter"
-                                variant="outline"
-                                className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !createdDateFilter && "text-muted-foreground"
-                                )}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {createdDateFilter ? format(createdDateFilter, "dd MMM yyyy") : "Seleziona"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CalendarComponent
-                                mode="single"
-                                selected={createdDateFilter}
-                                onSelect={setCreatedDateFilter}
-                                initialFocus
-                                className="pointer-events-auto"
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        
-                        <div className="w-28">
                           <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
                           <Select value={String(recordsPerPage)} onValueChange={(value) => {
                             setRecordsPerPage(Number(value));
@@ -2722,7 +2612,7 @@ export default function ImportTemplates() {
                     {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
                     <div className="flex justify-center items-center relative">
                       {/* Pulsante Pulisci filtri e contatore a sinistra */}
-                      {(searchQuery || originFilter || countryFilter || cityFilter || statoFilter || prioritaFilter || createdDateFilter || hasNotesFilter) && (
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                         <div className="absolute left-0 flex items-center gap-3">
                           <Button
                             variant="ghost"
@@ -2731,10 +2621,6 @@ export default function ImportTemplates() {
                               setSearchQuery('');
                               setOriginFilter('');
                               setCountryFilter('');
-                              setCityFilter('');
-                              setStatoFilter('');
-                              setPrioritaFilter('');
-                              setCreatedDateFilter(undefined);
                               setHasNotesFilter(false);
                             }}
                             className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
@@ -2766,7 +2652,7 @@ export default function ImportTemplates() {
                 )}
                 
                 {/* Pulsante Pulisci filtri quando i filtri sono nascosti ma attivi */}
-                {!showFiltersArea && (searchQuery || originFilter || countryFilter || cityFilter || statoFilter || prioritaFilter || createdDateFilter || hasNotesFilter) && (
+                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                   <div className="flex justify-start items-center gap-3 mt-2">
                     <Button
                       variant="ghost"
@@ -2775,10 +2661,6 @@ export default function ImportTemplates() {
                         setSearchQuery('');
                         setOriginFilter('');
                         setCountryFilter('');
-                        setCityFilter('');
-                        setStatoFilter('');
-                        setPrioritaFilter('');
-                        setCreatedDateFilter(undefined);
                         setHasNotesFilter(false);
                       }}
                       className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"

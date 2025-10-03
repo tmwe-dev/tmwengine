@@ -189,6 +189,7 @@ import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMult
 import { DocumentViewer } from '@/components/email/DocumentViewer';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
+import { AIDataValidator } from '@/components/import/AIDataValidator';
 
 interface EmailTemplate {
   id: string;
@@ -2218,42 +2219,20 @@ export default function ImportTemplates() {
               </Button>
               
               {useAIImport && importProgress.currentImportId && !importProgress.isProcessing && (
-                <Button
-                  onClick={async () => {
-                    setProcessingAI(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke('process-ai-import', {
-                        body: {
-                          importLogId: importProgress.currentImportId,
-                          aiPrompt
-                        }
-                      });
-                      
-                      if (error) throw error;
-                      
-                      if (data.success) {
-                        toast.success(`Elaborazione AI completata: ${data.data.processedRecords} contatti processati`);
-                        loadImportLogs();
-                        setImportProgress({
-                          currentImportId: null,
-                          totalRows: 0,
-                          processedRows: 0,
-                          isProcessing: false,
-                          startTime: 0
-                        });
-                      }
-                    } catch (error: any) {
-                      toast.error(`Errore elaborazione AI: ${error.message}`);
-                    } finally {
-                      setProcessingAI(false);
-                    }
+                <AIDataValidator
+                  importLogId={importProgress.currentImportId}
+                  onProcessComplete={() => {
+                    loadImportLogs();
+                    setImportProgress({
+                      currentImportId: null,
+                      totalRows: 0,
+                      processedRows: 0,
+                      isProcessing: false,
+                      startTime: 0
+                    });
                   }}
-                  disabled={processingAI}
-                  className="w-full"
-                  variant="secondary"
-                >
-                  {processingAI ? 'Elaborazione AI in corso...' : 'Avvia Elaborazione AI'}
-                </Button>
+                  initialPrompt={aiPrompt}
+                />
               )}
             </CardContent>
           </Card>

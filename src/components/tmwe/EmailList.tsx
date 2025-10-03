@@ -109,7 +109,7 @@ export const EmailList = ({
           key={email.id}
           ref={index === emails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'cursor-pointer border-l-4 p-3 transition-all duration-200',
+            'cursor-pointer border-l-4 p-0 transition-all duration-200 overflow-hidden',
             email.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01]',
@@ -121,8 +121,8 @@ export const EmailList = ({
           )}
           onClick={() => onEmailSelect(email.id)}
         >
-          <div className="flex items-start gap-4">
-            <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-stretch">
+            <div className="flex-1 min-w-0 p-3">
               <div className="flex items-center gap-4">
                 <div className="min-w-[200px]">
                   <p className={cn(
@@ -144,17 +144,6 @@ export const EmailList = ({
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                  </Button>
                   {!email.read && (
                     <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
                   )}
@@ -166,6 +155,20 @@ export const EmailList = ({
                   )}
                 </div>
               </div>
+            </div>
+            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEmailSelect(email.id);
+                  onOpenDetailPopup?.();
+                }}
+                className="p-0 h-full w-full hover:bg-white/10"
+              >
+                <Maximize2 className="h-4 w-4 text-white" />
+              </Button>
             </div>
           </div>
         </Card>
@@ -180,7 +183,7 @@ export const EmailList = ({
           key={email.id}
           ref={index === emails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'cursor-pointer border-l-4 p-4 transition-all duration-200',
+            'cursor-pointer border-l-4 p-0 transition-all duration-200 overflow-hidden',
             email.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',
@@ -192,53 +195,58 @@ export const EmailList = ({
           )}
           onClick={() => onEmailSelect(email.id)}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-1 overflow-hidden">
-              <div className="flex items-center gap-2">
-                <p className={cn(
-                  'truncate text-sm',
-                  !email.read && 'font-semibold text-email-unread'
-                )}>
-                  {email.from}
-                </p>
-                {!email.read && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                    New
-                  </Badge>
-                )}
+          <div className="flex items-stretch">
+            <div className="flex-1 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 space-y-1 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      'truncate text-sm',
+                      !email.read && 'font-semibold text-email-unread'
+                    )}>
+                      {email.from}
+                    </p>
+                    {!email.read && (
+                      <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                        New
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className={cn(
+                    'truncate text-base',
+                    !email.read && 'font-semibold'
+                  )}>
+                    {email.subject || '(No Subject)'}
+                  </h3>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
+                  </span>
+                  <div className="flex gap-1">
+                    {email.starred && (
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    )}
+                    {email.hasAttachments && (
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
               </div>
-              <h3 className={cn(
-                'truncate text-base',
-                !email.read && 'font-semibold'
-              )}>
-                {email.subject || '(No Subject)'}
-              </h3>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenDetailPopup?.();
-                  }}
-                  className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                >
-                  <Maximize2 className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="flex gap-1">
-                {email.starred && (
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                )}
-                {email.hasAttachments && (
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
+            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEmailSelect(email.id);
+                  onOpenDetailPopup?.();
+                }}
+                className="p-0 h-full w-full hover:bg-white/10"
+              >
+                <Maximize2 className="h-4 w-4 text-white" />
+              </Button>
             </div>
           </div>
         </Card>

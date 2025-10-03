@@ -33,17 +33,6 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('profile');
 
-  // Stati per le configurazioni
-  const [emailConfig, setEmailConfig] = useState({
-    id: null,
-    provider: '',
-    apiKey: '',
-    webhookSecret: '',
-    inboundRoute: '',
-    outboundEndpoint: '',
-    dominioInvio: '',
-    attivo: false
-  });
 
   const [aiConfigs, setAiConfigs] = useState([]);
   const [newAiConfig, setNewAiConfig] = useState({
@@ -110,26 +99,6 @@ const Settings = () => {
         })));
       }
 
-      // Carica configurazione email
-      const { data: emailData } = await supabase
-        .from('email_provider')
-        .select('*, email_provider_credenziali(*)')
-        .maybeSingle();
-
-      if (emailData) {
-        // email_provider_credenziali è un oggetto singolo, NON un array (relazione 1:1)
-        const creds = emailData.email_provider_credenziali;
-        setEmailConfig({
-          id: emailData.id,
-          provider: emailData.provider,
-          dominioInvio: emailData.dominio_invio || '',
-          inboundRoute: emailData.inbound_route || '',
-          outboundEndpoint: emailData.outbound_endpoint || '',
-          apiKey: creds?.oauth_token || creds?.api_key || '',
-          webhookSecret: creds?.webhook_secret || '',
-          attivo: emailData.attivo
-        });
-      }
 
       // Carica configurazione generale
       const { data: generalData } = await supabase
@@ -167,100 +136,6 @@ const Settings = () => {
     setShowSecrets(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleSaveEmailConfig = async () => {
-    setSaving(true);
-    try {
-      if (!emailConfig.provider || !emailConfig.apiKey) {
-        toast({
-          title: "Errore",
-          description: "Provider e API Key sono obbligatori",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      let emailProviderId = emailConfig.id;
-
-      if (emailConfig.id) {
-        // Aggiorna configurazione esistente
-        const { error: providerError } = await supabase
-          .from('email_provider')
-          .update({
-            provider: emailConfig.provider,
-            dominio_invio: emailConfig.dominioInvio,
-            inbound_route: emailConfig.inboundRoute,
-            outbound_endpoint: emailConfig.outboundEndpoint,
-            attivo: emailConfig.attivo
-          })
-          .eq('id', emailConfig.id);
-
-        if (providerError) throw providerError;
-
-        // Aggiorna credenziali
-        const { error: credError } = await supabase
-          .from('email_provider_credenziali')
-          .upsert({
-            provider_id: emailConfig.id,
-            api_key: emailConfig.apiKey,
-            oauth_token: emailConfig.apiKey,
-            webhook_secret: emailConfig.webhookSecret
-          }, {
-            onConflict: 'provider_id'
-          });
-
-        if (credError) throw credError;
-      } else {
-        // Crea nuova configurazione
-        const { data: providerData, error: providerError } = await supabase
-          .from('email_provider')
-          .insert({
-            provider: emailConfig.provider,
-            dominio_invio: emailConfig.dominioInvio,
-            inbound_route: emailConfig.inboundRoute,
-            outbound_endpoint: emailConfig.outboundEndpoint,
-            attivo: emailConfig.attivo
-          })
-          .select()
-          .single();
-
-        if (providerError) throw providerError;
-        emailProviderId = providerData.id;
-
-        // Crea credenziali
-        const { error: credError } = await supabase
-          .from('email_provider_credenziali')
-          .upsert({
-            provider_id: emailProviderId,
-            api_key: emailConfig.apiKey,
-            oauth_token: emailConfig.apiKey,
-            webhook_secret: emailConfig.webhookSecret
-          }, {
-            onConflict: 'provider_id'
-          });
-
-        if (credError) throw credError;
-
-        setEmailConfig(prev => ({ ...prev, id: emailProviderId }));
-      }
-
-      toast({
-        title: "Successo",
-        description: "Configurazione email salvata con successo",
-      });
-      
-      // Ricarica le configurazioni per mostrare il token salvato
-      await loadConfigurations();
-    } catch (error) {
-      console.error('Errore salvataggio email config:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile salvare la configurazione email",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleAddAiConfig = async () => {
     setSaving(true);
@@ -522,12 +397,6 @@ const Settings = () => {
                   Profilo Utente
                 </div>
               </SelectItem>
-              <SelectItem value="email">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email Provider
-                </div>
-              </SelectItem>
               <SelectItem value="ai">
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4" />
@@ -658,139 +527,6 @@ const Settings = () => {
           </Card>
         )}
 
-        {/* Configurazione Email Provider */}
-        {activeSection === 'email' && (
-          <Card className="w-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Mail className="h-5 w-5" />
-                Configurazione Email Provider
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Configura il provider email per invio e ricezione automatica
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="emailProvider" className="text-sm">Provider Email</Label>
-                  <Select value={emailConfig.provider} onValueChange={(value) => 
-                    setEmailConfig(prev => ({ ...prev, provider: value }))
-                  }>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Seleziona provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TMWE">TMWE Email API</SelectItem>
-                      <SelectItem value="sendgrid">SendGrid</SelectItem>
-                      <SelectItem value="mailgun">Mailgun</SelectItem>
-                      <SelectItem value="ses">Amazon SES</SelectItem>
-                      <SelectItem value="resend">Resend</SelectItem>
-                      <SelectItem value="custom">SMTP Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="dominioInvio" className="text-sm">Dominio di Invio</Label>
-                  <Input
-                    id="dominioInvio"
-                    value={emailConfig.dominioInvio}
-                    onChange={(e) => setEmailConfig(prev => ({ ...prev, dominioInvio: e.target.value }))}
-                    placeholder="crm.tuodominio.com"
-                    className="h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {emailConfig.provider === 'TMWE' ? (
-                  <>
-                    {renderSecretField(
-                      "TMWE API Token *",
-                      emailConfig.apiKey,
-                      "emailApiKey",
-                      (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
-                      "Inserisci il tuo token TMWE API"
-                    )}
-                    
-                    <div className="space-y-1">
-                      <Label className="text-sm">Configurazione TMWE</Label>
-                      <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
-                        Utilizza il token fornito da TMWE per l'integrazione email
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {renderSecretField(
-                      "API Key",
-                      emailConfig.apiKey,
-                      "emailApiKey",
-                      (value) => setEmailConfig(prev => ({ ...prev, apiKey: value })),
-                      "Inserisci la tua API key del provider email"
-                    )}
-
-                    {renderSecretField(
-                      "Webhook Secret",
-                      emailConfig.webhookSecret,
-                      "webhookSecret",
-                      (value) => setEmailConfig(prev => ({ ...prev, webhookSecret: value })),
-                      "Secret per validazione webhook inbound"
-                    )}
-                  </>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="inboundRoute" className="text-sm">Route Inbound Email</Label>
-                  <Input
-                    id="inboundRoute"
-                    value={emailConfig.inboundRoute}
-                    onChange={(e) => setEmailConfig(prev => ({ ...prev, inboundRoute: e.target.value }))}
-                    placeholder="/api/email/inbound"
-                    className="h-9"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="outboundEndpoint" className="text-sm">
-                    {emailConfig.provider === 'TMWE' ? 'TMWE Endpoint' : 'Endpoint Outbound'}
-                  </Label>
-                  <Input
-                    id="outboundEndpoint"
-                    value={emailConfig.outboundEndpoint}
-                    onChange={(e) => setEmailConfig(prev => ({ ...prev, outboundEndpoint: e.target.value }))}
-                    placeholder={emailConfig.provider === 'TMWE' ? 'https://api.tmwe.it/v1/send' : 'https://api.provider.com/send'}
-                    className="h-9"
-                  />
-                  {emailConfig.provider === 'TMWE' && (
-                    <div className="text-xs text-muted-foreground">
-                      Endpoint predefinito per TMWE API
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="emailAttivo"
-                    checked={emailConfig.attivo}
-                    onCheckedChange={(checked) => setEmailConfig(prev => ({ ...prev, attivo: checked }))}
-                  />
-                  <Label htmlFor="emailAttivo" className="text-sm">Provider email attivo</Label>
-                </div>
-
-                <Button onClick={handleSaveEmailConfig} disabled={saving} className="h-9">
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Salvataggio..." : "Salva"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Configurazione Telefono & WhatsApp */}
         {activeSection === 'phone' && (

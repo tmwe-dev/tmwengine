@@ -1143,6 +1143,7 @@ export default function Attivita() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16 text-center"></TableHead>
                 <TableHead className="w-16 text-center">Attività</TableHead>
                 <TableHead className="w-16">
                   <div className="flex items-center gap-2">
@@ -1271,7 +1272,6 @@ export default function Attivita() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="w-16 text-center"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1325,6 +1325,16 @@ export default function Attivita() {
                       )}
                       onClick={() => handleDateFilter(activity.scadenza ? new Date(activity.scadenza) : undefined)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteActivity(activity.id)}
+                          className="h-7 w-7 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
                       <TableCell className="w-16 align-middle text-center">
                         <span className="text-sm font-semibold text-primary">1</span>
                       </TableCell>
@@ -1471,16 +1481,6 @@ export default function Attivita() {
                         <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteActivity(activity.id)}
-                          className="h-7 w-7 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );

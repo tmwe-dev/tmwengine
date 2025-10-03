@@ -1589,9 +1589,15 @@ export default function ImportTemplates() {
   };
 
   const deleteImportFile = async (importLog: ImportLog) => {
-    const confirmDelete = confirm(`Sei sicuro di voler eliminare il file "${importLog.file_name}" e tutti i suoi dati importati? Questa azione non può essere annullata.`);
+    // Prima conferma
+    const firstConfirm = confirm(`Sei sicuro di voler eliminare il file "${importLog.file_name}"? Questa azione eliminerà anche tutti i dati importati.`);
     
-    if (!confirmDelete) return;
+    if (!firstConfirm) return;
+
+    // Seconda conferma
+    const secondConfirm = confirm(`ATTENZIONE: Questa azione è irreversibile! Confermi di voler eliminare definitivamente il file "${importLog.file_name}" e tutti i ${importLog.righe_importate || 0} record importati?`);
+    
+    if (!secondConfirm) return;
 
     try {
       // First delete all imported contacts for this import

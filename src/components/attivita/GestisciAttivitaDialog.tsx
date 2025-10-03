@@ -259,18 +259,16 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Note - metà pagina, 250px altezza, centrate */}
-              <div className="flex justify-center">
-                <div className="w-1/2">
-                  <Label htmlFor="note" className="text-sm">Note</Label>
-                  <Textarea
-                    id="note"
-                    value={formData.note || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-                    placeholder="Note aggiuntive..."
-                    className="h-[250px] text-sm resize-none"
-                  />
-                </div>
+              {/* Note - metà pagina, 250px altezza, allineate a sinistra */}
+              <div className="w-1/2">
+                <Label htmlFor="note" className="text-sm">Note</Label>
+                <Textarea
+                  id="note"
+                  value={formData.note || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Note aggiuntive..."
+                  className="h-[250px] text-sm resize-none"
+                />
               </div>
 
               {/* Telefoni compatti - una sola colonna */}

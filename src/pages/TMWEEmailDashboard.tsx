@@ -234,6 +234,8 @@ const EmailDashboard = () => {
             onLoadMore={fetchNextPage}
             hasMore={hasNextPage}
             isLoadingMore={isFetchingNextPage}
+            emailDetail={selectedEmail}
+            isLoadingDetail={isLoadingDetail}
           />
         </div>
 

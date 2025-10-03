@@ -221,9 +221,9 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Telefoni compatti - una sola colonna */}
-              <div className="space-y-2 max-w-xs mt-6">
-                <div>
+              {/* Telefoni compatti - affiancati su una riga */}
+              <div className="flex gap-3 mt-6">
+                <div className="w-40">
                   <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
                     <Phone className="h-3 w-3" />
                     Telefono
@@ -237,7 +237,7 @@ export function GestisciAttivitaDialog({
                   />
                 </div>
                 
-                <div>
+                <div className="w-40">
                   <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
                     <Phone className="h-3 w-3" />
                     Cellulare

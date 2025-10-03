@@ -419,9 +419,9 @@ const RecordImportati = () => {
             </div>
             
             {showFiltersArea && (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {/* Switch per nascondere contatti con attività completate oggi */}
-                <div className="flex items-center justify-center gap-3 pb-2 border-b">
+                <div className="flex items-center justify-center gap-3 py-3 px-4 bg-card/50 rounded-lg border">
                   <Label htmlFor="hide-today-activities" className="text-sm font-medium cursor-pointer">
                     Nascondi contatti con attività eseguite oggi
                   </Label>

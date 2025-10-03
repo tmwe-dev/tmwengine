@@ -125,7 +125,20 @@ export const EmailList = ({
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-4">
-                <div className="min-w-[200px]">
+                <div className="flex items-center gap-2 min-w-[200px]">
+                  {selectedEmailId === email.id && emailDetail && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDetailPopup?.();
+                      }}
+                      className="flex-shrink-0 p-1 h-6 w-6"
+                    >
+                      <Maximize2 className="h-3 w-3" />
+                    </Button>
+                  )}
                   <p className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -158,25 +171,12 @@ export const EmailList = ({
               </div>
               {selectedEmailId === email.id && emailDetail && (
                 <div className="w-full mt-3 pt-3 border-t">
-                  <div className="flex items-start justify-between gap-2">
-                    <div 
-                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDetailPopup?.();
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <div 
+                    className="text-sm text-muted-foreground prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -208,6 +208,19 @@ export const EmailList = ({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1 overflow-hidden">
               <div className="flex items-center gap-2">
+                {selectedEmailId === email.id && emailDetail && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDetailPopup?.();
+                    }}
+                    className="flex-shrink-0 p-1 h-6 w-6"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </Button>
+                )}
                 <p className={cn(
                   'truncate text-sm',
                   !email.read && 'font-semibold text-email-unread'
@@ -228,25 +241,12 @@ export const EmailList = ({
               </h3>
               {selectedEmailId === email.id && emailDetail ? (
                 <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-start justify-between gap-2">
-                    <div 
-                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-3"
-                      dangerouslySetInnerHTML={{ 
-                        __html: emailDetail.body.substring(0, 300) + (emailDetail.body.length > 300 ? '...' : '')
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDetailPopup?.();
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <div 
+                    className="text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-3"
+                    dangerouslySetInnerHTML={{ 
+                      __html: emailDetail.body.substring(0, 300) + (emailDetail.body.length > 300 ? '...' : '')
+                    }}
+                  />
                 </div>
               ) : (
                 <p className="line-clamp-2 text-sm text-muted-foreground">
@@ -296,6 +296,19 @@ export const EmailList = ({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1 overflow-hidden">
               <div className="flex items-center gap-2">
+                {selectedEmailId === currentEmail.id && emailDetail && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDetailPopup?.();
+                    }}
+                    className="flex-shrink-0 p-1 h-6 w-6"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </Button>
+                )}
                 <p className={cn(
                   'truncate text-sm',
                   !currentEmail.read && 'font-semibold text-email-unread'
@@ -316,25 +329,12 @@ export const EmailList = ({
               </h3>
               {selectedEmailId === currentEmail.id && emailDetail ? (
                 <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-start justify-between gap-2">
-                    <div 
-                      className="flex-1 text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-2"
-                      dangerouslySetInnerHTML={{ 
-                        __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDetailPopup?.();
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <div 
+                    className="text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-2"
+                    dangerouslySetInnerHTML={{ 
+                      __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
+                    }}
+                  />
                 </div>
               ) : (
                 <p className="line-clamp-2 text-sm text-muted-foreground">

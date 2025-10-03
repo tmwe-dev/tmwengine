@@ -118,6 +118,8 @@ const TMWEAuthCallbackIntegrated = () => {
         const tokenData = await response.json();
         
         console.log('✅ Token recibido exitosamente');
+        console.log('📦 RESPUESTA LITERAL DEL API:');
+        console.log(JSON.stringify(tokenData, null, 2));
         console.log('  - expires_in:', tokenData.expires_in, 'segundos');
         console.log('  - access_token presente:', !!tokenData.access_token);
         console.log('  - refresh_token presente:', !!tokenData.refresh_token);

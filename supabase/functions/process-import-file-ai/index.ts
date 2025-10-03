@@ -75,10 +75,6 @@ serve(async (req) => {
     
     const headers = firstLine.split(separator).map(h => h.replace(/["\r\n]/g, '').trim());
     console.log(`[AI Import] Detected separator: "${separator}", headers: ${headers.length}`);
-    
-    if (headers.length < 10) {
-      throw new Error(`Header parsing failed: only ${headers.length} columns found`);
-    }
 
     const dataRows = lines.slice(1);
     const totalRows = dataRows.length;

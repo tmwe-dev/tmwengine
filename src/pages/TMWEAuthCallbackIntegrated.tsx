@@ -165,10 +165,10 @@ const TMWEAuthCallbackIntegrated = () => {
           console.error('🔥 Excepción obteniendo email:', err);
         }
 
-        // Si no se pudo obtener el email, usar un email genérico basado en el clientId
+        // Si no se pudo obtener el email, usar un email genérico válido
         if (!userEmail) {
           console.warn('⚠️ No se pudo obtener email del API, usando email genérico');
-          userEmail = `tmwe_${clientId.substring(0, 8)}@tmwe-auth.local`;
+          userEmail = `tmwe_${clientId.substring(0, 16)}@tmweauth.app`;
           console.log('📧 Email generado:', userEmail);
         }
 

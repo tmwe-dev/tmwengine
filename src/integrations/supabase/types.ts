@@ -732,7 +732,10 @@ export type Database = {
       }
       file_imports: {
         Row: {
+          archived_at: string | null
+          backup_file_path: string | null
           created_at: string
+          deleted_at: string | null
           file_content: string
           file_name: string
           file_path: string
@@ -746,7 +749,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          backup_file_path?: string | null
           created_at?: string
+          deleted_at?: string | null
           file_content: string
           file_name: string
           file_path: string
@@ -760,7 +766,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          backup_file_path?: string | null
           created_at?: string
+          deleted_at?: string | null
           file_content?: string
           file_name?: string
           file_path?: string
@@ -785,12 +794,16 @@ export type Database = {
       }
       import_logs: {
         Row: {
+          archived_at: string | null
           completed_at: string | null
           contatti_selezionati: number | null
           created_at: string
+          deleted_at: string | null
           errori: Json | null
           file_name: string
           file_path: string
+          final_file_id: string | null
+          final_file_path: string | null
           id: string
           last_batch_at: string | null
           nome_tabella_temporanea: string | null
@@ -805,12 +818,16 @@ export type Database = {
           utente_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           completed_at?: string | null
           contatti_selezionati?: number | null
           created_at?: string
+          deleted_at?: string | null
           errori?: Json | null
           file_name: string
           file_path: string
+          final_file_id?: string | null
+          final_file_path?: string | null
           id?: string
           last_batch_at?: string | null
           nome_tabella_temporanea?: string | null
@@ -825,12 +842,16 @@ export type Database = {
           utente_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           completed_at?: string | null
           contatti_selezionati?: number | null
           created_at?: string
+          deleted_at?: string | null
           errori?: Json | null
           file_name?: string
           file_path?: string
+          final_file_id?: string | null
+          final_file_path?: string | null
           id?: string
           last_batch_at?: string | null
           nome_tabella_temporanea?: string | null
@@ -844,7 +865,15 @@ export type Database = {
           trasferiti_rubrica?: boolean | null
           utente_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "import_logs_final_file_id_fkey"
+            columns: ["final_file_id"]
+            isOneToOne: false
+            referencedRelation: "file_imports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       imported_contacts: {
         Row: {

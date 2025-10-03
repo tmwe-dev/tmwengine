@@ -49,13 +49,35 @@ export function AIBatchProcessor({ importLogId, totalRows, origin, onComplete }:
       
       if (result.success) {
         if (result.completed) {
-          // All batches completed
-          setProcessing(false);
+          // All batches completed - generate final file
           toast({
-            title: "✓ Normalizzazione Completata",
-            description: `${totalRows} record processati con AI`
+            title: "✅ Normalizzazione completata!",
+            description: "Generazione file finale in corso...",
           });
-          onComplete();
+
+          try {
+            const { data: fileData, error: fileError } = await supabase.functions.invoke(
+              'generate-normalized-file',
+              {
+                body: { importLogId, format: 'csv' }
+              }
+            );
+
+            if (fileError) throw fileError;
+
+            setProcessing(false);
+            toast({
+              title: "🎉 Import completato!",
+              description: `File normalizzato: ${fileData.file.name} (${fileData.file.totalRecords} record)`,
+            });
+            
+            setTimeout(() => {
+              onComplete();
+            }, 2000);
+          } catch (fileErr: any) {
+            setError(`Errore generazione file: ${fileErr.message}`);
+            setProcessing(false);
+          }
         } else {
           // Update progress and process next batch
           setCurrentBatch(result.data.currentBatch);

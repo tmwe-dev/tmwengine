@@ -131,7 +131,7 @@ serve(async (req) => {
     const startFromRow = processedRows;
     let totalValidRecords = 0;
     
-    // Process in smaller batches
+    // Process in smaller batches and store in temp table
     for (let batchStart = startFromRow; batchStart < dataRows.length; batchStart += batchSize) {
       // Check timeout
       if (Date.now() - startTime > maxProcessingTime) {
@@ -141,7 +141,7 @@ serve(async (req) => {
 
       const batchEnd = Math.min(batchStart + batchSize, dataRows.length);
       const batchRows = dataRows.slice(batchStart, batchEnd);
-      const contactsToInsert = [];
+      const tempRecords = [];
 
       console.log(`[AI Import] Processing batch ${Math.floor(batchStart / batchSize) + 1}: rows ${batchStart + 1}-${batchEnd}`);
 
@@ -152,56 +152,23 @@ serve(async (req) => {
         try {
           const values = row.split(separator);
           
-          const contactData: any = {
+          // Store raw data as JSON in temp table
+          const rawData: any = {};
+          headers.forEach((header: string, index: number) => {
+            if (index < values.length) {
+              const value = values[index];
+              if (value && value !== 'NULL' && value.trim() !== '') {
+                rawData[header] = value.replace(/^["']|["']$/g, '').trim();
+              }
+            }
+          });
+
+          tempRecords.push({
             import_log_id: importLogId,
             row_number: globalRowIndex + 1,
-            original_id: getFieldValue('id', values),
-            commercial_anagrafiche_id: getFieldValue('commercial_anagrafiche_id', values),
-            name: getFieldValue('name', values),
-            alias: getFieldValue('alias', values),
-            company_alias: getFieldValue('company_alias', values),
-            position: getFieldValue('position', values),
-            title: getFieldValue('title', values),
-            phone: getFieldValue('phone', values),
-            cell: getFieldValue('cell', values),
-            email: getFieldValue('email', values),
-            country: getFieldValue('country', values),
-            note: getFieldValue('note', values),
-            stato: getFieldValue('stato', values) || 'A',
-            created_by: getFieldValue('created_by', values),
-            agent_id: getFieldValue('agent_id', values),
-            completed: getBooleanValue(getFieldValue('completed', values)),
-            origin: getFieldValue('origin', values),
-            client_code: getFieldValue('client_code', values),
-            meta_client: getBooleanValue(getFieldValue('meta_client', values)),
-            meta_express: getBooleanValue(getFieldValue('meta_express', values)),
-            meta_sea_freight: getBooleanValue(getFieldValue('meta_sea_freight', values)),
-            meta_air_freight: getBooleanValue(getFieldValue('meta_air_freight', values)),
-            meta_interested: getBooleanValue(getFieldValue('meta_interested', values)),
-            meta_reception_required_email: getBooleanValue(getFieldValue('meta_reception_required_email', values)),
-            meta_contact_required_email: getBooleanValue(getFieldValue('meta_contact_required_email', values)),
-            meta_presentation: getBooleanValue(getFieldValue('meta_presentation', values)),
-            meta_exworks: getBooleanValue(getFieldValue('meta_exworks', values)),
-            meta_hight_value_customer: getBooleanValue(getFieldValue('meta_hight_value_customer', values)),
-            meta_tutorial: getBooleanValue(getFieldValue('meta_tutorial', values)),
-            meta_rejected: getBooleanValue(getFieldValue('meta_rejected', values)),
-            meta_wca: getBooleanValue(getFieldValue('meta_wca', values)),
-            meta_exclient: getBooleanValue(getFieldValue('meta_exclient', values)),
-            archiviata: getBooleanValue(getFieldValue('archiviata', values)),
-            has_actions: getBooleanValue(getFieldValue('has_actions', values)),
-            company_name: getFieldValue('name', values, true),
-            address: getFieldValue('address', values),
-            city: getFieldValue('city', values),
-            zip_code: getFieldValue('zip_code', values)
-          };
-
-          // Parse date fields - accept any value
-          contactData.last_contact = parseDate(getFieldValue('last', values));
-          contactData.scheduled_contact = parseDate(getFieldValue('scheduled_contact', values));
-          contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
-
-          // No validation - insert all records as-is
-          contactsToInsert.push(contactData);
+            raw_data: rawData
+          });
+          
           totalValidRecords++;
           processedRows++;
           
@@ -213,16 +180,16 @@ serve(async (req) => {
         }
       }
 
-      // Insert batch
-      if (contactsToInsert.length > 0) {
+      // Insert batch into temp table
+      if (tempRecords.length > 0) {
         const { error: insertError } = await supabaseClient
-          .from('imported_contacts')
-          .insert(contactsToInsert);
+          .from('temp_ai_import')
+          .insert(tempRecords);
 
         if (insertError) {
           console.error('[AI Import] Insert error:', insertError);
-          errorRows += contactsToInsert.length;
-          totalValidRecords -= contactsToInsert.length;
+          errorRows += tempRecords.length;
+          totalValidRecords -= tempRecords.length;
           errors.push({ batch: Math.floor(batchStart / batchSize) + 1, error: insertError.message });
         }
       }

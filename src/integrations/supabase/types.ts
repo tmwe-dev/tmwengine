@@ -1130,6 +1130,38 @@ export type Database = {
         }
         Relationships: []
       }
+      temp_ai_import: {
+        Row: {
+          created_at: string
+          id: string
+          import_log_id: string | null
+          raw_data: Json
+          row_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_log_id?: string | null
+          raw_data: Json
+          row_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_log_id?: string | null
+          raw_data?: Json
+          row_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_ai_import_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null

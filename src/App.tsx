@@ -19,7 +19,7 @@ import Campagne from "./pages/Campagne";
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
-import EmailProvider from "./pages/EmailProvider";
+
 import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
@@ -83,11 +83,6 @@ const App = () => (
             <Route path="/gestisci-import" element={
               <ProtectedRoute>
                 <CRMLayout><GestisciImport /></CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/email-provider" element={
-              <ProtectedRoute>
-                <CRMLayout><EmailProvider /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/ai-config" element={

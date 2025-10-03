@@ -1569,6 +1569,21 @@ export default function ImportTemplates() {
     return values;
   };
 
+  // Get unique values with counts
+  const getUniqueValuesWithCount = (field: string) => {
+    const counts: Record<string, number> = {};
+    allRecords.forEach(record => {
+      const value = record[field];
+      if (value && String(value).trim() !== '') {
+        const key = String(value);
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([value, count]) => ({ value, count }));
+  };
+
   const viewImportRecords = (importLog: ImportLog) => {
     loadAllRecords(importLog);
   };
@@ -2350,10 +2365,10 @@ export default function ImportTemplates() {
                               <SelectValue placeholder="Origine" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__all__">Tutte</SelectItem>
-                              {getUniqueValues('origin').map((origin) => (
-                                <SelectItem key={origin} value={String(origin)}>
-                                  {String(origin)}
+                              <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                              {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                <SelectItem key={value} value={value}>
+                                  {value} ({count})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -2581,10 +2596,10 @@ export default function ImportTemplates() {
                               <SelectValue placeholder="Tutte le origini" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__all__">Tutte le origini</SelectItem>
-                              {getUniqueValues('origin').map((origin) => (
-                                <SelectItem key={origin} value={String(origin)}>
-                                  {String(origin)}
+                              <SelectItem value="__all__">Tutte le origini ({allRecords.length})</SelectItem>
+                              {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                <SelectItem key={value} value={value}>
+                                  {value} ({count})
                                 </SelectItem>
                               ))}
                             </SelectContent>

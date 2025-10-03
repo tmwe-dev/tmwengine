@@ -1182,7 +1182,7 @@ export default function Attivita() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead className="w-32">Azioni</TableHead>
+                <TableHead className="w-20 text-center">Azioni</TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50" 
                   onClick={() => handleSort('rubrica_nome')}
@@ -1271,6 +1271,7 @@ export default function Attivita() {
                     )}
                   </div>
                 </TableHead>
+                <TableHead className="w-16 text-center"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1370,25 +1371,14 @@ export default function Attivita() {
                          </div>
                        </TableCell>
                        <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
-                         <div className="flex items-center justify-center gap-1">
-                           <Button
-                             variant="ghost"
-                             size="icon"
-                             onClick={() => openGestisciForm(activity)}
-                             className="h-7 w-7"
-                           >
-                             <Pickaxe className="h-4 w-4" />
-                           </Button>
-                           
-                           <Button
-                             variant="ghost"
-                             size="icon"
-                             onClick={() => handleDeleteActivity(activity.id)}
-                             className="h-7 w-7 text-red-500 hover:text-red-700"
-                           >
-                             <Trash2 className="h-3 w-3" />
-                           </Button>
-                         </div>
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => openGestisciForm(activity)}
+                           className="h-7 w-7"
+                         >
+                           <Pickaxe className="h-4 w-4" />
+                         </Button>
                        </TableCell>
                        <TableCell 
                          className="max-w-[280px] cursor-pointer hover:border-2 hover:border-green-500 focus:!bg-black focus:!border-2 focus:!border-green-500 focus:outline-none"
@@ -1481,6 +1471,16 @@ export default function Attivita() {
                         <Badge variant={getPrioritaBadgeVariant(activity.priorita)}>
                           {PRIORITA_LABELS[activity.priorita]}
                         </Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteActivity(activity.id)}
+                          className="h-7 w-7 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

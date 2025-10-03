@@ -221,8 +221,39 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
+              {/* Telefoni compatti - una sola colonna */}
+              <div className="space-y-2 max-w-xs mt-6">
+                <div>
+                  <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Telefono
+                  </Label>
+                  <Input
+                    id="telefono"
+                    type="tel"
+                    value={formData.telefono || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Cellulare
+                  </Label>
+                  <Input
+                    id="cellulare"
+                    type="tel"
+                    value={formData.cellulare || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+
               {/* Descrizione - metà pagina, 250px altezza, allineata a sinistra */}
-              <div className="w-1/2">
+              <div className="w-1/2 mt-6">
                 <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
                 <Textarea
                   id="descrizione"
@@ -278,37 +309,6 @@ export function GestisciAttivitaDialog({
                   placeholder="Note aggiuntive..."
                   className="h-[250px] text-sm resize-none"
                 />
-              </div>
-
-              {/* Telefoni compatti - una sola colonna */}
-              <div className="space-y-2 max-w-xs">
-                <div>
-                  <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Telefono
-                  </Label>
-                  <Input
-                    id="telefono"
-                    type="tel"
-                    value={formData.telefono || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Cellulare
-                  </Label>
-                  <Input
-                    id="cellulare"
-                    type="tel"
-                    value={formData.cellulare || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
-                </div>
               </div>
             </div>
           </div>

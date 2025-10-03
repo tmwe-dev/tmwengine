@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import { CompactContactCard } from '@/components/import/CompactContactCard';
@@ -131,6 +133,7 @@ const RecordImportati = () => {
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
+  const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
@@ -223,7 +226,27 @@ const RecordImportati = () => {
     return Array.from(values);
   };
 
+  const hasCompletedActivityToday = (contactId: string): boolean => {
+    const activities = getCompanyActivities(contactId);
+    const today = new Date();
+    const todayStart = startOfDay(today);
+    const todayEnd = endOfDay(today);
+    
+    return activities.some(activity => {
+      if (activity.stato !== 'completata') return false;
+      if (!activity.scadenza) return false;
+      
+      const activityDate = new Date(activity.scadenza);
+      return activityDate >= todayStart && activityDate <= todayEnd;
+    });
+  };
+
   const filteredRecords = allRecords.filter(record => {
+    // Filtro per contatti con attività completate oggi
+    if (hideContactsWithTodayActivities && hasCompletedActivityToday(record.id)) {
+      return false;
+    }
+    
     if (hasNotesFilter && !record.note) return false;
     if (originFilter && originFilter !== '__all__' && record.origin !== originFilter) return false;
     if (countryFilter && countryFilter !== '__all__' && record.country !== countryFilter) return false;
@@ -397,6 +420,18 @@ const RecordImportati = () => {
             
             {showFiltersArea && (
               <div className="flex flex-col gap-3">
+                {/* Switch per nascondere contatti con attività completate oggi */}
+                <div className="flex items-center justify-center gap-3 pb-2 border-b">
+                  <Label htmlFor="hide-today-activities" className="text-sm font-medium cursor-pointer">
+                    Nascondi contatti con attività eseguite oggi
+                  </Label>
+                  <Switch
+                    id="hide-today-activities"
+                    checked={hideContactsWithTodayActivities}
+                    onCheckedChange={setHideContactsWithTodayActivities}
+                  />
+                </div>
+                
                 <div className="flex items-end justify-center relative">
                   <div className="flex gap-2 items-end">
                     <div className="w-48">

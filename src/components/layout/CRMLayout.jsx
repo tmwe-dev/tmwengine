@@ -49,7 +49,6 @@ const CRMLayout = ({ children }) => {
     { name: 'Commerciale', href: '/rubrica-avanzata', icon: Database },
     { name: 'Attività', href: '/attivita', icon: Calendar },
     { name: 'Campagne', href: '/campagne', icon: BarChart3 },
-    { name: 'Email', href: '/email', icon: Mail },
     { name: 'Email Manager', href: '/email-manager', icon: Mail },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },

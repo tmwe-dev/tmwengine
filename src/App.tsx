@@ -15,7 +15,7 @@ import Rubrica from "./pages/Rubrica";
 import RubricaAvanzata from "./pages/RubricaAvanzata";
 import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
-import Email from "./pages/Email";
+
 import Chat from "./pages/Chat";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
@@ -68,11 +68,6 @@ const App = () => (
             <Route path="/campagne" element={
               <ProtectedRoute>
                 <CRMLayout><Campagne /></CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/email" element={
-              <ProtectedRoute>
-                <CRMLayout><Email /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/chat" element={

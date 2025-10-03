@@ -169,16 +169,6 @@ export const EmailList = ({
                   )}
                 </div>
               </div>
-              {selectedEmailId === email.id && emailDetail && (
-                <div className="w-full mt-2 pt-2 border-t max-h-[50px] overflow-hidden">
-                  <div 
-                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-2"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
-                    }}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </Card>
@@ -239,16 +229,6 @@ export const EmailList = ({
               )}>
                 {email.subject || '(No Subject)'}
               </h3>
-              {selectedEmailId === email.id && emailDetail && (
-                <div className="mt-2 pt-2 border-t max-h-[60px] overflow-hidden">
-                  <div 
-                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-3"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
-                    }}
-                  />
-                </div>
-              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               <span className="whitespace-nowrap text-xs text-muted-foreground">
@@ -323,16 +303,6 @@ export const EmailList = ({
               )}>
                 {currentEmail.subject || '(No Subject)'}
               </h3>
-              {selectedEmailId === currentEmail.id && emailDetail && (
-                <div className="mt-2 pt-2 border-t max-h-[50px] overflow-hidden">
-                  <div 
-                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-2"
-                    dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 120) + (emailDetail.body.length > 120 ? '...' : '')
-                    }}
-                  />
-                </div>
-              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               <span className="whitespace-nowrap text-xs text-muted-foreground">

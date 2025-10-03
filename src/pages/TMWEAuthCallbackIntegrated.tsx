@@ -3,11 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const { login } = useTMWEAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -198,6 +200,9 @@ const TMWEAuthCallbackIntegrated = () => {
         // Save email to session storage for the app to use
         sessionStorage.setItem('tmwe_user_email', userEmail);
         sessionStorage.setItem('tmwe_access_token', tokenData.access_token);
+
+        // Update auth context
+        login(userEmail);
 
         // Clear OAuth session data
         sessionStorage.removeItem('oauth_state');

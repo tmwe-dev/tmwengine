@@ -1,26 +1,22 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAdmin = false 
-}) => {
-  const { user, isLoading, isAdmin } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useTMWEAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/auth');
     }
-  }, [user, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -35,25 +31,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return null; // Will redirect to /auth
-  }
-
-  if (requireAdmin && !isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <Shield className="h-12 w-12 mx-auto mb-4 text-destructive" />
-            <h2 className="text-lg font-semibold mb-2">Accesso Negato</h2>
-            <p className="text-muted-foreground">
-              Non hai i permessi necessari per accedere a questa sezione. 
-              Contatta un amministratore per ottenere l'accesso.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
   return <>{children}</>;

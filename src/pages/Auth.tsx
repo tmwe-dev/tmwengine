@@ -2,21 +2,21 @@ import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { initiateAuthorizationCodeFlow } from '@/lib/tmwe-api-integrated';
 import { toast } from 'sonner';
 
 const Auth = () => {
-  const { user } = useAuth();
+  const { isAuthenticated } = useTMWEAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = () => {
     try {

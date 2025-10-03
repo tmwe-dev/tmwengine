@@ -26,6 +26,7 @@ import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
+import TMWEAuthTest from "./pages/TMWEAuthTest";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,11 @@ const App = () => (
             <Route path="/tables" element={
               <ProtectedRoute>
                 <CRMLayout><Tables /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/tmwe-test" element={
+              <ProtectedRoute>
+                <TMWEAuthTest />
               </ProtectedRoute>
             } />
             <Route path="/tmwe/callback" element={

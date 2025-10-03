@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { migrateOldCredentialsIfNeeded } from '@/lib/tmwe-migration-helper';
 
 export interface TMWECredentials {
   accessToken: string;
@@ -26,6 +27,10 @@ export const useTMWEAuth = () => {
 
     try {
       setLoading(true);
+      
+      // Try to migrate old credentials first
+      await migrateOldCredentialsIfNeeded();
+      
       const { data, error: dbError } = await supabase
         .from('user_tmwe_credentials')
         .select('*')

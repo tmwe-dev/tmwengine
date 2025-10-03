@@ -226,7 +226,7 @@ export const EmailList = ({
       <div className="py-2 px-[28px]">
         <Card
           className={cn(
-            'cursor-pointer border-l-4 p-4 transition-all duration-200',
+            'cursor-pointer border-l-4 p-4 transition-all duration-200 aspect-square flex flex-col',
             currentEmail.read 
               ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
               : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',

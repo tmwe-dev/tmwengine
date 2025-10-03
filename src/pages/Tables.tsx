@@ -17,12 +17,58 @@ interface TableData {
   rows: any[];
 }
 
+interface TableCategory {
+  name: string;
+  tables: TableInfo[];
+}
+
 export default function Tables() {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableData, setTableData] = useState<TableData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const categorizeTable = (tableName: string): string => {
+    if (tableName === 'rubrica' || tableName === 'attivita') {
+      return 'CRM & Contatti';
+    }
+    if (tableName.startsWith('email_')) {
+      return 'Email';
+    }
+    if (tableName.startsWith('chat_')) {
+      return 'Chat AI';
+    }
+    if (tableName.startsWith('import') || tableName === 'file_imports') {
+      return 'Import';
+    }
+    if (tableName.startsWith('config_')) {
+      return 'Configurazione';
+    }
+    if (tableName === 'user_roles') {
+      return 'Utenti & Permessi';
+    }
+    return 'Altro';
+  };
+
+  const getCategorizedTables = (): TableCategory[] => {
+    const categories: { [key: string]: TableInfo[] } = {};
+    
+    tables.forEach(table => {
+      const category = categorizeTable(table.table_name);
+      if (!categories[category]) {
+        categories[category] = [];
+      }
+      categories[category].push(table);
+    });
+
+    return Object.entries(categories)
+      .map(([name, tables]) => ({ name, tables }))
+      .sort((a, b) => {
+        const order = ['CRM & Contatti', 'Email', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'Altro'];
+        return order.indexOf(a.name) - order.indexOf(b.name);
+      });
+  };
 
   const loadTables = async () => {
     try {
@@ -188,6 +234,8 @@ export default function Tables() {
     );
   }
 
+  const categorizedTables = getCategorizedTables();
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -209,29 +257,36 @@ export default function Tables() {
           <p className="text-muted-foreground">Caricamento tabelle...</p>
         </div>
       ) : (
-        <div className="max-w-2xl">
-          <div className="space-y-2">
-            {tables.map((table) => (
-              <Card
-                key={table.table_name}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedTable(table.table_name)}
-              >
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <Database className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">{table.table_name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold">{table.row_count}</div>
-                    <p className="text-xs text-muted-foreground">
-                      record{table.row_count !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <div className="max-w-3xl space-y-6">
+          {categorizedTables.map((category) => (
+            <div key={category.name} className="space-y-3">
+              <h2 className="text-xl font-semibold text-foreground border-b pb-2">
+                {category.name}
+              </h2>
+              <div className="space-y-2">
+                {category.tables.map((table) => (
+                  <Card
+                    key={table.table_name}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setSelectedTable(table.table_name)}
+                  >
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <Database className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium">{table.table_name}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold">{table.row_count}</div>
+                        <p className="text-xs text-muted-foreground">
+                          record{table.row_count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

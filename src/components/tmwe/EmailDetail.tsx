@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,9 +14,21 @@ import {
   MoreVertical,
   Download,
   Paperclip,
-  ArrowLeft
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  FolderCog
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 
 interface EmailDetailProps {
   email: {
@@ -35,6 +47,11 @@ interface EmailDetailProps {
   onDelete?: () => void;
   onBack?: () => void;
   isMobile?: boolean;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
+  onMarkAsRead?: (emailId: string) => void;
 }
 
 export const EmailDetail = ({ 
@@ -44,8 +61,133 @@ export const EmailDetail = ({
   onForward, 
   onDelete,
   onBack,
-  isMobile 
+  isMobile,
+  onPrevious,
+  onNext,
+  hasPrevious = false,
+  hasNext = false,
+  onMarkAsRead
 }: EmailDetailProps) => {
+  const [senderGroups, setSenderGroups] = useState<any[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [currentSenderGroup, setCurrentSenderGroup] = useState<string | null>(null);
+
+  // Auto mark as read when email is displayed
+  useEffect(() => {
+    if (onMarkAsRead && email.id) {
+      onMarkAsRead(email.id);
+    }
+  }, [email.id, onMarkAsRead]);
+
+  // Load sender groups
+  useEffect(() => {
+    loadSenderGroups();
+    loadCurrentSenderGroup();
+  }, []);
+
+  const loadSenderGroups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_sender_groups')
+        .select('*')
+        .order('nome_gruppo');
+      
+      if (error) throw error;
+      setSenderGroups(data || []);
+    } catch (error) {
+      console.error('Error loading sender groups:', error);
+    }
+  };
+
+  const loadCurrentSenderGroup = async () => {
+    try {
+      const senderEmail = email.from.match(/<(.+)>/)
+        ? email.from.match(/<(.+)>/)?.[1]
+        : email.from;
+
+      const { data, error } = await supabase
+        .from('email_sender_rules')
+        .select('group_id, email_sender_groups(nome_gruppo)')
+        .eq('sender_email', senderEmail)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setCurrentSenderGroup((data as any).email_sender_groups?.nome_gruppo);
+      }
+    } catch (error) {
+      console.error('Error loading current sender group:', error);
+    }
+  };
+
+  const handleAssignGroup = async (groupId: string) => {
+    try {
+      const senderEmail = email.from.match(/<(.+)>/)
+        ? email.from.match(/<(.+)>/)?.[1]
+        : email.from;
+
+      if (!senderEmail) {
+        toast.error('Impossibile estrarre l\'indirizzo email del mittente');
+        return;
+      }
+
+      // Delete existing rule for this sender
+      await supabase
+        .from('email_sender_rules')
+        .delete()
+        .eq('sender_email', senderEmail);
+
+      // Insert new rule
+      const { error } = await supabase
+        .from('email_sender_rules')
+        .insert({
+          sender_email: senderEmail,
+          group_id: groupId
+        });
+      
+      if (error) throw error;
+      
+      toast.success('Regola assegnata con successo');
+      loadCurrentSenderGroup();
+    } catch (error: any) {
+      console.error('Error assigning group:', error);
+      toast.error('Errore nell\'assegnazione della regola');
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) {
+      toast.error('Inserisci un nome per il gruppo');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('email_sender_groups')
+        .insert({
+          nome_gruppo: newGroupName.trim()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success('Gruppo creato con successo');
+      setNewGroupName('');
+      setIsCreatingGroup(false);
+      await loadSenderGroups();
+      
+      // Automatically assign to new group
+      if (data) {
+        handleAssignGroup(data.id);
+      }
+    } catch (error: any) {
+      console.error('Error creating group:', error);
+      toast.error('Errore nella creazione del gruppo');
+    }
+  };
   // Validate and parse date safely
   const emailDate = (() => {
     try {
@@ -157,6 +299,7 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card">
+      {/* Top navigation bar */}
       <div className="flex items-center justify-between border-b p-3 md:p-4 gap-2">
         <div className="flex gap-1 md:gap-2 flex-wrap">
           {isMobile && onBack && (
@@ -177,7 +320,74 @@ export const EmailDetail = ({
             <span className="hidden md:inline">Forward</span>
           </Button>
         </div>
-        <div className="flex gap-1 md:gap-2">
+
+        {/* Center: Sender rules menu */}
+        <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="text-xs md:text-sm">
+                <FolderCog className="mr-2 h-4 w-4" />
+                {currentSenderGroup || 'Regole mittente'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-56">
+              {senderGroups.map((group) => (
+                <DropdownMenuItem
+                  key={group.id}
+                  onClick={() => handleAssignGroup(group.id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: group.colore }}
+                    />
+                    {group.nome_gruppo}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              {isCreatingGroup ? (
+                <div className="p-2 space-y-2">
+                  <Input
+                    placeholder="Nome gruppo"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateGroup();
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateGroup} className="flex-1">
+                      Crea
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setIsCreatingGroup(false);
+                        setNewGroupName('');
+                      }}
+                      className="flex-1"
+                    >
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
+                  + Nuovo gruppo
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Right: Actions and navigation */}
+        <div className="flex gap-1 md:gap-2 items-center">
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Star className="h-4 w-4" />
           </Button>
@@ -186,6 +396,25 @@ export const EmailDetail = ({
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+          <Separator orientation="vertical" className="h-6 mx-1" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onNext}
+            disabled={!hasNext}
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:inline-flex">
             <MoreVertical className="h-4 w-4" />
           </Button>

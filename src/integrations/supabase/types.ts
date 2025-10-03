@@ -552,6 +552,65 @@ export type Database = {
           },
         ]
       }
+      email_sender_groups: {
+        Row: {
+          colore: string | null
+          created_at: string
+          descrizione: string | null
+          id: string
+          nome_gruppo: string
+          updated_at: string
+        }
+        Insert: {
+          colore?: string | null
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          nome_gruppo: string
+          updated_at?: string
+        }
+        Update: {
+          colore?: string | null
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          nome_gruppo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_sender_rules: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          sender_email: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          sender_email: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          sender_email?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sender_rules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_ssl_config: {
         Row: {
           accept_self_signed: boolean

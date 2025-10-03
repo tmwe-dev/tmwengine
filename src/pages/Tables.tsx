@@ -57,8 +57,14 @@ export default function Tables() {
     if (tableName.startsWith('config_')) {
       return 'Configurazione';
     }
-    if (tableName === 'user_roles') {
+    if (tableName === 'user_roles' || tableName === 'user_tmwe_credentials') {
       return 'Utenti & Permessi';
+    }
+    if (tableName.startsWith('ui_style')) {
+      return 'UI';
+    }
+    if (tableName.startsWith('temp_')) {
+      return 'Temporanee';
     }
     return 'Altro';
   };
@@ -77,7 +83,7 @@ export default function Tables() {
     return Object.entries(categories)
       .map(([name, tables]) => ({ name, tables }))
       .sort((a, b) => {
-        const order = ['CRM & Contatti', 'Email', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'Altro'];
+        const order = ['CRM & Contatti', 'Email', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'UI', 'Temporanee', 'Altro'];
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
   };

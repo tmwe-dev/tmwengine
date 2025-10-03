@@ -511,9 +511,12 @@ export default function ImportTemplates() {
 
       // Crea le attività per ogni azienda selezionata
       const activities = [];
-      const emailSendPromises = [];
+      
+      console.log('🔍 DEBUG - selectedCompanies:', selectedCompanies);
+      console.log('🔍 DEBUG - activityData:', activityData);
       
       for (const company of selectedCompanies) {
+        console.log('🔍 DEBUG - Processing company:', company);
         // ATTIVITÀ IMMEDIATA (quello che ho fatto ora)
         let descrizione = '';
         let emailSendResult = null;

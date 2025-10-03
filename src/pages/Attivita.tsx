@@ -548,6 +548,50 @@ export default function Attivita() {
         delete activityUpdates.cellulare;
       }
 
+      // Se è un'attività email che viene completata, invia l'email
+      if (selectedActivity.tipo === 'email' && activityUpdates.stato === 'completata' && selectedActivity.stato !== 'completata') {
+        // Estrai oggetto e testo dalla descrizione esistente
+        const emailMatch = selectedActivity.descrizione.match(/Email: (.+)/);
+        const oggetto = emailMatch ? emailMatch[1] : 'Nessun oggetto';
+        
+        // Cerca di ottenere il testo dalle note o dalla descrizione
+        const testo = selectedActivity.note || 'Email inviata dalla gestione attività';
+        
+        // Recupera l'email del contatto se esiste rubrica_id
+        let recipientEmail = '';
+        if (selectedActivity.rubrica_id) {
+          const { data: contact } = await supabase
+            .from('rubrica')
+            .select('email')
+            .eq('id', selectedActivity.rubrica_id)
+            .maybeSingle();
+          
+          if (contact?.email) {
+            recipientEmail = contact.email;
+            
+            try {
+              const { emailMessageApi } = await import('@/lib/tmwe-api-integrated');
+              const response = await emailMessageApi.sendMessage({
+                to: [recipientEmail],
+                subject: oggetto,
+                body: testo,
+                body_type: 'text'
+              });
+
+              if (response?.success) {
+                activityUpdates.descrizione = `✅ Email INVIATA\n\nA: ${recipientEmail}\nOggetto: ${oggetto}\nMessage ID: ${response.message_id || 'N/A'}\n\nTesto inviato:\n${testo}`;
+              } else {
+                activityUpdates.descrizione = `❌ Email NON INVIATA\n\nA: ${recipientEmail}\nOggetto: ${oggetto}\n\nTesto:\n${testo}`;
+                activityUpdates.stato = 'aperta'; // Mantieni aperta se l'invio fallisce
+              }
+            } catch (err: any) {
+              activityUpdates.descrizione = `❌ Email NON INVIATA - Errore: ${err.message}\n\nA: ${recipientEmail}\nOggetto: ${oggetto}\n\nTesto:\n${testo}`;
+              activityUpdates.stato = 'aperta'; // Mantieni aperta se l'invio fallisce
+            }
+          }
+        }
+      }
+
       // Aggiorna sempre l'attività (solo con i campi validi)
       const { error } = await supabase
         .from('attivita')

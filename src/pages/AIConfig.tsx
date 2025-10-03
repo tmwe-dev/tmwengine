@@ -99,13 +99,6 @@ const AIConfig = () => {
         return;
       }
 
-      if (newAiConfig.attivo) {
-        await supabase
-          .from('config_ai')
-          .update({ attivo: false })
-          .neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-
       const { error } = await supabase
         .from('config_ai')
         .insert({
@@ -144,13 +137,6 @@ const AIConfig = () => {
 
   const handleToggleAiConfig = async (configId, currentStatus) => {
     try {
-      if (!currentStatus) {
-        await supabase
-          .from('config_ai')
-          .update({ attivo: false })
-          .neq('id', configId);
-      }
-
       const { error } = await supabase
         .from('config_ai')
         .update({ attivo: !currentStatus })

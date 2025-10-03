@@ -24,6 +24,33 @@ const AIConfig = () => {
     attivo: false
   });
 
+  // Modelli disponibili per provider
+  const modelsByProvider = {
+    openai: [
+      { value: 'gpt-4', label: 'GPT-4 (più potente)' },
+      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (veloce e potente)' },
+      { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (economico)' }
+    ],
+    anthropic: [
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' }
+    ],
+    google: [
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
+    ],
+    huggingface: [
+      { value: 'mistral-7b', label: 'Mistral 7B' },
+      { value: 'llama-2-7b', label: 'Llama 2 7B' },
+      { value: 'falcon-7b', label: 'Falcon 7B' }
+    ],
+    custom: [
+      { value: 'custom-model', label: 'Modello Custom (specifica manualmente)' }
+    ]
+  };
+
   useEffect(() => {
     loadAIConfigurations();
   }, []);
@@ -253,13 +280,32 @@ const AIConfig = () => {
 
             <div className="space-y-1">
               <Label htmlFor="aiModello" className="text-sm">Modello</Label>
-              <Input
-                id="aiModello"
-                value={newAiConfig.modello}
-                onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
-                placeholder="gpt-4, claude-3, ecc."
-                className="h-9"
-              />
+              {newAiConfig.provider && modelsByProvider[newAiConfig.provider] ? (
+                <Select 
+                  value={newAiConfig.modello} 
+                  onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Seleziona modello" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelsByProvider[newAiConfig.provider].map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="aiModello"
+                  value={newAiConfig.modello}
+                  onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
+                  placeholder="Seleziona prima un provider"
+                  className="h-9"
+                  disabled={!newAiConfig.provider}
+                />
+              )}
             </div>
           </div>
 

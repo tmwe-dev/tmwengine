@@ -2704,6 +2704,14 @@ export default function ImportTemplates() {
                   <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer whitespace-nowrap">
                     Nascondi attività oggi
                   </Label>
+                  {hideContactsWithTodayActivities && (() => {
+                    const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                    return hiddenCount > 0 ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {hiddenCount} nascosti
+                      </Badge>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 

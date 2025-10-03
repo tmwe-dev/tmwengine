@@ -613,7 +613,7 @@ const Chat = () => {
                     <div
                       className={`max-w-[80%] p-4 rounded-lg ${
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border border-purple-500/20'
                           : 'bg-muted'
                       }`}
                     >

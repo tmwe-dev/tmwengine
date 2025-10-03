@@ -3,9 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Database, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Database, ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TableInfo {
   table_name: string;
@@ -28,6 +38,8 @@ export default function Tables() {
   const [tableData, setTableData] = useState<TableData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteCategory, setDeleteCategory] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const categorizeTable = (tableName: string): string => {
     if (tableName === 'rubrica' || tableName === 'attivita') {
@@ -155,6 +167,41 @@ export default function Tables() {
     }
   }, [selectedTable]);
 
+  const handleDeleteCategory = async (categoryName: string, categoryTables: TableInfo[]) => {
+    setIsDeleting(true);
+    const toastId = toast.loading(`Eliminazione records da ${categoryTables.length} tabelle in corso...`);
+    
+    try {
+      let totalDeleted = 0;
+      
+      for (const table of categoryTables) {
+        const { error, count } = await supabase
+          .from(table.table_name as any)
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        
+        if (error) {
+          console.error(`Errore eliminazione da ${table.table_name}:`, error);
+          toast.error(`Errore nell'eliminazione da ${table.table_name}`, { id: toastId });
+          return;
+        }
+        
+        totalDeleted += table.row_count;
+      }
+      
+      toast.success(`${totalDeleted} record eliminati con successo da ${categoryName}`, { id: toastId });
+      
+      // Reload tables to update counts
+      await loadTables();
+    } catch (error: any) {
+      console.error('Errore eliminazione categoria:', error);
+      toast.error('Errore durante l\'eliminazione', { id: toastId });
+    } finally {
+      setIsDeleting(false);
+      setDeleteCategory(null);
+    }
+  };
+
   const handleRefresh = () => {
     if (selectedTable) {
       loadTableData(selectedTable);
@@ -246,9 +293,20 @@ export default function Tables() {
         <div className="max-w-2xl space-y-4">
           {categorizedTables.map((category) => (
             <div key={category.name} className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground border-b pb-1">
-                {category.name}
-              </h2>
+              <div className="flex items-center justify-between border-b pb-1">
+                <h2 className="text-lg font-semibold text-foreground">
+                  {category.name}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDeleteCategory(category.name)}
+                  disabled={isDeleting || category.tables.every(t => t.row_count === 0)}
+                  className="h-8 px-2"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {category.tables.map((table) => (
                   <Card
@@ -272,6 +330,47 @@ export default function Tables() {
           ))}
         </div>
       )}
+      
+      <AlertDialog open={deleteCategory !== null} onOpenChange={(open) => !open && setDeleteCategory(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare tutti i record dalle tabelle di "{deleteCategory}"?
+              Questa operazione non può essere annullata.
+              {deleteCategory && (
+                <div className="mt-4 p-3 bg-muted rounded-md">
+                  <p className="font-semibold mb-2">Tabelle interessate:</p>
+                  <ul className="text-sm space-y-1">
+                    {categorizedTables
+                      .find(cat => cat.name === deleteCategory)
+                      ?.tables.map(table => (
+                        <li key={table.table_name}>
+                          • {table.table_name} ({table.row_count} record{table.row_count !== 1 ? 's' : ''})
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const category = categorizedTables.find(cat => cat.name === deleteCategory);
+                if (category) {
+                  handleDeleteCategory(deleteCategory!, category.tables);
+                }
+              }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Eliminazione...' : 'Elimina tutto'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/useAuth';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
 import { 
   Users, 
@@ -36,7 +36,8 @@ const CRMLayout = ({ children }) => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { userEmail, logout } = useTMWEAuth();
 
   // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
@@ -98,19 +99,13 @@ const CRMLayout = ({ children }) => {
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
                 <div className="h-8 w-8 bg-secondary rounded-full flex items-center justify-center">
                   <span className="text-secondary-foreground text-sm font-medium">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    {userEmail?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
                 <div className="hidden sm:flex flex-col items-start">
                   <span className="text-sm text-foreground">
-                    {user?.email?.split('@')[0] || 'Utente'}
+                    {userEmail?.split('@')[0] || 'Utente'}
                   </span>
-                  {isAdmin && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
-                      Admin
-                    </span>
-                  )}
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
@@ -118,14 +113,8 @@ const CRMLayout = ({ children }) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{user?.email?.split('@')[0] || 'Utente'}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  {isAdmin && (
-                    <p className="text-xs text-primary flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
-                      Amministratore
-                    </p>
-                  )}
+                  <p className="text-sm font-medium">{userEmail?.split('@')[0] || 'Utente'}</p>
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -137,7 +126,10 @@ const CRMLayout = ({ children }) => {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={signOut}
+                onClick={() => {
+                  logout();
+                  navigate('/auth');
+                }}
                 className="flex items-center gap-2 text-destructive focus:text-destructive"
               >
                 <LogOut className="h-4 w-4" />

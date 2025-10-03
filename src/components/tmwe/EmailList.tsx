@@ -125,7 +125,7 @@ export const EmailList = ({
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 min-w-[200px]">
+                <div className="flex items-center gap-1 min-w-[200px]">
                   {selectedEmailId === email.id && emailDetail && (
                     <Button
                       variant="ghost"
@@ -134,7 +134,7 @@ export const EmailList = ({
                         e.stopPropagation();
                         onOpenDetailPopup?.();
                       }}
-                      className="flex-shrink-0 p-1 h-6 w-6"
+                      className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
                     >
                       <Maximize2 className="h-3 w-3" />
                     </Button>
@@ -216,7 +216,7 @@ export const EmailList = ({
                       e.stopPropagation();
                       onOpenDetailPopup?.();
                     }}
-                    className="flex-shrink-0 p-1 h-6 w-6"
+                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
                   >
                     <Maximize2 className="h-3 w-3" />
                   </Button>
@@ -304,7 +304,7 @@ export const EmailList = ({
                       e.stopPropagation();
                       onOpenDetailPopup?.();
                     }}
-                    className="flex-shrink-0 p-1 h-6 w-6"
+                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
                   >
                     <Maximize2 className="h-3 w-3" />
                   </Button>

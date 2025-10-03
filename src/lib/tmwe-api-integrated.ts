@@ -106,9 +106,9 @@ export const initiateAuthorizationCodeFlow = (): void => {
   console.log('💾 Datos guardados en sessionStorage');
   
   // Build authorization URL según OpenAPI spec
-  // Endpoint: GET /authorization
+  // Endpoint: GET /auth
   // IMPORTANTE: Construir URL manualmente para asegurar encoding correcto
-  const baseUrl = 'https://findair.it/erp/tmwe_json/authorization';
+  const baseUrl = 'https://findair.it/erp/tmwe_json/auth';
   const params = [
     `client_id=${encodeURIComponent(clientId)}`,
     `redirect_uri=${encodeURIComponent(redirectUri)}`,

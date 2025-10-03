@@ -239,7 +239,7 @@ export const EmailList = ({
               )}>
                 {email.subject || '(No Subject)'}
               </h3>
-              {selectedEmailId === email.id && emailDetail ? (
+              {selectedEmailId === email.id && emailDetail && (
                 <div className="mt-2 pt-2 border-t max-h-[60px] overflow-hidden">
                   <div 
                     className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-3"
@@ -248,10 +248,6 @@ export const EmailList = ({
                     }}
                   />
                 </div>
-              ) : (
-                <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {email.preview}
-                </p>
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
@@ -327,7 +323,7 @@ export const EmailList = ({
               )}>
                 {currentEmail.subject || '(No Subject)'}
               </h3>
-              {selectedEmailId === currentEmail.id && emailDetail ? (
+              {selectedEmailId === currentEmail.id && emailDetail && (
                 <div className="mt-2 pt-2 border-t max-h-[50px] overflow-hidden">
                   <div 
                     className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-2"
@@ -336,10 +332,6 @@ export const EmailList = ({
                     }}
                   />
                 </div>
-              ) : (
-                <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {currentEmail.preview}
-                </p>
               )}
             </div>
             <div className="flex flex-col items-end gap-2">

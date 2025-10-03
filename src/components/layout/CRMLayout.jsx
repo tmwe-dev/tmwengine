@@ -19,7 +19,10 @@ import {
   LogOut,
   Shield,
   ChevronDown,
-  FileCheck
+  FileCheck,
+  Bot,
+  Globe,
+  User
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -52,7 +55,11 @@ const CRMLayout = ({ children }) => {
     { name: 'Email', href: '/email', icon: Mail },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },
+    { name: 'Record Importati', href: '/record-importati', icon: FileCheck },
     { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
+    { name: 'Email Provider', href: '/email-provider', icon: Mail },
+    { name: 'AI Config', href: '/ai-config', icon: Bot },
+    { name: 'Config Generale', href: '/general-config', icon: Globe },
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 

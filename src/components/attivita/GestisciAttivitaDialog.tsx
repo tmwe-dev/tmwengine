@@ -179,45 +179,83 @@ export function GestisciAttivitaDialog({
           <div>
             {/* Form di modifica */}
             <div className="space-y-3">
-              {/* Stato e Priorità - 1/4 larghezza, allineati a sinistra */}
-              <div className="flex gap-2 items-end">
-                <div className="w-32">
-                  <Label htmlFor="stato" className="text-sm">Stato</Label>
-                  <Select 
-                    value={formData.stato} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="aperta">Aperta</SelectItem>
-                      <SelectItem value="in_corso">In Corso</SelectItem>
-                      <SelectItem value="completata">Completata</SelectItem>
-                      <SelectItem value="annullata">Annullata</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Prima riga: Stato, Priorità, Icona (a sinistra) e Scadenza (a destra) */}
+              <div className="flex justify-between items-end">
+                <div className="flex gap-2 items-end">
+                  <div className="w-32">
+                    <Label htmlFor="stato" className="text-sm">Stato</Label>
+                    <Select 
+                      value={formData.stato} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="aperta">Aperta</SelectItem>
+                        <SelectItem value="in_corso">In Corso</SelectItem>
+                        <SelectItem value="completata">Completata</SelectItem>
+                        <SelectItem value="annullata">Annullata</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="w-32">
+                    <Label htmlFor="priorita" className="text-sm">Priorità</Label>
+                    <Select 
+                      value={formData.priorita} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Media</SelectItem>
+                        <SelectItem value="bassa">Bassa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-center w-9 h-9 text-2xl">
+                    {getActivityIcon(activity.tipo)}
+                  </div>
                 </div>
 
-                <div className="w-32">
-                  <Label htmlFor="priorita" className="text-sm">Priorità</Label>
-                  <Select 
-                    value={formData.priorita} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="bassa">Bassa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center justify-center w-9 h-9 text-2xl">
-                  {getActivityIcon(activity.tipo)}
+                {/* Scadenza a destra */}
+                <div>
+                  <Label className="text-sm">Scadenza</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-36 justify-start text-left font-normal h-9 text-sm",
+                            !selectedDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-1 h-3 w-3" />
+                          {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="w-24 h-9 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -261,42 +299,6 @@ export function GestisciAttivitaDialog({
                   onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
                   className="h-[250px] text-sm resize-none"
                 />
-              </div>
-
-              {/* Scadenza compatta - una sola colonna */}
-              <div className="max-w-xs">
-                <Label className="text-sm">Scadenza</Label>
-                <div className="flex gap-2 mt-1">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-36 justify-start text-left font-normal h-9 text-sm",
-                          !selectedDate && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-1 h-3 w-3" />
-                        {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-24 h-9 text-sm"
-                  />
-                </div>
               </div>
 
               {/* Note - metà pagina, 250px altezza, allineate a sinistra */}

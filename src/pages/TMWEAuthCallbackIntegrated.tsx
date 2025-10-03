@@ -180,11 +180,16 @@ const TMWEAuthCallbackIntegrated = () => {
         
         const { supabase } = await import('@/integrations/supabase/client');
         
+        // Generate a consistent but short password (max 72 chars for Supabase)
+        // Use a hash of clientId to make it consistent across sessions
+        const shortPassword = btoa(clientId).substring(0, 40) + '_tmwe_auth';
+        console.log('🔑 Password length:', shortPassword.length, 'caracteres (max 72)');
+        
         // Try to sign in first
         console.log('🔑 Intentando sign in...');
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: userEmail,
-          password: tokenData.access_token,
+          password: shortPassword,
         });
 
         console.log('📊 Resultado del sign in:');
@@ -197,11 +202,12 @@ const TMWEAuthCallbackIntegrated = () => {
           console.log('🆕 Sign in falló, intentando sign up...');
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: userEmail,
-            password: tokenData.access_token,
+            password: shortPassword,
             options: {
               emailRedirectTo: `${window.location.origin}/`,
               data: {
                 tmwe_authenticated: true,
+                tmwe_client_id: clientId.substring(0, 20),
               }
             }
           });

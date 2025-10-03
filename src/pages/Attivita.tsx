@@ -1412,7 +1412,20 @@ export default function Attivita() {
           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="align-middle">
+                      <TableCell 
+                        className="align-middle cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activity.scadenza) {
+                            const scadenzaDate = new Date(activity.scadenza);
+                            setFilterDate(scadenzaDate);
+                            toast({
+                              title: "Filtro data applicato",
+                              description: `Visualizzazione attività del ${format(scadenzaDate, 'dd MMM yyyy')}`,
+                            });
+                          }
+                        }}
+                      >
                         {activity.scadenza ? (
                           <div className="space-y-1">
             <div className="font-semibold text-blue-600">

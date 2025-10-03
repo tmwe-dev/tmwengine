@@ -279,19 +279,13 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
                   <div
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, target.key)}
-                    className="min-h-[60px] border-2 border-dashed border-purple-300/30 rounded-lg p-3 transition-all relative overflow-hidden"
+                    className="min-h-[60px] border-2 border-dashed border-purple-300/30 rounded-lg p-3 transition-all"
                     style={{
                       background: `linear-gradient(to left, rgba(216, 180, 254, 0.1) 0%, rgba(216, 180, 254, 0.1) 35%, transparent 35%)`,
                     }}
                   >
-                    <div 
-                      className="absolute inset-0 opacity-30 pointer-events-none"
-                      style={{
-                        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(216, 180, 254, 0.2) 10px, rgba(216, 180, 254, 0.2) 20px)`
-                      }}
-                    />
                     {mapping?.sourceColumn ? (
-                      <div className="flex items-center justify-between rounded px-3 py-2 shadow-sm relative z-10">
+                      <div className="flex items-center justify-between rounded px-3 py-2 shadow-sm">
                         <div className="flex items-center gap-2">
                           <GripVertical className="h-4 w-4 text-muted-foreground" />
                           <span className="font-mono text-sm">{mapping.sourceColumn}</span>
@@ -305,7 +299,7 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
                         </Button>
                       </div>
                     ) : (
-                      <div className="text-center text-sm text-muted-foreground py-4 relative z-10">
+                      <div className="text-center text-sm text-muted-foreground py-4">
                         Trascina qui una colonna del file
                       </div>
                     )}

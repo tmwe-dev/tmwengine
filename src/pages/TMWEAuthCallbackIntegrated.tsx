@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { setApiConfigToDB } from '@/lib/tmwe-api-integrated';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
@@ -134,104 +134,70 @@ const TMWEAuthCallbackIntegrated = () => {
         
         let userEmail = tokenData.email;
         
-        // Si no viene el email en la respuesta, usar un email genérico válido
+        // Si no viene el email en la respuesta, mostrar error
         if (!userEmail) {
-          console.warn('⚠️ No se recibió email en la respuesta del token, usando email genérico');
-          userEmail = `tmwe_${clientId.substring(0, 16)}@tmweauth.app`;
-          console.log('📧 Email generado:', userEmail);
-        } else {
-          console.log('✅ Email del usuario:', userEmail);
+          console.error('❌ No se recibió email en la respuesta del token');
+          throw new Error('No se recibió email del API de TMWE');
         }
-
-        // Sign in or sign up user in Supabase using the email from TMWE
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('🔐 AUTENTICACIÓN CON SUPABASE');
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('📧 Email a usar:', userEmail);
         
-        const { supabase } = await import('@/integrations/supabase/client');
-        
-        // Generate a consistent but short password (max 72 chars for Supabase)
-        // Use a hash of clientId to make it consistent across sessions
-        const shortPassword = btoa(clientId).substring(0, 40) + '_tmwe_auth';
-        console.log('🔑 Password length:', shortPassword.length, 'caracteres (max 72)');
-        
-        // Try to sign in first
-        console.log('🔑 Intentando sign in...');
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: userEmail,
-          password: shortPassword,
-        });
+        console.log('✅ Email del usuario:', userEmail);
 
-        console.log('📊 Resultado del sign in:');
-        console.log('  - Tiene datos:', !!signInData);
-        console.log('  - Tiene error:', !!signInError);
-        if (signInError) console.log('  - Error:', signInError.message);
-
-        // If sign in fails, create new account
-        if (signInError) {
-          console.log('🆕 Sign in falló, intentando sign up...');
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: userEmail,
-            password: shortPassword,
-            options: {
-              emailRedirectTo: `${window.location.origin}/`,
-              data: {
-                tmwe_authenticated: true,
-                tmwe_client_id: clientId.substring(0, 20),
-              }
-            }
-          });
-
-          console.log('📊 Resultado del sign up:');
-          console.log('  - Tiene datos:', !!signUpData);
-          console.log('  - Tiene usuario:', !!signUpData?.user);
-          console.log('  - Tiene sesión:', !!signUpData?.session);
-          console.log('  - Tiene error:', !!signUpError);
-          if (signUpError) console.log('  - Error:', signUpError.message);
-
-          if (signUpError) {
-            console.error('❌ Error en Supabase signup:', signUpError);
-            throw new Error(`Errore registrazione: ${signUpError.message}`);
-          }
-
-          // Check if email confirmation is required
-          if (signUpData.user && !signUpData.session) {
-            console.warn('⚠️ Se requiere confirmación de email');
-            setError('È richiesta la conferma email. Controlla la tua casella di posta.');
-            toast.error('Conferma la tua email per completare la registrazione');
-            return;
-          }
-        }
-
-        // Verify user is authenticated
-        console.log('🔍 Verificando sesión activa...');
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('📊 Sesión actual:');
-        console.log('  - Tiene sesión:', !!session);
-        console.log('  - Usuario:', session?.user?.email);
-        
-        if (!session) {
-          console.error('❌ No hay sesión activa después de autenticación');
-          throw new Error('Autenticazione fallita: nessuna sessione attiva');
-        }
-
-        console.log('✅ Usuario autenticado exitosamente');
-        
-        // Save TMWE credentials to Supabase database
+        // Save TMWE credentials to database
         console.log('═══════════════════════════════════════════════════════');
         console.log('💾 GUARDANDO CREDENCIALES TMWE');
         console.log('═══════════════════════════════════════════════════════');
         
-        await setApiConfigToDB({
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token,
-          expiresAt,
-          clientId,
-          clientSecret,
-        });
+        // Check if credentials already exist for this email
+        const { data: existingCreds } = await supabase
+          .from('user_tmwe_credentials')
+          .select('*')
+          .eq('email', userEmail)
+          .maybeSingle();
 
-        console.log('✅ Credenciales guardadas');
+        if (existingCreds) {
+          // Update existing credentials
+          console.log('🔄 Actualizando credenciales existentes para:', userEmail);
+          const { error: updateError } = await supabase
+            .from('user_tmwe_credentials')
+            .update({
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token,
+              expires_at: expiresAt,
+              client_id: clientId,
+              client_secret: clientSecret,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('email', userEmail);
+
+          if (updateError) {
+            console.error('❌ Error actualizando credenciales:', updateError);
+            throw updateError;
+          }
+        } else {
+          // Insert new credentials
+          console.log('🆕 Creando nuevas credenciales para:', userEmail);
+          const { error: insertError } = await supabase
+            .from('user_tmwe_credentials')
+            .insert({
+              email: userEmail,
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token,
+              expires_at: expiresAt,
+              client_id: clientId,
+              client_secret: clientSecret,
+            });
+
+          if (insertError) {
+            console.error('❌ Error insertando credenciales:', insertError);
+            throw insertError;
+          }
+        }
+
+        console.log('✅ Credenciales guardadas exitosamente');
+
+        // Save email to session storage for the app to use
+        sessionStorage.setItem('tmwe_user_email', userEmail);
+        sessionStorage.setItem('tmwe_access_token', tokenData.access_token);
 
         // Clear OAuth session data
         sessionStorage.removeItem('oauth_state');

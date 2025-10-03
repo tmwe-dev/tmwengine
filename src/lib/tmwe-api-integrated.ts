@@ -15,14 +15,14 @@ const OAUTH_CLIENT_SECRET = '04d26799b3ec0a82dec492c2cb4a17a9ff20cabcde13166bd33
 
 // Load credentials from Supabase database
 export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const userEmail = sessionStorage.getItem('tmwe_user_email');
   
-  if (!user) return null;
+  if (!userEmail) return null;
 
   const { data, error } = await supabase
     .from('user_tmwe_credentials')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('email', userEmail)
     .maybeSingle();
 
   if (error || !data) return null;
@@ -37,15 +37,11 @@ export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
 };
 
 // Save credentials to Supabase database
-export const setApiConfigToDB = async (config: ApiConfig): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) throw new Error('User must be authenticated');
-
+export const setApiConfigToDB = async (config: ApiConfig & { email: string }): Promise<void> => {
   const { error } = await supabase
     .from('user_tmwe_credentials')
     .upsert({
-      user_id: user.id,
+      email: config.email,
       access_token: config.accessToken,
       refresh_token: config.refreshToken || null,
       expires_at: config.expiresAt || null,
@@ -54,18 +50,23 @@ export const setApiConfigToDB = async (config: ApiConfig): Promise<void> => {
     });
 
   if (error) throw error;
+  
+  sessionStorage.setItem('tmwe_user_email', config.email);
 };
 
 // Clear credentials from database
 export const clearApiConfigFromDB = async (): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const userEmail = sessionStorage.getItem('tmwe_user_email');
   
-  if (!user) return;
+  if (!userEmail) return;
 
   await supabase
     .from('user_tmwe_credentials')
     .delete()
-    .eq('user_id', user.id);
+    .eq('email', userEmail);
+    
+  sessionStorage.removeItem('tmwe_user_email');
+  sessionStorage.removeItem('tmwe_access_token');
 };
 
 // OAuth2 Authorization Code Flow - Según OpenAPI spec 3.0.4
@@ -130,7 +131,9 @@ export const initiateAuthorizationCodeFlow = (): void => {
 // Refresh access token
 export const refreshAccessToken = async (): Promise<boolean> => {
   const config = await getApiConfigFromDB();
-  if (!config?.refreshToken || !config?.clientId) {
+  const userEmail = sessionStorage.getItem('tmwe_user_email');
+  
+  if (!config?.refreshToken || !config?.clientId || !userEmail) {
     return false;
   }
 
@@ -157,10 +160,12 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     const expiresAt = Date.now() + (data.expires_in * 1000);
     
     await setApiConfigToDB({
-      ...config,
+      email: userEmail,
       accessToken: data.access_token,
       refreshToken: data.refresh_token || config.refreshToken,
       expiresAt,
+      clientId: config.clientId,
+      clientSecret: config.clientSecret || OAUTH_CLIENT_SECRET,
     });
 
     return true;

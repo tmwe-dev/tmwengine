@@ -125,20 +125,7 @@ export const EmailList = ({
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 min-w-[200px]">
-                  {selectedEmailId === email.id && emailDetail && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDetailPopup?.();
-                      }}
-                      className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                    >
-                      <Maximize2 className="h-3 w-3" />
-                    </Button>
-                  )}
+                <div className="min-w-[200px]">
                   <p className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -158,6 +145,17 @@ export const EmailList = ({
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDetailPopup?.();
+                    }}
+                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </Button>
                   {!email.read && (
                     <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
                   )}
@@ -198,19 +196,6 @@ export const EmailList = ({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1 overflow-hidden">
               <div className="flex items-center gap-2">
-                {selectedEmailId === email.id && emailDetail && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                  </Button>
-                )}
                 <p className={cn(
                   'truncate text-sm',
                   !email.read && 'font-semibold text-email-unread'
@@ -231,9 +216,22 @@ export const EmailList = ({
               </h3>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <span className="whitespace-nowrap text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDetailPopup?.();
+                  }}
+                  className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </Button>
+              </div>
               <div className="flex gap-1">
                 {email.starred && (
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -272,19 +270,6 @@ export const EmailList = ({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1 overflow-hidden">
               <div className="flex items-center gap-2">
-                {selectedEmailId === currentEmail.id && emailDetail && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDetailPopup?.();
-                    }}
-                    className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                  </Button>
-                )}
                 <p className={cn(
                   'truncate text-sm',
                   !currentEmail.read && 'font-semibold text-email-unread'
@@ -305,9 +290,22 @@ export const EmailList = ({
               </h3>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <span className="whitespace-nowrap text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(currentEmail.date), { addSuffix: true })}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(currentEmail.date), { addSuffix: true })}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDetailPopup?.();
+                  }}
+                  className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </Button>
+              </div>
               <div className="flex gap-1">
                 {currentEmail.starred && (
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

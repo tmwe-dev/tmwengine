@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, Trash2, Edit2, Save, X } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AIDataValidatorProps {
   importLogId: string;
@@ -32,6 +34,8 @@ export function AIDataValidator({ importLogId, onProcessComplete, initialPrompt 
   const [processing, setProcessing] = useState(false);
   const [additionalPrompt, setAdditionalPrompt] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState(initialPrompt);
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editedData, setEditedData] = useState<any>({});
   const [mappingStatus, setMappingStatus] = useState<{
     mapped: string[];
     unmapped: string[];
@@ -137,6 +141,80 @@ export function AIDataValidator({ importLogId, onProcessComplete, initialPrompt 
     return Object.keys(tempData[0].raw_data || {});
   };
 
+  const handleDeleteRow = async (rowId: string) => {
+    try {
+      const { error } = await supabase
+        .from('temp_ai_import')
+        .delete()
+        .eq('id', rowId);
+
+      if (error) throw error;
+
+      setTempData(prev => prev.filter(row => row.id !== rowId));
+      toast.success('Record eliminato con successo');
+    } catch (error: any) {
+      toast.error(`Errore eliminazione: ${error.message}`);
+    }
+  };
+
+  const handleStartEdit = (row: any) => {
+    setEditingRowId(row.id);
+    setEditedData({ ...row.raw_data });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRowId(null);
+    setEditedData({});
+  };
+
+  const handleSaveEdit = async (rowId: string) => {
+    try {
+      const { error } = await supabase
+        .from('temp_ai_import')
+        .update({ raw_data: editedData })
+        .eq('id', rowId);
+
+      if (error) throw error;
+
+      setTempData(prev => prev.map(row => 
+        row.id === rowId ? { ...row, raw_data: editedData } : row
+      ));
+      
+      setEditingRowId(null);
+      setEditedData({});
+      toast.success('Modifiche salvate');
+    } catch (error: any) {
+      toast.error(`Errore salvataggio: ${error.message}`);
+    }
+  };
+
+  const handleFieldChange = (fieldName: string, value: string) => {
+    setEditedData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
+  const validateField = (fieldName: string, value: string): boolean => {
+    if (!value) return true; // Campo vuoto è valido
+    
+    const normalizedField = fieldName.toLowerCase();
+    
+    // Validazione email
+    if (normalizedField.includes('email')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(value);
+    }
+    
+    // Validazione telefono
+    if (normalizedField.includes('phone') || normalizedField.includes('cell')) {
+      const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+      return phoneRegex.test(value);
+    }
+    
+    return true;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -202,7 +280,7 @@ export function AIDataValidator({ importLogId, onProcessComplete, initialPrompt 
         <CardHeader>
           <CardTitle>Anteprima Dati Importati ({tempData.length} record)</CardTitle>
           <CardDescription>
-            Dati originali dal file. Verifica la correttezza prima dell'elaborazione finale.
+            Dati originali dal file. Clicca su Modifica per editare i valori, o Elimina per rimuovere record non validi.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -216,19 +294,95 @@ export function AIDataValidator({ importLogId, onProcessComplete, initialPrompt 
                       {header}
                     </TableHead>
                   ))}
+                  <TableHead className="w-32">Azioni</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tempData.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.row_number}</TableCell>
-                    {getRawFieldHeaders().map((header) => (
-                      <TableCell key={header} className="whitespace-nowrap">
-                        {String(row.raw_data[header] || '')}
+                {tempData.map((row) => {
+                  const isEditing = editingRowId === row.id;
+                  
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.row_number}</TableCell>
+                      {getRawFieldHeaders().map((header) => {
+                        const value = isEditing ? editedData[header] : row.raw_data[header];
+                        const isValid = isEditing ? validateField(header, editedData[header] || '') : true;
+                        
+                        return (
+                          <TableCell key={header} className="whitespace-nowrap">
+                            {isEditing ? (
+                              <Input
+                                value={editedData[header] || ''}
+                                onChange={(e) => handleFieldChange(header, e.target.value)}
+                                className={`min-w-[150px] ${!isValid ? 'border-red-500' : ''}`}
+                              />
+                            ) : (
+                              <span className={!validateField(header, String(value || '')) ? 'text-red-500' : ''}>
+                                {String(value || '')}
+                              </span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleSaveEdit(row.id)}
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleCancelEdit}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleStartEdit(row)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Sei sicuro di voler eliminare questo record? L'azione non può essere annullata.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteRow(row.id)}>
+                                      Elimina
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

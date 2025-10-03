@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Loader2 } from 'lucide-react';
 
@@ -13,14 +12,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requireAdmin = false 
 }) => {
-  const { user, isLoading, isAdmin } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, isLoading, navigate]);
+    const checkAuth = () => {
+      // Verificar si hay credenciales TMWE en sessionStorage
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      const accessToken = sessionStorage.getItem('tmwe_access_token');
+      
+      const authenticated = !!(userEmail && accessToken);
+      setIsAuthenticated(authenticated);
+      setIsLoading(false);
+      
+      if (!authenticated) {
+        navigate('/auth');
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   if (isLoading) {
     return (
@@ -35,11 +47,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return null; // Will redirect to /auth
   }
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin) {
+    // For now, we don't have admin roles with TMWE auth
+    // You can implement this later if needed
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Card className="max-w-md">

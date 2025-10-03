@@ -362,28 +362,34 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]" key={selectedEmailId}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" key={selectedEmailId}>
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
-          {selectedEmail ? (
-            <EmailDetail
-              email={selectedEmail}
-              onReply={handleReply}
-              onReplyAll={handleReplyAll}
-              onForward={handleForward}
-              onDelete={handleDelete}
-              onPrevious={handlePreviousEmail}
-              onNext={handleNextEmail}
-              hasPrevious={hasPreviousEmail()}
-              hasNext={hasNextEmail()}
-              onMarkAsRead={handleMarkAsRead}
-            />
-          ) : (
-            <div className="flex items-center justify-center p-8">
-              <p className="text-muted-foreground">No email selected</p>
-            </div>
-          )}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {isLoadingDetail ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Caricamento...</p>
+              </div>
+            ) : selectedEmail ? (
+              <EmailDetail
+                email={selectedEmail}
+                onReply={handleReply}
+                onReplyAll={handleReplyAll}
+                onForward={handleForward}
+                onDelete={handleDelete}
+                onPrevious={handlePreviousEmail}
+                onNext={handleNextEmail}
+                hasPrevious={hasPreviousEmail()}
+                hasNext={hasNextEmail()}
+                onMarkAsRead={handleMarkAsRead}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">No email selected</p>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

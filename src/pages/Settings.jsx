@@ -44,8 +44,8 @@ const Settings = () => {
     attivo: false
   });
 
-  const [aiConfig, setAiConfig] = useState({
-    id: null,
+  const [aiConfigs, setAiConfigs] = useState([]);
+  const [newAiConfig, setNewAiConfig] = useState({
     provider: '',
     modello: '',
     apiKey: '',
@@ -93,20 +93,20 @@ const Settings = () => {
 
   const loadConfigurations = async () => {
     try {
-      // Carica configurazione AI
+      // Carica tutte le configurazioni AI
       const { data: aiData } = await supabase
         .from('config_ai')
         .select('*')
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (aiData) {
-        setAiConfig({
-          id: aiData.id,
-          provider: aiData.provider,
-          modello: aiData.modello,
-          apiKey: aiData.api_key,
-          attivo: aiData.attivo
-        });
+        setAiConfigs(aiData.map(config => ({
+          id: config.id,
+          provider: config.provider,
+          modello: config.modello,
+          apiKey: config.api_key,
+          attivo: config.attivo
+        })));
       }
 
       // Carica configurazione email
@@ -261,10 +261,10 @@ const Settings = () => {
     }
   };
 
-  const handleSaveAiConfig = async () => {
+  const handleAddAiConfig = async () => {
     setSaving(true);
     try {
-      if (!aiConfig.provider || !aiConfig.modello || !aiConfig.apiKey) {
+      if (!newAiConfig.provider || !newAiConfig.modello || !newAiConfig.apiKey) {
         toast({
           title: "Errore",
           description: "Provider, modello e API Key sono obbligatori",
@@ -273,49 +273,111 @@ const Settings = () => {
         return;
       }
 
-      if (aiConfig.id) {
-        // Aggiorna configurazione esistente
-        const { error } = await supabase
+      // Se questo sarà l'unico config attivo, disattiva gli altri
+      if (newAiConfig.attivo) {
+        await supabase
           .from('config_ai')
-          .update({
-            provider: aiConfig.provider,
-            modello: aiConfig.modello,
-            api_key: aiConfig.apiKey,
-            attivo: aiConfig.attivo
-          })
-          .eq('id', aiConfig.id);
-
-        if (error) throw error;
-      } else {
-        // Crea nuova configurazione
-        const { data, error } = await supabase
-          .from('config_ai')
-          .insert({
-            provider: aiConfig.provider,
-            modello: aiConfig.modello,
-            api_key: aiConfig.apiKey,
-            attivo: aiConfig.attivo
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setAiConfig(prev => ({ ...prev, id: data.id }));
+          .update({ attivo: false })
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Disattiva tutti
       }
+
+      // Crea nuova configurazione
+      const { error } = await supabase
+        .from('config_ai')
+        .insert({
+          provider: newAiConfig.provider,
+          modello: newAiConfig.modello,
+          api_key: newAiConfig.apiKey,
+          attivo: newAiConfig.attivo
+        });
+
+      if (error) throw error;
 
       toast({
         title: "Successo",
-        description: "Configurazione AI salvata con successo",
+        description: "Configurazione AI aggiunta con successo",
       });
+
+      // Reset form
+      setNewAiConfig({
+        provider: '',
+        modello: '',
+        apiKey: '',
+        attivo: false
+      });
+
+      // Ricarica configurazioni
+      await loadConfigurations();
     } catch (error) {
-      console.error('Errore salvataggio AI config:', error);
+      console.error('Errore aggiunta AI config:', error);
       toast({
         title: "Errore",
-        description: "Impossibile salvare la configurazione AI",
+        description: "Impossibile aggiungere la configurazione AI",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleAiConfig = async (configId, currentStatus) => {
+    try {
+      // Se stiamo attivando questo config, disattiviamo gli altri
+      if (!currentStatus) {
+        await supabase
+          .from('config_ai')
+          .update({ attivo: false })
+          .neq('id', configId);
+      }
+
+      // Toggle dello stato attuale
+      const { error } = await supabase
+        .from('config_ai')
+        .update({ attivo: !currentStatus })
+        .eq('id', configId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Successo",
+        description: `Configurazione ${!currentStatus ? 'attivata' : 'disattivata'}`,
+      });
+
+      // Ricarica configurazioni
+      await loadConfigurations();
+    } catch (error) {
+      console.error('Errore toggle AI config:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare la configurazione",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAiConfig = async (configId) => {
+    try {
+      const { error } = await supabase
+        .from('config_ai')
+        .delete()
+        .eq('id', configId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Successo",
+        description: "Configurazione AI eliminata",
+      });
+
+      // Ricarica configurazioni
+      await loadConfigurations();
+    } catch (error) {
+      console.error('Errore eliminazione AI config:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare la configurazione",
+        variant: "destructive",
+      });
     }
   };
 
@@ -861,129 +923,167 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
-                Configurazione AI per Classificazione Email
+                Servizi AI Configurati
               </CardTitle>
               <CardDescription>
-                Configura il provider AI per classificazione automatica email inbound
+                Gestisci multipli provider AI per classificazione automatica email
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="aiProvider">Provider AI</Label>
-                  <Select value={aiConfig.provider} onValueChange={(value) => 
-                    setAiConfig(prev => ({ ...prev, provider: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona provider AI" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="chatgpt">OpenAI ChatGPT</SelectItem>
-                      <SelectItem value="claude">Anthropic Claude</SelectItem>
-                      <SelectItem value="gemini">Google Gemini</SelectItem>
-                      <SelectItem value="mistral">Mistral AI</SelectItem>
-                      <SelectItem value="perplexity">Perplexity</SelectItem>
-                      <SelectItem value="cohere">Cohere</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Lista configurazioni esistenti */}
+              {aiConfigs.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Servizi AI Attivi</Label>
+                  {aiConfigs.map((config) => (
+                    <Card key={config.id} className="border-2">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium capitalize">{config.provider}</span>
+                              {config.attivo && (
+                                <Badge variant="default" className="text-xs">Attivo</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{config.modello}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={config.attivo}
+                              onCheckedChange={() => handleToggleAiConfig(config.id, config.attivo)}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAiConfig(config.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="aiModello">Modello</Label>
-                  <Select value={aiConfig.modello} onValueChange={(value) => 
-                    setAiConfig(prev => ({ ...prev, modello: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona modello" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {aiConfig.provider === 'chatgpt' && (
-                        <>
-                          <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
-                          <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
-                          <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
-                          <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
-                          <SelectItem value="gpt-4.1-mini-2025-04-14">GPT-4.1 Mini</SelectItem>
-                          <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
-                          <SelectItem value="o4-mini-2025-04-16">O4 Mini (Reasoning)</SelectItem>
-                          <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                          <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                          <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                          <SelectItem value="gpt-4">GPT-4</SelectItem>
-                          <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                        </>
-                      )}
-                      {aiConfig.provider === 'claude' && (
-                        <>
-                          <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1 (Latest)</SelectItem>
-                          <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
-                          <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
-                          <SelectItem value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</SelectItem>
-                          <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
-                          <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                          <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
-                          <SelectItem value="claude-3-haiku">Claude 3 Haiku</SelectItem>
-                        </>
-                      )}
-                      {aiConfig.provider === 'gemini' && (
-                        <>
-                          <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</SelectItem>
-                          <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-                          <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-                          <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-                          <SelectItem value="gemini-pro-vision">Gemini Pro Vision</SelectItem>
-                        </>
-                      )}
-                      {aiConfig.provider === 'mistral' && (
-                        <>
-                          <SelectItem value="mistral-large-2411">Mistral Large (Latest)</SelectItem>
-                          <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
-                          <SelectItem value="codestral-2405">Codestral</SelectItem>
-                          <SelectItem value="mixtral-8x7b">Mixtral 8x7B</SelectItem>
-                        </>
-                      )}
-                      {aiConfig.provider === 'perplexity' && (
-                        <>
-                          <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large (Online)</SelectItem>
-                          <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small (Online)</SelectItem>
-                          <SelectItem value="llama-3.1-sonar-huge-128k-online">Llama 3.1 Sonar Huge (Online)</SelectItem>
-                        </>
-                      )}
-                      {aiConfig.provider === 'cohere' && (
-                        <>
-                          <SelectItem value="command-r-plus">Command R+</SelectItem>
-                          <SelectItem value="command-r">Command R</SelectItem>
-                          <SelectItem value="command">Command</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {renderSecretField(
-                "API Key AI",
-                aiConfig.apiKey,
-                "aiApiKey",
-                (value) => setAiConfig(prev => ({ ...prev, apiKey: value })),
-                "Inserisci la tua API key del provider AI"
               )}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="aiAttivo"
-                    checked={aiConfig.attivo}
-                    onCheckedChange={(checked) => setAiConfig(prev => ({ ...prev, attivo: checked }))}
-                  />
-                  <Label htmlFor="aiAttivo">Classificazione AI attiva</Label>
+              {/* Form nuova configurazione */}
+              <div className="border-t pt-6 space-y-4">
+                <Label className="text-sm font-medium">Aggiungi Nuovo Servizio AI</Label>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="newAiProvider" className="text-sm">Provider AI</Label>
+                    <Select 
+                      value={newAiConfig.provider} 
+                      onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, provider: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Seleziona provider AI" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="chatgpt">OpenAI ChatGPT</SelectItem>
+                        <SelectItem value="claude">Anthropic Claude</SelectItem>
+                        <SelectItem value="gemini">Google Gemini</SelectItem>
+                        <SelectItem value="mistral">Mistral AI</SelectItem>
+                        <SelectItem value="perplexity">Perplexity</SelectItem>
+                        <SelectItem value="cohere">Cohere</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="newAiModello" className="text-sm">Modello</Label>
+                    <Select 
+                      value={newAiConfig.modello} 
+                      onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Seleziona modello" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {newAiConfig.provider === 'chatgpt' && (
+                          <>
+                            <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
+                            <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
+                            <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
+                            <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
+                            <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
+                            <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                            <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                          </>
+                        )}
+                        {newAiConfig.provider === 'claude' && (
+                          <>
+                            <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1</SelectItem>
+                            <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
+                            <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
+                          </>
+                        )}
+                        {newAiConfig.provider === 'gemini' && (
+                          <>
+                            <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash</SelectItem>
+                            <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                            <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                          </>
+                        )}
+                        {newAiConfig.provider === 'mistral' && (
+                          <>
+                            <SelectItem value="mistral-large-2411">Mistral Large</SelectItem>
+                            <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
+                          </>
+                        )}
+                        {newAiConfig.provider === 'perplexity' && (
+                          <>
+                            <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large</SelectItem>
+                            <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small</SelectItem>
+                          </>
+                        )}
+                        {newAiConfig.provider === 'cohere' && (
+                          <>
+                            <SelectItem value="command-r-plus">Command R+</SelectItem>
+                            <SelectItem value="command-r">Command R</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <Button onClick={handleSaveAiConfig} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Salvataggio...' : 'Salva Configurazione'}
-                </Button>
+                {renderSecretField(
+                  "API Key",
+                  newAiConfig.apiKey,
+                  "newAiApiKey",
+                  (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
+                  "Inserisci la tua API key del provider AI"
+                )}
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="newAiAttivo"
+                      checked={newAiConfig.attivo}
+                      onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
+                    />
+                    <Label htmlFor="newAiAttivo" className="text-sm">
+                      Imposta come servizio attivo
+                    </Label>
+                  </div>
+
+                  <Button onClick={handleAddAiConfig} disabled={saving} className="h-9">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Aggiunta...' : 'Aggiungi Servizio'}
+                  </Button>
+                </div>
               </div>
+
+              <Alert>
+                <Bot className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Puoi configurare multipli servizi AI e scegliere quale usare attivandolo. Solo un servizio può essere attivo alla volta.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         )}

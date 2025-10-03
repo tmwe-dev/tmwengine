@@ -260,7 +260,7 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
           return (
             <Card key={target.key} className={cn(
               "transition-colors",
-              !isMapped && "border-red-300 bg-red-50/50"
+              !isMapped && "border-red-300"
             )}>
               <CardContent className="p-4">
                 <div className="space-y-3">

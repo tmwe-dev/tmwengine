@@ -68,7 +68,7 @@ export const clearApiConfigFromDB = async (): Promise<void> => {
     .eq('user_id', user.id);
 };
 
-// OAuth2 Authorization Code Flow
+// OAuth2 Authorization Code Flow - Según OpenAPI spec 3.0.4
 export const initiateAuthorizationCodeFlow = (): void => {
   const clientId = OAUTH_CLIENT_ID;
   const clientSecret = OAUTH_CLIENT_SECRET;
@@ -77,8 +77,24 @@ export const initiateAuthorizationCodeFlow = (): void => {
     throw new Error('OAuth credentials not configured');
   }
 
+  // Validar que client_id cumple con el patrón requerido (^[a-f0-9]{32,}$)
+  if (!/^[a-f0-9]{32,}$/.test(clientId)) {
+    console.error('Invalid client_id format. Must be hexadecimal with minimum 32 characters');
+    throw new Error('Invalid OAuth client ID format');
+  }
+
   const state = Math.random().toString(36).substring(7) + Date.now().toString(36);
   const redirectUri = `${window.location.origin}/tmwe/callback`;
+  
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🚀 INICIANDO FLUJO OAUTH2 AUTHORIZATION CODE');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📋 Parámetros OAuth2:');
+  console.log('  - client_id:', clientId.substring(0, 20) + '...');
+  console.log('  - redirect_uri:', redirectUri);
+  console.log('  - response_type:', 'code');
+  console.log('  - state:', state);
+  console.log('  - scope:', 'read write');
   
   // Store OAuth config in session storage for callback
   sessionStorage.setItem('oauth_state', state);
@@ -86,13 +102,19 @@ export const initiateAuthorizationCodeFlow = (): void => {
   sessionStorage.setItem('oauth_client_secret', clientSecret);
   sessionStorage.setItem('oauth_redirect_uri', redirectUri);
   
-  // Build authorization URL
-  const authUrl = new URL('https://findair.it/erp/tmwe_json/auth');
+  console.log('💾 Datos guardados en sessionStorage');
+  
+  // Build authorization URL según OpenAPI spec
+  // Endpoint: GET /authorization
+  const authUrl = new URL('https://findair.it/erp/tmwe_json/authorization');
   authUrl.searchParams.append('client_id', clientId);
   authUrl.searchParams.append('redirect_uri', redirectUri);
-  authUrl.searchParams.append('response_type', 'code');
+  authUrl.searchParams.append('response_type', 'code');  // Siempre 'code' para Authorization Code flow
   authUrl.searchParams.append('state', state);
   authUrl.searchParams.append('scope', 'read write');
+  
+  console.log('🔗 Authorization URL:', authUrl.toString());
+  console.log('═══════════════════════════════════════════════════════');
   
   window.location.href = authUrl.toString();
 };

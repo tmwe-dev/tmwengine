@@ -12,6 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImportProgressMonitor } from '@/components/import/ImportProgressMonitor';
 import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
@@ -257,6 +259,7 @@ export default function ImportTemplates() {
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
+  const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [showFiltersArea, setShowFiltersArea] = useState(true);
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
@@ -356,6 +359,21 @@ export default function ImportTemplates() {
   }, [location.state, importLogs]);
 
   // Apply search and filters to records
+  const hasCompletedActivityToday = (contactId: string): boolean => {
+    const activities = getCompanyActivities(contactId);
+    const today = new Date();
+    const todayStart = startOfDay(today);
+    const todayEnd = endOfDay(today);
+    
+    return activities.some(activity => {
+      if (activity.stato !== 'completata') return false;
+      if (!activity.scadenza) return false;
+      
+      const activityDate = new Date(activity.scadenza);
+      return activityDate >= todayStart && activityDate <= todayEnd;
+    });
+  };
+
   useEffect(() => {
     let result = [...allRecords];
     
@@ -392,6 +410,11 @@ export default function ImportTemplates() {
       result = result.filter(record => record.note && record.note.trim() !== '');
     }
     
+    // Apply hide today activities filter
+    if (hideContactsWithTodayActivities) {
+      result = result.filter(record => !hasCompletedActivityToday(record.id));
+    }
+    
     // Apply legacy filters
     result = applyFilters(result, activeFilters);
     
@@ -404,12 +427,12 @@ export default function ImportTemplates() {
     const startIndex = currentPage * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     setViewingRecords(result.slice(startIndex, endIndex));
-  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, recordsPerPage, activeFilters, sortConfig, currentPage]);
+  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
 
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -2644,18 +2667,31 @@ export default function ImportTemplates() {
           {/* Controlli visibilità colonne - Solo desktop */}
           {!isMobile && (
             <div className="flex items-center justify-center border-b relative py-3 min-h-[60px]">
-              {/* Filtro "Solo con note" - a sinistra */}
+              {/* Filtro "Solo con note" e Switch - a sinistra */}
               <div className="absolute left-4 z-10 bg-background px-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="has-notes-filter-desktop"
-                    checked={hasNotesFilter}
-                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                  />
-                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                    <StickyNote className="h-4 w-4 text-blue-500" />
-                    Solo con note
-                  </Label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="has-notes-filter-desktop"
+                      checked={hasNotesFilter}
+                      onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                    />
+                    <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+                      <StickyNote className="h-4 w-4 text-blue-500" />
+                      Solo con note
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="hide-today-activities"
+                      checked={hideContactsWithTodayActivities}
+                      onCheckedChange={setHideContactsWithTodayActivities}
+                    />
+                    <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer whitespace-nowrap">
+                      Nascondi attività oggi
+                    </Label>
+                  </div>
                 </div>
               </div>
 

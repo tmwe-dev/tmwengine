@@ -124,7 +124,9 @@ const App = () => (
             <Route path="/email-manager" element={
               <ProtectedRoute>
                 <IntegratedAuthGuard>
-                  <TMWEEmailDashboard />
+                  <CRMLayout>
+                    <TMWEEmailDashboard />
+                  </CRMLayout>
                 </IntegratedAuthGuard>
               </ProtectedRoute>
             } />

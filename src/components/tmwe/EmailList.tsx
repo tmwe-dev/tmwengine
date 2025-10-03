@@ -170,11 +170,11 @@ export const EmailList = ({
                 </div>
               </div>
               {selectedEmailId === email.id && emailDetail && (
-                <div className="w-full mt-3 pt-3 border-t">
+                <div className="w-full mt-2 pt-2 border-t max-h-[50px] overflow-hidden">
                   <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none"
+                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-2"
                     dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
+                      __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
                     }}
                   />
                 </div>
@@ -240,11 +240,11 @@ export const EmailList = ({
                 {email.subject || '(No Subject)'}
               </h3>
               {selectedEmailId === email.id && emailDetail ? (
-                <div className="mt-3 pt-3 border-t">
+                <div className="mt-2 pt-2 border-t max-h-[60px] overflow-hidden">
                   <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-3"
+                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-3"
                     dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 300) + (emailDetail.body.length > 300 ? '...' : '')
+                      __html: emailDetail.body.substring(0, 200) + (emailDetail.body.length > 200 ? '...' : '')
                     }}
                   />
                 </div>
@@ -328,11 +328,11 @@ export const EmailList = ({
                 {currentEmail.subject || '(No Subject)'}
               </h3>
               {selectedEmailId === currentEmail.id && emailDetail ? (
-                <div className="mt-3 pt-3 border-t">
+                <div className="mt-2 pt-2 border-t max-h-[50px] overflow-hidden">
                   <div 
-                    className="text-sm text-muted-foreground prose prose-sm max-w-none line-clamp-2"
+                    className="text-xs text-muted-foreground prose prose-sm max-w-none line-clamp-2"
                     dangerouslySetInnerHTML={{ 
-                      __html: emailDetail.body.substring(0, 150) + (emailDetail.body.length > 150 ? '...' : '')
+                      __html: emailDetail.body.substring(0, 120) + (emailDetail.body.length > 120 ? '...' : '')
                     }}
                   />
                 </div>

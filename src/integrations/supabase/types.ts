@@ -1162,6 +1162,42 @@ export type Database = {
           },
         ]
       }
+      ui_style_configs: {
+        Row: {
+          attivo: boolean
+          configurazione: Json
+          contesto: string
+          created_at: string
+          descrizione: string | null
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          configurazione: Json
+          contesto: string
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          configurazione?: Json
+          contesto?: string
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

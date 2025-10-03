@@ -8,13 +8,20 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const EmailDashboard = () => {
+  const isMobile = useIsMobile();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [detailPopupOpen, setDetailPopupOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showEmailList, setShowEmailList] = useState(true);
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -22,7 +29,24 @@ const EmailDashboard = () => {
   // Reset selected email when folder changes
   useEffect(() => {
     setSelectedEmailId(null);
-  }, [selectedFolder]);
+    if (isMobile) {
+      setShowEmailList(true);
+    }
+  }, [selectedFolder, isMobile]);
+
+  // Handle email selection on mobile
+  const handleEmailSelect = (emailId: string) => {
+    setSelectedEmailId(emailId);
+    if (isMobile) {
+      setShowEmailList(false);
+    }
+  };
+
+  // Handle back to list on mobile
+  const handleBackToList = () => {
+    setSelectedEmailId(null);
+    setShowEmailList(true);
+  };
 
   const { 
     data: messagesData,
@@ -217,21 +241,54 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col">
-      <EmailHeader onSearch={setSearchQuery} onCompose={() => setComposeOpen(true)} onSync={handleSync} />
+      <EmailHeader 
+        onSearch={setSearchQuery} 
+        onCompose={() => setComposeOpen(true)} 
+        onSync={handleSync}
+        onMenuClick={() => setSidebarOpen(true)}
+        isMobile={isMobile}
+      />
       
       <div className="flex flex-1 overflow-hidden">
-        <EmailSidebar
-          selectedFolder={selectedFolder}
-          onFolderSelect={setSelectedFolder}
-          onCompose={() => setComposeOpen(true)}
-          onSync={handleSync}
-        />
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <EmailSidebar
+            selectedFolder={selectedFolder}
+            onFolderSelect={setSelectedFolder}
+            onCompose={() => setComposeOpen(true)}
+            onSync={handleSync}
+          />
+        )}
 
-        <div className="flex-1">
+        {/* Mobile Sidebar Sheet */}
+        {isMobile && (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetContent side="left" className="w-[280px] p-0">
+              <EmailSidebar
+                selectedFolder={selectedFolder}
+                onFolderSelect={(folder) => {
+                  setSelectedFolder(folder);
+                  setSidebarOpen(false);
+                }}
+                onCompose={() => {
+                  setComposeOpen(true);
+                  setSidebarOpen(false);
+                }}
+                onSync={handleSync}
+              />
+            </SheetContent>
+          </Sheet>
+        )}
+
+        {/* Email List - Hidden on mobile when email is selected */}
+        <div className={cn(
+          "flex-1 overflow-hidden",
+          isMobile && !showEmailList && "hidden"
+        )}>
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}
-            onEmailSelect={setSelectedEmailId}
+            onEmailSelect={handleEmailSelect}
             loading={messagesLoading}
             onLoadMore={fetchNextPage}
             hasMore={hasNextPage}
@@ -241,6 +298,20 @@ const EmailDashboard = () => {
             onOpenDetailPopup={() => setDetailPopupOpen(true)}
           />
         </div>
+
+        {/* Email Detail - Full screen on mobile when email is selected */}
+        {isMobile && !showEmailList && selectedEmail && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EmailDetail
+              email={selectedEmail}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onBack={handleBackToList}
+              isMobile={true}
+            />
+          </div>
+        )}
       </div>
 
       <ComposeDialog

@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, RefreshCw, Mail } from 'lucide-react';
+import { Search, Plus, RefreshCw, Mail, Menu } from 'lucide-react';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
   onCompose: () => void;
   onSync: () => void;
+  onMenuClick?: () => void;
+  isMobile?: boolean;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -18,11 +20,23 @@ export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) =
   };
 
   return (
-    <header className="flex items-center justify-between border-b bg-card px-6 py-4">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          TMWE Email Manager
+    <header className="flex items-center justify-between border-b bg-card px-4 md:px-6 py-3 md:py-4">
+      <div className="flex items-center gap-2 md:gap-4">
+        {isMobile && onMenuClick && (
+          <Button 
+            onClick={onMenuClick} 
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+        
+        <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          {isMobile ? 'Email' : 'TMWE Email Manager'}
         </h1>
+        
         <Button 
           onClick={onCompose} 
           size="icon"
@@ -36,6 +50,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) =
             }} 
           />
         </Button>
+        
         <Button 
           onClick={onSync} 
           variant="outline"
@@ -46,13 +61,13 @@ export const EmailHeader = ({ onSearch, onCompose, onSync }: EmailHeaderProps) =
         </Button>
       </div>
 
-      <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-8">
+      <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-2 md:mx-8">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search emails..."
-            className="pl-10"
+            placeholder={isMobile ? "Search..." : "Search emails..."}
+            className="pl-10 text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

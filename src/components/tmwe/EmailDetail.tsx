@@ -13,7 +13,8 @@ import {
   Star,
   MoreVertical,
   Download,
-  Paperclip
+  Paperclip,
+  ArrowLeft
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 
@@ -31,7 +32,9 @@ interface EmailDetailProps {
   onReply: () => void;
   onReplyAll: () => void;
   onForward: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onBack?: () => void;
+  isMobile?: boolean;
 }
 
 export const EmailDetail = ({ 
@@ -39,7 +42,9 @@ export const EmailDetail = ({
   onReply, 
   onReplyAll, 
   onForward, 
-  onDelete 
+  onDelete,
+  onBack,
+  isMobile 
 }: EmailDetailProps) => {
   // Validate and parse date safely
   const emailDate = (() => {
@@ -152,38 +157,45 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card">
-      <div className="flex items-center justify-between border-b p-4">
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onReply}>
-            <Reply className="mr-2 h-4 w-4" />
-            Reply
+      <div className="flex items-center justify-between border-b p-3 md:p-4 gap-2">
+        <div className="flex gap-1 md:gap-2 flex-wrap">
+          {isMobile && onBack && (
+            <Button variant="outline" size="sm" onClick={onBack} className="mr-2">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={onReply} className="text-xs md:text-sm">
+            <Reply className="mr-0 md:mr-2 h-4 w-4" />
+            <span className="hidden md:inline">Reply</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onReplyAll}>
-            <ReplyAll className="mr-2 h-4 w-4" />
-            Reply All
+          <Button variant="outline" size="sm" onClick={onReplyAll} className="text-xs md:text-sm">
+            <ReplyAll className="mr-0 md:mr-2 h-4 w-4" />
+            <span className="hidden md:inline">Reply All</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onForward}>
-            <Forward className="mr-2 h-4 w-4" />
-            Forward
+          <Button variant="outline" size="sm" onClick={onForward} className="text-xs md:text-sm">
+            <Forward className="mr-0 md:mr-2 h-4 w-4" />
+            <span className="hidden md:inline">Forward</span>
           </Button>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon">
+        <div className="flex gap-1 md:gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <Star className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onDelete}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon">
+          {onDelete && (
+            <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:inline-flex">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-6 space-y-4">
+        <div className="p-4 md:p-6 space-y-4">
           <div>
-            <h1 className="text-2xl font-bold mb-4">{email.subject}</h1>
+            <h1 className="text-xl md:text-2xl font-bold mb-4">{email.subject}</h1>
             
             <Card>
               <CardHeader className="pb-3">

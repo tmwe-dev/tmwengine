@@ -169,13 +169,24 @@ export default function Tables() {
 
   const handleDeleteCategory = async (categoryName: string, categoryTables: TableInfo[]) => {
     setIsDeleting(true);
-    const toastId = toast.loading(`Eliminazione records da ${categoryTables.length} tabelle in corso...`);
+    
+    // Escludi chat_system_prompts dall'eliminazione di gruppo
+    const tablesToDelete = categoryTables.filter(t => t.table_name !== 'chat_system_prompts');
+    
+    if (tablesToDelete.length === 0) {
+      toast.error('Nessuna tabella da eliminare in questa categoria');
+      setIsDeleting(false);
+      setDeleteCategory(null);
+      return;
+    }
+    
+    const toastId = toast.loading(`Eliminazione records da ${tablesToDelete.length} tabelle in corso...`);
     
     try {
       let totalDeleted = 0;
       let hasErrors = false;
       
-      for (const table of categoryTables) {
+      for (const table of tablesToDelete) {
         const { error } = await supabase
           .from(table.table_name as any)
           .delete()
@@ -202,6 +213,29 @@ export default function Tables() {
       await loadTables();
       setIsDeleting(false);
       setDeleteCategory(null);
+    }
+  };
+
+  const handleDeleteTable = async (tableName: string, rowCount: number) => {
+    const toastId = toast.loading(`Eliminazione ${rowCount} record da ${tableName}...`);
+    
+    try {
+      const { error } = await supabase
+        .from(tableName as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      if (error) {
+        console.error(`Errore eliminazione da ${tableName}:`, error);
+        toast.error(`Errore nell'eliminazione da ${tableName}`, { id: toastId });
+        return;
+      }
+      
+      toast.success(`${rowCount} record eliminati da ${tableName}`, { id: toastId });
+      await loadTables();
+    } catch (error: any) {
+      console.error('Errore eliminazione tabella:', error);
+      toast.error('Errore durante l\'eliminazione', { id: toastId });
     }
   };
 
@@ -322,9 +356,29 @@ export default function Tables() {
                         <Database className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span className="font-medium text-sm truncate">{table.table_name}</span>
                       </div>
-                      <span className="text-sm font-semibold whitespace-nowrap ml-2">
-                        {table.row_count}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold whitespace-nowrap">
+                          {table.row_count}
+                        </span>
+                        {table.table_name === 'chat_system_prompts' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (table.row_count > 0) {
+                                if (confirm(`Eliminare tutti i ${table.row_count} prompt di sistema?`)) {
+                                  handleDeleteTable(table.table_name, table.row_count);
+                                }
+                              }
+                            }}
+                            disabled={table.row_count === 0}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -347,12 +401,20 @@ export default function Tables() {
                   <ul className="text-sm space-y-1">
                     {categorizedTables
                       .find(cat => cat.name === deleteCategory)
-                      ?.tables.map(table => (
+                      ?.tables.filter(t => t.table_name !== 'chat_system_prompts')
+                      .map(table => (
                         <li key={table.table_name}>
                           • {table.table_name} ({table.row_count} record{table.row_count !== 1 ? 's' : ''})
                         </li>
                       ))}
                   </ul>
+                  {categorizedTables
+                    .find(cat => cat.name === deleteCategory)
+                    ?.tables.some(t => t.table_name === 'chat_system_prompts') && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Nota: chat_system_prompts verrà preservato e richiede eliminazione manuale.
+                    </p>
+                  )}
                 </div>
               )}
             </AlertDialogDescription>

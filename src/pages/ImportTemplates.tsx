@@ -517,17 +517,17 @@ export default function ImportTemplates() {
         let descrizione = '';
         
         if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
-          descrizione = `Email inviata: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
+          descrizione = `Email: ${activityData.oggetto_email}\n\nDestinatario: ${company.record.email || 'Email non disponibile'}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
         } else if (activityData.tipo === 'chiamata' && activityData.note_generali) {
           descrizione = `Chiamata effettuata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNote:\n${activityData.note_generali}`;
         }
 
-        // Attività immediata (data corrente)
+        // Attività immediata (registrata nella tabella imported_contacts tramite rubrica_id)
         activities.push({
           rubrica_id: company.id,
           tipo: activityData.tipo,
           descrizione: descrizione,
-          stato: 'completata', // Attività già completata
+          stato: 'aperta',
           scadenza: null,
           priorita: activityData.priorita || 'media',
           assegnato_a: activityData.assegnato_a || null,

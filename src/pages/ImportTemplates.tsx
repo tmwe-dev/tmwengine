@@ -2444,9 +2444,8 @@ export default function ImportTemplates() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between relative">
                   <div className="flex-1">
-                    <DialogTitle>
-                      Record Importati - {selectedImport?.file_name}
-                    </DialogTitle>
+                    <DialogTitle>Record Importati</DialogTitle>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
                   </div>
                   
                   {/* Pulsanti in alto a destra */}

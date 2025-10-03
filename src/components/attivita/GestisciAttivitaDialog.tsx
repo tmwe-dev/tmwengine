@@ -174,18 +174,9 @@ export function GestisciAttivitaDialog({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
             {/* Colonna sinistra - Form di modifica */}
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
-                <Textarea
-                  id="descrizione"
-                  value={formData.descrizione || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
-                  className="min-h-[60px] text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
+              {/* Stato e Priorità - 1/4 larghezza, allineati a sinistra */}
+              <div className="flex gap-2">
+                <div className="w-32">
                   <Label htmlFor="stato" className="text-sm">Stato</Label>
                   <Select 
                     value={formData.stato} 
@@ -203,7 +194,7 @@ export function GestisciAttivitaDialog({
                   </Select>
                 </div>
 
-                <div>
+                <div className="w-32">
                   <Label htmlFor="priorita" className="text-sm">Priorità</Label>
                   <Select 
                     value={formData.priorita} 
@@ -218,6 +209,19 @@ export function GestisciAttivitaDialog({
                       <SelectItem value="bassa">Bassa</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Descrizione - metà pagina, 250px altezza, allineata a destra */}
+              <div className="flex justify-end">
+                <div className="w-1/2">
+                  <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
+                  <Textarea
+                    id="descrizione"
+                    value={formData.descrizione || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
+                    className="h-[250px] text-sm resize-none"
+                  />
                 </div>
               </div>
 
@@ -257,16 +261,18 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Note compatte */}
-              <div>
-                <Label htmlFor="note" className="text-sm">Note</Label>
-                <Textarea
-                  id="note"
-                  value={formData.note || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-                  placeholder="Note aggiuntive..."
-                  className="min-h-[60px] text-sm"
-                />
+              {/* Note - metà pagina, 250px altezza, allineate a destra */}
+              <div className="flex justify-end">
+                <div className="w-1/2">
+                  <Label htmlFor="note" className="text-sm">Note</Label>
+                  <Textarea
+                    id="note"
+                    value={formData.note || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                    placeholder="Note aggiuntive..."
+                    className="h-[250px] text-sm resize-none"
+                  />
+                </div>
               </div>
 
               {/* Telefoni compatti - una sola colonna */}

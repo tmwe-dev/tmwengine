@@ -362,7 +362,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh]" key={selectedEmailId}>
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>

@@ -554,11 +554,11 @@ const Chat = () => {
                 {conversations.map((conversation) => (
                   <Button
                     key={conversation.id}
-                    variant={currentConversationId === conversation.id ? "outline" : "ghost"}
+                    variant="outline"
                     className={`w-full justify-start text-left h-auto p-3 transition-all ${
                       currentConversationId === conversation.id 
-                        ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border border-purple-500/20' 
-                        : 'hover:bg-gradient-to-l hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border hover:border-purple-500/30'
+                        ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20' 
+                        : 'bg-transparent hover:bg-gradient-to-l hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border-purple-500/30'
                     }`}
                     onClick={() => selectConversation(conversation.id)}
                   >

@@ -335,9 +335,11 @@ export default function Attivita() {
   const filteredActivities = baseFilteredActivities.filter(activity => {
     // Filtro per status dalla card summary
     const matchesStatusFilter = statusFilter === 'all' || 
-      (statusFilter === 'future' && isActivityFuture(activity)) ||
+      // Future = attività future NON completate
+      (statusFilter === 'future' && isActivityFuture(activity) && activity.stato !== 'completata') ||
       (statusFilter === 'completate' && activity.stato === 'completata') ||
       (statusFilter === 'in_corso' && activity.stato === 'in_corso') ||
+      // Scadute = attività con scadenza passata E non completate
       (statusFilter === 'scadute' && activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata');
 
     return matchesStatusFilter;
@@ -747,11 +749,15 @@ export default function Attivita() {
   const getStatsData = () => {
     // Usa baseFilteredActivities per le statistiche (esclude il filtro statusFilter dalle card)
     const totali = baseFilteredActivities.length;
-    const future = baseFilteredActivities.filter(a => isActivityFuture(a)).length;
+    // Future = attività future NON completate (in sospeso)
+    const future = baseFilteredActivities.filter(a => 
+      isActivityFuture(a) && a.stato !== 'completata'
+    ).length;
     const completate = baseFilteredActivities.filter(a => a.stato === 'completata').length;
     const in_corso = baseFilteredActivities.filter(a => a.stato === 'in_corso').length;
     
     const today = new Date();
+    // Scadute = attività con scadenza passata E non completate
     const scadute = baseFilteredActivities.filter(a => {
       if (!a.scadenza) return false;
       return new Date(a.scadenza) < today && a.stato !== 'completata';

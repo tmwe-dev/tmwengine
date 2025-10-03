@@ -2463,79 +2463,6 @@ export default function ImportTemplates() {
                     <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
                   </div>
                   
-                  {/* Blocco azioni record selezionati - al centro */}
-                  {selectedRecords.size > 0 && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default" className="text-sm px-4 py-2">
-                          {selectedRecords.size}
-                        </Badge>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setSelectedRecords(new Set())}
-                          className="h-14 px-4 text-sm"
-                        >
-                          <X className="h-6 w-6" />
-                        </Button>
-                        
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setShowMultipleActivityDialog(true)}
-                                className="h-14 w-14 p-0"
-                              >
-                                <FileText className="h-6 w-6 text-blue-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Crea attività</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={importSelectedRecords}
-                                className="h-14 w-14 p-0"
-                              >
-                                <Database className="h-6 w-6 text-green-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Importa {selectedRecords.size} in rubrica</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={deleteSelectedRecords}
-                                className="h-14 w-14 p-0"
-                              >
-                                <Trash2 className="h-6 w-6 text-red-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Elimina {selectedRecords.size} record</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Pulsanti in alto a destra */}
                   <div className="flex items-center gap-2">
                     {/* Pulsante Refresh */}
@@ -2848,6 +2775,24 @@ export default function ImportTemplates() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Seleziona tutti i record filtrati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={deleteSelectedRecords}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Elimina {selectedRecords.size} record</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

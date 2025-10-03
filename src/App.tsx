@@ -120,11 +120,7 @@ const App = () => (
                 <TMWEAuthTest />
               </ProtectedRoute>
             } />
-            <Route path="/tmwe/callback" element={
-              <ProtectedRoute>
-                <TMWEAuthCallbackIntegrated />
-              </ProtectedRoute>
-            } />
+            <Route path="/tmwe/callback" element={<TMWEAuthCallbackIntegrated />} />
             <Route path="/email-manager" element={
               <ProtectedRoute>
                 <IntegratedAuthGuard>

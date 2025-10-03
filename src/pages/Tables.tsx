@@ -28,38 +28,12 @@ export default function Tables() {
     try {
       setLoading(true);
       
-      // Get all tables
-      const { data: tablesData, error: tablesError } = await supabase
-        .rpc('get_public_tables' as any);
+      const { data, error } = await supabase
+        .rpc('get_tables_with_counts');
       
-      if (tablesError) {
-        // Fallback: query information_schema directly
-        const { data: schemaData, error: schemaError } = await supabase
-          .from('information_schema.tables' as any)
-          .select('table_name')
-          .eq('table_schema', 'public')
-          .eq('table_type', 'BASE TABLE');
-        
-        if (schemaError) throw schemaError;
-        
-        // Get row counts for each table
-        const tablesWithCounts = await Promise.all(
-          (schemaData || []).map(async (table: any) => {
-            const { count, error } = await supabase
-              .from(table.table_name)
-              .select('*', { count: 'exact', head: true });
-            
-            return {
-              table_name: table.table_name,
-              row_count: error ? 0 : (count || 0)
-            };
-          })
-        );
-        
-        setTables(tablesWithCounts);
-      } else {
-        setTables(tablesData || []);
-      }
+      if (error) throw error;
+      
+      setTables(data || []);
     } catch (error: any) {
       console.error('Error loading tables:', error);
       toast.error('Errore nel caricamento delle tabelle');

@@ -1164,6 +1164,13 @@ export type Database = {
         Args: { activity_data: Json }
         Returns: undefined
       }
+      get_tables_with_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          row_count: number
+          table_name: string
+        }[]
+      }
       get_temp_table_data: {
         Args:
           | { page_limit?: number; page_offset?: number; table_name: string }

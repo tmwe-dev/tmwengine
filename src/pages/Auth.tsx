@@ -25,7 +25,7 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/');
     }
   }, [user, navigate]);
 
@@ -63,7 +63,7 @@ const Auth = () => {
             setError(error.message || 'Errore durante il login');
           }
         } else {
-          navigate('/dashboard');
+          navigate('/');
         }
       } else {
         const { error } = await signUp(email, password);

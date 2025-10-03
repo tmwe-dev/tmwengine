@@ -826,8 +826,9 @@ export default function Attivita() {
         <div className="animate-fade-in">
           <Card className="border-card shadow-soft">
             <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
-              <div className={cn("flex gap-3", isMobile ? "flex-col" : "flex-col sm:flex-row gap-4")}>
-                <div className="flex-1 relative">
+              {/* Ricerca e Dropdown centrati */}
+              <div className="flex flex-col items-center gap-4 max-w-4xl mx-auto">
+                <div className="w-full max-w-xl relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
                   <Input
                     placeholder="Cerca per descrizione o contatto..."
@@ -841,7 +842,7 @@ export default function Attivita() {
                   value={filters.stato}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
                 >
-                  <SelectTrigger className="flex-1 min-w-[200px]">
+                  <SelectTrigger className="w-full max-w-xl">
                     <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
                   </SelectTrigger>
                   <SelectContent>
@@ -853,34 +854,6 @@ export default function Attivita() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Badge filtro contatto attivo */}
-              {filterByContactId && (
-                <div className="mt-6 mb-6 flex items-center justify-center">
-                  <Badge 
-                    variant="secondary" 
-                    className="flex items-center gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 transition-colors"
-                    onClick={handleBackNavigation}
-                  >
-                    <User className="h-4 w-4" />
-                    <span className="hover:underline font-medium">Filtrato per contatto - Torna a Record Importati</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFilterByContactId(null);
-                        setStatusFilter('future');
-                        toast({
-                          title: "Filtro rimosso",
-                          description: "Visualizzazione di tutte le attività",
-                        });
-                      }}
-                      className="ml-1 hover:bg-white/20 rounded-full p-1"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </Badge>
-                </div>
-              )}
 
               <div className="flex gap-3 mt-4 justify-center">
                 <Popover>

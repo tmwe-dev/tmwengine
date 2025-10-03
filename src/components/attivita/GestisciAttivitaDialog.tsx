@@ -134,7 +134,7 @@ export function GestisciAttivitaDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] flex flex-col overflow-hidden p-3 sm:p-4">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-3 sm:p-4">
         <DialogHeader className="flex-shrink-0 space-y-2 pb-2">
           {/* Breadcrumb compatto */}
           <Breadcrumb>
@@ -170,169 +170,179 @@ export function GestisciAttivitaDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-3 py-2">
-          {/* Informazioni di base - layout compatto */}
-          <div className="bg-muted/30 rounded-lg p-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div className="flex-1 overflow-y-auto py-2">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+            {/* Colonna sinistra - Form di modifica */}
+            <div className="space-y-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Data</Label>
-                <div className="font-medium text-blue-600">
-                  {format(new Date(activity.data_creazione), 'dd/MM/yy')}
-                  {activity.ora_creazione && <span className="text-xs ml-1">{activity.ora_creazione}</span>}
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-xs text-muted-foreground">Tipo</Label>
-                <div className="font-medium">{activity.tipo.toUpperCase()}</div>
-              </div>
-              
-              <div>
-                <Label className="text-xs text-muted-foreground">Priorità</Label>
-                <Badge variant={
-                  activity.priorita === 'alta' ? 'destructive' : 
-                  activity.priorita === 'media' ? 'secondary' : 'outline'
-                } className="text-xs">
-                  {activity.priorita.toUpperCase()}
-                </Badge>
+                <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
+                <Textarea
+                  id="descrizione"
+                  value={formData.descrizione || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
+                  className="min-h-[60px] text-sm"
+                />
               </div>
 
-              {activity.data_ultima_modifica && (
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Modificata</Label>
-                  <div className="text-xs font-medium">
-                    {format(new Date(activity.data_ultima_modifica), 'dd/MM/yy HH:mm')}
-                  </div>
+                  <Label htmlFor="stato" className="text-sm">Stato</Label>
+                  <Select 
+                    value={formData.stato} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aperta">Aperta</SelectItem>
+                      <SelectItem value="in_corso">In Corso</SelectItem>
+                      <SelectItem value="completata">Completata</SelectItem>
+                      <SelectItem value="annullata">Annullata</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Form di modifica - compatto */}
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
-              <Textarea
-                id="descrizione"
-                value={formData.descrizione || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
-                className="min-h-[60px] text-sm"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="stato" className="text-sm">Stato</Label>
-                <Select 
-                  value={formData.stato} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aperta">Aperta</SelectItem>
-                    <SelectItem value="in_corso">In Corso</SelectItem>
-                    <SelectItem value="completata">Completata</SelectItem>
-                    <SelectItem value="annullata">Annullata</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="priorita" className="text-sm">Priorità</Label>
+                  <Select 
+                    value={formData.priorita} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="bassa">Bassa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="priorita" className="text-sm">Priorità</Label>
-                <Select 
-                  value={formData.priorita} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="bassa">Bassa</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Scadenza compatta - una sola colonna */}
+              <div className="max-w-xs">
+                <Label className="text-sm">Scadenza</Label>
+                <div className="flex gap-2 mt-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-36 justify-start text-left font-normal h-9 text-sm",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-24 h-9 text-sm"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Scadenza compatta */}
-            <div>
-              <Label className="text-sm">Scadenza</Label>
-              <div className="flex gap-2 mt-1">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "flex-1 justify-start text-left font-normal h-9 text-sm",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <Calendar className="mr-1 h-3 w-3" />
-                      {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              {/* Note compatte */}
+              <div>
+                <Label htmlFor="note" className="text-sm">Note</Label>
+                <Textarea
+                  id="note"
+                  value={formData.note || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Note aggiuntive..."
+                  className="min-h-[60px] text-sm"
+                />
+              </div>
+
+              {/* Telefoni compatti - una sola colonna */}
+              <div className="space-y-2 max-w-xs">
+                <div>
+                  <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Telefono
+                  </Label>
+                  <Input
+                    id="telefono"
+                    type="tel"
+                    value={formData.telefono || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
                 
-                <Input
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-28 h-9 text-sm"
-                />
+                <div>
+                  <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Cellulare
+                  </Label>
+                  <Input
+                    id="cellulare"
+                    type="tel"
+                    value={formData.cellulare || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Note compatte */}
-            <div>
-              <Label htmlFor="note" className="text-sm">Note</Label>
-              <Textarea
-                id="note"
-                value={formData.note || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-                placeholder="Note aggiuntive..."
-                className="min-h-[60px] text-sm"
-              />
-            </div>
+            {/* Colonna destra - Informazioni di base (min 500px altezza) */}
+            <div className="bg-muted/30 rounded-lg p-3 min-h-[500px] flex flex-col">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Info Attività
+              </h3>
+              <div className="space-y-4 flex-1">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Data Creazione</Label>
+                  <div className="font-medium text-blue-600 text-sm">
+                    {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
+                  </div>
+                  {activity.ora_creazione && (
+                    <div className="text-xs text-blue-500">
+                      ore {activity.ora_creazione}
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <Label className="text-xs text-muted-foreground">Tipo</Label>
+                  <div className="font-medium text-sm">{activity.tipo.toUpperCase()}</div>
+                </div>
+                
+                <div>
+                  <Label className="text-xs text-muted-foreground">Priorità Iniziale</Label>
+                  <Badge variant={
+                    activity.priorita === 'alta' ? 'destructive' : 
+                    activity.priorita === 'media' ? 'secondary' : 'outline'
+                  } className="text-xs">
+                    {activity.priorita.toUpperCase()}
+                  </Badge>
+                </div>
 
-            {/* Telefoni compatti */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  Telefono
-                </Label>
-                <Input
-                  id="telefono"
-                  type="tel"
-                  value={formData.telefono || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                  className="h-9 text-sm"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  Cellulare
-                </Label>
-                <Input
-                  id="cellulare"
-                  type="tel"
-                  value={formData.cellulare || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
-                  className="h-9 text-sm"
-                />
+                {activity.data_ultima_modifica && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Ultima Modifica</Label>
+                    <div className="text-sm font-medium">
+                      {format(new Date(activity.data_ultima_modifica), 'dd/MM/yyyy HH:mm')}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

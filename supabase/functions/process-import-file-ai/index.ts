@@ -60,9 +60,9 @@ serve(async (req) => {
 
     const firstLine = lines[0];
     
-    // Auto-detect separator
+    // Auto-detect separator - try multiple separators
     let separator = '\t';
-    const testSeparators = [';', '\t', ','];
+    const testSeparators = ['\t', ';', ',', '|'];
     let maxColumns = 0;
     
     for (const testSep of testSeparators) {
@@ -74,7 +74,7 @@ serve(async (req) => {
     }
     
     const headers = firstLine.split(separator).map(h => h.replace(/["\r\n]/g, '').trim());
-    console.log(`[AI Import] Detected separator: "${separator}", headers: ${headers.length}`);
+    console.log(`[AI Import] Detected separator: "${separator}" (code: ${separator.charCodeAt(0)}), headers: ${headers.length}`, headers.slice(0, 5));
 
     const dataRows = lines.slice(1);
     const totalRows = dataRows.length;

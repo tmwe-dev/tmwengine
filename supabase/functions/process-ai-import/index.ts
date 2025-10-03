@@ -75,35 +75,59 @@ OUTPUT STRICT JSON ARRAY with these fields for EACH record:
   "name": "string | null",
   "company_name": "string | null", 
   "email": "valid email | null",
-  "phone": "phone number | null",
-  "cell": "mobile number | null",
-  "country": "country name | null",
+  "phone": "phone number with international format | null",
+  "cell": "mobile number with international format | null",
+  "country": "country name in English | null",
   "city": "city name | null",
+  "state": "state/province/region | null",
   "address": "address | null",
   "zip_code": "postal code | null",
   "note": "notes | null"
 }
 
 CRITICAL RULES - DATA COMPLETION:
-1. **Country Inference**: If city is known (e.g., "Milano", "Roma", "Napoli"), ADD country "Italia"
-2. **ZIP Code**: If city + country are known, ADD the most common zip code for that area
-3. **Data Detection**: Recognize field types from content:
-   - Email: contains @
-   - Phone: contains numbers, may have +39 prefix
-   - Mobile: often starts with 3 (Italy)
-4. **Clean Format**:
-   - Phone: standardize format (+39 XXX XXXXXXX)
+
+1. **PHONE INTELLIGENCE (ALL COUNTRIES)**:
+   - Recognize phone numbers from ANY country and add correct international prefix
+   - Examples by country:
+     * USA/Canada (+1): "3049050980" → "+13049050980"
+     * Italy (+39): "3351234567" → "+393351234567"
+     * France (+33): "612345678" → "+33612345678"
+     * Germany (+49): "1701234567" → "+491701234567"
+     * UK (+44): "7700900000" → "+447700900000"
+     * Spain (+34): "612345678" → "+34612345678"
+     * Japan (+81): "9012345678" → "+819012345678"
+     * China (+86): "13812345678" → "+8613812345678"
+   - Remove all spaces, dashes, parentheses: format as +[code][number]
+   - If prefix already exists, validate and fix format
+
+2. **GEOGRAPHIC INTELLIGENCE (ALL COUNTRIES)**:
+   - Infer state/province/region from well-known cities:
+     * USA: Miami→FL, New York→NY, Los Angeles→CA, Chicago→IL, Houston→TX, Boston→MA
+     * Italy: Roma→Lazio, Milano→Lombardia, Napoli→Campania, Torino→Piemonte, Firenze→Toscana
+     * Germany: Berlin→BE, München→BY, Hamburg→HH, Frankfurt→HE, Köln→NW
+     * France: Paris→Île-de-France, Lyon→Auvergne-Rhône-Alpes, Marseille→Provence-Alpes-Côte d'Azur
+     * Spain: Madrid→Comunidad de Madrid, Barcelona→Cataluña, Valencia→Comunidad Valenciana
+     * UK: London→England, Manchester→England, Edinburgh→Scotland, Cardiff→Wales
+   - ONLY add if you are 100% CERTAIN
+
+3. **Country & ZIP Code Inference**:
+   - If city is well-known (Milano, Paris, Miami, etc.), ADD country
+   - If city + country known, ADD most common ZIP code for that area
+   - Examples:
+     * Milano → Italy, zip: 20100-20162
+     * Paris → France, zip: 75001-75020
+     * Miami → USA, state: FL, zip: 33101-33199
+     * Berlin → Germany, state: BE, zip: 10115-14199
+
+4. **Data Standardization**:
+   - Country names in ENGLISH (Italy, France, USA, Germany, not Italia, Francia, etc.)
    - Email: lowercase
-   - Names: capitalize properly
+   - Names: proper capitalization
+   - Remove extra spaces
+
 5. **ONLY add data you are 100% CERTAIN about**
 6. **Return null for missing/uncertain data**
-
-GEOGRAPHIC KNOWLEDGE (use ONLY if certain):
-- Milano → Italy, common zip: 20100-20162
-- Roma → Italy, common zip: 00100-00199
-- Torino → Italy, common zip: 10100-10156
-- Napoli → Italy, common zip: 80100-80147
-- Firenze → Italy, common zip: 50100-50145
 
 OUTPUT: ONLY the JSON array, no other text`;
 

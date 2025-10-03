@@ -891,6 +891,7 @@ export type Database = {
           position: string | null
           row_number: number | null
           scheduled_contact: string | null
+          state: string | null
           stato: string | null
           title: string | null
           updated_at: string
@@ -940,6 +941,7 @@ export type Database = {
           position?: string | null
           row_number?: number | null
           scheduled_contact?: string | null
+          state?: string | null
           stato?: string | null
           title?: string | null
           updated_at?: string
@@ -989,6 +991,7 @@ export type Database = {
           position?: string | null
           row_number?: number | null
           scheduled_contact?: string | null
+          state?: string | null
           stato?: string | null
           title?: string | null
           updated_at?: string
@@ -1043,6 +1046,7 @@ export type Database = {
           position: string | null
           responsabile: string | null
           scheduled_contact: string | null
+          state: string | null
           stato: string | null
           tags: string[] | null
           telefono: string | null
@@ -1088,6 +1092,7 @@ export type Database = {
           position?: string | null
           responsabile?: string | null
           scheduled_contact?: string | null
+          state?: string | null
           stato?: string | null
           tags?: string[] | null
           telefono?: string | null
@@ -1133,6 +1138,7 @@ export type Database = {
           position?: string | null
           responsabile?: string | null
           scheduled_contact?: string | null
+          state?: string | null
           stato?: string | null
           tags?: string[] | null
           telefono?: string | null

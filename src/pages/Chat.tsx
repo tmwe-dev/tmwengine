@@ -611,10 +611,10 @@ const Chat = () => {
                       <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                     )}
                     <div
-                      className={`max-w-[80%] p-4 rounded-lg ${
+                      className={`max-w-[80%] p-4 rounded-lg border ${
                         message.role === 'user'
-                          ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border border-purple-500/20'
-                          : 'bg-muted'
+                          ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
+                          : 'bg-gradient-to-l from-orange-800/10 via-orange-800/5 via-35% to-transparent border-orange-800/20'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>

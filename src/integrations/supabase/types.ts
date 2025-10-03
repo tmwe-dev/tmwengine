@@ -792,11 +792,15 @@ export type Database = {
           file_name: string
           file_path: string
           id: string
+          last_batch_at: string | null
           nome_tabella_temporanea: string | null
+          normalization_method: string | null
+          processing_batch: number | null
           righe_errori: number | null
           righe_importate: number | null
           righe_totali: number | null
           stato: string
+          total_batches: number | null
           trasferiti_rubrica: boolean | null
           utente_id: string | null
         }
@@ -808,11 +812,15 @@ export type Database = {
           file_name: string
           file_path: string
           id?: string
+          last_batch_at?: string | null
           nome_tabella_temporanea?: string | null
+          normalization_method?: string | null
+          processing_batch?: number | null
           righe_errori?: number | null
           righe_importate?: number | null
           righe_totali?: number | null
           stato?: string
+          total_batches?: number | null
           trasferiti_rubrica?: boolean | null
           utente_id?: string | null
         }
@@ -824,11 +832,15 @@ export type Database = {
           file_name?: string
           file_path?: string
           id?: string
+          last_batch_at?: string | null
           nome_tabella_temporanea?: string | null
+          normalization_method?: string | null
+          processing_batch?: number | null
           righe_errori?: number | null
           righe_importate?: number | null
           righe_totali?: number | null
           stato?: string
+          total_batches?: number | null
           trasferiti_rubrica?: boolean | null
           utente_id?: string | null
         }
@@ -1155,6 +1167,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "temp_ai_import_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_ai_reviewed: {
+        Row: {
+          created_at: string
+          id: string
+          import_log_id: string | null
+          normalized_data: Json | null
+          raw_data: Json
+          row_number: number | null
+          validation_errors: Json | null
+          validation_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_log_id?: string | null
+          normalized_data?: Json | null
+          raw_data: Json
+          row_number?: number | null
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_log_id?: string | null
+          normalized_data?: Json | null
+          raw_data?: Json
+          row_number?: number | null
+          validation_errors?: Json | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_ai_reviewed_import_log_id_fkey"
             columns: ["import_log_id"]
             isOneToOne: false
             referencedRelation: "import_logs"

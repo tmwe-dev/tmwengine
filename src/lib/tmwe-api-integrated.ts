@@ -9,7 +9,7 @@ export interface ApiConfig {
   clientSecret?: string;
 }
 
-// OAuth2 Configuration
+// OAuth2 Configuration - Aggiornate con credenziali corrette
 const OAUTH_CLIENT_ID = '30eb3689ecfe890adfda0578d61ad858cf9f98999a919e0cd7bb798df17b006f';
 const OAUTH_CLIENT_SECRET = 'a6c592327aa191ab36769dded7b77b0396b9352';
 

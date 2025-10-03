@@ -94,9 +94,15 @@ export const EmailList = ({
             key={email.id}
             ref={index === emails.length - 1 ? lastEmailRef : null}
             className={cn(
-              'cursor-pointer border-l-4 p-4 transition-all hover:bg-email-hover',
-              email.read ? 'border-l-transparent' : 'border-l-email-unread',
-              selectedEmailId === email.id && 'bg-email-selected shadow-md'
+              'cursor-pointer border-l-4 p-4 transition-all',
+              email.read 
+                ? 'border-l-transparent bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent hover:from-purple-500/15 hover:via-purple-500/8'
+                : 'border-l-orange-500/50 bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent hover:from-orange-500/15 hover:via-orange-500/8',
+              selectedEmailId === email.id && (
+                email.read 
+                  ? 'bg-gradient-to-l from-purple-500/20 via-purple-500/10 via-35% to-transparent border-purple-500/30 shadow-md'
+                  : 'bg-gradient-to-l from-orange-500/20 via-orange-500/10 via-35% to-transparent border-orange-500/50 shadow-md'
+              )
             )}
             onClick={() => onEmailSelect(email.id)}
           >

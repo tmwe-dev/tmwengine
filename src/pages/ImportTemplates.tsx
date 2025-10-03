@@ -1580,7 +1580,7 @@ export default function ImportTemplates() {
       }
     });
     return Object.entries(counts)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([, countA], [, countB]) => countB - countA) // Ordina per conteggio decrescente
       .map(([value, count]) => ({ value, count }));
   };
 

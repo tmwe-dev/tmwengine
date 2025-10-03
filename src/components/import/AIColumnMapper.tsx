@@ -288,7 +288,7 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
                     )}
                   >
                     {mapping?.sourceColumn ? (
-                      <div className="flex items-center justify-between bg-white rounded px-3 py-2 shadow-sm">
+                      <div className="flex items-center justify-between rounded px-3 py-2 shadow-sm">
                         <div className="flex items-center gap-2">
                           <GripVertical className="h-4 w-4 text-muted-foreground" />
                           <span className="font-mono text-sm">{mapping.sourceColumn}</span>

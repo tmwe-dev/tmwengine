@@ -92,7 +92,8 @@ export default function Attivita() {
     tipo: '',
     priorita: '',
     scadenza: '',
-    hasNotes: false
+    hasNotes: false,
+    origine: ''
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
@@ -321,7 +322,8 @@ export default function Attivita() {
       (!filters.tipo || filters.tipo === 'all' || activity.tipo === filters.tipo) &&
       (!filters.priorita || filters.priorita === 'all' || activity.priorita === filters.priorita) &&
       (!filters.scadenza || filters.scadenza === 'all' || checkScadenzaFilter(activity.scadenza, filters.scadenza)) &&
-      (!filters.hasNotes || (activity.note && activity.note.trim() !== ''));
+      (!filters.hasNotes || (activity.note && activity.note.trim() !== '')) &&
+      (!filters.origine || filters.origine === 'all' || activity.rubrica_origine === filters.origine);
 
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
@@ -889,6 +891,7 @@ export default function Attivita() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onClose={() => setIsFiltersOpen(false)}
+                    activities={activities}
                   />
                 </DialogContent>
               </Dialog>

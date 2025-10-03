@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StickyNote } from 'lucide-react';
+
+interface Activity {
+  rubrica_origine?: string;
+  stato: string;
+  tipo: string;
+  priorita: string;
+  scadenza?: string;
+  note?: string;
+}
 
 interface Filters {
   stato: string;
@@ -11,15 +20,27 @@ interface Filters {
   priorita: string;
   scadenza: string;
   hasNotes: boolean;
+  origine: string;
 }
 
 interface ActivityFiltersProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   onClose: () => void;
+  activities?: Activity[];
 }
 
-export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityFiltersProps) {
+export function ActivityFilters({ filters, onFiltersChange, onClose, activities = [] }: ActivityFiltersProps) {
+  // Calcola i conteggi per origine
+  const origineConteggi = useMemo(() => {
+    const conteggi: Record<string, number> = {};
+    activities.forEach(activity => {
+      const origine = activity.rubrica_origine || 'Senza origine';
+      conteggi[origine] = (conteggi[origine] || 0) + 1;
+    });
+    return conteggi;
+  }, [activities]);
+
   const handleFilterChange = (key: keyof Filters, value: string) => {
     onFiltersChange({
       ...filters,
@@ -33,11 +54,12 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
       tipo: 'all',
       priorita: 'all',
       scadenza: 'all',
-      hasNotes: false
+      hasNotes: false,
+      origine: 'all'
     });
   };
 
-  const hasActiveFilters = filters.stato !== 'all' || filters.tipo !== 'all' || filters.priorita !== 'all' || filters.scadenza !== 'all' || filters.hasNotes;
+  const hasActiveFilters = filters.stato !== 'all' || filters.tipo !== 'all' || filters.priorita !== 'all' || filters.scadenza !== 'all' || filters.hasNotes || filters.origine !== 'all';
 
   return (
     <div className="space-y-6">
@@ -102,6 +124,25 @@ export function ActivityFilters({ filters, onFiltersChange, onClose }: ActivityF
               <SelectItem value="domani">Domani</SelectItem>
               <SelectItem value="questa_settimana">Questa settimana</SelectItem>
               <SelectItem value="senza_scadenza">Senza scadenza</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="origine-filter">Origine</Label>
+          <Select value={filters.origine} onValueChange={(value) => handleFilterChange('origine', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Tutte le origini" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le origini ({activities.length})</SelectItem>
+              {Object.entries(origineConteggi)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([origine, conteggio]) => (
+                  <SelectItem key={origine} value={origine}>
+                    {origine} ({conteggio})
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>

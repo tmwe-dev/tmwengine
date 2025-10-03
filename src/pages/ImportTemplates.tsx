@@ -271,6 +271,9 @@ export default function ImportTemplates() {
   // Prompt per AI
   const [aiPrompt, setAiPrompt] = useState('Analizza i dati importati e normalizzali nella tabella temporanea. Correggi eventuali errori di formato, standardizza i nomi dei campi e verifica la coerenza dei dati.');
   
+  // Stato per elaborazione AI
+  const [processingAI, setProcessingAI] = useState(false);
+  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -937,20 +940,26 @@ export default function ImportTemplates() {
         }
 
         if (processResult?.success) {
-          const { importedRows, errorRows } = processResult.data;
-          
-          setImportProgress({
-            currentImportId: importLogId,
-            totalRows,
-            processedRows: importedRows,
-            isProcessing: false,
-            startTime: 0
-          });
-          
-          if (errorRows > 0) {
-            toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
+          if (useAIImport) {
+            // AI import: data is now in temp table, show success message
+            toast.success(`File caricato: ${totalRows} righe salvate in tabella temporanea. Verifica i dati e avvia l'elaborazione AI.`);
           } else {
-            toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`);
+            // Standard import: data is in imported_contacts
+            const { importedRows, errorRows } = processResult.data;
+            
+            setImportProgress({
+              currentImportId: importLogId,
+              totalRows,
+              processedRows: importedRows,
+              isProcessing: false,
+              startTime: 0
+            });
+            
+            if (errorRows > 0) {
+              toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
+            } else {
+              toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`);
+            }
           }
         }
       } else {
@@ -2205,8 +2214,47 @@ export default function ImportTemplates() {
                 disabled={!importFile || uploadingFile || importProgress.isProcessing}
                 className="w-full"
               >
-                {uploadingFile || importProgress.isProcessing ? 'Elaborazione in corso...' : 'Importa File'}
+                {uploadingFile || importProgress.isProcessing ? 'Elaborazione in corso...' : useAIImport ? 'Carica File in Tabella Temporanea' : 'Importa File'}
               </Button>
+              
+              {useAIImport && importProgress.currentImportId && !importProgress.isProcessing && (
+                <Button
+                  onClick={async () => {
+                    setProcessingAI(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('process-ai-import', {
+                        body: {
+                          importLogId: importProgress.currentImportId,
+                          aiPrompt
+                        }
+                      });
+                      
+                      if (error) throw error;
+                      
+                      if (data.success) {
+                        toast.success(`Elaborazione AI completata: ${data.data.processedRecords} contatti processati`);
+                        loadImportLogs();
+                        setImportProgress({
+                          currentImportId: null,
+                          totalRows: 0,
+                          processedRows: 0,
+                          isProcessing: false,
+                          startTime: 0
+                        });
+                      }
+                    } catch (error: any) {
+                      toast.error(`Errore elaborazione AI: ${error.message}`);
+                    } finally {
+                      setProcessingAI(false);
+                    }
+                  }}
+                  disabled={processingAI}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  {processingAI ? 'Elaborazione AI in corso...' : 'Avvia Elaborazione AI'}
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}

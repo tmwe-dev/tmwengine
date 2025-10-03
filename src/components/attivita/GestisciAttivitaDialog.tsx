@@ -259,8 +259,8 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Note - metà pagina, 250px altezza, allineate a destra */}
-              <div className="flex justify-end">
+              {/* Note - metà pagina, 250px altezza, centrate */}
+              <div className="flex justify-center">
                 <div className="w-1/2">
                   <Label htmlFor="note" className="text-sm">Note</Label>
                   <Textarea

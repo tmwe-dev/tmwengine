@@ -86,46 +86,36 @@ serve(async (req) => {
       'User-Agent': 'Deno/1.0',
     };
 
-    // 📤 LOG REQUEST
-    const logData: any = {
-      endpoint,
-      url,
-      handler: data.handler,
-      dataKeys: Object.keys(data),
-      timestamp: new Date().toISOString(),
-      headers: {
-        'Content-Type': requestHeaders['Content-Type'],
-        'Authorization': `Bearer ${bearerToken.substring(0, 20)}...`
-      }
-    };
-
-    // Log attachments details if present
-    if (data.attachments && Array.isArray(data.attachments)) {
-      logData.attachments = data.attachments.map((att: any) => ({
-        filename: att.filename,
-        content_type: att.content_type,
-        content_size: att.content ? att.content.length : 0,
-        has_content: !!att.content
-      }));
-      console.log('📎 ATTACHMENTS DETAILS:', logData.attachments);
-    }
-
-    // Log full data (excluding large attachment content for readability)
+    // 📤 LOG COMPLETO DE LA SOLICITUD
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📤 SOLICITUD AL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('🔗 URL:', url);
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
+    console.log('📋 Headers:', {
+      'Content-Type': requestHeaders['Content-Type'],
+      'Authorization': `Bearer ${bearerToken.substring(0, 20)}...`,
+      'Accept': requestHeaders['Accept'],
+      'User-Agent': requestHeaders['User-Agent']
+    });
+    
+    // Log del body completo (excluyendo contenido grande de adjuntos)
     const dataForLog = { ...data };
     if (dataForLog.attachments && Array.isArray(dataForLog.attachments)) {
       dataForLog.attachments = dataForLog.attachments.map((att: any) => ({
         filename: att.filename,
         content_type: att.content_type,
         content_length: att.content ? att.content.length : 0,
-        content_preview: att.content ? att.content.substring(0, 50) + '...' : null
+        content_preview: att.content ? att.content.substring(0, 100) + '...' : null
       }));
+      console.log('📎 ATTACHMENTS:', dataForLog.attachments);
     }
-
-    console.log('📤 TMWE API REQUEST:', {
-      ...logData,
-      dataPreview: dataForLog,
-      bodySize: JSON.stringify(data).length
-    });
+    
+    console.log('📦 Request Body:', JSON.stringify(dataForLog, null, 2));
+    console.log('📏 Body Size:', JSON.stringify(data).length, 'bytes');
+    console.log('═══════════════════════════════════════════════════════');
 
     // Retry mechanism for inconsistent API responses
     let response: Response | undefined;
@@ -165,18 +155,25 @@ serve(async (req) => {
       throw new Error('No response received from API');
     }
 
-    // 📥 LOG RESPONSE
-    console.log('📥 TMWE API RESPONSE:', {
-      endpoint,
-      handler: data.handler,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      responseSize: responseText.length,
-      rawResponse: responseText,
-      retries: retryCount,
-      hadAttachments: !!(data.attachments && data.attachments.length > 0)
+    // 📥 LOG COMPLETO DE LA RESPUESTA
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📥 RESPUESTA DEL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('🔗 URL:', url);
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
+    console.log('🔢 HTTP Status Code:', response.status);
+    console.log('📝 HTTP Status Text:', response.statusText);
+    console.log('✅ Response OK:', response.ok);
+    console.log('📏 Response Size:', responseText.length, 'bytes');
+    console.log('🔄 Retries:', retryCount);
+    console.log('📦 Response Headers:', {
+      'content-type': response.headers.get('content-type'),
+      'content-length': response.headers.get('content-length'),
     });
+    console.log('📄 Response Body (raw):', responseText);
+    console.log('═══════════════════════════════════════════════════════');
 
     // Handle different error status codes according to OpenAPI spec
     if (!response.ok) {
@@ -188,11 +185,14 @@ serve(async (req) => {
         errorData = { raw: responseText };
       }
 
-      console.error('❌ TMWE API Error:', {
-        status: response.status,
-        error: errorData,
-        fullResponse: responseText
-      });
+      console.log('═══════════════════════════════════════════════════════');
+      console.error('❌ ERROR EN RESPUESTA DEL API TMWE');
+      console.log('═══════════════════════════════════════════════════════');
+      console.error('🔢 HTTP Status:', response.status);
+      console.error('📝 Status Text:', response.statusText);
+      console.error('⚠️ Error Data:', errorData);
+      console.error('📄 Full Response:', responseText);
+      console.log('═══════════════════════════════════════════════════════');
 
       // Map TMWE API errors to OpenAPI error responses
       switch (response.status) {
@@ -234,12 +234,14 @@ serve(async (req) => {
       responseData = { raw: responseText };
     }
     
-    console.log('✅ TMWE API Success:', {
-      endpoint,
-      handler: data.handler,
-      hasData: !!responseData,
-      fullResponse: responseData
-    });
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅ RESPUESTA EXITOSA DEL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
+    console.log('🔢 HTTP Status:', response.status);
+    console.log('📦 Parsed Response:', JSON.stringify(responseData, null, 2));
+    console.log('═══════════════════════════════════════════════════════');
 
     return new Response(
       JSON.stringify(responseData),
@@ -250,7 +252,12 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('🔥 Edge Function Error:', error);
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('🔥 ERROR EN EDGE FUNCTION');
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('⚠️ Error Message:', error.message);
+    console.error('📚 Stack Trace:', error.stack);
+    console.log('═══════════════════════════════════════════════════════');
     return createErrorResponse(
       'internal_error',
       error.message || 'An internal server error occurred',

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Plus } from 'lucide-react';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
+  onCompose: () => void;
 }
 
-export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -20,6 +22,13 @@ export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
         <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
           TMWE Email Manager
         </h1>
+        <Button 
+          onClick={onCompose} 
+          size="icon"
+          className="h-8 w-8"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
 
       <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-8">

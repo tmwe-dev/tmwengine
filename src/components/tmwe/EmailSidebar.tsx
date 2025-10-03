@@ -162,26 +162,6 @@ export const EmailSidebar = ({
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="p-4 space-y-2">
-        <Button 
-          onClick={onCompose} 
-          className="w-full"
-          size="lg"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Compose
-        </Button>
-        <Button 
-          onClick={onSync} 
-          variant="outline" 
-          className="w-full"
-          size="sm"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Sync Now
-        </Button>
-      </div>
-
       <Separator />
 
       <ScrollArea className="flex-1 px-2">

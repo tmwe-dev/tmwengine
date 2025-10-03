@@ -213,7 +213,7 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col">
-      <EmailHeader onSearch={setSearchQuery} />
+      <EmailHeader onSearch={setSearchQuery} onCompose={() => setComposeOpen(true)} />
       
       <div className="flex flex-1 overflow-hidden">
         <EmailSidebar

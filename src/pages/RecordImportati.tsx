@@ -584,10 +584,47 @@ const RecordImportati = () => {
         </CardHeader>
         
         <CardContent>
-          {/* Table placeholder - la logica completa sarà aggiunta in seguito */}
-          <div className="text-center py-8 text-muted-foreground">
-            Implementazione tabella in corso...
-          </div>
+          {loadingAllRecords ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Caricamento in corso...
+            </div>
+          ) : viewingRecords.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nessun record trovato
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {viewingRecords.map((record, index) => {
+                const globalIndex = currentPage * recordsPerPage + index;
+                return (
+                  <CompactContactCard
+                    key={record.id}
+                    contact={record}
+                    index={globalIndex}
+                    isSelected={selectedRecords.has(globalIndex)}
+                    onSelect={(idx, selected) => {
+                      if (selected) {
+                        setSelectedRecords(prev => new Set(prev).add(idx));
+                      } else {
+                        setSelectedRecords(prev => {
+                          const newSet = new Set(prev);
+                          newSet.delete(idx);
+                          return newSet;
+                        });
+                      }
+                    }}
+                    onView={() => {
+                      setSelectedContactIdForActivities(record.id);
+                      setIsAttivitaDialogOpen(true);
+                    }}
+                    onDelete={() => deleteImportedContact(record.id, globalIndex)}
+                    getCountryFlag={getCountryFlag}
+                    formatCellValue={formatCellValue}
+                  />
+                );
+              })}
+            </div>
+          )}
           
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">

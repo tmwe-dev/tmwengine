@@ -124,27 +124,81 @@ serve(async (req) => {
     let retryCount = 0;
 
     while (retryCount < maxRetries) {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: requestHeaders,
-        body: JSON.stringify(data),
-      });
+      const requestStartTime = Date.now();
+      
+      console.log(`🔄 Attempt ${retryCount + 1}/${maxRetries} - Starting request at ${new Date().toISOString()}`);
+      
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify(data),
+        });
 
-      responseText = await response.text();
-      
-      // If we got a valid structured response, break
-      if (responseText && responseText !== '[]' && responseText.includes('{')) {
-        break;
-      }
-      
-      // If we got an empty array on get_folders, retry
-      if (data.handler === 'get_folders' && responseText === '[]') {
-        retryCount++;
-        if (retryCount < maxRetries) {
-          console.log(`⚠️ Got empty response, retrying (${retryCount}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 500 * retryCount)); // Exponential backoff
+        const requestDuration = Date.now() - requestStartTime;
+        console.log(`⏱️ Request completed in ${requestDuration}ms`);
+
+        responseText = await response.text();
+        
+        // Log empty response warning
+        if (responseText === '[]' || responseText === '') {
+          console.log('⚠️⚠️⚠️ EMPTY RESPONSE DETECTED ⚠️⚠️⚠️');
+          console.log('📊 Empty Response Details:');
+          console.log('  - Handler:', data.handler);
+          console.log('  - Endpoint:', endpoint);
+          console.log('  - Request Duration:', requestDuration, 'ms');
+          console.log('  - Response Status:', response.status);
+          console.log('  - Response Headers:', Object.fromEntries(response.headers.entries()));
+          console.log('  - Timestamp:', new Date().toISOString());
+          console.log('  - Request Body:', JSON.stringify(data, null, 2));
+          
+          // Check if this is a handler that should return data
+          const shouldHaveData = ['get_messages', 'get_folders', 'get_message'].includes(data.handler);
+          if (shouldHaveData) {
+            console.log('  ⚠️ This handler typically returns data - empty response is unexpected');
+          }
+        }
+        
+        // If we got a valid structured response, break
+        if (responseText && responseText !== '[]' && responseText.includes('{')) {
+          console.log('✅ Valid response received, breaking retry loop');
+          break;
+        }
+        
+        // If we got an empty array on handlers that should return data, retry
+        const handlersToRetry = ['get_folders', 'get_messages', 'get_message'];
+        if (handlersToRetry.includes(data.handler) && responseText === '[]') {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            const backoffDelay = 500 * retryCount;
+            console.log(`⚠️ Empty response for ${data.handler}, retrying (${retryCount}/${maxRetries}) after ${backoffDelay}ms...`);
+            console.log(`  - Previous request took ${requestDuration}ms`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            continue;
+          } else {
+            console.log(`❌ Max retries reached (${maxRetries}), returning empty response`);
+            console.log(`  - Total attempts: ${retryCount + 1}`);
+            console.log(`  - Handler: ${data.handler}`);
+            console.log(`  - This may indicate an issue with the TMWE API or the request parameters`);
+          }
+        }
+        
+      } catch (fetchError: any) {
+        const requestDuration = Date.now() - requestStartTime;
+        console.error('🔥 Fetch error during attempt', retryCount + 1);
+        console.error('  - Error message:', fetchError.message);
+        console.error('  - Request duration before error:', requestDuration, 'ms');
+        console.error('  - URL:', url);
+        console.error('  - Handler:', data.handler);
+        
+        if (retryCount < maxRetries - 1) {
+          const backoffDelay = 1000 * (retryCount + 1);
+          console.log(`  - Retrying after ${backoffDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          retryCount++;
           continue;
         }
+        throw fetchError;
       }
       
       break;

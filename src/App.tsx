@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
-import Dashboard from "./pages/Dashboard";
+
 import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
 import RubricaAvanzata from "./pages/RubricaAvanzata";
@@ -37,11 +37,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <CRMLayout><Dashboard /></CRMLayout>
-              </ProtectedRoute>
-            } />
             <Route path="/settings" element={
               <ProtectedRoute>
                 <CRMLayout><Settings /></CRMLayout>

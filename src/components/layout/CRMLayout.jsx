@@ -44,7 +44,6 @@ const CRMLayout = ({ children }) => {
   }, [location.pathname]);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Clienti', href: '/rubrica', icon: Users },
     { name: 'Commerciale', href: '/rubrica-avanzata', icon: Database },
     { name: 'Attività', href: '/attivita', icon: Calendar },

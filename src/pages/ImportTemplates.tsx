@@ -189,7 +189,7 @@ import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMult
 import { DocumentViewer } from '@/components/email/DocumentViewer';
 import { ImportedContactMobileCard } from '@/components/import/ImportedContactMobileCard';
 import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
-import { AIDataValidator } from '@/components/import/AIDataValidator';
+import { AIColumnMapper } from '@/components/import/AIColumnMapper';
 
 interface EmailTemplate {
   id: string;
@@ -2219,7 +2219,7 @@ export default function ImportTemplates() {
               </Button>
               
               {useAIImport && importProgress.currentImportId && !importProgress.isProcessing && (
-                <AIDataValidator
+                <AIColumnMapper
                   importLogId={importProgress.currentImportId}
                   onProcessComplete={() => {
                     loadImportLogs();

@@ -59,7 +59,7 @@ export function AIBatchProcessor({ importLogId, totalRows, origin, onComplete }:
             const { data: fileData, error: fileError } = await supabase.functions.invoke(
               'generate-normalized-file',
               {
-                body: { importLogId, format: 'csv' }
+                body: { importLogId, mode: 'row_normalization' }
               }
             );
 
@@ -68,7 +68,7 @@ export function AIBatchProcessor({ importLogId, totalRows, origin, onComplete }:
             setProcessing(false);
             toast({
               title: "🎉 Import completato!",
-              description: `File normalizzato: ${fileData.file.name} (${fileData.file.totalRecords} record)`,
+              description: `File normalizzato generato: ${fileData.file_name}`,
             });
             
             setTimeout(() => {

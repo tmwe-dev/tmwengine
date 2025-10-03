@@ -17,111 +17,130 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { importLogId, format = 'csv' } = await req.json();
-    console.log('[Generate File] Starting file generation:', { importLogId, format });
+    const { importLogId, mode } = await req.json();
+    console.log('[Generate File] Starting for import:', importLogId, 'mode:', mode);
 
-    // Get normalized data from temp_ai_reviewed
-    const { data: normalizedData, error: fetchError } = await supabaseClient
-      .from('temp_ai_reviewed')
-      .select('*')
-      .eq('import_log_id', importLogId)
-      .eq('validation_status', 'normalized')
-      .order('row_number');
+    // Get import log info
+    const { data: importLog, error: logError } = await supabaseClient
+      .from('import_logs')
+      .select('*, file_imports(*)')
+      .eq('id', importLogId)
+      .single();
 
-    if (fetchError) {
-      throw new Error(`Error fetching normalized data: ${fetchError.message}`);
+    if (logError || !importLog) {
+      throw new Error(`Import log not found: ${logError?.message}`);
     }
 
-    if (!normalizedData || normalizedData.length === 0) {
-      throw new Error('No normalized data found');
+    let normalizedData: any[] = [];
+
+    if (mode === 'row_normalization') {
+      // Get normalized data from temp_ai_reviewed
+      const { data: reviewedData, error: reviewError } = await supabaseClient
+        .from('temp_ai_reviewed')
+        .select('normalized_data, validation_status')
+        .eq('import_log_id', importLogId)
+        .eq('validation_status', 'normalized')
+        .order('row_number');
+
+      if (reviewError) {
+        throw new Error(`Error fetching reviewed data: ${reviewError.message}`);
+      }
+
+      normalizedData = reviewedData?.map(r => r.normalized_data) || [];
+    } else {
+      // Column mapping - get from imported_contacts
+      const { data: contacts, error: contactsError } = await supabaseClient
+        .from('imported_contacts')
+        .select('*')
+        .eq('import_log_id', importLogId)
+        .order('row_number');
+
+      if (contactsError) {
+        throw new Error(`Error fetching contacts: ${contactsError.message}`);
+      }
+
+      normalizedData = contacts || [];
     }
 
-    console.log(`[Generate File] Found ${normalizedData.length} normalized records`);
-
-    // Extract normalized data fields
-    const records = normalizedData.map(r => r.normalized_data);
+    if (normalizedData.length === 0) {
+      throw new Error('No data to export');
+    }
 
     // Generate CSV content
-    const headers = Object.keys(records[0] || {}).filter(k => k !== null);
-    const csvRows = [headers.join(',')];
-    
-    records.forEach(record => {
-      const values = headers.map(header => {
-        const value = record[header];
-        if (value === null || value === undefined) return '';
+    const headers = [
+      'name', 'company_name', 'position', 'title', 
+      'email', 'phone', 'cell',
+      'address', 'city', 'state', 'country', 'zip_code',
+      'origin', 'note'
+    ];
+
+    let csvContent = headers.join(',') + '\n';
+
+    normalizedData.forEach(record => {
+      const row = headers.map(header => {
+        const value = record[header] || '';
         // Escape quotes and wrap in quotes if contains comma
-        const stringValue = String(value);
-        return stringValue.includes(',') || stringValue.includes('"') 
-          ? `"${stringValue.replace(/"/g, '""')}"` 
-          : stringValue;
+        const escaped = String(value).replace(/"/g, '""');
+        return escaped.includes(',') ? `"${escaped}"` : escaped;
       });
-      csvRows.push(values.join(','));
+      csvContent += row.join(',') + '\n';
     });
 
-    const csvContent = csvRows.join('\n');
-    const fileName = `normalized_import_${importLogId}_${Date.now()}.csv`;
+    // Save to storage bucket
+    const fileName = `normalized_${importLogId}_${Date.now()}.csv`;
+    const filePath = `normalized/${fileName}`;
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    const { error: uploadError } = await supabaseClient
+      .storage
       .from('import-files')
-      .upload(fileName, csvContent, {
+      .upload(filePath, new Blob([csvContent], { type: 'text/csv' }), {
         contentType: 'text/csv',
         upsert: false
       });
 
     if (uploadError) {
-      throw new Error(`Error uploading file: ${uploadError.message}`);
+      throw new Error(`Upload error: ${uploadError.message}`);
     }
 
-    console.log('[Generate File] File uploaded:', uploadData.path);
-
-    // Get public URL
-    const { data: { publicUrl } } = supabaseClient.storage
-      .from('import-files')
-      .getPublicUrl(uploadData.path);
-
-    // Create file_imports record
-    const { data: fileImport, error: fileImportError } = await supabaseClient
+    // Create file_imports record for the normalized file
+    const { data: newFileImport, error: fileError } = await supabaseClient
       .from('file_imports')
       .insert({
         file_name: fileName,
-        file_path: uploadData.path,
+        file_path: filePath,
+        file_size: new TextEncoder().encode(csvContent).length,
         file_content: csvContent,
-        file_size: new Blob([csvContent]).size,
-        stato: 'normalizzato',
+        stato: 'processato',
         total_rows: normalizedData.length,
-        headers_detected: headers,
         separator_detected: ',',
-        import_log_id: importLogId
+        headers_detected: headers
       })
       .select()
       .single();
 
-    if (fileImportError) {
-      throw new Error(`Error creating file_imports record: ${fileImportError.message}`);
+    if (fileError) {
+      throw new Error(`Error creating file record: ${fileError.message}`);
     }
 
     // Update import_logs with final file reference
     await supabaseClient
       .from('import_logs')
       .update({
-        final_file_path: uploadData.path,
-        final_file_id: fileImport.id,
-        stato: 'normalizzato'
+        final_file_path: filePath,
+        final_file_id: newFileImport.id,
+        stato: 'completato',
+        completed_at: new Date().toISOString()
       })
       .eq('id', importLogId);
 
-    console.log('[Generate File] Process completed successfully');
+    console.log('[Generate File] Success:', fileName);
 
     return new Response(JSON.stringify({
       success: true,
-      file: {
-        id: fileImport.id,
-        name: fileName,
-        path: uploadData.path,
-        publicUrl,
-        totalRecords: normalizedData.length
-      }
+      file_path: filePath,
+      file_name: fileName,
+      file_id: newFileImport.id,
+      records_count: normalizedData.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

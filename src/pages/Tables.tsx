@@ -243,7 +243,7 @@ export default function Tables() {
           <p className="text-muted-foreground">Caricamento tabelle...</p>
         </div>
       ) : (
-        <div className="max-w-4xl space-y-4">
+        <div className="max-w-2xl space-y-4">
           {categorizedTables.map((category) => (
             <div key={category.name} className="space-y-2">
               <h2 className="text-lg font-semibold text-foreground border-b pb-1">

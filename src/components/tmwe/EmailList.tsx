@@ -111,44 +111,46 @@ export const EmailList = ({
           )}
           onClick={() => onEmailSelect(email.id)}
         >
-          <div className="flex items-center gap-4">
-            <div className="flex-1 flex items-center gap-4">
-              <div className="min-w-[200px]">
-                <p className={cn(
-                  'truncate text-sm',
-                  !email.read && 'font-semibold text-email-unread'
-                )}>
-                  {email.from}
+          <div className="flex items-start gap-4">
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-4">
+                <div className="min-w-[200px]">
+                  <p className={cn(
+                    'truncate text-sm',
+                    !email.read && 'font-semibold text-email-unread'
+                  )}>
+                    {email.from}
+                  </p>
+                </div>
+                <div className="flex-1">
+                  <h3 className={cn(
+                    'truncate text-sm',
+                    !email.read && 'font-semibold'
+                  )}>
+                    {email.subject || '(No Subject)'}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
+                  </span>
+                  {!email.read && (
+                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
+                  )}
+                  {email.starred && (
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  )}
+                  {email.hasAttachments && (
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              <div className="w-[90%]">
+                <p className="truncate text-sm text-muted-foreground/60">
+                  {email.preview || 'No preview available'}
                 </p>
               </div>
-              <div className="flex-1">
-                <h3 className={cn(
-                  'truncate text-sm',
-                  !email.read && 'font-semibold'
-                )}>
-                  {email.subject || '(No Subject)'}
-                </h3>
-              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="whitespace-nowrap text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-              </span>
-              {!email.read && (
-                <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
-              )}
-              {email.starred && (
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              )}
-              {email.hasAttachments && (
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-          </div>
-          <div className="mt-2">
-            <p className="truncate text-sm text-muted-foreground">
-              {email.preview}
-            </p>
           </div>
         </Card>
       ))}

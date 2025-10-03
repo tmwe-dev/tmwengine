@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Square, Maximize2 } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ interface EmailListProps {
   onOpenDetailPopup?: () => void;
 }
 
-type ViewMode = 'list' | 'grid' | 'single';
+type ViewMode = 'list' | 'grid';
 
 export const EmailList = ({ 
   emails, 
@@ -54,7 +54,6 @@ export const EmailList = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastEmailRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(0);
 
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const [target] = entries;
@@ -247,100 +246,6 @@ export const EmailList = ({
     </div>
   );
 
-  const renderSingleView = () => {
-    const currentEmail = emails[currentPage];
-    if (!currentEmail) return null;
-
-    return (
-      <div className="py-2 px-[28px]">
-        <Card
-          className={cn(
-            'cursor-pointer border-l-4 p-4 transition-all duration-200 w-[250px] h-[250px] flex flex-col',
-            currentEmail.read 
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02]'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02]',
-            selectedEmailId === currentEmail.id && (
-              currentEmail.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_16px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_16px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
-            )
-          )}
-          onClick={() => onEmailSelect(currentEmail.id)}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-1 overflow-hidden">
-              <div className="flex items-center gap-2">
-                <p className={cn(
-                  'truncate text-sm',
-                  !currentEmail.read && 'font-semibold text-email-unread'
-                )}>
-                  {currentEmail.from}
-                </p>
-                {!currentEmail.read && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                    New
-                  </Badge>
-                )}
-              </div>
-              <h3 className={cn(
-                'truncate text-base',
-                !currentEmail.read && 'font-semibold'
-              )}>
-                {currentEmail.subject || '(No Subject)'}
-              </h3>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(currentEmail.date), { addSuffix: true })}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenDetailPopup?.();
-                  }}
-                  className="flex-shrink-0 p-0 h-4 w-4 hover:bg-transparent"
-                >
-                  <Maximize2 className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="flex gap-1">
-                {currentEmail.starred && (
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                )}
-                {currentEmail.hasAttachments && (
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            disabled={currentPage === 0}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {currentPage + 1} / {emails.length}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(emails.length - 1, prev + 1))}
-            disabled={currentPage === emails.length - 1}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <>
@@ -359,23 +264,12 @@ export const EmailList = ({
         >
           <LayoutGrid className="h-4 w-4" />
         </Button>
-        <Button
-          variant={viewMode === 'single' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => {
-            setViewMode('single');
-            setCurrentPage(0);
-          }}
-        >
-          <Square className="h-4 w-4" />
-        </Button>
       </div>
       <ScrollArea className="h-full" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}
         {viewMode === 'grid' && renderGridView()}
-        {viewMode === 'single' && renderSingleView()}
         
-        {isLoadingMore && viewMode !== 'single' && (
+        {isLoadingMore && (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>

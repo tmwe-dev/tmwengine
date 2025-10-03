@@ -2473,11 +2473,11 @@ export default function ImportTemplates() {
                             size="sm"
                             variant="ghost"
                             onClick={() => selectedImport && loadAllRecords(selectedImport)}
-                            className="h-8 px-2 gap-1"
+                            className="h-auto px-2 py-1 flex flex-col items-center gap-1"
                             disabled={loadingAllRecords}
                           >
                             <RefreshCw className={cn("h-4 w-4", loadingAllRecords && "animate-spin")} />
-                            <span className="text-xs">Refresh</span>
+                            <span className="text-[10px]">Ricarica i dati</span>
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>

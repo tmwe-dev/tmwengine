@@ -24,6 +24,10 @@ import AIConfig from "./pages/AIConfig";
 import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
+import TMWELogin from "./pages/TMWELogin";
+import TMWEAuthCallback from "./pages/TMWEAuthCallback";
+import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
+import { AuthGuard } from "./components/tmwe/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +114,13 @@ const App = () => (
               <ProtectedRoute>
                 <CRMLayout><Tables /></CRMLayout>
               </ProtectedRoute>
+            } />
+            <Route path="/login" element={<TMWELogin />} />
+            <Route path="/tmwe/callback" element={<TMWEAuthCallback />} />
+            <Route path="/email-manager" element={
+              <AuthGuard>
+                <TMWEEmailDashboard />
+              </AuthGuard>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

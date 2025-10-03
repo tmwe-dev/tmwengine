@@ -180,7 +180,7 @@ export function GestisciAttivitaDialog({
             {/* Colonna sinistra - Form di modifica */}
             <div className="space-y-3">
               {/* Stato e Priorità - 1/4 larghezza, allineati a sinistra */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 <div className="w-32">
                   <Label htmlFor="stato" className="text-sm">Stato</Label>
                   <Select 
@@ -214,6 +214,10 @@ export function GestisciAttivitaDialog({
                       <SelectItem value="bassa">Bassa</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div className="flex items-center justify-center w-9 h-9 text-2xl">
+                  {getActivityIcon(activity.tipo)}
                 </div>
               </div>
 
@@ -315,11 +319,6 @@ export function GestisciAttivitaDialog({
                 Info Attività
               </h3>
               <div className="space-y-6 flex-1">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Tipo</Label>
-                  <div className="font-medium text-sm mt-1">{activity.tipo.toUpperCase()}</div>
-                </div>
-
                 <div>
                   <Label className="text-xs text-muted-foreground">Stato</Label>
                   <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs mt-1">

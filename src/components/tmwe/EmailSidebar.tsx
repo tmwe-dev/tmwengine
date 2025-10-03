@@ -140,7 +140,7 @@ export const EmailSidebar = ({
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
         className={cn(
           'w-full justify-between',
-          selectedFolder === folder.name && 'bg-email-selected'
+          selectedFolder === folder.name && 'bg-email-selected text-primary-foreground'
         )}
         style={{ paddingLeft: `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}

@@ -17,6 +17,7 @@ import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 
 interface RecordDetailLayoutProps {
   record: any;
@@ -342,38 +343,25 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
       let emailSendResult = null;
       
       if (activityData.tipo === 'email') {
-        // Invia la mail tramite TMWE
         if (record.email && activityData.oggetto_email && activityData.testo_email) {
           try {
-            console.log(`📧 Invio email a ${record.email}...`);
-            const { data: sendResult, error: sendError } = await supabase.functions.invoke('tmwe-email-send', {
-              body: {
-                to: record.email,
-                subject: activityData.oggetto_email,
-                body_text: activityData.testo_email,
-                body_html: activityData.testo_email.replace(/\n/g, '<br>')
-              }
+            const response = await emailMessageApi.sendMessage({
+              to: [record.email],
+              subject: activityData.oggetto_email,
+              body: activityData.testo_email,
+              body_type: 'text'
             });
-            
-            console.log('📧 Risultato invio email:', { sendResult, sendError });
-            
-            if (sendError) {
-              console.error('❌ Errore invio email:', sendError);
-              descrizione = `❌ Email NON INVIATA - Errore: ${sendError.message}\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
-            } else if (sendResult?.success) {
-              console.log('✅ Email inviata con successo:', sendResult.message_id);
+
+            if (response?.success) {
               emailSendResult = 'success';
-              descrizione = `✅ Email INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\nMessage ID: ${sendResult.message_id || 'N/A'}\n\nTesto inviato:\n${activityData.testo_email}`;
+              descrizione = `✅ Email INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\nMessage ID: ${response.message_id || 'N/A'}\n\nTesto inviato:\n${activityData.testo_email}`;
             } else {
-              console.error('❌ Errore invio email - risposta:', sendResult);
               descrizione = `❌ Email NON INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
             }
-          } catch (error) {
-            console.error('❌ Errore durante invio email:', error);
-            descrizione = `❌ Email NON INVIATA - Errore tecnico\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
+          } catch (err: any) {
+            descrizione = `❌ Email NON INVIATA - Errore: ${err.message}\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${record.email}\nAzienda: ${record.company_name || record.azienda || ''}\n\nTesto:\n${activityData.testo_email}`;
           }
         } else {
-          // Email mancante o dati incompleti
           descrizione = `❌ Email NON INVIATA - Dati mancanti\n\nOggetto: ${activityData.oggetto_email || 'Nessun oggetto'}\nAzienda: ${record.company_name || record.azienda || ''}\n\nEmail destinatario: ${record.email || 'Non disponibile'}`;
         }
       } else if (activityData.tipo === 'chiamata') {

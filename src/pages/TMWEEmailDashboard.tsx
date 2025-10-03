@@ -48,6 +48,41 @@ const EmailDashboard = () => {
     setShowEmailList(true);
   };
 
+  // Navigation between emails
+  const handlePreviousEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
+    if (currentIndex > 0) {
+      setSelectedEmailId(emails[currentIndex - 1].id);
+    }
+  };
+
+  const handleNextEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
+    if (currentIndex >= 0 && currentIndex < emails.length - 1) {
+      setSelectedEmailId(emails[currentIndex + 1].id);
+    }
+  };
+
+  const hasPreviousEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
+    return currentIndex > 0;
+  };
+
+  const hasNextEmail = () => {
+    const currentIndex = emails.findIndex(e => e.id === selectedEmailId);
+    return currentIndex >= 0 && currentIndex < emails.length - 1;
+  };
+
+  // Mark email as read
+  const handleMarkAsRead = async (emailId: string) => {
+    try {
+      await emailMessageApi.getMessage(emailId, true);
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    } catch (error) {
+      console.error('Error marking email as read:', error);
+    }
+  };
+
   const { 
     data: messagesData,
     isLoading: messagesLoading,
@@ -309,6 +344,11 @@ const EmailDashboard = () => {
               onForward={handleForward}
               onBack={handleBackToList}
               isMobile={true}
+              onPrevious={handlePreviousEmail}
+              onNext={handleNextEmail}
+              hasPrevious={hasPreviousEmail()}
+              hasNext={hasNextEmail()}
+              onMarkAsRead={handleMarkAsRead}
             />
           </div>
         )}
@@ -333,6 +373,11 @@ const EmailDashboard = () => {
               onReplyAll={handleReplyAll}
               onForward={handleForward}
               onDelete={handleDelete}
+              onPrevious={handlePreviousEmail}
+              onNext={handleNextEmail}
+              hasPrevious={hasPreviousEmail()}
+              hasNext={hasNextEmail()}
+              onMarkAsRead={handleMarkAsRead}
             />
           ) : (
             <div className="flex items-center justify-center p-8">

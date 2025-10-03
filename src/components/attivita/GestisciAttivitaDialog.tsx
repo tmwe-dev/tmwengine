@@ -176,8 +176,8 @@ export function GestisciAttivitaDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-2">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
-            {/* Colonna sinistra - Form di modifica */}
+          <div>
+            {/* Form di modifica */}
             <div className="space-y-3">
               {/* Stato e Priorità - 1/4 larghezza, allineati a sinistra */}
               <div className="flex gap-2 items-end">
@@ -309,31 +309,6 @@ export function GestisciAttivitaDialog({
                     className="h-9 text-sm"
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Colonna destra - Informazioni di base (min 500px altezza) */}
-            <div className="bg-muted/30 rounded-lg p-3 min-h-[500px] flex flex-col">
-              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                Info Attività
-              </h3>
-              <div className="space-y-6 flex-1">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Stato</Label>
-                  <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs mt-1">
-                    {activity.stato.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-
-                {activity.data_ultima_modifica && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Ultima Modifica</Label>
-                    <div className="text-sm font-medium mt-1">
-                      {format(new Date(activity.data_ultima_modifica), 'dd/MM/yyyy HH:mm')}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

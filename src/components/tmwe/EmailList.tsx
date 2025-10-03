@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 interface Email {
@@ -54,6 +56,9 @@ export const EmailList = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastEmailRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
+  const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const [target] = entries;
@@ -104,10 +109,10 @@ export const EmailList = ({
 
   const renderListView = () => (
     <div className="space-y-2 py-2 px-[28px]">
-      {emails.map((email, index) => (
+      {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
-          ref={index === emails.length - 1 ? lastEmailRef : null}
+          ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
             'cursor-pointer border-l-4 p-0 transition-all duration-200 overflow-hidden',
             email.read 
@@ -178,10 +183,10 @@ export const EmailList = ({
 
   const renderGridView = () => (
     <div className="space-y-3 py-2 px-[28px]">
-      {emails.map((email, index) => (
+      {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
-          ref={index === emails.length - 1 ? lastEmailRef : null}
+          ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
             'cursor-pointer border-l-4 p-0 transition-all duration-200 overflow-hidden',
             email.read 
@@ -257,21 +262,33 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex items-center justify-end gap-2 p-2 px-[28px] border-b">
-        <Button
-          variant={viewMode === 'list' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('list')}
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'grid' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('grid')}
-        >
-          <LayoutGrid className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center justify-between gap-2 p-2 px-[28px] border-b">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="unread-only"
+            checked={showUnreadOnly}
+            onCheckedChange={setShowUnreadOnly}
+          />
+          <Label htmlFor="unread-only" className="text-sm cursor-pointer">
+            Solo non lette
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <ScrollArea className="h-full" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}

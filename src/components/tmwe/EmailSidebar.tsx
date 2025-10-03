@@ -142,34 +142,53 @@ export const EmailSidebar = ({
         key={folder.name}
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
         className={cn(
-          'w-full justify-start gap-3',
+          'w-full',
+          isCollapsed ? 'justify-center px-2' : 'justify-between',
           selectedFolder === folder.name && 'bg-email-selected text-primary-foreground'
         )}
-        style={{ paddingLeft: `${12 + indent * 16}px` }}
+        style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
+        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
-        <Icon className="h-4 w-4 flex-shrink-0" />
-        <span className="truncate flex-1 text-left">
-          {folder.name}
-        </span>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {totalMessages > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {totalMessages.toLocaleString()}
+        <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
+          <Icon className={cn("h-4 w-4 flex-shrink-0", isCollapsed ? "" : "mr-3")} />
+          {!isCollapsed && (
+            <span className="truncate">
+              {folder.name} {totalMessages > 0 && `(${totalMessages.toLocaleString()})`}
             </span>
           )}
-          {unseenCount > 0 && (
-            <Badge variant="default" className="h-5 min-w-[20px] px-1.5 text-xs">
-              {unseenCount}
-            </Badge>
-          )}
         </div>
+        {!isCollapsed && unseenCount > 0 && (
+          <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 flex-shrink-0">
+            {unseenCount}
+          </Badge>
+        )}
+        {isCollapsed && unseenCount > 0 && (
+          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] flex items-center justify-center text-primary-foreground">
+            {unseenCount > 9 ? '9+' : unseenCount}
+          </div>
+        )}
       </Button>
     );
   };
 
   return (
-    <div className="flex h-full flex-col border-r bg-card w-64">
+    <div className={cn(
+      "flex h-full flex-col border-r bg-card transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="p-2 flex justify-end">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? "Espandi sidebar" : "Riduci sidebar"}
+        >
+          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </Button>
+      </div>
+      <Separator />
+
       <ScrollArea className="flex-1 px-2">
         <div className="space-y-1 py-2">
           {isLoading ? (
@@ -187,17 +206,32 @@ export const EmailSidebar = ({
               {customFolders.length > 0 && (
                 <>
                   <Separator className="my-2" />
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
-                    <span>Folders</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0"
-                      onClick={() => setIsCreateDialogOpen(true)}
-                    >
-                      <FolderPlus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                  {!isCollapsed && (
+                    <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                      <span>Folders</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                      >
+                        <FolderPlus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  {isCollapsed && (
+                    <div className="px-2 py-1 flex justify-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        title="Nuova Carpeta"
+                      >
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   {customFolders.map(renderFolder)}
                 </>
               )}
@@ -206,15 +240,27 @@ export const EmailSidebar = ({
                 <>
                   <Separator className="my-2" />
                   <div className="px-2 py-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setIsCreateDialogOpen(true)}
-                    >
-                      <FolderPlus className="mr-2 h-4 w-4" />
-                      Nueva Carpeta
-                    </Button>
+                    {isCollapsed ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full p-2"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        title="Nuova Carpeta"
+                      >
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                      >
+                        <FolderPlus className="mr-2 h-4 w-4" />
+                        Nueva Carpeta
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
@@ -228,11 +274,12 @@ export const EmailSidebar = ({
       <div className="p-2">
         <Button 
           variant="ghost" 
-          className="w-full justify-start gap-3" 
+          className={cn("w-full", isCollapsed ? "justify-center px-2" : "justify-start")} 
           size="sm"
+          title={isCollapsed ? "Settings" : undefined}
         >
-          <Settings className="h-4 w-4" />
-          Settings
+          <Settings className={cn("h-4 w-4", isCollapsed ? "" : "mr-3")} />
+          {!isCollapsed && "Settings"}
         </Button>
       </div>
 

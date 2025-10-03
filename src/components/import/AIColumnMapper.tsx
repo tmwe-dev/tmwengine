@@ -329,7 +329,7 @@ export function AIColumnMapper({ importLogId, onProcessComplete, initialPrompt }
                 onDragEnd={handleDragEnd}
                 className={cn(
                   "px-4 py-2 rounded-lg border-2 cursor-move transition-all",
-                  "bg-white hover:bg-gray-50 hover:shadow-md",
+                  "hover:shadow-md",
                   draggedColumn === column && "opacity-50 scale-95"
                 )}
               >

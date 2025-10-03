@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,11 +31,67 @@ serve(async (req) => {
       throw new Error('Errore nel download del file');
     }
 
-    // Converti il file in testo
-    const fileContent = await fileData.text();
-    const fileSize = new Blob([fileContent]).size;
-
+    const fileSize = fileData.size;
     console.log(`[AI Import] File size: ${fileSize} bytes`);
+
+    let fileContent: string;
+    let headers: string[];
+    let separator = '\t';
+
+    // Check if file is Excel format
+    if (filePath.endsWith('.xlsx') || filePath.endsWith('.xls')) {
+      console.log('[AI Import] Processing Excel file');
+      
+      // Read as array buffer for Excel parsing
+      const arrayBuffer = await fileData.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      // Get first sheet
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // Convert to CSV format
+      const csvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+      fileContent = csvContent;
+      
+      // Extract headers from first line
+      const lines = csvContent.split('\n').filter((line: string) => line.trim());
+      if (lines.length === 0) {
+        throw new Error('File vuoto');
+      }
+      
+      const firstLine = lines[0];
+      headers = firstLine.split('\t').map(h => h.replace(/["\r\n]/g, '').trim());
+      separator = '\t';
+      
+      console.log(`[AI Import] Excel parsed: ${headers.length} columns, ${lines.length - 1} data rows`);
+    } else {
+      // Process as text file (CSV/TSV)
+      console.log('[AI Import] Processing text file');
+      fileContent = await fileData.text();
+      
+      const lines = fileContent.split('\n').filter((line: string) => line.trim());
+      if (lines.length === 0) {
+        throw new Error('File vuoto');
+      }
+
+      const firstLine = lines[0];
+      
+      // Auto-detect separator
+      const testSeparators = ['\t', ';', ',', '|'];
+      let maxColumns = 0;
+      
+      for (const testSep of testSeparators) {
+        const testHeaders = firstLine.split(testSep);
+        if (testHeaders.length > maxColumns) {
+          maxColumns = testHeaders.length;
+          separator = testSep;
+        }
+      }
+      
+      headers = firstLine.split(separator).map(h => h.replace(/["\r\n]/g, '').trim());
+      console.log(`[AI Import] Text file parsed: separator="${separator}", ${headers.length} columns`);
+    }
 
     // Inizia il log di importazione
     const { data: importLog, error: logError } = await supabaseClient
@@ -53,29 +110,6 @@ serve(async (req) => {
 
     // Analizza la struttura del file
     const lines = fileContent.split('\n').filter((line: string) => line.trim());
-    
-    if (lines.length === 0) {
-      throw new Error('File vuoto');
-    }
-
-    const firstLine = lines[0];
-    
-    // Auto-detect separator - try multiple separators
-    let separator = '\t';
-    const testSeparators = ['\t', ';', ',', '|'];
-    let maxColumns = 0;
-    
-    for (const testSep of testSeparators) {
-      const testHeaders = firstLine.split(testSep);
-      if (testHeaders.length > maxColumns) {
-        maxColumns = testHeaders.length;
-        separator = testSep;
-      }
-    }
-    
-    const headers = firstLine.split(separator).map(h => h.replace(/["\r\n]/g, '').trim());
-    console.log(`[AI Import] Detected separator: "${separator}" (code: ${separator.charCodeAt(0)}), headers: ${headers.length}`, headers.slice(0, 5));
-
     const dataRows = lines.slice(1);
     const totalRows = dataRows.length;
 

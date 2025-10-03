@@ -1,15 +1,31 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Zap, Table2 } from "lucide-react";
 
 interface ImportMethodSelectorProps {
-  onSelectMethod: (method: 'column_mapping' | 'row_normalization') => void;
+  onSelectMethod: (method: 'column_mapping' | 'row_normalization', origin: string) => void;
   totalRows: number;
 }
 
 export function ImportMethodSelector({ onSelectMethod, totalRows }: ImportMethodSelectorProps) {
+  const [origin, setOrigin] = useState("");
+  const [selectedMethod, setSelectedMethod] = useState<'column_mapping' | 'row_normalization' | null>(null);
+
+  const handleMethodSelect = (method: 'column_mapping' | 'row_normalization') => {
+    setSelectedMethod(method);
+  };
+
+  const handleConfirm = () => {
+    if (selectedMethod && origin.trim()) {
+      onSelectMethod(selectedMethod, origin.trim());
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Scegli Metodo di Importazione</h2>
         <p className="text-muted-foreground">
@@ -17,10 +33,31 @@ export function ImportMethodSelector({ onSelectMethod, totalRows }: ImportMethod
         </p>
       </div>
 
+      {/* Origine Field */}
+      <Card className="p-4 bg-primary/5 border-primary/20">
+        <div className="space-y-2">
+          <Label htmlFor="origin" className="text-base font-semibold">
+            Origine Contatti <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="origin"
+            placeholder="es: LinkedIn, Fiera Milano 2024, Database Clienti..."
+            value={origin}
+            onChange={(e) => setOrigin(e.target.value)}
+            className="bg-background"
+          />
+          <p className="text-xs text-muted-foreground">
+            Specifica la provenienza di questi contatti. Verrà salvata nel campo "origine" per ogni record.
+          </p>
+        </div>
+      </Card>
+
       <div className="grid md:grid-cols-2 gap-4">
         {/* Column Mapping */}
-        <Card className="p-6 hover:border-primary transition-colors cursor-pointer group"
-              onClick={() => onSelectMethod('column_mapping')}>
+        <Card className={`p-6 hover:border-primary transition-colors cursor-pointer group ${
+          selectedMethod === 'column_mapping' ? 'border-primary bg-primary/5' : ''
+        }`}
+              onClick={() => handleMethodSelect('column_mapping')}>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
@@ -49,8 +86,10 @@ export function ImportMethodSelector({ onSelectMethod, totalRows }: ImportMethod
         </Card>
 
         {/* AI Row Normalization */}
-        <Card className="p-6 hover:border-primary transition-colors cursor-pointer group border-primary/50"
-              onClick={() => onSelectMethod('row_normalization')}>
+        <Card className={`p-6 hover:border-primary transition-colors cursor-pointer group ${
+          selectedMethod === 'row_normalization' ? 'border-primary bg-primary/5' : 'border-primary/50'
+        }`}
+              onClick={() => handleMethodSelect('row_normalization')}>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
@@ -79,13 +118,24 @@ export function ImportMethodSelector({ onSelectMethod, totalRows }: ImportMethod
                 📊 {totalRows} righe = ~{Math.ceil(totalRows / 50)} batch (~{Math.ceil(totalRows / 50 * 2)}s totali)
               </div>
               
-              <Button className="w-full">
-                Usa AI Normalization
-              </Button>
             </div>
           </div>
         </Card>
       </div>
+
+      {/* Confirm Button */}
+      {selectedMethod && (
+        <div className="flex justify-center">
+          <Button 
+            size="lg"
+            onClick={handleConfirm}
+            disabled={!origin.trim()}
+            className="min-w-[200px]"
+          >
+            Avvia Importazione
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

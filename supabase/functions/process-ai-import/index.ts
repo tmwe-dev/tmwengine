@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { importLogId, aiPrompt, mode = 'column_mapping', batchSize = 50, offset = 0 } = await req.json();
+    const { importLogId, aiPrompt, mode = 'column_mapping', batchSize = 50, offset = 0, origin } = await req.json();
     console.log('[AI Process] Starting AI processing:', { importLogId, mode, batchSize, offset });
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -68,8 +68,8 @@ serve(async (req) => {
 
     if (mode === 'row_normalization') {
       // AI Row-by-Row Normalization
-      const systemPrompt = `You are a data normalization assistant. Analyze each contact record and extract/normalize fields into the standard schema.
-      
+      const systemPrompt = `You are an intelligent data normalization assistant. Analyze each contact record, extract/normalize fields, and COMPLETE missing data when you are CERTAIN.
+
 OUTPUT STRICT JSON ARRAY with these fields for EACH record:
 {
   "name": "string | null",
@@ -80,14 +80,32 @@ OUTPUT STRICT JSON ARRAY with these fields for EACH record:
   "country": "country name | null",
   "city": "city name | null",
   "address": "address | null",
+  "zip_code": "postal code | null",
   "note": "notes | null"
 }
 
-RULES:
-- Detect field type from content (email contains @, phone has numbers)
-- Clean and format values properly
-- Return null for missing/invalid data
-- Output ONLY the JSON array, no other text`;
+CRITICAL RULES - DATA COMPLETION:
+1. **Country Inference**: If city is known (e.g., "Milano", "Roma", "Napoli"), ADD country "Italia"
+2. **ZIP Code**: If city + country are known, ADD the most common zip code for that area
+3. **Data Detection**: Recognize field types from content:
+   - Email: contains @
+   - Phone: contains numbers, may have +39 prefix
+   - Mobile: often starts with 3 (Italy)
+4. **Clean Format**:
+   - Phone: standardize format (+39 XXX XXXXXXX)
+   - Email: lowercase
+   - Names: capitalize properly
+5. **ONLY add data you are 100% CERTAIN about**
+6. **Return null for missing/uncertain data**
+
+GEOGRAPHIC KNOWLEDGE (use ONLY if certain):
+- Milano → Italy, common zip: 20100-20162
+- Roma → Italy, common zip: 00100-00199
+- Torino → Italy, common zip: 10100-10156
+- Napoli → Italy, common zip: 80100-80147
+- Firenze → Italy, common zip: 50100-50145
+
+OUTPUT: ONLY the JSON array, no other text`;
 
       const recordsJson = tempRecords.map(r => ({
         row: r.row_number,
@@ -129,14 +147,20 @@ RULES:
         normalized = [];
       }
 
-      // Insert to temp_ai_reviewed
-      const reviewedRecords = tempRecords.map((record, idx) => ({
-        import_log_id: importLogId,
-        row_number: record.row_number,
-        raw_data: record.raw_data,
-        normalized_data: normalized[idx] || null,
-        validation_status: normalized[idx] ? 'normalized' : 'failed'
-      }));
+      // Insert to temp_ai_reviewed with origin
+      const reviewedRecords = tempRecords.map((record, idx) => {
+        const normalizedData = normalized[idx];
+        if (normalizedData && origin) {
+          normalizedData.origin = origin;
+        }
+        return {
+          import_log_id: importLogId,
+          row_number: record.row_number,
+          raw_data: record.raw_data,
+          normalized_data: normalizedData || null,
+          validation_status: normalizedData ? 'normalized' : 'failed'
+        };
+      });
 
       await supabaseClient
         .from('temp_ai_reviewed')
@@ -156,7 +180,9 @@ RULES:
         country: record.raw_data.country || record.raw_data.Paese || null,
         city: record.raw_data.city || record.raw_data.Città || null,
         address: record.raw_data.address || record.raw_data.Indirizzo || null,
+        zip_code: record.raw_data.zip_code || record.raw_data.CAP || null,
         note: record.raw_data.note || record.raw_data.Note || null,
+        origin: origin || null,
       }));
 
       await supabaseClient

@@ -9,12 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 interface AIBatchProcessorProps {
   importLogId: string;
   totalRows: number;
+  origin: string;
   onComplete: () => void;
 }
 
 const BATCH_SIZE = 50;
 
-export function AIBatchProcessor({ importLogId, totalRows, onComplete }: AIBatchProcessorProps) {
+export function AIBatchProcessor({ importLogId, totalRows, origin, onComplete }: AIBatchProcessorProps) {
   const { toast } = useToast();
   const [processing, setProcessing] = useState(true);
   const [currentBatch, setCurrentBatch] = useState(0);
@@ -37,7 +38,8 @@ export function AIBatchProcessor({ importLogId, totalRows, onComplete }: AIBatch
           importLogId,
           mode: 'row_normalization',
           batchSize: BATCH_SIZE,
-          offset
+          offset,
+          origin
         }
       });
 

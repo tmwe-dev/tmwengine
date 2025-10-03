@@ -268,6 +268,9 @@ export default function ImportTemplates() {
   // Switch per attivare/disattivare importazione AI
   const [useAIImport, setUseAIImport] = useState(false);
   
+  // Prompt per AI
+  const [aiPrompt, setAiPrompt] = useState('Analizza i dati importati e normalizzali nella tabella temporanea. Correggi eventuali errori di formato, standardizza i nomi dei campi e verifica la coerenza dei dati.');
+  
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
     primary: { column: string; direction: 'asc' | 'desc' } | null;
@@ -2136,6 +2139,23 @@ export default function ImportTemplates() {
                   Usa Importazione AI
                 </Label>
               </div>
+              
+              {useAIImport && (
+                <div className="space-y-2">
+                  <Label htmlFor="ai-prompt">Istruzioni per l'AI</Label>
+                  <Textarea
+                    id="ai-prompt"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Descrivi come l'AI deve processare i dati importati..."
+                    className="min-h-[120px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    L'AI utilizzerà queste istruzioni per elaborare i dati nella tabella temporanea
+                  </p>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="file-upload">File da Importare (.xlsx, .xls, .csv)</Label>
                 <Input

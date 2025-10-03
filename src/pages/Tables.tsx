@@ -170,11 +170,10 @@ export default function Tables() {
   const handleDeleteCategory = async (categoryName: string, categoryTables: TableInfo[]) => {
     setIsDeleting(true);
     
-    // Escludi chat_system_prompts dall'eliminazione di gruppo
-    const tablesToDelete = categoryTables.filter(t => t.table_name !== 'chat_system_prompts');
+    const tablesToDelete = categoryTables.filter(t => t.row_count > 0);
     
     if (tablesToDelete.length === 0) {
-      toast.error('Nessuna tabella da eliminare in questa categoria');
+      toast.error('Nessuna tabella con record da eliminare in questa categoria');
       setIsDeleting(false);
       setDeleteCategory(null);
       return;
@@ -360,24 +359,22 @@ export default function Tables() {
                         <span className="text-sm font-semibold whitespace-nowrap">
                           {table.row_count}
                         </span>
-                        {table.table_name === 'chat_system_prompts' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (table.row_count > 0) {
-                                if (confirm(`Eliminare tutti i ${table.row_count} prompt di sistema?`)) {
-                                  handleDeleteTable(table.table_name, table.row_count);
-                                }
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (table.row_count > 0) {
+                              if (confirm(`Eliminare tutti i ${table.row_count} record da ${table.table_name}?`)) {
+                                handleDeleteTable(table.table_name, table.row_count);
                               }
-                            }}
-                            disabled={table.row_count === 0}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                          </Button>
-                        )}
+                            }
+                          }}
+                          disabled={table.row_count === 0}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -401,20 +398,13 @@ export default function Tables() {
                   <ul className="text-sm space-y-1">
                     {categorizedTables
                       .find(cat => cat.name === deleteCategory)
-                      ?.tables.filter(t => t.table_name !== 'chat_system_prompts')
+                      ?.tables.filter(t => t.row_count > 0)
                       .map(table => (
                         <li key={table.table_name}>
                           • {table.table_name} ({table.row_count} record{table.row_count !== 1 ? 's' : ''})
                         </li>
                       ))}
                   </ul>
-                  {categorizedTables
-                    .find(cat => cat.name === deleteCategory)
-                    ?.tables.some(t => t.table_name === 'chat_system_prompts') && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Nota: chat_system_prompts verrà preservato e richiede eliminazione manuale.
-                    </p>
-                  )}
                 </div>
               )}
             </AlertDialogDescription>

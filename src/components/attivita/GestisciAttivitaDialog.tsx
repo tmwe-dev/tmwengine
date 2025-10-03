@@ -320,13 +320,6 @@ export function GestisciAttivitaDialog({
                   <div className="font-medium text-sm mt-1">{activity.tipo.toUpperCase()}</div>
                 </div>
 
-                <div>
-                  <Label className="text-xs text-muted-foreground">Stato</Label>
-                  <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs mt-1">
-                    {activity.stato.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-
                 {activity.data_ultima_modifica && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Ultima Modifica</Label>
@@ -335,6 +328,13 @@ export function GestisciAttivitaDialog({
                     </div>
                   </div>
                 )}
+
+                <div>
+                  <Label className="text-xs text-muted-foreground">Stato</Label>
+                  <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs mt-1">
+                    {activity.stato.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
               </div>
             </div>
           </div>

@@ -7,65 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Data validation functions
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
-};
-
-const isValidPhone = (phone: string): boolean => {
-  const phoneRegex = /^[\+]?[\d\s\-\(\)]{7,20}$/;
-  return phoneRegex.test(phone.trim());
-};
-
-const isValidCountry = (country: string): boolean => {
-  // Check if it looks like a country name (no @ symbol, reasonable length)
-  return !country.includes('@') && country.length >= 2 && country.length <= 50 && !/^\d+$/.test(country);
-};
-
-const isValidName = (name: string): boolean => {
-  // Name shouldn't contain @ or be just numbers
-  return !name.includes('@') && !/^\d+$/.test(name) && name.length >= 1 && name.length <= 100;
-};
-
-const isValidCompanyName = (company: string): boolean => {
-  // Company name basic validation
-  return company.length >= 1 && company.length <= 200 && !company.includes('@');
-};
-
-const validateAndCleanData = (data: any, fieldName: string, rawValue: string | null): any => {
-  if (!rawValue || rawValue === 'NULL' || rawValue.trim() === '') {
-    return null;
-  }
-
-  const cleanValue = rawValue.replace(/^["']|["']$/g, '').trim();
-
-  switch (fieldName) {
-    case 'email':
-      return isValidEmail(cleanValue) ? cleanValue.toLowerCase() : null;
-    
-    case 'phone':
-    case 'cell':
-      return isValidPhone(cleanValue) ? cleanValue : null;
-    
-    case 'country':
-      return isValidCountry(cleanValue) ? cleanValue : null;
-    
-    case 'name':
-    case 'alias':
-      return isValidName(cleanValue) ? cleanValue : null;
-    
-    case 'company_name':
-    case 'company_alias':
-      return isValidCompanyName(cleanValue) ? cleanValue : null;
-    
-    case 'city':
-      return (cleanValue.length >= 1 && cleanValue.length <= 100 && !cleanValue.includes('@')) ? cleanValue : null;
-    
-    default:
-      return cleanValue.length <= 500 ? cleanValue : cleanValue.substring(0, 500);
-  }
-};
+// No validation functions - accept all data as-is
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -156,7 +98,9 @@ serve(async (req) => {
       const index = getFieldIndex(fieldName, isSecondOccurrence);
       if (index >= 0 && index < values.length) {
         const value = values[index];
-        return validateAndCleanData(null, fieldName, value);
+        // Return raw value without any validation or cleaning
+        if (!value || value === 'NULL' || value.trim() === '') return null;
+        return value.replace(/^["']|["']$/g, '').trim();
       }
       return null;
     };
@@ -251,27 +195,14 @@ serve(async (req) => {
             zip_code: getFieldValue('zip_code', values)
           };
 
-          // Parse date fields
+          // Parse date fields - accept any value
           contactData.last_contact = parseDate(getFieldValue('last', values));
           contactData.scheduled_contact = parseDate(getFieldValue('scheduled_contact', values));
           contactData.next_contact_date = parseDate(getFieldValue('next_contact_date', values));
 
-          // Validate essential fields - skip record if critical data is invalid
-          const hasValidName = contactData.name || contactData.company_name || contactData.company_alias;
-          const hasValidContact = contactData.email || contactData.phone || contactData.cell;
-
-          if (hasValidName && hasValidContact) {
-            contactsToInsert.push(contactData);
-            totalValidRecords++;
-          } else {
-            console.log(`[AI Import] Skipping invalid record at row ${globalRowIndex + 1}: missing essential fields`);
-            errors.push({ 
-              row: globalRowIndex + 1, 
-              error: 'Missing essential fields (name/company and contact info)' 
-            });
-            errorRows++;
-          }
-          
+          // No validation - insert all records as-is
+          contactsToInsert.push(contactData);
+          totalValidRecords++;
           processedRows++;
           
         } catch (rowError: any) {

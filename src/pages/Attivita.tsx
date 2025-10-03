@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database, Circle } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, User, CheckCircle, AlertCircle, Pause, X, Settings, Trash2, Phone, Mail, Users, FileText, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, CalendarIcon, EyeOff, Eye, SearchCheck, SearchX, Database, Circle, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1372,13 +1372,12 @@ export default function Attivita() {
                        <TableCell onClick={(e) => e.stopPropagation()} className="text-center align-middle">
                          <div className="flex items-center justify-center gap-1">
                            <Button
-                             variant="outline"
-                             size="sm"
+                             variant="ghost"
+                             size="icon"
                              onClick={() => openGestisciForm(activity)}
-                             className="h-7 px-2 text-xs"
+                             className="h-7 w-7"
                            >
-                             <Settings className="h-3 w-3 mr-1" />
-                             Gestisci
+                             <Pickaxe className="h-4 w-4" />
                            </Button>
                            
                            <Button

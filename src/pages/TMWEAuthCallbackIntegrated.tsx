@@ -116,15 +116,20 @@ const TMWEAuthCallbackIntegrated = () => {
         if (userEmail) {
           const { supabase } = await import('@/integrations/supabase/client');
           
+          console.log('🔐 Attempting Supabase authentication for:', userEmail);
+          
           // Try to sign in first
-          const { error: signInError } = await supabase.auth.signInWithPassword({
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email: userEmail,
             password: tokenData.access_token,
           });
 
+          console.log('Sign in result:', { signInData, signInError });
+
           // If sign in fails, create new account
           if (signInError) {
-            const { error: signUpError } = await supabase.auth.signUp({
+            console.log('Sign in failed, attempting sign up...');
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
               email: userEmail,
               password: tokenData.access_token,
               options: {
@@ -135,9 +140,27 @@ const TMWEAuthCallbackIntegrated = () => {
               }
             });
 
+            console.log('Sign up result:', { signUpData, signUpError });
+
             if (signUpError) {
-              console.error('Supabase signup error:', signUpError);
+              console.error('❌ Supabase signup error:', signUpError);
+              throw new Error(`Errore registrazione: ${signUpError.message}`);
             }
+
+            // Check if email confirmation is required
+            if (signUpData.user && !signUpData.session) {
+              setError('È richiesta la conferma email. Controlla la tua casella di posta.');
+              toast.error('Conferma la tua email per completare la registrazione');
+              return;
+            }
+          }
+
+          // Verify user is authenticated
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log('Current session after auth:', session);
+          
+          if (!session) {
+            throw new Error('Autenticazione fallita: nessuna sessione attiva');
           }
         }
         

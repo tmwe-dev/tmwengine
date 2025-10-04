@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, RefreshCw, Mail, Menu } from 'lucide-react';
+import findairLogo from '@/assets/findair-logo.png';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;
@@ -33,9 +34,12 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
           </Button>
         )}
         
-        <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          {isMobile ? 'Email' : 'TMWE Email Manager'}
-        </h1>
+        <div className="flex items-center gap-2">
+          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-8 md:h-10 md:w-10" />
+          <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            {isMobile ? 'Email' : 'TMWE Email Manager'}
+          </h1>
+        </div>
         
         <Button 
           onClick={onCompose} 

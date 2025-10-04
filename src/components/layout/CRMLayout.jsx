@@ -119,7 +119,7 @@ const CRMLayout = ({ children }) => {
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-1.5">
+              <Button variant="ghost" size="icon" className="mr-3">
                 <Search className="h-5 w-5" />
               </Button>
             </PopoverTrigger>

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3 } from 'lucide-react';
+import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -40,6 +40,8 @@ export default function EmailSenders() {
   const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group' | 'company'>('count');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [chartDialogOpen, setChartDialogOpen] = useState(false);
+  const [timelineWindowStart, setTimelineWindowStart] = useState(0);
+  const MONTHS_TO_SHOW = 12;
   const queryClient = useQueryClient();
 
   // Fetch sender statistics
@@ -265,7 +267,7 @@ export default function EmailSenders() {
   };
 
   // Fetch email timeline for selected sender
-  const { data: emailTimeline, isLoading: loadingTimeline } = useQuery({
+  const { data: emailTimelineAll, isLoading: loadingTimeline } = useQuery({
     queryKey: ['email-timeline', selectedSenders[0]],
     queryFn: async () => {
       if (selectedSenders.length !== 1) return [];
@@ -299,6 +301,11 @@ export default function EmailSenders() {
     },
     enabled: selectedSenders.length === 1,
   });
+
+  // Get windowed data for chart
+  const emailTimeline = emailTimelineAll?.slice(timelineWindowStart, timelineWindowStart + MONTHS_TO_SHOW) || [];
+  const canScrollLeft = timelineWindowStart > 0;
+  const canScrollRight = emailTimelineAll && timelineWindowStart + MONTHS_TO_SHOW < emailTimelineAll.length;
 
   const totalEmails = senderStats?.reduce((sum, s) => sum + s.count, 0) || 0;
   const uniqueSenders = senderStats?.length || 0;
@@ -687,7 +694,10 @@ export default function EmailSenders() {
         </Dialog>
 
         {/* Email Timeline Chart Dialog */}
-        <Dialog open={chartDialogOpen} onOpenChange={setChartDialogOpen}>
+        <Dialog open={chartDialogOpen} onOpenChange={(open) => {
+          setChartDialogOpen(open);
+          if (!open) setTimelineWindowStart(0);
+        }}>
           <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -698,56 +708,85 @@ export default function EmailSenders() {
                 Visualizzazione cronologica delle email ricevute da questo mittente
               </DialogDescription>
             </DialogHeader>
-            <div className="py-6">
+            <div className="py-6 space-y-4">
               {loadingTimeline ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-muted-foreground">Caricamento...</div>
                 </div>
-              ) : !emailTimeline || emailTimeline.length === 0 ? (
+              ) : !emailTimelineAll || emailTimelineAll.length === 0 ? (
                 <div className="flex items-center justify-center h-64 text-muted-foreground">
                   Nessun dato disponibile
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={emailTimeline}>
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis 
-                      dataKey="displayMonth" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      itemStyle={{ color: 'hsl(var(--primary))' }}
-                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="url(#barGradient)"
-                      radius={[8, 8, 0, 0]}
-                      name="Email"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                <>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={emailTimeline}>
+                      <defs>
+                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis 
+                        dataKey="displayMonth" 
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                        itemStyle={{ color: 'hsl(var(--primary))' }}
+                        cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        fill="url(#barGradient)"
+                        radius={[8, 8, 0, 0]}
+                        name="Email"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Navigation Controls */}
+                  <div className="flex items-center justify-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTimelineWindowStart(Math.max(0, timelineWindowStart - MONTHS_TO_SHOW))}
+                      disabled={!canScrollLeft}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Precedenti
+                    </Button>
+                    
+                    <div className="text-sm text-muted-foreground">
+                      Mesi {timelineWindowStart + 1}-{Math.min(timelineWindowStart + MONTHS_TO_SHOW, emailTimelineAll.length)} di {emailTimelineAll.length}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTimelineWindowStart(timelineWindowStart + MONTHS_TO_SHOW)}
+                      disabled={!canScrollRight}
+                    >
+                      Successivi
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           </DialogContent>

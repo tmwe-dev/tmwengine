@@ -595,10 +595,6 @@ const EmailDashboard = () => {
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
             isDownloading={isDownloading}
-            onOpenAIChat={(senderEmail) => {
-              setSelectedAIChatSender(senderEmail);
-              setAiChatOpen(true);
-            }}
           />
         </div>
 

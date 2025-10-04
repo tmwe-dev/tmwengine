@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize, Brain } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -37,7 +37,6 @@ interface Email {
   hasGroup?: boolean;
   groupName?: string;
   hasRule?: boolean;
-  from_email?: string;
 }
 
 interface EmailListProps {
@@ -62,7 +61,6 @@ interface EmailListProps {
   onBulkMarkAsRead?: (emailIds: string[]) => void;
   onBulkMoveToFolder?: (emailIds: string[], folder: string) => void;
   isDownloading?: boolean;
-  onOpenAIChat?: (senderEmail: string) => void;
 }
 
 type ViewMode = 'list' | 'grid';
@@ -83,8 +81,7 @@ export const EmailList = ({
   onBulkForward,
   onBulkMarkAsRead,
   onBulkMoveToFolder,
-  isDownloading = false,
-  onOpenAIChat
+  isDownloading = false
 }: EmailListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -391,17 +388,6 @@ export const EmailList = ({
                         New
                       </Badge>
                     )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 hover:bg-primary/10 flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenAIChat?.(email.from_email || email.from);
-                      }}
-                    >
-                      <Brain className="h-3.5 w-3.5 text-primary" />
-                    </Button>
                   </div>
                   <h3 className={cn(
                     'truncate text-base mt-1',

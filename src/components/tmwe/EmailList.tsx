@@ -526,34 +526,49 @@ export const EmailList = ({
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    <SelectItem value="delete">
+                    <SelectItem 
+                      value="delete"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Trash2 className="h-3 w-3" />
-                        <span className="text-xs">Elimina</span>
+                        <Trash2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Elimina</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="archive">
+                    <SelectItem 
+                      value="archive"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Archive className="h-3 w-3" />
-                        <span className="text-xs">Archivia</span>
+                        <Archive className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Archivia</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="forward">
+                    <SelectItem 
+                      value="forward"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <Forward className="h-3 w-3" />
-                        <span className="text-xs">Inoltra</span>
+                        <Forward className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Inoltra</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="mark-read">
+                    <SelectItem 
+                      value="mark-read"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span className="text-xs">Letta</span>
+                        <CheckCircle2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Letta</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="move">
+                    <SelectItem 
+                      value="move"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <FolderInput className="h-3 w-3" />
-                        <span className="text-xs">Sposta</span>
+                        <FolderInput className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Sposta</span>
                       </div>
                     </SelectItem>
                   </SelectContent>

@@ -142,19 +142,20 @@ export const EmailSidebar = ({
         key={folder.name}
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
         className={cn(
-          'relative w-full',
+          'relative w-full group transition-all duration-200',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
           selectedFolder === folder.name && 'bg-email-selected text-primary-foreground',
-          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent'
+          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
+          'hover:bg-transparent'
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
         title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
-          <Icon className={cn("h-4 w-4 flex-shrink-0", isCollapsed ? "" : "mr-3")} />
+          <Icon className={cn("h-4 w-4 flex-shrink-0 transition-all duration-200 group-hover:scale-105 group-hover:animate-[pulse_0.5s_ease-in-out_infinite]", isCollapsed ? "" : "mr-3")} />
           {!isCollapsed && (
-            <span className="truncate">
+            <span className="truncate transition-transform duration-200 group-hover:scale-110">
               {folder.name}
             </span>
           )}

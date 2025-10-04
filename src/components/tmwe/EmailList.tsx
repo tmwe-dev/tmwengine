@@ -562,7 +562,7 @@ export const EmailList = ({
       </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
-        <SheetContent className="bg-background">
+        <SheetContent className="bg-background z-[100]">
           <SheetHeader>
             <SheetTitle>Azioni e Regole</SheetTitle>
             <SheetDescription>
@@ -575,7 +575,15 @@ export const EmailList = ({
               <p className="text-sm text-muted-foreground mb-4">
                 Crea regole automatiche per le email da questo mittente
               </p>
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  console.log('Crea regola per:', selectedEmailForActions?.from);
+                  // TODO: Implementare creazione regola
+                  setShowActionsSheet(false);
+                }}
+              >
                 <Tag className="mr-2 h-4 w-4" />
                 Crea Nuova Regola
               </Button>
@@ -583,15 +591,41 @@ export const EmailList = ({
             <div>
               <h3 className="font-semibold mb-2">Azioni Rapide</h3>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    if (selectedEmailForActions) {
+                      onBulkArchive?.([selectedEmailForActions.id]);
+                      setShowActionsSheet(false);
+                    }
+                  }}
+                >
                   <Archive className="mr-2 h-4 w-4" />
                   Archivia
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    console.log('Sposta in cartella:', selectedEmailForActions?.id);
+                    // TODO: Implementare spostamento cartella
+                    setShowActionsSheet(false);
+                  }}
+                >
                   <FolderInput className="mr-2 h-4 w-4" />
                   Sposta in Cartella
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-destructive">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  onClick={() => {
+                    if (selectedEmailForActions) {
+                      onBulkDelete?.([selectedEmailForActions.id]);
+                      setShowActionsSheet(false);
+                    }
+                  }}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Elimina
                 </Button>

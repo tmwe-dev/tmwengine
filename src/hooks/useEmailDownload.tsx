@@ -69,11 +69,11 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
                 body_html: email.body_html || email.html || '',
                 data_ricezione: email.date || email.data_ricezione || new Date().toISOString(),
                 cartella: folder,
-                direzione: 'ricevuta',
+                direzione: 'inbound',
                 stato: 'nuovo',
                 flags: email.flags || [],
                 attachments: email.attachments || [],
-                provider_id: '00000000-0000-0000-0000-000000000000', // ID provider predefinito
+                provider_id: '00000000-0000-0000-0000-000000000000',
               }));
 
               const { error: insertError } = await supabase

@@ -2276,7 +2276,7 @@ export default function ImportTemplates() {
 
         {activeSection === 'manage' && (
           <div className="space-y-4">
-          <Card className="bg-background/70">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />

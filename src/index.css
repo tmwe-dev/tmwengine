@@ -48,6 +48,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --card-border: 240 3.7% 15.9%;
+    --card-transparent: 240 10% 3.9% / 0.35; /* Trasparenza 35% per card */
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
@@ -147,6 +148,7 @@ Tutti i colori DEVONO essere HSL.
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --card-border: 240 3.7% 15.9%;
+    --card-transparent: 240 10% 3.9% / 0.35; /* Trasparenza 35% per card */
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;

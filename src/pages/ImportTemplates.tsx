@@ -1901,7 +1901,7 @@ export default function ImportTemplates() {
 
       {activeSection === 'templates' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-card/35">
+            <Card className="bg-card-transparent">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
@@ -1996,7 +1996,7 @@ export default function ImportTemplates() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/35">
+            <Card className="bg-card-transparent">
               <CardHeader>
                 <CardTitle>Templates Email Esistenti</CardTitle>
               </CardHeader>
@@ -2069,7 +2069,7 @@ export default function ImportTemplates() {
         {activeSection === 'attachments' && (
           <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-card/35">
+            <Card className="bg-card-transparent">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
@@ -2108,7 +2108,7 @@ export default function ImportTemplates() {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/35">
+            <Card className="bg-card-transparent">
               <CardHeader>
                 <CardTitle>Allegati Disponibili ({emailAttachments.length})</CardTitle>
                 <CardDescription>
@@ -2167,7 +2167,7 @@ export default function ImportTemplates() {
         )}
 
         {activeSection === 'import' && (
-          <Card className="bg-card/35">
+          <Card className="bg-card-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
@@ -2217,7 +2217,7 @@ export default function ImportTemplates() {
 
               {/* Progress Indicator */}
               {importProgress.isProcessing && (
-                <Card className="border-blue-200 bg-card/35">
+                <Card className="border-blue-200 bg-card-transparent">
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 text-blue-700">
@@ -2276,7 +2276,7 @@ export default function ImportTemplates() {
 
         {activeSection === 'manage' && (
           <div className="space-y-4">
-          <Card className="bg-card/35">
+          <Card className="bg-card-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />

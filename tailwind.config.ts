@@ -68,6 +68,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
           border: "hsl(var(--card-border))",
+          transparent: "hsl(var(--card-transparent))",
         },
 
         // === SIDEBAR ===

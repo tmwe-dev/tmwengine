@@ -16,6 +16,7 @@ import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AIChatPopup } from '@/components/ai/AIChatPopup';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 interface Contact {
   id: string;
@@ -269,11 +270,14 @@ export default function Rubrica() {
       <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Clienti</h1>
-          <p className="text-muted-foreground">
-            Gestisci tutti i tuoi clienti della rubrica
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Clienti</h1>
+            <p className="text-muted-foreground">
+              Gestisci tutti i tuoi clienti della rubrica
+            </p>
+          </div>
+          <PagePromptManager pageRoute="/rubrica" />
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

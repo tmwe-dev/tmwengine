@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AIChatPopup } from '@/components/ai/AIChatPopup';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 interface Activity {
   id: string;
@@ -840,10 +841,13 @@ export default function Attivita() {
       
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-heading-1 font-bold text-text-primary mb-2">
-            Gestione Attività
-          </h1>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-heading-1 font-bold text-text-primary mb-2">
+              Gestione Attività
+            </h1>
+          </div>
+          <PagePromptManager pageRoute="/attivita" />
         </div>
         
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

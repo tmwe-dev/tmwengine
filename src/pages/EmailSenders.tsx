@@ -521,7 +521,7 @@ export default function EmailSenders() {
         {/* Senders Table & Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-full">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle>Mittenti</CardTitle>

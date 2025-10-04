@@ -245,7 +245,7 @@ export default function EmailSenders() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card className="backdrop-blur-md bg-card/80 border-white/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Email Totali</CardTitle>
               <Mail className="h-4 w-4 text-muted-foreground" />
@@ -255,7 +255,7 @@ export default function EmailSenders() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="backdrop-blur-md bg-card/80 border-white/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Mittenti Unici</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -265,7 +265,7 @@ export default function EmailSenders() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-md bg-card/80 border-white/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Mittenti Raggruppati</CardTitle>
               <Tag className="h-4 w-4 text-muted-foreground" />
@@ -278,7 +278,7 @@ export default function EmailSenders() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-md bg-card/80 border-white/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Gruppi Attivi</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -291,7 +291,7 @@ export default function EmailSenders() {
 
         {/* Bulk Actions */}
         {selectedSenders.length > 0 && (
-          <Card className="bg-primary/10 border-primary">
+          <Card className="backdrop-blur-md bg-primary/10 border-primary/20">
             <CardContent className="flex items-center justify-between py-4">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{selectedSenders.length} selezionati</Badge>
@@ -334,7 +334,7 @@ export default function EmailSenders() {
         )}
 
         {/* Search */}
-        <Card>
+        <Card className="backdrop-blur-md bg-card/80 border-white/10">
           <CardHeader>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -349,7 +349,7 @@ export default function EmailSenders() {
         </Card>
 
         {/* Senders Table */}
-        <Card>
+        <Card className="backdrop-blur-md bg-card/80 border-white/10">
           <CardHeader>
             <CardTitle>Mittenti</CardTitle>
             <CardDescription>
@@ -424,14 +424,14 @@ export default function EmailSenders() {
         </Card>
 
         {/* Groups List */}
-        <Card>
+        <Card className="backdrop-blur-md bg-card/80 border-white/10">
           <CardHeader>
             <CardTitle>Gruppi Esistenti</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
               {groups?.map((group) => (
-                <Card key={group.id} className="border-2" style={{ borderColor: group.colore }}>
+                <Card key={group.id} className="backdrop-blur-sm bg-card/60 border-2" style={{ borderColor: group.colore }}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <div

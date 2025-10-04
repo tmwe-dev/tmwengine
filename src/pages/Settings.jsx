@@ -427,7 +427,7 @@ const Settings = () => {
         
         {/* Renderizza la sezione selezionata */}
         {activeSection === 'profile' && (
-          <Card className="w-full">
+          <Card className="w-full bg-card-transparent">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <User className="h-5 w-5" />
@@ -530,7 +530,7 @@ const Settings = () => {
 
         {/* Configurazione Telefono & WhatsApp */}
         {activeSection === 'phone' && (
-          <Card className="w-full">
+          <Card className="w-full bg-card-transparent">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Phone className="h-5 w-5" />
@@ -656,7 +656,7 @@ const Settings = () => {
 
         {/* Configurazione AI */}
         {activeSection === 'ai' && (
-          <Card>
+          <Card className="bg-card-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
@@ -672,7 +672,7 @@ const Settings = () => {
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Servizi AI Attivi</Label>
                   {aiConfigs.map((config) => (
-                    <Card key={config.id} className="border-2">
+                    <Card key={config.id} className="border-2 bg-card-transparent">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 space-y-1">
@@ -827,7 +827,7 @@ const Settings = () => {
 
         {/* Configurazioni Generali */}
         {activeSection === 'general' && (
-          <Card>
+          <Card className="bg-card-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />
@@ -914,7 +914,7 @@ const Settings = () => {
 
         {/* Sicurezza */}
         {activeSection === 'security' && (
-          <Card>
+          <Card className="bg-card-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />

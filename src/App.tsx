@@ -29,6 +29,7 @@ import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
 import EmailSenders from "./pages/EmailSenders";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
+import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <VoiceAgentWidget />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={

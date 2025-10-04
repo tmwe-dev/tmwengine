@@ -1057,7 +1057,7 @@ export default function RubricaAvanzata() {
         </div>
       ) : (
         /* Desktop Table Layout */
-        <Card className="border-card shadow-soft bg-card-transparent">
+        <Card className="border-card shadow-soft bg-transparent">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">

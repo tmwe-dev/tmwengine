@@ -2,17 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ElevenLabs Widget - Posizionamento personalizzato */
-elevenlabs-convai {
-  position: fixed !important;
-  top: 20px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  bottom: auto !important;
-  right: auto !important;
-  z-index: 9999 !important;
-}
-
 /* ===== DESIGN SYSTEM CRM PLATFORM =====
 Definisce lo stile grafico uniforme per tutta la piattaforma
 Colori, tipografia, spaziature e stili consistenti

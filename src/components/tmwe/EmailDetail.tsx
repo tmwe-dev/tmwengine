@@ -415,8 +415,7 @@ export const EmailDetail = ({
           </div>
         </div>
 
-        {/* Right: Forward and delete */}
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-3 items-center justify-end">
           <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
             <div className="flex items-center gap-2 mb-1">
               <Forward className="h-8 w-8" />

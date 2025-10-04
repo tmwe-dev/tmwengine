@@ -221,7 +221,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch">
+          <div className="flex items-stretch min-w-0 w-full">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3">
                 <Checkbox
@@ -232,8 +232,8 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 min-w-0 p-3 relative">
-              <div className="flex items-center gap-4">
-                <div className="min-w-[200px]">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="min-w-0 flex-shrink-0 w-32 sm:w-48 md:min-w-[200px]">
                   <p className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -241,7 +241,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold'
@@ -249,8 +249,8 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                  <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (
@@ -319,7 +319,7 @@ export const EmailList = ({
                 )}
               </div>
             </div>
-            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">
+            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0 hidden sm:flex">
               <Button
                 variant="ghost"
                 size="sm"
@@ -361,7 +361,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch">
+          <div className="flex items-stretch min-w-0 w-full">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3">
                 <Checkbox

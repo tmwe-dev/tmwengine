@@ -95,8 +95,8 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
       {/* Chat Popup - Centered on page */}
       {isOpen && (
         <Card 
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-[600px] shadow-2xl z-50 flex flex-col"
-          style={{ background: 'var(--gradient-page)' }}
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-[600px] shadow-2xl z-50 flex flex-col bg-background/95"
+          style={{ backgroundImage: 'var(--gradient-page)', backgroundBlendMode: 'overlay' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">

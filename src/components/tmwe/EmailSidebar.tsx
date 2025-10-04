@@ -160,13 +160,13 @@ export const EmailSidebar = ({
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
-            selectedFolder === folder.name && "text-purple-400",
+            selectedFolder === folder.name && "text-purple-400 scale-110",
             isCollapsed ? "" : "mr-3"
           )} />
           {!isCollapsed && (
             <span className={cn(
               "truncate transition-transform duration-200 group-hover:scale-110",
-              selectedFolder === folder.name && "text-purple-300 font-semibold"
+              selectedFolder === folder.name && "text-purple-300 font-semibold scale-110"
             )}>
               {folder.name}
             </span>

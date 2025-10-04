@@ -579,7 +579,7 @@ export const EmailList = ({
                   disabled={selectedEmailIds.size === 0 || !bulkAction}
                   size="sm"
                   variant="ghost"
-                  className="h-7 text-[11px] px-2 ml-1.5 bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl"
+                  className="relative h-7 text-[11px] px-2 ml-1.5 bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl border border-transparent before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:border before:border-transparent before:bg-gradient-to-r before:from-white/65 before:via-black before:via-45% before:to-transparent before:pointer-events-none before:[mask:linear-gradient(#fff_0_0)_padding-box,linear-gradient(#fff_0_0)] before:[mask-composite:exclude] before:p-[1px]"
                 >
                   Esegui ({selectedEmailIds.size})
                 </Button>

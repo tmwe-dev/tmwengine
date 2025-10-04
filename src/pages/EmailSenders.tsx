@@ -319,8 +319,7 @@ export default function EmailSenders() {
           {/* Bulk Actions */}
           {selectedSenders.length > 0 && (
             <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
-              <CardContent className="flex flex-col gap-4 py-4">
-                <Badge variant="secondary" className="w-fit">{selectedSenders.length} selezionati</Badge>
+              <CardContent className="py-4">
                 <div className="flex items-center gap-2">
                   <Select
                     onValueChange={(value) => {
@@ -347,6 +346,7 @@ export default function EmailSenders() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Badge variant="secondary">{selectedSenders.length}</Badge>
                   <Button
                     variant="outline"
                     size="icon"

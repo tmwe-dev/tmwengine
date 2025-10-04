@@ -358,26 +358,24 @@ export default function EmailSenders() {
               Clicca per selezionare i mittenti da raggruppare
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"></TableHead>
                   <TableHead>Mittente</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead className="text-right">Gruppo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingStats ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
+                    <TableCell colSpan={2} className="text-center py-8">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : senderStats?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
                       Nessun mittente trovato
                     </TableCell>
                   </TableRow>
@@ -385,26 +383,30 @@ export default function EmailSenders() {
                   senderStats?.map((stat) => (
                     <TableRow
                       key={stat.sender}
-                      className={`cursor-pointer ${
+                      className={`cursor-pointer hover:bg-muted/50 ${
                         selectedSenders.includes(stat.sender) ? 'bg-primary/10' : ''
                       }`}
                       onClick={() => handleToggleSender(stat.sender)}
                     >
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedSenders.includes(stat.sender)}
-                          onChange={() => handleToggleSender(stat.sender)}
-                          className="cursor-pointer"
-                        />
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedSenders.includes(stat.sender)}
+                            onChange={() => handleToggleSender(stat.sender)}
+                            className="cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm truncate">{stat.sender}</span>
+                            <Badge variant="outline" className="w-fit text-xs">{stat.count} email</Badge>
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell className="font-medium">{stat.sender}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{stat.count} email</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right py-2">
                         {stat.group ? (
                           <Badge
+                            className="text-xs"
                             style={{
                               backgroundColor: `${stat.group.color}20`,
                               color: stat.group.color,
@@ -414,7 +416,7 @@ export default function EmailSenders() {
                             {stat.group.name}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">Non assegnato</Badge>
+                          <Badge variant="secondary" className="text-xs">Non assegnato</Badge>
                         )}
                       </TableCell>
                     </TableRow>

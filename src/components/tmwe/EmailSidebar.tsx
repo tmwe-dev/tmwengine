@@ -153,7 +153,17 @@ export const EmailSidebar = ({
         title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
-          <Icon className={cn("h-4 w-4 flex-shrink-0 transition-all duration-200 group-hover:scale-105 group-hover:animate-[pulse_0.5s_ease-in-out_infinite]", isCollapsed ? "" : "mr-3")} />
+          <Icon className={cn("h-4 w-4 flex-shrink-0 transition-all duration-200 group-hover:scale-105 group-hover:animate-[wiggle_0.3s_ease-in-out]", isCollapsed ? "" : "mr-3")} 
+            style={{
+              animation: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.animation = 'wiggle 0.3s ease-in-out';
+            }}
+            onAnimationEnd={(e) => {
+              e.currentTarget.style.animation = 'none';
+            }}
+          />
           {!isCollapsed && (
             <span className="truncate transition-transform duration-200 group-hover:scale-110">
               {folder.name}

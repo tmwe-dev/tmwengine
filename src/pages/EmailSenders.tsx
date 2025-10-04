@@ -779,26 +779,22 @@ export default function EmailSenders() {
         }}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    <DialogTitle>Timeline Email</DialogTitle>
-                  </div>
-                  <DialogDescription className="truncate">
-                    {currentChartSender}
-                  </DialogDescription>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  <DialogTitle>Timeline Email</DialogTitle>
                 </div>
+                <DialogDescription className="truncate">
+                  {currentChartSender}
+                </DialogDescription>
 
-                {/* Assignment Controls - Compact Version */}
-                <div className="w-[25%] space-y-2">
-                  <h3 className="font-semibold text-xs">Assegna</h3>
-                  
+                {/* Assignment Controls - Centered Horizontal */}
+                <div className="flex items-center justify-center gap-4 pt-2">
                   {/* Group Assignment */}
-                  <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
                     <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Gruppo..." />
+                      <SelectTrigger className="w-[180px] h-8 text-xs">
+                        <SelectValue placeholder="Seleziona gruppo..." />
                       </SelectTrigger>
                       <SelectContent>
                         {groups?.map((group) => (
@@ -818,17 +814,17 @@ export default function EmailSenders() {
                       onClick={handleAssignGroup}
                       disabled={!selectedGroupId}
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-8 text-xs"
                     >
                       Assegna Gruppo
                     </Button>
                   </div>
 
                   {/* Action Assignment */}
-                  <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
                     <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Azione..." />
+                      <SelectTrigger className="w-[180px] h-8 text-xs">
+                        <SelectValue placeholder="Seleziona azione..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="move_to_folder"><span className="text-xs">📁 Sposta</span></SelectItem>
@@ -842,7 +838,7 @@ export default function EmailSenders() {
                       onClick={handleAssignAction}
                       disabled={!selectedActionType}
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-8 text-xs"
                     >
                       Assegna Azione
                     </Button>

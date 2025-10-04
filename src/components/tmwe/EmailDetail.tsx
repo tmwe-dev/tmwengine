@@ -426,7 +426,7 @@ export const EmailDetail = ({
           <div>
             <h1 className="text-xl md:text-2xl font-bold mb-4">{email.subject}</h1>
             
-            <Card>
+            <Card className="bg-card-transparent">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -447,7 +447,7 @@ export const EmailDetail = ({
           </div>
 
           {downloadableAttachments.length > 0 && (
-            <Card>
+            <Card className="bg-card-transparent">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-medium mb-3">
                   <Paperclip className="h-4 w-4" />

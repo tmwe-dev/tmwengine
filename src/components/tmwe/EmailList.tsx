@@ -526,31 +526,31 @@ export const EmailList = ({
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    <SelectItem value="delete" className="hover:bg-gradient-to-bl hover:from-purple-400/25 hover:via-purple-400/15 hover:via-35% hover:to-transparent cursor-pointer">
+                    <SelectItem value="delete">
                       <div className="flex items-center gap-1.5">
                         <Trash2 className="h-3 w-3" />
                         <span className="text-xs">Elimina</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="archive" className="hover:bg-gradient-to-bl hover:from-purple-400/25 hover:via-purple-400/15 hover:via-35% hover:to-transparent cursor-pointer">
+                    <SelectItem value="archive">
                       <div className="flex items-center gap-1.5">
                         <Archive className="h-3 w-3" />
                         <span className="text-xs">Archivia</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="forward" className="hover:bg-gradient-to-bl hover:from-purple-400/25 hover:via-purple-400/15 hover:via-35% hover:to-transparent cursor-pointer">
+                    <SelectItem value="forward">
                       <div className="flex items-center gap-1.5">
                         <Forward className="h-3 w-3" />
                         <span className="text-xs">Inoltra</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="mark-read" className="hover:bg-gradient-to-bl hover:from-purple-400/25 hover:via-purple-400/15 hover:via-35% hover:to-transparent cursor-pointer">
+                    <SelectItem value="mark-read">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="h-3 w-3" />
                         <span className="text-xs">Letta</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="move" className="hover:bg-gradient-to-bl hover:from-purple-400/25 hover:via-purple-400/15 hover:via-35% hover:to-transparent cursor-pointer">
+                    <SelectItem value="move">
                       <div className="flex items-center gap-1.5">
                         <FolderInput className="h-3 w-3" />
                         <span className="text-xs">Sposta</span>

@@ -38,7 +38,7 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
         return;
       }
 
-      const batchSize = 50; // Download 50 emails at a time
+      const batchSize = 10; // API TMWE non funziona bene con batch > 10
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
       const allDownloadedEmails: any[] = [];

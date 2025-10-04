@@ -75,7 +75,8 @@ const CRMLayout = ({ children }) => {
       {/* Header */}
       <header 
         className={cn(
-          "border-b border-border flex items-center justify-between relative",
+          "flex items-center justify-between relative",
+          location.pathname !== '/attivita' && "border-b border-border",
           isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
         style={location.pathname === '/attivita' ? {

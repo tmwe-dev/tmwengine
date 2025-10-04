@@ -65,6 +65,12 @@ const Settings = () => {
     autoDetectCountry: true
   });
 
+  const [voiceAgentConfig, setVoiceAgentConfig] = useState({
+    elevenLabsApiKey: '',
+    agentId: '',
+    enabled: false
+  });
+
   // Sincronizza con il hook usePhoneActions
   useEffect(() => {
     const savedConfig = localStorage.getItem('phone_config');
@@ -74,6 +80,16 @@ const Settings = () => {
         setPhoneConfig(prev => ({ ...prev, ...parsed }));
       } catch (error) {
         console.error('Error loading phone config:', error);
+      }
+    }
+
+    const savedVoiceAgent = localStorage.getItem('voice_agent_config');
+    if (savedVoiceAgent) {
+      try {
+        const parsed = JSON.parse(savedVoiceAgent);
+        setVoiceAgentConfig(prev => ({ ...prev, ...parsed }));
+      } catch (error) {
+        console.error('Error loading voice agent config:', error);
       }
     }
   }, []);
@@ -428,6 +444,12 @@ const Settings = () => {
                   Telefono & WhatsApp
                 </div>
               </SelectItem>
+              <SelectItem value="voiceagent">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4" />
+                  Voice Agent (ElevenLabs)
+                </div>
+              </SelectItem>
               <SelectItem value="security">
                 <div className="flex items-center gap-2">
                   <Key className="h-4 w-4" />
@@ -540,6 +562,80 @@ const Settings = () => {
           </Card>
         )}
 
+
+        {/* Configurazione Voice Agent */}
+        {activeSection === 'voiceagent' && (
+          <Card className="w-full bg-card-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bot className="h-5 w-5" />
+                Voice Agent - ElevenLabs
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Configura l'agente vocale ElevenLabs per interazioni AI via voce
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {renderSecretField(
+                  "ElevenLabs API Key *",
+                  voiceAgentConfig.elevenLabsApiKey,
+                  "elevenLabsApiKey",
+                  (value) => setVoiceAgentConfig(prev => ({ ...prev, elevenLabsApiKey: value })),
+                  "Inserisci la tua API key di ElevenLabs"
+                )}
+
+                <div className="space-y-1">
+                  <Label htmlFor="agentId" className="text-sm">Agent ID *</Label>
+                  <Input
+                    id="agentId"
+                    value={voiceAgentConfig.agentId}
+                    onChange={(e) => setVoiceAgentConfig(prev => ({ ...prev, agentId: e.target.value }))}
+                    placeholder="Inserisci l'Agent ID creato su ElevenLabs"
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Puoi trovare l'Agent ID nel tuo dashboard ElevenLabs dopo aver creato un agente
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="space-y-0.5">
+                    <Label>Abilita Voice Agent</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Attiva l'agente vocale nell'applicazione
+                    </div>
+                  </div>
+                  <Switch
+                    checked={voiceAgentConfig.enabled}
+                    onCheckedChange={(checked) => setVoiceAgentConfig(prev => ({ ...prev, enabled: checked }))}
+                  />
+                </div>
+              </div>
+
+              <Alert className="mt-4">
+                <Bot className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  <strong>Come configurare:</strong> Crea un agente su ElevenLabs, configura i Client Tools come da documentazione, 
+                  poi inserisci API Key e Agent ID qui. L'agente potrà gestire email, attività CRM e invio email template.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => {
+                  localStorage.setItem('voice_agent_config', JSON.stringify(voiceAgentConfig));
+                  toast({
+                    title: "Successo",
+                    description: "Configurazione Voice Agent salvata con successo",
+                  });
+                }} className="h-9">
+                  <Save className="h-4 w-4 mr-2" />
+                  Salva Configurazione
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Configurazione Telefono & WhatsApp */}
         {activeSection === 'phone' && (

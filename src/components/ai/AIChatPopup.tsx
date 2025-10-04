@@ -92,10 +92,10 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
         <Brain className="h-5 w-5" />
       </Button>
 
-      {/* Chat Popup - Positioned relative to trigger */}
+      {/* Chat Popup - Centered on page */}
       {isOpen && (
         <Card 
-          className="absolute top-full right-0 mt-2 w-96 max-h-[calc(100vh-120px)] shadow-2xl z-50 flex flex-col"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-[600px] shadow-2xl z-50 flex flex-col"
           style={{ background: 'var(--gradient-page)' }}
         >
           {/* Header */}

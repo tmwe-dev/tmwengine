@@ -97,7 +97,21 @@ const EmailDashboard = () => {
     },
   });
 
+  // Conta le email già presenti nel database
+  const { data: dbCount } = useQuery({
+    queryKey: ['db-email-count', selectedFolder],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('cartella', selectedFolder);
+      return count || 0;
+    },
+  });
+
   const totalEmailCount = folderInfo?.total || 0;
+  const dbEmailCount = dbCount || 0;
+  const missingEmailCount = Math.max(0, totalEmailCount - dbEmailCount);
 
   // Email download hook - declare first
   const {
@@ -514,6 +528,8 @@ const EmailDashboard = () => {
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}
+            missingEmails={missingEmailCount}
+            dbEmails={dbEmailCount}
             onDownloadComplete={() => {}}
             onStartDownload={startDownload}
             isDownloading={isDownloading}

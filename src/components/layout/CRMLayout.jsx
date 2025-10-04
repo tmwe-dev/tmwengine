@@ -63,10 +63,15 @@ const CRMLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className={cn(
-        "bg-card border-b border-border flex items-center justify-between",
-        isMobile ? "h-14 px-3" : "h-16 px-4 lg:px-6"
-      )}>
+      <header 
+        className={cn(
+          "border-b border-border flex items-center justify-between relative",
+          isMobile ? "h-14 px-3" : "h-16 px-4 lg:px-6"
+        )}
+        style={{
+          background: 'linear-gradient(to right, hsl(var(--primary) / 0.35) 0%, hsl(0 0% 0% / 0.35) 40%, hsl(0 0% 0%) 40%)'
+        }}
+      >
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -99,8 +104,8 @@ const CRMLayout = ({ children }) => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
-                <div className="h-8 w-8 bg-secondary rounded-full flex items-center justify-center">
-                  <span className="text-secondary-foreground text-sm font-medium">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
                     {userEmail?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>

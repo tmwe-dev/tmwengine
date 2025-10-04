@@ -1,0 +1,460 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Search, Mail, Users, Tag, TrendingUp } from 'lucide-react';
+import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface SenderStats {
+  sender: string;
+  count: number;
+  group?: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
+export default function EmailSenders() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSenders, setSelectedSenders] = useState<string[]>([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [newGroupColor, setNewGroupColor] = useState('#3b82f6');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch sender statistics
+  const { data: senderStats, isLoading: loadingStats } = useQuery({
+    queryKey: ['sender-stats', searchQuery],
+    queryFn: async () => {
+      // Get all emails grouped by sender
+      const { data: emails, error } = await supabase
+        .from('email_messages')
+        .select('from_email')
+        .ilike('from_email', `%${searchQuery}%`);
+
+      if (error) throw error;
+
+      // Count occurrences
+      const counts: Record<string, number> = {};
+      emails?.forEach(email => {
+        const sender = email.from_email;
+        counts[sender] = (counts[sender] || 0) + 1;
+      });
+
+      // Get groups for each sender
+      const { data: rules } = await supabase
+        .from('email_sender_rules')
+        .select('sender_email, group_id, email_sender_groups(id, nome_gruppo, colore)');
+
+      const senderGroups: Record<string, any> = {};
+      rules?.forEach(rule => {
+        if (rule.email_sender_groups) {
+          senderGroups[rule.sender_email] = {
+            id: rule.group_id,
+            name: (rule.email_sender_groups as any).nome_gruppo,
+            color: (rule.email_sender_groups as any).colore,
+          };
+        }
+      });
+
+      // Combine data
+      const stats: SenderStats[] = Object.entries(counts)
+        .map(([sender, count]) => ({
+          sender,
+          count,
+          group: senderGroups[sender],
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return stats;
+    },
+  });
+
+  // Fetch groups
+  const { data: groups } = useQuery({
+    queryKey: ['sender-groups'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_sender_groups')
+        .select('*')
+        .order('nome_gruppo');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Create group mutation
+  const createGroupMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from('email_sender_groups')
+        .insert({
+          nome_gruppo: newGroupName,
+          descrizione: newGroupDescription,
+          colore: newGroupColor,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sender-groups'] });
+      toast.success('Gruppo creato con successo');
+      setNewGroupName('');
+      setNewGroupDescription('');
+      setNewGroupColor('#3b82f6');
+      setDialogOpen(false);
+    },
+    onError: () => {
+      toast.error('Errore durante la creazione del gruppo');
+    },
+  });
+
+  // Assign senders to group mutation
+  const assignToGroupMutation = useMutation({
+    mutationFn: async ({ groupId, senders }: { groupId: string; senders: string[] }) => {
+      // Delete existing rules for these senders
+      await supabase
+        .from('email_sender_rules')
+        .delete()
+        .in('sender_email', senders);
+
+      // Create new rules
+      const rules = senders.map(sender => ({
+        group_id: groupId,
+        sender_email: sender,
+      }));
+
+      const { error } = await supabase
+        .from('email_sender_rules')
+        .insert(rules);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sender-stats'] });
+      toast.success('Mittenti assegnati al gruppo');
+      setSelectedSenders([]);
+    },
+    onError: () => {
+      toast.error('Errore durante l\'assegnazione');
+    },
+  });
+
+  const handleToggleSender = (sender: string) => {
+    setSelectedSenders(prev =>
+      prev.includes(sender)
+        ? prev.filter(s => s !== sender)
+        : [...prev, sender]
+    );
+  };
+
+  const totalEmails = senderStats?.reduce((sum, s) => sum + s.count, 0) || 0;
+  const uniqueSenders = senderStats?.length || 0;
+  const groupedSenders = senderStats?.filter(s => s.group).length || 0;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              Gestione Mittenti
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Raggruppa e organizza i mittenti delle tue email
+            </p>
+          </div>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nuovo Gruppo
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Crea Nuovo Gruppo</DialogTitle>
+                <DialogDescription>
+                  Crea un gruppo per organizzare i mittenti
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Gruppo</Label>
+                  <Input
+                    id="name"
+                    placeholder="Es: Clienti, Fornitori, Newsletter..."
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrizione</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Descrizione del gruppo..."
+                    value={newGroupDescription}
+                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="color">Colore</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color"
+                      type="color"
+                      value={newGroupColor}
+                      onChange={(e) => setNewGroupColor(e.target.value)}
+                      className="w-20"
+                    />
+                    <Input
+                      type="text"
+                      value={newGroupColor}
+                      onChange={(e) => setNewGroupColor(e.target.value)}
+                      placeholder="#3b82f6"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={() => createGroupMutation.mutate()}
+                  disabled={!newGroupName || createGroupMutation.isPending}
+                  className="w-full"
+                >
+                  Crea Gruppo
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Email Totali</CardTitle>
+              <Mail className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalEmails.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Mittenti Unici</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{uniqueSenders}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Mittenti Raggruppati</CardTitle>
+              <Tag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{groupedSenders}</div>
+              <p className="text-xs text-muted-foreground">
+                {uniqueSenders > 0 ? Math.round((groupedSenders / uniqueSenders) * 100) : 0}% organizzati
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gruppi Attivi</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{groups?.length || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bulk Actions */}
+        {selectedSenders.length > 0 && (
+          <Card className="bg-primary/10 border-primary">
+            <CardContent className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{selectedSenders.length} selezionati</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  onValueChange={(value) => {
+                    assignToGroupMutation.mutate({
+                      groupId: value,
+                      senders: selectedSenders,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Assegna a gruppo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groups?.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: group.colore }}
+                          />
+                          {group.nome_gruppo}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedSenders([])}
+                >
+                  Deseleziona
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Search */}
+        <Card>
+          <CardHeader>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cerca mittente..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Senders Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Mittenti</CardTitle>
+            <CardDescription>
+              Clicca per selezionare i mittenti da raggruppare
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>Mittente</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Gruppo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingStats ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      Caricamento...
+                    </TableCell>
+                  </TableRow>
+                ) : senderStats?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      Nessun mittente trovato
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  senderStats?.map((stat) => (
+                    <TableRow
+                      key={stat.sender}
+                      className={`cursor-pointer ${
+                        selectedSenders.includes(stat.sender) ? 'bg-primary/10' : ''
+                      }`}
+                      onClick={() => handleToggleSender(stat.sender)}
+                    >
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedSenders.includes(stat.sender)}
+                          onChange={() => handleToggleSender(stat.sender)}
+                          className="cursor-pointer"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{stat.sender}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{stat.count} email</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {stat.group ? (
+                          <Badge
+                            style={{
+                              backgroundColor: `${stat.group.color}20`,
+                              color: stat.group.color,
+                              borderColor: stat.group.color,
+                            }}
+                          >
+                            {stat.group.name}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Non assegnato</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Groups List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Gruppi Esistenti</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              {groups?.map((group) => (
+                <Card key={group.id} className="border-2" style={{ borderColor: group.colore }}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: group.colore }}
+                      />
+                      {group.nome_gruppo}
+                    </CardTitle>
+                    {group.descrizione && (
+                      <CardDescription>{group.descrizione}</CardDescription>
+                    )}
+                  </CardHeader>
+                </Card>
+              ))}
+              {groups?.length === 0 && (
+                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                  Nessun gruppo creato. Crea il primo gruppo per iniziare!
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

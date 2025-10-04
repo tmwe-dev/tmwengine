@@ -27,6 +27,7 @@ import Tables from "./pages/Tables";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
+import EmailSenders from "./pages/EmailSenders";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -118,6 +119,13 @@ const App = () => (
                     <TMWEEmailDashboard />
                   </CRMLayout>
                 </IntegratedAuthGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/email-senders" element={
+              <ProtectedRoute>
+                <CRMLayout>
+                  <EmailSenders />
+                </CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -105,6 +105,9 @@ Tutti i colori DEVONO essere HSL.
     --shadow-lg: 0 10px 15px -3px hsl(240 3.7% 15.9% / 0.1), 0 4px 6px -4px hsl(240 3.7% 15.9% / 0.05);
     --shadow-glow: 0 0 20px hsl(220 91% 55% / 0.3);
 
+    /* === GRADIENTI === */
+    --gradient-page: linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%);
+
     /* === TRANSIZIONI === */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;

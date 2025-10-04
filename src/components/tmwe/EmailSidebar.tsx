@@ -189,7 +189,7 @@ export const EmailSidebar = ({
 
   return (
     <div className={cn(
-      "flex h-full flex-col border-r bg-card transition-all duration-300",
+      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="p-2 flex justify-end">

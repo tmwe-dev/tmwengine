@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Mail, Users, Tag, TrendingUp } from 'lucide-react';
+import { Plus, Search, Mail, Users, Tag, TrendingUp, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -296,7 +296,7 @@ export default function EmailSenders() {
             <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
               <CardContent className="flex flex-col gap-4 py-4">
                 <Badge variant="secondary" className="w-fit">{selectedSenders.length} selezionati</Badge>
-                <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
                   <Select
                     onValueChange={(value) => {
                       assignToGroupMutation.mutate({
@@ -305,7 +305,7 @@ export default function EmailSenders() {
                       });
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Assegna a gruppo..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -324,9 +324,10 @@ export default function EmailSenders() {
                   </Select>
                   <Button
                     variant="outline"
+                    size="icon"
                     onClick={() => setSelectedSenders([])}
                   >
-                    Deseleziona
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>

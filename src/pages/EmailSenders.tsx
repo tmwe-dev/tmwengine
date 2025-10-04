@@ -497,7 +497,20 @@ export default function EmailSenders() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{uniqueSenders}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-bold">{uniqueSenders}</div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-primary/10"
+                  onClick={() => {
+                    setSelectedAIChatSender('assistente.mittenti@ai.local');
+                    setAiChatOpen(true);
+                  }}
+                >
+                  <Brain className="h-4 w-4 text-primary" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -699,25 +712,11 @@ export default function EmailSenders() {
                         {index + 1}
                       </TableCell>
                       <TableCell className="py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col flex-1">
-                            {extractCompanyName(stat.sender) && (
-                              <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
-                            )}
-                            <span className="text-sm text-muted-foreground">{stat.sender}</span>
-                          </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 hover:bg-primary/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedAIChatSender(stat.sender);
-                              setAiChatOpen(true);
-                            }}
-                          >
-                            <Brain className="h-4 w-4 text-primary" />
-                          </Button>
+                        <div className="flex flex-col">
+                          {extractCompanyName(stat.sender) && (
+                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                          )}
+                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center py-2">

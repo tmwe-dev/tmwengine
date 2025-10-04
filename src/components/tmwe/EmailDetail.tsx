@@ -320,16 +320,9 @@ export const EmailDetail = ({
             </div>
             <span className="text-xs">Rispondi a tutti</span>
           </Button>
-          <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Forward className="h-8 w-8" />
-              <Megaphone className="h-6 w-6" />
-            </div>
-            <span className="text-xs">Inoltra</span>
-          </Button>
         </div>
 
-        {/* Center: Navigation and star */}
+        {/* Center: Navigation, forward and star */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex gap-3">
             <Button 
@@ -351,6 +344,13 @@ export const EmailDetail = ({
             >
               <ChevronRight className="h-8 w-8 mb-1" />
               <span className="text-xs">Successiva</span>
+            </Button>
+            <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Forward className="h-8 w-8" />
+                <Megaphone className="h-6 w-6" />
+              </div>
+              <span className="text-xs">Inoltra</span>
             </Button>
           </div>
           <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">

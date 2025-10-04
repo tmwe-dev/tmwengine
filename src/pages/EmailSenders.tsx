@@ -36,13 +36,19 @@ export default function EmailSenders() {
   const { data: senderStats, isLoading: loadingStats } = useQuery({
     queryKey: ['sender-stats', searchQuery],
     queryFn: async () => {
-      // Use RPC to get aggregated sender stats efficiently
-      const { data: senderCounts, error } = await supabase
-        .rpc('get_sender_statistics', { 
-          search_pattern: searchQuery ? `%${searchQuery}%` : '%' 
-        });
+      // Leggi tutte le email dal backup in Supabase
+      const { data: emails, error } = await supabase
+        .from('email_messages')
+        .select('from_email');
 
       if (error) throw error;
+
+      // Conta i mittenti
+      const counts: Record<string, number> = {};
+      emails?.forEach(email => {
+        const sender = email.from_email;
+        counts[sender] = (counts[sender] || 0) + 1;
+      });
 
       // Get groups for each sender
       const { data: rules } = await supabase
@@ -60,13 +66,14 @@ export default function EmailSenders() {
         }
       });
 
-      // Combine data
-      const stats: SenderStats[] = (senderCounts || [])
-        .map((row: any) => ({
-          sender: row.sender_email,
-          count: row.email_count,
-          group: senderGroups[row.sender_email],
+      // Combina i dati e filtra per ricerca
+      const stats: SenderStats[] = Object.entries(counts)
+        .map(([sender, count]) => ({
+          sender,
+          count,
+          group: senderGroups[sender],
         }))
+        .filter(stat => !searchQuery || stat.sender.toLowerCase().includes(searchQuery.toLowerCase()))
         .sort((a, b) => b.count - a.count);
 
       return stats;

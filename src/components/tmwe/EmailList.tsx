@@ -188,7 +188,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-4 px-6 w-full max-w-full overflow-x-hidden">
+    <div className="space-y-2 py-4 pl-6 pr-[34px] w-full max-w-full overflow-x-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -328,7 +328,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-3 py-4 px-6 w-full max-w-full overflow-x-hidden">
+    <div className="space-y-3 py-4 pl-6 pr-[34px] w-full max-w-full overflow-x-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}

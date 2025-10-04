@@ -224,6 +224,11 @@ export default function EmailSenders() {
     );
   };
 
+  const extractCompanyName = (email: string): string => {
+    const match = email.match(/@([^.]+)\./);
+    return match ? match[1] : '';
+  };
+
   const handleSort = (column: 'sender' | 'count' | 'group') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -521,7 +526,12 @@ export default function EmailSenders() {
                         />
                       </TableCell>
                       <TableCell className="py-2">
-                        <span className="font-medium text-sm truncate max-w-[200px] block">{stat.sender}</span>
+                        <div className="flex flex-col">
+                          {extractCompanyName(stat.sender) && (
+                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                          )}
+                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center py-2">
                         <span className="text-base font-semibold">{stat.count}</span>

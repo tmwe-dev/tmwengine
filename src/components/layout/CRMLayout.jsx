@@ -83,11 +83,15 @@ const CRMLayout = ({ children }) => {
           </Button>
           
           <div className="flex items-center gap-2">
-            <img src={findairLogo} alt="FindAir Logo" className="h-6 w-auto md:h-8" />
             <h1 className={cn("font-semibold text-foreground px-3 py-1.5 rounded-lg", isMobile ? "text-lg" : "text-xl")}>
               {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
             </h1>
           </div>
+        </div>
+
+        {/* Logo centrato */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <img src={findairLogo} alt="FindAir Logo" className="h-6 w-auto md:h-8" />
         </div>
 
         <div className="flex items-center gap-4">

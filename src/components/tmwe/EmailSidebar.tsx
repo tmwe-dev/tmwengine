@@ -142,9 +142,10 @@ export const EmailSidebar = ({
         key={folder.name}
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
         className={cn(
-          'w-full',
+          'relative w-full',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
-          selectedFolder === folder.name && 'bg-email-selected text-primary-foreground'
+          selectedFolder === folder.name && 'bg-email-selected text-primary-foreground',
+          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent'
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}

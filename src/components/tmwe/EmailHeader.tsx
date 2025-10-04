@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, RefreshCw, Mail, Menu } from 'lucide-react';
-import findairLogo from '@/assets/findair-logo-inverted.png';
+import findairLogo from '@/assets/findair-logo.png';
 
 interface EmailHeaderProps {
   onSearch: (query: string) => void;

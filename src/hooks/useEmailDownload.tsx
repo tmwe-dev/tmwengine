@@ -58,36 +58,52 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
           // Salva le email in Supabase
           if (pageEmails.length > 0) {
             try {
-              const emailsToInsert = pageEmails.map((email: any) => ({
-                message_id: email.uid || email.message_id || `msg-${Date.now()}-${Math.random()}`,
-                from_email: email.from || email.from_email || '',
-                to_email: email.to || email.to_email || '',
-                cc_email: email.cc || email.cc_email,
-                bcc_email: email.bcc || email.bcc_email,
-                subject: email.subject || '',
-                body_text: email.body_text || email.text || '',
-                body_html: email.body_html || email.html || '',
-                data_ricezione: email.date || email.data_ricezione || new Date().toISOString(),
-                cartella: folder,
-                direzione: 'inbound',
-                stato: 'nuovo',
-                flags: email.flags || [],
-                attachments: email.attachments || [],
-                provider_id: '00000000-0000-0000-0000-000000000000',
-              }));
+              const emailsToInsert = pageEmails.map((email: any) => {
+                // Convert date string to ISO timestamp
+                let isoDate = new Date().toISOString();
+                if (email.date) {
+                  try {
+                    isoDate = new Date(email.date).toISOString();
+                  } catch (e) {
+                    console.error('Error parsing date:', email.date);
+                  }
+                }
 
-              const { error: insertError } = await supabase
+                return {
+                  message_id: String(email.uid || email.message_id || `msg-${Date.now()}-${Math.random()}`),
+                  from_email: email.from || email.from_email || '',
+                  to_email: email.to || email.to_email || '',
+                  cc_email: email.cc || email.cc_email || null,
+                  bcc_email: email.bcc || email.bcc_email || null,
+                  subject: email.subject || '',
+                  body_text: email.body_text || email.text || '',
+                  body_html: email.body_html || email.html || '',
+                  data_ricezione: isoDate,
+                  cartella: folder,
+                  direzione: 'inbound',
+                  stato: 'nuovo',
+                  flags: email.flags || [],
+                  attachments: email.attachments || [],
+                  provider_id: '00000000-0000-0000-0000-000000000000',
+                };
+              });
+
+              console.log('📧 Inserting emails:', emailsToInsert.length, 'emails');
+              
+              const { data, error: insertError } = await supabase
                 .from('email_messages')
                 .upsert(emailsToInsert, { 
                   onConflict: 'message_id',
-                  ignoreDuplicates: true 
+                  ignoreDuplicates: false 
                 });
 
               if (insertError) {
-                console.error('Error saving emails to database:', insertError);
+                console.error('❌ Error saving emails to database:', insertError);
+              } else {
+                console.log('✅ Successfully saved', emailsToInsert.length, 'emails to database');
               }
             } catch (dbError) {
-              console.error('Database save error:', dbError);
+              console.error('❌ Database save error:', dbError);
             }
           }
 

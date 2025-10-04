@@ -298,9 +298,9 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-card">
+    <div className="flex h-full flex-col bg-card-transparent">
       {/* Top navigation bar */}
-      <div className="flex items-center justify-between border-b p-3 md:p-4 gap-2">
+      <div className="flex items-center justify-between border-b p-3 md:p-4 gap-2 bg-card-transparent">
         <div className="flex gap-1 md:gap-2 flex-wrap">
           {isMobile && onBack && (
             <Button variant="outline" size="sm" onClick={onBack} className="mr-2">
@@ -422,7 +422,7 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4">
+        <div className="p-4 md:p-6 space-y-4 bg-card-transparent">
           <div>
             <h1 className="text-xl md:text-2xl font-bold mb-4">{email.subject}</h1>
             

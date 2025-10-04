@@ -304,7 +304,7 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col" style={{ background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)' }}>
+    <div className="flex h-screen flex-col" style={{ background: 'var(--gradient-page)' }}>
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 

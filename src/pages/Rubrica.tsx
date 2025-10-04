@@ -265,7 +265,7 @@ export default function Rubrica() {
   return (
     <div 
       className="space-y-6" 
-      style={{ background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)' }}
+      style={{ background: 'var(--gradient-page)' }}
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -6,6 +6,7 @@ import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
+import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -24,6 +25,7 @@ const EmailDashboard = () => {
   const [showEmailList, setShowEmailList] = useState(true);
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Reset selected email when folder changes
@@ -173,7 +175,7 @@ const EmailDashboard = () => {
     },
   });
 
-  const emails = (messagesData?.pages || []).flatMap(page => 
+  const allEmails = (messagesData?.pages || []).flatMap(page => 
     (page?.messages || []).map((msg: any) => {
       // Debug: Log message structure to understand attachment indicators
       if (msg.uid === 6624) {
@@ -201,6 +203,11 @@ const EmailDashboard = () => {
       };
     })
   );
+
+  // Filter emails by selected sender
+  const emails = selectedSender 
+    ? allEmails.filter(email => email.from === selectedSender)
+    : allEmails;
 
   const handleSync = () => {
     toast.info('Starting sync...');
@@ -346,9 +353,23 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 overflow-hidden",
+          "flex-1 overflow-hidden flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
+          {/* Sender Filter */}
+          <div className="border-b bg-card-transparent px-4 py-2 flex items-center gap-2">
+            <EmailSenderFilter
+              emails={allEmails}
+              selectedSender={selectedSender}
+              onSenderSelect={setSelectedSender}
+            />
+            {selectedSender && (
+              <div className="flex-1 text-sm text-muted-foreground">
+                Mostrando {emails.length} email da <strong>{selectedSender}</strong>
+              </div>
+            )}
+          </div>
+          
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}

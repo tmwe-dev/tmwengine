@@ -17,7 +17,10 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  FolderCog
+  FolderCog,
+  User,
+  Users,
+  Megaphone
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -300,37 +303,63 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top navigation bar */}
-      <div className="flex items-center justify-between border-b p-3 md:p-4 gap-2 bg-card-transparent">
-        <div className="flex gap-1 md:gap-2 flex-wrap">
-          {isMobile && onBack && (
-            <Button variant="outline" size="sm" onClick={onBack} className="mr-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={onReply} className="text-xs md:text-sm">
-            <Reply className="mr-0 md:mr-2 h-4 w-4" />
-            <span className="hidden md:inline">Reply</span>
+      <div className="flex items-center justify-between border-b p-6 md:p-8 gap-4 bg-card-transparent">
+        {/* Left: Reply actions */}
+        <div className="flex gap-3">
+          <Button variant="outline" size="lg" onClick={onReply}>
+            <div className="flex items-center gap-2">
+              <Reply className="h-8 w-8" />
+              <User className="h-6 w-6" />
+            </div>
           </Button>
-          <Button variant="outline" size="sm" onClick={onReplyAll} className="text-xs md:text-sm">
-            <ReplyAll className="mr-0 md:mr-2 h-4 w-4" />
-            <span className="hidden md:inline">Reply All</span>
+          <Button variant="outline" size="lg" onClick={onReplyAll}>
+            <div className="flex items-center gap-2">
+              <ReplyAll className="h-8 w-8" />
+              <Users className="h-6 w-6" />
+            </div>
           </Button>
-          <Button variant="outline" size="sm" onClick={onForward} className="text-xs md:text-sm">
-            <Forward className="mr-0 md:mr-2 h-4 w-4" />
-            <span className="hidden md:inline">Forward</span>
+          <Button variant="outline" size="lg" onClick={onForward}>
+            <div className="flex items-center gap-2">
+              <Forward className="h-8 w-8" />
+              <Megaphone className="h-6 w-6" />
+            </div>
           </Button>
         </div>
 
-        {/* Center: Sender rules menu */}
-        <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+        {/* Center: Navigation and star */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-3">
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              onClick={onPrevious}
+              disabled={!hasPrevious}
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              onClick={onNext}
+              disabled={!hasNext}
+            >
+              <ChevronRight className="h-8 w-8" />
+            </Button>
+          </div>
+          <Button variant="ghost" size="lg">
+            <Star className="h-8 w-8" />
+          </Button>
+        </div>
+
+        {/* Right: Rules and delete */}
+        <div className="flex gap-3 items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs md:text-sm">
-                <FolderCog className="mr-2 h-4 w-4" />
-                {currentSenderGroup || 'Regole mittente'}
+              <Button variant="outline" size="lg">
+                <FolderCog className="h-8 w-8" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-56">
+            <DropdownMenuContent align="end" className="w-56">
               {senderGroups.map((group) => (
                 <DropdownMenuItem
                   key={group.id}
@@ -384,40 +413,12 @@ export const EmailDetail = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        {/* Right: Actions and navigation */}
-        <div className="flex gap-1 md:gap-2 items-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Star className="h-4 w-4" />
-          </Button>
+          
           {onDelete && (
-            <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8">
-              <Trash2 className="h-4 w-4" />
+            <Button variant="destructive" size="lg" onClick={onDelete}>
+              <Trash2 className="h-8 w-8" />
             </Button>
           )}
-          <Separator orientation="vertical" className="h-6 mx-1" />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onNext}
-            disabled={!hasNext}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:inline-flex">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 

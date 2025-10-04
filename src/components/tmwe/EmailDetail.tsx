@@ -322,7 +322,7 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Center: Navigation, star and rules */}
+        {/* Center: Navigation on top, Rules and Star below */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-3">
             <Button 
@@ -345,72 +345,74 @@ export const EmailDetail = ({
               <ChevronRight className="h-8 w-8 mb-1" />
               <span className="text-xs">Successiva</span>
             </Button>
+          </div>
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
+                  <FolderCog className="h-8 w-8 mb-1" />
+                  <span className="text-xs">Regole</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-56">
+                {senderGroups.map((group) => (
+                  <DropdownMenuItem
+                    key={group.id}
+                    onClick={() => handleAssignGroup(group.id)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: group.colore }}
+                      />
+                      {group.nome_gruppo}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {isCreatingGroup ? (
+                  <div className="p-2 space-y-2">
+                    <Input
+                      placeholder="Nome gruppo"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateGroup();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleCreateGroup} className="flex-1">
+                        Crea
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          setIsCreatingGroup(false);
+                          setNewGroupName('');
+                        }}
+                        className="flex-1"
+                      >
+                        Annulla
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
+                    + Nuovo gruppo
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
               <Star className="h-8 w-8 mb-1" />
               <span className="text-xs">Preferito</span>
             </Button>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
-                <FolderCog className="h-8 w-8 mb-1" />
-                <span className="text-xs">Regole</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-56">
-              {senderGroups.map((group) => (
-                <DropdownMenuItem
-                  key={group.id}
-                  onClick={() => handleAssignGroup(group.id)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: group.colore }}
-                    />
-                    {group.nome_gruppo}
-                  </div>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              {isCreatingGroup ? (
-                <div className="p-2 space-y-2">
-                  <Input
-                    placeholder="Nome gruppo"
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleCreateGroup();
-                      }
-                    }}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateGroup} className="flex-1">
-                      Crea
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => {
-                        setIsCreatingGroup(false);
-                        setNewGroupName('');
-                      }}
-                      className="flex-1"
-                    >
-                      Annulla
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
-                  + Nuovo gruppo
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Right: Forward and delete */}

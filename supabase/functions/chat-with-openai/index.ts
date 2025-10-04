@@ -26,14 +26,28 @@ serve(async (req) => {
     }
 
     // Get active AI configuration
-    const { data: aiConfig, error: configError } = await supabase
+    let { data: aiConfig, error: configError } = await supabase
       .from('config_ai')
       .select('*')
       .eq('attivo', true)
       .single();
 
+    // If no active config or error, try to get an openai config as fallback
     if (configError || !aiConfig) {
-      throw new Error('Configurazione AI attiva non trovata');
+      console.log('No active AI config found, trying openai fallback');
+      const { data: openaiConfig } = await supabase
+        .from('config_ai')
+        .select('*')
+        .or('provider.eq.openai,provider.eq.chatgpt')
+        .limit(1)
+        .single();
+      
+      if (openaiConfig) {
+        aiConfig = openaiConfig;
+        console.log('Using openai fallback config');
+      } else {
+        throw new Error('Nessuna configurazione AI disponibile');
+      }
     }
 
     // Get memory configuration

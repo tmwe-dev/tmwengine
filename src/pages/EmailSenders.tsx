@@ -476,7 +476,7 @@ export default function EmailSenders() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-12">#</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:text-primary"
                     onClick={() => handleSort('company')}
@@ -512,22 +512,16 @@ export default function EmailSenders() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  senderStats?.map((stat) => (
+                  senderStats?.map((stat, index) => (
                     <TableRow
                       key={stat.sender}
                       className={`cursor-pointer hover:bg-muted/50 ${
-                        selectedSenders.includes(stat.sender) ? 'bg-primary/10' : ''
+                        selectedSenders.includes(stat.sender) ? 'border-l-4 border-primary bg-primary/5' : ''
                       }`}
                       onClick={() => handleToggleSender(stat.sender)}
                     >
-                      <TableCell className="py-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedSenders.includes(stat.sender)}
-                          onChange={() => handleToggleSender(stat.sender)}
-                          className="cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                      <TableCell className="py-2 font-semibold text-muted-foreground">
+                        {index + 1}
                       </TableCell>
                       <TableCell className="py-2">
                         <div className="flex flex-col">

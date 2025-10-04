@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -94,8 +94,19 @@ export const EmailList = ({
   const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
+  const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('medium');
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
+
+  const getWidthClass = () => {
+    switch (contentWidth) {
+      case 'narrow': return 'max-w-3xl'; // ~768px
+      case 'medium': return 'max-w-5xl'; // ~1024px
+      case 'wide': return 'max-w-7xl'; // ~1280px
+      case 'full': return 'max-w-full';
+      default: return 'max-w-5xl';
+    }
+  };
 
   const handleToggleEmailSelection = (emailId: string) => {
     const newSelected = new Set(selectedEmailIds);
@@ -188,7 +199,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-4 pl-6 pr-[34px] w-full max-w-[70%] mx-auto overflow-x-hidden">
+    <div className={cn("space-y-2 py-4 pl-6 pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -328,7 +339,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-3 py-4 pl-6 pr-[34px] w-full max-w-[70%] mx-auto overflow-x-hidden">
+    <div className={cn("space-y-3 py-4 pl-6 pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -568,6 +579,46 @@ export const EmailList = ({
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Width controls */}
+            <div className="flex items-center gap-0.5 mr-2 border-r pr-2 border-border">
+              <Button
+                variant={contentWidth === 'narrow' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setContentWidth('narrow')}
+                title="Larghezza stretta"
+              >
+                S
+              </Button>
+              <Button
+                variant={contentWidth === 'medium' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setContentWidth('medium')}
+                title="Larghezza media"
+              >
+                M
+              </Button>
+              <Button
+                variant={contentWidth === 'wide' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setContentWidth('wide')}
+                title="Larghezza larga"
+              >
+                L
+              </Button>
+              <Button
+                variant={contentWidth === 'full' ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setContentWidth('full')}
+                title="Larghezza massima"
+              >
+                <Maximize className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
             {multiSelectMode && (
               <Button
                 variant="ghost"

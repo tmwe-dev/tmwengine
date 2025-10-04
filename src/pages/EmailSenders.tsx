@@ -351,7 +351,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[33%]">
           <CardHeader>
             <CardTitle>Mittenti</CardTitle>
             <CardDescription>
@@ -416,7 +416,7 @@ export default function EmailSenders() {
                             {stat.group.name}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">Non assegnato</Badge>
+                          <span className="text-xs text-muted-foreground">Non assegnato</span>
                         )}
                       </TableCell>
                     </TableRow>

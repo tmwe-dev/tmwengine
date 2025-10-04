@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -34,6 +34,9 @@ interface Email {
   read: boolean;
   starred: boolean;
   hasAttachments: boolean;
+  hasGroup?: boolean;
+  groupName?: string;
+  hasRule?: boolean;
 }
 
 interface EmailListProps {
@@ -216,7 +219,7 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 min-w-0 p-3">
+            <div className="flex-1 min-w-0 p-3 relative">
               <div className="flex items-center gap-4">
                 <div className="min-w-[200px]">
                   <p className={cn(
@@ -289,6 +292,20 @@ export const EmailList = ({
                   )}
                 </div>
               </div>
+              {/* Indicatori gruppo/regola in basso a sinistra */}
+              <div className="absolute bottom-1 left-3 flex items-center gap-2">
+                {email.hasGroup && (
+                  <div className="flex items-center gap-1 text-xs text-blue-400">
+                    <Users className="h-3 w-3" />
+                    <span className="font-medium">{email.groupName || 'Gruppo'}</span>
+                  </div>
+                )}
+                {email.hasRule && (
+                  <div className="text-xs font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                    R
+                  </div>
+                )}
+              </div>
             </div>
             <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">
               <Button
@@ -342,7 +359,7 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-4">
+            <div className="flex-1 p-4 relative">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-1 overflow-hidden">
                   <div className="flex items-center gap-2">
@@ -420,6 +437,20 @@ export const EmailList = ({
                     )}
                   </div>
                 </div>
+              </div>
+              {/* Indicatori gruppo/regola in basso a sinistra */}
+              <div className="absolute bottom-2 left-4 flex items-center gap-2">
+                {email.hasGroup && (
+                  <div className="flex items-center gap-1 text-xs text-blue-400">
+                    <Users className="h-3 w-3" />
+                    <span className="font-medium">{email.groupName || 'Gruppo'}</span>
+                  </div>
+                )}
+                {email.hasRule && (
+                  <div className="text-xs font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                    R
+                  </div>
+                )}
               </div>
             </div>
             <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">

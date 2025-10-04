@@ -818,7 +818,7 @@ export default function Attivita() {
   
   return (
     <div 
-      className={cn("section-spacing min-h-screen -mx-6 -mb-6 p-6", isMobile && "space-y-4")}
+      className={cn("section-spacing min-h-screen -m-6 pt-0 px-6 pb-6", isMobile && "space-y-4")}
       style={{
         background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
       }}

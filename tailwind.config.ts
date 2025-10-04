@@ -176,28 +176,28 @@ export default {
         },
         "line-bounce": {
           "0%": { 
-            transform: "translateX(0)",
-            width: "60%",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(0) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "8%": { 
-            transform: "translateX(calc(100% / 6))",
-            width: "60%",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(calc(100% / 6)) scaleX(1)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "50%": { 
-            transform: "translateX(calc(100% - 60%))",
-            width: "1px",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            transform: "translateX(calc(100% - 60%)) scaleX(0.017)",
+            transformOrigin: "left",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "92%": { 
-            transform: "translateX(calc(100% / 6))",
-            width: "60%",
+            transform: "translateX(calc(100% / 6)) scaleX(1)",
+            transformOrigin: "left",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "100%": { 
-            transform: "translateX(0)",
-            width: "60%",
+            transform: "translateX(0) scaleX(1)",
+            transformOrigin: "left",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
         },

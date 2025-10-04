@@ -145,7 +145,7 @@ export const EmailSidebar = ({
           'relative w-full group transition-all duration-200 overflow-hidden',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
           selectedFolder === folder.name && 'bg-email-selected text-primary-foreground',
-          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
+          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent after:origin-left',
           'hover:bg-transparent',
           'hover:after:animate-line-bounce'
         )}

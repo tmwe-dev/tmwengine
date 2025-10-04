@@ -34,6 +34,7 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentPrompt = prompt;
     setPrompt("");
     setIsLoading(true);
 
@@ -48,14 +49,11 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
 
       const systemPrompt = pagePrompt?.system_prompt || "Sei un assistente AI per il CRM FindAir.";
 
-      // Call AI chat function
+      // Call AI chat function with correct format
       const { data, error } = await supabase.functions.invoke("chat-with-openai", {
         body: {
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages.map((m) => ({ role: m.role, content: m.content })),
-            { role: "user", content: prompt },
-          ],
+          prompt: currentPrompt,
+          systemPrompt: systemPrompt,
         },
       });
 

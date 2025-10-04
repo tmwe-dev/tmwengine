@@ -22,47 +22,48 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
 
   return (
     <header className="flex items-center justify-between border-b bg-card px-4 md:px-6 py-3 md:py-4">
-      <div className="flex items-center gap-2 md:gap-4">
-        {isMobile && onMenuClick && (
-          <Button 
-            onClick={onMenuClick} 
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        )}
+      <div className="flex items-center gap-4 md:gap-6">
+        <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-10" />
         
-        <div className="flex items-center gap-2">
-          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-10" />
+        <div className="flex items-center gap-2 md:gap-4">
+          {isMobile && onMenuClick && (
+            <Button 
+              onClick={onMenuClick} 
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          
           <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             {isMobile ? 'Email' : 'TMWE Email Manager'}
           </h1>
+          
+          <Button 
+            onClick={onCompose} 
+            size="icon"
+            className="h-8 w-8 relative"
+          >
+            <Mail 
+              className="h-4 w-4" 
+              style={{ 
+                filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
+                transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
+              }} 
+            />
+          </Button>
+          
+          <Button 
+            onClick={onSync} 
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
-        
-        <Button 
-          onClick={onCompose} 
-          size="icon"
-          className="h-8 w-8 relative"
-        >
-          <Mail 
-            className="h-4 w-4" 
-            style={{ 
-              filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
-              transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
-            }} 
-          />
-        </Button>
-        
-        <Button 
-          onClick={onSync} 
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
       </div>
 
       <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-2 md:mx-8">

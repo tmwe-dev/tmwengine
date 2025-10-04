@@ -104,19 +104,18 @@ export const VoiceAgentWidget = () => {
       // Richiedi permesso microfono
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Genera signed URL chiamando direttamente l'API ElevenLabs
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${config.agentId}`
-      );
+      // Ottieni signed URL dalla edge function
+      const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
+        body: { agentId: config.agentId }
+      });
 
-      if (!response.ok) {
-        throw new Error('Impossibile generare il signed URL');
-      }
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Nessun signed URL ricevuto');
 
-      const data = await response.json();
+      console.log('Signed URL ottenuto, avvio conversazione...');
       
       // Avvia la sessione con il signed URL
-      await conversation.startSession({ signedUrl: data.signed_url });
+      await conversation.startSession({ signedUrl: data.signedUrl });
     } catch (error) {
       console.error('Error starting conversation:', error);
       toast({

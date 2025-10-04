@@ -24,92 +24,83 @@ serve(async (req) => {
 
     const { action, message_ids, folder } = await req.json();
 
-    console.log('🤖 AI Email Actions:', { action, message_ids, folder });
+    console.log('🔧 AI Email Actions:', { action, message_count: message_ids?.length, folder });
 
     if (!action || !message_ids || !Array.isArray(message_ids)) {
-      throw new Error('Invalid parameters: action and message_ids required');
+      throw new Error('Missing required parameters: action, message_ids');
     }
 
     // Get TMWE credentials
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user?.email) {
+    const { data: session } = await supabaseClient.auth.getSession();
+    const userEmail = session?.session?.user?.email;
+
+    if (!userEmail) {
       throw new Error('User not authenticated');
     }
 
     const { data: credentials } = await supabaseClient
       .from('user_tmwe_credentials')
       .select('*')
-      .eq('email', user.email)
+      .eq('email', userEmail)
       .single();
 
     if (!credentials) {
       throw new Error('TMWE credentials not found');
     }
 
-    // Prepare API calls based on action type
-    const results = [];
-    
-    for (const messageId of message_ids) {
-      let apiResult;
-      
-      switch (action) {
-        case 'mark_read':
-          apiResult = await callTMWEApi('email_message', {
-            action: 'mark_read',
-            message_id: messageId
-          }, credentials);
-          break;
-          
-        case 'mark_unread':
-          apiResult = await callTMWEApi('email_message', {
-            action: 'mark_unread',
-            message_id: messageId
-          }, credentials);
-          break;
-          
-        case 'delete':
-          apiResult = await callTMWEApi('email_message', {
-            action: 'delete',
-            message_id: messageId
-          }, credentials);
-          break;
-          
-        case 'move_folder':
-          if (!folder) {
-            throw new Error('Folder required for move_folder action');
-          }
-          apiResult = await callTMWEApi('email_message', {
-            action: 'move',
-            message_id: messageId,
-            destination_folder: folder
-          }, credentials);
-          break;
-          
-        default:
-          throw new Error(`Unknown action: ${action}`);
-      }
-      
-      results.push({
-        message_id: messageId,
-        action,
-        success: apiResult.success,
-        response: apiResult
-      });
+    // Prepare TMWE API request based on action
+    let tmweAction = '';
+    let actionParams: any = {
+      message_ids: message_ids
+    };
+
+    switch (action) {
+      case 'mark_read':
+        tmweAction = 'mark_as_read';
+        break;
+      case 'mark_unread':
+        tmweAction = 'mark_as_unread';
+        break;
+      case 'delete':
+        tmweAction = 'delete_messages';
+        break;
+      case 'move_folder':
+        if (!folder) {
+          throw new Error('Folder parameter required for move_folder action');
+        }
+        tmweAction = 'move_to_folder';
+        actionParams.folder = folder;
+        break;
+      default:
+        throw new Error(`Unknown action: ${action}`);
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.length - successCount;
+    // Call TMWE API via proxy
+    const { data: tmweResult, error: tmweError } = await supabaseClient.functions.invoke(
+      'tmwe-api-proxy',
+      {
+        body: {
+          endpoint: 'email_message',
+          data: {
+            action: tmweAction,
+            ...actionParams
+          }
+        }
+      }
+    );
 
-    console.log(`✅ AI Actions completed: ${successCount} success, ${failCount} failed`);
+    if (tmweError) {
+      throw tmweError;
+    }
+
+    console.log('✅ TMWE Action completed:', tmweResult);
 
     return new Response(
       JSON.stringify({
         success: true,
-        action,
-        total: message_ids.length,
-        successful: successCount,
-        failed: failCount,
-        results
+        action: action,
+        message_count: message_ids.length,
+        tmwe_response: tmweResult
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -118,7 +109,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ AI Email Actions error:', error);
+    console.error('❌ Error in ai-email-actions:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -131,28 +122,3 @@ serve(async (req) => {
     );
   }
 });
-
-async function callTMWEApi(endpoint: string, data: any, credentials: any) {
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
-
-  const { data: result, error } = await supabaseClient.functions.invoke('tmwe-api-proxy', {
-    body: {
-      endpoint,
-      data,
-      credentials: {
-        access_token: credentials.access_token,
-        client_id: credentials.client_id,
-        client_secret: credentials.client_secret
-      }
-    }
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return result;
-}

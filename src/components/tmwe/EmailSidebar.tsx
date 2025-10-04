@@ -207,7 +207,7 @@ export const EmailSidebar = ({
       <ScrollArea className="flex-1 px-2">
         <div 
           className="space-y-1 py-2" 
-          style={{ boxShadow: '-3px 0 0 0 hsla(0, 60%, 40%, 0.70)' }}
+          style={{ boxShadow: '-3px 0 0 0 hsla(0, 60%, 40%, 0.65)' }}
         >
           {isLoading ? (
             <div className="flex items-center justify-center py-8">

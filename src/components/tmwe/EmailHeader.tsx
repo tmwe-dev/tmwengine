@@ -20,8 +20,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
   };
 
   return (
-    <header className="flex items-center justify-between border-b bg-card-transparent px-4 md:px-6 py-3 md:py-4">
-      <div className="flex items-center gap-2 md:gap-4">
+    <header className="flex items-center border-b bg-card-transparent px-4 md:px-6 py-3 md:py-4">
+      <div className="flex items-center gap-1 md:gap-2">
         {isMobile && onMenuClick && (
           <Button 
             onClick={onMenuClick} 
@@ -61,7 +61,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
         </Button>
       </div>
 
-      <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-2 md:mx-8">
+      <form onSubmit={handleSearch} className="flex-1 ml-2 md:ml-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input

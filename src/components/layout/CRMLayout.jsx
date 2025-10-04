@@ -78,6 +78,9 @@ const CRMLayout = ({ children }) => {
           "border-b border-border flex items-center justify-between relative",
           isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
+        style={location.pathname === '/attivita' ? {
+          background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0%, rgba(0, 40, 10, 0.5) 100%)'
+        } : undefined}
       >
         <div className="flex items-center gap-4">
           <Button

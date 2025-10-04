@@ -68,7 +68,9 @@ const CRMLayout = ({ children }) => {
   return (
     <div 
       className="min-h-screen"
-      style={{
+      style={location.pathname === '/attivita' ? {
+        background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
+      } : {
         background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0px, hsla(0, 0%, 0%, 0.35) 600px, hsl(0, 0%, 0%) 600px)'
       }}
     >
@@ -79,9 +81,6 @@ const CRMLayout = ({ children }) => {
           location.pathname !== '/attivita' && "border-b border-border",
           isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
-        style={location.pathname === '/attivita' ? {
-          background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 300px)'
-        } : undefined}
       >
         <div className="flex items-center gap-4">
           <Button

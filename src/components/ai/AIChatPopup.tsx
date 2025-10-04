@@ -95,7 +95,7 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
       {/* Chat Popup - Positioned relative to trigger */}
       {isOpen && (
         <Card 
-          className="absolute top-full right-0 mt-2 w-96 h-[600px] shadow-2xl z-50 flex flex-col"
+          className="absolute top-full right-0 mt-2 w-96 max-h-[calc(100vh-120px)] shadow-2xl z-50 flex flex-col"
           style={{ background: 'var(--gradient-page)' }}
         >
           {/* Header */}

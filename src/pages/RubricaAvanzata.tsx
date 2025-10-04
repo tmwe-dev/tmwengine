@@ -611,12 +611,7 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div 
-      className={cn("space-y-2", isMobile && "space-y-1")}
-      style={{
-        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)'
-      }}
-    >
+    <div className={cn("space-y-2", isMobile && "space-y-1")}>
 
       {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft bg-card-transparent">

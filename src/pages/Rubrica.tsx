@@ -267,8 +267,8 @@ export default function Rubrica() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-heading-1 font-bold text-text-primary">Clienti</h1>
-          <p className="text-body text-text-secondary">
+          <h1 className="text-2xl font-bold text-foreground">Clienti</h1>
+          <p className="text-muted-foreground">
             Gestisci tutti i tuoi clienti della rubrica
           </p>
         </div>
@@ -308,7 +308,7 @@ export default function Rubrica() {
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cerca per nome, azienda o email..."
                 value={searchTerm}
@@ -363,10 +363,10 @@ export default function Rubrica() {
         <Card className="border-card shadow-soft bg-card-transparent">
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-heading-2 font-bold text-text-primary">
+              <div className="text-2xl font-bold text-foreground">
                 {contacts.length}
               </div>
-              <div className="text-small text-text-secondary">
+              <div className="text-sm text-muted-foreground">
                 Contatti Totali
               </div>
             </div>
@@ -376,10 +376,10 @@ export default function Rubrica() {
         <Card className="border-card shadow-soft bg-card-transparent">
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-heading-2 font-bold text-text-primary">
+              <div className="text-2xl font-bold text-foreground">
                 {filteredContacts.length}
               </div>
-              <div className="text-small text-text-secondary">
+              <div className="text-sm text-muted-foreground">
                 Risultati Filtro
               </div>
             </div>
@@ -389,10 +389,10 @@ export default function Rubrica() {
         <Card className="border-card shadow-soft bg-card-transparent">
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-heading-2 font-bold text-text-primary">
+              <div className="text-2xl font-bold text-foreground">
                 {contacts.filter(c => c.azienda).length}
               </div>
-              <div className="text-small text-text-secondary">
+              <div className="text-sm text-muted-foreground">
                 Con Azienda
               </div>
             </div>
@@ -410,7 +410,7 @@ export default function Rubrica() {
         {filteredContacts.length === 0 ? (
           <Card className="col-span-full border-card shadow-soft bg-card-transparent">
             <CardContent className="p-12 text-center">
-              <div className="text-text-secondary mb-4">
+              <div className="text-muted-foreground mb-4">
                 {contacts.length === 0 ? (
                   <>
                     <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -463,14 +463,14 @@ export default function Rubrica() {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      <CardTitle className="text-heading-4 font-semibold text-text-primary">
+                      <CardTitle className="text-lg font-semibold text-foreground">
                         {contact.nome || contact.responsabile}
                       </CardTitle>
                     </div>
                      {contact.azienda && (
                        <div className="flex items-center gap-2 mt-1">
                          <Building className="h-4 w-4" />
-                         <span className="text-body text-text-secondary">{contact.azienda}</span>
+                         <span className="text-sm text-muted-foreground">{contact.azienda}</span>
                          <ActivityIndicators 
                            companyId={contact.id} 
                            activities={getCompanyActivities(contact.id)}
@@ -522,21 +522,21 @@ export default function Rubrica() {
               
               <CardContent className="space-y-3">
                 {contact.email && (
-                  <div className="flex items-center gap-2 text-body text-text-secondary">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4" />
                     <span className="truncate">{contact.email}</span>
                   </div>
                 )}
                 
                 {contact.telefono && (
-                  <div className="flex items-center gap-2 text-body text-text-secondary">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span>{contact.telefono}</span>
                   </div>
                 )}
                 
                 {(contact.citta || contact.paese) && (
-                  <div className="flex items-center gap-2 text-body text-text-secondary">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4" />
                     <span>
                       {[contact.citta, contact.paese]
@@ -548,7 +548,7 @@ export default function Rubrica() {
                 
                 {contact.tags && contact.tags.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Tag className="h-4 w-4 text-text-secondary" />
+                    <Tag className="h-4 w-4 text-muted-foreground" />
                     {contact.tags.slice(0, 3).map((tag, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {tag}
@@ -563,7 +563,7 @@ export default function Rubrica() {
                 )}
                 
                 {contact.note && (
-                  <p className="text-small text-text-secondary line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {contact.note}
                   </p>
                 )}

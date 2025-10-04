@@ -625,7 +625,7 @@ export default function RubricaAvanzata() {
               </div>
             )}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cerca per nome, azienda, email o città..."
                 value={searchQuery}
@@ -638,7 +638,7 @@ export default function RubricaAvanzata() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-text-secondary hover:text-text-primary transition-colors p-2 shrink-0"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-2 shrink-0"
                   title="Filtri avanzati"
                 >
                   <Filter className="h-5 w-5" />
@@ -725,20 +725,20 @@ export default function RubricaAvanzata() {
                     {/* Compact Stats */}
                     <div className="grid grid-cols-4 gap-2 py-2 border-t border-border">
                       <div className="text-center">
-                        <div className="text-sm font-bold text-text-primary">{allRecords.length}</div>
-                        <div className="text-xs text-text-secondary">Totali</div>
+                        <div className="text-sm font-bold text-foreground">{allRecords.length}</div>
+                        <div className="text-xs text-muted-foreground">Totali</div>
                       </div>
                       <div className="text-center">
                         <div className="text-sm font-bold text-primary">{filteredRecords.length}</div>
-                        <div className="text-xs text-text-secondary">Filtrati</div>
+                        <div className="text-xs text-muted-foreground">Filtrati</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm font-bold text-text-primary">{allRecords.filter(c => c.azienda).length}</div>
-                        <div className="text-xs text-text-secondary">Aziende</div>
+                        <div className="text-sm font-bold text-foreground">{allRecords.filter(c => c.azienda).length}</div>
+                        <div className="text-xs text-muted-foreground">Aziende</div>
                       </div>
                       <div className="text-center">
                         <div className={cn("text-sm font-bold", selectedRecords.size > 0 ? "text-blue-600" : "text-accent")}>{selectedRecords.size}</div>
-                        <div className="text-xs text-text-secondary">Selez.</div>
+                        <div className="text-xs text-muted-foreground">Selez.</div>
                       </div>
                     </div>
 
@@ -777,7 +777,7 @@ export default function RubricaAvanzata() {
                     {activeFilters.length > 0 && (
                       <div className="pt-2 border-t border-border">
                         <div className="flex flex-wrap gap-1 items-center">
-                          <span className="text-xs font-medium text-text-secondary">Filtri attivi:</span>
+                          <span className="text-xs font-medium text-muted-foreground">Filtri attivi:</span>
                           {activeFilters.map((filter, index) => (
                             <Badge key={index} variant="secondary" className="cursor-pointer text-xs h-6" onClick={() => removeFilter(index)}>
                               {filter.displayValue} ×
@@ -894,7 +894,7 @@ export default function RubricaAvanzata() {
             </Card>
           ) : viewingRecords.length === 0 ? (
             <Card className="border-card shadow-soft bg-card-transparent">
-              <CardContent className="text-center py-12 text-text-secondary">
+              <CardContent className="text-center py-12 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">Nessun contatto trovato</h3>
                 <p className="text-sm">
@@ -955,7 +955,7 @@ export default function RubricaAvanzata() {
                   <Card className="border-card shadow-soft bg-card-transparent">
                     <CardContent className="p-2">
                       <div className="flex flex-col gap-1">
-                        <div className="text-xs text-text-secondary text-center">
+                        <div className="text-xs text-muted-foreground text-center">
                           Pagina {currentPage + 1} di {totalPages}
                         </div>
                         <div className="flex justify-center gap-2">
@@ -1025,7 +1025,7 @@ export default function RubricaAvanzata() {
              <Card className="border-card shadow-soft bg-card-transparent">
                <CardContent className="p-2">
                   <div className="flex flex-col gap-1">
-                    <div className="text-xs text-text-secondary text-center">
+                    <div className="text-xs text-muted-foreground text-center">
                       Pagina {currentPage + 1} di {totalPages}
                     </div>
                    <div className="flex justify-center gap-2">
@@ -1117,10 +1117,10 @@ export default function RubricaAvanzata() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : viewingRecords.length === 0 ? (
-              <div className="text-center py-12 text-text-secondary">
+              <div className="text-center py-12 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-heading-3 font-semibold mb-2">Nessun contatto trovato</h3>
-                <p className="text-body">
+                <h3 className="text-lg font-semibold mb-2">Nessun contatto trovato</h3>
+                <p className="text-sm">
                   Prova a modificare i filtri di ricerca
                 </p>
               </div>
@@ -1320,7 +1320,7 @@ export default function RubricaAvanzata() {
                               >
                                 <span className="font-medium">{formatCellValue(record.nome)}</span>
                                 {record.responsabile && record.responsabile !== record.nome && (
-                                  <span className="text-sm text-text-secondary">{formatCellValue(record.responsabile)}</span>
+                                  <span className="text-sm text-muted-foreground">{formatCellValue(record.responsabile)}</span>
                                 )}
                               </div>
                             </div>
@@ -1343,19 +1343,19 @@ export default function RubricaAvanzata() {
                           )}
                           <TableCell>
                             <div className="flex items-center gap-1 relative z-10">
-                              <Mail className="h-3 w-3 text-text-secondary" />
+                              <Mail className="h-3 w-3 text-muted-foreground" />
                               {formatCellValue(record.email)}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 relative z-10">
-                              <Phone className="h-3 w-3 text-text-secondary" />
+                              <Phone className="h-3 w-3 text-muted-foreground" />
                               {formatCellValue(record.telefono)}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 relative z-10">
-                              <Phone className="h-3 w-3 text-text-secondary" />
+                              <Phone className="h-3 w-3 text-muted-foreground" />
                               {formatCellValue(record.cellulare)}
                             </div>
                           </TableCell>
@@ -1366,7 +1366,7 @@ export default function RubricaAvanzata() {
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <div className="cursor-pointer flex items-center gap-1" onClick={() => addFilter('citta', record.citta)}>
-                                        <MapPin className="h-3 w-3 text-text-secondary" />
+                                        <MapPin className="h-3 w-3 text-muted-foreground" />
                                         {formatCellValue(record.citta)}
                                       </div>
                                     </TooltipTrigger>
@@ -1421,7 +1421,7 @@ export default function RubricaAvanzata() {
                                       </TooltipProvider>
                                     ))
                                   ) : (
-                                    <span className="text-xs text-text-secondary">-</span>
+                                    <span className="text-xs text-muted-foreground">-</span>
                                   )}
                                   {record.tags && record.tags.length > 2 && (
                                     <Badge variant="outline" className="text-xs">
@@ -1556,7 +1556,7 @@ export default function RubricaAvanzata() {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-text-secondary">
+                  <div className="text-sm text-muted-foreground">
                     Pagina {currentPage + 1} di {totalPages} 
                     ({filteredRecords.length} risultati totali)
                   </div>
@@ -1607,7 +1607,7 @@ export default function RubricaAvanzata() {
                   <ChevronLeft className="h-4 w-4" />
                   {!isMobile && "Prec"}
                 </Button>
-                <span className={cn("text-sm text-text-secondary flex items-center", isMobile ? "px-3" : "")}>
+                <span className={cn("text-sm text-muted-foreground flex items-center", isMobile ? "px-3" : "")}>
                   {selectedRecordIndex + 1} di {viewingRecords.length}
                 </span>
                 <Button

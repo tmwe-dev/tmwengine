@@ -46,10 +46,12 @@ const CRMLayout = ({ children }) => {
   const navigate = useNavigate();
   const { userEmail, logout } = useTMWEAuth();
 
-  // Chiudi automaticamente la sidebar quando cambia la rotta
+  // Chiudi automaticamente la sidebar quando cambia la rotta o su mobile
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [location.pathname]);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const navigation = [
     { name: 'Clienti', href: '/rubrica', icon: Users },
@@ -179,38 +181,76 @@ const CRMLayout = ({ children }) => {
       </header>
 
       <div className={cn("flex", isMobile ? "h-[calc(100vh-3.5rem)]" : "h-[calc(100vh-7rem)]")}>
-        {/* Sidebar */}
-        <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
-        } overflow-hidden`}>
-          <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href);
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className={`${sidebarOpen ? 'block' : 'hidden lg:hidden xl:block'}`}>
-                    {item.name}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
+        {/* Sidebar - nascosta completamente su mobile, visibile su desktop */}
+        {!isMobile && (
+          <aside className={cn(
+            "bg-card-transparent border-r border-border transition-all duration-300 overflow-hidden",
+            sidebarOpen ? 'w-64' : 'w-16'
+          )}>
+            <nav className="p-4 space-y-2">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className={`${sidebarOpen ? 'block' : 'hidden xl:block'}`}>
+                      {item.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        )}
+
+        {/* Sidebar mobile - overlay con Sheet */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <aside 
+              className="fixed left-0 top-14 bottom-0 w-64 bg-background border-r border-border z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <nav className="p-4 space-y-2">
+                {navigation.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        active
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </aside>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-6">
+          <div className={cn(isMobile ? "p-3" : "p-6")}>
             {children}
           </div>
         </main>

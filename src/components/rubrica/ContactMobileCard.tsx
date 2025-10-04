@@ -86,7 +86,7 @@ export function ContactMobileCard({
 
   return (
     <Card className={cn(
-      "border-card shadow-soft transition-all duration-200 relative overflow-hidden",
+      "border-card shadow-soft transition-all duration-200 relative overflow-hidden bg-card/35",
       cardBgColor,
       isSelected && "ring-2 ring-primary border-primary"
     )}>

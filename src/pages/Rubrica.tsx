@@ -304,7 +304,7 @@ export default function Rubrica() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="border-card shadow-soft">
+      <Card className="border-card shadow-soft bg-card/35">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -360,7 +360,7 @@ export default function Rubrica() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-card shadow-soft">
+        <Card className="border-card shadow-soft bg-card/35">
           <CardContent className="p-6">
             <div className="text-center">
               <div className="text-heading-2 font-bold text-text-primary">
@@ -373,7 +373,7 @@ export default function Rubrica() {
           </CardContent>
         </Card>
         
-        <Card className="border-card shadow-soft">
+        <Card className="border-card shadow-soft bg-card/35">
           <CardContent className="p-6">
             <div className="text-center">
               <div className="text-heading-2 font-bold text-text-primary">
@@ -386,7 +386,7 @@ export default function Rubrica() {
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card className="border-card shadow-soft bg-card/35">
           <CardContent className="p-6">
             <div className="text-center">
               <div className="text-heading-2 font-bold text-text-primary">
@@ -408,7 +408,7 @@ export default function Rubrica() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContacts.length === 0 ? (
-          <Card className="col-span-full border-card shadow-soft">
+          <Card className="col-span-full border-card shadow-soft bg-card/35">
             <CardContent className="p-12 text-center">
               <div className="text-text-secondary mb-4">
                 {contacts.length === 0 ? (
@@ -437,7 +437,7 @@ export default function Rubrica() {
           </Card>
         ) : (
           filteredContacts.map((contact, index) => (
-            <Card key={contact.id} className="border-card shadow-soft hover:shadow-medium transition-shadow">
+            <Card key={contact.id} className="border-card shadow-soft hover:shadow-medium transition-shadow bg-card/35">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">

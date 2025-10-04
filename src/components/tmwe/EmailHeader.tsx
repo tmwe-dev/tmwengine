@@ -9,9 +9,10 @@ interface EmailHeaderProps {
   onSync: () => void;
   onMenuClick?: () => void;
   isMobile?: boolean;
+  downloadProgressComponent?: React.ReactNode;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile, downloadProgressComponent }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -60,6 +61,12 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
+
+      {downloadProgressComponent && (
+        <div className="ml-2">
+          {downloadProgressComponent}
+        </div>
+      )}
 
       <form onSubmit={handleSearch} className="flex-1 ml-2 md:ml-4">
         <div className="relative">

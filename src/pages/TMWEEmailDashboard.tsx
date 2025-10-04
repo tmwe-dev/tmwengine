@@ -7,6 +7,8 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
+import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
+import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -103,6 +105,21 @@ const EmailDashboard = () => {
       return allPages.length + 1;
     },
     initialPageParam: 1,
+  });
+
+  // Get total email count from the first page response
+  const totalEmailCount = messagesData?.pages?.[0]?.total || 0;
+
+  // Email download hook
+  const {
+    isDownloading,
+    downloadedCount,
+    downloadError,
+    allEmails: downloadedEmails,
+    startDownload,
+  } = useEmailDownload({
+    folder: selectedFolder,
+    totalEmails: totalEmailCount,
   });
 
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
@@ -204,10 +221,29 @@ const EmailDashboard = () => {
     })
   );
 
+  // Use downloaded emails if available, otherwise use paginated emails
+  const emailsToUse = downloadedEmails.length > 0 ? downloadedEmails.map((msg: any) => ({
+    id: String(msg.uid || msg.id),
+    subject: msg.subject || '(No Subject)',
+    from: typeof msg.from === 'object' ? msg.from.email : msg.from,
+    preview: '',
+    date: msg.date,
+    read: msg.is_read === true || msg.seen === 1,
+    starred: msg.is_flagged === true || msg.flagged === 1,
+    hasAttachments: !!(
+      msg.has_attachments || 
+      msg.hasAttachments || 
+      msg.attachment_count > 0 ||
+      msg.attachmentCount > 0 ||
+      (msg.attachments && msg.attachments.length > 0) ||
+      (msg.size && parseInt(msg.size) > 50000)
+    ),
+  })) : allEmails;
+
   // Filter emails by selected sender
   const emails = selectedSender 
-    ? allEmails.filter(email => email.from === selectedSender)
-    : allEmails;
+    ? emailsToUse.filter(email => email.from === selectedSender)
+    : emailsToUse;
 
   const handleSync = () => {
     toast.info('Starting sync...');
@@ -318,6 +354,16 @@ const EmailDashboard = () => {
         onSync={handleSync}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
+        downloadProgressComponent={
+          <EmailDownloadProgress
+            totalEmails={totalEmailCount}
+            onDownloadComplete={() => {}}
+            onStartDownload={startDownload}
+            isDownloading={isDownloading}
+            downloadedCount={downloadedCount}
+            downloadError={downloadError}
+          />
+        }
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -359,7 +405,7 @@ const EmailDashboard = () => {
           {/* Sender Filter */}
           <div className="border-b bg-card-transparent px-4 py-2 flex items-center gap-2">
             <EmailSenderFilter
-              emails={allEmails}
+              emails={emailsToUse}
               selectedSender={selectedSender}
               onSenderSelect={setSelectedSender}
             />

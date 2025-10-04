@@ -56,13 +56,21 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
 
           const pageEmails = response?.messages || [];
           
+          console.log(`📄 Pagina ${page}/${totalPages}: ricevute ${pageEmails.length} email dalla API`);
+          
           // 3. Filtra solo le email NON presenti nel database
           const missingEmails = pageEmails.filter((email: any) => {
             const emailId = String(email.uid || email.message_id);
-            return !existingIds.has(emailId);
+            const isMissing = !existingIds.has(emailId);
+            if (page === 1 && pageEmails.indexOf(email) < 3) {
+              console.log(`🔍 Email ID: ${emailId}, presente nel DB: ${!isMissing}`);
+            }
+            return isMissing;
           });
 
-          console.log(`📄 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
+          console.log(`📊 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da salvare`);
+
+          allDownloadedEmails.push(...pageEmails);
 
           // 4. Salva solo le email mancanti
           if (missingEmails.length > 0) {

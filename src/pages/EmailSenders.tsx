@@ -41,6 +41,9 @@ export default function EmailSenders() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [chartDialogOpen, setChartDialogOpen] = useState(false);
   const [timelineWindowStart, setTimelineWindowStart] = useState(0);
+  const [currentSenderIndex, setCurrentSenderIndex] = useState(0);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [selectedActionType, setSelectedActionType] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | ''>('');
   const MONTHS_TO_SHOW = 12;
   const queryClient = useQueryClient();
 
@@ -266,16 +269,19 @@ export default function EmailSenders() {
     }
   };
 
-  // Fetch email timeline for selected sender
+  // Get current sender for chart
+  const currentChartSender = senderStats?.[currentSenderIndex]?.sender;
+
+  // Fetch email timeline for current chart sender
   const { data: emailTimelineAll, isLoading: loadingTimeline } = useQuery({
-    queryKey: ['email-timeline', selectedSenders[0]],
+    queryKey: ['email-timeline', currentChartSender],
     queryFn: async () => {
-      if (selectedSenders.length !== 1) return [];
+      if (!currentChartSender) return [];
 
       const { data, error } = await supabase
         .from('email_messages')
         .select('data_ricezione')
-        .eq('from_email', selectedSenders[0])
+        .eq('from_email', currentChartSender)
         .order('data_ricezione', { ascending: true });
 
       if (error) throw error;
@@ -299,13 +305,78 @@ export default function EmailSenders() {
         }))
         .sort((a, b) => a.month.localeCompare(b.month));
     },
-    enabled: selectedSenders.length === 1,
+    enabled: !!currentChartSender && chartDialogOpen,
   });
 
   // Get windowed data for chart
   const emailTimeline = emailTimelineAll?.slice(timelineWindowStart, timelineWindowStart + MONTHS_TO_SHOW) || [];
   const canScrollLeft = timelineWindowStart > 0;
   const canScrollRight = emailTimelineAll && timelineWindowStart + MONTHS_TO_SHOW < emailTimelineAll.length;
+
+  // Navigation functions
+  const handlePreviousSender = () => {
+    if (currentSenderIndex > 0) {
+      setCurrentSenderIndex(currentSenderIndex - 1);
+      setTimelineWindowStart(0);
+    }
+  };
+
+  const handleNextSender = () => {
+    if (senderStats && currentSenderIndex < senderStats.length - 1) {
+      setCurrentSenderIndex(currentSenderIndex + 1);
+      setTimelineWindowStart(0);
+    }
+  };
+
+  // Assignment functions
+  const handleAssignGroup = async () => {
+    if (!selectedGroupId || !currentChartSender) return;
+    
+    await supabase
+      .from('email_sender_rules')
+      .delete()
+      .eq('sender_email', currentChartSender);
+
+    const { error } = await supabase
+      .from('email_sender_rules')
+      .insert({
+        group_id: selectedGroupId,
+        sender_email: currentChartSender,
+      });
+
+    if (!error) {
+      toast.success('Gruppo assegnato');
+      queryClient.invalidateQueries({ queryKey: ['sender-stats'] });
+      setSelectedGroupId('');
+    } else {
+      toast.error('Errore durante l\'assegnazione');
+    }
+  };
+
+  const handleAssignAction = async () => {
+    if (!selectedActionType || !currentChartSender) return;
+    
+    await supabase
+      .from('email_sender_actions')
+      .delete()
+      .eq('sender_email', currentChartSender);
+
+    const { error } = await supabase
+      .from('email_sender_actions')
+      .insert({
+        sender_email: currentChartSender,
+        action_type: selectedActionType,
+        action_params: {},
+      });
+
+    if (!error) {
+      toast.success('Azione assegnata');
+      queryClient.invalidateQueries({ queryKey: ['sender-stats'] });
+      setSelectedActionType('');
+    } else {
+      toast.error('Errore durante l\'assegnazione dell\'azione');
+    }
+  };
 
   const totalEmails = senderStats?.reduce((sum, s) => sum + s.count, 0) || 0;
   const uniqueSenders = senderStats?.length || 0;
@@ -541,7 +612,11 @@ export default function EmailSenders() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setChartDialogOpen(true)}
+                  onClick={() => {
+                    const index = senderStats?.findIndex(s => s.sender === selectedSenders[0]) || 0;
+                    setCurrentSenderIndex(index);
+                    setChartDialogOpen(true);
+                  }}
                   className="h-8 w-8"
                 >
                   <BarChart3 className="h-4 w-4" />
@@ -696,19 +771,48 @@ export default function EmailSenders() {
         {/* Email Timeline Chart Dialog */}
         <Dialog open={chartDialogOpen} onOpenChange={(open) => {
           setChartDialogOpen(open);
-          if (!open) setTimelineWindowStart(0);
+          if (!open) {
+            setTimelineWindowStart(0);
+            setSelectedGroupId('');
+            setSelectedActionType('');
+          }
         }}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Timeline Email - {selectedSenders[0]}
-              </DialogTitle>
-              <DialogDescription>
-                Visualizzazione cronologica delle email ricevute da questo mittente
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  <DialogTitle>Timeline Email</DialogTitle>
+                </div>
+                {/* Sender Navigation */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handlePreviousSender}
+                    disabled={currentSenderIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="text-sm text-muted-foreground min-w-[200px] text-center">
+                    {currentSenderIndex + 1} / {senderStats?.length || 0}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleNextSender}
+                    disabled={!senderStats || currentSenderIndex >= senderStats.length - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <DialogDescription className="truncate">
+                {currentChartSender}
               </DialogDescription>
             </DialogHeader>
-            <div className="py-6 space-y-4">
+            
+            <div className="space-y-6 py-4">
               {loadingTimeline ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-muted-foreground">Caricamento...</div>
@@ -760,7 +864,7 @@ export default function EmailSenders() {
                     </BarChart>
                   </ResponsiveContainer>
                   
-                  {/* Navigation Controls */}
+                  {/* Time Navigation Controls */}
                   <div className="flex items-center justify-center gap-4">
                     <Button
                       variant="outline"
@@ -788,6 +892,61 @@ export default function EmailSenders() {
                   </div>
                 </>
               )}
+
+              {/* Assignment Controls */}
+              <div className="border-t pt-6 space-y-4">
+                <h3 className="font-semibold text-lg">Assegna Regole</h3>
+                
+                {/* Group Assignment */}
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona gruppo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: group.colore }}
+                            />
+                            {group.nome_gruppo}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAssignGroup}
+                    disabled={!selectedGroupId}
+                  >
+                    Assegna Gruppo
+                  </Button>
+                </div>
+
+                {/* Action Assignment */}
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona azione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="move_to_folder">📁 Sposta in cartella</SelectItem>
+                      <SelectItem value="mark_as_read">✓ Marca come letto</SelectItem>
+                      <SelectItem value="archive">📦 Archivia</SelectItem>
+                      <SelectItem value="delete">🗑️ Elimina</SelectItem>
+                      <SelectItem value="forward">➡️ Inoltra</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAssignAction}
+                    disabled={!selectedActionType}
+                  >
+                    Assegna Azione
+                  </Button>
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

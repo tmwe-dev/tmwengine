@@ -15,6 +15,7 @@ import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { AIChatPopup } from '@/components/ai/AIChatPopup';
 
 interface Contact {
   id: string;
@@ -263,7 +264,9 @@ export default function Rubrica() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <AIChatPopup pageRoute="/rubrica" />
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -574,5 +577,6 @@ export default function Rubrica() {
       </div>
       )}
     </div>
+    </>
   );
 }

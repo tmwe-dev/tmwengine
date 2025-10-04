@@ -23,6 +23,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { AIChatPopup } from '@/components/ai/AIChatPopup';
 
 interface Activity {
   id: string;
@@ -817,9 +818,11 @@ export default function Attivita() {
   console.log('🔴 ATTIVITA PAGE - filterByContactId:', filterByContactId);
   
   return (
-    <div 
-      className={cn("section-spacing", isMobile && "space-y-4")}
-    >
+    <>
+      <AIChatPopup pageRoute="/attivita" />
+      <div 
+        className={cn("section-spacing", isMobile && "space-y-4")}
+      >
       {/* Pulsante Indietro - Sempre visibile quando filterByContactId è attivo */}
       {filterByContactId && (
         <div className="mb-4">
@@ -1691,5 +1694,6 @@ export default function Attivita() {
         onSave={handleSaveContact}
       />
     </div>
+    </>
   );
 }

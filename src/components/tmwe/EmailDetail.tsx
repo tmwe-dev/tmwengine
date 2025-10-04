@@ -303,7 +303,7 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top navigation bar */}
-      <div className="flex items-center justify-between border-b p-6 md:p-8 gap-4 bg-card-transparent">
+      <div className="grid grid-cols-3 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
         {/* Left: Reply actions */}
         <div className="flex gap-3">
           <Button variant="outline" size="lg" onClick={onReply} className="flex-col h-auto py-3 px-4">

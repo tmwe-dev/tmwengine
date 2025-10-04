@@ -487,7 +487,10 @@ export default function EmailSenders() {
         {/* Senders Table */}
         <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
           <CardHeader>
-            <CardTitle>Mittenti</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Mittenti</CardTitle>
+              <Badge variant="secondary">{uniqueSenders}</Badge>
+            </div>
             <CardDescription>
               Clicca per selezionare i mittenti da raggruppare
             </CardDescription>

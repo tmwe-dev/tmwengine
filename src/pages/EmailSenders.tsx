@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Search, Mail, Users, Tag, TrendingUp, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SenderStats {
   sender: string;
@@ -118,6 +119,39 @@ export default function EmailSenders() {
 
       return stats;
     },
+  });
+
+  // Fetch email timeline for selected sender
+  const { data: emailTimeline } = useQuery({
+    queryKey: ['email-timeline', selectedSenders[0]],
+    queryFn: async () => {
+      if (selectedSenders.length !== 1) return null;
+
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('data_ricezione')
+        .eq('from_email', selectedSenders[0])
+        .order('data_ricezione', { ascending: true });
+
+      if (error) throw error;
+
+      // Raggruppa per mese
+      const monthCounts: Record<string, number> = {};
+      data?.forEach(email => {
+        const date = new Date(email.data_ricezione);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+      });
+
+      // Converti in array per il grafico
+      return Object.entries(monthCounts)
+        .map(([month, count]) => ({
+          month,
+          count,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+    },
+    enabled: selectedSenders.length === 1,
   });
 
   // Fetch groups
@@ -484,8 +518,10 @@ export default function EmailSenders() {
           </Card>
         </div>
 
+        {/* Senders Table & Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle>Mittenti</CardTitle>
@@ -578,6 +614,72 @@ export default function EmailSenders() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Email Timeline Chart */}
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+          <CardHeader>
+            <CardTitle>
+              {selectedSenders.length === 1 ? (
+                <div className="flex flex-col gap-1">
+                  <span>Andamento Email</span>
+                  <span className="text-sm font-normal text-muted-foreground">{selectedSenders[0]}</span>
+                </div>
+              ) : (
+                'Andamento Email'
+              )}
+            </CardTitle>
+            <CardDescription>
+              {selectedSenders.length === 1 
+                ? 'Email ricevute nel tempo' 
+                : 'Seleziona un mittente per vedere il grafico'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {selectedSenders.length === 1 && emailTimeline && emailTimeline.length > 0 ? (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={emailTimeline}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="month" 
+                    className="text-xs"
+                    tickFormatter={(value) => {
+                      const [year, month] = value.split('-');
+                      return `${month}/${year.slice(2)}`;
+                    }}
+                  />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    labelFormatter={(value) => {
+                      const [year, month] = value.split('-');
+                      const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+                      return `${monthNames[parseInt(month) - 1]} ${year}`;
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--primary))" 
+                    radius={[8, 8, 0, 0]}
+                    name="Email"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                {selectedSenders.length === 0 
+                  ? 'Seleziona un mittente dalla lista'
+                  : selectedSenders.length > 1
+                  ? 'Seleziona solo un mittente per vedere il grafico'
+                  : 'Nessun dato disponibile'}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        </div>
 
         {/* Groups List */}
         <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">

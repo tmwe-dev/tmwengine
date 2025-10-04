@@ -611,7 +611,7 @@ export default function RubricaAvanzata() {
   }
 
   return (
-    <div className={cn("space-y-2", isMobile && "space-y-1")}>
+    <div className="space-y-6">
 
       {/* Search Field - Always Visible */}
       <Card className="border-card shadow-soft bg-card-transparent">

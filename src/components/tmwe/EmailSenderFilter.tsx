@@ -216,11 +216,9 @@ export const EmailSenderFilter = ({
       variant="ghost"
       className="h-9 w-9 hover:bg-primary/10"
       onClick={() => {
-        if (selectedSender && onOpenAIChat) {
-          onOpenAIChat(selectedSender);
-        }
+        const senderEmail = selectedSender || 'assistente.email@ai.local';
+        onOpenAIChat?.(senderEmail);
       }}
-      disabled={!selectedSender}
     >
       <Brain className="h-4 w-4 text-primary" />
     </Button>

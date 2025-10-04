@@ -43,7 +43,12 @@ export function SenderAIChatDialog({ senderEmail, open, onOpenChange }: SenderAI
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const systemPrompt = `Sei un assistente AI che aiuta a gestire le email. 
+      const isGeneralAssistant = senderEmail === 'assistente.email@ai.local';
+      const systemPrompt = isGeneralAssistant
+        ? `Sei un assistente AI che aiuta a gestire le email. 
+Aiuta l'utente con domande generali sulla gestione email, organizzazione, best practices, etc.
+Rispondi sempre in italiano.`
+        : `Sei un assistente AI che aiuta a gestire le email. 
 Il mittente con cui stai parlando è: ${senderEmail}
 Aiuta l'utente a capire meglio le email di questo mittente, suggerisci azioni, analizza pattern, etc.
 Rispondi sempre in italiano.`;
@@ -84,7 +89,7 @@ Rispondi sempre in italiano.`;
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
-            Chat AI - {senderEmail}
+            Chat AI{senderEmail !== 'assistente.email@ai.local' ? ` - ${senderEmail}` : ' - Assistente Email'}
           </DialogTitle>
         </DialogHeader>
 

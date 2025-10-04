@@ -145,7 +145,10 @@ export const EmailSidebar = ({
           'relative w-full group transition-all duration-200 overflow-hidden',
           isCollapsed ? 'justify-center px-2' : 'justify-between',
           selectedFolder === folder.name && 'bg-email-selected text-primary-foreground',
-          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent after:origin-left',
+          'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left',
+          selectedFolder === folder.name 
+            ? 'after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent'
+            : 'after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent',
           'hover:bg-transparent',
           'hover:after:animate-line-bounce'
         )}
@@ -157,10 +160,14 @@ export const EmailSidebar = ({
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
+            selectedFolder === folder.name && "bg-purple-500/20 rounded p-0.5",
             isCollapsed ? "" : "mr-3"
           )} />
           {!isCollapsed && (
-            <span className="truncate transition-transform duration-200 group-hover:scale-110">
+            <span className={cn(
+              "truncate transition-transform duration-200 group-hover:scale-110",
+              selectedFolder === folder.name && "text-purple-300 font-semibold"
+            )}>
               {folder.name}
             </span>
           )}

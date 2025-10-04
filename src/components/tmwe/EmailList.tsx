@@ -605,7 +605,7 @@ export const EmailList = ({
           <div className="mt-6 space-y-6">
             <div>
               <h3 className="font-semibold mb-4 text-center">Azioni Rapide</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 pb-4 border-b border-border/30">
                 <button
                   className={cn(
                     "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",

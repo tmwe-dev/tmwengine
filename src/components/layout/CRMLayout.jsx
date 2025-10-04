@@ -95,9 +95,19 @@ const CRMLayout = ({ children }) => {
           </Button>
           
           <div className="flex items-center gap-2">
-            <h1 className={cn("font-semibold text-foreground px-3 py-1.5 rounded-lg", isMobile ? "text-lg" : "text-xl")}>
-              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
-            </h1>
+            {isMobile ? (
+              // Mobile: mostra solo l'icona
+              (() => {
+                const currentNav = navigation.find(nav => isActive(nav.href));
+                const Icon = currentNav?.icon || Home;
+                return <Icon className="h-6 w-6 text-foreground" />;
+              })()
+            ) : (
+              // Desktop: mostra il nome
+              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+              </h1>
+            )}
           </div>
         </div>
 

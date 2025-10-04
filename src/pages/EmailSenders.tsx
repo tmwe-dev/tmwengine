@@ -10,10 +10,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 
 interface SenderStats {
   sender: string;
@@ -47,6 +48,8 @@ export default function EmailSenders() {
   const [selectedActionType, setSelectedActionType] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | ''>('');
   const [confirmChartGroupAssignment, setConfirmChartGroupAssignment] = useState(false);
   const [confirmChartActionAssignment, setConfirmChartActionAssignment] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const MONTHS_TO_SHOW = 12;
   const queryClient = useQueryClient();
 
@@ -696,11 +699,25 @@ export default function EmailSenders() {
                         {index + 1}
                       </TableCell>
                       <TableCell className="py-2">
-                        <div className="flex flex-col">
-                          {extractCompanyName(stat.sender) && (
-                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
-                          )}
-                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col flex-1">
+                            {extractCompanyName(stat.sender) && (
+                              <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                            )}
+                            <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAIChatSender(stat.sender);
+                              setAiChatOpen(true);
+                            }}
+                          >
+                            <Brain className="h-4 w-4 text-primary" />
+                          </Button>
                         </div>
                       </TableCell>
                       <TableCell className="text-center py-2">
@@ -986,6 +1003,13 @@ export default function EmailSenders() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* AI Chat Dialog */}
+        <SenderAIChatDialog 
+          senderEmail={selectedAIChatSender}
+          open={aiChatOpen}
+          onOpenChange={setAiChatOpen}
+        />
 
         {/* Confirm Action Assignment Dialog */}
         <AlertDialog open={confirmChartActionAssignment} onOpenChange={setConfirmChartActionAssignment}>

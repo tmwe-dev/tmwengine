@@ -3,13 +3,27 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 interface Email {
   id: string;
@@ -73,6 +87,8 @@ export const EmailList = ({
   const [selectedEmailIds, setSelectedEmailIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string>('');
   const [targetFolder, setTargetFolder] = useState<string>('INBOX');
+  const [showActionsSheet, setShowActionsSheet] = useState(false);
+  const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -227,6 +243,46 @@ export const EmailList = ({
                   {email.hasAttachments && (
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
                   )}
+                  {!multiSelectMode && selectedEmailId === email.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover z-50">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEmailForActions(email);
+                          setShowActionsSheet(true);
+                        }}>
+                          <Tag className="mr-2 h-4 w-4" />
+                          Gestisci Regole
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archivia
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                          <FolderInput className="mr-2 h-4 w-4" />
+                          Sposta in...
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Elimina
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </div>
             </div>
@@ -304,9 +360,51 @@ export const EmailList = ({
                   </h3>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className="whitespace-nowrap text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
+                    </span>
+                    {!multiSelectMode && selectedEmailId === email.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover z-50">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEmailForActions(email);
+                            setShowActionsSheet(true);
+                          }}>
+                            <Tag className="mr-2 h-4 w-4" />
+                            Gestisci Regole
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archivia
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                            <FolderInput className="mr-2 h-4 w-4" />
+                            Sposta in...
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Elimina
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                   <div className="flex gap-1 mt-1">
                     {email.starred && (
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -462,6 +560,46 @@ export const EmailList = ({
           </div>
         )}
       </ScrollArea>
+
+      <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
+        <SheetContent className="bg-background">
+          <SheetHeader>
+            <SheetTitle>Azioni e Regole</SheetTitle>
+            <SheetDescription>
+              Gestisci azioni e regole per: {selectedEmailForActions?.from}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">Regole Mittente</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Crea regole automatiche per le email da questo mittente
+              </p>
+              <Button variant="outline" className="w-full">
+                <Tag className="mr-2 h-4 w-4" />
+                Crea Nuova Regola
+              </Button>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start">
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archivia
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FolderInput className="mr-2 h-4 w-4" />
+                  Sposta in Cartella
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Elimina
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

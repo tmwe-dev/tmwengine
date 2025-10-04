@@ -622,7 +622,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[48%]">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

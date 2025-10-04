@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UseEmailDownloadProps {
@@ -38,6 +39,42 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
           emails.push(...pageEmails);
           setDownloadedCount(emails.length);
           setAllEmails([...emails]);
+
+          // Salva le email in Supabase
+          if (pageEmails.length > 0) {
+            try {
+              const emailsToInsert = pageEmails.map((email: any) => ({
+                message_id: email.uid || email.message_id || `msg-${Date.now()}-${Math.random()}`,
+                from_email: email.from || email.from_email || '',
+                to_email: email.to || email.to_email || '',
+                cc_email: email.cc || email.cc_email,
+                bcc_email: email.bcc || email.bcc_email,
+                subject: email.subject || '',
+                body_text: email.body_text || email.text || '',
+                body_html: email.body_html || email.html || '',
+                data_ricezione: email.date || email.data_ricezione || new Date().toISOString(),
+                cartella: folder,
+                direzione: 'ricevuta',
+                stato: 'nuovo',
+                flags: email.flags || [],
+                attachments: email.attachments || [],
+                provider_id: '00000000-0000-0000-0000-000000000000', // ID provider predefinito
+              }));
+
+              const { error: insertError } = await supabase
+                .from('email_messages')
+                .upsert(emailsToInsert, { 
+                  onConflict: 'message_id',
+                  ignoreDuplicates: true 
+                });
+
+              if (insertError) {
+                console.error('Error saving emails to database:', insertError);
+              }
+            } catch (dbError) {
+              console.error('Database save error:', dbError);
+            }
+          }
 
           // Small delay to avoid overwhelming the server
           if (page < totalPages) {

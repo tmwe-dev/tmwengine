@@ -25,15 +25,15 @@ serve(async (req) => {
       throw new Error('Prompt è richiesto');
     }
 
-    // Get AI configuration
+    // Get active AI configuration
     const { data: aiConfig, error: configError } = await supabase
       .from('config_ai')
       .select('*')
-      .eq('provider', 'chatgpt')
+      .eq('attivo', true)
       .single();
 
     if (configError || !aiConfig) {
-      throw new Error('Configurazione AI non trovata');
+      throw new Error('Configurazione AI attiva non trovata');
     }
 
     // Get memory configuration
@@ -272,21 +272,55 @@ serve(async (req) => {
       }
     ];
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Determine API endpoint based on provider
+    let apiUrl = 'https://api.openai.com/v1/chat/completions';
+    let authHeader = `Bearer ${aiConfig.api_key}`;
+    
+    if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
+      apiUrl = 'https://api.anthropic.com/v1/messages';
+      authHeader = aiConfig.api_key;
+    }
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${aiConfig.api_key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: aiConfig.modello,
-        messages: messages,
-        max_completion_tokens: 1000,
-        ...(requiresCRMTools && {
-          tools: tools,
-          tool_choice: "auto"
-        })
-      }),
+      headers: aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude' 
+        ? {
+            'x-api-key': authHeader,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          }
+        : {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+          },
+      body: JSON.stringify(
+        aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude'
+          ? {
+              model: aiConfig.modello,
+              max_tokens: 1000,
+              messages: messages.filter(m => m.role !== 'system').map(m => ({
+                role: m.role,
+                content: m.content
+              })),
+              system: systemPrompt || 'Sei un assistente AI utile e amichevole che risponde in italiano.',
+              ...(requiresCRMTools && {
+                tools: tools.map(t => ({
+                  name: t.function.name,
+                  description: t.function.description,
+                  input_schema: t.function.parameters
+                }))
+              })
+            }
+          : {
+              model: aiConfig.modello,
+              messages: messages,
+              max_completion_tokens: 1000,
+              ...(requiresCRMTools && {
+                tools: tools,
+                tool_choice: "auto"
+              })
+            }
+      ),
     });
 
     if (!response.ok) {
@@ -296,8 +330,18 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const choice = data.choices[0];
-    let aiResponse = choice.message.content;
+    
+    // Handle response based on provider
+    let aiResponse: string;
+    let choice: any;
+    
+    if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
+      aiResponse = data.content?.[0]?.text || '';
+      choice = { message: { tool_calls: data.content?.filter((c: any) => c.type === 'tool_use') } };
+    } else {
+      choice = data.choices[0];
+      aiResponse = choice.message.content;
+    }
     
     // Gestisci le chiamate agli strumenti
     if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {

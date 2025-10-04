@@ -215,7 +215,7 @@ export default function Campagne() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="border-card shadow-soft">
+      <Card className="bg-card-transparent border-card shadow-soft">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -257,35 +257,35 @@ export default function Campagne() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="border-card shadow-soft">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-text-primary">{stats.totali}</div>
             <div className="text-small text-text-secondary">Totali</div>
           </CardContent>
         </Card>
         
-        <Card className="border-card shadow-soft">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-green-600">{stats.attive}</div>
             <div className="text-small text-text-secondary">Attive</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-orange-600">{stats.in_pausa}</div>
             <div className="text-small text-text-secondary">In Pausa</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-blue-600">{stats.completate}</div>
             <div className="text-small text-text-secondary">Completate</div>
           </CardContent>
         </Card>
 
-        <Card className="border-card shadow-soft">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardContent className="p-4 text-center">
             <div className="text-heading-3 font-bold text-text-primary">
               €{stats.budget_totale.toLocaleString('it-IT')}
@@ -298,7 +298,7 @@ export default function Campagne() {
       {/* Campaigns List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredCampaigns.length === 0 ? (
-          <Card className="col-span-full border-card shadow-soft">
+          <Card className="col-span-full bg-card-transparent border-card shadow-soft">
             <CardContent className="p-12 text-center">
               <div className="text-text-secondary mb-4">
                 {campaigns.length === 0 ? (
@@ -331,7 +331,7 @@ export default function Campagne() {
             const progress = calculateProgress(campaign);
             
             return (
-              <Card key={campaign.id} className="border-card shadow-soft hover:shadow-medium transition-shadow">
+              <Card key={campaign.id} className="bg-card-transparent border-card shadow-soft hover:shadow-medium transition-shadow">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">

@@ -496,6 +496,7 @@ export const EmailList = ({
                 id="unread-only"
                 checked={showUnreadOnly}
                 onCheckedChange={setShowUnreadOnly}
+                className="data-[state=checked]:bg-orange-400/30"
               />
               <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
                 Solo non lette

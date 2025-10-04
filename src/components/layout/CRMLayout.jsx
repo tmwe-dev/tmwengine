@@ -66,7 +66,7 @@ const CRMLayout = ({ children }) => {
       <header 
         className={cn(
           "border-b border-border flex items-center justify-between relative",
-          isMobile ? "h-16 px-3" : "h-20 px-4 lg:px-6"
+          isMobile ? "h-24 px-3" : "h-28 px-4 lg:px-6"
         )}
         style={{
           background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)'
@@ -89,9 +89,16 @@ const CRMLayout = ({ children }) => {
           </div>
         </div>
 
-        {/* Logo centrato */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
+        {/* Logo e Ricerca centrati */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Cerca in CRM..." 
+              className="pl-10 w-64"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -142,7 +149,7 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex", isMobile ? "h-[calc(100vh-4rem)]" : "h-[calc(100vh-5rem)]")}>
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'

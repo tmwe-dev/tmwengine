@@ -452,7 +452,7 @@ export const EmailList = ({
                 Solo non lette
               </Label>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Switch
                 id="multi-select"
                 checked={multiSelectMode}
@@ -461,16 +461,6 @@ export const EmailList = ({
               <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
                 Selezione multipla
               </Label>
-              {multiSelectMode && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={() => setShowActionsSheet(true)}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              )}
             </div>
 
             {multiSelectMode && (
@@ -541,6 +531,16 @@ export const EmailList = ({
           </div>
 
           <div className="flex items-center gap-1">
+            {multiSelectMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setShowActionsSheet(true)}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"

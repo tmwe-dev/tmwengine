@@ -484,12 +484,6 @@ export default function EmailSenders() {
                     Azienda {sortBy === 'company' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('sender')}
-                  >
-                    Mittente {sortBy === 'sender' && (sortOrder === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                  <TableHead 
                     className="text-center cursor-pointer hover:text-primary w-24"
                     onClick={() => handleSort('count')}
                   >
@@ -507,13 +501,13 @@ export default function EmailSenders() {
               <TableBody>
                 {loadingStats ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : senderStats?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       Nessun mittente trovato
                     </TableCell>
                   </TableRow>
@@ -536,12 +530,12 @@ export default function EmailSenders() {
                         />
                       </TableCell>
                       <TableCell className="py-2">
-                        {extractCompanyName(stat.sender) && (
-                          <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-2">
-                        <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                        <div className="flex flex-col">
+                          {extractCompanyName(stat.sender) && (
+                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                          )}
+                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center py-2">
                         <span className="text-base font-semibold">{stat.count}</span>

@@ -177,11 +177,11 @@ export default {
         "line-bounce": {
           "0%": { 
             transform: "translateX(0)",
-            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "8%": { 
             transform: "translateX(calc((100% - 1px) / 6))",
-            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "50%": { 
             transform: "translateX(calc(100% - 1px))",
@@ -189,7 +189,7 @@ export default {
           },
           "92%": { 
             transform: "translateX(calc((100% - 1px) / 6))",
-            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "100%": { 
             transform: "translateX(0)",

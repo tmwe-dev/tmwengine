@@ -112,7 +112,7 @@ export function PagePromptManager({ pageRoute }: PagePromptManagerProps) {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Inserisci il prompt di sistema..."
-                  className="min-h-[300px] backdrop-blur-md bg-background/50 border-white/10"
+                  className="min-h-[250px] backdrop-blur-md bg-background/50 border-white/10"
                   disabled={isLoading}
                 />
               </div>

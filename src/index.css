@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ElevenLabs Widget - Visibile su tutti i dispositivi */
+elevenlabs-convai {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 768px) {
+  elevenlabs-convai {
+    display: block !important;
+    visibility: visible !important;
+  }
+}
+
 /* ===== DESIGN SYSTEM CRM PLATFORM =====
 Definisce lo stile grafico uniforme per tutta la piattaforma
 Colori, tipografia, spaziature e stili consistenti

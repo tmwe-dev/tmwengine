@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +24,8 @@ import {
   AlertTriangle,
   Settings as SettingsIcon,
   User,
-  Phone
+  Phone,
+  Info
 } from 'lucide-react';
 
 const Settings = () => {
@@ -367,20 +369,31 @@ const Settings = () => {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Impostazioni CRM</h1>
-          <p className="text-sm text-muted-foreground">Configura API keys, provider email e impostazioni AI</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SettingsIcon className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Impostazioni CRM</h1>
+            <p className="text-sm text-muted-foreground">Configura API keys, provider email e impostazioni AI</p>
+          </div>
         </div>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Info className="h-5 w-5 text-primary" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="flex gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm">
+                ✅ <strong>Configurazione permanente attiva:</strong> Tutte le chiavi API sono salvate in modo sicuro e non dovrai mai più reinserirle. Il sistema le utilizza automaticamente per ogni operazione.
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
-
-      <Alert className="mb-4">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription className="text-sm">
-          ✅ <strong>Configurazione permanente attiva:</strong> Tutte le chiavi API sono salvate in modo sicuro e non dovrai mai più reinserirle. Il sistema le utilizza automaticamente per ogni operazione.
-        </AlertDescription>
-      </Alert>
 
       <div className="space-y-4">
         {/* Selector per la sezione */}

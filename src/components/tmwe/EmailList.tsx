@@ -580,7 +580,10 @@ export const EmailList = ({
                   size="sm"
                   variant="ghost"
                   className={cn(
-                    "h-7 text-[11px] px-2 ml-1.5 bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl transition-colors",
+                    "h-7 text-[11px] px-2 ml-1.5 transition-colors",
+                    bulkAction === 'delete'
+                      ? "bg-gradient-to-bl from-red-400/25 via-red-400/15 via-35% to-transparent hover:from-red-400/30 hover:via-red-400/20 hover:bg-gradient-to-bl"
+                      : "bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl",
                     selectedEmailIds.size > 0 
                       ? "text-white" 
                       : "text-foreground"

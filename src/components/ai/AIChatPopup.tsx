@@ -95,7 +95,10 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
 
       {/* Chat Popup */}
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col bg-checkered">
+        <Card 
+          className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col relative overflow-hidden"
+          style={{ background: 'var(--gradient-page)' }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
             <div className="flex items-center gap-2">

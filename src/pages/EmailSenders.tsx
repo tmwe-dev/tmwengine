@@ -351,7 +351,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
           <CardHeader>
             <CardTitle>Mittenti</CardTitle>
             <CardDescription>

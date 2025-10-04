@@ -497,20 +497,7 @@ export default function EmailSenders() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold">{uniqueSenders}</div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => {
-                    setSelectedAIChatSender('assistente.mittenti@ai.local');
-                    setAiChatOpen(true);
-                  }}
-                >
-                  <Brain className="h-4 w-4 text-primary" />
-                </Button>
-              </div>
+              <div className="text-2xl font-bold">{uniqueSenders}</div>
             </CardContent>
           </Card>
 
@@ -640,6 +627,17 @@ export default function EmailSenders() {
               <div className="flex items-center gap-2">
                 <CardTitle>Mittenti</CardTitle>
                 <Badge variant="secondary">{uniqueSenders}</Badge>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-primary/10"
+                  onClick={() => {
+                    setSelectedAIChatSender('assistente.mittenti@ai.local');
+                    setAiChatOpen(true);
+                  }}
+                >
+                  <Brain className="h-4 w-4 text-primary" />
+                </Button>
               </div>
               {selectedSenders.length === 1 && (
                 <Button

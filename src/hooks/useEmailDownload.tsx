@@ -20,7 +20,7 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     setAllEmails([]);
 
     try {
-      const batchSize = 50; // Download 50 emails at a time
+      const batchSize = 10; // Download 10 emails at a time
       const totalPages = Math.ceil(totalEmails / batchSize);
       const emails: any[] = [];
 

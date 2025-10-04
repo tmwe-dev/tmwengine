@@ -136,7 +136,7 @@ const EmailDashboard = () => {
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
 
-  // Query per le email dal database Supabase (fallback su API)
+  // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
     data: messagesData,
     isLoading: messagesLoading,
@@ -156,39 +156,7 @@ const EmailDashboard = () => {
         };
       }
 
-      // Prova prima a caricare dal database
-      const { data: dbEmails, error: dbError } = await supabase
-        .from('email_messages')
-        .select('*')
-        .eq('cartella', selectedFolder)
-        .order('data_ricezione', { ascending: false })
-        .range(pageParam, pageParam + 29);
-
-      if (!dbError && dbEmails && dbEmails.length > 0) {
-        // Mappa i dati del database al formato atteso
-        const mappedMessages = dbEmails.map(email => ({
-          uid: email.message_id,
-          message_id: email.message_id,
-          from: email.from_email,
-          from_email: email.from_email,
-          to: email.to_email,
-          to_email: email.to_email,
-          subject: email.subject,
-          date: email.data_ricezione,
-          data_ricezione: email.data_ricezione,
-          flags: email.flags || [],
-          attachments: email.attachments || [],
-          body_text: email.body_text,
-          body_html: email.body_html,
-        }));
-
-        return {
-          messages: mappedMessages,
-          total: dbEmails.length,
-        };
-      }
-
-      // Fallback su API se database è vuoto
+      // USA SEMPRE L'API TMWE (Supabase solo per backup con Sync Smart)
       const page = Math.floor(pageParam / 30) + 1;
       return searchQuery 
         ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })

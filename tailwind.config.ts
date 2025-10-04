@@ -180,15 +180,15 @@ export default {
             backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "8%": { 
-            transform: "translateX(calc((100% - 1px) / 6))",
+            transform: "translateX(calc(100% / 6))",
             backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "50%": { 
-            transform: "translateX(calc(100% - 1px))",
+            transform: "translateX(calc(100% - 60%))",
             backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "92%": { 
-            transform: "translateX(calc((100% - 1px) / 6))",
+            transform: "translateX(calc(100% / 6))",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "100%": { 

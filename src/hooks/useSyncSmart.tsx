@@ -41,6 +41,8 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
       let errorCount = 0;
+      let consecutiveEmptyBatches = 0;
+      const maxEmptyBatches = 3; // Ferma dopo 3 batch vuoti consecutivi
 
       toast.info(`Sincronizzazione smart: ${missingCount.toLocaleString()} email da scaricare...`);
 
@@ -61,7 +63,19 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
             return !existingIds.has(emailId);
           });
 
-          console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da salvare`);
+          // ⚡ OTTIMIZZAZIONE: Ferma se non ci sono email mancanti per 3 batch consecutivi
+          if (missingEmails.length === 0) {
+            consecutiveEmptyBatches++;
+            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, 0 nuove (vuoti consecutivi: ${consecutiveEmptyBatches})`);
+            
+            if (consecutiveEmptyBatches >= maxEmptyBatches) {
+              console.log(`⏹️ Sync smart fermato: ${maxEmptyBatches} batch vuoti consecutivi. Database già sincronizzato.`);
+              break;
+            }
+          } else {
+            consecutiveEmptyBatches = 0; // Reset se troviamo email
+            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da salvare`);
+          }
 
           // 4. Salva solo le email mancanti
           if (missingEmails.length > 0) {

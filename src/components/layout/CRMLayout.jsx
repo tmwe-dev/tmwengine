@@ -71,7 +71,7 @@ const CRMLayout = ({ children }) => {
       <header 
         className={cn(
           "border-b border-border flex items-center justify-between relative",
-          isMobile ? "h-28 px-3 py-5" : "h-32 px-4 lg:px-6 py-5"
+          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
         style={{
           background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)'
@@ -163,7 +163,7 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex", isMobile ? "h-[calc(100vh-7rem)]" : "h-[calc(100vh-8rem)]")}>
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'

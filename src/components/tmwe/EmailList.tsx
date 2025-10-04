@@ -452,7 +452,7 @@ export const EmailList = ({
                 Solo non lette
               </Label>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <Switch
                 id="multi-select"
                 checked={multiSelectMode}
@@ -465,11 +465,8 @@ export const EmailList = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0 ml-1"
-                  onClick={() => {
-                    setShowActionsSheet(true);
-                  }}
-                  disabled={selectedEmailIds.size === 0}
+                  className="h-7 w-7 p-0"
+                  onClick={() => setShowActionsSheet(true)}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>

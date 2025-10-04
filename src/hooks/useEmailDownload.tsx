@@ -21,13 +21,28 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     setAllEmails([]);
 
     try {
+      // Controlla quante email sono già nel database per questa cartella
+      const { count: existingCount } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('cartella', folder);
+
+      const alreadyDownloaded = existingCount || 0;
+      
+      if (alreadyDownloaded >= totalEmails) {
+        toast.success(`Tutte le ${totalEmails.toLocaleString()} email sono già state scaricate.`);
+        setIsDownloading(false);
+        return;
+      }
+
       const batchSize = 10; // Download 10 emails at a time
+      const startPage = Math.floor(alreadyDownloaded / batchSize) + 1;
       const totalPages = Math.ceil(totalEmails / batchSize);
       const emails: any[] = [];
 
-      toast.info(`Inizio download di ${totalEmails.toLocaleString()} email...`);
+      toast.info(`Ripresa download da email ${alreadyDownloaded + 1} di ${totalEmails.toLocaleString()}...`);
 
-      for (let page = 1; page <= totalPages; page++) {
+      for (let page = startPage; page <= totalPages; page++) {
         try {
           const response = await emailMessageApi.getMessages({
             folder,

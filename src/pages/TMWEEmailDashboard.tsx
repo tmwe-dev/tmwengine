@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
@@ -87,6 +88,28 @@ const EmailDashboard = () => {
     }
   };
 
+  // Email download hook - must be declared before use
+  const [downloadedEmails, setDownloadedEmails] = useState<any[]>([]);
+  
+  const {
+    isDownloading,
+    downloadedCount,
+    downloadError,
+    allEmails,
+    startDownload,
+  } = useEmailDownload({
+    folder: selectedFolder,
+    totalEmails: 0, // Will be updated when messagesData loads
+  });
+
+  // Update downloadedEmails when allEmails changes
+  useEffect(() => {
+    if (allEmails.length > 0) {
+      setDownloadedEmails(allEmails);
+    }
+  }, [allEmails]);
+
+  // Query per le email dal database Supabase (fallback su API)
   const { 
     data: messagesData,
     isLoading: messagesLoading,
@@ -94,33 +117,71 @@ const EmailDashboard = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['messages', selectedFolder, searchQuery],
-    queryFn: ({ pageParam = 1 }) => 
-      searchQuery 
+    queryKey: ['messages', selectedFolder, searchQuery, downloadedEmails.length],
+    queryFn: async ({ pageParam = 0 }) => {
+      // Se abbiamo email scaricate, usale
+      if (downloadedEmails.length > 0) {
+        const start = pageParam;
+        const end = start + 30;
+        return {
+          messages: downloadedEmails.slice(start, end),
+          total: downloadedEmails.length,
+        };
+      }
+
+      // Prova prima a caricare dal database
+      const { data: dbEmails, error: dbError } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('cartella', selectedFolder)
+        .order('data_ricezione', { ascending: false })
+        .range(pageParam, pageParam + 29);
+
+      if (!dbError && dbEmails && dbEmails.length > 0) {
+        // Mappa i dati del database al formato atteso
+        const mappedMessages = dbEmails.map(email => ({
+          uid: email.message_id,
+          message_id: email.message_id,
+          from: email.from_email,
+          from_email: email.from_email,
+          to: email.to_email,
+          to_email: email.to_email,
+          subject: email.subject,
+          date: email.data_ricezione,
+          data_ricezione: email.data_ricezione,
+          flags: email.flags || [],
+          attachments: email.attachments || [],
+          body_text: email.body_text,
+          body_html: email.body_html,
+        }));
+
+        return {
+          messages: mappedMessages,
+          total: dbEmails.length,
+        };
+      }
+
+      // Fallback su API se database è vuoto
+      const page = Math.floor(pageParam / 30) + 1;
+      return searchQuery 
         ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page: pageParam }),
+        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+    },
     getNextPageParam: (lastPage, allPages) => {
+      if (downloadedEmails.length > 0) {
+        const nextOffset = allPages.length * 30;
+        return nextOffset < downloadedEmails.length ? nextOffset : undefined;
+      }
+      
       const messages = lastPage?.messages || [];
       if (messages.length === 0 || messages.length < 30) return undefined;
-      return allPages.length + 1;
+      return allPages.length * 30;
     },
-    initialPageParam: 1,
+    initialPageParam: 0,
   });
 
   // Get total email count from the first page response
   const totalEmailCount = messagesData?.pages?.[0]?.total || 0;
-
-  // Email download hook
-  const {
-    isDownloading,
-    downloadedCount,
-    downloadError,
-    allEmails: downloadedEmails,
-    startDownload,
-  } = useEmailDownload({
-    folder: selectedFolder,
-    totalEmails: totalEmailCount,
-  });
 
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],
@@ -192,7 +253,7 @@ const EmailDashboard = () => {
     },
   });
 
-  const allEmails = (messagesData?.pages || []).flatMap(page => 
+  const emailsFromPages = (messagesData?.pages || []).flatMap(page => 
     (page?.messages || []).map((msg: any) => {
       // Debug: Log message structure to understand attachment indicators
       if (msg.uid === 6624) {
@@ -238,7 +299,7 @@ const EmailDashboard = () => {
       (msg.attachments && msg.attachments.length > 0) ||
       (msg.size && parseInt(msg.size) > 50000)
     ),
-  })) : allEmails;
+  })) : emailsFromPages;
 
   // Filter emails by selected sender
   const emails = selectedSender 

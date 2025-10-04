@@ -91,7 +91,7 @@ const CRMLayout = ({ children }) => {
 
         {/* Logo centrato */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
-          <img src={findairLogo} alt="FindAir Logo" className="h-6 w-auto md:h-8" />
+          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </div>
 
         <div className="flex items-center gap-4">

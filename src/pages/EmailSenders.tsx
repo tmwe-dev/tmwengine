@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 interface SenderStats {
   sender: string;
@@ -627,17 +628,14 @@ export default function EmailSenders() {
               <div className="flex items-center gap-2">
                 <CardTitle>Mittenti</CardTitle>
                 <Badge variant="secondary">{uniqueSenders}</Badge>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 hover:bg-primary/10"
+                <Brain 
+                  className="h-4 w-4 text-primary cursor-pointer hover:scale-110 transition-transform" 
                   onClick={() => {
                     setSelectedAIChatSender('assistente.mittenti@ai.local');
                     setAiChatOpen(true);
                   }}
-                >
-                  <Brain className="h-4 w-4 text-primary" />
-                </Button>
+                />
+                <PagePromptManager pageRoute="/email-senders" />
               </div>
               {selectedSenders.length === 1 && (
                 <Button

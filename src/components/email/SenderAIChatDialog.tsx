@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLocation } from 'react-router-dom';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -24,7 +25,32 @@ export function SenderAIChatDialog({ senderEmail, open, onOpenChange }: SenderAI
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pagePrompt, setPagePrompt] = useState<string>('');
   const { toast } = useToast();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (open) {
+      loadPagePrompt();
+    }
+  }, [open, location.pathname]);
+
+  const loadPagePrompt = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('page_system_prompts')
+        .select('system_prompt')
+        .eq('page_route', location.pathname)
+        .eq('attivo', true)
+        .single();
+
+      if (data) {
+        setPagePrompt(data.system_prompt);
+      }
+    } catch (error) {
+      console.error('Errore caricamento prompt pagina:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +70,16 @@ export function SenderAIChatDialog({ senderEmail, open, onOpenChange }: SenderAI
 
     try {
       const isGeneralAssistant = senderEmail === 'assistente.email@ai.local' || senderEmail === 'assistente.mittenti@ai.local';
-      const systemPrompt = isGeneralAssistant
+      
+      // Usa il prompt della pagina se disponibile, altrimenti usa il fallback
+      const systemPrompt = pagePrompt || (isGeneralAssistant
         ? `Sei un assistente AI che aiuta a gestire le email e i mittenti. 
 Aiuta l'utente con domande generali sulla gestione email, organizzazione mittenti, raggruppamento, best practices, etc.
 Rispondi sempre in italiano.`
         : `Sei un assistente AI che aiuta a gestire le email. 
 Il mittente con cui stai parlando è: ${senderEmail}
 Aiuta l'utente a capire meglio le email di questo mittente, suggerisci azioni, analizza pattern, etc.
-Rispondi sempre in italiano.`;
+Rispondi sempre in italiano.`);
 
       const { data, error } = await supabase.functions.invoke('chat-with-openai', {
         body: { 

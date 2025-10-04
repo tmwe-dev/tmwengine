@@ -1122,6 +1122,36 @@ export type Database = {
           },
         ]
       }
+      page_system_prompts: {
+        Row: {
+          attivo: boolean
+          created_at: string
+          id: string
+          page_name: string
+          page_route: string
+          system_prompt: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          page_name: string
+          page_route: string
+          system_prompt: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          page_name?: string
+          page_route?: string
+          system_prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rubrica: {
         Row: {
           alias: string | null

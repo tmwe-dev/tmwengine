@@ -779,50 +779,50 @@ export default function EmailSenders() {
         }}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  <DialogTitle>Timeline Email</DialogTitle>
-                </div>
-                {/* Sender Navigation */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handlePreviousSender}
-                    disabled={currentSenderIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="text-sm text-muted-foreground min-w-[200px] text-center">
-                    {currentSenderIndex + 1} / {senderStats?.length || 0}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      <DialogTitle>Timeline Email</DialogTitle>
+                    </div>
+                    {/* Sender Navigation */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handlePreviousSender}
+                        disabled={currentSenderIndex === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <div className="text-sm text-muted-foreground min-w-[200px] text-center">
+                        {currentSenderIndex + 1} / {senderStats?.length || 0}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleNextSender}
+                        disabled={!senderStats || currentSenderIndex >= senderStats.length - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleNextSender}
-                    disabled={!senderStats || currentSenderIndex >= senderStats.length - 1}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <DialogDescription className="truncate">
+                    {currentChartSender}
+                  </DialogDescription>
                 </div>
-              </div>
-              <DialogDescription className="truncate">
-                {currentChartSender}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6 py-4">
-              {/* Assignment Controls */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-sm">Assegna Regole</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                {/* Assignment Controls - Compact Version */}
+                <div className="w-[45%] space-y-2">
+                  <h3 className="font-semibold text-sm">Assegna Regole</h3>
+                  
                   {/* Group Assignment */}
                   <div className="flex gap-2">
                     <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Seleziona gruppo..." />
+                      <SelectTrigger className="flex-1 h-9">
+                        <SelectValue placeholder="Gruppo..." />
                       </SelectTrigger>
                       <SelectContent>
                         {groups?.map((group) => (
@@ -850,12 +850,12 @@ export default function EmailSenders() {
                   {/* Action Assignment */}
                   <div className="flex gap-2">
                     <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Seleziona azione..." />
+                      <SelectTrigger className="flex-1 h-9">
+                        <SelectValue placeholder="Azione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="move_to_folder">📁 Sposta in cartella</SelectItem>
-                        <SelectItem value="mark_as_read">✓ Marca come letto</SelectItem>
+                        <SelectItem value="move_to_folder">📁 Sposta</SelectItem>
+                        <SelectItem value="mark_as_read">✓ Letto</SelectItem>
                         <SelectItem value="archive">📦 Archivia</SelectItem>
                         <SelectItem value="delete">🗑️ Elimina</SelectItem>
                         <SelectItem value="forward">➡️ Inoltra</SelectItem>
@@ -871,7 +871,9 @@ export default function EmailSenders() {
                   </div>
                 </div>
               </div>
-
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
               {loadingTimeline ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-muted-foreground">Caricamento...</div>

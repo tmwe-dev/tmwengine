@@ -34,7 +34,7 @@ export default function EmailSenders() {
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#3b82f6');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group'>('count');
+  const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group' | 'company'>('count');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const queryClient = useQueryClient();
 
@@ -106,6 +106,10 @@ export default function EmailSenders() {
           const aGroup = a.group?.name || '';
           const bGroup = b.group?.name || '';
           comparison = aGroup.localeCompare(bGroup);
+        } else if (sortBy === 'company') {
+          const aCompany = a.sender.match(/@([^.]+)\./)?.[1] || '';
+          const bCompany = b.sender.match(/@([^.]+)\./)?.[1] || '';
+          comparison = aCompany.localeCompare(bCompany);
         }
         return sortOrder === 'asc' ? comparison : -comparison;
       });
@@ -229,7 +233,7 @@ export default function EmailSenders() {
     return match ? match[1] : '';
   };
 
-  const handleSort = (column: 'sender' | 'count' | 'group') => {
+  const handleSort = (column: 'sender' | 'count' | 'group' | 'company') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -475,6 +479,12 @@ export default function EmailSenders() {
                   <TableHead className="w-12"></TableHead>
                   <TableHead 
                     className="cursor-pointer hover:text-primary"
+                    onClick={() => handleSort('company')}
+                  >
+                    Azienda {sortBy === 'company' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:text-primary"
                     onClick={() => handleSort('sender')}
                   >
                     Mittente {sortBy === 'sender' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -497,13 +507,13 @@ export default function EmailSenders() {
               <TableBody>
                 {loadingStats ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : senderStats?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       Nessun mittente trovato
                     </TableCell>
                   </TableRow>
@@ -526,12 +536,12 @@ export default function EmailSenders() {
                         />
                       </TableCell>
                       <TableCell className="py-2">
-                        <div className="flex flex-col">
-                          {extractCompanyName(stat.sender) && (
-                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
-                          )}
-                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
-                        </div>
+                        {extractCompanyName(stat.sender) && (
+                          <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <span className="text-sm text-muted-foreground">{stat.sender}</span>
                       </TableCell>
                       <TableCell className="text-center py-2">
                         <span className="text-base font-semibold">{stat.count}</span>

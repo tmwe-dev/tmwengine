@@ -69,7 +69,7 @@ const CRMLayout = ({ children }) => {
     <div 
       className="min-h-screen"
       style={{
-        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)'
+        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0px, hsla(0, 0%, 0%, 0.35) 600px, hsl(0, 0%, 0%) 600px)'
       }}
     >
       {/* Header */}

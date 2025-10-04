@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Mail, Users, Tag, TrendingUp, X } from 'lucide-react';
+import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface SenderStats {
   sender: string;
@@ -38,6 +39,7 @@ export default function EmailSenders() {
   const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<{ id: string; name: string } | null>(null);
   const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group' | 'company'>('count');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [chartDialogOpen, setChartDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch sender statistics
@@ -261,6 +263,42 @@ export default function EmailSenders() {
       setSelectedGroupForAssignment(null);
     }
   };
+
+  // Fetch email timeline for selected sender
+  const { data: emailTimeline, isLoading: loadingTimeline } = useQuery({
+    queryKey: ['email-timeline', selectedSenders[0]],
+    queryFn: async () => {
+      if (selectedSenders.length !== 1) return [];
+
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('data_ricezione')
+        .eq('from_email', selectedSenders[0])
+        .order('data_ricezione', { ascending: true });
+
+      if (error) throw error;
+
+      // Group by month
+      const monthCounts: Record<string, number> = {};
+      data?.forEach(email => {
+        const date = new Date(email.data_ricezione);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+      });
+
+      return Object.entries(monthCounts)
+        .map(([month, count]) => ({
+          month,
+          count,
+          displayMonth: new Date(month + '-01').toLocaleDateString('it-IT', { 
+            year: 'numeric', 
+            month: 'short' 
+          })
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+    },
+    enabled: selectedSenders.length === 1,
+  });
 
   const totalEmails = senderStats?.reduce((sum, s) => sum + s.count, 0) || 0;
   const uniqueSenders = senderStats?.length || 0;
@@ -487,9 +525,21 @@ export default function EmailSenders() {
         {/* Senders Table */}
         <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle>Mittenti</CardTitle>
-              <Badge variant="secondary">{uniqueSenders}</Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle>Mittenti</CardTitle>
+                <Badge variant="secondary">{uniqueSenders}</Badge>
+              </div>
+              {selectedSenders.length === 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setChartDialogOpen(true)}
+                  className="h-8 w-8"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <CardDescription>
               Clicca per selezionare i mittenti da raggruppare
@@ -633,6 +683,73 @@ export default function EmailSenders() {
                 Conferma
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email Timeline Chart Dialog */}
+        <Dialog open={chartDialogOpen} onOpenChange={setChartDialogOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Timeline Email - {selectedSenders[0]}
+              </DialogTitle>
+              <DialogDescription>
+                Visualizzazione cronologica delle email ricevute da questo mittente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-6">
+              {loadingTimeline ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-muted-foreground">Caricamento...</div>
+                </div>
+              ) : !emailTimeline || emailTimeline.length === 0 ? (
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
+                  Nessun dato disponibile
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={emailTimeline}>
+                    <defs>
+                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      dataKey="displayMonth" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      itemStyle={{ color: 'hsl(var(--primary))' }}
+                      cursor={{ fill: 'hsl(var(--muted))', opacity: 0.2 }}
+                    />
+                    <Bar 
+                      dataKey="count" 
+                      fill="url(#barGradient)"
+                      radius={[8, 8, 0, 0]}
+                      name="Email"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>

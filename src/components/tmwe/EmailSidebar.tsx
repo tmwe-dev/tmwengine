@@ -175,8 +175,10 @@ export const EmailSidebar = ({
         </div>
         {!isCollapsed && unseenCount > 0 && (
           <Badge variant="secondary" className={cn(
-            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border border-current",
-            selectedFolder === folder.name ? "text-purple-300 border-purple-300" : ""
+            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
+            selectedFolder === folder.name 
+              ? "text-purple-300 border-purple-300" 
+              : "text-white border-white"
           )}>
             {unseenCount}
           </Badge>

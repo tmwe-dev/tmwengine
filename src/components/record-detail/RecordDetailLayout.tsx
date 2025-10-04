@@ -60,6 +60,28 @@ export function RecordDetailLayout({ record, formatCellValue }: RecordDetailLayo
   const activities = getCompanyActivities(record.id);
   const activityCount = getActivityCount(record.id);
 
+  // Aggiorna lo stato quando il record cambia
+  React.useEffect(() => {
+    setNoteValue(record.note || record.notes || '');
+    setEditValues({
+      address: record.address || record.indirizzo || '',
+      city: record.city || record.citta || '',
+      zip_code: record.zip_code || '',
+      country: record.country || record.paese || '',
+      email: record.email || '',
+      phone: record.phone || record.telefono || '',
+      cell: record.cell || record.cellulare || '',
+      company_name: record.company_name || record.azienda || '',
+      company_alias: record.company_alias || '',
+      name: record.name || record.nome || '',
+      alias: record.alias || '',
+      title: record.title || '',
+      position: record.position || '',
+      origin: record.origin || record.origine || '',
+    });
+    setEditingNote(false);
+  }, [record]);
+
   // Use mobile layout for mobile devices
   if (isMobile) {
     return <MobileRecordDetailLayout record={record} formatCellValue={formatCellValue} />;

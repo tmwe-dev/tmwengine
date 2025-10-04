@@ -231,13 +231,70 @@ const EmailDashboard = () => {
   })() : null;
 
   const syncMutation = useMutation({
-    mutationFn: emailSyncApi.incrementalSync,
-    onSuccess: () => {
-      toast.success('Sync completed successfully');
+    mutationFn: async () => {
+      // 1. Recupera tutte le email dalla cartella corrente via API
+      const apiResponse = await emailMessageApi.getMessages({ 
+        folder: selectedFolder, 
+        limit: 999999, 
+        page: 1 
+      });
+      
+      const apiEmails = apiResponse.messages || [];
+      
+      // 2. Recupera tutti gli ID esistenti nel database
+      const { data: existingEmails } = await supabase
+        .from('email_messages')
+        .select('message_id')
+        .eq('cartella', selectedFolder);
+      
+      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
+      
+      // 3. Filtra solo le email mancanti
+      const missingEmails = apiEmails.filter((email: any) => 
+        !existingIds.has(email.message_id || email.uid?.toString())
+      );
+      
+      console.log(`📊 Sync: ${apiEmails.length} totali, ${existingIds.size} già nel DB, ${missingEmails.length} da inserire`);
+      
+      // 4. Inserisci le email mancanti nel database
+      if (missingEmails.length > 0) {
+        const emailsToInsert = missingEmails.map((email: any) => ({
+          message_id: email.message_id || email.uid?.toString(),
+          provider_id: '00000000-0000-0000-0000-000000000000',
+          from_email: typeof email.from === 'object' ? email.from.email : email.from,
+          to_email: typeof email.to === 'object' ? email.to.email : email.to,
+          cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
+          bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
+          subject: email.subject || '(No Subject)',
+          body_text: email.body_plain || email.body_text || null,
+          body_html: email.body_html || null,
+          data_ricezione: email.date || new Date().toISOString(),
+          cartella: selectedFolder,
+          direzione: 'ricevuta',
+          stato: email.is_read || email.seen ? 'letto' : 'nuovo',
+          flags: email.flags || [],
+          attachments: email.attachments || [],
+        }));
+        
+        const { error } = await supabase
+          .from('email_messages')
+          .insert(emailsToInsert);
+        
+        if (error) {
+          console.error('❌ Errore inserimento email:', error);
+          throw error;
+        }
+      }
+      
+      return { synced: missingEmails.length };
+    },
+    onSuccess: (data) => {
+      toast.success(`Sincronizzate ${data.synced} nuove email`);
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
-    onError: () => {
-      toast.error('Sync failed');
+    onError: (error) => {
+      console.error('❌ Sync error:', error);
+      toast.error('Sync fallita');
     },
   });
 

@@ -88,26 +88,17 @@ const EmailDashboard = () => {
     }
   };
 
-  // Email download hook - must be declared before use
-  const [downloadedEmails, setDownloadedEmails] = useState<any[]>([]);
-  
+  // Email download hook - declare first
   const {
     isDownloading,
     downloadedCount,
     downloadError,
-    allEmails,
+    allEmails: downloadedEmails,
     startDownload,
   } = useEmailDownload({
     folder: selectedFolder,
-    totalEmails: 0, // Will be updated when messagesData loads
+    totalEmails: 0, // Will be updated after messagesData loads
   });
-
-  // Update downloadedEmails when allEmails changes
-  useEffect(() => {
-    if (allEmails.length > 0) {
-      setDownloadedEmails(allEmails);
-    }
-  }, [allEmails]);
 
   // Query per le email dal database Supabase (fallback su API)
   const { 
@@ -119,7 +110,7 @@ const EmailDashboard = () => {
   } = useInfiniteQuery({
     queryKey: ['messages', selectedFolder, searchQuery, downloadedEmails.length],
     queryFn: async ({ pageParam = 0 }) => {
-      // Se abbiamo email scaricate, usale
+      // Se abbiamo email scaricate in memoria, usale
       if (downloadedEmails.length > 0) {
         const start = pageParam;
         const end = start + 30;

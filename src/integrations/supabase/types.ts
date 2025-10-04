@@ -552,6 +552,33 @@ export type Database = {
           },
         ]
       }
+      email_sender_actions: {
+        Row: {
+          action_params: Json | null
+          action_type: Database["public"]["Enums"]["email_action_type"]
+          created_at: string
+          id: string
+          sender_email: string
+          updated_at: string
+        }
+        Insert: {
+          action_params?: Json | null
+          action_type: Database["public"]["Enums"]["email_action_type"]
+          created_at?: string
+          id?: string
+          sender_email: string
+          updated_at?: string
+        }
+        Update: {
+          action_params?: Json | null
+          action_type?: Database["public"]["Enums"]["email_action_type"]
+          created_at?: string
+          id?: string
+          sender_email?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_sender_groups: {
         Row: {
           colore: string | null
@@ -1454,6 +1481,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      email_action_type:
+        | "move_to_folder"
+        | "mark_as_read"
+        | "archive"
+        | "delete"
+        | "forward"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1582,6 +1615,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      email_action_type: [
+        "move_to_folder",
+        "mark_as_read",
+        "archive",
+        "delete",
+        "forward",
+      ],
     },
   },
 } as const

@@ -21,6 +21,10 @@ interface SenderStats {
     name: string;
     color: string;
   };
+  action?: {
+    type: string;
+    params: any;
+  };
 }
 
 export default function EmailSenders() {
@@ -57,6 +61,11 @@ export default function EmailSenders() {
         .from('email_sender_rules')
         .select('sender_email, group_id, email_sender_groups(id, nome_gruppo, colore)');
 
+      // Get actions for each sender
+      const { data: actions } = await supabase
+        .from('email_sender_actions')
+        .select('sender_email, action_type, action_params');
+
       const senderGroups: Record<string, any> = {};
       rules?.forEach(rule => {
         if (rule.email_sender_groups) {
@@ -68,12 +77,21 @@ export default function EmailSenders() {
         }
       });
 
+      const senderActions: Record<string, any> = {};
+      actions?.forEach(action => {
+        senderActions[action.sender_email] = {
+          type: action.action_type,
+          params: action.action_params,
+        };
+      });
+
       // Combina i dati e filtra per ricerca
       let stats: SenderStats[] = Object.entries(counts)
         .map(([sender, count]) => ({
           sender,
           count,
           group: senderGroups[sender],
+          action: senderActions[sender],
         }))
         .filter(stat => !searchQuery || stat.sender.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -142,13 +160,11 @@ export default function EmailSenders() {
   // Assign senders to group mutation
   const assignToGroupMutation = useMutation({
     mutationFn: async ({ groupId, senders }: { groupId: string; senders: string[] }) => {
-      // Delete existing rules for these senders
       await supabase
         .from('email_sender_rules')
         .delete()
         .in('sender_email', senders);
 
-      // Create new rules
       const rules = senders.map(sender => ({
         group_id: groupId,
         sender_email: sender,
@@ -167,6 +183,36 @@ export default function EmailSenders() {
     },
     onError: () => {
       toast.error('Errore durante l\'assegnazione');
+    },
+  });
+
+  // Assign action to senders mutation
+  const assignActionMutation = useMutation({
+    mutationFn: async ({ actionType, senders }: { actionType: 'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward'; senders: string[] }) => {
+      await supabase
+        .from('email_sender_actions')
+        .delete()
+        .in('sender_email', senders);
+
+      const actions = senders.map(sender => ({
+        sender_email: sender,
+        action_type: actionType,
+        action_params: {},
+      }));
+
+      const { error } = await supabase
+        .from('email_sender_actions')
+        .insert(actions);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sender-stats'] });
+      toast.success('Azione assegnata ai mittenti');
+      setSelectedSenders([]);
+    },
+    onError: () => {
+      toast.error('Errore durante l\'assegnazione dell\'azione');
     },
   });
 
@@ -320,40 +366,74 @@ export default function EmailSenders() {
           {selectedSenders.length > 0 && (
             <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2">
-                  <Select
-                    onValueChange={(value) => {
-                      assignToGroupMutation.mutate({
-                        groupId: value,
-                        senders: selectedSenders,
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Assegna a gruppo..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups?.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: group.colore }}
-                            />
-                            {group.nome_gruppo}
-                          </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Select
+                      onValueChange={(value) => {
+                        assignToGroupMutation.mutate({
+                          groupId: value,
+                          senders: selectedSenders,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Assegna a gruppo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups?.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: group.colore }}
+                              />
+                              {group.nome_gruppo}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Badge variant="secondary">{selectedSenders.length}</Badge>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setSelectedSenders([])}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Select
+                      onValueChange={(value: 'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward') => {
+                        assignActionMutation.mutate({
+                          actionType: value,
+                          senders: selectedSenders,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Assegna azione automatica..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="move_to_folder">
+                          📁 Sposta in cartella
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Badge variant="secondary">{selectedSenders.length}</Badge>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setSelectedSenders([])}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                        <SelectItem value="mark_as_read">
+                          ✓ Marca come letto
+                        </SelectItem>
+                        <SelectItem value="archive">
+                          📦 Archivia
+                        </SelectItem>
+                        <SelectItem value="delete">
+                          🗑️ Elimina
+                        </SelectItem>
+                        <SelectItem value="forward">
+                          ➡️ Inoltra
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>

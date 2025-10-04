@@ -494,6 +494,7 @@ const EmailDashboard = () => {
             onBulkForward={handleBulkForward}
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
+            isDownloading={isDownloading}
           />
         </div>
 

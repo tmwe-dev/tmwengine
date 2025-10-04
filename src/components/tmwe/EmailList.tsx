@@ -60,6 +60,7 @@ interface EmailListProps {
   onBulkForward?: (emailIds: string[]) => void;
   onBulkMarkAsRead?: (emailIds: string[]) => void;
   onBulkMoveToFolder?: (emailIds: string[], folder: string) => void;
+  isDownloading?: boolean;
 }
 
 type ViewMode = 'list' | 'grid';
@@ -79,7 +80,8 @@ export const EmailList = ({
   onBulkArchive,
   onBulkForward,
   onBulkMarkAsRead,
-  onBulkMoveToFolder
+  onBulkMoveToFolder,
+  isDownloading = false
 }: EmailListProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);

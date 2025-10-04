@@ -781,33 +781,9 @@ export default function EmailSenders() {
             <DialogHeader>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      <DialogTitle>Timeline Email</DialogTitle>
-                    </div>
-                    {/* Sender Navigation */}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handlePreviousSender}
-                        disabled={currentSenderIndex === 0}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <div className="text-sm text-muted-foreground min-w-[200px] text-center">
-                        {currentSenderIndex + 1} / {senderStats?.length || 0}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleNextSender}
-                        disabled={!senderStats || currentSenderIndex >= senderStats.length - 1}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <DialogTitle>Timeline Email</DialogTitle>
                   </div>
                   <DialogDescription className="truncate">
                     {currentChartSender}
@@ -925,8 +901,33 @@ export default function EmailSenders() {
                     </BarChart>
                   </ResponsiveContainer>
                   
+                  {/* Sender Navigation - Below Chart */}
+                  <div className="flex items-center justify-center gap-4 pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePreviousSender}
+                      disabled={currentSenderIndex === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-2" />
+                      Mittente Precedente
+                    </Button>
+                    <div className="text-sm text-muted-foreground min-w-[150px] text-center">
+                      {currentSenderIndex + 1} / {senderStats?.length || 0}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextSender}
+                      disabled={!senderStats || currentSenderIndex >= senderStats.length - 1}
+                    >
+                      Mittente Successivo
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                  
                   {/* Time Navigation Controls */}
-                  <div className="flex items-center justify-center gap-4">
+                  <div className="flex items-center justify-center gap-4 border-t pt-4">
                     <Button
                       variant="outline"
                       size="sm"

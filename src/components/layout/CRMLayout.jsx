@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
-import { 
+import findairLogo from '@/assets/findair-logo-header.png';
+import {
   Users, 
   Calendar, 
   Mail, 
@@ -77,6 +78,7 @@ const CRMLayout = ({ children }) => {
           </Button>
           
           <div className="flex items-center gap-2">
+            <img src={findairLogo} alt="FindAir Logo" className="h-6 w-auto md:h-8" />
             <h1 className={cn("font-semibold text-foreground px-3 py-1.5 rounded-lg", isMobile ? "text-lg" : "text-xl")}>
               {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
             </h1>

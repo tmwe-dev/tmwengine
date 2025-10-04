@@ -290,7 +290,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Bulk Actions & Search */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Bulk Actions */}
           {selectedSenders.length > 0 && (
             <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
@@ -335,7 +335,7 @@ export default function EmailSenders() {
           )}
 
           {/* Search */}
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg md:col-span-1">
             <CardHeader>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -351,7 +351,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[33%]">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
           <CardHeader>
             <CardTitle>Mittenti</CardTitle>
             <CardDescription>
@@ -362,20 +362,22 @@ export default function EmailSenders() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12"></TableHead>
                   <TableHead>Mittente</TableHead>
+                  <TableHead className="text-center">Email</TableHead>
                   <TableHead className="text-right">Gruppo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingStats ? (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : senderStats?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       Nessun mittente trovato
                     </TableCell>
                   </TableRow>
@@ -389,19 +391,19 @@ export default function EmailSenders() {
                       onClick={() => handleToggleSender(stat.sender)}
                     >
                       <TableCell className="py-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedSenders.includes(stat.sender)}
-                            onChange={() => handleToggleSender(stat.sender)}
-                            className="cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm truncate">{stat.sender}</span>
-                            <Badge variant="outline" className="w-fit text-xs">{stat.count} email</Badge>
-                          </div>
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedSenders.includes(stat.sender)}
+                          onChange={() => handleToggleSender(stat.sender)}
+                          className="cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <span className="font-medium text-sm">{stat.sender}</span>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <Badge variant="outline" className="text-xs">{stat.count} email</Badge>
                       </TableCell>
                       <TableCell className="text-right py-2">
                         {stat.group ? (

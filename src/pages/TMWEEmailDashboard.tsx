@@ -9,6 +9,7 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
+import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,8 @@ const EmailDashboard = () => {
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const queryClient = useQueryClient();
 
   // Reset selected email when folder changes
@@ -588,6 +591,10 @@ const EmailDashboard = () => {
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
             isDownloading={isDownloading}
+            onOpenAIChat={(senderEmail) => {
+              setSelectedAIChatSender(senderEmail);
+              setAiChatOpen(true);
+            }}
           />
         </div>
 
@@ -651,6 +658,12 @@ const EmailDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SenderAIChatDialog 
+        senderEmail={selectedAIChatSender}
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+      />
     </div>
   );
 };

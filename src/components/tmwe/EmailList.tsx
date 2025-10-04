@@ -461,23 +461,20 @@ export const EmailList = ({
               <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
                 Selezione multipla
               </Label>
+              {multiSelectMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 ml-1"
+                  onClick={() => {
+                    setShowActionsSheet(true);
+                  }}
+                  disabled={selectedEmailIds.size === 0}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-
-            {multiSelectMode && selectedEmailIds.size > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1"
-                onClick={() => {
-                  const selectedEmails = filteredEmails.filter(e => selectedEmailIds.has(e.id));
-                  setSelectedEmailForActions(selectedEmails[0]); // temporary, will show all
-                  setShowActionsSheet(true);
-                }}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                Regole ({selectedEmailIds.size})
-              </Button>
-            )}
 
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">

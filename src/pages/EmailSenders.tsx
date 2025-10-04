@@ -30,11 +30,13 @@ export default function EmailSenders() {
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#3b82f6');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group'>('count');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const queryClient = useQueryClient();
 
   // Fetch sender statistics
   const { data: senderStats, isLoading: loadingStats } = useQuery({
-    queryKey: ['sender-stats', searchQuery],
+    queryKey: ['sender-stats', searchQuery, sortBy, sortOrder],
     queryFn: async () => {
       // Leggi tutte le email dal backup in Supabase
       const { data: emails, error } = await supabase
@@ -67,14 +69,28 @@ export default function EmailSenders() {
       });
 
       // Combina i dati e filtra per ricerca
-      const stats: SenderStats[] = Object.entries(counts)
+      let stats: SenderStats[] = Object.entries(counts)
         .map(([sender, count]) => ({
           sender,
           count,
           group: senderGroups[sender],
         }))
-        .filter(stat => !searchQuery || stat.sender.toLowerCase().includes(searchQuery.toLowerCase()))
-        .sort((a, b) => b.count - a.count);
+        .filter(stat => !searchQuery || stat.sender.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // Ordina i dati
+      stats.sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'sender') {
+          comparison = a.sender.localeCompare(b.sender);
+        } else if (sortBy === 'count') {
+          comparison = a.count - b.count;
+        } else if (sortBy === 'group') {
+          const aGroup = a.group?.name || '';
+          const bGroup = b.group?.name || '';
+          comparison = aGroup.localeCompare(bGroup);
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
 
       return stats;
     },
@@ -160,6 +176,15 @@ export default function EmailSenders() {
         ? prev.filter(s => s !== sender)
         : [...prev, sender]
     );
+  };
+
+  const handleSort = (column: 'sender' | 'count' | 'group') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
   };
 
   const totalEmails = senderStats?.reduce((sum, s) => sum + s.count, 0) || 0;
@@ -351,7 +376,7 @@ export default function EmailSenders() {
         </div>
 
         {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
           <CardHeader>
             <CardTitle>Mittenti</CardTitle>
             <CardDescription>
@@ -363,9 +388,25 @@ export default function EmailSenders() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead>Mittente</TableHead>
-                  <TableHead className="text-center">Email</TableHead>
-                  <TableHead className="text-right">Gruppo</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:text-primary"
+                    onClick={() => handleSort('sender')}
+                  >
+                    Mittente {sortBy === 'sender' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-center cursor-pointer hover:text-primary w-24"
+                    onClick={() => handleSort('count')}
+                  >
+                    <Mail className="h-4 w-4 mx-auto" />
+                    {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-right cursor-pointer hover:text-primary"
+                    onClick={() => handleSort('group')}
+                  >
+                    Gruppo {sortBy === 'group' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -400,13 +441,13 @@ export default function EmailSenders() {
                         />
                       </TableCell>
                       <TableCell className="py-2">
-                        <span className="font-medium text-sm">{stat.sender}</span>
+                        <span className="font-medium text-sm truncate max-w-[200px] block">{stat.sender}</span>
                       </TableCell>
                       <TableCell className="text-center py-2">
-                        <Badge variant="outline" className="text-xs">{stat.count} email</Badge>
+                        <span className="text-base font-semibold">{stat.count}</span>
                       </TableCell>
                       <TableCell className="text-right py-2">
-                        {stat.group ? (
+                        {stat.group && (
                           <Badge
                             className="text-xs"
                             style={{
@@ -417,8 +458,6 @@ export default function EmailSenders() {
                           >
                             {stat.group.name}
                           </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Non assegnato</span>
                         )}
                       </TableCell>
                     </TableRow>

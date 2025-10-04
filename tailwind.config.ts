@@ -175,11 +175,26 @@ export default {
           "100%": { transform: "scale(1) rotate(0deg)" },
         },
         "line-bounce": {
-          "0%": { transform: "translateX(0)" },
-          "8%": { transform: "translateX(calc((100% - 1px) / 6))" },
-          "50%": { transform: "translateX(calc(100% - 1px))" },
-          "92%": { transform: "translateX(calc((100% - 1px) / 6))" },
-          "100%": { transform: "translateX(0)" },
+          "0%": { 
+            transform: "translateX(0)",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
+          "8%": { 
+            transform: "translateX(calc((100% - 1px) / 6))",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
+          "50%": { 
+            transform: "translateX(calc(100% - 1px))",
+            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
+          "92%": { 
+            transform: "translateX(calc((100% - 1px) / 6))",
+            backgroundImage: "linear-gradient(to left, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
+          "100%": { 
+            transform: "translateX(0)",
+            backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
+          },
         },
       },
       animation: {
@@ -189,7 +204,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "wiggle": "wiggle 0.8s ease-in-out",
-        "line-bounce": "line-bounce 2s linear",
+        "line-bounce": "line-bounce 1.2s linear",
       },
     },
   },

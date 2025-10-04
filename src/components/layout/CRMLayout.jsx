@@ -116,7 +116,7 @@ const CRMLayout = ({ children }) => {
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon">

@@ -13,8 +13,6 @@ import { cn } from '@/lib/utils';
 interface EmailDownloadProgressProps {
   onDownloadComplete: (emails: any[]) => void;
   totalEmails: number;
-  missingEmails: number;
-  dbEmails: number;
   onStartDownload: () => Promise<void>;
   isDownloading: boolean;
   downloadedCount: number;
@@ -24,15 +22,13 @@ interface EmailDownloadProgressProps {
 export const EmailDownloadProgress = ({
   onDownloadComplete,
   totalEmails,
-  missingEmails,
-  dbEmails,
   onStartDownload,
   isDownloading,
   downloadedCount,
   downloadError,
 }: EmailDownloadProgressProps) => {
-  const progressPercentage = missingEmails > 0 ? (downloadedCount / missingEmails) * 100 : 0;
-  const isComplete = downloadedCount >= missingEmails && missingEmails > 0;
+  const progressPercentage = totalEmails > 0 ? (downloadedCount / totalEmails) * 100 : 0;
+  const isComplete = downloadedCount >= totalEmails && totalEmails > 0;
 
   return (
     <Popover>
@@ -57,47 +53,31 @@ export const EmailDownloadProgress = ({
           )}
           {isDownloading || isComplete ? (
             <span className="text-xs">
-              {downloadedCount.toLocaleString()} / {missingEmails.toLocaleString()}
+              {downloadedCount.toLocaleString()} / {totalEmails.toLocaleString()}
             </span>
-          ) : missingEmails > 0 ? (
-            <span className="text-xs">{missingEmails.toLocaleString()} da scaricare</span>
           ) : (
-            <span className="text-xs">Sincronizzato</span>
+            <span className="text-xs">Analizza</span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="start">
         <div className="space-y-4">
           <div>
-            <h4 className="font-semibold mb-1">Sincronizzazione Email</h4>
+            <h4 className="font-semibold mb-1">Download Email Completo</h4>
             <p className="text-sm text-muted-foreground">
-              {dbEmails.toLocaleString()} nel DB, {totalEmails.toLocaleString()} totali
+              Scarica tutte le email per analisi complete dei mittenti
             </p>
-            {missingEmails > 0 && (
-              <p className="text-sm font-medium text-orange-600 dark:text-orange-400 mt-1">
-                {missingEmails.toLocaleString()} email mancanti
-              </p>
-            )}
           </div>
 
-          {!isDownloading && !isComplete && !downloadError && missingEmails > 0 && (
+          {!isDownloading && !isComplete && !downloadError && (
             <Button
               onClick={onStartDownload}
               className="w-full"
               size="sm"
             >
               <Download className="h-4 w-4 mr-2" />
-              Scarica {missingEmails.toLocaleString()} email mancanti
+              Inizia Download ({totalEmails.toLocaleString()} email)
             </Button>
-          )}
-          
-          {!isDownloading && missingEmails === 0 && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                Database sincronizzato
-              </span>
-            </div>
           )}
 
           {(isDownloading || isComplete) && (
@@ -111,7 +91,7 @@ export const EmailDownloadProgress = ({
               <Progress value={progressPercentage} className="h-2" />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{downloadedCount.toLocaleString()} scaricate</span>
-                <span>{missingEmails.toLocaleString()} mancanti</span>
+                <span>{totalEmails.toLocaleString()} totali</span>
               </div>
             </div>
           )}

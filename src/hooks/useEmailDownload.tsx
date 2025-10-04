@@ -38,7 +38,7 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
         return;
       }
 
-      const batchSize = 10; // API TMWE non funziona bene con batch > 10
+      const batchSize = 50; // Download 50 emails at a time
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
       const allDownloadedEmails: any[] = [];
@@ -56,21 +56,13 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
 
           const pageEmails = response?.messages || [];
           
-          console.log(`📄 Pagina ${page}/${totalPages}: ricevute ${pageEmails.length} email dalla API`);
-          
           // 3. Filtra solo le email NON presenti nel database
           const missingEmails = pageEmails.filter((email: any) => {
             const emailId = String(email.uid || email.message_id);
-            const isMissing = !existingIds.has(emailId);
-            if (page === 1 && pageEmails.indexOf(email) < 3) {
-              console.log(`🔍 Email ID: ${emailId}, presente nel DB: ${!isMissing}`);
-            }
-            return isMissing;
+            return !existingIds.has(emailId);
           });
 
-          console.log(`📊 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da salvare`);
-
-          allDownloadedEmails.push(...pageEmails);
+          console.log(`📄 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
 
           // 4. Salva solo le email mancanti
           if (missingEmails.length > 0) {

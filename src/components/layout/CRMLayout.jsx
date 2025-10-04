@@ -4,6 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
+import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -109,6 +110,10 @@ const CRMLayout = ({ children }) => {
                 {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
               </h1>
             )}
+            {/* AI Chat Widget */}
+            <div className="relative">
+              <AIChatPopup pageRoute={location.pathname} />
+            </div>
           </div>
         </div>
 

@@ -820,8 +820,7 @@ export default function Attivita() {
   
   return (
     <>
-      <AIChatPopup pageRoute="/attivita" />
-      <div 
+      <div
         className={cn("section-spacing", isMobile && "space-y-4")}
       >
       {/* Pulsante Indietro - Sempre visibile quando filterByContactId è attivo */}

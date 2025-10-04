@@ -170,7 +170,7 @@ const CRMLayout = ({ children }) => {
         <aside className={`bg-card border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
         } overflow-hidden`}>
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 bg-card-transparent">
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);

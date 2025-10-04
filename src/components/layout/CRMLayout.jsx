@@ -46,12 +46,10 @@ const CRMLayout = ({ children }) => {
   const navigate = useNavigate();
   const { userEmail, logout } = useTMWEAuth();
 
-  // Chiudi automaticamente la sidebar quando cambia la rotta o su mobile
+  // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, isMobile]);
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const navigation = [
     { name: 'Clienti', href: '/rubrica', icon: Users },
@@ -83,44 +81,46 @@ const CRMLayout = ({ children }) => {
         className={cn(
           "flex items-center justify-between relative",
           location.pathname !== '/attivita' && "border-b border-border",
-          isMobile ? "h-14 px-2 py-2" : "h-28 px-4 lg:px-6 py-3"
+          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
       >
-        <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-4")}>
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={cn("lg:hidden", isMobile ? "h-8 w-8" : "")}
+            className="lg:hidden"
           >
-            {sidebarOpen ? <X className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <Menu className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           
-          {isMobile && (
-            (() => {
-              const currentNav = navigation.find(nav => isActive(nav.href));
-              const Icon = currentNav?.icon || Home;
-              return <Icon className="h-4 w-4 text-foreground ml-0.5" />;
-            })()
-          )}
-          
-          {!isMobile && (
-            <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
-            </h1>
-          )}
+          <div className="flex items-center gap-2">
+            {isMobile ? (
+              // Mobile: mostra solo l'icona
+              (() => {
+                const currentNav = navigation.find(nav => isActive(nav.href));
+                const Icon = currentNav?.icon || Home;
+                return <Icon className="h-6 w-6 text-foreground" />;
+              })()
+            ) : (
+              // Desktop: mostra il nome
+              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+              </h1>
+            )}
+          </div>
         </div>
 
         {/* Logo centrato */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
-          <img src={findairLogo} alt="FindAir Logo" className={cn("w-auto", isMobile ? "h-6" : "h-11")} />
+          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </div>
 
-        <div className={cn("flex items-center", isMobile ? "gap-0" : "gap-2")}>
+        <div className="flex items-center gap-4">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className={cn(isMobile ? "h-8 w-8" : "")}>
-                <Search className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />
+              <Button variant="ghost" size="icon">
+                <Search className="h-5 w-5" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80">
@@ -136,9 +136,9 @@ const CRMLayout = ({ children }) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className={cn("flex items-center gap-2", isMobile ? "h-8 px-0.5" : "h-8 px-2")}>
-                <div className={cn("rounded-full flex items-center justify-center", isMobile ? "h-6 w-6" : "h-8 w-8")}>
-                  <span className={cn("text-white font-medium", isMobile ? "text-xs" : "text-sm")}>
+              <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
                     {userEmail?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
@@ -147,7 +147,7 @@ const CRMLayout = ({ children }) => {
                     {userEmail?.split('@')[0] || 'Utente'}
                   </span>
                 </div>
-                {!isMobile && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -180,77 +180,39 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex", isMobile ? "h-[calc(100vh-3.5rem)]" : "h-[calc(100vh-7rem)]")}>
-        {/* Sidebar - nascosta completamente su mobile, visibile su desktop */}
-        {!isMobile && (
-          <aside className={cn(
-            "bg-card-transparent border-r border-border transition-all duration-300 overflow-hidden",
-            sidebarOpen ? 'w-64' : 'w-16'
-          )}>
-            <nav className="p-4 space-y-2">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      active
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className={`${sidebarOpen ? 'block' : 'hidden xl:block'}`}>
-                      {item.name}
-                    </span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </aside>
-        )}
-
-        {/* Sidebar mobile - overlay con Sheet */}
-        {isMobile && sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <aside 
-              className="fixed left-0 top-14 bottom-0 w-64 bg-background border-r border-border z-50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <nav className="p-4 space-y-2">
-                {navigation.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        active
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </aside>
-          </div>
-        )}
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
+        {/* Sidebar */}
+        <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
+          sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
+        } overflow-hidden`}>
+          <nav className="p-4 space-y-2">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <span className={`${sidebarOpen ? 'block' : 'hidden lg:hidden xl:block'}`}>
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <div className={cn(isMobile ? "p-3" : "p-6")}>
+          <div className="p-6">
             {children}
           </div>
         </main>

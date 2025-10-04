@@ -733,9 +733,9 @@ const Settings = () => {
                         <SelectValue placeholder="Seleziona provider AI" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="chatgpt">OpenAI ChatGPT</SelectItem>
-                        <SelectItem value="claude">Anthropic Claude</SelectItem>
-                        <SelectItem value="gemini">Google Gemini</SelectItem>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                        <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                        <SelectItem value="google">Google AI</SelectItem>
                         <SelectItem value="mistral">Mistral AI</SelectItem>
                         <SelectItem value="perplexity">Perplexity</SelectItem>
                         <SelectItem value="cohere">Cohere</SelectItem>
@@ -753,7 +753,7 @@ const Settings = () => {
                         <SelectValue placeholder="Seleziona modello" />
                       </SelectTrigger>
                       <SelectContent>
-                        {newAiConfig.provider === 'chatgpt' && (
+                        {newAiConfig.provider === 'openai' && (
                           <>
                             <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
                             <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>

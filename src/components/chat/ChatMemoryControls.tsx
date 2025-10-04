@@ -105,8 +105,8 @@ export const ChatMemoryControls = ({
       toast({
         title: memoriaCompleta ? "Memoria Limitata" : "Memoria Completa",
         description: memoriaCompleta 
-          ? "ChatGPT userà solo i messaggi recenti"
-          : "ChatGPT ricorderà tutta la conversazione (più token)",
+          ? "L'AI userà solo i messaggi recenti"
+          : "L'AI ricorderà tutta la conversazione (più token)",
       });
     } catch (error) {
       console.error('Errore toggle memoria:', error);
@@ -131,7 +131,7 @@ export const ChatMemoryControls = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5" />
-          Controlli Memoria ChatGPT
+          Controlli Memoria AI
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -142,7 +142,7 @@ export const ChatMemoryControls = ({
               <div>
                 <Label className="font-medium">Memoria Completa (Solo questa conversazione)</Label>
                 <p className="text-sm text-muted-foreground">
-                  ChatGPT ricorderà tutti i messaggi di questa conversazione
+                  L'AI ricorderà tutti i messaggi di questa conversazione
                 </p>
               </div>
               <Switch

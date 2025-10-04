@@ -69,7 +69,7 @@ const CRMLayout = ({ children }) => {
           isMobile ? "h-14 px-3" : "h-16 px-4 lg:px-6"
         )}
         style={{
-          background: 'linear-gradient(to right, hsl(var(--primary) / 0.35) 0%, hsl(0 0% 0% / 0.35) 40%, hsl(0 0% 0%) 40%)'
+          background: 'linear-gradient(to right, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 40%, hsl(0, 0%, 0%) 40%)'
         }}
       >
         <div className="flex items-center gap-4">

@@ -2276,7 +2276,17 @@ export default function ImportTemplates() {
 
         {activeSection === 'manage' && (
           <div className="space-y-4">
-          <Card>
+          <Card 
+            style={{
+              backgroundImage: `repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                hsla(0, 0%, 50%, 0.7) 10px,
+                hsla(0, 0%, 50%, 0.7) 11px
+              )`
+            }}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />

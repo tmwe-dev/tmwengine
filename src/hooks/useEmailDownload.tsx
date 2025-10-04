@@ -21,28 +21,32 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     setAllEmails([]);
 
     try {
-      // Controlla quante email sono già nel database per questa cartella
-      const { count: existingCount } = await supabase
+      // 1. Recupera tutti gli ID delle email già presenti nel database
+      const { data: existingEmails } = await supabase
         .from('email_messages')
-        .select('*', { count: 'exact', head: true })
+        .select('message_id')
         .eq('cartella', folder);
 
-      const alreadyDownloaded = existingCount || 0;
+      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
+      const alreadyInDb = existingIds.size;
       
-      if (alreadyDownloaded >= totalEmails) {
+      console.log(`📊 Database: ${alreadyInDb} email già presenti in ${folder}`);
+
+      if (alreadyInDb >= totalEmails) {
         toast.success(`Tutte le ${totalEmails.toLocaleString()} email sono già state scaricate.`);
         setIsDownloading(false);
         return;
       }
 
-      const batchSize = 10; // Download 10 emails at a time
-      const startPage = Math.floor(alreadyDownloaded / batchSize) + 1;
+      const batchSize = 50; // Download 50 emails at a time
       const totalPages = Math.ceil(totalEmails / batchSize);
-      const emails: any[] = [];
+      let newEmailsCount = 0;
+      const allDownloadedEmails: any[] = [];
 
-      toast.info(`Ripresa download da email ${alreadyDownloaded + 1} di ${totalEmails.toLocaleString()}...`);
+      toast.info(`Controllo ${totalEmails.toLocaleString()} email...`);
 
-      for (let page = startPage; page <= totalPages; page++) {
+      // 2. Scarica tutte le email dalla API batch per batch
+      for (let page = 1; page <= totalPages; page++) {
         try {
           const response = await emailMessageApi.getMessages({
             folder,
@@ -51,15 +55,19 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
           });
 
           const pageEmails = response?.messages || [];
-          emails.push(...pageEmails);
-          setDownloadedCount(emails.length);
-          setAllEmails([...emails]);
+          
+          // 3. Filtra solo le email NON presenti nel database
+          const missingEmails = pageEmails.filter((email: any) => {
+            const emailId = String(email.uid || email.message_id);
+            return !existingIds.has(emailId);
+          });
 
-          // Salva le email in Supabase
-          if (pageEmails.length > 0) {
+          console.log(`📄 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
+
+          // 4. Salva solo le email mancanti
+          if (missingEmails.length > 0) {
             try {
-              const emailsToInsert = pageEmails.map((email: any) => {
-                // Convert date string to ISO timestamp
+              const emailsToInsert = missingEmails.map((email: any) => {
                 let isoDate = new Date().toISOString();
                 if (email.date) {
                   try {
@@ -88,19 +96,24 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
                 };
               });
 
-              console.log('📧 Inserting emails:', emailsToInsert.length, 'emails');
-              
-              const { data, error: insertError } = await supabase
+              const { error: insertError } = await supabase
                 .from('email_messages')
-                .upsert(emailsToInsert, { 
-                  onConflict: 'message_id',
-                  ignoreDuplicates: false 
-                });
+                .insert(emailsToInsert);
 
               if (insertError) {
                 console.error('❌ Error saving emails to database:', insertError);
               } else {
-                console.log('✅ Successfully saved', emailsToInsert.length, 'emails to database');
+                newEmailsCount += missingEmails.length;
+                allDownloadedEmails.push(...missingEmails);
+                
+                // Aggiungi i nuovi ID al Set per evitare duplicati nei batch successivi
+                missingEmails.forEach((email: any) => {
+                  existingIds.add(String(email.uid || email.message_id));
+                });
+                
+                setDownloadedCount(newEmailsCount);
+                setAllEmails([...allDownloadedEmails]);
+                console.log(`✅ Salvate ${missingEmails.length} nuove email (totale: ${newEmailsCount})`);
               }
             } catch (dbError) {
               console.error('❌ Database save error:', dbError);
@@ -118,7 +131,12 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
       }
 
       setIsDownloading(false);
-      toast.success(`Download completato! ${emails.length.toLocaleString()} email scaricate.`);
+      
+      if (newEmailsCount > 0) {
+        toast.success(`Download completato! ${newEmailsCount.toLocaleString()} nuove email scaricate.`);
+      } else {
+        toast.success(`Database già aggiornato. ${alreadyInDb.toLocaleString()} email già presenti.`);
+      }
     } catch (error: any) {
       console.error('Download error:', error);
       setDownloadError(error.message || 'Errore durante il download');

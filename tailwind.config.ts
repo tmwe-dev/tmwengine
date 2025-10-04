@@ -181,17 +181,17 @@ export default {
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "8%": { 
-            transform: "translateX(6.67%) scaleX(1)",
+            transform: "translateX(10%) scaleX(1)",
             transformOrigin: "left",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "50%": { 
-            transform: "translateX(40%) scaleX(0.017)",
+            transform: "translateX(60%) scaleX(0.017)",
             transformOrigin: "left",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },
           "92%": { 
-            transform: "translateX(6.67%) scaleX(1)",
+            transform: "translateX(10%) scaleX(1)",
             transformOrigin: "left",
             backgroundImage: "linear-gradient(to right, hsl(0, 0%, 100%, 0.65), hsl(0, 0%, 0%) 40%, transparent)"
           },

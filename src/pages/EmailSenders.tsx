@@ -779,72 +779,70 @@ export default function EmailSenders() {
         }}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  <DialogTitle>Timeline Email</DialogTitle>
-                </div>
-
-                {/* Assignment Controls - In Header */}
-                <div className="flex items-center gap-3">
-                  {/* Group Assignment */}
-                  <div className="flex items-center gap-1">
-                    <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <SelectValue placeholder="Gruppo..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups?.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: group.colore }}
-                              />
-                              <span className="text-xs">{group.nome_gruppo}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      onClick={handleAssignGroup}
-                      disabled={!selectedGroupId}
-                      size="sm"
-                      className="h-8 text-xs px-2"
-                    >
-                      Assegna
-                    </Button>
-                  </div>
-
-                  {/* Action Assignment */}
-                  <div className="flex items-center gap-1">
-                    <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <SelectValue placeholder="Azione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="move_to_folder"><span className="text-xs">📁 Sposta</span></SelectItem>
-                        <SelectItem value="mark_as_read"><span className="text-xs">✓ Letto</span></SelectItem>
-                        <SelectItem value="archive"><span className="text-xs">📦 Archivia</span></SelectItem>
-                        <SelectItem value="delete"><span className="text-xs">🗑️ Elimina</span></SelectItem>
-                        <SelectItem value="forward"><span className="text-xs">➡️ Inoltra</span></SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      onClick={handleAssignAction}
-                      disabled={!selectedActionType}
-                      size="sm"
-                      className="h-8 text-xs px-2"
-                    >
-                      Assegna
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                <DialogTitle>Timeline Email</DialogTitle>
               </div>
               <DialogDescription className="truncate">
                 {currentChartSender}
               </DialogDescription>
+              
+              {/* Assignment Controls - Centered in Header */}
+              <div className="flex items-center justify-center gap-3 pt-4">
+                {/* Group Assignment */}
+                <div className="flex items-center gap-1">
+                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue placeholder="Gruppo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: group.colore }}
+                            />
+                            <span className="text-xs">{group.nome_gruppo}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAssignGroup}
+                    disabled={!selectedGroupId}
+                    size="sm"
+                    className="h-8 text-xs px-2"
+                  >
+                    Assegna
+                  </Button>
+                </div>
+
+                {/* Action Assignment */}
+                <div className="flex items-center gap-1">
+                  <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue placeholder="Azione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="move_to_folder"><span className="text-xs">📁 Sposta</span></SelectItem>
+                      <SelectItem value="mark_as_read"><span className="text-xs">✓ Letto</span></SelectItem>
+                      <SelectItem value="archive"><span className="text-xs">📦 Archivia</span></SelectItem>
+                      <SelectItem value="delete"><span className="text-xs">🗑️ Elimina</span></SelectItem>
+                      <SelectItem value="forward"><span className="text-xs">➡️ Inoltra</span></SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAssignAction}
+                    disabled={!selectedActionType}
+                    size="sm"
+                    className="h-8 text-xs px-2"
+                  >
+                    Assegna
+                  </Button>
+                </div>
+              </div>
             </DialogHeader>
             
             <div className="space-y-6 py-4">

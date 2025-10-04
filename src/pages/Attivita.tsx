@@ -817,7 +817,12 @@ export default function Attivita() {
   console.log('🔴 ATTIVITA PAGE - filterByContactId:', filterByContactId);
   
   return (
-    <div className={cn("section-spacing", isMobile && "space-y-4")}>
+    <div 
+      className={cn("section-spacing", isMobile && "space-y-4")}
+      style={{
+        backgroundImage: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(192, 132, 252, 0.05) 100%)'
+      }}
+    >
       {/* Pulsante Indietro - Sempre visibile quando filterByContactId è attivo */}
       {filterByContactId && (
         <div className="mb-4">

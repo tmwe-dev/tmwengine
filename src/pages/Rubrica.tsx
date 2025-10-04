@@ -263,7 +263,12 @@ export default function Rubrica() {
   };
 
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6" 
+      style={{
+        backgroundImage: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(192, 132, 252, 0.05) 100%)'
+      }}
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

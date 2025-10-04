@@ -625,7 +625,7 @@ export default function EmailSenders() {
         <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[50%]">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <CardTitle>Mittenti</CardTitle>
                 <Badge variant="secondary">{uniqueSenders}</Badge>
                 <Brain 

@@ -442,18 +442,19 @@ const EmailDashboard = () => {
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetContent side="left" className="w-[280px] p-0">
-              <EmailSidebar
-                selectedFolder={selectedFolder}
-                onFolderSelect={(folder) => {
-                  setSelectedFolder(folder);
-                  setSidebarOpen(false);
-                }}
-                onCompose={() => {
-                  setComposeOpen(true);
-                  setSidebarOpen(false);
-                }}
-                onSync={handleSync}
-              />
+            <EmailSidebar 
+              selectedFolder={selectedFolder}
+              onFolderSelect={(folder) => {
+                setSelectedFolder(folder);
+                setSidebarOpen(false);
+              }}
+              onCompose={() => {
+                setComposeOpen(true);
+                setSidebarOpen(false);
+              }}
+              onSync={handleSync}
+              dbEmailCount={downloadedEmails.length}
+            />
             </SheetContent>
           </Sheet>
         )}

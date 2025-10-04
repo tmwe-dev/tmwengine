@@ -38,6 +38,7 @@ interface EmailSidebarProps {
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
   onSync: () => void;
+  dbEmailCount?: number;
 }
 
 const folderIcons: Record<string, any> = {
@@ -71,7 +72,8 @@ export const EmailSidebar = ({
   selectedFolder, 
   onFolderSelect, 
   onCompose,
-  onSync 
+  onSync,
+  dbEmailCount = 0
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -289,7 +291,12 @@ export const EmailSidebar = ({
 
       <Separator />
 
-      <div className="p-2">
+      <div className="p-2 space-y-2">
+        {!isCollapsed && (
+          <div className="px-3 py-2 text-xs text-muted-foreground flex items-center justify-start">
+            <span>Email nel DB: {dbEmailCount}</span>
+          </div>
+        )}
         <Button 
           variant="ghost" 
           className={cn("w-full", isCollapsed ? "justify-center px-2" : "justify-start")} 

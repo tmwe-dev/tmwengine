@@ -198,12 +198,12 @@ export const EmailList = ({
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read 
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_8px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_8px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_8px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_8px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
             ),
             selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
           )}
@@ -338,12 +338,12 @@ export const EmailList = ({
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read 
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_8px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_8px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-6px_6px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-6px_6px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_8px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_8px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-6px_6px_5px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-6px_6px_5px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
             ),
             selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
           )}

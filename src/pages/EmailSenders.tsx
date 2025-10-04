@@ -289,64 +289,65 @@ export default function EmailSenders() {
           </Card>
         </div>
 
-        {/* Bulk Actions */}
-        {selectedSenders.length > 0 && (
-          <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{selectedSenders.length} selezionati</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select
-                  onValueChange={(value) => {
-                    assignToGroupMutation.mutate({
-                      groupId: value,
-                      senders: selectedSenders,
-                    });
-                  }}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Assegna a gruppo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups?.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: group.colore }}
-                          />
-                          {group.nome_gruppo}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedSenders([])}
-                >
-                  Deseleziona
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Bulk Actions & Search */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Bulk Actions */}
+          {selectedSenders.length > 0 && (
+            <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
+              <CardContent className="flex flex-col gap-4 py-4">
+                <Badge variant="secondary" className="w-fit">{selectedSenders.length} selezionati</Badge>
+                <div className="flex flex-col gap-2">
+                  <Select
+                    onValueChange={(value) => {
+                      assignToGroupMutation.mutate({
+                        groupId: value,
+                        senders: selectedSenders,
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Assegna a gruppo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: group.colore }}
+                            />
+                            {group.nome_gruppo}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedSenders([])}
+                  >
+                    Deseleziona
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Search */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
-          <CardHeader>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Cerca mittente..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardHeader>
-        </Card>
+          {/* Search */}
+          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+            <CardHeader>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Cerca mittente..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
 
         {/* Senders Table */}
         <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">

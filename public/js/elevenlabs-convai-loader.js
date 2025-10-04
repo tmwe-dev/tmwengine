@@ -44,7 +44,132 @@ window.mountElevenLabsConvai = function(agentId) {
   console.log('ElevenLabs ConvAI widget mounted');
 };
 
-// Client tools globali per interazione con il CRM
+// Client tools globali per interazione con il CRM e Email
+window.analyzeEmails = async function(params) {
+  console.log('analyzeEmails called:', params);
+  
+  try {
+    const { query, folder } = params;
+    
+    // Chiamata all'edge function per analizzare email
+    const response = await fetch('https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/ai-email-actions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A',
+      },
+      body: JSON.stringify({
+        action: 'analyze',
+        query: query || '',
+        folder: folder || 'INBOX'
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Errore API: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return { success: true, results: data };
+  } catch (error) {
+    console.error('Error in analyzeEmails:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+window.countEmails = async function(params) {
+  console.log('countEmails called:', params);
+  
+  try {
+    const { folder, unreadOnly } = params;
+    
+    // Query diretta al database per contare email
+    const response = await fetch('https://dlldkrzoxvjxpgkkttxu.supabase.co/rest/v1/email_messages?select=id', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A',
+        'Range': '0-0'
+      }
+    });
+    
+    const contentRange = response.headers.get('Content-Range');
+    const total = contentRange ? parseInt(contentRange.split('/')[1]) : 0;
+    
+    return { 
+      success: true, 
+      count: total,
+      message: `Ci sono ${total} email nel sistema`
+    };
+  } catch (error) {
+    console.error('Error in countEmails:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+window.searchEmails = async function(params) {
+  console.log('searchEmails called:', params);
+  
+  try {
+    const { sender, subject, folder } = params;
+    let url = 'https://dlldkrzoxvjxpgkkttxu.supabase.co/rest/v1/email_messages?select=*';
+    
+    if (sender) {
+      url += `&from_email=ilike.*${encodeURIComponent(sender)}*`;
+    }
+    if (subject) {
+      url += `&subject=ilike.*${encodeURIComponent(subject)}*`;
+    }
+    if (folder) {
+      url += `&cartella=eq.${encodeURIComponent(folder)}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A',
+      }
+    });
+    
+    const emails = await response.json();
+    
+    return { 
+      success: true, 
+      count: emails.length,
+      emails: emails,
+      message: `Trovate ${emails.length} email`
+    };
+  } catch (error) {
+    console.error('Error in searchEmails:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+window.createActivity = async function(params) {
+  console.log('createActivity called:', params);
+  
+  try {
+    const response = await fetch('https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/ai-crm-manager', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsbGRrcnpveHZqeHBna2t0dHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MjA1ODQsImV4cCI6MjA3NDI5NjU4NH0.PrHXldlTqbNm63S90_Wo4bFcFeSBMVeSxjJpUxoKf5A',
+      },
+      body: JSON.stringify({
+        action: 'create_activity',
+        ...params
+      })
+    });
+    
+    const data = await response.json();
+    return { success: true, data, message: 'Attività creata con successo' };
+  } catch (error) {
+    console.error('Error in createActivity:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 window.executeAppCommand = function(params) {
   console.log('executeAppCommand called:', params);
   
@@ -59,7 +184,6 @@ window.executeAppCommand = function(params) {
         return { success: true, message: `Navigazione a ${data.path}` };
         
       case 'search_contacts':
-        // Trigger ricerca contatti
         const searchInput = document.querySelector('input[placeholder*="Cerca"]');
         if (searchInput && data.query) {
           searchInput.value = data.query;
@@ -68,7 +192,6 @@ window.executeAppCommand = function(params) {
         return { success: true, message: `Ricerca: ${data.query}` };
         
       case 'show_notification':
-        // Mostra toast
         if (window.dispatchEvent) {
           window.dispatchEvent(new CustomEvent('show-toast', {
             detail: { title: data.title, description: data.message }
@@ -93,9 +216,7 @@ window.read_page_content = function() {
       title: document.title,
       url: window.location.href,
       path: window.location.pathname,
-      // Estrai contenuto principale
       mainContent: document.querySelector('main')?.innerText || '',
-      // Conta elementi visibili
       visibleButtons: document.querySelectorAll('button:not([disabled])').length,
       visibleInputs: document.querySelectorAll('input:not([disabled])').length,
     };

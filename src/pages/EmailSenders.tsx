@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,6 +34,8 @@ export default function EmailSenders() {
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#3b82f6');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmGroupDialog, setConfirmGroupDialog] = useState(false);
+  const [selectedGroupForAssignment, setSelectedGroupForAssignment] = useState<{ id: string; name: string } | null>(null);
   const [sortBy, setSortBy] = useState<'sender' | 'count' | 'group' | 'company'>('count');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const queryClient = useQueryClient();
@@ -239,6 +241,24 @@ export default function EmailSenders() {
     } else {
       setSortBy(column);
       setSortOrder('desc');
+    }
+  };
+
+  const handleGroupCardClick = (groupId: string, groupName: string) => {
+    if (selectedSenders.length > 0) {
+      setSelectedGroupForAssignment({ id: groupId, name: groupName });
+      setConfirmGroupDialog(true);
+    }
+  };
+
+  const confirmGroupAssignment = () => {
+    if (selectedGroupForAssignment) {
+      assignToGroupMutation.mutate({
+        groupId: selectedGroupForAssignment.id,
+        senders: selectedSenders,
+      });
+      setConfirmGroupDialog(false);
+      setSelectedGroupForAssignment(null);
     }
   };
 
@@ -564,7 +584,12 @@ export default function EmailSenders() {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
               {groups?.map((group) => (
-                <Card key={group.id} className="backdrop-blur-sm bg-card/60 border-2 shadow-md" style={{ borderColor: group.colore }}>
+                <Card 
+                  key={group.id} 
+                  className={`backdrop-blur-sm bg-card/60 border-2 shadow-md ${selectedSenders.length > 0 ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+                  style={{ borderColor: group.colore }}
+                  onClick={() => handleGroupCardClick(group.id, group.nome_gruppo)}
+                >
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <div
@@ -587,6 +612,26 @@ export default function EmailSenders() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Confirm Group Assignment Dialog */}
+        <Dialog open={confirmGroupDialog} onOpenChange={setConfirmGroupDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Conferma Assegnazione</DialogTitle>
+              <DialogDescription>
+                Vuoi assegnare {selectedSenders.length} mittent{selectedSenders.length > 1 ? 'i' : 'e'} al gruppo "{selectedGroupForAssignment?.name}"?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmGroupDialog(false)}>
+                Annulla
+              </Button>
+              <Button onClick={confirmGroupAssignment}>
+                Conferma
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

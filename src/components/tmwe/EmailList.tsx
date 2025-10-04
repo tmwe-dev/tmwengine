@@ -585,7 +585,7 @@ export const EmailList = ({
                     {Array.from(selectedEmailIds).slice(0, 3).map(id => {
                       const email = emails.find(e => e.id === id);
                       return email ? (
-                        <div key={id} className="text-xs font-mono px-2 py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.5px] shadow-[-1px_2px_3px_0px_hsl(15,55%,45%,0.25)]">
+                        <div key={id} className="text-xs font-mono px-2 py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.5px] shadow-[0px_3px_0px_0px_hsl(15,55%,45%,0.4),0px_3px_0px_0px_hsl(0,0%,0%,0.6)_0%,0px_3px_0px_0px_hsl(0,0%,0%,0.6)_40%,0px_3px_0px_0px_transparent_40%]">
                           {email.from}
                         </div>
                       ) : null;

@@ -89,6 +89,7 @@ export const EmailList = ({
   const [targetFolder, setTargetFolder] = useState<string>('INBOX');
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
+  const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -642,23 +643,48 @@ export const EmailList = ({
                     if (idsToArchive.length > 0) {
                       onBulkArchive?.(idsToArchive);
                       setShowActionsSheet(false);
+                      setSelectedEmailIds(new Set());
                     }
                   }}
                 >
                   <Archive className="mr-2 h-4 w-4" />
-                  Archivia
+                  Archivia {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    console.log('Sposta in cartella');
-                    setShowActionsSheet(false);
-                  }}
-                >
-                  <FolderInput className="mr-2 h-4 w-4" />
-                  Sposta in Cartella
-                </Button>
+                
+                <div className="space-y-2">
+                  <Select value={selectedDestinationFolder} onValueChange={setSelectedDestinationFolder}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleziona cartella" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-[200]">
+                      <SelectItem value="INBOX">Inbox</SelectItem>
+                      <SelectItem value="Sent">Inviati</SelectItem>
+                      <SelectItem value="Drafts">Bozze</SelectItem>
+                      <SelectItem value="Spam">Spam</SelectItem>
+                      <SelectItem value="Trash">Cestino</SelectItem>
+                      <SelectItem value="Archive">Archivio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      const idsToMove = multiSelectMode && selectedEmailIds.size > 0
+                        ? Array.from(selectedEmailIds)
+                        : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                      
+                      if (idsToMove.length > 0) {
+                        onBulkMoveToFolder?.(idsToMove, selectedDestinationFolder);
+                        setShowActionsSheet(false);
+                        setSelectedEmailIds(new Set());
+                      }
+                    }}
+                  >
+                    <FolderInput className="mr-2 h-4 w-4" />
+                    Sposta in {selectedDestinationFolder} {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
+                  </Button>
+                </div>
+                
                 <Button 
                   variant="outline" 
                   className="w-full justify-start text-destructive hover:text-destructive"
@@ -670,11 +696,12 @@ export const EmailList = ({
                     if (idsToDelete.length > 0) {
                       onBulkDelete?.(idsToDelete);
                       setShowActionsSheet(false);
+                      setSelectedEmailIds(new Set());
                     }
                   }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Elimina
+                  Elimina {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
                 </Button>
               </div>
             </div>

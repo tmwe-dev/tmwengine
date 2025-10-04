@@ -174,6 +174,13 @@ export default {
           "80%": { transform: "scale(1.2) rotate(0deg)" },
           "100%": { transform: "scale(1) rotate(0deg)" },
         },
+        "line-bounce": {
+          "0%": { transform: "translateX(0)" },
+          "25%": { transform: "translateX(calc(100% - 1px))" },
+          "50%": { transform: "translateX(0)" },
+          "75%": { transform: "translateX(calc(100% - 1px))" },
+          "100%": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.3s ease-out",
@@ -182,6 +189,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.3s ease-out",
         "wiggle": "wiggle 0.8s ease-in-out",
+        "line-bounce": "line-bounce 1s ease-in-out",
       },
     },
   },

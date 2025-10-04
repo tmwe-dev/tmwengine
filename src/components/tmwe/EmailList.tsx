@@ -90,6 +90,7 @@ export const EmailList = ({
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
+  const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -601,48 +602,53 @@ export const EmailList = ({
               )}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-6">
             <div>
-              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    const idsToArchive = multiSelectMode && selectedEmailIds.size > 0
-                      ? Array.from(selectedEmailIds)
-                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                    
-                    if (idsToArchive.length > 0) {
-                      onBulkArchive?.(idsToArchive);
-                      setShowActionsSheet(false);
-                      setSelectedEmailIds(new Set());
-                    }
-                  }}
+              <h3 className="font-semibold mb-4 text-center">Azioni Rapide</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <button
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    selectedAction === 'archive' 
+                      ? "border-primary bg-primary/10" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                  onClick={() => setSelectedAction('archive')}
                 >
-                  <Archive className="mr-2 h-4 w-4" />
-                  Archivia {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                </Button>
-                
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => {
-                      const idsToMove = multiSelectMode && selectedEmailIds.size > 0
-                        ? Array.from(selectedEmailIds)
-                        : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                      
-                      if (idsToMove.length > 0) {
-                        onBulkMoveToFolder?.(idsToMove, selectedDestinationFolder);
-                        setShowActionsSheet(false);
-                        setSelectedEmailIds(new Set());
-                      }
-                    }}
-                  >
-                    <FolderInput className="mr-2 h-4 w-4" />
-                    Sposta in Cartella {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                  </Button>
+                  <Archive className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-medium">Archivia</span>
+                </button>
+
+                <button
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    selectedAction === 'move' 
+                      ? "border-primary bg-primary/10" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                  onClick={() => setSelectedAction('move')}
+                >
+                  <FolderInput className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-medium">Sposta</span>
+                </button>
+
+                <button
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    selectedAction === 'delete' 
+                      ? "border-primary bg-primary/10" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                  onClick={() => setSelectedAction('delete')}
+                >
+                  <Trash2 className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-medium">Elimina</span>
+                </button>
+              </div>
+
+              {selectedAction === 'move' && (
+                <div className="mt-4">
+                  <Label className="text-sm mb-2 block">Seleziona cartella di destinazione:</Label>
                   <Select value={selectedDestinationFolder} onValueChange={setSelectedDestinationFolder}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Seleziona cartella" />
@@ -657,26 +663,7 @@ export const EmailList = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-destructive hover:text-destructive"
-                  onClick={() => {
-                    const idsToDelete = multiSelectMode && selectedEmailIds.size > 0
-                      ? Array.from(selectedEmailIds)
-                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                    
-                    if (idsToDelete.length > 0) {
-                      onBulkDelete?.(idsToDelete);
-                      setShowActionsSheet(false);
-                      setSelectedEmailIds(new Set());
-                    }
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Elimina {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                </Button>
-              </div>
+              )}
             </div>
             
             <div>
@@ -688,8 +675,31 @@ export const EmailList = ({
               </p>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className={cn(
+                  "w-full transition-colors",
+                  selectedAction && "bg-green-500/20 border-green-500 hover:bg-green-500/30"
+                )}
                 onClick={() => {
+                  if (!selectedAction) return;
+
+                  const emailIds = multiSelectMode && selectedEmailIds.size > 0
+                    ? Array.from(selectedEmailIds)
+                    : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                  
+                  if (emailIds.length === 0) return;
+
+                  switch (selectedAction) {
+                    case 'archive':
+                      onBulkArchive?.(emailIds);
+                      break;
+                    case 'move':
+                      onBulkMoveToFolder?.(emailIds, selectedDestinationFolder);
+                      break;
+                    case 'delete':
+                      onBulkDelete?.(emailIds);
+                      break;
+                  }
+
                   if (multiSelectMode && selectedEmailIds.size > 0) {
                     const selectedSenders = Array.from(selectedEmailIds).map(id => {
                       const email = emails.find(e => e.id === id);
@@ -699,11 +709,15 @@ export const EmailList = ({
                   } else {
                     console.log('Crea regola per:', selectedEmailForActions?.from);
                   }
+                  
                   setShowActionsSheet(false);
+                  setSelectedEmailIds(new Set());
+                  setSelectedAction(null);
                 }}
+                disabled={!selectedAction}
               >
                 <Tag className="mr-2 h-4 w-4" />
-                Crea Nuova Regola
+                Crea Nuova Regola {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
               </Button>
             </div>
           </div>

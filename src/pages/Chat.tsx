@@ -407,7 +407,7 @@ const Chat = () => {
 
               {selectedTab === 'prompts' && (
                 <div className="space-y-4 sm:space-y-6">
-                  <Card>
+                  <Card className="bg-card-transparent">
                     <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
                       <CollapsibleTrigger asChild>
                         <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3 sm:py-4">
@@ -537,7 +537,7 @@ const Chat = () => {
       {/* Layout Responsive */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-1 order-2 xl:order-1">
-          <Card>
+          <Card className="bg-card-transparent">
             <CardHeader className="cursor-pointer py-4" onClick={() => setShowConversations(!showConversations)}>
               <CardTitle className="flex items-center justify-between">
                 <span>Conversazioni</span>
@@ -588,7 +588,7 @@ const Chat = () => {
         <div className="xl:col-span-3 space-y-6 order-1 xl:order-2">
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
-            <Card>
+            <Card className="bg-card-transparent">
               <CardHeader className="py-4">
                 <CardTitle className="flex items-center justify-between">
                   <span>Conversazione</span>
@@ -640,7 +640,7 @@ const Chat = () => {
           )}
 
           {!currentConversationId && (
-            <Card>
+            <Card className="bg-card-transparent">
               <CardContent className="flex items-center justify-start py-8 px-6">
                 <MessageSquare className="h-5 w-5 text-muted-foreground mr-3 flex-shrink-0" />
                 <p className="text-muted-foreground">
@@ -651,7 +651,7 @@ const Chat = () => {
           )}
 
           {/* Area Input */}
-          <Card>
+          <Card className="bg-card-transparent">
             <CardHeader className="py-4">
               <CardTitle className="flex items-center justify-between">
                 <span>{currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}</span>

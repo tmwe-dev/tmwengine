@@ -9,12 +9,20 @@ interface EmailHeaderProps {
   onSearch: (query: string) => void;
   onCompose: () => void;
   onSync: () => void;
+  onSyncSmart?: () => void;
+  isSyncingSmart?: boolean;
+  syncSmartProgress?: {
+    current: number;
+    total: number;
+    missing: number;
+  };
+  missingEmailCount?: number;
   onMenuClick?: () => void;
   isMobile?: boolean;
   downloadProgressComponent?: React.ReactNode;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile, downloadProgressComponent }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
 
@@ -98,6 +106,50 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
+        
+        {/* Sync Smart Button */}
+        {onSyncSmart && (
+          <Button 
+            onClick={onSyncSmart}
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 relative"
+            disabled={isSyncingSmart}
+            title="Sincronizza solo le email mancanti (batch da 10)"
+          >
+            <Database className={`h-4 w-4 ${isSyncingSmart ? 'animate-pulse' : ''}`} />
+            
+            {/* Badge rosso con numero email mancanti */}
+            {missingEmailCount !== undefined && missingEmailCount > 0 && !isSyncingSmart && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold"
+              >
+                {missingEmailCount > 999 ? '999+' : missingEmailCount}
+              </Badge>
+            )}
+            
+            {/* Progress durante sync */}
+            {isSyncingSmart && syncSmartProgress && (
+              <Badge 
+                variant="default" 
+                className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold bg-blue-500"
+              >
+                {syncSmartProgress.current}/{syncSmartProgress.missing}
+              </Badge>
+            )}
+            
+            {/* Badge verde quando sincronizzato */}
+            {missingEmailCount === 0 && !isSyncingSmart && (
+              <Badge 
+                variant="secondary" 
+                className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] bg-green-500 text-white"
+              >
+                ✓
+              </Badge>
+            )}
+          </Button>
+        )}
       </div>
 
       {downloadProgressComponent && (

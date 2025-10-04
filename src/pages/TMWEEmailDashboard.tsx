@@ -10,6 +10,7 @@ import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
+import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -110,6 +111,30 @@ const EmailDashboard = () => {
     folder: selectedFolder,
     totalEmails: totalEmailCount,
   });
+
+  // Sync Smart hook
+  const {
+    isSyncing: isSyncingSmart,
+    syncedCount,
+    startSync: startSyncSmart,
+  } = useSyncSmart({
+    folder: selectedFolder,
+    totalEmails: totalEmailCount,
+  });
+
+  // Conta le email nel DB per la cartella corrente
+  const { data: dbEmailCount } = useQuery({
+    queryKey: ['db-email-count', selectedFolder],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('cartella', selectedFolder);
+      return count || 0;
+    },
+  });
+
+  const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
 
   // Query per le email dal database Supabase (fallback su API)
   const { 
@@ -509,6 +534,10 @@ const EmailDashboard = () => {
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
         onSync={handleSync}
+        onSyncSmart={startSyncSmart}
+        isSyncingSmart={isSyncingSmart}
+        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
+        missingEmailCount={missingEmailCount}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
         downloadProgressComponent={

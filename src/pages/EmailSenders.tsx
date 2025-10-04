@@ -813,6 +813,65 @@ export default function EmailSenders() {
             </DialogHeader>
             
             <div className="space-y-6 py-4">
+              {/* Assignment Controls */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Assegna Regole</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Group Assignment */}
+                  <div className="flex gap-2">
+                    <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Seleziona gruppo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups?.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: group.colore }}
+                              />
+                              {group.nome_gruppo}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleAssignGroup}
+                      disabled={!selectedGroupId}
+                      size="sm"
+                    >
+                      Assegna
+                    </Button>
+                  </div>
+
+                  {/* Action Assignment */}
+                  <div className="flex gap-2">
+                    <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Seleziona azione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="move_to_folder">📁 Sposta in cartella</SelectItem>
+                        <SelectItem value="mark_as_read">✓ Marca come letto</SelectItem>
+                        <SelectItem value="archive">📦 Archivia</SelectItem>
+                        <SelectItem value="delete">🗑️ Elimina</SelectItem>
+                        <SelectItem value="forward">➡️ Inoltra</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleAssignAction}
+                      disabled={!selectedActionType}
+                      size="sm"
+                    >
+                      Assegna
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {loadingTimeline ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-muted-foreground">Caricamento...</div>
@@ -823,7 +882,7 @@ export default function EmailSenders() {
                 </div>
               ) : (
                 <>
-                  <ResponsiveContainer width="100%" height={400}>
+                  <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={emailTimeline}>
                       <defs>
                         <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
@@ -892,61 +951,6 @@ export default function EmailSenders() {
                   </div>
                 </>
               )}
-
-              {/* Assignment Controls */}
-              <div className="border-t pt-6 space-y-4">
-                <h3 className="font-semibold text-lg">Assegna Regole</h3>
-                
-                {/* Group Assignment */}
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona gruppo..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups?.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: group.colore }}
-                            />
-                            {group.nome_gruppo}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleAssignGroup}
-                    disabled={!selectedGroupId}
-                  >
-                    Assegna Gruppo
-                  </Button>
-                </div>
-
-                {/* Action Assignment */}
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona azione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="move_to_folder">📁 Sposta in cartella</SelectItem>
-                      <SelectItem value="mark_as_read">✓ Marca come letto</SelectItem>
-                      <SelectItem value="archive">📦 Archivia</SelectItem>
-                      <SelectItem value="delete">🗑️ Elimina</SelectItem>
-                      <SelectItem value="forward">➡️ Inoltra</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleAssignAction}
-                    disabled={!selectedActionType}
-                  >
-                    Assegna Azione
-                  </Button>
-                </div>
-              </div>
             </div>
           </DialogContent>
         </Dialog>

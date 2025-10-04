@@ -306,23 +306,26 @@ export const EmailDetail = ({
       <div className="flex items-center justify-between border-b p-6 md:p-8 gap-4 bg-card-transparent">
         {/* Left: Reply actions */}
         <div className="flex gap-3">
-          <Button variant="outline" size="lg" onClick={onReply}>
-            <div className="flex items-center gap-2">
+          <Button variant="outline" size="lg" onClick={onReply} className="flex-col h-auto py-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
               <Reply className="h-8 w-8" />
               <User className="h-6 w-6" />
             </div>
+            <span className="text-xs">Rispondi</span>
           </Button>
-          <Button variant="outline" size="lg" onClick={onReplyAll}>
-            <div className="flex items-center gap-2">
+          <Button variant="outline" size="lg" onClick={onReplyAll} className="flex-col h-auto py-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
               <ReplyAll className="h-8 w-8" />
               <Users className="h-6 w-6" />
             </div>
+            <span className="text-xs">Rispondi a tutti</span>
           </Button>
-          <Button variant="outline" size="lg" onClick={onForward}>
-            <div className="flex items-center gap-2">
+          <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
               <Forward className="h-8 w-8" />
               <Megaphone className="h-6 w-6" />
             </div>
+            <span className="text-xs">Inoltra</span>
           </Button>
         </div>
 
@@ -334,20 +337,25 @@ export const EmailDetail = ({
               size="lg" 
               onClick={onPrevious}
               disabled={!hasPrevious}
+              className="flex-col h-auto py-3 px-4"
             >
-              <ChevronLeft className="h-8 w-8" />
+              <ChevronLeft className="h-8 w-8 mb-1" />
+              <span className="text-xs">Precedente</span>
             </Button>
             <Button 
               variant="ghost" 
               size="lg" 
               onClick={onNext}
               disabled={!hasNext}
+              className="flex-col h-auto py-3 px-4"
             >
-              <ChevronRight className="h-8 w-8" />
+              <ChevronRight className="h-8 w-8 mb-1" />
+              <span className="text-xs">Successiva</span>
             </Button>
           </div>
-          <Button variant="ghost" size="lg">
-            <Star className="h-8 w-8" />
+          <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
+            <Star className="h-8 w-8 mb-1" />
+            <span className="text-xs">Preferito</span>
           </Button>
         </div>
 
@@ -355,8 +363,9 @@ export const EmailDetail = ({
         <div className="flex gap-3 items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg">
-                <FolderCog className="h-8 w-8" />
+              <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
+                <FolderCog className="h-8 w-8 mb-1" />
+                <span className="text-xs">Regole</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -415,8 +424,9 @@ export const EmailDetail = ({
           </DropdownMenu>
           
           {onDelete && (
-            <Button variant="destructive" size="lg" onClick={onDelete}>
-              <Trash2 className="h-8 w-8" />
+            <Button variant="destructive" size="lg" onClick={onDelete} className="flex-col h-auto py-3 px-4">
+              <Trash2 className="h-8 w-8 mb-1" />
+              <span className="text-xs">Elimina</span>
             </Button>
           )}
         </div>

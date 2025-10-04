@@ -35,7 +35,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onMenuClick, isMobile
         )}
         
         <div className="flex items-center gap-2">
-          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-8 md:h-10 md:w-10" />
+          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-10" />
           <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             {isMobile ? 'Email' : 'TMWE Email Manager'}
           </h1>

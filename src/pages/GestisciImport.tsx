@@ -566,7 +566,7 @@ export default function GestisciImport() {
       </div>
 
       {monitoringImportId && (
-        <Card>
+        <Card className="bg-card-transparent">
           <CardContent className="pt-6">
             <ImportProgressMonitor
               importLogId={monitoringImportId}
@@ -579,7 +579,7 @@ export default function GestisciImport() {
         </Card>
       )}
 
-      <Card>
+      <Card className="bg-card-transparent">
         <CardHeader>
           <CardTitle>Storico Import</CardTitle>
         </CardHeader>

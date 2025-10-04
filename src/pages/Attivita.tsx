@@ -875,7 +875,7 @@ export default function Attivita() {
       {/* Search and Filters - Collapsible */}
       {!isHeaderCollapsed && (
         <div className="animate-fade-in">
-          <Card className="border-card shadow-soft">
+          <Card className="bg-card-transparent border-card shadow-soft">
             <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
               {/* Ricerca e Dropdown centrati */}
               <div className="flex flex-col items-center gap-4 max-w-4xl mx-auto">

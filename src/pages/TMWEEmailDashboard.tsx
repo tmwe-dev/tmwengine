@@ -566,6 +566,10 @@ const EmailDashboard = () => {
               emails={emailsToUse}
               selectedSender={selectedSender}
               onSenderSelect={setSelectedSender}
+              onOpenAIChat={(senderEmail) => {
+                setSelectedAIChatSender(senderEmail);
+                setAiChatOpen(true);
+              }}
             />
             {selectedSender && (
               <div className="flex-1 text-sm text-muted-foreground">

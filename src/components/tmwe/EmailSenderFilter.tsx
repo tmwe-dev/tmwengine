@@ -16,19 +16,21 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Users, ChevronDown, Search, X } from 'lucide-react';
+import { Users, ChevronDown, Search, X, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EmailSenderFilterProps {
-  emails: Array<{ id: string; from: string; read: boolean }>;
+  emails: Array<{ id: string; from: string; read: boolean; from_email?: string }>;
   selectedSender: string | null;
   onSenderSelect: (sender: string | null) => void;
+  onOpenAIChat?: (senderEmail: string) => void;
 }
 
 export const EmailSenderFilter = ({
   emails,
   selectedSender,
   onSenderSelect,
+  onOpenAIChat,
 }: EmailSenderFilterProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -75,22 +77,23 @@ export const EmailSenderFilter = ({
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant={selectedSender ? 'secondary' : 'ghost'}
-          size="sm"
-          className="relative"
-        >
-          <Users className="h-4 w-4 mr-2" />
-          Mittenti
-          {selectedSender && (
-            <Badge className="ml-2 h-5 px-1.5" variant="default">
-              1
-            </Badge>
-          )}
-        </Button>
-      </SheetTrigger>
+    <div className="flex items-center gap-2">
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant={selectedSender ? 'secondary' : 'ghost'}
+            size="sm"
+            className="relative"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Mittenti
+            {selectedSender && (
+              <Badge className="ml-2 h-5 px-1.5" variant="default">
+                1
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
       <SheetContent side="right" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Filtra per Mittente</SheetTitle>
@@ -207,5 +210,20 @@ export const EmailSenderFilter = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-9 w-9 hover:bg-primary/10"
+      onClick={() => {
+        if (selectedSender && onOpenAIChat) {
+          onOpenAIChat(selectedSender);
+        }
+      }}
+      disabled={!selectedSender}
+    >
+      <Brain className="h-4 w-4 text-primary" />
+    </Button>
+    </div>
   );
 };

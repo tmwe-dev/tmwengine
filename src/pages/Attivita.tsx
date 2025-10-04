@@ -820,7 +820,7 @@ export default function Attivita() {
     <div 
       className={cn("section-spacing", isMobile && "space-y-4")}
       style={{
-        background: 'var(--gradient-page)'
+        backgroundImage: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(192, 132, 252, 0.05) 100%)'
       }}
     >
       {/* Pulsante Indietro - Sempre visibile quando filterByContactId è attivo */}

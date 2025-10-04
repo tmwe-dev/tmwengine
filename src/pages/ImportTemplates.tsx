@@ -1857,12 +1857,7 @@ export default function ImportTemplates() {
   }
 
   return (
-    <div 
-      className="space-y-6"
-      style={{
-        background: 'var(--gradient-page)'
-      }}
-    >
+    <div className="space-y-6">
       {/* Header with Dropdown Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>

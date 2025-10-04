@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
+import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -187,24 +188,20 @@ const CRMLayout = ({ children }) => {
         } overflow-hidden`}>
           <nav className="p-4 space-y-2">
             {navigation.map((item) => {
-              const Icon = item.icon;
               const active = isActive(item.href);
+              const isCollapsed = !sidebarOpen;
               
               return (
-                <Link
+                <AnimatedNavButton
                   key={item.name}
-                  to={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className={`${sidebarOpen ? 'block' : 'hidden lg:hidden xl:block'}`}>
-                    {item.name}
-                  </span>
-                </Link>
+                  icon={item.icon}
+                  label={item.name}
+                  isActive={active}
+                  isCollapsed={isCollapsed && !isMobile}
+                  onClick={() => navigate(item.href)}
+                  colorScheme="primary"
+                  className="w-full"
+                />
               );
             })}
           </nav>

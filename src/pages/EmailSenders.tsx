@@ -791,13 +791,13 @@ export default function EmailSenders() {
                 </div>
 
                 {/* Assignment Controls - Compact Version */}
-                <div className="w-[45%] space-y-2">
-                  <h3 className="font-semibold text-sm">Assegna Regole</h3>
+                <div className="w-[25%] space-y-2">
+                  <h3 className="font-semibold text-xs">Assegna</h3>
                   
                   {/* Group Assignment */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-1">
                     <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                      <SelectTrigger className="flex-1 h-9">
+                      <SelectTrigger className="h-8 text-xs">
                         <SelectValue placeholder="Gruppo..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -805,10 +805,10 @@ export default function EmailSenders() {
                           <SelectItem key={group.id} value={group.id}>
                             <div className="flex items-center gap-2">
                               <div
-                                className="w-3 h-3 rounded-full"
+                                className="w-2 h-2 rounded-full"
                                 style={{ backgroundColor: group.colore }}
                               />
-                              {group.nome_gruppo}
+                              <span className="text-xs">{group.nome_gruppo}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -818,31 +818,33 @@ export default function EmailSenders() {
                       onClick={handleAssignGroup}
                       disabled={!selectedGroupId}
                       size="sm"
+                      className="h-7 text-xs"
                     >
-                      Assegna
+                      Assegna Gruppo
                     </Button>
                   </div>
 
                   {/* Action Assignment */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-1">
                     <Select value={selectedActionType} onValueChange={(value: any) => setSelectedActionType(value)}>
-                      <SelectTrigger className="flex-1 h-9">
+                      <SelectTrigger className="h-8 text-xs">
                         <SelectValue placeholder="Azione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="move_to_folder">📁 Sposta</SelectItem>
-                        <SelectItem value="mark_as_read">✓ Letto</SelectItem>
-                        <SelectItem value="archive">📦 Archivia</SelectItem>
-                        <SelectItem value="delete">🗑️ Elimina</SelectItem>
-                        <SelectItem value="forward">➡️ Inoltra</SelectItem>
+                        <SelectItem value="move_to_folder"><span className="text-xs">📁 Sposta</span></SelectItem>
+                        <SelectItem value="mark_as_read"><span className="text-xs">✓ Letto</span></SelectItem>
+                        <SelectItem value="archive"><span className="text-xs">📦 Archivia</span></SelectItem>
+                        <SelectItem value="delete"><span className="text-xs">🗑️ Elimina</span></SelectItem>
+                        <SelectItem value="forward"><span className="text-xs">➡️ Inoltra</span></SelectItem>
                       </SelectContent>
                     </Select>
                     <Button 
                       onClick={handleAssignAction}
                       disabled={!selectedActionType}
                       size="sm"
+                      className="h-7 text-xs"
                     >
-                      Assegna
+                      Assegna Azione
                     </Button>
                   </div>
                 </div>

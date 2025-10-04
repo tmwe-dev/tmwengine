@@ -27,12 +27,11 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       const alreadyInDb = existingIds.size;
-      const missingCount = Math.max(0, totalEmails - alreadyInDb);
       
-      console.log(`📊 Sync Smart avviato: ${totalEmails} totali, ${alreadyInDb} già presenti, ${missingCount} mancanti`);
+      console.log(`📊 Sync Smart avviato: ${totalEmails} totali, ${alreadyInDb} già presenti nel DB`);
 
-      if (missingCount === 0) {
-        toast.success(`Tutte le ${totalEmails.toLocaleString()} email sono già sincronizzate.`);
+      if (alreadyInDb >= totalEmails) {
+        toast.success(`✅ Database già sincronizzato (${alreadyInDb.toLocaleString()} email)`);
         setIsSyncing(false);
         return;
       }
@@ -44,7 +43,7 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       let consecutiveEmptyBatches = 0;
       const maxEmptyBatches = 3; // Ferma dopo 3 batch vuoti consecutivi
 
-      toast.info(`Sincronizzazione smart: ${missingCount.toLocaleString()} email da scaricare...`);
+      console.log(`🚀 Inizio sincronizzazione smart...`);
 
       // 2. Scarica email batch per batch
       for (let page = 1; page <= totalPages; page++) {
@@ -148,12 +147,12 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       
       if (newEmailsCount > 0) {
         toast.success(
-          `🎉 Sync Smart completato! ${newEmailsCount.toLocaleString()} nuove email salvate${errorCount > 0 ? ` (${errorCount} errori)` : ''}.`,
+          `🎉 Sincronizzate ${newEmailsCount.toLocaleString()} nuove email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`,
           { duration: 5000 }
         );
-        console.log(`🎉 Sync Smart completato: ${newEmailsCount} nuove email salvate su ${missingCount} mancanti`);
+        console.log(`🎉 Sync Smart completato: ${newEmailsCount} nuove email salvate`);
       } else {
-        toast.success(`Database già aggiornato. ${alreadyInDb.toLocaleString()} email già presenti.`);
+        toast.success(`✅ Database già aggiornato (${alreadyInDb.toLocaleString()} email presenti)`);
       }
     } catch (error: any) {
       console.error('❌ Sync Smart error:', error);

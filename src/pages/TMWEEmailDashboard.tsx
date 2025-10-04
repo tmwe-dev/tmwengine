@@ -88,6 +88,17 @@ const EmailDashboard = () => {
     }
   };
 
+  // Prima ottieni il conteggio totale delle email
+  const { data: folderInfo } = useQuery({
+    queryKey: ['folder-info', selectedFolder],
+    queryFn: async () => {
+      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, page: 1 });
+      return result;
+    },
+  });
+
+  const totalEmailCount = folderInfo?.total || 0;
+
   // Email download hook - declare first
   const {
     isDownloading,
@@ -97,7 +108,7 @@ const EmailDashboard = () => {
     startDownload,
   } = useEmailDownload({
     folder: selectedFolder,
-    totalEmails: 0, // Will be updated after messagesData loads
+    totalEmails: totalEmailCount,
   });
 
   // Query per le email dal database Supabase (fallback su API)
@@ -171,8 +182,6 @@ const EmailDashboard = () => {
     initialPageParam: 0,
   });
 
-  // Get total email count from the first page response
-  const totalEmailCount = messagesData?.pages?.[0]?.total || 0;
 
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],

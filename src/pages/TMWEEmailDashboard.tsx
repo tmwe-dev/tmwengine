@@ -232,16 +232,15 @@ const EmailDashboard = () => {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
-      // 1. Recupera tutte le email dalla cartella corrente via API
-      const apiResponse = await emailMessageApi.getMessages({ 
+      // 1. Ottieni il totale delle email dalla cartella
+      const folderInfoResponse = await emailMessageApi.getMessages({ 
         folder: selectedFolder, 
-        limit: 999999, 
+        limit: 1, 
         page: 1 
       });
+      const totalEmails = folderInfoResponse.total || 0;
       
-      const apiEmails = apiResponse.messages || [];
-      
-      // 2. Recupera tutti gli ID esistenti nel database
+      // 2. Recupera gli ID esistenti nel database
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
@@ -249,47 +248,87 @@ const EmailDashboard = () => {
       
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       
-      // 3. Filtra solo le email mancanti
-      const missingEmails = apiEmails.filter((email: any) => 
-        !existingIds.has(email.message_id || email.uid?.toString())
-      );
+      // 3. Download batch di email dalla API
+      const batchSize = 50;
+      const totalPages = Math.ceil(totalEmails / batchSize);
+      let syncedCount = 0;
       
-      console.log(`📊 Sync: ${apiEmails.length} totali, ${existingIds.size} già nel DB, ${missingEmails.length} da inserire`);
+      console.log(`📊 Sync: ${totalEmails} totali, ${existingIds.size} già nel DB`);
       
-      // 4. Inserisci le email mancanti nel database
-      if (missingEmails.length > 0) {
-        const emailsToInsert = missingEmails.map((email: any) => ({
-          message_id: email.message_id || email.uid?.toString(),
-          provider_id: '00000000-0000-0000-0000-000000000000',
-          from_email: typeof email.from === 'object' ? email.from.email : email.from,
-          to_email: typeof email.to === 'object' ? email.to.email : email.to,
-          cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
-          bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
-          subject: email.subject || '(No Subject)',
-          body_text: email.body_plain || email.body_text || null,
-          body_html: email.body_html || null,
-          data_ricezione: email.date || new Date().toISOString(),
-          cartella: selectedFolder,
-          direzione: 'ricevuta',
-          stato: email.is_read || email.seen ? 'letto' : 'nuovo',
-          flags: email.flags || [],
-          attachments: email.attachments || [],
-        }));
+      for (let page = 1; page <= totalPages; page++) {
+        const response = await emailMessageApi.getMessages({
+          folder: selectedFolder,
+          limit: batchSize,
+          page,
+        });
         
-        const { error } = await supabase
-          .from('email_messages')
-          .insert(emailsToInsert);
+        const pageEmails = response?.messages || [];
         
-        if (error) {
-          console.error('❌ Errore inserimento email:', error);
-          throw error;
+        // Filtra solo email mancanti
+        const missingEmails = pageEmails.filter((email: any) => 
+          !existingIds.has(email.message_id || email.uid?.toString())
+        );
+        
+        // Inserisci le email mancanti
+        if (missingEmails.length > 0) {
+          const emailsToInsert = missingEmails.map((email: any) => {
+            let isoDate = new Date().toISOString();
+            if (email.date) {
+              try {
+                isoDate = new Date(email.date).toISOString();
+              } catch (e) {
+                console.error('Error parsing date:', email.date);
+              }
+            }
+            
+            return {
+              message_id: String(email.uid || email.message_id),
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              from_email: typeof email.from === 'object' ? email.from.email : email.from,
+              to_email: typeof email.to === 'object' ? email.to.email : email.to,
+              cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
+              bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
+              subject: email.subject || '(No Subject)',
+              body_text: email.body_plain || email.body_text || null,
+              body_html: email.body_html || null,
+              data_ricezione: isoDate,
+              cartella: selectedFolder,
+              direzione: 'ricevuta',
+              stato: email.is_read || email.seen ? 'letto' : 'nuovo',
+              flags: email.flags || [],
+              attachments: email.attachments || [],
+            };
+          });
+          
+          const { error } = await supabase
+            .from('email_messages')
+            .upsert(emailsToInsert, { 
+              onConflict: 'message_id',
+              ignoreDuplicates: false 
+            });
+          
+          if (error) {
+            console.error('❌ Errore inserimento batch:', error);
+          } else {
+            syncedCount += missingEmails.length;
+            console.log(`✅ Batch ${page}/${totalPages}: +${missingEmails.length} email`);
+          }
+        }
+        
+        // Piccolo delay per non sovraccaricare il server
+        if (page < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
-      return { synced: missingEmails.length };
+      return { synced: syncedCount, total: totalEmails };
     },
     onSuccess: (data) => {
-      toast.success(`Sincronizzate ${data.synced} nuove email`);
+      if (data.synced > 0) {
+        toast.success(`Sincronizzate ${data.synced} nuove email su ${data.total} totali`);
+      } else {
+        toast.success('Database già sincronizzato');
+      }
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
     onError: (error) => {

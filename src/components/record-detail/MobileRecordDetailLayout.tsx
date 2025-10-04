@@ -372,7 +372,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
           {record.email && (
-            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-lg bg-blue-50">
+            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-lg">
               <Mail className="h-4 w-4 text-blue-600" />
               <div className="flex-1">
                 <div className="text-xs text-blue-600 mb-1">Email</div>

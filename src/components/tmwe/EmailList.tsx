@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -607,8 +606,8 @@ export const EmailList = ({
               <h3 className="font-semibold mb-2">Azioni Rapide</h3>
               <div className="space-y-2">
                 <Button 
-                  variant="default"
-                  className="w-full justify-start bg-blue-600 hover:bg-blue-700"
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={() => {
                     const idsToArchive = multiSelectMode && selectedEmailIds.size > 0
                       ? Array.from(selectedEmailIds)
@@ -616,7 +615,6 @@ export const EmailList = ({
                     
                     if (idsToArchive.length > 0) {
                       onBulkArchive?.(idsToArchive);
-                      toast.success(`${idsToArchive.length} email archiviate con successo`);
                       setShowActionsSheet(false);
                       setSelectedEmailIds(new Set());
                     }
@@ -628,8 +626,8 @@ export const EmailList = ({
                 
                 <div className="space-y-2">
                   <Button 
-                    variant="default"
-                    className="w-full justify-start bg-green-600 hover:bg-green-700"
+                    variant="outline" 
+                    className="w-full justify-start"
                     onClick={() => {
                       const idsToMove = multiSelectMode && selectedEmailIds.size > 0
                         ? Array.from(selectedEmailIds)
@@ -637,7 +635,6 @@ export const EmailList = ({
                       
                       if (idsToMove.length > 0) {
                         onBulkMoveToFolder?.(idsToMove, selectedDestinationFolder);
-                        toast.success(`${idsToMove.length} email spostate in ${selectedDestinationFolder}`);
                         setShowActionsSheet(false);
                         setSelectedEmailIds(new Set());
                       }
@@ -662,8 +659,8 @@ export const EmailList = ({
                 </div>
                 
                 <Button 
-                  variant="default"
-                  className="w-full justify-start bg-red-600 hover:bg-red-700"
+                  variant="outline" 
+                  className="w-full justify-start text-destructive hover:text-destructive"
                   onClick={() => {
                     const idsToDelete = multiSelectMode && selectedEmailIds.size > 0
                       ? Array.from(selectedEmailIds)
@@ -671,7 +668,6 @@ export const EmailList = ({
                     
                     if (idsToDelete.length > 0) {
                       onBulkDelete?.(idsToDelete);
-                      toast.success(`${idsToDelete.length} email eliminate`);
                       setShowActionsSheet(false);
                       setSelectedEmailIds(new Set());
                     }
@@ -700,10 +696,8 @@ export const EmailList = ({
                       return email?.from;
                     }).filter(Boolean);
                     console.log('Crea regola per mittenti:', selectedSenders);
-                    toast.info('Funzione regole in sviluppo');
                   } else {
                     console.log('Crea regola per:', selectedEmailForActions?.from);
-                    toast.info('Funzione regole in sviluppo');
                   }
                   setShowActionsSheet(false);
                 }}

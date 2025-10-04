@@ -217,7 +217,7 @@ export const EmailList = ({
                 ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
                 : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
+            selectedEmailIds.has(email.id) && 'ring-2 ring-yellow-500'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
@@ -357,7 +357,7 @@ export const EmailList = ({
                 ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
                 : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'ring-2 ring-primary'
+            selectedEmailIds.has(email.id) && 'ring-2 ring-yellow-500'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >

@@ -603,6 +603,83 @@ export const EmailList = ({
           </SheetHeader>
           <div className="mt-6 space-y-4">
             <div>
+              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    const idsToArchive = multiSelectMode && selectedEmailIds.size > 0
+                      ? Array.from(selectedEmailIds)
+                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                    
+                    if (idsToArchive.length > 0) {
+                      onBulkArchive?.(idsToArchive);
+                      setShowActionsSheet(false);
+                      setSelectedEmailIds(new Set());
+                    }
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archivia {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
+                </Button>
+                
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      const idsToMove = multiSelectMode && selectedEmailIds.size > 0
+                        ? Array.from(selectedEmailIds)
+                        : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                      
+                      if (idsToMove.length > 0) {
+                        onBulkMoveToFolder?.(idsToMove, selectedDestinationFolder);
+                        setShowActionsSheet(false);
+                        setSelectedEmailIds(new Set());
+                      }
+                    }}
+                  >
+                    <FolderInput className="mr-2 h-4 w-4" />
+                    Sposta in Cartella {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
+                  </Button>
+                  <Select value={selectedDestinationFolder} onValueChange={setSelectedDestinationFolder}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleziona cartella" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-[200]">
+                      <SelectItem value="INBOX">Inbox</SelectItem>
+                      <SelectItem value="Sent">Inviati</SelectItem>
+                      <SelectItem value="Drafts">Bozze</SelectItem>
+                      <SelectItem value="Spam">Spam</SelectItem>
+                      <SelectItem value="Trash">Cestino</SelectItem>
+                      <SelectItem value="Archive">Archivio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  onClick={() => {
+                    const idsToDelete = multiSelectMode && selectedEmailIds.size > 0
+                      ? Array.from(selectedEmailIds)
+                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                    
+                    if (idsToDelete.length > 0) {
+                      onBulkDelete?.(idsToDelete);
+                      setShowActionsSheet(false);
+                      setSelectedEmailIds(new Set());
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Elimina {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
+                </Button>
+              </div>
+            </div>
+            
+            <div>
               <h3 className="font-semibold mb-2">Regole Mittente</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Crea regole automatiche per le email da {multiSelectMode && selectedEmailIds.size > 0 
@@ -628,82 +705,6 @@ export const EmailList = ({
                 <Tag className="mr-2 h-4 w-4" />
                 Crea Nuova Regola
               </Button>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    const idsToArchive = multiSelectMode && selectedEmailIds.size > 0
-                      ? Array.from(selectedEmailIds)
-                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                    
-                    if (idsToArchive.length > 0) {
-                      onBulkArchive?.(idsToArchive);
-                      setShowActionsSheet(false);
-                      setSelectedEmailIds(new Set());
-                    }
-                  }}
-                >
-                  <Archive className="mr-2 h-4 w-4" />
-                  Archivia {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                </Button>
-                
-                <div className="space-y-2">
-                  <Select value={selectedDestinationFolder} onValueChange={setSelectedDestinationFolder}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleziona cartella" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-[200]">
-                      <SelectItem value="INBOX">Inbox</SelectItem>
-                      <SelectItem value="Sent">Inviati</SelectItem>
-                      <SelectItem value="Drafts">Bozze</SelectItem>
-                      <SelectItem value="Spam">Spam</SelectItem>
-                      <SelectItem value="Trash">Cestino</SelectItem>
-                      <SelectItem value="Archive">Archivio</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    onClick={() => {
-                      const idsToMove = multiSelectMode && selectedEmailIds.size > 0
-                        ? Array.from(selectedEmailIds)
-                        : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                      
-                      if (idsToMove.length > 0) {
-                        onBulkMoveToFolder?.(idsToMove, selectedDestinationFolder);
-                        setShowActionsSheet(false);
-                        setSelectedEmailIds(new Set());
-                      }
-                    }}
-                  >
-                    <FolderInput className="mr-2 h-4 w-4" />
-                    Sposta in {selectedDestinationFolder} {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                  </Button>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-destructive hover:text-destructive"
-                  onClick={() => {
-                    const idsToDelete = multiSelectMode && selectedEmailIds.size > 0
-                      ? Array.from(selectedEmailIds)
-                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
-                    
-                    if (idsToDelete.length > 0) {
-                      onBulkDelete?.(idsToDelete);
-                      setShowActionsSheet(false);
-                      setSelectedEmailIds(new Set());
-                    }
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Elimina {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
-                </Button>
-              </div>
             </div>
           </div>
         </SheetContent>

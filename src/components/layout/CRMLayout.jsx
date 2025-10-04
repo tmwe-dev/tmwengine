@@ -81,46 +81,44 @@ const CRMLayout = ({ children }) => {
         className={cn(
           "flex items-center justify-between relative",
           location.pathname !== '/attivita' && "border-b border-border",
-          isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
+          isMobile ? "h-16 px-2 py-2" : "h-28 px-4 lg:px-6 py-3"
         )}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden"
+            className={cn("lg:hidden", isMobile ? "h-9 w-9" : "")}
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           
-          <div className="flex items-center gap-2">
-            {isMobile ? (
-              // Mobile: mostra solo l'icona
-              (() => {
-                const currentNav = navigation.find(nav => isActive(nav.href));
-                const Icon = currentNav?.icon || Home;
-                return <Icon className="h-6 w-6 text-foreground" />;
-              })()
-            ) : (
-              // Desktop: mostra il nome
-              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
-              </h1>
-            )}
-          </div>
+          {isMobile && (
+            (() => {
+              const currentNav = navigation.find(nav => isActive(nav.href));
+              const Icon = currentNav?.icon || Home;
+              return <Icon className="h-5 w-5 text-foreground" />;
+            })()
+          )}
+          
+          {!isMobile && (
+            <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+            </h1>
+          )}
         </div>
 
         {/* Logo centrato */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
-          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
+          <img src={findairLogo} alt="FindAir Logo" className={cn("w-auto", isMobile ? "h-7" : "h-11")} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center", isMobile ? "gap-0" : "gap-2")}>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="mr-3">
-                <Search className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className={cn(isMobile ? "h-9 w-9" : "")}>
+                <Search className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80">
@@ -136,9 +134,9 @@ const CRMLayout = ({ children }) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
+              <Button variant="ghost" className={cn("flex items-center gap-2", isMobile ? "h-9 px-1" : "h-8 px-2")}>
+                <div className={cn("rounded-full flex items-center justify-center", isMobile ? "h-7 w-7" : "h-8 w-8")}>
+                  <span className={cn("text-white font-medium", isMobile ? "text-xs" : "text-sm")}>
                     {userEmail?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
@@ -147,7 +145,7 @@ const CRMLayout = ({ children }) => {
                     {userEmail?.split('@')[0] || 'Utente'}
                   </span>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                {!isMobile && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -180,7 +178,7 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-4rem)]" : "h-[calc(100vh-7rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'

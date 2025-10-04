@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 export const VoiceAgentWidget = () => {
   const { toast } = useToast();
   const [config, setConfig] = useState<{
-    elevenLabsApiKey: string;
     agentId: string;
     enabled: boolean;
   } | null>(null);
@@ -216,10 +215,10 @@ export const VoiceAgentWidget = () => {
   });
 
   const handleStartConversation = async () => {
-    if (!config?.elevenLabsApiKey || !config?.agentId) {
+    if (!config?.agentId) {
       toast({
         title: 'Configurazione mancante',
-        description: 'Configura l\'API Key e l\'Agent ID nelle impostazioni.',
+        description: 'Configura l\'Agent ID nelle impostazioni.',
         variant: 'destructive',
       });
       return;
@@ -229,24 +228,19 @@ export const VoiceAgentWidget = () => {
       // Richiedi permesso microfono
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Genera signed URL tramite API ElevenLabs
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${config.agentId}`,
-        {
-          method: 'GET',
-          headers: {
-            'xi-api-key': config.elevenLabsApiKey,
-          },
-        }
-      );
+      // Ottieni signed URL tramite edge function
+      const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
+        body: { agentId: config.agentId }
+      });
 
-      if (!response.ok) {
-        throw new Error('Impossibile ottenere URL firmato da ElevenLabs');
-      }
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Nessun signed URL ricevuto');
 
-      const { signed_url } = await response.json();
+      console.log('Starting conversation with signed URL');
       
-      await conversation.startSession({ url: signed_url });
+      await conversation.startSession({ 
+        signedUrl: data.signedUrl 
+      });
     } catch (error) {
       console.error('Error starting conversation:', error);
       toast({

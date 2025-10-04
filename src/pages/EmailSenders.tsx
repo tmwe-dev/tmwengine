@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,6 +45,8 @@ export default function EmailSenders() {
   const [currentSenderIndex, setCurrentSenderIndex] = useState(0);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [selectedActionType, setSelectedActionType] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | ''>('');
+  const [confirmChartGroupAssignment, setConfirmChartGroupAssignment] = useState(false);
+  const [confirmChartActionAssignment, setConfirmChartActionAssignment] = useState(false);
   const MONTHS_TO_SHOW = 12;
   const queryClient = useQueryClient();
 
@@ -329,8 +332,15 @@ export default function EmailSenders() {
   };
 
   // Assignment functions
+  const confirmAssignGroup = () => {
+    if (!selectedGroupId) return;
+    setConfirmChartGroupAssignment(true);
+  };
+
   const handleAssignGroup = async () => {
     if (!selectedGroupId || !currentChartSender) return;
+    
+    setConfirmChartGroupAssignment(false);
     
     await supabase
       .from('email_sender_rules')
@@ -353,8 +363,15 @@ export default function EmailSenders() {
     }
   };
 
+  const confirmAssignAction = () => {
+    if (!selectedActionType) return;
+    setConfirmChartActionAssignment(true);
+  };
+
   const handleAssignAction = async () => {
     if (!selectedActionType || !currentChartSender) return;
+    
+    setConfirmChartActionAssignment(false);
     
     await supabase
       .from('email_sender_actions')
@@ -810,7 +827,7 @@ export default function EmailSenders() {
                     </SelectContent>
                   </Select>
                   <Button 
-                    onClick={handleAssignGroup}
+                    onClick={confirmAssignGroup}
                     disabled={!selectedGroupId}
                     size="sm"
                     className="h-8 text-xs px-2"
@@ -834,7 +851,7 @@ export default function EmailSenders() {
                     </SelectContent>
                   </Select>
                   <Button 
-                    onClick={handleAssignAction}
+                    onClick={confirmAssignAction}
                     disabled={!selectedActionType}
                     size="sm"
                     className="h-8 text-xs px-2"
@@ -953,6 +970,38 @@ export default function EmailSenders() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Confirm Group Assignment Dialog */}
+        <AlertDialog open={confirmChartGroupAssignment} onOpenChange={setConfirmChartGroupAssignment}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma assegnazione gruppo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler assegnare il gruppo a questo mittente? L'operazione sovrascriverà eventuali assegnazioni precedenti.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAssignGroup}>Conferma</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm Action Assignment Dialog */}
+        <AlertDialog open={confirmChartActionAssignment} onOpenChange={setConfirmChartActionAssignment}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma assegnazione azione</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler assegnare questa azione automatica a questo mittente? L'operazione sovrascriverà eventuali azioni precedenti.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAssignAction}>Conferma</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

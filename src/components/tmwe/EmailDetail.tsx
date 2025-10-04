@@ -322,43 +322,34 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Center: Navigation and star */}
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-            className="flex-col h-auto py-3 px-4"
-          >
-            <ChevronLeft className="h-8 w-8 mb-1" />
-            <span className="text-xs">Precedente</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            onClick={onNext}
-            disabled={!hasNext}
-            className="flex-col h-auto py-3 px-4"
-          >
-            <ChevronRight className="h-8 w-8 mb-1" />
-            <span className="text-xs">Successiva</span>
-          </Button>
-          <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
-            <Star className="h-8 w-8 mb-1" />
-            <span className="text-xs">Preferito</span>
-          </Button>
-        </div>
-
-        {/* Right: Forward, Rules and delete */}
-        <div className="flex gap-3 items-center">
-          <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Forward className="h-8 w-8" />
-              <Megaphone className="h-6 w-6" />
-            </div>
-            <span className="text-xs">Inoltra</span>
-          </Button>
+        {/* Center: Navigation, star and rules */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              onClick={onPrevious}
+              disabled={!hasPrevious}
+              className="flex-col h-auto py-3 px-4"
+            >
+              <ChevronLeft className="h-8 w-8 mb-1" />
+              <span className="text-xs">Precedente</span>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              onClick={onNext}
+              disabled={!hasNext}
+              className="flex-col h-auto py-3 px-4"
+            >
+              <ChevronRight className="h-8 w-8 mb-1" />
+              <span className="text-xs">Successiva</span>
+            </Button>
+            <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
+              <Star className="h-8 w-8 mb-1" />
+              <span className="text-xs">Preferito</span>
+            </Button>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
@@ -366,7 +357,7 @@ export const EmailDetail = ({
                 <span className="text-xs">Regole</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="center" className="w-56">
               {senderGroups.map((group) => (
                 <DropdownMenuItem
                   key={group.id}
@@ -420,6 +411,17 @@ export const EmailDetail = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* Right: Forward and delete */}
+        <div className="flex gap-3 items-center">
+          <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Forward className="h-8 w-8" />
+              <Megaphone className="h-6 w-6" />
+            </div>
+            <span className="text-xs">Inoltra</span>
+          </Button>
           
           {onDelete && (
             <Button variant="destructive" size="lg" onClick={onDelete} className="flex-col h-auto py-3 px-4">

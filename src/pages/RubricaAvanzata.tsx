@@ -614,7 +614,7 @@ export default function RubricaAvanzata() {
     <div className={cn("space-y-2", isMobile && "space-y-1")}>
 
       {/* Search Field - Always Visible */}
-      <Card className="border-card shadow-soft">
+      <Card className="border-card shadow-soft bg-card-transparent">
         <CardContent className={cn(isMobile ? "p-2" : "p-4")}>
           <div className="flex items-center gap-3">
             {/* Counter - Mobile */}
@@ -805,7 +805,7 @@ export default function RubricaAvanzata() {
           {/* Sort Dropdown - Center */}
           {viewingRecords.length > 0 && (
             <div className="flex justify-center">
-              <Card className="border-card shadow-soft w-fit">
+              <Card className="border-card shadow-soft w-fit bg-card-transparent">
                 <CardContent className="p-2">
                   <div className="flex items-center gap-2">
                     {/* Create Activity button - only show when contacts are selected */}
@@ -887,13 +887,13 @@ export default function RubricaAvanzata() {
           )}
 
           {loadingAllRecords ? (
-            <Card className="border-card shadow-soft">
+            <Card className="border-card shadow-soft bg-card-transparent">
               <CardContent className="flex items-center justify-center h-32 p-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </CardContent>
             </Card>
           ) : viewingRecords.length === 0 ? (
-            <Card className="border-card shadow-soft">
+            <Card className="border-card shadow-soft bg-card-transparent">
               <CardContent className="text-center py-12 text-text-secondary">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">Nessun contatto trovato</h3>
@@ -906,7 +906,7 @@ export default function RubricaAvanzata() {
              <>
            {/* Mobile Controls */}
                  {viewingRecords.length > 0 && (
-                   <Card className="border-card shadow-soft">
+                   <Card className="border-card shadow-soft bg-card-transparent">
                     <CardContent className="p-1.5 space-y-1 mb-4">
                       {/* Checkbox Seleziona tutto */}
                       <div className="flex items-center justify-between px-4">
@@ -952,7 +952,7 @@ export default function RubricaAvanzata() {
                 
                 {/* Mobile Pagination - Top */}
                 {totalPages > 1 && (
-                  <Card className="border-card shadow-soft">
+                  <Card className="border-card shadow-soft bg-card-transparent">
                     <CardContent className="p-2">
                       <div className="flex flex-col gap-1">
                         <div className="text-xs text-text-secondary text-center">
@@ -1022,7 +1022,7 @@ export default function RubricaAvanzata() {
 
            {/* Mobile Pagination */}
            {totalPages > 1 && (
-             <Card className="border-card shadow-soft">
+             <Card className="border-card shadow-soft bg-card-transparent">
                <CardContent className="p-2">
                   <div className="flex flex-col gap-1">
                     <div className="text-xs text-text-secondary text-center">
@@ -1057,7 +1057,7 @@ export default function RubricaAvanzata() {
         </div>
       ) : (
         /* Desktop Table Layout */
-        <Card className="border-card shadow-soft">
+        <Card className="border-card shadow-soft bg-card-transparent">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">

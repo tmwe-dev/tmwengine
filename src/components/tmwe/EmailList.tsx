@@ -463,6 +463,22 @@ export const EmailList = ({
               </Label>
             </div>
 
+            {multiSelectMode && selectedEmailIds.size > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1"
+                onClick={() => {
+                  const selectedEmails = filteredEmails.filter(e => selectedEmailIds.has(e.id));
+                  setSelectedEmailForActions(selectedEmails[0]); // temporary, will show all
+                  setShowActionsSheet(true);
+                }}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                Regole ({selectedEmailIds.size})
+              </Button>
+            )}
+
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
@@ -566,21 +582,51 @@ export const EmailList = ({
           <SheetHeader>
             <SheetTitle>Azioni e Regole</SheetTitle>
             <SheetDescription>
-              Gestisci azioni e regole per: {selectedEmailForActions?.from}
+              {multiSelectMode && selectedEmailIds.size > 0 ? (
+                <>
+                  Gestisci regole per {selectedEmailIds.size} mittenti selezionati:
+                  <div className="mt-2 space-y-1">
+                    {Array.from(selectedEmailIds).slice(0, 3).map(id => {
+                      const email = emails.find(e => e.id === id);
+                      return email ? (
+                        <div key={id} className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                          {email.from}
+                        </div>
+                      ) : null;
+                    })}
+                    {selectedEmailIds.size > 3 && (
+                      <div className="text-xs text-muted-foreground">
+                        ...e altri {selectedEmailIds.size - 3}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                `Gestisci azioni e regole per: ${selectedEmailForActions?.from}`
+              )}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-4">
             <div>
               <h3 className="font-semibold mb-2">Regole Mittente</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Crea regole automatiche per le email da questo mittente
+                Crea regole automatiche per le email da {multiSelectMode && selectedEmailIds.size > 0 
+                  ? `questi ${selectedEmailIds.size} mittenti` 
+                  : 'questo mittente'}
               </p>
               <Button 
                 variant="outline" 
                 className="w-full"
                 onClick={() => {
-                  console.log('Crea regola per:', selectedEmailForActions?.from);
-                  // TODO: Implementare creazione regola
+                  if (multiSelectMode && selectedEmailIds.size > 0) {
+                    const selectedSenders = Array.from(selectedEmailIds).map(id => {
+                      const email = emails.find(e => e.id === id);
+                      return email?.from;
+                    }).filter(Boolean);
+                    console.log('Crea regola per mittenti:', selectedSenders);
+                  } else {
+                    console.log('Crea regola per:', selectedEmailForActions?.from);
+                  }
                   setShowActionsSheet(false);
                 }}
               >
@@ -595,8 +641,12 @@ export const EmailList = ({
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => {
-                    if (selectedEmailForActions) {
-                      onBulkArchive?.([selectedEmailForActions.id]);
+                    const idsToArchive = multiSelectMode && selectedEmailIds.size > 0
+                      ? Array.from(selectedEmailIds)
+                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                    
+                    if (idsToArchive.length > 0) {
+                      onBulkArchive?.(idsToArchive);
                       setShowActionsSheet(false);
                     }
                   }}
@@ -608,8 +658,7 @@ export const EmailList = ({
                   variant="outline" 
                   className="w-full justify-start"
                   onClick={() => {
-                    console.log('Sposta in cartella:', selectedEmailForActions?.id);
-                    // TODO: Implementare spostamento cartella
+                    console.log('Sposta in cartella');
                     setShowActionsSheet(false);
                   }}
                 >
@@ -620,8 +669,12 @@ export const EmailList = ({
                   variant="outline" 
                   className="w-full justify-start text-destructive hover:text-destructive"
                   onClick={() => {
-                    if (selectedEmailForActions) {
-                      onBulkDelete?.([selectedEmailForActions.id]);
+                    const idsToDelete = multiSelectMode && selectedEmailIds.size > 0
+                      ? Array.from(selectedEmailIds)
+                      : selectedEmailForActions ? [selectedEmailForActions.id] : [];
+                    
+                    if (idsToDelete.length > 0) {
+                      onBulkDelete?.(idsToDelete);
                       setShowActionsSheet(false);
                     }
                   }}

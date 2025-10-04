@@ -614,7 +614,7 @@ export default function RubricaAvanzata() {
     <div 
       className={cn("space-y-2", isMobile && "space-y-1")}
       style={{
-        backgroundImage: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(192, 132, 252, 0.05) 100%)'
+        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%)'
       }}
     >
 

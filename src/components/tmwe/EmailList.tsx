@@ -495,7 +495,10 @@ export const EmailList = ({
               <Switch
                 id="unread-only"
                 checked={showUnreadOnly}
-                onCheckedChange={setShowUnreadOnly}
+                onCheckedChange={(checked) => {
+                  setShowUnreadOnly(checked);
+                  if (selectedEmailId) onEmailSelect('');
+                }}
                 className="data-[state=checked]:bg-orange-400/30"
               />
               <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
@@ -506,7 +509,10 @@ export const EmailList = ({
               <Switch
                 id="multi-select"
                 checked={multiSelectMode}
-                onCheckedChange={setMultiSelectMode}
+                onCheckedChange={(checked) => {
+                  setMultiSelectMode(checked);
+                  if (selectedEmailId) onEmailSelect('');
+                }}
               />
               <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
                 Selezione multipla

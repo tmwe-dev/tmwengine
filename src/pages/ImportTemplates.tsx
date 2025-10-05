@@ -2944,6 +2944,125 @@ export default function ImportTemplates() {
             </div>
            )}
           
+          {/* Mobile Actions */}
+          {isMobile && filteredRecords.length > 0 && (
+            <div className="space-y-3 py-3">
+              {/* Mobile Selection Controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                   <Checkbox
+                     checked={(() => {
+                       // Controlla se tutti i record della pagina corrente sono selezionati
+                       const currentPageIndexes = [];
+                       for (let i = 0; i < viewingRecords.length; i++) {
+                         const actualIndex = currentPage * recordsPerPage + i;
+                         currentPageIndexes.push(actualIndex);
+                       }
+                       return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                     })()}
+                     onCheckedChange={toggleSelectAll}
+                     aria-label="Seleziona tutti della pagina"
+                   />
+                   <span className="text-sm">
+                     Seleziona pagina ({viewingRecords.length})
+                   </span>
+                </div>
+                {selectedRecords.size > 0 && (
+                   <span className="text-sm font-medium text-white bg-blue-500 px-2 py-1 rounded">
+                     {selectedRecords.size} selezionati
+                   </span>
+                )}
+              </div>
+              
+              {/* Mobile Action Buttons as Icons */}
+              {selectedRecords.size > 0 && (
+                 <div className="flex items-center justify-between">
+                   {/* Icona multipla all'estrema sinistra */}
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={() => setShowMultipleActivityDialog(true)}
+                           className="p-2"
+                         >
+                           <FileText className="h-4 w-4 text-blue-500" />
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent>
+                         <p>Crea attività multiple</p>
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+
+                   {/* Bottone centrale */}
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={importSelectedRecords}
+                           className="p-2"
+                         >
+                           <Database className="h-4 w-4 text-green-500" />
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent>
+                         <p>Importa in rubrica</p>
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+
+                   {/* Cestino all'estrema destra */}
+                   <TooltipProvider>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={deleteSelectedRecords}
+                           className="p-2"
+                         >
+                           <Trash2 className="h-4 w-4 text-red-500" />
+                         </Button>
+                       </TooltipTrigger>
+                       <TooltipContent>
+                         <p>Elimina selezionati</p>
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+                 </div>
+              )}
+              
+              {/* Mobile Pagination */}
+              <div className="flex justify-center">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm px-3 py-1 bg-muted rounded">
+                    {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                    disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
@@ -3296,152 +3415,36 @@ export default function ImportTemplates() {
                       </span>
                     )}
                   </div>
-                  
-                   {/* Mobile Actions */}
-                   {isMobile ? (
-                     <div className="space-y-3">
-                       {/* Mobile Selection Controls */}
-                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                            <Checkbox
-                              checked={(() => {
-                                // Controlla se tutti i record della pagina corrente sono selezionati
-                                const currentPageIndexes = [];
-                                for (let i = 0; i < viewingRecords.length; i++) {
-                                  const actualIndex = currentPage * recordsPerPage + i;
-                                  currentPageIndexes.push(actualIndex);
-                                }
-                                return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
-                              })()}
-                              onCheckedChange={toggleSelectAll}
-                              aria-label="Seleziona tutti della pagina"
-                            />
-                            <span className="text-sm">
-                              Seleziona pagina ({viewingRecords.length})
-                            </span>
-                         </div>
-                         {selectedRecords.size > 0 && (
-                            <span className="text-sm font-medium text-white bg-blue-500 px-2 py-1 rounded">
-                              {selectedRecords.size} selezionati
-                            </span>
-                         )}
-                       </div>
-                       
-                       {/* Mobile Action Buttons as Icons */}
-                       {selectedRecords.size > 0 && (
-                          <div className="flex items-center justify-between">
-                            {/* Icona multipla all'estrema sinistra */}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setShowMultipleActivityDialog(true)}
-                                    className="p-2"
-                                  >
-                                    <FileText className="h-4 w-4 text-blue-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Crea attività multiple</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            {/* Bottone centrale */}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={importSelectedRecords}
-                                    className="p-2"
-                                  >
-                                    <Database className="h-4 w-4 text-green-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Importa in rubrica</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            {/* Cestino all'estrema destra */}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={deleteSelectedRecords}
-                                    className="p-2"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Elimina selezionati</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                       )}
-                       
-                       {/* Mobile Pagination */}
-                       <div className="flex justify-center">
-                         <div className="flex items-center gap-2">
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                             disabled={currentPage === 0}
-                           >
-                             <ChevronLeft className="h-4 w-4" />
-                           </Button>
-                           <span className="text-sm px-3 py-1 bg-muted rounded">
-                             {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                           </span>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                             disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                           >
-                             <ChevronRight className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       </div>
-                     </div>
-                   ) : (
-                     /* Desktop Pagination */
-                     <div className="flex items-center gap-2">
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                         disabled={currentPage === 0}
-                       >
-                         <ChevronLeft className="h-4 w-4" />
-                         Precedente
-                       </Button>
-                       <span className="text-sm px-3 py-1 bg-muted rounded">
-                         Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                       </span>
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                         disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                       >
-                         Successivo
-                         <ChevronRight className="h-4 w-4" />
-                       </Button>
-                     </div>
-                   )}
-                 </div>
-                 </div>
+                   
+                    {/* Desktop Actions - keep existing */}
+                    {!isMobile && (
+                      /* Desktop Pagination */
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Precedente
+                        </Button>
+                        <span className="text-sm px-3 py-1 bg-muted rounded">
+                          Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                          disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                        >
+                          Successivo
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                   </div>
+                  </div>
                ) : (
                  <div className="text-center py-8">
                    <p className="text-muted-foreground">Nessun record trovato in questa importazione.</p>

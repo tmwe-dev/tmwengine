@@ -2323,7 +2323,7 @@ export default function ImportTemplates() {
                     {importLogs.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell>
-                          {new Date(log.created_at).toLocaleDateString()}
+                          {new Date(log.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                         </TableCell>
                         <TableCell>{log.file_name}</TableCell>
                         <TableCell className="text-center">{getStatusBadge(log.stato)}</TableCell>

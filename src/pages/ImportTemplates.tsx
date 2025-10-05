@@ -2954,7 +2954,11 @@ export default function ImportTemplates() {
                      aria-label="Seleziona tutti della pagina"
                    />
                    <span className="text-sm">
-                     Seleziona pagina ({viewingRecords.length})
+                     {viewingRecords.length < 50 ? (
+                       <>Seleziona pagina (<span className="font-bold text-primary">{viewingRecords.length}</span>)</>
+                     ) : (
+                       "Seleziona full page"
+                     )}
                    </span>
                 </div>
                 {selectedRecords.size > 0 && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CallDialog } from '@/components/attivita/CallDialog';
 import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ export function GestisciAttivitaDialog({
   const [showHistory, setShowHistory] = useState(false);
   const [showUpdateCompanyDialog, setShowUpdateCompanyDialog] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<Partial<Activity> | null>(null);
+  const [showCallDialog, setShowCallDialog] = useState(false);
 
   React.useEffect(() => {
     if (activity) {
@@ -227,7 +229,11 @@ export function GestisciAttivitaDialog({
                     </Select>
                   </div>
                   
-                  <div className="flex items-center justify-center w-9 h-9 text-2xl">
+                  <div 
+                    className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
+                    onClick={() => setShowCallDialog(true)}
+                    title="Contatta"
+                  >
                     {getActivityIcon(activity.tipo)}
                   </div>
                 </div>
@@ -424,6 +430,23 @@ export function GestisciAttivitaDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Call Dialog */}
+      <CallDialog
+        isOpen={showCallDialog}
+        onClose={() => setShowCallDialog(false)}
+        contact={{
+          id: activity.rubrica_id,
+          nome: activity.rubrica_nome,
+          azienda: activity.rubrica_nome,
+          telefono: formData.telefono || activity.telefono || '',
+          cellulare: formData.cellulare || activity.cellulare || ''
+        }}
+        onSave={(contactId, telefono, cellulare) => {
+          setFormData(prev => ({ ...prev, telefono, cellulare }));
+          setShowCallDialog(false);
+        }}
+      />
     </Dialog>
   );
 }

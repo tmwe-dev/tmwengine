@@ -10,10 +10,16 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
 
   useEffect(() => {
     if (currentPage < previousPage.current) {
-      // Going backward - trigger animation
+      // Going backward - play video normally
+      setDirection('backward');
+      setIsAnimating(true);
+    } else if (currentPage > previousPage.current) {
+      // Going forward - play video in reverse
+      setDirection('forward');
       setIsAnimating(true);
     }
     
@@ -23,14 +29,32 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   // Separate effect to play video when it's mounted
   useEffect(() => {
     if (isAnimating && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = 6; // 6x speed
-      videoRef.current.play();
+      const video = videoRef.current;
+      
+      if (direction === 'backward') {
+        // Play forward from start
+        video.currentTime = 0;
+        video.playbackRate = 6;
+        video.play();
+      } else {
+        // Play backward from end
+        video.currentTime = video.duration || 4; // fallback to 4 seconds if duration not loaded
+        video.playbackRate = -6; // negative = reverse
+        video.play();
+      }
     }
-  }, [isAnimating]);
+  }, [isAnimating, direction]);
 
   const handleVideoEnd = () => {
     setIsAnimating(false);
+  };
+
+  // Handle reverse playback reaching start
+  const handleTimeUpdate = () => {
+    if (videoRef.current && direction === 'forward' && videoRef.current.currentTime <= 0) {
+      videoRef.current.pause();
+      setIsAnimating(false);
+    }
   };
 
   return (
@@ -43,6 +67,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
           ref={videoRef}
           src={libroVideo}
           onEnded={handleVideoEnd}
+          onTimeUpdate={handleTimeUpdate}
           className="max-w-full max-h-full object-contain"
           style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
           muted

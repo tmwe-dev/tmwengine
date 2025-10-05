@@ -315,11 +315,11 @@ export function GestisciAttivitaDialog({
                   </div>
                 </div>
                 
-                {/* Icona contatta allineata con cellulare */}
-                <div className="flex items-end pb-0">
+                {/* Icona contatta centrata nella sezione destra */}
+                <div className="flex-1 flex items-center justify-center">
                   <div 
                     className={cn(
-                      "flex items-center justify-center w-12 h-12 text-3xl cursor-pointer hover:bg-accent/50 rounded transition-colors",
+                      "flex items-center justify-center w-16 h-16 text-4xl cursor-pointer hover:bg-accent/50 rounded transition-colors",
                       formData.cellulare && "text-green-600"
                     )}
                     onClick={() => setShowCallDialog(true)}

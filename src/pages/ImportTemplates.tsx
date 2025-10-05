@@ -2424,8 +2424,46 @@ export default function ImportTemplates() {
             {isMobile ? (
               /* Mobile Header - Compact */
               <div className="space-y-3">
-                {/* Mobile Title Only */}
+                {/* Mobile Title */}
                 <DialogTitle>Record Importati</DialogTitle>
+                
+                {/* Active Filters Badges - Centered */}
+                {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                  <div className="flex flex-wrap justify-center items-center gap-1">
+                    {searchQuery && (
+                      <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                        🔍 {searchQuery}
+                        <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setSearchQuery('')}>
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </Badge>
+                    )}
+                    {originFilter && (
+                      <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                        📂 {originFilter}
+                        <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setOriginFilter('')}>
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </Badge>
+                    )}
+                    {countryFilter && (
+                      <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                        🌍 {getCountryFullName(countryFilter)}
+                        <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setCountryFilter('')}>
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </Badge>
+                    )}
+                    {hasNotesFilter && (
+                      <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                        📝 Con note
+                        <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               /* Desktop Header - Original */
@@ -2943,7 +2981,7 @@ export default function ImportTemplates() {
           
           {/* Mobile Filters Button - Above Cards */}
           {isMobile && (
-            <div className="flex justify-end items-start gap-2 pb-2">
+            <div className="flex justify-end pb-2">
               <Dialog open={showFilters} onOpenChange={setShowFilters}>
                 <DialogTrigger asChild>
                   <Button
@@ -3051,44 +3089,6 @@ export default function ImportTemplates() {
                   </div>
                 </DialogContent>
               </Dialog>
-              
-              {/* Active Filters Badges */}
-              {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                <div className="flex flex-wrap items-start gap-1">
-                  {searchQuery && (
-                    <Badge variant="secondary" className="text-[10px] h-6 px-2">
-                      🔍 {searchQuery}
-                      <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setSearchQuery('')}>
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {originFilter && (
-                    <Badge variant="secondary" className="text-[10px] h-6 px-2">
-                      📂 {originFilter}
-                      <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setOriginFilter('')}>
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {countryFilter && (
-                    <Badge variant="secondary" className="text-[10px] h-6 px-2">
-                      🌍 {getCountryFullName(countryFilter)}
-                      <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setCountryFilter('')}>
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </Badge>
-                  )}
-                  {hasNotesFilter && (
-                    <Badge variant="secondary" className="text-[10px] h-6 px-2">
-                      📝 Con note
-                      <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </Badge>
-                  )}
-                </div>
-              )}
             </div>
           )}
           

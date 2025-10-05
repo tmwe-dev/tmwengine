@@ -39,7 +39,7 @@ export function CompactContactCard({
       "hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border-purple-500/30",
       isSelected && "ring-2 ring-purple-500 border-purple-500/40 from-purple-500/20 via-purple-500/10 via-35% to-transparent"
     )}>
-      <CardContent className="p-3 mt-1.5">
+      <CardContent className="p-3 -mt-[8.5px]">
         <div className="flex items-center gap-2">
           {/* Checkbox e numero record */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0">

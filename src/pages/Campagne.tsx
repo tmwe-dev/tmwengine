@@ -267,46 +267,6 @@ export default function Campagne() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-card-transparent border-card shadow-soft">
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-text-primary">{stats.totali}</div>
-            <div className="text-small text-text-secondary">Totali</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card-transparent border-card shadow-soft">
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-green-600">{stats.attive}</div>
-            <div className="text-small text-text-secondary">Attive</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card-transparent border-card shadow-soft">
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-orange-600">{stats.in_pausa}</div>
-            <div className="text-small text-text-secondary">In Pausa</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card-transparent border-card shadow-soft">
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-blue-600">{stats.completate}</div>
-            <div className="text-small text-text-secondary">Completate</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card-transparent border-card shadow-soft">
-          <CardContent className="p-4 text-center">
-            <div className="text-heading-3 font-bold text-text-primary">
-              €{stats.budget_totale.toLocaleString('it-IT')}
-            </div>
-            <div className="text-small text-text-secondary">Budget Totale</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Campaigns List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredCampaigns.length === 0 ? (

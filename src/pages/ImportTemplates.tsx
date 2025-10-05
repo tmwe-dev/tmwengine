@@ -3005,14 +3005,6 @@ export default function ImportTemplates() {
                    <span className="text-sm">
                      Seleziona pagina ({viewingRecords.length})
                    </span>
-                   {selectedRecords.size > 0 && (
-                     <span 
-                       className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded ml-2 cursor-pointer hover:bg-blue-600"
-                       onClick={() => setSelectedRecords(new Set())}
-                     >
-                       {selectedRecords.size}
-                     </span>
-                   )}
                  </div>
                 )}
               </div>
@@ -3426,6 +3418,17 @@ export default function ImportTemplates() {
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
                       <div className="flex flex-col items-center border-t">
+                        {/* Selected Records Badge */}
+                        {selectedRecords.size > 0 && (
+                          <div className="w-full flex justify-center py-2">
+                            <span 
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600"
+                              onClick={() => setSelectedRecords(new Set())}
+                            >
+                              {selectedRecords.size}
+                            </span>
+                          </div>
+                        )}
                         {/* Animated Book */}
                         <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
                         

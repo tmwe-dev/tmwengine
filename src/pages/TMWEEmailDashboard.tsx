@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database } from 'lucide-react';
+import { Database, MessageSquare, Brain } from 'lucide-react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
@@ -598,27 +598,61 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center gap-2">
-            {/* Mobile Email Count Badge - transparent background */}
-            {isMobile && (
-              <div className="flex items-center gap-1 shrink-0">
-                <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
-              </div>
-            )}
+          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {/* Mobile Email Count Badge - transparent background */}
+              {isMobile && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
+                </div>
+              )}
+              
+              <EmailSenderFilter
+                emails={emailsToUse}
+                selectedSender={selectedSender}
+                onSenderSelect={setSelectedSender}
+                onOpenAIChat={(senderEmail) => {
+                  setSelectedAIChatSender(senderEmail);
+                  setAiChatOpen(true);
+                }}
+              />
+              {selectedSender && !isMobile && (
+                <div className="flex-1 text-sm text-muted-foreground">
+                  Mostrando {emails.length} email da <strong>{selectedSender}</strong>
+                </div>
+              )}
+            </div>
             
-            <EmailSenderFilter
-              emails={emailsToUse}
-              selectedSender={selectedSender}
-              onSenderSelect={setSelectedSender}
-              onOpenAIChat={(senderEmail) => {
-                setSelectedAIChatSender(senderEmail);
-                setAiChatOpen(true);
-              }}
-            />
-            {selectedSender && (
-              <div className="flex-1 text-sm text-muted-foreground">
-                Mostrando {emails.length} email da <strong>{selectedSender}</strong>
+            {/* Right aligned icons for mobile */}
+            {isMobile && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    // TODO: Open prompt dialog
+                    toast.info('Prompt AI in sviluppo');
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    if (selectedSender) {
+                      setSelectedAIChatSender(selectedSender);
+                      setAiChatOpen(true);
+                    } else {
+                      toast.info('Seleziona un mittente prima');
+                    }
+                  }}
+                >
+                  <Brain className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>

@@ -343,7 +343,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-2 py-2 px-2 sm:px-4 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -374,8 +374,8 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-2 sm:p-4 relative">
-              <div className="flex items-start justify-between gap-2 sm:gap-4 h-full min-w-0">
+            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative">
+              <div className="flex items-start justify-between gap-1.5 sm:gap-2 md:gap-4 h-full min-w-0">
                 <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -65,6 +65,7 @@ const Chat = () => {
   } | null>(null);
   const [showConversations, setShowConversations] = useState(true);
   const [selectedTab, setSelectedTab] = useState('prompts');
+  const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -606,7 +607,7 @@ const Chat = () => {
         </div>
 
         {/* Area Chat Principale */}
-        <div className={`order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full overflow-hidden min-h-0' : 'xl:col-span-3 space-y-6'}`}>
+        <div className={`order-1 xl:order-2 ${shouldHideHeader ? `col-span-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full overflow-hidden min-h-0 transition-all duration-300` : 'xl:col-span-3 space-y-6'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
             <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
@@ -746,6 +747,20 @@ const Chat = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* Toggle Button - Solo mobile */}
+          {shouldHideHeader && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm border-2 border-primary/30 hover:border-primary shadow-lg hover:shadow-primary/20 transition-all duration-300"
+              >
+                <ArrowUpDown className="h-5 w-5 text-primary" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

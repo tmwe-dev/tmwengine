@@ -768,6 +768,10 @@ const Chat = () => {
                             : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
                         }`}
                       >
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <span>{new Date(message.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
+                          <span>{new Date(message.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
                         <div 
                           className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                           dangerouslySetInnerHTML={{ 

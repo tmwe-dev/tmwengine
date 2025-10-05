@@ -21,9 +21,9 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       setGifKey(prev => prev + 1);
       
       setTimeout(() => {
-        console.log('AnimatedBook - Hiding GIF after 2s');
+        console.log('AnimatedBook - Hiding GIF after 1s');
         setShowGif(false);
-      }, 2000);
+      }, 1000);
     }
     
     previousPage.current = currentPage;

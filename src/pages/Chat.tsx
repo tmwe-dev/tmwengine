@@ -70,10 +70,12 @@ const Chat = () => {
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll verso il basso quando cambiano i messaggi
+  // Auto-scroll verso il basso quando cambiano i messaggi (solo se layout non invertito)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!isLayoutInverted) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLayoutInverted]);
 
   // Carica system prompts
   useEffect(() => {
@@ -623,9 +625,9 @@ const Chat = () => {
                   </CardTitle>
                 </CardHeader>
               )}
-              <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
+              <CardContent className={`overflow-y-auto ${shouldHideHeader ? `flex-1 px-3 py-3 min-h-0 ${isLayoutInverted ? 'flex flex-col-reverse' : ''}` : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
                 <div className={shouldHideHeader ? 'space-y-3' : ''}>
-                  {(isLayoutInverted && shouldHideHeader ? [...messages].reverse() : messages).map((message) => (
+                  {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex items-start gap-3 ${shouldHideHeader ? 'mb-3' : ''} ${
@@ -660,6 +662,7 @@ const Chat = () => {
                     </div>
                   ))}
                 </div>
+                {!isLayoutInverted && <div ref={messagesEndRef} />}
                 <div ref={messagesEndRef} />
               </CardContent>
             </Card>

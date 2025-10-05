@@ -48,7 +48,7 @@ export function CompactContactCard({
               onCheckedChange={(checked) => onSelect(index, !!checked)}
               className="h-4 w-4"
             />
-            <span className="text-xs font-medium text-primary">#{index + 1}</span>
+            <span className="text-xs font-medium text-white">#{index + 1}</span>
           </div>
           
           {/* Contenuto principale ultra-compatto */}

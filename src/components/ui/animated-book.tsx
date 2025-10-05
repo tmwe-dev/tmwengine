@@ -18,10 +18,10 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       setIsAnimating(true);
       setGifKey(prev => prev + 1);
       
-      // Wait for GIF to complete (adjust time based on actual GIF duration)
+      // Wait for GIF to complete (4 seconds)
       setTimeout(() => {
         setIsAnimating(false);
-      }, 2000); // 2 seconds - adjust this based on your GIF duration
+      }, 4000);
     }
     
     previousPage.current = currentPage;

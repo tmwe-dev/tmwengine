@@ -123,7 +123,7 @@ export function ImportLogMobileCard({
               variant="ghost"
               size="sm"
               onClick={onDelete}
-              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full ml-auto"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>

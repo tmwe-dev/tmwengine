@@ -177,13 +177,13 @@ export function GestisciAttivitaDialog({
               {activity.rubrica_nome && (
                 <div className="text-base text-muted-foreground mt-0.5 text-center">
                   {activity.rubrica_nome}
+                  {/* Data creazione sotto il nome */}
+                  <div className="text-xs text-blue-600 font-medium mt-1">
+                    Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
+                    {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
+                  </div>
                 </div>
               )}
-              {/* Data creazione sotto il titolo - solo su desktop */}
-              <div className="text-xs text-blue-600 font-medium mt-1 hidden md:block">
-                Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
-                {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
-              </div>
             </div>
           </DialogTitle>
         </DialogHeader>

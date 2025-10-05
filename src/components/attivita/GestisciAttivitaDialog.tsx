@@ -196,6 +196,44 @@ export function GestisciAttivitaDialog({
             </TabsList>
             
             <TabsContent value="dettagli" className="space-y-4 mt-4">
+              {/* Stato e Priorità */}
+              <div className="flex gap-3">
+                <div className="w-32">
+                  <Label htmlFor="stato" className="text-sm">Stato</Label>
+                  <Select 
+                    value={formData.stato} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aperta">Aperta</SelectItem>
+                      <SelectItem value="in_corso">In Corso</SelectItem>
+                      <SelectItem value="completata">Completata</SelectItem>
+                      <SelectItem value="annullata">Annullata</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-32">
+                  <Label htmlFor="priorita" className="text-sm">Priorità</Label>
+                  <Select 
+                    value={formData.priorita} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="bassa">Bassa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
               {/* Scadenza */}
               <div>
                 <Label className="text-sm">Scadenza</Label>
@@ -245,45 +283,10 @@ export function GestisciAttivitaDialog({
             </TabsContent>
             
             <TabsContent value="altro" className="space-y-4 mt-4">
-              {/* Stato e Priorità */}
-              <div className="flex gap-3">
-                <div className="w-32">
-                  <Label htmlFor="stato" className="text-sm">Stato</Label>
-                  <Select 
-                    value={formData.stato} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="aperta">Aperta</SelectItem>
-                      <SelectItem value="in_corso">In Corso</SelectItem>
-                      <SelectItem value="completata">Completata</SelectItem>
-                      <SelectItem value="annullata">Annullata</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="w-32">
-                  <Label htmlFor="priorita" className="text-sm">Priorità</Label>
-                  <Select 
-                    value={formData.priorita} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="bassa">Bassa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
+              {/* Icona contatta */}
+              <div className="flex justify-center">
                 <div 
-                  className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
+                  className="flex items-center justify-center w-12 h-12 text-3xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
                   onClick={() => setShowCallDialog(true)}
                   title="Contatta"
                 >

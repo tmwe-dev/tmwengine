@@ -54,7 +54,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
         <img
           src={libroStatic}
           alt="Book"
-          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          className="max-w-full max-h-full object-contain absolute inset-0 m-auto transition-opacity duration-100"
           style={{ 
             transform: 'perspective(1000px) rotateX(20deg)',
             opacity: !isAnimating ? 1 : 0
@@ -64,7 +64,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
           ref={videoBackwardRef}
           src={libroVideo}
           onEnded={handleVideoEnd}
-          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          className="max-w-full max-h-full object-contain absolute inset-0 m-auto transition-opacity duration-100"
           style={{ 
             transform: 'perspective(1000px) rotateX(20deg)',
             opacity: direction === 'backward' && isAnimating ? 1 : 0
@@ -76,7 +76,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
           ref={videoForwardRef}
           src={libroReverseVideo}
           onEnded={handleVideoEnd}
-          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          className="max-w-full max-h-full object-contain absolute inset-0 m-auto transition-opacity duration-100"
           style={{ 
             transform: 'perspective(1000px) rotateX(20deg)',
             opacity: direction === 'forward' && isAnimating ? 1 : 0

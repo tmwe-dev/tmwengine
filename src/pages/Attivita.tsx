@@ -15,7 +15,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { ActivityMobileCard } from '@/components/attivita/ActivityMobileCard';
-import { ActivityWheelPicker } from '@/components/attivita/ActivityWheelPicker';
 import { GestisciAttivitaDialog } from '@/components/attivita/GestisciAttivitaDialog';
 import { CompanyDialog } from '@/components/attivita/CompanyDialog';
 import { CallDialog } from '@/components/attivita/CallDialog';
@@ -98,7 +97,7 @@ export default function Attivita() {
     hasNotes: false,
     origine: ''
   });
-  const [statusFilter, setStatusFilter] = useState<'all' | 'future' | 'scadute'>('future'); // Default: mostra attività future/da svolgere
+  const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);
@@ -286,7 +285,7 @@ export default function Attivita() {
   };
 
   // Status filter functions per i summary cards
-  const handleStatusFilter = (status: 'all' | 'future' | 'scadute') => {
+  const handleStatusFilter = (status: string) => {
     // Salva la posizione di scroll prima di cambiare il filtro
     scrollPositionRef.current = window.scrollY;
     setStatusFilter(status);
@@ -339,6 +338,8 @@ export default function Attivita() {
     // Filtro per status dalla card summary
     const matchesStatusFilter = statusFilter === 'all' || 
       (statusFilter === 'future' && isActivityFuture(activity)) ||
+      (statusFilter === 'completate' && activity.stato === 'completata') ||
+      (statusFilter === 'in_corso' && activity.stato === 'in_corso') ||
       (statusFilter === 'scadute' && activity.scadenza && new Date(activity.scadenza) < new Date() && activity.stato !== 'completata');
 
     return matchesStatusFilter;
@@ -1089,9 +1090,9 @@ export default function Attivita() {
 
       {/* Activities */}
       {isMobile ? (
-        /* Mobile Carousel Layout */
-        <div className="w-full" style={{ height: 'calc(100vh - 300px)' }}>
-          {filteredActivities.length === 0 ? (
+        /* Mobile Card Layout */
+        <div className="space-y-3">
+           {paginatedActivities.length === 0 ? (
             <Card className="border-card shadow-soft">
               <CardContent className="p-8 text-center">
                 {activities.length === 0 ? (
@@ -1118,26 +1119,76 @@ export default function Attivita() {
               </CardContent>
             </Card>
           ) : (
-            <ActivityWheelPicker
-              onFilterChange={handleStatusFilter}
-              activeFilter={statusFilter}
-              stats={stats}
-              itemHeight={450}
-            >
-              {filteredActivities.map((activity, index) => (
-                <ActivityMobileCard
-                  key={activity.id}
-                  activity={activity}
-                  index={index}
-                  isSelected={selectedActivities.includes(activity.id)}
-                  onSelect={handleActivitySelect}
-                  onPhoneClick={() => handlePhoneClick(activity)}
-                  onCompanyClick={() => activity.rubrica_id && openCompanyDialog(activity.rubrica_id)}
-                  onGestisci={() => openGestisciForm(activity)}
-                  onDelete={() => handleDeleteActivity(activity.id)}
-                />
-              ))}
-            </ActivityWheelPicker>
+            paginatedActivities.map((activity) => (
+              <ActivityMobileCard
+                key={activity.id}
+                activity={activity}
+                index={paginatedActivities.indexOf(activity) + currentPage * recordsPerPage}
+                isSelected={selectedActivities.includes(activity.id)}
+                onSelect={handleActivitySelect}
+                onPhoneClick={() => handlePhoneClick(activity)}
+                onCompanyClick={() => activity.rubrica_id && openCompanyDialog(activity.rubrica_id)}
+                onGestisci={() => openGestisciForm(activity)}
+                onDelete={() => handleDeleteActivity(activity.id)}
+              />
+            ))
+           )}
+          
+          {/* Paginazione Mobile */}
+          {totalPages > 1 && (
+            <Card className="border-card shadow-soft mt-4">
+              <CardContent className="p-3">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-text-secondary">Per pagina:</span>
+                    <Select 
+                      value={recordsPerPage.toString()} 
+                      onValueChange={(value) => {
+                        setRecordsPerPage(Number(value));
+                        setCurrentPage(0);
+                      }}
+                    >
+                      <SelectTrigger className="w-16">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="text-center text-sm text-text-secondary">
+                    {filteredActivities.length} risultati totali
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                        disabled={currentPage === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm px-3 py-1 bg-muted rounded">
+                        {currentPage + 1} di {totalPages}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                        disabled={currentPage >= totalPages - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       ) : (

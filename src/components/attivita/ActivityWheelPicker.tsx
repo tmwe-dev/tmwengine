@@ -1,30 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-
-type FilterType = 'all' | 'future' | 'scadute';
 
 interface ActivityWheelPickerProps {
   children: React.ReactNode[];
   onIndexChange?: (index: number) => void;
   itemHeight?: number;
-  onFilterChange?: (filter: FilterType) => void;
-  activeFilter?: FilterType;
-  stats?: {
-    totali: number;
-    future: number;
-    scadute: number;
-  };
 }
 
 export function ActivityWheelPicker({ 
   children, 
   onIndexChange,
-  itemHeight = 400,
-  onFilterChange,
-  activeFilter = 'all',
-  stats = { totali: 0, future: 0, scadute: 0 }
+  itemHeight = 400 
 }: ActivityWheelPickerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -182,66 +169,12 @@ export function ActivityWheelPicker({
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Filter buttons at top */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 flex gap-2 bg-background/95 backdrop-blur-sm border border-border rounded-full p-1.5 shadow-lg">
-        <Button
-          variant={activeFilter === 'all' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => {
-            onFilterChange?.('all');
-            setCurrentIndex(0);
-            setRotation(0);
-          }}
-          className={cn(
-            "h-8 px-3 text-xs rounded-full transition-all",
-            activeFilter === 'all' && "shadow-md"
-          )}
-        >
-          <span className="font-semibold">{stats.totali}</span>
-          <span className="ml-1.5">Totali</span>
-        </Button>
-        
-        <Button
-          variant={activeFilter === 'future' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => {
-            onFilterChange?.('future');
-            setCurrentIndex(0);
-            setRotation(0);
-          }}
-          className={cn(
-            "h-8 px-3 text-xs rounded-full transition-all",
-            activeFilter === 'future' && "shadow-md bg-orange-600 hover:bg-orange-700"
-          )}
-        >
-          <span className="font-semibold">{stats.future}</span>
-          <span className="ml-1.5">In Sospeso</span>
-        </Button>
-        
-        <Button
-          variant={activeFilter === 'scadute' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => {
-            onFilterChange?.('scadute');
-            setCurrentIndex(0);
-            setRotation(0);
-          }}
-          className={cn(
-            "h-8 px-3 text-xs rounded-full transition-all",
-            activeFilter === 'scadute' && "shadow-md bg-red-600 hover:bg-red-700"
-          )}
-        >
-          <span className="font-semibold">{stats.scadute}</span>
-          <span className="ml-1.5">Scadute</span>
-        </Button>
-      </div>
-
       {/* Navigation arrows */}
       <button
         onClick={() => navigateToIndex(currentIndex - 1)}
         disabled={currentIndex === 0}
         className={cn(
-          "absolute top-20 left-1/2 -translate-x-1/2 z-50",
+          "absolute top-4 left-1/2 -translate-x-1/2 z-50",
           "w-12 h-12 rounded-full bg-background/80 backdrop-blur-sm",
           "border border-border shadow-lg",
           "flex items-center justify-center",

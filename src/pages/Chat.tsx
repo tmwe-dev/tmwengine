@@ -66,7 +66,7 @@ const Chat = () => {
   const [showConversations, setShowConversations] = useState(true);
   const [selectedTab, setSelectedTab] = useState('prompts');
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
-  const [useSystemPrompt, setUseSystemPrompt] = useState(true);
+  const [useSystemPrompt, setUseSystemPrompt] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);

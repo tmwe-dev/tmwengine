@@ -414,7 +414,7 @@ const Chat = () => {
             </h1>
             
             {/* Modello AI utilizzato */}
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 ml-11">
               <p className="text-xs text-muted-foreground">
                 {selectedAIModel === 'google/gemini-2.5-flash' && 'Gemini 2.5 Flash'}
                 {selectedAIModel === 'google/gemini-2.5-pro' && 'Gemini 2.5 Pro'}
@@ -507,7 +507,7 @@ const Chat = () => {
             
             {/* Stats orizzontali in grigio sotto il modello */}
             {lastResponseStats && (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 ml-11">
                 <span>{lastResponseStats.tokens} token</span>
                 <span>•</span>
                 <span>{lastResponseStats.responseTime}ms</span>

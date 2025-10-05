@@ -2439,7 +2439,7 @@ export default function ImportTemplates() {
                     )}
                     <DialogTitle>Record Importati</DialogTitle>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground pr-[50px]">
                     <span className="text-primary font-medium">{totalRecords}</span>
                   </span>
                 </div>

@@ -2328,10 +2328,7 @@ export default function ImportTemplates() {
                         <TableCell>{log.file_name}</TableCell>
                         <TableCell>{getStatusBadge(log.stato)}</TableCell>
                          <TableCell>
-                           <div className="flex items-center gap-1">
-                             <span className="font-medium text-primary">{log.righe_totali}</span>
-                             <span className="text-sm text-muted-foreground">record</span>
-                           </div>
+                           <span className="font-medium text-primary">{log.righe_totali}</span>
                          </TableCell>
                         <TableCell className="text-red-600">{log.righe_errori}</TableCell>
                         <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>

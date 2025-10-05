@@ -203,7 +203,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className={cn("space-y-2 py-4 px-4 sm:px-6 w-full overflow-x-hidden", getWidthClass())}>
+    <div className={cn("space-y-2 py-4 px-4 sm:px-6 pr-2 w-full", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -343,7 +343,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 w-full overflow-x-hidden", getWidthClass())}>
+    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 pr-1 w-full", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}

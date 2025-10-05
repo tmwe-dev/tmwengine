@@ -2689,6 +2689,70 @@ export default function ImportTemplates() {
                           </Select>
                         </div>
                         
+                        <div className="w-40">
+                          <Label htmlFor="sort-primary" className="text-sm font-medium">Ordina per</Label>
+                          <Select 
+                            value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : ""} 
+                            onValueChange={(value) => {
+                              if (!value) {
+                                setSortConfig({ primary: null, secondary: null });
+                                return;
+                              }
+                              const [column, direction] = value.split('-');
+                              setSortConfig(prev => ({ 
+                                ...prev, 
+                                primary: { column, direction: direction as 'asc' | 'desc' } 
+                              }));
+                            }}
+                          >
+                            <SelectTrigger id="sort-primary">
+                              <SelectValue placeholder="Nessun ordinamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Nessun ordinamento</SelectItem>
+                              <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                              <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                              <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                              <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                              <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                              <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {sortConfig.primary && (
+                          <div className="w-40">
+                            <Label htmlFor="sort-secondary" className="text-sm font-medium">Poi per</Label>
+                            <Select 
+                              value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : ""} 
+                              onValueChange={(value) => {
+                                if (!value) {
+                                  setSortConfig(prev => ({ ...prev, secondary: null }));
+                                  return;
+                                }
+                                const [column, direction] = value.split('-');
+                                setSortConfig(prev => ({ 
+                                  ...prev, 
+                                  secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                }));
+                              }}
+                            >
+                              <SelectTrigger id="sort-secondary">
+                                <SelectValue placeholder="Nessuno" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Nessuno</SelectItem>
+                                <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
                         <div className="w-32">
                           <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
                           <Select value={String(recordsPerPage)} onValueChange={(value) => {

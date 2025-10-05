@@ -3357,7 +3357,7 @@ export default function ImportTemplates() {
                     {/* Desktop Actions - keep existing */}
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
-                      <div className="flex flex-col items-center border-t relative">
+                      <div className="flex flex-col items-center relative">
                         {/* Cestino - allineato al badge numero records */}
                         {selectedRecords.size > 0 && (
                           <div className="absolute -top-[15px] left-1/2 -translate-x-1/2 z-10">

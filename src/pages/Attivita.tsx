@@ -1098,35 +1098,35 @@ export default function Attivita() {
               type="single" 
               value={statusFilter} 
               onValueChange={(value) => value && handleStatusFilter(value)}
-              className="grid grid-cols-3 w-full bg-muted/30 rounded-lg p-1 gap-1"
+              className="grid grid-cols-3 w-full bg-transparent rounded-lg p-0 gap-2"
             >
               <ToggleGroupItem 
                 value="all" 
-                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-foreground bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-xs font-medium">Totali</span>
-                  <span className="text-lg font-bold">{baseFilteredActivities.length}</span>
+                  <span className="text-xs font-medium text-muted-foreground">Totali</span>
+                  <span className="text-lg font-bold text-foreground">{baseFilteredActivities.length}</span>
                 </div>
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="future" 
-                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-warning bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-xs font-medium">In Sospeso</span>
-                  <span className="text-lg font-bold text-warning">
+                  <span className="text-xs font-medium text-muted-foreground">In Sospeso</span>
+                  <span className="text-lg font-bold text-foreground">
                     {baseFilteredActivities.filter(a => isActivityFuture(a) && a.stato !== 'completata').length}
                   </span>
                 </div>
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="scadute" 
-                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-destructive bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-xs font-medium">Scadute</span>
-                  <span className="text-lg font-bold text-destructive">
+                  <span className="text-xs font-medium text-muted-foreground">Scadute</span>
+                  <span className="text-lg font-bold text-foreground">
                     {baseFilteredActivities.filter(a => a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata').length}
                   </span>
                 </div>

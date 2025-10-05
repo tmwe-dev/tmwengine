@@ -115,20 +115,20 @@ export const EmailList = ({
 
   return (
     <ScrollArea className="h-full" ref={scrollRef}>
-      <div className="space-y-1 p-2">
+      <div className="space-y-1 p-1 md:p-2">
         {emails.map((email, index) => (
           <Card
             key={email.id}
             ref={index === emails.length - 1 ? lastEmailRef : null}
             className={cn(
-              'cursor-pointer border-l-4 p-4 transition-all hover:bg-email-hover group',
+              'cursor-pointer border-l-4 p-2 md:p-4 transition-all hover:bg-email-hover group',
               email.read ? 'border-l-transparent' : 'border-l-email-unread',
               selectedEmailId === email.id && 'bg-email-selected shadow-md'
             )}
             onClick={() => onEmailSelect(email.id)}
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-1 overflow-hidden">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
                   <p className={cn(
                     'truncate text-sm',
@@ -137,26 +137,34 @@ export const EmailList = ({
                     {email.from}
                   </p>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                    <Badge variant="secondary" className="h-5 px-1.5 text-xs shrink-0">
                       New
                     </Badge>
                   )}
                 </div>
                 <h3 className={cn(
-                  'truncate text-base',
+                  'truncate text-sm md:text-base',
                   !email.read && 'font-semibold'
                 )}>
                   {email.subject || '(No Subject)'}
                 </h3>
-                <p className="line-clamp-2 text-sm text-muted-foreground">
+                <p className="line-clamp-2 text-xs md:text-sm text-muted-foreground">
                   {email.preview}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="whitespace-nowrap text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-                  </span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex gap-1">
+                    {email.starred && (
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    )}
+                    {email.hasAttachments && (
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                   {selectedEmailId === email.id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -196,14 +204,6 @@ export const EmailList = ({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  {email.starred && (
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  )}
-                  {email.hasAttachments && (
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
               </div>

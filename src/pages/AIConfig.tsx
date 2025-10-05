@@ -25,34 +25,30 @@ const AIConfig = () => {
   });
 
   // Modelli disponibili per provider
-  const modelsByProvider: Record<string, Array<{value: string, label: string}>> = {
-    chatgpt: [
-      { value: 'gpt-5-2025-08-07', label: 'GPT-5 (più potente)' },
-      { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini (bilanciato)' },
-      { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano (veloce)' },
-      { value: 'gpt-4.1-2025-04-14', label: 'GPT-4.1' },
-      { value: 'gpt-4o', label: 'GPT-4o (legacy)' },
-      { value: 'gpt-4o-mini', label: 'GPT-4o Mini (legacy)' }
+  const modelsByProvider = {
+    openai: [
+      { value: 'gpt-4', label: 'GPT-4 (più potente)' },
+      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (veloce e potente)' },
+      { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (economico)' }
     ],
     anthropic: [
       { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
       { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
-      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' },
-      { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet (legacy)' }
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' }
     ],
-    lovable: [
-      { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-      { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato, gratuito)' },
-      { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (gratuito)' },
-      { value: 'google/gemini-2.5-flash-image-preview', label: 'Gemini Image Generator (gratuito)' },
-      { value: 'openai/gpt-5', label: 'GPT-5' },
-      { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini' },
-      { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano' }
+    google: [
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
+    ],
+    huggingface: [
+      { value: 'mistral-7b', label: 'Mistral 7B' },
+      { value: 'llama-2-7b', label: 'Llama 2 7B' },
+      { value: 'falcon-7b', label: 'Falcon 7B' }
+    ],
+    custom: [
+      { value: 'custom-model', label: 'Modello Custom (specifica manualmente)' }
     ]
-  };
-
-  const getModelsForProvider = (provider: string) => {
-    return modelsByProvider[provider] || [];
   };
 
   useEffect(() => {
@@ -249,64 +245,66 @@ const AIConfig = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="aiProvider" className="text-sm">Provider AI</Label>
-              <Select 
-                value={newAiConfig.provider} 
-                onValueChange={(value) => {
-                  setNewAiConfig(prev => ({ ...prev, provider: value, modello: '' }));
-                }}
-              >
+              <Select value={newAiConfig.provider} onValueChange={(value) => 
+                setNewAiConfig(prev => ({ ...prev, provider: value }))
+              }>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Seleziona provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lovable">Lovable AI Gateway (Google Gemini gratuito + OpenAI)</SelectItem>
-                  <SelectItem value="anthropic">Anthropic (Claude) - API diretta</SelectItem>
-                  <SelectItem value="chatgpt">ChatGPT (OpenAI) - API diretta</SelectItem>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                  <SelectItem value="google">Google AI</SelectItem>
+                  <SelectItem value="huggingface">HuggingFace</SelectItem>
+                  <SelectItem value="custom">Custom API</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1">
               <Label htmlFor="aiModello" className="text-sm">Modello</Label>
-              <Select 
-                key={`model-${newAiConfig.provider}`}
-                value={newAiConfig.modello} 
-                onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
-                disabled={!newAiConfig.provider || getModelsForProvider(newAiConfig.provider).length === 0}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder={
-                    !newAiConfig.provider 
-                      ? "Seleziona prima un provider" 
-                      : getModelsForProvider(newAiConfig.provider).length === 0
-                        ? "Nessun modello disponibile"
-                        : "Seleziona modello"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {getModelsForProvider(newAiConfig.provider).map((model) => (
-                    <SelectItem key={model.value} value={model.value}>
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-1/2">
-              {renderSecretField(
-                "API Key *",
-                newAiConfig.apiKey,
-                "newAiApiKey",
-                (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
-                "Inserisci la tua API key"
+              {newAiConfig.provider && modelsByProvider[newAiConfig.provider] ? (
+                <Select 
+                  value={newAiConfig.modello} 
+                  onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Seleziona modello" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelsByProvider[newAiConfig.provider].map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="aiModello"
+                  value={newAiConfig.modello}
+                  onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
+                  placeholder="Seleziona prima un provider"
+                  className="h-9"
+                  disabled={!newAiConfig.provider}
+                />
               )}
             </div>
+          </div>
 
-            <div className="flex items-center space-x-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {renderSecretField(
+              "API Key *",
+              newAiConfig.apiKey,
+              "newAiApiKey",
+              (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
+              "Inserisci la tua API key"
+            )}
+
+            <div className="flex items-center space-x-2 pt-6">
               <Switch
                 id="newAiAttivo"
                 checked={newAiConfig.attivo}

@@ -201,9 +201,8 @@ export default function Campagne() {
             <div className="flex items-center gap-2">
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={openAddForm} className="shadow-soft">
+                  <Button onClick={openAddForm} size="icon" className="shadow-soft">
                     <Plus className="h-4 w-4" />
-                    Nuova Campagna
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

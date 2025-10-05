@@ -3011,6 +3011,67 @@ export default function ImportTemplates() {
             </div>
           )}
           
+          {/* Mobile Action Buttons */}
+          {isMobile && selectedRecords.size > 0 && (
+            <div className="flex items-center justify-between pb-2">
+              {/* Icona multipla all'estrema sinistra */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowMultipleActivityDialog(true)}
+                      className="p-2"
+                    >
+                      <FileText className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Crea attività multiple</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Bottone centrale */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={importSelectedRecords}
+                      className="p-2"
+                    >
+                      <Database className="h-4 w-4 text-green-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Importa in rubrica</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Cestino all'estrema destra */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={deleteSelectedRecords}
+                      className="p-2"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Elimina selezionati</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
           
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
@@ -3372,91 +3433,30 @@ export default function ImportTemplates() {
                             </span>
                           )}
                           
-                          {/* Mobile Action Buttons - Center */}
-                          {selectedRecords.size > 0 && (
-                            <div className="flex items-center gap-2 absolute">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setShowMultipleActivityDialog(true)}
-                                      className="p-2"
-                                    >
-                                      <FileText className="h-4 w-4 text-blue-500" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Crea attività multiple</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={importSelectedRecords}
-                                      className="p-2"
-                                    >
-                                      <Database className="h-4 w-4 text-green-500" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Importa in rubrica</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={deleteSelectedRecords}
-                                      className="p-2"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Elimina selezionati</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          )}
-                          
-                          {/* Centered pagination controls - only when no records selected */}
-                          {selectedRecords.size === 0 && (
-                            <div className="flex items-center gap-[15px]">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="px-[15px] hover:bg-transparent"
-                                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                                disabled={currentPage === 0}
-                              >
-                                <ChevronLeft className="h-10 w-10" />
-                              </Button>
-                              <span className="text-sm px-3 py-1">
-                                {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="px-[15px] hover:bg-transparent"
-                                onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                                disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                              >
-                                <ChevronRight className="h-10 w-10" />
-                              </Button>
-                            </div>
-                          )}
+                          {/* Centered controls */}
+                          <div className="flex items-center gap-[15px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                              disabled={currentPage === 0}
+                            >
+                              <ChevronLeft className="h-10 w-10" />
+                            </Button>
+                            <span className="text-sm px-3 py-1">
+                              {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                              disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                            >
+                              <ChevronRight className="h-10 w-10" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : (

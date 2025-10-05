@@ -188,7 +188,7 @@ export default function Campagne() {
       }}
     >
       {/* Header with Title and Toggle */}
-      <div className="flex justify-between items-start gap-4">
+      <div className="flex justify-between items-start gap-4 mb-4">
         <div>
           <h1 className="text-heading-1 font-bold text-text-primary">Campagne</h1>
           {isHeaderVisible && (
@@ -210,8 +210,8 @@ export default function Campagne() {
 
       {/* Action Buttons and Filters */}
       {isHeaderVisible && (
-        <div className="animate-accordion-down space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="animate-accordion-down space-y-4">
+          <div className="flex justify-between items-center gap-4">
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
                 <Button onClick={openAddForm} size="icon" className="shadow-soft">
@@ -232,10 +232,10 @@ export default function Campagne() {
               </DialogContent>
             </Dialog>
             
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
                     <Search className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
@@ -252,8 +252,8 @@ export default function Campagne() {
               
               <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Filter className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
+                    <Filter className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -275,17 +275,15 @@ export default function Campagne() {
 
           {/* Search and Filters */}
           <Card className="bg-card-transparent border-card shadow-soft">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                  <Input
-                    placeholder="Cerca per nome o obiettivo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                <Input
+                  placeholder="Cerca per nome o obiettivo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </CardContent>
           </Card>

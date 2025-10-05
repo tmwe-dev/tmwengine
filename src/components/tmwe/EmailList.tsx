@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -398,9 +399,14 @@ export const EmailList = ({
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="whitespace-nowrap text-base font-bold">
+                        {format(new Date(email.date), 'HH:mm')}
+                      </span>
+                      <span className="whitespace-nowrap text-xs text-muted-foreground">
+                        {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
+                      </span>
+                    </div>
                     {!multiSelectMode && selectedEmailId === email.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

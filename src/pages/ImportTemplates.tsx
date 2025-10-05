@@ -3360,7 +3360,7 @@ export default function ImportTemplates() {
                       <div className="flex flex-col items-center border-t relative">
                         {/* Cestino - allineato al badge numero records */}
                         {selectedRecords.size > 0 && (
-                          <div className="absolute -top-[70px] left-1/2 -translate-x-1/2 z-10">
+                          <div className="absolute top-[30px] left-1/2 -translate-x-1/2 z-10">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>

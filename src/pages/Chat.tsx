@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,12 @@ const Chat = () => {
   const [selectedTab, setSelectedTab] = useState('prompts');
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll verso il basso quando cambiano i messaggi
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Carica system prompts
   useEffect(() => {
@@ -670,6 +676,7 @@ const Chat = () => {
                     )}
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </CardContent>
             </Card>
           )}

@@ -641,7 +641,7 @@ const Chat = () => {
                   </div>
                 </CardHeader>
               )}
-              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-280px)]' : 'max-h-[600px]'}`}>
+              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-280px)] pb-4' : 'max-h-[600px]'}`}>
                 {messages.map((message) => (
                   <div
                     key={message.id}

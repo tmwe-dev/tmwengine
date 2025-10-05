@@ -903,9 +903,9 @@ const Settings = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            className="h-9 w-9 p-0"
+                            className="h-12 w-12 p-0 ml-4"
                           >
-                            <Key className="h-5 w-5 text-yellow-500" />
+                            <Key className="h-7 w-7 text-yellow-500" />
                           </Button>
                         </DialogTrigger>
                         <DialogContent>

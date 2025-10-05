@@ -4,6 +4,7 @@ import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import bookForward from '@/assets/book-page-forward.png';
 import bookBackward from '@/assets/book-page-backward.png';
+import libroGif from '@/assets/libro.gif';
 
 interface BookProps {
   direction: 'forward' | 'backward' | 'idle';
@@ -15,20 +16,32 @@ function Book({ direction, onAnimationComplete }: BookProps) {
   const animationProgress = useRef(0);
   const isAnimating = useRef(false);
   const [currentTexture, setCurrentTexture] = useState<'idle' | 'forward' | 'backward'>('idle');
+  const [showGif, setShowGif] = useState(false);
   
   const forwardTexture = useLoader(THREE.TextureLoader, bookForward);
   const backwardTexture = useLoader(THREE.TextureLoader, bookBackward);
+  const gifTexture = useLoader(THREE.TextureLoader, libroGif);
 
   useEffect(() => {
     if (direction !== 'idle') {
       isAnimating.current = true;
       animationProgress.current = 0;
       setCurrentTexture(direction);
+      
+      if (direction === 'backward') {
+        setShowGif(true);
+        setTimeout(() => {
+          setShowGif(false);
+          isAnimating.current = false;
+          setCurrentTexture('idle');
+          onAnimationComplete();
+        }, 2000);
+      }
     }
-  }, [direction]);
+  }, [direction, onAnimationComplete]);
 
   useFrame((state, delta) => {
-    if (!isAnimating.current || !meshRef.current) return;
+    if (!isAnimating.current || !meshRef.current || showGif) return;
 
     const speed = 2;
     animationProgress.current += delta * speed;
@@ -47,7 +60,8 @@ function Book({ direction, onAnimationComplete }: BookProps) {
     material.opacity = 0.9 + (Math.sin(easeProgress * Math.PI) * 0.1);
   });
 
-  const texture = currentTexture === 'forward' ? forwardTexture : 
+  const texture = showGif ? gifTexture :
+                 currentTexture === 'forward' ? forwardTexture : 
                  currentTexture === 'backward' ? backwardTexture : forwardTexture;
 
   return (

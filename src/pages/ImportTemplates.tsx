@@ -3386,10 +3386,10 @@ export default function ImportTemplates() {
                         
                         {/* Pagination Controls */}
                         <div className="flex items-center justify-center gap-[15px] relative w-full">
-                          {/* Selected Records Badge - Left side */}
+                          {/* Selected Records Badge - Centered */}
                           {selectedRecords.size > 0 && (
                             <span 
-                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-0 -top-[70px]"
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[90px]"
                               onClick={() => setSelectedRecords(new Set())}
                             >
                               {selectedRecords.size}

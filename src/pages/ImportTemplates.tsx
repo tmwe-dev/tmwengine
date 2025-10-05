@@ -2425,7 +2425,7 @@ export default function ImportTemplates() {
               /* Mobile Header - Compact */
               <div className="space-y-3">
                 {/* Mobile Title with Filtered and Total Count */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between relative">
                   <div className="flex flex-col items-start gap-1">
                     <div className="flex items-center gap-2">
                       {/* Filtered count - only when filters are active */}
@@ -2479,7 +2479,7 @@ export default function ImportTemplates() {
                       </div>
                     )}
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground absolute right-0 top-0">
                     <span className="text-primary font-medium">{totalRecords}</span>
                   </span>
                 </div>

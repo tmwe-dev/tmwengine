@@ -397,7 +397,7 @@ export default function Rubrica() {
         )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="flex gap-4 overflow-x-auto">
         <Card className="border-card shadow-soft bg-card-transparent">
           <CardContent className="p-6">
             <div className="text-center">

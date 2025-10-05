@@ -806,7 +806,7 @@ export default function RubricaAvanzata() {
           {viewingRecords.length > 0 && (
             <div className="flex justify-center">
               <Card className="border-0 shadow-none w-fit bg-transparent">
-                <CardContent className="p-2 pb-[10px]">
+                <CardContent className="p-2 pb-[10px] -mt-5">
                   <div className="flex items-center gap-2">
                     {/* Create Activity button - only show when contacts are selected */}
                     {selectedRecords.size > 0 && (

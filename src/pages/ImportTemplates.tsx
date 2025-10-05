@@ -3358,9 +3358,9 @@ export default function ImportTemplates() {
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
                       <div className="flex flex-col items-center relative">
-                        {/* Cestino - allineato al badge numero records */}
+                        {/* Cestino - allineato a destra */}
                         {selectedRecords.size > 0 && (
-                          <div className="absolute -top-[15px] left-1/2 -translate-x-1/2 z-10">
+                          <div className="absolute -top-[15px] right-0 z-10">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>

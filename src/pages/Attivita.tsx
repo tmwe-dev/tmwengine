@@ -100,6 +100,7 @@ export default function Attivita() {
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Clean_Top pattern: controls header visibility
+  const [isSearchVisible, setIsSearchVisible] = useState<boolean>(false); // Controls search card visibility
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);
   const scrollPositionRef = useRef<number>(0);
@@ -890,7 +891,12 @@ export default function Attivita() {
                 </DialogContent>
               </Dialog>
               
-              <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-10 w-10"
+                onClick={() => setIsSearchVisible(!isSearchVisible)}
+              >
                 <Search className="h-5 w-5" />
               </Button>
               
@@ -938,20 +944,22 @@ export default function Attivita() {
             </div>
           </div>
 
-          {/* Search Card */}
-          <Card className="bg-card-transparent border-card shadow-soft">
-            <CardContent className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                <Input
-                  placeholder="Cerca per descrizione o contatto..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Search Card - Only when search is visible */}
+          {isSearchVisible && (
+            <Card className="bg-card-transparent border-card shadow-soft animate-accordion-down">
+              <CardContent className="p-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    placeholder="Cerca per descrizione o contatto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
 
           {/* Stats Cards - Under Filters */}

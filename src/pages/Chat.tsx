@@ -607,7 +607,7 @@ const Chat = () => {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 max-h-[600px] overflow-y-auto px-2 sm:px-6">
+              <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-2 sm:px-6">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -619,7 +619,7 @@ const Chat = () => {
                       <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                     )}
                     <div
-                      className={`w-full max-w-none sm:max-w-[85%] p-3 sm:p-4 rounded-lg border ${
+                      className={`max-w-[75%] p-3 rounded-lg border ${
                         message.role === 'user'
                           ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
                           : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
@@ -636,22 +636,6 @@ const Chat = () => {
                             .replace(/\n/g, '<br>')
                         }}
                       />
-                      <div className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50 flex justify-between items-center gap-2">
-                        <span>{new Date(message.created_at).toLocaleString('it-IT', { 
-                          day: '2-digit', 
-                          month: '2-digit', 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}</span>
-                        <div className="flex gap-2 items-center">
-                          {message.model && (
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{message.model}</span>
-                          )}
-                          {message.tokens_used && (
-                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{message.tokens_used}t</span>
-                          )}
-                        </div>
-                      </div>
                     </div>
                     {message.role === 'user' && (
                       <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />

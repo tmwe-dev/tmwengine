@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -3432,7 +3432,7 @@ export default function ImportTemplates() {
                                       onClick={() => setShowMultipleActivityDialog(true)}
                                       className="p-2 absolute left-0"
                                     >
-                                      <FileText className="h-4 w-4 text-blue-500" />
+                                      <Pickaxe className="h-4 w-4 text-blue-500" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ import {
 const Settings = () => {
   const { toast } = useToast();
   const [showSecrets, setShowSecrets] = useState({});
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('profile');
@@ -841,69 +843,113 @@ const Settings = () => {
 
                   <div className="space-y-1">
                     <Label htmlFor="newAiModello" className="text-sm">Modello</Label>
-                    <Select 
-                      value={newAiConfig.modello} 
-                      onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
-                    >
-                      <SelectTrigger className="h-9 w-[60%]">
-                        <SelectValue placeholder="Seleziona modello" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {newAiConfig.provider === 'openai' && (
-                          <>
-                            <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
-                            <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
-                            <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
-                            <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
-                            <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
-                            <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                            <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                          </>
-                        )}
-                        {newAiConfig.provider === 'claude' && (
-                          <>
-                            <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1</SelectItem>
-                            <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
-                            <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
-                          </>
-                        )}
-                        {newAiConfig.provider === 'gemini' && (
-                          <>
-                            <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash</SelectItem>
-                            <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-                            <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-                          </>
-                        )}
-                        {newAiConfig.provider === 'mistral' && (
-                          <>
-                            <SelectItem value="mistral-large-2411">Mistral Large</SelectItem>
-                            <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
-                          </>
-                        )}
-                        {newAiConfig.provider === 'perplexity' && (
-                          <>
-                            <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large</SelectItem>
-                            <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small</SelectItem>
-                          </>
-                        )}
-                        {newAiConfig.provider === 'cohere' && (
-                          <>
-                            <SelectItem value="command-r-plus">Command R+</SelectItem>
-                            <SelectItem value="command-r">Command R</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select 
+                        value={newAiConfig.modello} 
+                        onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
+                      >
+                        <SelectTrigger className="h-9 w-[60%]">
+                          <SelectValue placeholder="Seleziona modello" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {newAiConfig.provider === 'openai' && (
+                            <>
+                              <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
+                              <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
+                              <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
+                              <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
+                              <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
+                              <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                              <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                            </>
+                          )}
+                          {newAiConfig.provider === 'claude' && (
+                            <>
+                              <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1</SelectItem>
+                              <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
+                              <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
+                            </>
+                          )}
+                          {newAiConfig.provider === 'gemini' && (
+                            <>
+                              <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash</SelectItem>
+                              <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                              <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                            </>
+                          )}
+                          {newAiConfig.provider === 'mistral' && (
+                            <>
+                              <SelectItem value="mistral-large-2411">Mistral Large</SelectItem>
+                              <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
+                            </>
+                          )}
+                          {newAiConfig.provider === 'perplexity' && (
+                            <>
+                              <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large</SelectItem>
+                              <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small</SelectItem>
+                            </>
+                          )}
+                          {newAiConfig.provider === 'cohere' && (
+                            <>
+                              <SelectItem value="command-r-plus">Command R+</SelectItem>
+                              <SelectItem value="command-r">Command R</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                          >
+                            <Key className="h-5 w-5 text-yellow-500" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Aggiungi API Key</DialogTitle>
+                            <DialogDescription>
+                              Inserisci la tua API key per {newAiConfig.provider}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="apiKeyInput">API Key</Label>
+                              <div className="relative">
+                                <Input
+                                  id="apiKeyInput"
+                                  type={showSecrets['dialogApiKey'] ? "text" : "password"}
+                                  value={newAiConfig.apiKey}
+                                  onChange={(e) => setNewAiConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                                  placeholder="Inserisci la tua API key"
+                                  className="pr-10"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3"
+                                  onClick={() => setShowSecrets(prev => ({ ...prev, dialogApiKey: !prev.dialogApiKey }))}
+                                >
+                                  {showSecrets['dialogApiKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </div>
+                            <Button 
+                              onClick={() => setShowApiKeyDialog(false)} 
+                              className="w-full"
+                            >
+                              Salva
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                 </div>
-
-                {renderSecretField(
-                  "API Key",
-                  newAiConfig.apiKey,
-                  "newAiApiKey",
-                  (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
-                  "Inserisci la tua API key del provider AI"
-                )}
 
                 <div className="flex items-center space-x-2">
                   <Switch

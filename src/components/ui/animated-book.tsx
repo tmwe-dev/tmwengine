@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import libroVideo from '@/assets/libro.mp4';
 import libroReverseVideo from '@/assets/libro-reverse.mp4';
+import libroStatic from '@/assets/libro-static.png';
 
 interface AnimatedBookProps {
   currentPage: number;
@@ -50,6 +51,15 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       style={{ height: '140px', background: 'transparent', position: 'relative' }}
     >
       <div className="w-full h-full flex items-center justify-center relative">
+        <img
+          src={libroStatic}
+          alt="Book"
+          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          style={{ 
+            transform: 'perspective(1000px) rotateX(20deg)',
+            opacity: !isAnimating ? 1 : 0
+          }}
+        />
         <video
           ref={videoBackwardRef}
           src={libroVideo}

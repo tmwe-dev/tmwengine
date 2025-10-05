@@ -170,9 +170,6 @@ export function GestisciAttivitaDialog({
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2 flex-wrap justify-start">
                 <span className="text-lg">Gestisci Attività</span>
-                <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs">
-                  {activity.stato.replace('_', ' ').toUpperCase()}
-                </Badge>
               </div>
               {activity.rubrica_nome && (
                 <div className="text-base text-muted-foreground mt-0.5 text-center">
@@ -322,11 +319,10 @@ export function GestisciAttivitaDialog({
                   >
                     {getActivityIcon(activity.tipo)}
                   </div>
-                  {/* Data creazione sotto l'icona */}
-                  <div className="text-xs text-blue-600 font-medium mt-1">
-                    Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
-                    {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
-                  </div>
+                  {/* Stato sotto l'icona */}
+                  <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs">
+                    {activity.stato.replace('_', ' ').toUpperCase()}
+                  </Badge>
                 </div>
               </div>
 

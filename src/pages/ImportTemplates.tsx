@@ -3365,25 +3365,38 @@ export default function ImportTemplates() {
                         <div className="flex items-center justify-center gap-[15px] relative w-full">
                           {/* File Icon - a sinistra del badge */}
                           {filteredRecords.length > 0 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={toggleSelectAll}
-                              className="p-2 hover:bg-transparent absolute left-0 -top-[90px]"
-                              aria-label="Seleziona tutti della pagina"
-                            >
-                              <FileText 
-                                className={(() => {
-                                  const currentPageIndexes = [];
-                                  for (let i = 0; i < viewingRecords.length; i++) {
-                                    const actualIndex = currentPage * recordsPerPage + i;
-                                    currentPageIndexes.push(actualIndex);
-                                  }
-                                  const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
-                                  return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
-                                })()}
-                              />
-                            </Button>
+                            <div className="absolute left-0 -top-[90px] flex flex-col items-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleSelectAll}
+                                className="p-2 hover:bg-transparent"
+                                aria-label="Seleziona tutti della pagina"
+                              >
+                                <FileText 
+                                  className={(() => {
+                                    const currentPageIndexes = [];
+                                    for (let i = 0; i < viewingRecords.length; i++) {
+                                      const actualIndex = currentPage * recordsPerPage + i;
+                                      currentPageIndexes.push(actualIndex);
+                                    }
+                                    const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                    return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
+                                  })()}
+                                />
+                              </Button>
+                              {(() => {
+                                const currentPageIndexes = [];
+                                for (let i = 0; i < viewingRecords.length; i++) {
+                                  const actualIndex = currentPage * recordsPerPage + i;
+                                  currentPageIndexes.push(actualIndex);
+                                }
+                                const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                return isAllSelected ? (
+                                  <span className="text-xs text-green-500 font-medium">full page</span>
+                                ) : null;
+                              })()}
+                            </div>
                           )}
                           
                           {/* Selected Records Badge - Centered */}

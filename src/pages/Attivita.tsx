@@ -99,7 +99,7 @@ export default function Attivita() {
     origine: ''
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false); // Stato per nascondere/mostrare sezione superiore
+  const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Stato per nascondere/mostrare sezione superiore (Clean_Top pattern)
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);
   const scrollPositionRef = useRef<number>(0);
@@ -839,101 +839,65 @@ export default function Attivita() {
         </div>
       )}
       
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-heading-1 font-bold text-text-primary mb-2">
-              Gestione Attività
-            </h1>
-          </div>
-          <PagePromptManager pageRoute="/attivita" />
+      {/* Header with Title and Toggle - Clean_Top Pattern */}
+      <div className="flex justify-between items-start gap-4 mb-4">
+        <div>
+          <h1 className="text-heading-1 font-bold text-text-primary">Gestione Attività</h1>
+          {isHeaderVisible && (
+            <p className="text-body text-text-secondary animate-accordion-down">
+              Gestisci tutte le tue attività della rubrica
+            </p>
+          )}
         </div>
         
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddForm} className="shadow-soft">
-              <Plus className="h-4 w-4" />
-              Nuova Attività
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle>
-                {selectedActivity ? 'Modifica Attività' : 'Nuova Attività'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-y-auto">
-              <AdvancedMultipleActivityForm
-                contacts={[]}
-                onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
-                onCancel={() => setIsFormOpen(false)}
-                isSubmitting={false}
-                showSaveToRubrica={false}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+          className="h-8 w-8 shrink-0 mt-2.5"
+        >
+          {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </div>
 
-      {/* Search and Filters - Collapsible */}
-      {!isHeaderCollapsed && (
-        <div className="animate-fade-in">
-          <Card className="bg-card-transparent border-card shadow-soft">
-            <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
-              {/* Ricerca e Dropdown centrati */}
-              <div className="flex flex-col items-center gap-4 max-w-4xl mx-auto">
-                <div className="w-full max-w-xl relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                  <Input
-                    placeholder="Cerca per descrizione o contatto..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <Select
-                  value={filters.stato}
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
-                >
-                  <SelectTrigger className="w-full max-w-xl">
-                    <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
-                    <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
-                    <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
-                    <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
-                    <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-3 mt-4 justify-center">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
-                    </Button>
-                  </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={filterDate}
-                        onSelect={handleDateFilter}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                </PopoverContent>
-              </Popover>
-
+      {/* Action Buttons and Filters - Clean_Top Pattern */}
+      {isHeaderVisible && (
+        <div className="animate-accordion-down space-y-4">
+          <div className="flex justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              {/* Left-aligned action buttons */}
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button size="icon" onClick={openAddForm} className="shadow-soft h-10 w-10">
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+                  <DialogHeader className="flex-shrink-0">
+                    <DialogTitle>
+                      {selectedActivity ? 'Modifica Attività' : 'Nuova Attività'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-y-auto">
+                    <AdvancedMultipleActivityForm
+                      contacts={[]}
+                      onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
+                      onCancel={() => setIsFormOpen(false)}
+                      isSubmitting={false}
+                      showSaveToRubrica={false}
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <Search className="h-5 w-5" />
+              </Button>
+              
               <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filtri Avanzati
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
+                    <Filter className="h-5 w-5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -949,69 +913,117 @@ export default function Attivita() {
                 </DialogContent>
               </Dialog>
             </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Right-aligned AI/Settings icons */}
+              <PagePromptManager pageRoute="/attivita" />
+              <AIChatPopup pageRoute="/attivita" />
+            </div>
+          </div>
+
+          {/* Search Card */}
+          <Card className="bg-card-transparent border-card shadow-soft">
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                <Input
+                  placeholder="Cerca per descrizione o contatto..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </CardContent>
           </Card>
-        </div>
-      )}
 
-      {/* Stats - Solo Desktop */}
-      {!isMobile && (
-        <div className="flex justify-center mb-6">
-          <div className="flex gap-2 flex-wrap justify-center">
-            <Card 
-              className={cn(
-                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-                statusFilter === 'all' && "ring-2 ring-primary border-primary"
-              )}
-              onClick={() => handleStatusFilter('all')}
-            >
-              <CardContent className="text-center p-3 w-20">
-                <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
-                <div className="text-text-secondary text-xs">Totali</div>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={cn(
-                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-                statusFilter === 'future' && "ring-2 ring-primary border-primary"
-              )}
-              onClick={() => handleStatusFilter('future')}
-            >
-              <CardContent className="text-center p-3 w-20">
-                <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
-                <div className="text-text-secondary text-xs">In Sospeso</div>
-              </CardContent>
-            </Card>
+          {/* Filters Section - Under Search */}
+          <div className="flex gap-3 justify-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={filterDate}
+                  onSelect={handleDateFilter}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
 
-            <Card 
-              className={cn(
-                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-                statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
-              )}
-              onClick={() => handleStatusFilter('scadute')}
-            >
-              <CardContent className="text-center p-3 w-20">
-                <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
-                <div className="text-text-secondary text-xs">Scadute</div>
-              </CardContent>
-            </Card>
+            <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filtri Avanzati
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Filtri Attività</DialogTitle>
+                </DialogHeader>
+                <ActivityFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  onClose={() => setIsFiltersOpen(false)}
+                  activities={activities}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
+
+          {/* Stats Cards - Under Filters */}
+          {!isMobile && (
+            <div className="flex justify-center">
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Card 
+                  className={cn(
+                    "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                    statusFilter === 'all' && "ring-2 ring-primary border-primary"
+                  )}
+                  onClick={() => handleStatusFilter('all')}
+                >
+                  <CardContent className="text-center p-3 w-20">
+                    <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
+                    <div className="text-text-secondary text-xs">Totali</div>
+                  </CardContent>
+                </Card>
+                
+                <Card 
+                  className={cn(
+                    "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                    statusFilter === 'future' && "ring-2 ring-primary border-primary"
+                  )}
+                  onClick={() => handleStatusFilter('future')}
+                >
+                  <CardContent className="text-center p-3 w-20">
+                    <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
+                    <div className="text-text-secondary text-xs">In Sospeso</div>
+                  </CardContent>
+                </Card>
+
+                <Card 
+                  className={cn(
+                    "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                    statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
+                  )}
+                  onClick={() => handleStatusFilter('scadute')}
+                >
+                  <CardContent className="text-center p-3 w-20">
+                    <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
+                    <div className="text-text-secondary text-xs">Scadute</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Controllo visibilità filtri - Centrato */}
-      <div className="flex justify-center mb-4">
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-          className="text-text-secondary hover:text-text-primary transition-colors p-3"
-          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
-        >
-          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
-        </Button>
-      </div>
 
       {/* Azioni per selezione multipla */}
       {selectedActivities.length > 0 && (

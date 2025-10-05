@@ -2909,7 +2909,10 @@ export default function ImportTemplates() {
                      Seleziona pagina ({viewingRecords.length})
                    </span>
                    {selectedRecords.size > 0 && (
-                     <span className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded ml-2">
+                     <span 
+                       className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded ml-2 cursor-pointer hover:bg-blue-600"
+                       onClick={() => setSelectedRecords(new Set())}
+                     >
                        {selectedRecords.size}
                      </span>
                    )}

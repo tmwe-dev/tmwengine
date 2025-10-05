@@ -625,7 +625,7 @@ const Chat = () => {
               )}
               <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
                 <div className={shouldHideHeader ? 'space-y-3' : ''}>
-                  {messages.map((message) => (
+                  {(isLayoutInverted && shouldHideHeader ? [...messages].reverse() : messages).map((message) => (
                     <div
                       key={message.id}
                       className={`flex items-start gap-3 ${shouldHideHeader ? 'mb-3' : ''} ${

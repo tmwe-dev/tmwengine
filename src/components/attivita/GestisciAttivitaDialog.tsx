@@ -171,11 +171,6 @@ export function GestisciAttivitaDialog({
               <div className="flex items-center gap-2 flex-wrap justify-start">
                 <span className="text-lg">Gestisci Attività</span>
               </div>
-              {activity.rubrica_nome && (
-                <div className="text-base text-muted-foreground mt-0.5 text-center">
-                  {activity.rubrica_nome}
-                </div>
-              )}
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -323,6 +318,12 @@ export function GestisciAttivitaDialog({
                   <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs">
                     {activity.stato.replace('_', ' ').toUpperCase()}
                   </Badge>
+                  {/* Nome cliente sotto il badge */}
+                  {activity.rubrica_nome && (
+                    <div className="text-base text-muted-foreground text-center">
+                      {activity.rubrica_nome}
+                    </div>
+                  )}
                 </div>
               </div>
 

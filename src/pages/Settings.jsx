@@ -905,18 +905,18 @@ const Settings = () => {
                   "Inserisci la tua API key del provider AI"
                 )}
 
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="newAiAttivo"
-                      checked={newAiConfig.attivo}
-                      onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
-                    />
-                    <Label htmlFor="newAiAttivo" className="text-sm">
-                      Imposta come servizio attivo
-                    </Label>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="newAiAttivo"
+                    checked={newAiConfig.attivo}
+                    onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
+                  />
+                  <Label htmlFor="newAiAttivo" className="text-sm">
+                    Imposta come servizio attivo
+                  </Label>
+                </div>
 
+                <div className="flex justify-center">
                   <Button onClick={handleAddAiConfig} disabled={saving} className="h-9">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? 'Aggiunta...' : 'Aggiungi Servizio'}

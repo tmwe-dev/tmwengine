@@ -3011,67 +3011,7 @@ export default function ImportTemplates() {
             </div>
           )}
           
-          {/* Mobile Action Buttons */}
-          {isMobile && selectedRecords.size > 0 && (
-            <div className="flex items-center justify-between pb-2">
-              {/* Icona multipla all'estrema sinistra */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowMultipleActivityDialog(true)}
-                      className="p-2"
-                    >
-                      <FileText className="h-4 w-4 text-blue-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Crea attività multiple</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Bottone centrale */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={importSelectedRecords}
-                      className="p-2"
-                    >
-                      <Database className="h-4 w-4 text-green-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Importa in rubrica</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Cestino all'estrema destra */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={deleteSelectedRecords}
-                      className="p-2"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Elimina selezionati</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          )}
+          {/* Mobile Action Buttons - separate positioning */}
           
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
@@ -3417,7 +3357,30 @@ export default function ImportTemplates() {
                     {/* Desktop Actions - keep existing */}
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
-                      <div className="flex flex-col items-center border-t">
+                      <div className="flex flex-col items-center border-t relative">
+                        {/* Cestino - esattamente sopra il libro */}
+                        {selectedRecords.size > 0 && (
+                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={deleteSelectedRecords}
+                                    className="p-2"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Elimina selezionati</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        )}
+                        
                         {/* Animated Book */}
                         <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
                         
@@ -3444,6 +3407,28 @@ export default function ImportTemplates() {
                             >
                               <ChevronLeft className="h-10 w-10" />
                             </Button>
+                            
+                            {/* Azioni multiple - al centro tra le frecce */}
+                            {selectedRecords.size > 0 && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setShowMultipleActivityDialog(true)}
+                                      className="p-2"
+                                    >
+                                      <FileText className="h-4 w-4 text-blue-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Crea attività multiple</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            
                             <span className="text-sm px-3 py-1">
                               {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
                             </span>
@@ -3457,6 +3442,27 @@ export default function ImportTemplates() {
                               <ChevronRight className="h-10 w-10" />
                             </Button>
                           </div>
+                          
+                          {/* Salva in rubrica - a destra della freccia, allineato a destra */}
+                          {selectedRecords.size > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={importSelectedRecords}
+                                    className="p-2 absolute right-0"
+                                  >
+                                    <Database className="h-4 w-4 text-green-500" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Importa in rubrica</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </div>
                     ) : (

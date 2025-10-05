@@ -606,7 +606,7 @@ const Chat = () => {
         </div>
 
         {/* Area Chat Principale */}
-        <div className={`space-y-6 order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full' : 'xl:col-span-3'}`}>
+        <div className={`order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full overflow-hidden' : 'xl:col-span-3 space-y-6'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
             <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none' : ''}`}>
@@ -674,7 +674,7 @@ const Chat = () => {
           )}
 
           {/* Area Input */}
-          <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none' : ''}`}>
+          <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
             {!shouldHideHeader && (
               <CardHeader className="py-4">
                 <CardTitle>

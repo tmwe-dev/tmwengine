@@ -825,7 +825,7 @@ const Settings = () => {
                       value={newAiConfig.provider} 
                       onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, provider: value }))}
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-9 w-[60%]">
                         <SelectValue placeholder="Seleziona provider AI" />
                       </SelectTrigger>
                       <SelectContent>
@@ -845,7 +845,7 @@ const Settings = () => {
                       value={newAiConfig.modello} 
                       onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-9 w-[60%]">
                         <SelectValue placeholder="Seleziona modello" />
                       </SelectTrigger>
                       <SelectContent>

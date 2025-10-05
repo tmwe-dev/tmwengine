@@ -67,8 +67,9 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
   };
 
   return (
-    <header className="flex items-center border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden">
-      <div className="flex items-center gap-1 md:gap-2">
+    <header className="flex items-center justify-between border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden gap-2">
+      {/* LEFT: Menu + Title */}
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {isMobile && onMenuClick && (
           <Button 
             onClick={onMenuClick} 
@@ -80,14 +81,18 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           </Button>
         )}
         
-        <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          {isMobile ? 'Email' : 'TMWE Email Manager'}
+        <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
+          {isMobile ? 'Email' : 'TMWE Email'}
         </h1>
-        
+      </div>
+
+      {/* CENTER: Actions (Compose + Sync buttons) */}
+      <div className="flex items-center gap-1 shrink-0">
         <Button 
           onClick={onCompose} 
           size="icon"
           className="h-8 w-8 relative"
+          title="Compose new email"
         >
           <Mail 
             className="h-4 w-4" 
@@ -103,6 +108,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           variant="outline"
           size="icon"
           className="h-8 w-8"
+          title="Sync all emails"
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
@@ -115,7 +121,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             size="icon"
             className="h-8 w-8 relative"
             disabled={isSyncingSmart}
-            title="Sincronizza solo le email mancanti (batch da 10)"
+            title="Smart sync - only missing emails"
           >
             <Database className={`h-4 w-4 ${isSyncingSmart ? 'animate-pulse' : ''}`} />
             
@@ -150,34 +156,35 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             )}
           </Button>
         )}
+
+        {/* Download Progress */}
+        {downloadProgressComponent && (
+          <div className="ml-1">
+            {downloadProgressComponent}
+          </div>
+        )}
       </div>
 
-      {downloadProgressComponent && (
-        <div className="ml-2">
-          {downloadProgressComponent}
-        </div>
-      )}
+      {/* RIGHT: Email Count + Search */}
+      <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+        <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
+          <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
+        </Badge>
 
-      <form onSubmit={handleSearch} className="flex-1 ml-2 md:ml-4 min-w-0">
-        <div className="relative flex items-center gap-1 sm:gap-2 min-w-0">
-          <Badge variant="secondary" className="flex items-center gap-1.5 px-2 py-1 whitespace-nowrap">
-            <Database className="h-3.5 w-3.5" />
-            <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
-          </Badge>
-          
-          <div className="relative flex-1 min-w-0">
+        <form onSubmit={handleSearch} className="flex-1 min-w-0">
+          <div className="relative min-w-0">
             <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder={isMobile ? "Search..." : "Search emails..."}
-              className="pl-8 sm:pl-10 text-xs sm:text-sm h-8"
+              className="pl-8 sm:pl-10 text-xs sm:text-sm h-8 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
-      </form>
-
+        </form>
+      </div>
     </header>
   );
 };

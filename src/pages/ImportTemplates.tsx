@@ -2485,15 +2485,112 @@ export default function ImportTemplates() {
                   </div>
                 </div>
                 
-                {/* Search Field */}
-                <div className="relative w-[65%] mx-auto mt-[10px]">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Cerca..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                {/* Search Field and Filter Buttons Container */}
+                <div className="flex items-center justify-center gap-2 mt-[10px]">
+                  <div className="relative w-[65%]">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {/* Filter Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 p-2"
+                        >
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] w-[95vw]">
+                        <DialogHeader>
+                          <DialogTitle>Filtri</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          {/* Filters */}
+                          <div className="space-y-3">
+                            <div className="space-y-2">
+                              <Label>Origine</Label>
+                              <Select value={originFilter} onValueChange={setOriginFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le origini" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {value} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Nazione</Label>
+                              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le nazioni" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('nazione').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {getCountryFullName(value)} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="has-notes-filter-mobile"
+                                checked={hasNotesFilter}
+                                onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                <StickyNote className="h-4 w-4 text-blue-500" />
+                                Solo con note
+                              </Label>
+                            </div>
+                          </div>
+                          
+                          {/* Confirm Button */}
+                          <div className="pt-4 border-t">
+                            <Button 
+                              className="w-full" 
+                              onClick={() => setShowFilters(false)}
+                            >
+                              Conferma
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    {/* Clear Filters Button */}
+                    {(originFilter || countryFilter || hasNotesFilter) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 p-2"
+                        onClick={() => {
+                          setOriginFilter('');
+                          setCountryFilter('');
+                          setHasNotesFilter(false);
+                        }}
+                      >
+                        <FilterX className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -2887,7 +2984,7 @@ export default function ImportTemplates() {
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
             <div className="flex justify-between items-center pb-2">
-              {/* Selection Controls and Filters */}
+              {/* Selection Controls - Left side */}
               <div className="flex items-center gap-2">
               {/* Selection Controls */}
               {filteredRecords.length > 0 && (
@@ -2917,117 +3014,7 @@ export default function ImportTemplates() {
                      </span>
                    )}
                  </div>
-               )}
-              
-              {/* Filter Buttons */}
-              <div className="flex items-center gap-1">
-                <Dialog open={showFilters} onOpenChange={setShowFilters}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 p-2"
-                    >
-                      <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
-                    </Button>
-                  </DialogTrigger>
-                <DialogContent className="max-w-[95vw] w-[95vw]">
-                  <DialogHeader>
-                    <DialogTitle>Filtri</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    {/* Filters */}
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label>Origine</Label>
-                        <Select value={originFilter} onValueChange={setOriginFilter}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tutte le origini" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
-                            {getUniqueValuesWithCount('origin').map(({ value, count }) => (
-                              <SelectItem key={value} value={value}>
-                                {value} ({count})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Paese</Label>
-                        <Select value={countryFilter} onValueChange={setCountryFilter}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tutti i paesi" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all__">Tutti</SelectItem>
-                            {getUniqueValues('country').map((country) => (
-                              <SelectItem key={country} value={String(country)}>
-                                {getCountryFullName(String(country))}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Record per pagina</Label>
-                        <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="25">25</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox
-                          id="has-notes-filter-mobile"
-                          checked={hasNotesFilter}
-                          onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                        />
-                        <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 cursor-pointer">
-                          <StickyNote className="h-4 w-4 text-blue-500" />
-                          Solo con note
-                        </Label>
-                      </div>
-                    </div>
-                    
-                    {/* Confirm Button */}
-                    <div className="pt-4 border-t">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => setShowFilters(false)}
-                      >
-                        Conferma
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              
-              {/* Clear Filters Button */}
-              {(originFilter || countryFilter || hasNotesFilter) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 p-2"
-                  onClick={() => {
-                    setOriginFilter('');
-                    setCountryFilter('');
-                    setHasNotesFilter(false);
-                  }}
-                >
-                  <FilterX className="h-4 w-4 text-red-500" />
-                </Button>
-              )}
-            </div>
+                )}
               </div>
             </div>
           )}

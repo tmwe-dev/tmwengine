@@ -891,19 +891,6 @@ const Chat = () => {
             )}
             <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
               <form onSubmit={handleSubmit} className={shouldHideHeader ? 'space-y-3' : 'space-y-4'}>
-                {/* File Upload and Image Generation - Only show when not hidden */}
-                {!shouldHideHeader && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <FileUploader 
-                      onFilesUploaded={setUploadedFiles}
-                      maxFiles={5}
-                    />
-                    <ImageGenerator 
-                      onImageGenerated={(url) => setGeneratedImage(url)}
-                    />
-                  </div>
-                )}
-
                 {/* Show generated image preview */}
                 {generatedImage && (
                   <div className="relative inline-block">
@@ -984,13 +971,20 @@ const Chat = () => {
                       </Dialog>
                     </div>
                   ) : null}
-                  <div className={shouldHideHeader ? 'ml-auto' : 'w-full flex justify-end'}>
+                  <div className={shouldHideHeader ? 'ml-auto flex items-center gap-2' : 'w-full flex justify-end items-center gap-2'}>
+                    <FileUploader 
+                      onFilesUploaded={setUploadedFiles}
+                      maxFiles={5}
+                    />
+                    <ImageGenerator 
+                      onImageGenerated={(url) => setGeneratedImage(url)}
+                    />
                     <Button 
                       type="submit" 
                       disabled={(!prompt.trim() && uploadedFiles.length === 0 && !generatedImage) || isLoading}
                       className="flex items-center gap-2"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-4 w-4" strokeWidth={1.5} />
                       {isLoading ? 'Invio...' : 'Invia Messaggio'}
                     </Button>
                   </div>

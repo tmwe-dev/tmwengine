@@ -68,9 +68,8 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          <ImageIcon className="h-4 w-4 mr-2" />
-          Genera Immagine
+        <Button type="button" variant="ghost" size="icon" title="Genera Immagine">
+          <ImageIcon className="h-5 w-5" strokeWidth={1.5} />
         </Button>
       </DialogTrigger>
       <DialogContent>

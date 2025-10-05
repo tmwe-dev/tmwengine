@@ -96,13 +96,13 @@ export const FileUploader = ({ onFilesUploaded, maxFiles = 5 }: FileUploaderProp
       <div className="flex items-center gap-2">
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon"
           disabled={uploading || files.length >= maxFiles}
           onClick={() => document.getElementById('file-upload')?.click()}
+          title={uploading ? 'Caricamento...' : 'Allega File'}
         >
-          <Paperclip className="h-4 w-4 mr-2" />
-          {uploading ? 'Caricamento...' : 'Allega File'}
+          <Paperclip className="h-5 w-5" strokeWidth={1.5} />
         </Button>
         <input
           id="file-upload"

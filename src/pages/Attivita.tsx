@@ -954,52 +954,51 @@ export default function Attivita() {
         </div>
       )}
 
-      {/* Stats - Sempre visibili */}
-      <div className="flex justify-center mb-6">
-        <div className={cn(
-          "flex gap-2 overflow-x-auto",
-          isMobile ? "flex-nowrap" : "flex-wrap justify-center"
-        )}>
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'all' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('all')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
-              <div className="text-text-secondary text-xs">Totali</div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'future' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('future')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
-              <div className="text-text-secondary text-xs">In Sospeso</div>
-            </CardContent>
-          </Card>
+      {/* Stats - Solo Desktop */}
+      {!isMobile && (
+        <div className="flex justify-center mb-6">
+          <div className="flex gap-2 flex-wrap justify-center">
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'all' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('all')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
+                <div className="text-text-secondary text-xs">Totali</div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'future' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('future')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
+                <div className="text-text-secondary text-xs">In Sospeso</div>
+              </CardContent>
+            </Card>
 
-          <Card 
-            className={cn(
-              "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-              statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handleStatusFilter('scadute')}
-          >
-            <CardContent className="text-center p-3 w-20">
-              <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
-              <div className="text-text-secondary text-xs">Scadute</div>
-            </CardContent>
-          </Card>
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('scadute')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
+                <div className="text-text-secondary text-xs">Scadute</div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Controllo visibilità filtri - Centrato */}
       <div className="flex justify-center mb-4">

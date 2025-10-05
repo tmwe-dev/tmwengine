@@ -2984,30 +2984,7 @@ export default function ImportTemplates() {
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
             <div className="flex justify-between items-center pb-2 relative">
-              {/* Selection Controls - posizionato in basso assoluto */}
-              {filteredRecords.length > 0 && (
-                <div className="absolute -bottom-[41px] left-0 z-10">
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     onClick={toggleSelectAll}
-                     className="p-2 hover:bg-transparent"
-                     aria-label="Seleziona tutti della pagina"
-                   >
-                     <FileText 
-                       className={(() => {
-                         const currentPageIndexes = [];
-                         for (let i = 0; i < viewingRecords.length; i++) {
-                           const actualIndex = currentPage * recordsPerPage + i;
-                           currentPageIndexes.push(actualIndex);
-                         }
-                         const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
-                         return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
-                       })()}
-                     />
-                   </Button>
-                 </div>
-               )}
+              {/* Selection Controls rimosso da qui - ora nel footer */}
             </div>
           )}
           
@@ -3386,6 +3363,29 @@ export default function ImportTemplates() {
                         
                         {/* Pagination Controls */}
                         <div className="flex items-center justify-center gap-[15px] relative w-full">
+                          {/* File Icon - a sinistra del badge */}
+                          {filteredRecords.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={toggleSelectAll}
+                              className="p-2 hover:bg-transparent absolute left-1/2 -translate-x-1/2 -left-[30px] -top-[90px]"
+                              aria-label="Seleziona tutti della pagina"
+                            >
+                              <FileText 
+                                className={(() => {
+                                  const currentPageIndexes = [];
+                                  for (let i = 0; i < viewingRecords.length; i++) {
+                                    const actualIndex = currentPage * recordsPerPage + i;
+                                    currentPageIndexes.push(actualIndex);
+                                  }
+                                  const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                                  return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
+                                })()}
+                              />
+                            </Button>
+                          )}
+                          
                           {/* Selected Records Badge - Centered */}
                           {selectedRecords.size > 0 && (
                             <span 

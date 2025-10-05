@@ -876,257 +876,141 @@ export default function Attivita() {
         </Dialog>
       </div>
 
-      {/* Search Field - Always Visible */}
-      <Card className="border-card shadow-soft bg-card-transparent">
-        <CardContent className={cn(isMobile ? "p-2" : "p-4")}>
-          <div className="flex items-center gap-3">
-            {/* Counter - Mobile */}
-            {isMobile && (
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <FileText className="h-4 w-4" />
-                ({filteredActivities.length})
-              </div>
-            )}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cerca attività..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={cn("pl-10", isMobile ? "h-8" : "h-9")}
-              />
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2 shrink-0"
-                  title="Filtri avanzati"
-                >
-                  <Filter className="h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
-                <Card className="border-0 shadow-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      Filtri Avanzati
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <ActivityFilters 
-                      filters={filters}
-                      onFiltersChange={setFilters}
-                      activities={activities}
-                      onClose={() => {}}
-                    />
-                    
-                    {/* Date Filter */}
-                    <div className="pt-2 border-t">
-                      <label className="text-xs font-medium mb-1 block">Data Scadenza</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full h-8 text-xs justify-start">
-                            <CalendarIcon className="h-4 w-4 mr-2" />
-                            {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={filterDate}
-                            onSelect={handleDateFilter}
-                            initialFocus
-                            className="p-3 pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    {/* Records Per Page */}
-                    <div className="pt-2 border-t">
-                      <label className="text-xs font-medium mb-1 block">Per pagina</label>
-                      <Select value={recordsPerPage.toString()} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                          <SelectItem value="200">200</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Compact Stats */}
-                    <div className="grid grid-cols-3 gap-2 py-2 border-t border-border">
-                      <div className="text-center">
-                        <div className="text-sm font-bold text-foreground">{activities.length}</div>
-                        <div className="text-xs text-muted-foreground">Totali</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-bold text-primary">{filteredActivities.length}</div>
-                        <div className="text-xs text-muted-foreground">Filtrate</div>
-                      </div>
-                      <div className="text-center">
-                        <div className={cn("text-sm font-bold", selectedActivities.length > 0 ? "text-blue-600" : "text-accent")}>{selectedActivities.length}</div>
-                        <div className="text-xs text-muted-foreground">Selez.</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mobile Sort & Actions - Below Search */}
-      {isMobile && paginatedActivities.length > 0 && (
-        <div className="flex justify-center">
-          <Card className="border-0 shadow-none w-fit bg-transparent">
-            <CardContent className="p-2 pb-[10px] -mt-5">
-              <div className="flex items-center gap-2">
-                {/* Actions when activities selected */}
-                {selectedActivities.length > 0 && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-transparent"
-                      onClick={() => setIsGestisciOpen(true)}
-                      title={`Gestisci ${selectedActivities.length} attività`}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
+      {/* Search and Filters - Collapsible */}
+      {!isHeaderCollapsed && (
+        <div className="animate-fade-in">
+          <Card className="bg-card-transparent border-card shadow-soft">
+            <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
+              {/* Ricerca e Dropdown centrati */}
+              <div className="flex flex-col items-center gap-4 max-w-4xl mx-auto">
+                <div className="w-full max-w-xl relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    placeholder="Cerca per descrizione o contatto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
                 <Select
-                  value={sortField}
-                  onValueChange={(value) => setSortField(value as keyof Activity)}
+                  value={filters.stato}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, stato: value }))}
                 >
-                  <SelectTrigger className="h-8 text-xs w-auto min-w-[120px]">
-                    <SelectValue placeholder="Ordina per" />
+                  <SelectTrigger className="w-full max-w-xl">
+                    <SelectValue placeholder={`Risultati: ${filteredActivities.length}/${activities.length}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="data_creazione">Data creazione</SelectItem>
-                    <SelectItem value="scadenza">Scadenza</SelectItem>
-                    <SelectItem value="priorita">Priorità</SelectItem>
-                    <SelectItem value="stato">Stato</SelectItem>
-                    <SelectItem value="tipo">Tipo</SelectItem>
+                    <SelectItem value="all">Tutte le attività ({activities.length})</SelectItem>
+                    <SelectItem value="aperta,in_corso">Da svolgere ({activities.filter(a => a.stato === 'aperta' || a.stato === 'in_corso').length})</SelectItem>
+                    <SelectItem value="completata">Completate ({activities.filter(a => a.stato === 'completata').length})</SelectItem>
+                    <SelectItem value="annullata">Annullate ({activities.filter(a => a.stato === 'annullata').length})</SelectItem>
+                    <SelectItem value="aperta">Solo aperte ({activities.filter(a => a.stato === 'aperta').length})</SelectItem>
                   </SelectContent>
                 </Select>
-                {selectedActivities.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-transparent"
-                    onClick={async () => {
-                      if (confirm(`Eliminare ${selectedActivities.length} attività?`)) {
-                        try {
-                          const { error } = await supabase
-                            .from('attivita')
-                            .delete()
-                            .in('id', selectedActivities);
-                          
-                          if (error) throw error;
-                          
-                          toast({
-                            title: "Successo",
-                            description: `${selectedActivities.length} attività eliminate`,
-                          });
-                          
-                          setSelectedActivities([]);
-                          loadActivities();
-                        } catch (error: any) {
-                          toast({
-                            title: "Errore",
-                            description: error.message,
-                            variant: "destructive"
-                          });
-                        }
-                      }
-                    }}
-                    title={`Elimina ${selectedActivities.length} attività`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
+
+              <div className="flex gap-3 mt-4 justify-center">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
+                    </Button>
+                  </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={filterDate}
+                        onSelect={handleDateFilter}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                </PopoverContent>
+              </Popover>
+
+              <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filtri Avanzati
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Filtri Attività</DialogTitle>
+                  </DialogHeader>
+                  <ActivityFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onClose={() => setIsFiltersOpen(false)}
+                    activities={activities}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Stats - Summary Cards */}
-      <div className="flex gap-2 flex-wrap justify-center">
-        <Card 
-          className={cn(
-            "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-            statusFilter === 'all' && "ring-2 ring-primary border-primary"
-          )}
-          onClick={() => handleStatusFilter('all')}
-        >
-          <CardContent className="text-center p-3 w-20">
-            <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
-            <div className="text-text-secondary text-xs">Totali</div>
-          </CardContent>
-        </Card>
-        
-        <Card 
-          className={cn(
-            "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-            statusFilter === 'future' && "ring-2 ring-primary border-primary"
-          )}
-          onClick={() => handleStatusFilter('future')}
-        >
-          <CardContent className="text-center p-3 w-20">
-            <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
-            <div className="text-text-secondary text-xs">In Sospeso</div>
-          </CardContent>
-        </Card>
+      {/* Stats - Solo Desktop */}
+      {!isMobile && (
+        <div className="flex justify-center mb-6">
+          <div className="flex gap-2 flex-wrap justify-center">
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'all' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('all')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-text-primary text-xl">{stats.totali}</div>
+                <div className="text-text-secondary text-xs">Totali</div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'future' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('future')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-orange-600 text-xl">{stats.future}</div>
+                <div className="text-text-secondary text-xs">In Sospeso</div>
+              </CardContent>
+            </Card>
 
-        <Card 
-          className={cn(
-            "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-            statusFilter === 'completate' && "ring-2 ring-primary border-primary"
-          )}
-          onClick={() => handleStatusFilter('completate')}
-        >
-          <CardContent className="text-center p-3 w-20">
-            <div className="font-bold text-green-600 text-xl">{stats.completate}</div>
-            <div className="text-text-secondary text-xs">Completate</div>
-          </CardContent>
-        </Card>
+            <Card 
+              className={cn(
+                "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
+                statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
+              )}
+              onClick={() => handleStatusFilter('scadute')}
+            >
+              <CardContent className="text-center p-3 w-20">
+                <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
+                <div className="text-text-secondary text-xs">Scadute</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
-        <Card 
-          className={cn(
-            "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-            statusFilter === 'in_corso' && "ring-2 ring-primary border-primary"
-          )}
-          onClick={() => handleStatusFilter('in_corso')}
+      {/* Controllo visibilità filtri - Centrato */}
+      <div className="flex justify-center mb-4">
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          className="text-text-secondary hover:text-text-primary transition-colors p-3"
+          title={isHeaderCollapsed ? "Mostra filtri e statistiche" : "Nascondi filtri e statistiche"}
         >
-          <CardContent className="text-center p-3 w-20">
-            <div className="font-bold text-blue-600 text-xl">{stats.in_corso}</div>
-            <div className="text-text-secondary text-xs">In Corso</div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={cn(
-            "border-2 border-border bg-card/50 backdrop-blur-sm shadow-md cursor-pointer hover:shadow-lg transition-all",
-            statusFilter === 'scadute' && "ring-2 ring-primary border-primary"
-          )}
-          onClick={() => handleStatusFilter('scadute')}
-        >
-          <CardContent className="text-center p-3 w-20">
-            <div className="font-bold text-red-600 text-xl">{stats.scadute}</div>
-            <div className="text-text-secondary text-xs">Scadute</div>
-          </CardContent>
-        </Card>
+          {isHeaderCollapsed ? <SearchCheck className="h-6 w-6" /> : <SearchX className="h-6 w-6" />}
+        </Button>
       </div>
 
       {/* Azioni per selezione multipla */}

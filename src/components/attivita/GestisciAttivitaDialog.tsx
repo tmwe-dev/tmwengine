@@ -342,8 +342,8 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Descrizione e Note affiancati */}
-              <div className="flex gap-4 mt-6">
+              {/* Descrizione e Note affiancati desktop, sotto in mobile */}
+              <div className="flex flex-col md:flex-row gap-4 mt-6">
                 <div className="flex-1">
                   <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
                   <Textarea

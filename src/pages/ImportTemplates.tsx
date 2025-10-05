@@ -3434,19 +3434,7 @@ export default function ImportTemplates() {
                   "pt-4 border-t flex-shrink-0",
                   isMobile ? "space-y-3" : "flex justify-between items-center"
                 )}>
-                  {/* Stats */}
-                  <div className={cn(
-                    "text-sm text-muted-foreground",
-                    isMobile && "text-center"
-                  )}>
-                    <span className="text-primary font-medium">{viewingRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> record
-                    {activeFilters.length > 0 && (
-                      <span className="ml-2 text-blue-600">
-                        • {filteredRecords.length} filtrati
-                      </span>
-                    )}
-                  </div>
-                   
+                  {/* Stats - removed */}
                     {/* Desktop Actions - keep existing */}
                     {isMobile ? (
                       /* Mobile Pagination - Footer */

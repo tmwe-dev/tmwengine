@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
+import { Plus, Search, Mail, Users, Tag, TrendingUp, X, BarChart3, ChevronLeft, ChevronRight, Brain, ChevronUp, ChevronDown, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -51,6 +51,8 @@ export default function EmailSenders() {
   const [confirmChartActionAssignment, setConfirmChartActionAssignment] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
+  const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Clean_Top pattern
+  const [isSearchVisible, setIsSearchVisible] = useState<boolean>(false); // Search visibility
   const MONTHS_TO_SHOW = 12;
   const queryClient = useQueryClient();
 
@@ -404,251 +406,274 @@ export default function EmailSenders() {
   const groupedSenders = senderStats?.filter(s => s.group).length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900/20 via-background/50 to-blue-900/20 p-6">
+    <div className="section-spacing">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Header with Title and Toggle - Clean_Top Pattern */}
+        <div className="flex justify-between items-start gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Gestione Mittenti
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Raggruppa e organizza i mittenti delle tue email
-            </p>
+            <h1 className="text-heading-1 font-bold text-text-primary">Gestione Mittenti</h1>
+            {isHeaderVisible && (
+              <p className="text-body text-text-secondary animate-accordion-down">
+                Raggruppa e organizza i mittenti delle tue email
+              </p>
+            )}
           </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+            className="h-8 w-8 shrink-0 mt-2.5"
+          >
+            {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuovo Gruppo
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crea Nuovo Gruppo</DialogTitle>
-                <DialogDescription>
-                  Crea un gruppo per organizzare i mittenti
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Gruppo</Label>
-                  <Input
-                    id="name"
-                    placeholder="Es: Clienti, Fornitori, Newsletter..."
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrizione</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Descrizione del gruppo..."
-                    value={newGroupDescription}
-                    onChange={(e) => setNewGroupDescription(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="color">Colore</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="color"
-                      type="color"
-                      value={newGroupColor}
-                      onChange={(e) => setNewGroupColor(e.target.value)}
-                      className="w-20"
-                    />
-                    <Input
-                      type="text"
-                      value={newGroupColor}
-                      onChange={(e) => setNewGroupColor(e.target.value)}
-                      placeholder="#3b82f6"
-                    />
-                  </div>
-                </div>
-                <Button
-                  onClick={() => createGroupMutation.mutate()}
-                  disabled={!newGroupName || createGroupMutation.isPending}
-                  className="w-full"
+        {/* Action Buttons and Filters - Clean_Top Pattern */}
+        {isHeaderVisible && (
+          <div className="animate-accordion-down space-y-4">
+            <div className="flex justify-between items-center gap-4">
+              <div className="flex items-center gap-2">
+                {/* Left-aligned action buttons */}
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="icon" className="shadow-soft h-10 w-10">
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Crea Nuovo Gruppo</DialogTitle>
+                      <DialogDescription>
+                        Crea un gruppo per organizzare i mittenti
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nome Gruppo</Label>
+                        <Input
+                          id="name"
+                          placeholder="Es: Clienti, Fornitori, Newsletter..."
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Descrizione</Label>
+                        <Textarea
+                          id="description"
+                          placeholder="Descrizione del gruppo..."
+                          value={newGroupDescription}
+                          onChange={(e) => setNewGroupDescription(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="color">Colore</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="color"
+                            type="color"
+                            value={newGroupColor}
+                            onChange={(e) => setNewGroupColor(e.target.value)}
+                            className="w-20"
+                          />
+                          <Input
+                            type="text"
+                            value={newGroupColor}
+                            onChange={(e) => setNewGroupColor(e.target.value)}
+                            placeholder="#3b82f6"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => createGroupMutation.mutate()}
+                        disabled={!newGroupName || createGroupMutation.isPending}
+                        className="w-full"
+                      >
+                        Crea Gruppo
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10"
+                  onClick={() => setIsSearchVisible(!isSearchVisible)}
                 >
-                  Crea Gruppo
+                  <Search className="h-5 w-5" />
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Email Totali</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalEmails.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Mittenti Unici</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{uniqueSenders}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Mittenti Raggruppati</CardTitle>
-              <Tag className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{groupedSenders}</div>
-              <p className="text-xs text-muted-foreground">
-                {uniqueSenders > 0 ? Math.round((groupedSenders / uniqueSenders) * 100) : 0}% organizzati
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Gruppi Attivi</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{groups?.length || 0}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bulk Actions & Search */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Bulk Actions */}
-          {selectedSenders.length > 0 && (
-            <Card className="backdrop-blur-md bg-primary/10 border-primary/20 shadow-lg">
-              <CardContent className="py-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      onValueChange={(value) => {
-                        assignToGroupMutation.mutate({
-                          groupId: value,
-                          senders: selectedSenders,
-                        });
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Assegna a gruppo..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups?.map((group) => (
-                          <SelectItem key={group.id} value={group.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: group.colore }}
-                              />
-                              {group.nome_gruppo}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Badge variant="secondary">{selectedSenders.length}</Badge>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setSelectedSenders([])}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Select
-                      onValueChange={(value: 'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward') => {
-                        assignActionMutation.mutate({
-                          actionType: value,
-                          senders: selectedSenders,
-                        });
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Assegna azione automatica..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="move_to_folder">
-                          📁 Sposta in cartella
-                        </SelectItem>
-                        <SelectItem value="mark_as_read">
-                          ✓ Marca come letto
-                        </SelectItem>
-                        <SelectItem value="archive">
-                          📦 Archivia
-                        </SelectItem>
-                        <SelectItem value="delete">
-                          🗑️ Elimina
-                        </SelectItem>
-                        <SelectItem value="forward">
-                          ➡️ Inoltra
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Search */}
-          <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg md:col-span-1">
-            <CardHeader>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Cerca mittente..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* Senders Table */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg max-w-[48%]">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CardTitle>Mittenti</CardTitle>
-                <Badge variant="secondary">{uniqueSenders}</Badge>
+              
+              <div className="flex items-center gap-1">
+                {/* Right-aligned AI/Settings icons */}
+                <PagePromptManager pageRoute="/email-senders" />
                 <Brain 
-                  className="h-4 w-4 text-primary cursor-pointer hover:scale-110 transition-transform" 
+                  className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform" 
                   onClick={() => {
                     setSelectedAIChatSender('assistente.mittenti@ai.local');
                     setAiChatOpen(true);
                   }}
                 />
-                <PagePromptManager pageRoute="/email-senders" />
+              </div>
+            </div>
+
+            {/* Search Card - Only when search is visible */}
+            {isSearchVisible && (
+              <Card className="bg-card-transparent border-card shadow-soft animate-accordion-down">
+                <CardContent className="p-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                    <Input
+                      placeholder="Cerca mittente..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Stats Cards - Under Search */}
+            <div className="grid gap-4 grid-cols-4">
+              <Card className="bg-card-transparent border-card shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Email Totali</CardTitle>
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalEmails.toLocaleString()}</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-card-transparent border-card shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Mittenti Unici</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{uniqueSenders}</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card-transparent border-card shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Raggruppati</CardTitle>
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{groupedSenders}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {uniqueSenders > 0 ? Math.round((groupedSenders / uniqueSenders) * 100) : 0}%
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card-transparent border-card shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Gruppi Attivi</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{groups?.length || 0}</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Actions */}
+        {selectedSenders.length > 0 && (
+          <Card className="bg-card-transparent border-card shadow-soft border-primary/40">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {selectedSenders.length} mittent{selectedSenders.length > 1 ? 'i' : 'e'} selezionat{selectedSenders.length > 1 ? 'i' : 'o'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedSenders([])}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Deseleziona
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Select
+                    onValueChange={(value) => {
+                      assignToGroupMutation.mutate({
+                        groupId: value,
+                        senders: selectedSenders,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Assegna a gruppo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: group.colore }}
+                            />
+                            {group.nome_gruppo}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    onValueChange={(value: 'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward') => {
+                      assignActionMutation.mutate({
+                        actionType: value,
+                        senders: selectedSenders,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Assegna azione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="move_to_folder">📁 Sposta in cartella</SelectItem>
+                      <SelectItem value="mark_as_read">✓ Marca come letto</SelectItem>
+                      <SelectItem value="archive">📦 Archivia</SelectItem>
+                      <SelectItem value="delete">🗑️ Elimina</SelectItem>
+                      <SelectItem value="forward">➡️ Inoltra</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Senders Table */}
+        <Card className="bg-card-transparent border-card shadow-soft">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle>Mittenti</CardTitle>
+                <Badge variant="secondary">{uniqueSenders}</Badge>
               </div>
               {selectedSenders.length === 1 && (
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => {
                     const index = senderStats?.findIndex(s => s.sender === selectedSenders[0]) || 0;
                     setCurrentSenderIndex(index);
                     setChartDialogOpen(true);
                   }}
-                  className="h-8 w-8"
                 >
-                  <BarChart3 className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Visualizza Timeline
                 </Button>
               )}
             </div>
@@ -662,20 +687,19 @@ export default function EmailSenders() {
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary"
+                    className="cursor-pointer hover:text-primary w-[40%]"
                     onClick={() => handleSort('company')}
                   >
                     Azienda {sortBy === 'company' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-center cursor-pointer hover:text-primary w-24"
+                    className="text-center cursor-pointer hover:text-primary w-[80px]"
                     onClick={() => handleSort('count')}
                   >
-                    <Mail className="h-4 w-4 mx-auto" />
-                    {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    Email {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-right cursor-pointer hover:text-primary"
+                    className="text-right cursor-pointer hover:text-primary w-[30%]"
                     onClick={() => handleSort('group')}
                   >
                     Gruppo {sortBy === 'group' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -704,19 +728,19 @@ export default function EmailSenders() {
                       }`}
                       onClick={() => handleToggleSender(stat.sender)}
                     >
-                      <TableCell className="py-2 font-semibold text-muted-foreground">
+                      <TableCell className="py-3 font-semibold text-muted-foreground text-sm">
                         {index + 1}
                       </TableCell>
-                      <TableCell className="py-2">
-                        <div className="flex flex-col">
+                      <TableCell className="py-3">
+                        <div className="flex flex-col gap-1">
                           {extractCompanyName(stat.sender) && (
-                            <span className="font-bold text-base capitalize">{extractCompanyName(stat.sender)}</span>
+                            <span className="font-semibold text-sm capitalize">{extractCompanyName(stat.sender)}</span>
                           )}
-                          <span className="text-sm text-muted-foreground">{stat.sender}</span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[300px]">{stat.sender}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center py-2">
-                        <span className="text-base font-semibold">{stat.count}</span>
+                      <TableCell className="text-center py-3">
+                        <Badge variant="secondary" className="font-semibold">{stat.count}</Badge>
                       </TableCell>
                       <TableCell className="text-right py-2">
                         {stat.group && (
@@ -741,35 +765,38 @@ export default function EmailSenders() {
         </Card>
 
         {/* Groups List */}
-        <Card className="backdrop-blur-md bg-card/80 border-white/10 shadow-lg">
+        <Card className="bg-card-transparent border-card shadow-soft">
           <CardHeader>
             <CardTitle>Gruppi Esistenti</CardTitle>
+            <CardDescription>
+              {selectedSenders.length > 0 && 'Clicca su un gruppo per assegnare i mittenti selezionati'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {groups?.map((group) => (
                 <Card 
                   key={group.id} 
-                  className={`backdrop-blur-sm bg-card/60 border-2 shadow-md ${selectedSenders.length > 0 ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+                  className={`bg-card/60 border-2 shadow-sm transition-all ${selectedSenders.length > 0 ? 'cursor-pointer hover:shadow-md hover:scale-105' : ''}`}
                   style={{ borderColor: group.colore }}
                   onClick={() => handleGroupCardClick(group.id, group.nome_gruppo)}
                 >
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                  <CardHeader className="p-4">
+                    <CardTitle className="flex items-center gap-2 text-sm">
                       <div
-                        className="w-4 h-4 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: group.colore }}
                       />
-                      {group.nome_gruppo}
+                      <span className="truncate">{group.nome_gruppo}</span>
                     </CardTitle>
                     {group.descrizione && (
-                      <CardDescription>{group.descrizione}</CardDescription>
+                      <CardDescription className="text-xs truncate">{group.descrizione}</CardDescription>
                     )}
                   </CardHeader>
                 </Card>
               ))}
               {groups?.length === 0 && (
-                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                <div className="col-span-full text-center py-8 text-muted-foreground text-sm">
                   Nessun gruppo creato. Crea il primo gruppo per iniziare!
                 </div>
               )}

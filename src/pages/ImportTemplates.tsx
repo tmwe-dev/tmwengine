@@ -3011,6 +3011,68 @@ export default function ImportTemplates() {
             </div>
           )}
           
+          {/* Mobile Action Buttons */}
+          {isMobile && selectedRecords.size > 0 && (
+            <div className="flex items-center justify-between pb-2">
+              {/* Icona multipla all'estrema sinistra */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowMultipleActivityDialog(true)}
+                      className="p-2"
+                    >
+                      <FileText className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Crea attività multiple</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Bottone centrale */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={importSelectedRecords}
+                      className="p-2"
+                    >
+                      <Database className="h-4 w-4 text-green-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Importa in rubrica</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Cestino all'estrema destra */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={deleteSelectedRecords}
+                      className="p-2"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Elimina selezionati</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+          
           {loadingAllRecords ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
@@ -3359,67 +3421,18 @@ export default function ImportTemplates() {
                         {/* Animated Book */}
                         <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
                         
-                        {/* Selection indicator - Above page number, aligned left */}
-                        {selectedRecords.size > 0 && (
-                          <div className="flex items-center gap-2 w-full justify-start pb-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setShowMultipleActivityDialog(true)}
-                                    className="p-2"
-                                  >
-                                    <FileText className={cn("h-5 w-5", selectedRecords.size > 0 ? "text-green-500" : "text-blue-500")} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Crea attività multiple</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={importSelectedRecords}
-                                    className="p-2"
-                                  >
-                                    <Database className={cn("h-5 w-5", selectedRecords.size > 0 ? "text-green-500" : "text-blue-500")} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Importa in rubrica</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={deleteSelectedRecords}
-                                    className="p-2"
-                                  >
-                                    <Trash2 className={cn("h-5 w-5", selectedRecords.size > 0 ? "text-green-500" : "text-red-500")} />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Elimina selezionati</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        )}
-                        
                         {/* Pagination Controls */}
                         <div className="flex items-center justify-center gap-[15px] relative w-full">
+                          {/* Selected Records Badge - Left side */}
+                          {selectedRecords.size > 0 && (
+                            <span 
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-0"
+                              onClick={() => setSelectedRecords(new Set())}
+                            >
+                              {selectedRecords.size}
+                            </span>
+                          )}
+                          
                           {/* Centered controls */}
                           <div className="flex items-center gap-[15px]">
                             <Button

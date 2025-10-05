@@ -296,13 +296,15 @@ const AIConfig = () => {
               </Select>
             </div>
 
-            {renderSecretField(
-              "API Key *",
-              newAiConfig.apiKey,
-              "newAiApiKey",
-              (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
-              "Inserisci la tua API key"
-            )}
+            <div className="w-1/2">
+              {renderSecretField(
+                "API Key *",
+                newAiConfig.apiKey,
+                "newAiApiKey",
+                (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
+                "Inserisci la tua API key"
+              )}
+            </div>
 
             <div className="flex items-center space-x-2">
               <Switch

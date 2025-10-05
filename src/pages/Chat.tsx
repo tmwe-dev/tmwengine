@@ -405,10 +405,18 @@ const Chat = () => {
       {!shouldHideHeader && (
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <MessageSquare className="h-8 w-8 text-primary" />
-              Chat AI
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <MessageSquare className="h-8 w-8 text-primary" />
+                Chat AI
+              </h1>
+              <span className="text-sm text-muted-foreground mt-2">
+                {useSystemPrompt 
+                  ? `Sistema: ${systemPrompts.find(p => p.attivo)?.nome || 'Prompt personalizzato'}`
+                  : 'Chat libera senza prompts'
+                }
+              </span>
+            </div>
             
             {/* Stats orizzontali in grigio sotto il titolo */}
             {lastResponseStats && (

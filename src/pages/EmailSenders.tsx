@@ -681,25 +681,25 @@ export default function EmailSenders() {
               Clicca per selezionare i mittenti da raggruppare
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-2 md:p-4 overflow-x-auto">
-            <Table className="text-xs md:text-sm">
+          <CardContent className="p-0 md:p-4 overflow-x-auto">
+            <Table className="text-xs md:text-sm w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-8 md:w-12 text-xs">#</TableHead>
+                  <TableHead className="w-6 md:w-12 text-[10px] md:text-xs p-1 md:p-2">#</TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary w-[50%] md:w-[40%] text-xs"
+                    className="cursor-pointer hover:text-primary w-[45%] md:w-[40%] text-[10px] md:text-xs p-1 md:p-2"
                     onClick={() => handleSort('company')}
                   >
                     Azienda {sortBy === 'company' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-center cursor-pointer hover:text-primary w-[60px] md:w-[80px] text-xs"
+                    className="text-center cursor-pointer hover:text-primary w-[50px] md:w-[80px] text-[10px] md:text-xs p-1 md:p-2"
                     onClick={() => handleSort('count')}
                   >
-                    Email {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    # {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-right cursor-pointer hover:text-primary w-[25%] md:w-[30%] text-xs"
+                    className="text-right cursor-pointer hover:text-primary w-[30%] md:w-[30%] text-[10px] md:text-xs p-1 md:p-2 hidden md:table-cell"
                     onClick={() => handleSort('group')}
                   >
                     Gruppo {sortBy === 'group' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -728,21 +728,21 @@ export default function EmailSenders() {
                       }`}
                       onClick={() => handleToggleSender(stat.sender)}
                     >
-                      <TableCell className="py-2 md:py-3 font-semibold text-muted-foreground text-[10px] md:text-sm">
+                      <TableCell className="py-1 md:py-3 font-semibold text-muted-foreground text-[9px] md:text-sm p-1 md:p-2">
                         {index + 1}
                       </TableCell>
-                      <TableCell className="py-2 md:py-3">
-                        <div className="flex flex-col gap-0.5">
+                      <TableCell className="py-1 md:py-3 p-1 md:p-2">
+                        <div className="flex flex-col gap-0">
                           {extractCompanyName(stat.sender) && (
-                            <span className="font-semibold text-xs md:text-sm capitalize truncate">{extractCompanyName(stat.sender)}</span>
+                            <span className="font-semibold text-[10px] md:text-sm capitalize truncate">{extractCompanyName(stat.sender)}</span>
                           )}
-                          <span className="text-[10px] md:text-xs text-muted-foreground truncate max-w-[150px] md:max-w-[300px]">{stat.sender}</span>
+                          <span className="text-[9px] md:text-xs text-muted-foreground truncate max-w-[120px] md:max-w-[300px]">{stat.sender}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center py-2 md:py-3">
-                        <Badge variant="secondary" className="text-[10px] md:text-xs font-semibold px-1 md:px-2">{stat.count}</Badge>
+                      <TableCell className="text-center py-1 md:py-3 p-1 md:p-2">
+                        <Badge variant="secondary" className="text-[9px] md:text-xs font-semibold px-1 md:px-2 py-0">{stat.count}</Badge>
                       </TableCell>
-                      <TableCell className="text-right py-2">
+                      <TableCell className="text-right py-1 md:py-3 p-1 md:p-2 hidden md:table-cell">
                         {stat.group && (
                           <Badge
                             className="text-xs"

@@ -40,12 +40,11 @@ export function CampaignFilters({ filters, onFiltersChange, onClose }: CampaignF
       <div className="space-y-4">
         <div>
           <Label htmlFor="stato-filter">Stato</Label>
-          <Select value={filters.stato} onValueChange={(value) => handleFilterChange('stato', value)}>
+          <Select value={filters.stato || undefined} onValueChange={(value) => handleFilterChange('stato', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutti gli stati" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti gli stati</SelectItem>
               <SelectItem value="attiva">Attiva</SelectItem>
               <SelectItem value="pausa">In Pausa</SelectItem>
               <SelectItem value="completata">Completata</SelectItem>
@@ -55,12 +54,11 @@ export function CampaignFilters({ filters, onFiltersChange, onClose }: CampaignF
 
         <div>
           <Label htmlFor="periodo-filter">Periodo</Label>
-          <Select value={filters.periodo} onValueChange={(value) => handleFilterChange('periodo', value)}>
+          <Select value={filters.periodo || undefined} onValueChange={(value) => handleFilterChange('periodo', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutti i periodi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti i periodi</SelectItem>
               <SelectItem value="correnti">Campagne Correnti</SelectItem>
               <SelectItem value="future">Campagne Future</SelectItem>
               <SelectItem value="passate">Campagne Passate</SelectItem>

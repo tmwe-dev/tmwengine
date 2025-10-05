@@ -369,21 +369,21 @@ const Chat = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-start gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <MessageSquare className="h-8 w-8 text-primary" />
-              Chat AI
-            </h1>
-          </div>
+    <div className="max-w-7xl mx-auto p-3 sm:p-6">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+            <MessageSquare className="h-8 w-8 text-primary" />
+            Chat AI
+          </h1>
           
-          {/* Stats verticali in grigio */}
+          {/* Stats orizzontali in grigio sotto il titolo */}
           {lastResponseStats && (
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground mt-1">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
               <span>{lastResponseStats.tokens} token</span>
+              <span>•</span>
               <span>{lastResponseStats.responseTime}ms</span>
+              <span>•</span>
               <span>{lastResponseStats.memoryMode} memory</span>
             </div>
           )}

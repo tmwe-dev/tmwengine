@@ -947,19 +947,19 @@ const Settings = () => {
                           </div>
                         </DialogContent>
                       </Dialog>
+
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="newAiAttivo"
+                          checked={newAiConfig.attivo}
+                          onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
+                        />
+                        {newAiConfig.attivo && (
+                          <span className="text-xs text-success">Servizio attivo</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="newAiAttivo"
-                    checked={newAiConfig.attivo}
-                    onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
-                  />
-                  <Label htmlFor="newAiAttivo" className="text-sm">
-                    Imposta come servizio attivo
-                  </Label>
                 </div>
 
                 <div className="flex justify-center">

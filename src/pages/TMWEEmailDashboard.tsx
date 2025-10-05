@@ -13,9 +13,10 @@ import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -560,6 +561,22 @@ const EmailDashboard = () => {
           "flex-1 overflow-hidden flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
+          {/* Mobile Search Bar - Above cards on mobile */}
+          {isMobile && (
+            <div className="border-b bg-card-transparent px-2 py-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search emails..."
+                  className="pl-10 text-sm h-9 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          
           {/* Sender Filter */}
           <div className="border-b bg-card-transparent px-4 py-2 flex items-center gap-2">
             <EmailSenderFilter

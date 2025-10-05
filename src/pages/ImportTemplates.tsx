@@ -2499,7 +2499,7 @@ export default function ImportTemplates() {
                           </Select>
                         </div>
                         
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <Checkbox
                             id="has-notes-filter-mobile"
                             checked={hasNotesFilter}

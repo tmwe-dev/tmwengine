@@ -2984,9 +2984,9 @@ export default function ImportTemplates() {
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
             <div className="flex justify-between items-center pb-2 relative">
-              {/* Selection Controls - posizionato in basso assoluto */}
+              {/* Selection Controls - allineato al badge numero records */}
               {filteredRecords.length > 0 && (
-                <div className="absolute -bottom-[15px] left-0 z-10">
+                <div className="absolute -bottom-[90px] left-0 z-10">
                    <Button
                      variant="ghost"
                      size="sm"

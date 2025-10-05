@@ -9,73 +9,99 @@ interface BookProps {
 }
 
 function Book({ direction, onAnimationComplete }: BookProps) {
-  const leftPageRef = useRef<THREE.Mesh>(null);
-  const rightPageRef = useRef<THREE.Mesh>(null);
+  const turningPageRef = useRef<THREE.Group>(null);
   const animationProgress = useRef(0);
   const isAnimating = useRef(false);
+  const targetRotation = useRef(0);
 
   useEffect(() => {
     if (direction !== 'idle') {
       isAnimating.current = true;
       animationProgress.current = 0;
+      targetRotation.current = direction === 'forward' ? -Math.PI : Math.PI;
     }
   }, [direction]);
 
   useFrame((state, delta) => {
-    if (!isAnimating.current || !leftPageRef.current || !rightPageRef.current) return;
+    if (!isAnimating.current || !turningPageRef.current) return;
 
-    // Animate the page turn
-    const speed = 2.5;
+    const speed = 3;
     animationProgress.current += delta * speed;
 
     if (animationProgress.current >= 1) {
       animationProgress.current = 1;
       isAnimating.current = false;
+      turningPageRef.current.rotation.y = 0;
       onAnimationComplete();
+      return;
     }
 
     const progress = animationProgress.current;
-    const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
-
-    if (direction === 'forward') {
-      // Right page turns to the left
-      rightPageRef.current.rotation.y = -Math.PI * easeProgress;
-    } else if (direction === 'backward') {
-      // Left page turns to the right
-      leftPageRef.current.rotation.y = Math.PI * easeProgress;
-    }
+    const easeProgress = 1 - Math.pow(1 - progress, 4);
+    turningPageRef.current.rotation.y = targetRotation.current * (1 - easeProgress);
   });
 
   return (
-    <group>
-      {/* Book cover/base */}
+    <group rotation={[0.35, 0, 0]}>
+      {/* Left cover */}
+      <mesh position={[-1.3, 0, -0.05]}>
+        <boxGeometry args={[1.3, 1.8, 0.08]} />
+        <meshStandardMaterial color="#6366f1" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* Right cover */}
+      <mesh position={[1.3, 0, -0.05]}>
+        <boxGeometry args={[1.3, 1.8, 0.08]} />
+        <meshStandardMaterial color="#8b5cf6" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* Spine */}
       <mesh position={[0, 0, -0.05]}>
-        <boxGeometry args={[2.4, 1.8, 0.1]} />
-        <meshStandardMaterial color="#8B4513" />
+        <boxGeometry args={[0.15, 1.8, 0.08]} />
+        <meshStandardMaterial color="#4f46e5" metalness={0.4} roughness={0.6} />
       </mesh>
 
-      {/* Left page */}
-      <mesh ref={leftPageRef} position={[-0.6, 0, 0]}>
-        <boxGeometry args={[1.2, 1.6, 0.02]} />
-        <meshStandardMaterial color="#F5F5DC" side={THREE.DoubleSide} />
+      {/* Left pages stack */}
+      <mesh position={[-1.25, 0, 0]}>
+        <boxGeometry args={[1.15, 1.65, 0.15]} />
+        <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      {/* Right page */}
-      <mesh ref={rightPageRef} position={[0.6, 0, 0]}>
-        <boxGeometry args={[1.2, 1.6, 0.02]} />
-        <meshStandardMaterial color="#F5F5DC" side={THREE.DoubleSide} />
+      {/* Right pages stack */}
+      <mesh position={[1.25, 0, 0]}>
+        <boxGeometry args={[1.15, 1.65, 0.15]} />
+        <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      {/* Page separator line */}
-      <mesh position={[0, 0, 0.02]}>
-        <boxGeometry args={[0.02, 1.6, 0.04]} />
-        <meshStandardMaterial color="#8B4513" />
-      </mesh>
+      {/* Turning page */}
+      <group ref={turningPageRef} position={[0, 0, 0.08]}>
+        <mesh position={[0.575, 0, 0]}>
+          <boxGeometry args={[1.15, 1.65, 0.01]} />
+          <meshStandardMaterial color="#fefefe" side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+
+      {/* Page edges - left */}
+      {[...Array(8)].map((_, i) => (
+        <mesh key={`left-${i}`} position={[-1.25, 0, 0.08 - i * 0.015]}>
+          <boxGeometry args={[1.14, 1.64, 0.005]} />
+          <meshStandardMaterial color="#f9fafb" />
+        </mesh>
+      ))}
+
+      {/* Page edges - right */}
+      {[...Array(8)].map((_, i) => (
+        <mesh key={`right-${i}`} position={[1.25, 0, 0.08 - i * 0.015]}>
+          <boxGeometry args={[1.14, 1.64, 0.005]} />
+          <meshStandardMaterial color="#f9fafb" />
+        </mesh>
+      ))}
 
       {/* Lighting */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]} intensity={0.8} />
-      <directionalLight position={[-5, -5, -5]} intensity={0.3} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
+      <directionalLight position={[-3, -3, -3]} intensity={0.4} />
+      <pointLight position={[0, 2, 3]} intensity={0.5} color="#a78bfa" />
     </group>
   );
 }
@@ -103,9 +129,9 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   };
 
   return (
-    <div className={className} style={{ height: '120px' }}>
-      <Canvas>
-        <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={80} />
+    <div className={className} style={{ height: '140px', background: 'transparent' }}>
+      <Canvas shadows>
+        <OrthographicCamera makeDefault position={[0, 0, 8]} zoom={60} />
         <Book direction={direction.current} onAnimationComplete={handleAnimationComplete} />
       </Canvas>
     </div>

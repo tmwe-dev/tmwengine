@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -74,8 +75,8 @@ const Chat = () => {
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const [useSystemPrompt, setUseSystemPrompt] = useState(false);
   const [showPromptConfirm, setShowPromptConfirm] = useState(false);
-  const [selectedAIModel, setSelectedAIModel] = useState<string>('google/gemini-2.5-flash');
-  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [aiConfigs, setAiConfigs] = useState<any[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { toast } = useToast();
@@ -89,10 +90,11 @@ const Chat = () => {
     }
   }, [messages, isLayoutInverted]);
 
-  // Carica system prompts
+  // Carica system prompts e AI configurations
   useEffect(() => {
     loadSystemPrompts();
     loadConversations();
+    loadAIConfigurations();
   }, []);
 
   // Setup realtime subscriptions
@@ -138,6 +140,27 @@ const Chat = () => {
       supabase.removeChannel(systemPromptsChannel);
     };
   }, [currentConversationId]);
+
+  const loadAIConfigurations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('config_ai')
+        .select('*')
+        .order('provider', { ascending: true });
+
+      if (error) throw error;
+      
+      setAiConfigs(data || []);
+      
+      // Set active config as default selection
+      const activeConfig = data?.find(c => c.attivo);
+      if (activeConfig) {
+        setSelectedConfigId(activeConfig.id);
+      }
+    } catch (error) {
+      console.error('Error loading AI configurations:', error);
+    }
+  };
 
   const loadSystemPrompts = async () => {
     try {
@@ -357,12 +380,12 @@ const Chat = () => {
         ...(generatedImage ? [generatedImage] : [])
       ];
 
-      const { data, error } = await supabase.functions.invoke('chat-with-openai', {
+      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
         body: { 
           prompt: currentPrompt, 
           systemPrompt: systemPromptContent,
           conversationId: conversationId,
-          model: selectedAIModel,
+          configId: selectedConfigId,
           images: imageUrls.length > 0 ? imageUrls : undefined
         }
       });
@@ -440,96 +463,35 @@ const Chat = () => {
               Chat AI
             </h1>
             
-            {/* Modello AI utilizzato */}
+            {/* Configurazione AI utilizzata */}
             <div className="flex items-center gap-2 mt-2 ml-11">
-              <p className="text-xs text-muted-foreground">
-                {selectedAIModel === 'google/gemini-2.5-flash' && 'Gemini 2.5 Flash'}
-                {selectedAIModel === 'google/gemini-2.5-pro' && 'Gemini 2.5 Pro'}
-                {selectedAIModel === 'google/gemini-2.5-flash-lite' && 'Gemini 2.5 Flash Lite'}
-                {selectedAIModel === 'openai/gpt-5' && 'ChatGPT 5.0'}
-                {selectedAIModel === 'openai/gpt-5-mini' && 'ChatGPT 5.0 Mini'}
-                {selectedAIModel === 'openai/gpt-5-nano' && 'ChatGPT 5.0 Nano'}
-              </p>
-              <Dialog open={showModelSelector} onOpenChange={setShowModelSelector}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
-                    <Cpu className="h-3 w-3 text-muted-foreground" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Seleziona Modello AI</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-2 py-4">
-                    <Button
-                      variant={selectedAIModel === 'google/gemini-2.5-flash' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('google/gemini-2.5-flash');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Flash selezionato' });
-                      }}
-                    >
-                      Gemini 2.5 Flash
-                    </Button>
-                    <Button
-                      variant={selectedAIModel === 'google/gemini-2.5-pro' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('google/gemini-2.5-pro');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Pro selezionato' });
-                      }}
-                    >
-                      Gemini 2.5 Pro
-                    </Button>
-                    <Button
-                      variant={selectedAIModel === 'google/gemini-2.5-flash-lite' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('google/gemini-2.5-flash-lite');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Flash Lite selezionato' });
-                      }}
-                    >
-                      Gemini 2.5 Flash Lite
-                    </Button>
-                    <Button
-                      variant={selectedAIModel === 'openai/gpt-5' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('openai/gpt-5');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 selezionato' });
-                      }}
-                    >
-                      ChatGPT 5.0
-                    </Button>
-                    <Button
-                      variant={selectedAIModel === 'openai/gpt-5-mini' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('openai/gpt-5-mini');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 Mini selezionato' });
-                      }}
-                    >
-                      ChatGPT 5.0 Mini
-                    </Button>
-                    <Button
-                      variant={selectedAIModel === 'openai/gpt-5-nano' ? 'default' : 'outline'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedAIModel('openai/gpt-5-nano');
-                        setShowModelSelector(false);
-                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 Nano selezionato' });
-                      }}
-                    >
-                      ChatGPT 5.0 Nano
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {selectedConfigId && aiConfigs.length > 0 && (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {aiConfigs.find(c => c.id === selectedConfigId)?.provider} - {aiConfigs.find(c => c.id === selectedConfigId)?.modello}
+                  </p>
+                  <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                    <SelectTrigger className="h-6 w-auto text-xs border-none">
+                      <Cpu className="h-3 w-3" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aiConfigs.map((config) => (
+                        <SelectItem key={config.id} value={config.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="capitalize">{config.provider}</span>
+                            <span className="text-muted-foreground">-</span>
+                            <span className="text-xs">{config.modello}</span>
+                            {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              {aiConfigs.length === 0 && (
+                <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
+              )}
             </div>
             
             {/* Stats orizzontali in grigio sotto il modello */}

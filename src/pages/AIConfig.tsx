@@ -249,7 +249,7 @@ const AIConfig = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="aiProvider" className="text-sm">Provider AI</Label>
               <Select 
@@ -295,9 +295,7 @@ const AIConfig = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {renderSecretField(
               "API Key *",
               newAiConfig.apiKey,
@@ -306,7 +304,7 @@ const AIConfig = () => {
               "Inserisci la tua API key"
             )}
 
-            <div className="flex items-center space-x-2 pt-6">
+            <div className="flex items-center space-x-2">
               <Switch
                 id="newAiAttivo"
                 checked={newAiConfig.attivo}

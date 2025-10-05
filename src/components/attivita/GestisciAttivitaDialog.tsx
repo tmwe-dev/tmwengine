@@ -191,54 +191,27 @@ export function GestisciAttivitaDialog({
           <div>
             {/* Form di modifica */}
             <div className="space-y-3">
-              {/* Prima riga: Stato, Priorità, Icona (a sinistra) e Scadenza (a destra - solo desktop) */}
+              {/* Prima riga: Stato e Data (desktop), solo Stato (mobile) */}
               <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-3">
-                <div className="flex gap-2 items-end">
-                  <div className="w-32">
-                    <Label htmlFor="stato" className="text-sm">Stato</Label>
-                    <Select 
-                      value={formData.stato} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="aperta">Aperta</SelectItem>
-                        <SelectItem value="in_corso">In Corso</SelectItem>
-                        <SelectItem value="completata">Completata</SelectItem>
-                        <SelectItem value="annullata">Annullata</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="w-32">
-                    <Label htmlFor="priorita" className="text-sm">Priorità</Label>
-                    <Select 
-                      value={formData.priorita} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Media</SelectItem>
-                        <SelectItem value="bassa">Bassa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div 
-                    className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
-                    onClick={() => setShowCallDialog(true)}
-                    title="Contatta"
+                <div className="w-32">
+                  <Label htmlFor="stato" className="text-sm">Stato</Label>
+                  <Select 
+                    value={formData.stato} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
                   >
-                    {getActivityIcon(activity.tipo)}
-                  </div>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aperta">Aperta</SelectItem>
+                      <SelectItem value="in_corso">In Corso</SelectItem>
+                      <SelectItem value="completata">Completata</SelectItem>
+                      <SelectItem value="annullata">Annullata</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Scadenza a destra - solo desktop */}
+                {/* Data a destra - solo desktop */}
                 <div className="hidden md:block">
                   <Label className="text-sm">Scadenza</Label>
                   <div className="flex gap-2 mt-1">
@@ -264,18 +237,11 @@ export function GestisciAttivitaDialog({
                         />
                       </PopoverContent>
                     </Popover>
-                    
-                    <Input
-                      type="time"
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="w-24 h-9 text-sm"
-                    />
                   </div>
                 </div>
               </div>
 
-              {/* Scadenza sotto - solo mobile */}
+              {/* Data sotto - solo mobile */}
               <div className="md:hidden">
                 <Label className="text-sm">Scadenza</Label>
                 <div className="flex gap-2 mt-1">
@@ -301,46 +267,94 @@ export function GestisciAttivitaDialog({
                       />
                     </PopoverContent>
                   </Popover>
-                  
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-24 h-9 text-sm"
-                  />
                 </div>
               </div>
 
-              {/* Telefoni compatti - affiancati su una riga */}
-              <div className="flex gap-3 mt-6">
-                <div className="w-40">
-                  <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Telefono
-                  </Label>
-                  <Input
-                    id="telefono"
-                    type="tel"
-                    value={formData.telefono || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
+              {/* Telefoni, Priorità e Ora */}
+              <div className="flex flex-col md:flex-row gap-3 mt-6">
+                <div className="flex gap-3">
+                  <div className="w-40">
+                    <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Telefono
+                    </Label>
+                    <Input
+                      id="telefono"
+                      type="tel"
+                      value={formData.telefono || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="w-40">
+                    <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Cellulare
+                    </Label>
+                    <Input
+                      id="cellulare"
+                      type="tel"
+                      value={formData.cellulare || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
-                
-                <div className="w-40">
-                  <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Cellulare
-                  </Label>
-                  <Input
-                    id="cellulare"
-                    type="tel"
-                    value={formData.cellulare || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
+
+                <div className="flex gap-3 md:ml-auto">
+                  <div className="w-32">
+                    <Label htmlFor="priorita" className="text-sm">Priorità</Label>
+                    <Select 
+                      value={formData.priorita} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Media</SelectItem>
+                        <SelectItem value="bassa">Bassa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Ora solo desktop */}
+                  <div className="hidden md:block w-24">
+                    <Label className="text-sm">Ora</Label>
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Icona sotto telefoni - centro pagina */}
+              <div className="flex justify-center mt-3">
+                <div 
+                  className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
+                  onClick={() => setShowCallDialog(true)}
+                  title="Contatta"
+                >
+                  {getActivityIcon(activity.tipo)}
+                </div>
+              </div>
+
+              {/* Ora sotto - solo mobile */}
+              <div className="md:hidden">
+                <Label className="text-sm">Ora</Label>
+                <Input
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="h-9 text-sm w-24"
+                />
+              </div>
+            </div>
 
               {/* Descrizione e Note affiancati desktop, sotto in mobile */}
               <div className="flex flex-col md:flex-row gap-4 mt-6">
@@ -365,7 +379,6 @@ export function GestisciAttivitaDialog({
                   />
                 </div>
               </div>
-            </div>
           </div>
 
           {/* Storico modifiche */}

@@ -148,6 +148,16 @@ export function GestisciAttivitaDialog({
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-medium">Gestione</BreadcrumbPage>
               </BreadcrumbItem>
+              {/* Data e ora breve in mobile */}
+              <BreadcrumbSeparator className="md:hidden">
+                <span className="text-xs text-muted-foreground mx-1">•</span>
+              </BreadcrumbSeparator>
+              <BreadcrumbItem className="md:hidden">
+                <span className="text-xs text-blue-600 font-medium">
+                  {format(new Date(activity.data_creazione), 'dd/MM')}
+                  {activity.ora_creazione && <span className="ml-1">{activity.ora_creazione.substring(0, 5)}</span>}
+                </span>
+              </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
 
@@ -166,8 +176,8 @@ export function GestisciAttivitaDialog({
                   {activity.rubrica_nome}
                 </div>
               )}
-              {/* Data creazione sotto il titolo */}
-              <div className="text-xs text-blue-600 font-medium mt-1">
+              {/* Data creazione sotto il titolo - solo su desktop */}
+              <div className="text-xs text-blue-600 font-medium mt-1 hidden md:block">
                 Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
                 {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
               </div>

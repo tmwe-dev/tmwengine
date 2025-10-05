@@ -380,7 +380,7 @@ const Chat = () => {
   const shouldHideHeader = isMobile && hasMessages;
 
   return (
-    <div className="max-w-7xl mx-auto p-3 sm:p-6">
+    <div className={`mx-auto ${shouldHideHeader ? 'p-0 h-screen flex flex-col' : 'max-w-7xl p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
         <div className="mb-3 flex items-center justify-between">
           <div>
@@ -556,7 +556,7 @@ const Chat = () => {
       )}
 
       {/* Layout Responsive */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
         <div className={`xl:col-span-1 order-2 xl:order-1 ${shouldHideHeader ? 'hidden' : ''}`}>
           <Card className="bg-card-transparent">
             <CardHeader className="cursor-pointer py-4" onClick={() => setShowConversations(!showConversations)}>
@@ -606,10 +606,10 @@ const Chat = () => {
         </div>
 
         {/* Area Chat Principale */}
-        <div className={`space-y-6 order-1 xl:order-2 ${shouldHideHeader ? 'xl:col-span-4' : 'xl:col-span-3'}`}>
+        <div className={`space-y-6 order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full' : 'xl:col-span-3'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
-            <Card className="bg-card-transparent">
+            <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none' : ''}`}>
               {!shouldHideHeader && (
                 <CardHeader className="py-4">
                   <CardTitle className="flex items-center justify-between">
@@ -622,26 +622,7 @@ const Chat = () => {
                   </CardTitle>
                 </CardHeader>
               )}
-              {shouldHideHeader && (
-                <CardHeader className="py-2 px-4">
-                  <div className="flex items-center justify-between">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setMessages([])}
-                      className="p-0 h-auto hover:bg-transparent"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    {currentConversation?.memoria_completa && (
-                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                        🧠 Memoria Completa
-                      </span>
-                    )}
-                  </div>
-                </CardHeader>
-              )}
-              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-280px)] pb-[200px]' : 'max-h-[600px]'}`}>
+              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'flex-1 pb-2' : 'max-h-[600px]'}`}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -693,7 +674,7 @@ const Chat = () => {
           )}
 
           {/* Area Input */}
-          <Card className={`bg-card-transparent ${shouldHideHeader ? 'fixed bottom-0 left-0 right-0 z-10 m-2 sm:relative sm:m-0' : ''}`}>
+          <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none' : ''}`}>
             {!shouldHideHeader && (
               <CardHeader className="py-4">
                 <CardTitle>
@@ -701,25 +682,64 @@ const Chat = () => {
                 </CardTitle>
               </CardHeader>
             )}
-            <CardContent className={shouldHideHeader ? 'pt-4 pb-4' : ''}>
+            <CardContent className={shouldHideHeader ? 'p-3' : ''}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Inserisci qui il tuo messaggio..."
-                  className="min-h-[120px] resize-none"
+                  className={`resize-none ${shouldHideHeader ? 'min-h-[80px]' : 'min-h-[120px]'}`}
                   disabled={isLoading}
                 />
                 
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={!prompt.trim() || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    {isLoading ? 'Invio...' : 'Invia Messaggio'}
-                  </Button>
+                <div className="flex justify-between items-center">
+                  {shouldHideHeader && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+                        <DialogHeader className="pb-3 sm:pb-4">
+                          <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
+                        </DialogHeader>
+                        
+                        {lastResponseStats && (
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                            <span>{lastResponseStats.tokens} token</span>
+                            <span>•</span>
+                            <span>{lastResponseStats.responseTime}ms</span>
+                            <span>•</span>
+                            <span>{lastResponseStats.memoryMode} memory</span>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-4 sm:space-y-6">
+                          <Select value={selectedTab} onValueChange={setSelectedTab}>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Seleziona una sezione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="prompts">🤖 System Prompts</SelectItem>
+                              <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
+                              <SelectItem value="stats">📊 Statistiche</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  <div className={shouldHideHeader ? 'ml-auto' : 'w-full flex justify-end'}>
+                    <Button 
+                      type="submit" 
+                      disabled={!prompt.trim() || isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      <Send className="h-4 w-4" />
+                      {isLoading ? 'Invio...' : 'Invia Messaggio'}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>

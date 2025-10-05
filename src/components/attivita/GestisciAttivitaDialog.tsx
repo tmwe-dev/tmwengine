@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 interface Activity {
@@ -188,95 +189,15 @@ export function GestisciAttivitaDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-2">
-          <div>
-            {/* Form di modifica */}
-            <div className="space-y-3">
-              {/* Prima riga: Stato, Priorità, Icona (a sinistra) e Scadenza (a destra - solo desktop) */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-3">
-                <div className="flex gap-2 items-end">
-                  <div className="w-32">
-                    <Label htmlFor="stato" className="text-sm">Stato</Label>
-                    <Select 
-                      value={formData.stato} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="aperta">Aperta</SelectItem>
-                        <SelectItem value="in_corso">In Corso</SelectItem>
-                        <SelectItem value="completata">Completata</SelectItem>
-                        <SelectItem value="annullata">Annullata</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="w-32">
-                    <Label htmlFor="priorita" className="text-sm">Priorità</Label>
-                    <Select 
-                      value={formData.priorita} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Media</SelectItem>
-                        <SelectItem value="bassa">Bassa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div 
-                    className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
-                    onClick={() => setShowCallDialog(true)}
-                    title="Contatta"
-                  >
-                    {getActivityIcon(activity.tipo)}
-                  </div>
-                </div>
-
-                {/* Scadenza a destra - solo desktop */}
-                <div className="hidden md:block">
-                  <Label className="text-sm">Scadenza</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-36 justify-start text-left font-normal h-9 text-sm",
-                            !selectedDate && "text-muted-foreground"
-                          )}
-                        >
-                          <Calendar className="mr-1 h-3 w-3" />
-                          {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Input
-                      type="time"
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="w-24 h-9 text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Scadenza sotto - solo mobile */}
-              <div className="md:hidden">
+          <Tabs defaultValue="dettagli" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="dettagli">Dettagli</TabsTrigger>
+              <TabsTrigger value="altro">Altro</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dettagli" className="space-y-4 mt-4">
+              {/* Scadenza */}
+              <div>
                 <Label className="text-sm">Scadenza</Label>
                 <div className="flex gap-2 mt-1">
                   <Popover>
@@ -311,8 +232,67 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Telefoni compatti - affiancati su una riga */}
-              <div className="flex gap-3 mt-6">
+              {/* Descrizione */}
+              <div>
+                <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
+                <Textarea
+                  id="descrizione"
+                  value={formData.descrizione || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
+                  className="h-[300px] text-sm resize-none"
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="altro" className="space-y-4 mt-4">
+              {/* Stato e Priorità */}
+              <div className="flex gap-3">
+                <div className="w-32">
+                  <Label htmlFor="stato" className="text-sm">Stato</Label>
+                  <Select 
+                    value={formData.stato} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, stato: value as Activity['stato'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aperta">Aperta</SelectItem>
+                      <SelectItem value="in_corso">In Corso</SelectItem>
+                      <SelectItem value="completata">Completata</SelectItem>
+                      <SelectItem value="annullata">Annullata</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="w-32">
+                  <Label htmlFor="priorita" className="text-sm">Priorità</Label>
+                  <Select 
+                    value={formData.priorita} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, priorita: value as Activity['priorita'] }))}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alta">Alta</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="bassa">Bassa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div 
+                  className="flex items-center justify-center w-9 h-9 text-2xl cursor-pointer hover:bg-accent/50 rounded transition-colors" 
+                  onClick={() => setShowCallDialog(true)}
+                  title="Contatta"
+                >
+                  {getActivityIcon(activity.tipo)}
+                </div>
+              </div>
+
+              {/* Telefoni */}
+              <div className="flex gap-3">
                 <div className="w-40">
                   <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
                     <Phone className="h-3 w-3" />
@@ -342,60 +322,48 @@ export function GestisciAttivitaDialog({
                 </div>
               </div>
 
-              {/* Descrizione e Note affiancati desktop, sotto in mobile */}
-              <div className="flex flex-col md:flex-row gap-4 mt-6">
-                <div className="flex-1">
-                  <Label htmlFor="descrizione" className="text-sm">Descrizione</Label>
-                  <Textarea
-                    id="descrizione"
-                    value={formData.descrizione || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
-                    className="h-[250px] text-sm resize-none"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <Label htmlFor="note" className="text-sm">Note</Label>
-                  <Textarea
-                    id="note"
-                    value={formData.note || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-                    placeholder="Note aggiuntive..."
-                    className="h-[250px] text-sm resize-none"
-                  />
-                </div>
+              {/* Note */}
+              <div>
+                <Label htmlFor="note" className="text-sm">Note</Label>
+                <Textarea
+                  id="note"
+                  value={formData.note || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Note aggiuntive..."
+                  className="h-[200px] text-sm resize-none"
+                />
               </div>
-            </div>
-          </div>
 
-          {/* Storico modifiche */}
-          {activity.modifiche_log && activity.modifiche_log.length > 0 && (
-            <div className="border-t pt-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center gap-2 mb-3"
-              >
-                <History className="h-4 w-4" />
-                Storico Modifiche ({activity.modifiche_log.length})
-              </Button>
-              
-              {showHistory && (
-                <div className="space-y-2 max-h-40 overflow-y-auto bg-muted/20 p-3 rounded">
-                  {activity.modifiche_log.map((modifica, index) => (
-                    <div key={index} className="text-xs border-l-2 border-blue-500 pl-3 py-1">
-                      <div className="font-medium">
-                        {format(new Date(modifica.timestamp), 'dd/MM/yyyy HH:mm')}
-                      </div>
-                      <div className="text-muted-foreground">
-                        Campo modificato: {modifica.campo_modificato}
-                      </div>
+              {/* Storico modifiche */}
+              {activity.modifiche_log && activity.modifiche_log.length > 0 && (
+                <div className="border-t pt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="flex items-center gap-2 mb-3"
+                  >
+                    <History className="h-4 w-4" />
+                    Storico Modifiche ({activity.modifiche_log.length})
+                  </Button>
+                  
+                  {showHistory && (
+                    <div className="space-y-2 max-h-40 overflow-y-auto bg-muted/20 p-3 rounded">
+                      {activity.modifiche_log.map((modifica, index) => (
+                        <div key={index} className="text-xs border-l-2 border-blue-500 pl-3 py-1">
+                          <div className="font-medium">
+                            {format(new Date(modifica.timestamp), 'dd/MM/yyyy HH:mm')}
+                          </div>
+                          <div className="text-muted-foreground">
+                            Campo modificato: {modifica.campo_modificato}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Azioni */}

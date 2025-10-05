@@ -177,11 +177,6 @@ export function GestisciAttivitaDialog({
               {activity.rubrica_nome && (
                 <div className="text-base text-muted-foreground mt-0.5 text-center">
                   {activity.rubrica_nome}
-                  {/* Data creazione sotto il nome */}
-                  <div className="text-xs text-blue-600 font-medium mt-1">
-                    Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
-                    {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
-                  </div>
                 </div>
               )}
             </div>
@@ -316,7 +311,7 @@ export function GestisciAttivitaDialog({
                 </div>
                 
                 {/* Icona contatta centrata nella sezione destra */}
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex-1 flex flex-col items-center justify-center gap-2">
                   <div 
                     className={cn(
                       "flex items-center justify-center w-16 h-16 text-4xl cursor-pointer hover:bg-accent/50 rounded transition-colors",
@@ -326,6 +321,11 @@ export function GestisciAttivitaDialog({
                     title="Contatta"
                   >
                     {getActivityIcon(activity.tipo)}
+                  </div>
+                  {/* Data creazione sotto l'icona */}
+                  <div className="text-xs text-blue-600 font-medium mt-1">
+                    Creata il {format(new Date(activity.data_creazione), 'dd/MM/yyyy')}
+                    {activity.ora_creazione && <span className="ml-1">ore {activity.ora_creazione}</span>}
                   </div>
                 </div>
               </div>

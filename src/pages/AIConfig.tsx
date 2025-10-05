@@ -270,14 +270,9 @@ const AIConfig = () => {
 
             <div className="space-y-1">
               <Label htmlFor="aiModello" className="text-sm">Modello</Label>
-              {(() => {
-                const hasModels = newAiConfig.provider && modelsByProvider[newAiConfig.provider];
-                console.log('Provider:', newAiConfig.provider);
-                console.log('Has models:', hasModels);
-                console.log('All providers keys:', Object.keys(modelsByProvider));
-                return hasModels;
-              })() ? (
+              {newAiConfig.provider && modelsByProvider[newAiConfig.provider] ? (
                 <Select 
+                  key={newAiConfig.provider}
                   value={newAiConfig.modello} 
                   onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
                 >
@@ -297,7 +292,7 @@ const AIConfig = () => {
                   id="aiModello"
                   value={newAiConfig.modello}
                   onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
-                  placeholder={newAiConfig.provider ? "Seleziona modello" : "Seleziona prima un provider"}
+                  placeholder={newAiConfig.provider ? "Nessun modello disponibile" : "Seleziona prima un provider"}
                   className="h-9"
                   disabled={!newAiConfig.provider}
                 />

@@ -190,6 +190,11 @@ export function ActivityMobileCard({
           <div className="font-semibold text-foreground text-base leading-tight">
             {activity.rubrica_azienda || 'Nessuna azienda'}
           </div>
+          {activity.rubrica_nome && (
+            <div className="text-sm text-muted-foreground mt-0.5">
+              {activity.rubrica_nome}
+            </div>
+          )}
           <div className="text-sm text-muted-foreground mt-1">
             {activity.descrizione}
           </div>

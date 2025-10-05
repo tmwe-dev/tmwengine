@@ -2440,6 +2440,9 @@ export default function ImportTemplates() {
                         </span>
                       )}
                       <DialogTitle>Record Importati</DialogTitle>
+                      <span className="text-lg text-muted-foreground ml-2">
+                        <span className="text-primary font-medium">{totalRecords}</span>
+                      </span>
                     </div>
                     
                     {/* Active Filters Badges - Below title, aligned left */}
@@ -2480,9 +2483,6 @@ export default function ImportTemplates() {
                       </div>
                     )}
                   </div>
-                  <span className="text-lg text-muted-foreground absolute right-[50px] top-[2px]">
-                    <span className="text-primary font-medium">{totalRecords}</span>
-                  </span>
                 </div>
                 
                 {/* Search Field */}

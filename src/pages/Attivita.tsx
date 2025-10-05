@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { ActivityFilters } from '@/components/attivita/ActivityFilters';
 import { ActivityMobileCard } from '@/components/attivita/ActivityMobileCard';
@@ -1092,6 +1093,48 @@ export default function Attivita() {
       {isMobile ? (
         /* Mobile Card Layout */
         <div className="space-y-3">
+          {/* Mobile Segmented Control Filter */}
+          <div className="mb-2">
+            <ToggleGroup 
+              type="single" 
+              value={statusFilter} 
+              onValueChange={(value) => value && handleStatusFilter(value)}
+              className="grid grid-cols-3 w-full bg-muted/30 rounded-lg p-1 gap-1"
+            >
+              <ToggleGroupItem 
+                value="all" 
+                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-medium">Totali</span>
+                  <span className="text-lg font-bold">{baseFilteredActivities.length}</span>
+                </div>
+              </ToggleGroupItem>
+              <ToggleGroupItem 
+                value="future" 
+                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-medium">In Sospeso</span>
+                  <span className="text-lg font-bold text-warning">
+                    {baseFilteredActivities.filter(a => isActivityFuture(a) && a.stato !== 'completata').length}
+                  </span>
+                </div>
+              </ToggleGroupItem>
+              <ToggleGroupItem 
+                value="scadute" 
+                className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm rounded-md transition-all py-3"
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-medium">Scadute</span>
+                  <span className="text-lg font-bold text-destructive">
+                    {baseFilteredActivities.filter(a => a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata').length}
+                  </span>
+                </div>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
            {paginatedActivities.length === 0 ? (
             <Card className="border-card shadow-soft">
               <CardContent className="p-8 text-center">

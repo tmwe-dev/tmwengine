@@ -186,13 +186,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
         </form>
       </div>
 
-      {/* Mobile: Only Email Count Badge */}
-      <div className="flex md:hidden items-center shrink-0">
-        <Badge variant="secondary" className="flex items-center gap-1 px-1.5 py-1 whitespace-nowrap">
-          <Database className="h-3 w-3" />
-          <span className="font-semibold text-[10px]">{emailCount.toLocaleString()}</span>
-        </Badge>
-      </div>
+      {/* Mobile: Email Count Badge moved to sender filter section */}
     </header>
   );
 };

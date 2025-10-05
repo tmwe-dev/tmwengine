@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Database } from 'lucide-react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
@@ -94,6 +95,25 @@ const EmailDashboard = () => {
   };
 
   // Prima ottieni il conteggio totale delle email
+  const [emailCount, setEmailCount] = useState<number>(0);
+  
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true });
+      if (count !== null) setEmailCount(count);
+    };
+    fetchCount();
+    
+    const channel = supabase
+      .channel('email-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'email_messages' }, fetchCount)
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+  
   const { data: folderInfo } = useQuery({
     queryKey: ['folder-info', selectedFolder],
     queryFn: async () => {
@@ -578,7 +598,15 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent px-4 py-2 flex items-center gap-2">
+          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center gap-2">
+            {/* Mobile Email Count Badge - transparent background */}
+            {isMobile && (
+              <div className="flex items-center gap-1 shrink-0">
+                <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
+              </div>
+            )}
+            
             <EmailSenderFilter
               emails={emailsToUse}
               selectedSender={selectedSender}

@@ -154,15 +154,15 @@ export function GestisciAttivitaDialog({
           {/* Titolo compatto */}
           <DialogTitle className="flex items-center gap-2">
             <span className="text-xl">{getActivityIcon(activity.tipo)}</span>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2 flex-wrap justify-start">
                 <span className="text-lg">Gestisci Attività</span>
                 <Badge variant={getStatoBadgeVariant(activity.stato)} className="text-xs">
                   {activity.stato.replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               {activity.rubrica_nome && (
-                <div className="text-xs text-muted-foreground mt-0.5">
+                <div className="text-xs text-muted-foreground mt-0.5 text-left">
                   {activity.rubrica_nome}
                 </div>
               )}

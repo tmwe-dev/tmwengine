@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AIChatPopup } from '@/components/ai/AIChatPopup';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 interface Campaign {
   id: string;
@@ -215,7 +216,10 @@ export default function Campagne() {
             </DialogContent>
           </Dialog>
           
-          <AIChatPopup pageRoute="/campagne" />
+          <div className="flex items-center gap-1">
+            <PagePromptManager pageRoute="/campagne" />
+            <AIChatPopup pageRoute="/campagne" />
+          </div>
         </div>
       </div>
 

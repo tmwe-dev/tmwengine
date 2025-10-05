@@ -187,86 +187,89 @@ export default function Campagne() {
         backgroundImage: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.08) 50%, rgba(192, 132, 252, 0.05) 100%)'
       }}
     >
-      {/* Header */}
+      {/* Header with Title and Toggle */}
+      <div className="flex justify-between items-start gap-4">
+        <div>
+          <h1 className="text-heading-1 font-bold text-text-primary">Campagne</h1>
+          {isHeaderVisible && (
+            <p className="text-body text-text-secondary animate-accordion-down">
+              Gestisci e monitora le tue campagne marketing
+            </p>
+          )}
+        </div>
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+          className="h-8 w-8 shrink-0"
+        >
+          {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Action Buttons and Filters */}
       {isHeaderVisible && (
         <div className="animate-accordion-down space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-heading-1 font-bold text-text-primary">Campagne</h1>
-              <p className="text-body text-text-secondary">
-                Gestisci e monitora le tue campagne marketing
-              </p>
-            </div>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openAddForm} size="icon" className="shadow-soft">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
+                  </DialogTitle>
+                </DialogHeader>
+                <CampaignForm
+                  campaign={selectedCampaign}
+                  onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
+                  onCancel={() => setIsFormOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
             
-            <div className="flex items-center gap-2">
-              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <div className="flex items-center gap-1 ml-auto">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Search className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Cerca in CRM..." 
+                      className="pl-10"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={openAddForm} size="icon" className="shadow-soft">
-                    <Plus className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Filter className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>
-                      {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
-                    </DialogTitle>
+                    <DialogTitle>Filtri Avanzati</DialogTitle>
                   </DialogHeader>
-                  <CampaignForm
-                    campaign={selectedCampaign}
-                    onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
-                    onCancel={() => setIsFormOpen(false)}
+                  <CampaignFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onClose={() => setIsFiltersOpen(false)}
                   />
                 </DialogContent>
               </Dialog>
               
-              <div className="flex items-center gap-1">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Search className="h-5 w-5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Cerca in CRM..." 
-                        className="pl-10"
-                      />
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                
-                <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Filtri Avanzati</DialogTitle>
-                    </DialogHeader>
-                    <CampaignFilters
-                      filters={filters}
-                      onFiltersChange={setFilters}
-                      onClose={() => setIsFiltersOpen(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsHeaderVisible(!isHeaderVisible)}
-                  className="h-8 w-8"
-                >
-                  {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-                
-                <PagePromptManager pageRoute="/campagne" />
-                <AIChatPopup pageRoute="/campagne" />
-              </div>
+              <PagePromptManager pageRoute="/campagne" />
+              <AIChatPopup pageRoute="/campagne" />
             </div>
           </div>
 

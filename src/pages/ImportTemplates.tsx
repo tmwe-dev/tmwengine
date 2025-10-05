@@ -2427,6 +2427,17 @@ export default function ImportTemplates() {
                 {/* Mobile Title */}
                 <DialogTitle>Record Importati</DialogTitle>
                 
+                {/* Search Field */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cerca..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
                 {/* Active Filters Badges - Centered */}
                 {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
                   <div className="flex flex-wrap justify-center items-center gap-1">
@@ -2901,9 +2912,9 @@ export default function ImportTemplates() {
                   >
                     <Filter className="h-4 w-4" />
                     Filtri
-                    {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                    {(originFilter || countryFilter || hasNotesFilter) && (
                       <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                        {[searchQuery, originFilter, countryFilter, hasNotesFilter].filter(Boolean).length}
+                        {[originFilter, countryFilter, hasNotesFilter].filter(Boolean).length}
                       </Badge>
                     )}
                   </Button>
@@ -2913,17 +2924,6 @@ export default function ImportTemplates() {
                     <DialogTitle>Filtri</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Cerca..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    
                     {/* Filters */}
                     <div className="space-y-3">
                       <div className="space-y-2">

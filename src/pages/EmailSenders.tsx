@@ -537,47 +537,47 @@ export default function EmailSenders() {
             )}
 
             {/* Stats Cards - Under Search */}
-            <div className="grid gap-4 grid-cols-4">
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-4">
               <Card className="bg-card-transparent border-card shadow-soft">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Email Totali</CardTitle>
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
+                  <CardTitle className="text-xs font-medium">Email Totali</CardTitle>
+                  <Mail className="h-3 w-3 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalEmails.toLocaleString()}</div>
+                <CardContent className="p-3 pt-0">
+                  <div className="text-lg font-bold md:text-2xl">{totalEmails.toLocaleString()}</div>
                 </CardContent>
               </Card>
               
               <Card className="bg-card-transparent border-card shadow-soft">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Mittenti Unici</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
+                  <CardTitle className="text-xs font-medium">Mittenti Unici</CardTitle>
+                  <Users className="h-3 w-3 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{uniqueSenders}</div>
+                <CardContent className="p-3 pt-0">
+                  <div className="text-lg font-bold md:text-2xl">{uniqueSenders}</div>
                 </CardContent>
               </Card>
 
               <Card className="bg-card-transparent border-card shadow-soft">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Raggruppati</CardTitle>
-                  <Tag className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
+                  <CardTitle className="text-xs font-medium">Raggruppati</CardTitle>
+                  <Tag className="h-3 w-3 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{groupedSenders}</div>
-                  <p className="text-xs text-muted-foreground">
+                <CardContent className="p-3 pt-0">
+                  <div className="text-lg font-bold md:text-2xl">{groupedSenders}</div>
+                  <p className="text-[10px] text-muted-foreground md:text-xs">
                     {uniqueSenders > 0 ? Math.round((groupedSenders / uniqueSenders) * 100) : 0}%
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-card-transparent border-card shadow-soft">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Gruppi Attivi</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
+                  <CardTitle className="text-xs font-medium">Gruppi Attivi</CardTitle>
+                  <TrendingUp className="h-3 w-3 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{groups?.length || 0}</div>
+                <CardContent className="p-3 pt-0">
+                  <div className="text-lg font-bold md:text-2xl">{groups?.length || 0}</div>
                 </CardContent>
               </Card>
             </div>
@@ -681,25 +681,25 @@ export default function EmailSenders() {
               Clicca per selezionare i mittenti da raggruppare
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-4">
-            <Table>
+          <CardContent className="p-2 md:p-4 overflow-x-auto">
+            <Table className="text-xs md:text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-8 md:w-12 text-xs">#</TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary w-[40%]"
+                    className="cursor-pointer hover:text-primary w-[50%] md:w-[40%] text-xs"
                     onClick={() => handleSort('company')}
                   >
                     Azienda {sortBy === 'company' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-center cursor-pointer hover:text-primary w-[80px]"
+                    className="text-center cursor-pointer hover:text-primary w-[60px] md:w-[80px] text-xs"
                     onClick={() => handleSort('count')}
                   >
                     Email {sortBy === 'count' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
-                    className="text-right cursor-pointer hover:text-primary w-[30%]"
+                    className="text-right cursor-pointer hover:text-primary w-[25%] md:w-[30%] text-xs"
                     onClick={() => handleSort('group')}
                   >
                     Gruppo {sortBy === 'group' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -728,19 +728,19 @@ export default function EmailSenders() {
                       }`}
                       onClick={() => handleToggleSender(stat.sender)}
                     >
-                      <TableCell className="py-3 font-semibold text-muted-foreground text-sm">
+                      <TableCell className="py-2 md:py-3 font-semibold text-muted-foreground text-[10px] md:text-sm">
                         {index + 1}
                       </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex flex-col gap-1">
+                      <TableCell className="py-2 md:py-3">
+                        <div className="flex flex-col gap-0.5">
                           {extractCompanyName(stat.sender) && (
-                            <span className="font-semibold text-sm capitalize">{extractCompanyName(stat.sender)}</span>
+                            <span className="font-semibold text-xs md:text-sm capitalize truncate">{extractCompanyName(stat.sender)}</span>
                           )}
-                          <span className="text-xs text-muted-foreground truncate max-w-[300px]">{stat.sender}</span>
+                          <span className="text-[10px] md:text-xs text-muted-foreground truncate max-w-[150px] md:max-w-[300px]">{stat.sender}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center py-3">
-                        <Badge variant="secondary" className="font-semibold">{stat.count}</Badge>
+                      <TableCell className="text-center py-2 md:py-3">
+                        <Badge variant="secondary" className="text-[10px] md:text-xs font-semibold px-1 md:px-2">{stat.count}</Badge>
                       </TableCell>
                       <TableCell className="text-right py-2">
                         {stat.group && (

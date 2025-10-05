@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatedBook } from '@/components/ui/animated-book';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -3434,7 +3435,11 @@ export default function ImportTemplates() {
                     {/* Desktop Actions - keep existing */}
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
-                      <div className="flex justify-center py-3 border-t">
+                      <div className="flex flex-col items-center py-3 border-t gap-2">
+                        {/* Animated Book */}
+                        <AnimatedBook currentPage={currentPage} className="w-full" />
+                        
+                        {/* Pagination Controls */}
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"

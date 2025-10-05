@@ -117,12 +117,12 @@ export function CompactContactCard({
         {(contact.email || contact.phone || contact.cell) && (
           <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
             {contact.email && (
-              <div className="p-1.5 border border-blue-200 rounded-full shadow-sm hover:border-blue-300 transition-colors">
+              <div className="p-1.5 rounded-full">
                 <Mail className="h-4 w-4 text-blue-600" />
               </div>
             )}
             {(contact.phone || contact.cell) && (
-              <div className="p-1.5 border border-green-200 rounded-full shadow-sm hover:border-green-300 transition-colors">
+              <div className="p-1.5 rounded-full">
                 <Phone className="h-4 w-4 text-green-600" />
               </div>
             )}

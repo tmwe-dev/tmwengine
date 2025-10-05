@@ -14,19 +14,21 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
 
   useEffect(() => {
     if (currentPage < previousPage.current) {
-      // Going backward - show and play video
+      // Going backward - trigger animation
       setIsAnimating(true);
-      
-      // Play video when it's ready
-      if (videoRef.current) {
-        videoRef.current.currentTime = 0;
-        videoRef.current.playbackRate = 4; // 4x speed - adjust as needed
-        videoRef.current.play();
-      }
     }
     
     previousPage.current = currentPage;
   }, [currentPage]);
+
+  // Separate effect to play video when it's mounted
+  useEffect(() => {
+    if (isAnimating && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.playbackRate = 4; // 4x speed - adjust as needed
+      videoRef.current.play();
+    }
+  }, [isAnimating]);
 
   const handleVideoEnd = () => {
     setIsAnimating(false);

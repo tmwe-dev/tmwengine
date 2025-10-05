@@ -2853,35 +2853,6 @@ export default function ImportTemplates() {
             </div>
            )}
           
-          {/* Mobile Actions */}
-          {isMobile && filteredRecords.length > 0 && (
-            <div className="space-y-3 py-3">
-              {/* Mobile Pagination */}
-              <div className="flex justify-center">
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                    disabled={currentPage === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm px-3 py-1 bg-muted rounded">
-                    {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                    disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Contatore contatti mobile */}
           {isMobile && filteredRecords.length > 0 && (
@@ -3447,7 +3418,32 @@ export default function ImportTemplates() {
                   </div>
                    
                     {/* Desktop Actions - keep existing */}
-                    {!isMobile && (
+                    {isMobile ? (
+                      /* Mobile Pagination - Footer */
+                      <div className="flex justify-center py-3 border-t">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                            disabled={currentPage === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm px-3 py-1 bg-muted rounded">
+                            {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                            disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                       /* Desktop Pagination */
                       <div className="flex items-center gap-2">
                         <Button

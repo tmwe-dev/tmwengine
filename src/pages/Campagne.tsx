@@ -202,7 +202,7 @@ export default function Campagne() {
           variant="ghost"
           size="icon"
           onClick={() => setIsHeaderVisible(!isHeaderVisible)}
-          className="h-8 w-8 shrink-0"
+          className="h-8 w-8 shrink-0 mt-2.5"
         >
           {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>

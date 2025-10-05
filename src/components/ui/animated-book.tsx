@@ -9,8 +9,7 @@ interface AnimatedBookProps {
 
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
-  const videoForwardRef = useRef<HTMLVideoElement>(null);
-  const videoBackwardRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
 
@@ -30,13 +29,11 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
 
   // Separate effect to play video when it's mounted
   useEffect(() => {
-    if (isAnimating) {
-      const video = direction === 'forward' ? videoForwardRef.current : videoBackwardRef.current;
-      if (video) {
-        video.currentTime = 0;
-        video.playbackRate = 6;
-        video.play();
-      }
+    if (isAnimating && videoRef.current) {
+      const video = videoRef.current;
+      video.currentTime = 0;
+      video.playbackRate = 6;
+      video.play();
     }
   }, [isAnimating, direction]);
 
@@ -49,21 +46,12 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       className={className} 
       style={{ height: '140px', background: 'transparent', position: 'relative' }}
     >
-      <div className="w-full h-full flex items-center justify-center relative">
+      <div className="w-full h-full flex items-center justify-center">
         <video
-          ref={videoBackwardRef}
-          src={libroVideo}
+          ref={videoRef}
+          src={direction === 'forward' ? libroReverseVideo : libroVideo}
           onEnded={handleVideoEnd}
-          className={`max-w-full max-h-full object-contain absolute inset-0 ${direction === 'backward' && isAnimating ? 'opacity-100' : 'opacity-0'}`}
-          style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
-          muted
-          playsInline
-        />
-        <video
-          ref={videoForwardRef}
-          src={libroReverseVideo}
-          onEnded={handleVideoEnd}
-          className={`max-w-full max-h-full object-contain absolute inset-0 ${direction === 'forward' && isAnimating ? 'opacity-100' : 'opacity-0'}`}
+          className="max-w-full max-h-full object-contain"
           style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
           muted
           playsInline

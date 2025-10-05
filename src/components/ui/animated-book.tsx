@@ -1,7 +1,9 @@
-import { useRef, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef, useEffect, useState } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
+import bookForward from '@/assets/book-page-forward.png';
+import bookBackward from '@/assets/book-page-backward.png';
 
 interface BookProps {
   direction: 'forward' | 'backward' | 'idle';
@@ -9,99 +11,58 @@ interface BookProps {
 }
 
 function Book({ direction, onAnimationComplete }: BookProps) {
-  const turningPageRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const animationProgress = useRef(0);
   const isAnimating = useRef(false);
-  const targetRotation = useRef(0);
+  const [currentTexture, setCurrentTexture] = useState<'idle' | 'forward' | 'backward'>('idle');
+  
+  const forwardTexture = useLoader(THREE.TextureLoader, bookForward);
+  const backwardTexture = useLoader(THREE.TextureLoader, bookBackward);
 
   useEffect(() => {
     if (direction !== 'idle') {
       isAnimating.current = true;
       animationProgress.current = 0;
-      targetRotation.current = direction === 'forward' ? -Math.PI : Math.PI;
+      setCurrentTexture(direction);
     }
   }, [direction]);
 
   useFrame((state, delta) => {
-    if (!isAnimating.current || !turningPageRef.current) return;
+    if (!isAnimating.current || !meshRef.current) return;
 
-    const speed = 3;
+    const speed = 2;
     animationProgress.current += delta * speed;
 
     if (animationProgress.current >= 1) {
       animationProgress.current = 1;
       isAnimating.current = false;
-      turningPageRef.current.rotation.y = 0;
+      setCurrentTexture('idle');
       onAnimationComplete();
       return;
     }
 
     const progress = animationProgress.current;
-    const easeProgress = 1 - Math.pow(1 - progress, 4);
-    turningPageRef.current.rotation.y = targetRotation.current * (1 - easeProgress);
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const material = meshRef.current.material as THREE.MeshBasicMaterial;
+    material.opacity = 0.9 + (Math.sin(easeProgress * Math.PI) * 0.1);
   });
+
+  const texture = currentTexture === 'forward' ? forwardTexture : 
+                 currentTexture === 'backward' ? backwardTexture : forwardTexture;
 
   return (
     <group rotation={[0.35, 0, 0]}>
-      {/* Left cover */}
-      <mesh position={[-1.3, 0, -0.05]}>
-        <boxGeometry args={[1.3, 1.8, 0.08]} />
-        <meshStandardMaterial color="#6366f1" metalness={0.3} roughness={0.7} />
+      <mesh ref={meshRef}>
+        <planeGeometry args={[4, 3]} />
+        <meshBasicMaterial 
+          map={texture} 
+          transparent 
+          opacity={0.95}
+          side={THREE.DoubleSide}
+        />
       </mesh>
-
-      {/* Right cover */}
-      <mesh position={[1.3, 0, -0.05]}>
-        <boxGeometry args={[1.3, 1.8, 0.08]} />
-        <meshStandardMaterial color="#8b5cf6" metalness={0.3} roughness={0.7} />
-      </mesh>
-
-      {/* Spine */}
-      <mesh position={[0, 0, -0.05]}>
-        <boxGeometry args={[0.15, 1.8, 0.08]} />
-        <meshStandardMaterial color="#4f46e5" metalness={0.4} roughness={0.6} />
-      </mesh>
-
-      {/* Left pages stack */}
-      <mesh position={[-1.25, 0, 0]}>
-        <boxGeometry args={[1.15, 1.65, 0.15]} />
-        <meshStandardMaterial color="#ffffff" />
-      </mesh>
-
-      {/* Right pages stack */}
-      <mesh position={[1.25, 0, 0]}>
-        <boxGeometry args={[1.15, 1.65, 0.15]} />
-        <meshStandardMaterial color="#ffffff" />
-      </mesh>
-
-      {/* Turning page */}
-      <group ref={turningPageRef} position={[0, 0, 0.08]}>
-        <mesh position={[0.575, 0, 0]}>
-          <boxGeometry args={[1.15, 1.65, 0.01]} />
-          <meshStandardMaterial color="#fefefe" side={THREE.DoubleSide} />
-        </mesh>
-      </group>
-
-      {/* Page edges - left */}
-      {[...Array(8)].map((_, i) => (
-        <mesh key={`left-${i}`} position={[-1.25, 0, 0.08 - i * 0.015]}>
-          <boxGeometry args={[1.14, 1.64, 0.005]} />
-          <meshStandardMaterial color="#f9fafb" />
-        </mesh>
-      ))}
-
-      {/* Page edges - right */}
-      {[...Array(8)].map((_, i) => (
-        <mesh key={`right-${i}`} position={[1.25, 0, 0.08 - i * 0.015]}>
-          <boxGeometry args={[1.14, 1.64, 0.005]} />
-          <meshStandardMaterial color="#f9fafb" />
-        </mesh>
-      ))}
-
-      {/* Lighting */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
-      <directionalLight position={[-3, -3, -3]} intensity={0.4} />
-      <pointLight position={[0, 2, 3]} intensity={0.5} color="#a78bfa" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[2, 3, 2]} intensity={0.6} />
     </group>
   );
 }

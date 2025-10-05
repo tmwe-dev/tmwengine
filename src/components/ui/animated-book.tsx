@@ -9,7 +9,8 @@ interface AnimatedBookProps {
 
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoForwardRef = useRef<HTMLVideoElement>(null);
+  const videoBackwardRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
 
@@ -29,11 +30,13 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
 
   // Separate effect to play video when it's mounted
   useEffect(() => {
-    if (isAnimating && videoRef.current) {
-      const video = videoRef.current;
-      video.currentTime = 0;
-      video.playbackRate = 6;
-      video.play();
+    if (isAnimating) {
+      const video = direction === 'forward' ? videoForwardRef.current : videoBackwardRef.current;
+      if (video) {
+        video.currentTime = 0;
+        video.playbackRate = 6;
+        video.play();
+      }
     }
   }, [isAnimating, direction]);
 
@@ -46,13 +49,28 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       className={className} 
       style={{ height: '140px', background: 'transparent', position: 'relative' }}
     >
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center relative">
         <video
-          ref={videoRef}
-          src={direction === 'forward' ? libroReverseVideo : libroVideo}
+          ref={videoBackwardRef}
+          src={libroVideo}
           onEnded={handleVideoEnd}
-          className="max-w-full max-h-full object-contain"
-          style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
+          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          style={{ 
+            transform: 'perspective(1000px) rotateX(20deg)',
+            opacity: direction === 'backward' && isAnimating ? 1 : 0
+          }}
+          muted
+          playsInline
+        />
+        <video
+          ref={videoForwardRef}
+          src={libroReverseVideo}
+          onEnded={handleVideoEnd}
+          className="max-w-full max-h-full object-contain absolute inset-0 transition-opacity duration-100"
+          style={{ 
+            transform: 'perspective(1000px) rotateX(20deg)',
+            opacity: direction === 'forward' && isAnimating ? 1 : 0
+          }}
           muted
           playsInline
         />

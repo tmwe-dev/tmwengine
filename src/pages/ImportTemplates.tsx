@@ -3369,7 +3369,7 @@ export default function ImportTemplates() {
                               variant="ghost"
                               size="sm"
                               onClick={toggleSelectAll}
-                              className="p-2 hover:bg-transparent absolute left-1/2 -translate-x-1/2 -left-[30px] -top-[90px]"
+                              className="p-2 hover:bg-transparent absolute -top-[90px]" style={{ left: 'calc(50% - 45px)' }}
                               aria-label="Seleziona tutti della pagina"
                             >
                               <FileText 

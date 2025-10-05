@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2, FileText, Activity } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Mail, Building, MapPin, Tag, Edit, Trash2, FileText, Activity, ChevronUp, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Contact {
   id: string;
@@ -44,6 +45,7 @@ export default function Rubrica() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     tag: '',
@@ -52,7 +54,7 @@ export default function Rubrica() {
     hasActivities: false,
     hasNotes: false
   });
-  
+
   const { toast } = useToast();
   const { getCompanyActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
@@ -267,102 +269,132 @@ export default function Rubrica() {
   return (
     <>
       <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
+        {/* Header with Title and Toggle */}
+        <div className="flex justify-between items-start gap-4 mb-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clienti</h1>
-            <p className="text-muted-foreground">
-              Gestisci tutti i tuoi clienti della rubrica
-            </p>
+            {isHeaderVisible && (
+              <p className="text-muted-foreground animate-accordion-down">
+                Gestisci tutti i tuoi clienti della rubrica
+              </p>
+            )}
           </div>
-          <PagePromptManager pageRoute="/rubrica" />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+            className="h-8 w-8 shrink-0 mt-2.5"
+          >
+            {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
         </div>
-        
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddForm} className="shadow-soft">
-              <Plus className="h-4 w-4" />
-              Nuovo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedContact ? 'Modifica Cliente' : 'Nuovo Cliente'}
-              </DialogTitle>
-            </DialogHeader>
-            <ContactForm
-              contact={selectedContact ? {
-                ...selectedContact, 
-                data_creazione: selectedContact.created_at,
-                tag: selectedContact.tags || [],
-                responsabile: selectedContact.responsabile || selectedContact.nome || '',
-                nazione: selectedContact.paese,
-                provincia_stato: '',
-                cap: selectedContact.zip_code
-              } : null}
-              onSubmit={selectedContact ? handleEditContact : handleAddContact}
-              onCancel={() => setIsFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      {/* Search and Filters */}
-      <Card className="border-card shadow-soft bg-card-transparent">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cerca per nome, azienda o email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="shadow-soft">
-                  <Filter className="h-4 w-4" />
-                  Filtri
-                  {(filters.tag || filters.citta || filters.nazione) && (
-                    <Badge variant="secondary" className="ml-2">
-                      {Object.values(filters).filter(Boolean).length}
-                    </Badge>
-                  )}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Filtri Avanzati</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <ContactFilters
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    onClose={() => setIsFiltersOpen(false)}
-                  />
-                  <div className="flex items-center space-x-2 pt-4 border-t">
-                    <input
-                      type="checkbox"
-                      id="hasActivities"
-                      checked={filters.hasActivities}
-                      onChange={(e) => setFilters({...filters, hasActivities: e.target.checked})}
-                      className="h-4 w-4"
+        {/* Action Buttons and Filters */}
+        {isHeaderVisible && (
+          <div className="overflow-hidden animate-accordion-down space-y-4">
+            <div className="flex justify-between items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openAddForm} size="icon" className="shadow-soft">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {selectedContact ? 'Modifica Cliente' : 'Nuovo Cliente'}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ContactForm
+                      contact={selectedContact ? {
+                        ...selectedContact, 
+                        data_creazione: selectedContact.created_at,
+                        tag: selectedContact.tags || [],
+                        responsabile: selectedContact.responsabile || selectedContact.nome || '',
+                        nazione: selectedContact.paese,
+                        provincia_stato: '',
+                        cap: selectedContact.zip_code
+                      } : null}
+                      onSubmit={selectedContact ? handleEditContact : handleAddContact}
+                      onCancel={() => setIsFormOpen(false)}
                     />
-                    <label htmlFor="hasActivities" className="text-sm font-medium">
-                      Solo contatti con attività associate
-                    </label>
-                  </div>
+                  </DialogContent>
+                </Dialog>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Cerca in CRM..." 
+                        className="pl-10"
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10">
+                      <Filter className="h-5 w-5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Filtri Avanzati</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <ContactFilters
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                        onClose={() => setIsFiltersOpen(false)}
+                      />
+                      <div className="flex items-center space-x-2 pt-4 border-t">
+                        <input
+                          type="checkbox"
+                          id="hasActivities"
+                          checked={filters.hasActivities}
+                          onChange={(e) => setFilters({...filters, hasActivities: e.target.checked})}
+                          className="h-4 w-4"
+                        />
+                        <label htmlFor="hasActivities" className="text-sm font-medium">
+                          Solo contatti con attività associate
+                        </label>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <PagePromptManager pageRoute="/rubrica" />
+                <AIChatPopup pageRoute="/rubrica" />
+              </div>
+            </div>
+
+            {/* Search Card */}
+            <Card className="border-card shadow-soft bg-card-transparent">
+              <CardContent className="p-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cerca per nome, azienda o email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

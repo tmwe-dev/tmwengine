@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import libroGif from '@/assets/libro.gif';
 import libroStatic from '@/assets/libro-static.png';
 
@@ -8,24 +8,29 @@ interface AnimatedBookProps {
 }
 
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
+  const previousPage = useRef(currentPage);
   const [isAnimating, setIsAnimating] = useState(false);
   const [gifKey, setGifKey] = useState(0);
 
-  const handleClick = () => {
-    setIsAnimating(true);
-    setGifKey(prev => prev + 1);
+  useEffect(() => {
+    if (currentPage < previousPage.current) {
+      // Going backward - show and activate GIF
+      setIsAnimating(true);
+      setGifKey(prev => prev + 1);
+      
+      // Stop animation after 1 second
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 1000);
+    }
     
-    // Stop animation after 1 second
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 1000);
-  };
+    previousPage.current = currentPage;
+  }, [currentPage]);
 
   return (
     <div 
       className={className} 
-      style={{ height: '140px', background: 'transparent', position: 'relative', cursor: 'pointer' }}
-      onClick={handleClick}
+      style={{ height: '140px', background: 'transparent', position: 'relative' }}
     >
       <div className="w-full h-full flex items-center justify-center">
         <img 

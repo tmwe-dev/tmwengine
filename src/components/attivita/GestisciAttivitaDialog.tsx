@@ -344,11 +344,11 @@ export function GestisciAttivitaDialog({
 
               {/* Storico modifiche */}
               {activity.modifiche_log && activity.modifiche_log.length > 0 && (
-                <div className="border-t pt-0">
+                <div className="flex flex-col items-center mt-4">
                   <Button
                     variant="ghost"
                     onClick={() => setShowHistory(!showHistory)}
-                    className="flex items-center gap-2 mb-3"
+                    className="flex items-center gap-2"
                   >
                     <History className="h-4 w-4" />
                     Storico Modifiche ({activity.modifiche_log.length})

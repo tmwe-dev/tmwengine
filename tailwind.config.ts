@@ -144,12 +144,12 @@ export default {
       // === ANIMAZIONI ===
       keyframes: {
         "accordion-down": {
-          from: { height: "0", opacity: "0" },
-          to: { height: "var(--radix-accordion-content-height)", opacity: "1" },
+          from: { height: "0", opacity: "0", overflow: "hidden" },
+          to: { height: "var(--radix-accordion-content-height)", opacity: "1", overflow: "hidden" },
         },
         "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)", opacity: "1" },
-          to: { height: "0", opacity: "0" },
+          from: { height: "var(--radix-accordion-content-height)", opacity: "1", overflow: "hidden" },
+          to: { height: "0", opacity: "0", overflow: "hidden" },
         },
         "fade-in": {
           "0%": { opacity: "0", transform: "translateY(10px)" },

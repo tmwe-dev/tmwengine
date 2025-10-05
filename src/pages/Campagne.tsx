@@ -210,7 +210,7 @@ export default function Campagne() {
 
       {/* Action Buttons and Filters */}
       {isHeaderVisible && (
-        <div className="animate-accordion-down space-y-4">
+        <div className="overflow-hidden animate-accordion-down space-y-4">
           <div className="flex justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

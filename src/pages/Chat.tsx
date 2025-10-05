@@ -391,6 +391,12 @@ const Chat = () => {
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               Chat AI
+              {!useSystemPrompt && (
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1.5 rounded-full flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Chat Libera
+                </span>
+              )}
             </h1>
             
             {/* Stats orizzontali in grigio sotto il titolo */}
@@ -405,8 +411,18 @@ const Chat = () => {
             )}
           </div>
           
-          {/* Settings Icon */}
-          <Dialog>
+          {/* Settings Icon e Toggle System Prompt */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setUseSystemPrompt(!useSystemPrompt)}
+              className={useSystemPrompt ? '' : 'bg-blue-500/10 border border-blue-500/30'}
+              title={useSystemPrompt ? 'Disattiva System Prompts' : 'Attiva System Prompts'}
+            >
+              <Sparkles className={`h-5 w-5 ${useSystemPrompt ? '' : 'text-blue-500'}`} />
+            </Button>
+            <Dialog>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
                 <Settings className="h-4 w-4" />
@@ -556,6 +572,7 @@ const Chat = () => {
             </div>
           </DialogContent>
         </Dialog>
+          </div>
         </div>
       )}
 

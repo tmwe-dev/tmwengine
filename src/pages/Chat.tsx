@@ -428,10 +428,10 @@ const Chat = () => {
               variant="ghost"
               size="icon"
               onClick={handlePromptToggle}
-              className={useSystemPrompt ? 'animate-pulse' : ''}
+              className="animate-pulse"
               title={useSystemPrompt ? 'Disattiva System Prompts' : 'Attiva System Prompts'}
             >
-              <Sparkles className={`h-5 w-5 transition-colors ${useSystemPrompt ? 'text-yellow-500 animate-pulse' : 'text-muted-foreground'}`} />
+              <Sparkles className={`h-5 w-5 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
             </Button>
             <Dialog>
             <DialogTrigger asChild>
@@ -734,9 +734,9 @@ const Chat = () => {
                         variant="ghost"
                         size="icon"
                         onClick={handlePromptToggle}
-                        className={useSystemPrompt ? 'animate-pulse' : ''}
+                        className="animate-pulse"
                       >
-                        <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500 animate-pulse' : 'text-muted-foreground'}`} />
+                        <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
                       </Button>
                       <Dialog>
                         <DialogTrigger asChild>

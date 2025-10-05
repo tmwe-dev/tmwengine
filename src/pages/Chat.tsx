@@ -371,11 +371,22 @@ const Chat = () => {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Chat AI
-          </h1>
+        <div className="flex items-start gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              Chat AI
+            </h1>
+          </div>
+          
+          {/* Stats verticali in grigio */}
+          {lastResponseStats && (
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground mt-1">
+              <span>{lastResponseStats.tokens} token</span>
+              <span>{lastResponseStats.responseTime}ms</span>
+              <span>{lastResponseStats.memoryMode} memory</span>
+            </div>
+          )}
         </div>
         
         {/* Settings Icon */}
@@ -650,21 +661,8 @@ const Chat = () => {
           {/* Area Input */}
           <Card className="bg-card-transparent">
             <CardHeader className="py-4">
-              <CardTitle className="flex items-center justify-between">
-                <span>{currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}</span>
-                {lastResponseStats && (
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-primary/10 px-2 py-1 rounded-full">
-                      {lastResponseStats.tokens} token
-                    </span>
-                    <span className="text-blue-500">
-                      {lastResponseStats.responseTime}ms
-                    </span>
-                    <span className="bg-muted px-2 py-1 rounded-full">
-                      {lastResponseStats.memoryMode} memory
-                    </span>
-                  </div>
-                )}
+              <CardTitle>
+                {currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}
               </CardTitle>
             </CardHeader>
             <CardContent>

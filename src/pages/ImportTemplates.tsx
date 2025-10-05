@@ -2309,7 +2309,7 @@ export default function ImportTemplates() {
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow>
-                       <TableHead>Data</TableHead>
+                       <TableHead className="w-24">Data</TableHead>
                        <TableHead>File</TableHead>
                        <TableHead className="text-center">Stato</TableHead>
                        <TableHead className="text-center">Record</TableHead>

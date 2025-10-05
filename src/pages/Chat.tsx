@@ -392,7 +392,7 @@ const Chat = () => {
         {/* Settings Icon */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
               <Settings className="h-4 w-4" />
             </Button>
           </DialogTrigger>
@@ -607,39 +607,54 @@ const Chat = () => {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+              <CardContent className="space-y-4 max-h-[600px] overflow-y-auto px-2 sm:px-6">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex items-start gap-4 ${
+                    className={`flex items-start gap-3 ${
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     {message.role === 'assistant' && (
-                      <Bot className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                      <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                     )}
                     <div
-                      className={`max-w-[80%] p-4 rounded-lg border ${
+                      className={`w-full max-w-none sm:max-w-[85%] p-3 sm:p-4 rounded-lg border ${
                         message.role === 'user'
                           ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
                           : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                      <div className="text-xs opacity-70 mt-3 flex justify-between items-center">
-                        <span>{new Date(message.created_at).toLocaleTimeString()}</span>
-                        <div className="flex gap-2">
+                      <div 
+                        className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: message.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
+                            .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>')
+                            .replace(/\n/g, '<br>')
+                        }}
+                      />
+                      <div className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/50 flex justify-between items-center gap-2">
+                        <span>{new Date(message.created_at).toLocaleString('it-IT', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}</span>
+                        <div className="flex gap-2 items-center">
                           {message.model && (
-                            <span className="text-xs">{message.model}</span>
+                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{message.model}</span>
                           )}
                           {message.tokens_used && (
-                            <span className="text-xs">{message.tokens_used}t</span>
+                            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">{message.tokens_used}t</span>
                           )}
                         </div>
                       </div>
                     </div>
                     {message.role === 'user' && (
-                      <User className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                      <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
                     )}
                   </div>
                 ))}

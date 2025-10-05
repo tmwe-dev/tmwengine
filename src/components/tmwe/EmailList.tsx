@@ -203,7 +203,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className={cn("flex flex-col items-center space-y-2 py-4 px-4 sm:px-6 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("flex flex-col items-center space-y-2 py-4 px-4 sm:px-6 w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -343,7 +343,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("flex flex-col items-center space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("flex flex-col items-center space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}

@@ -1102,7 +1102,7 @@ export default function Attivita() {
             >
               <ToggleGroupItem 
                 value="all" 
-                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-foreground bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-foreground"
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-xs font-medium text-muted-foreground">Totali</span>
@@ -1111,7 +1111,7 @@ export default function Attivita() {
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="future" 
-                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-warning bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-warning"
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-xs font-medium text-muted-foreground">In Sospeso</span>
@@ -1122,7 +1122,7 @@ export default function Attivita() {
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="scadute" 
-                className="data-[state=on]:bg-transparent data-[state=on]:border-b-2 data-[state=on]:border-destructive bg-transparent hover:bg-transparent rounded-none border-b-2 border-transparent transition-all py-3"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-destructive"
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-xs font-medium text-muted-foreground">Scadute</span>

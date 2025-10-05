@@ -11,6 +11,7 @@ import { CampaignFilters } from '@/components/campagne/CampaignFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { AIChatPopup } from '@/components/ai/AIChatPopup';
 
 interface Campaign {
   id: string;
@@ -192,26 +193,30 @@ export default function Campagne() {
           </p>
         </div>
         
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddForm} className="shadow-soft">
-              <Plus className="h-4 w-4" />
-              Nuova Campagna
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
-              </DialogTitle>
-            </DialogHeader>
-            <CampaignForm
-              campaign={selectedCampaign}
-              onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
-              onCancel={() => setIsFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddForm} className="shadow-soft">
+                <Plus className="h-4 w-4" />
+                Nuova Campagna
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
+                </DialogTitle>
+              </DialogHeader>
+              <CampaignForm
+                campaign={selectedCampaign}
+                onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
+                onCancel={() => setIsFormOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          <AIChatPopup pageRoute="/campagne" />
+        </div>
       </div>
 
       {/* Search and Filters */}

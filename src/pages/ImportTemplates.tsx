@@ -3444,11 +3444,11 @@ export default function ImportTemplates() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="px-[15px]"
+                            className="px-[15px] hover:bg-transparent"
                             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                             disabled={currentPage === 0}
                           >
-                            <ChevronLeft className="h-8 w-8" />
+                            <ChevronLeft className="h-10 w-10" />
                           </Button>
                           <span className="text-sm px-3 py-1">
                             {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
@@ -3456,11 +3456,11 @@ export default function ImportTemplates() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="px-[15px]"
+                            className="px-[15px] hover:bg-transparent"
                             onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
                             disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
                           >
-                            <ChevronRight className="h-8 w-8" />
+                            <ChevronRight className="h-10 w-10" />
                           </Button>
                         </div>
                       </div>

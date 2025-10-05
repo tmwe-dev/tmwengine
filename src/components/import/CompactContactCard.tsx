@@ -34,7 +34,7 @@ export function CompactContactCard({
   
   return (
     <Card className={cn(
-      "border transition-all duration-200 hover:shadow-sm relative",
+      "border transition-all duration-200 hover:shadow-sm relative w-[95%] mx-auto",
       "bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20",
       "hover:from-purple-500/10 hover:via-purple-500/5 hover:via-35% hover:to-transparent hover:border-purple-500/30",
       isSelected && "ring-2 ring-purple-500 border-purple-500/40 from-purple-500/20 via-purple-500/10 via-35% to-transparent"

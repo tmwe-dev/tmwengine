@@ -2955,7 +2955,7 @@ export default function ImportTemplates() {
               <div className="flex flex-col min-h-0 flex-1">
                 {isMobile ? (
                   /* Mobile View - Ultra-Compact Cards */
-                  <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x w-[95%] mx-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {viewingRecords.map((record, viewIndex) => {
                       const actualIndex = currentPage * recordsPerPage + viewIndex;
                       return (

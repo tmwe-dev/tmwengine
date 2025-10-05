@@ -13,6 +13,8 @@ import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
+import { ImageGenerator } from '@/components/chat/ImageGenerator';
 
 interface Message {
   id: string;
@@ -22,6 +24,9 @@ interface Message {
   model?: string;
   tokens_used?: number;
   created_at: string;
+  images?: string[];
+  attachments?: UploadedFile[];
+  generated_images?: string[];
 }
 
 interface SystemPrompt {
@@ -71,6 +76,8 @@ const Chat = () => {
   const [showPromptConfirm, setShowPromptConfirm] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState<string>('google/gemini-2.5-flash');
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -178,7 +185,16 @@ const Chat = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages((data || []) as Message[]);
+      
+      // Cast with proper type mapping for JSON fields
+      const messages = (data || []).map(msg => ({
+        ...msg,
+        images: Array.isArray(msg.images) ? msg.images as string[] : [],
+        attachments: Array.isArray(msg.attachments) ? msg.attachments as unknown as UploadedFile[] : [],
+        generated_images: Array.isArray(msg.generated_images) ? msg.generated_images as string[] : []
+      })) as Message[];
+      
+      setMessages(messages);
     } catch (error) {
       console.error('Errore caricamento messaggi:', error);
     }
@@ -335,16 +351,27 @@ const Chat = () => {
         prompt: currentPrompt.substring(0, 50) + '...'
       });
 
+      // Prepare images for vision models
+      const imageUrls = [
+        ...uploadedFiles.filter(f => f.isImage).map(f => f.url),
+        ...(generatedImage ? [generatedImage] : [])
+      ];
+
       const { data, error } = await supabase.functions.invoke('chat-with-openai', {
         body: { 
           prompt: currentPrompt, 
           systemPrompt: systemPromptContent,
           conversationId: conversationId,
-          model: selectedAIModel
+          model: selectedAIModel,
+          images: imageUrls.length > 0 ? imageUrls : undefined
         }
       });
 
       if (error) throw error;
+
+      // Clear uploaded files after sending
+      setUploadedFiles([]);
+      setGeneratedImage(null);
 
       // Aggiorna statistiche ultima risposta
       setLastResponseStats({
@@ -772,6 +799,52 @@ const Chat = () => {
                           <span>{new Date(message.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
                           <span>{new Date(message.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
+
+                        {/* Show attachments if any */}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {message.attachments.map((file, idx) => (
+                              <a 
+                                key={idx}
+                                href={file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1 hover:bg-muted/80"
+                              >
+                                {file.name}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Show images if any */}
+                        {message.images && message.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {message.images.map((img, idx) => (
+                              <img 
+                                key={idx}
+                                src={img}
+                                alt={`Immagine ${idx + 1}`}
+                                className="max-w-xs rounded-lg border"
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Show generated images if any */}
+                        {message.generated_images && message.generated_images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {message.generated_images.map((img, idx) => (
+                              <img 
+                                key={idx}
+                                src={img}
+                                alt={`Generata ${idx + 1}`}
+                                className="max-w-xs rounded-lg border"
+                              />
+                            ))}
+                          </div>
+                        )}
+
                         <div 
                           className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                           dangerouslySetInnerHTML={{ 
@@ -816,14 +889,51 @@ const Chat = () => {
                 </CardTitle>
               </CardHeader>
             )}
-            <CardContent className={shouldHideHeader ? 'p-3' : ''}>
+            <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
               <form onSubmit={handleSubmit} className={shouldHideHeader ? 'space-y-3' : 'space-y-4'}>
+                {/* File Upload and Image Generation - Only show when not hidden */}
+                {!shouldHideHeader && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <FileUploader 
+                      onFilesUploaded={setUploadedFiles}
+                      maxFiles={5}
+                    />
+                    <ImageGenerator 
+                      onImageGenerated={(url) => setGeneratedImage(url)}
+                    />
+                  </div>
+                )}
+
+                {/* Show generated image preview */}
+                {generatedImage && (
+                  <div className="relative inline-block">
+                    <img 
+                      src={generatedImage} 
+                      alt="Generated" 
+                      className="max-w-xs rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setGeneratedImage(null)}
+                      className="absolute top-2 right-2 bg-destructive text-white rounded-full p-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Inserisci qui il tuo messaggio..."
                   className={`resize-none ${shouldHideHeader ? 'min-h-[80px]' : 'min-h-[120px]'}`}
                   disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
                 />
                 
                 <div className="flex justify-between items-center">
@@ -877,7 +987,7 @@ const Chat = () => {
                   <div className={shouldHideHeader ? 'ml-auto' : 'w-full flex justify-end'}>
                     <Button 
                       type="submit" 
-                      disabled={!prompt.trim() || isLoading}
+                      disabled={(!prompt.trim() && uploadedFiles.length === 0 && !generatedImage) || isLoading}
                       className="flex items-center gap-2"
                     >
                       <Send className="h-4 w-4" />

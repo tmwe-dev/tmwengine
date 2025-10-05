@@ -114,10 +114,13 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          attachments: Json | null
           content: string
           conversation_id: string
           created_at: string
+          generated_images: Json | null
           id: string
+          images: Json | null
           model: string | null
           role: string
           tempo_risposta_ms: number | null
@@ -126,10 +129,13 @@ export type Database = {
           tokens_used: number | null
         }
         Insert: {
+          attachments?: Json | null
           content: string
           conversation_id: string
           created_at?: string
+          generated_images?: Json | null
           id?: string
+          images?: Json | null
           model?: string | null
           role: string
           tempo_risposta_ms?: number | null
@@ -138,10 +144,13 @@ export type Database = {
           tokens_used?: number | null
         }
         Update: {
+          attachments?: Json | null
           content?: string
           conversation_id?: string
           created_at?: string
+          generated_images?: Json | null
           id?: string
+          images?: Json | null
           model?: string | null
           role?: string
           tempo_risposta_ms?: number | null

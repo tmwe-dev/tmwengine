@@ -18,11 +18,11 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, systemPrompt, conversationId } = await req.json();
+    const { prompt, systemPrompt, conversationId, images, model } = await req.json();
     const startTime = Date.now();
 
-    if (!prompt) {
-      throw new Error('Prompt è richiesto');
+    if (!prompt && (!images || images.length === 0)) {
+      throw new Error('Prompt o immagini richiesti');
     }
 
     // Get active AI configuration
@@ -138,8 +138,24 @@ serve(async (req) => {
       }
     }
 
-    // Add current user message
-    messages.push({ role: 'user', content: prompt });
+    // Build user message with optional images
+    const userMessage: any = { role: 'user' };
+    
+    if (images && images.length > 0) {
+      // Multi-modal message with images
+      userMessage.content = [
+        { type: 'text', text: prompt || 'Analizza queste immagini' },
+        ...images.map((img: string) => ({
+          type: 'image_url',
+          image_url: { url: img }
+        }))
+      ];
+    } else {
+      // Text-only message
+      userMessage.content = prompt;
+    }
+
+    messages.push(userMessage);
 
     console.log(`[MEMORY] Using ${useFullMemory ? 'FULL' : 'LIMITED'} memory for conversation ${conversationId}`);
     console.log(`[MEMORY] Total messages in context: ${messages.length}`);
@@ -286,31 +302,42 @@ serve(async (req) => {
       }
     ];
 
-    // Determine API endpoint based on provider
+    // Determine API endpoint based on model parameter or config
+    let useLovableAI = false;
+    let selectedModel = model || aiConfig.modello;
+    
+    // Check if using Lovable AI gateway
+    if (model && (model.startsWith('google/') || model.startsWith('openai/'))) {
+      useLovableAI = true;
+    }
+    
     let apiUrl = 'https://api.openai.com/v1/chat/completions';
     let authHeader = `Bearer ${aiConfig.api_key}`;
     
-    if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
+    if (useLovableAI) {
+      apiUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+      authHeader = `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`;
+    } else if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
       apiUrl = 'https://api.anthropic.com/v1/messages';
       authHeader = aiConfig.api_key;
     }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude' 
+      headers: useLovableAI || !(aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude')
         ? {
-            'x-api-key': authHeader,
-            'anthropic-version': '2023-06-01',
+            'Authorization': authHeader,
             'Content-Type': 'application/json',
           }
         : {
-            'Authorization': authHeader,
+            'x-api-key': authHeader,
+            'anthropic-version': '2023-06-01',
             'Content-Type': 'application/json',
           },
       body: JSON.stringify(
         aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude'
           ? {
-              model: aiConfig.modello,
+              model: selectedModel,
               max_tokens: 1000,
               messages: messages.filter(m => m.role !== 'system').map(m => ({
                 role: m.role,
@@ -326,7 +353,7 @@ serve(async (req) => {
               })
             }
           : {
-              model: aiConfig.modello,
+              model: selectedModel,
               messages: messages,
               max_completion_tokens: 1000,
               ...(requiresCRMTools && {

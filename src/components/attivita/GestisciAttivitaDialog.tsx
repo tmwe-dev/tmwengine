@@ -277,7 +277,7 @@ export function GestisciAttivitaDialog({
                   id="descrizione"
                   value={formData.descrizione || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
-                  className="h-[250px] text-sm resize-none"
+                  className="h-[230px] text-sm resize-none"
                 />
               </div>
             </TabsContent>

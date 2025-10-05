@@ -3435,7 +3435,7 @@ export default function ImportTemplates() {
                     {/* Desktop Actions - keep existing */}
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
-                      <div className="flex flex-col items-center py-3 border-t gap-2">
+                      <div className="flex flex-col items-center border-t gap-0">
                         {/* Animated Book */}
                         <AnimatedBook currentPage={currentPage} className="w-full" />
                         

@@ -2425,7 +2425,7 @@ export default function ImportTemplates() {
               /* Mobile Header - Compact */
               <div className="space-y-3">
                 {/* Mobile Filters - Dialog */}
-                <div className="space-y-2">
+                <div className="flex items-start gap-2">
                   <Dialog open={showFilters} onOpenChange={setShowFilters}>
                     <DialogTrigger asChild>
                       <Button

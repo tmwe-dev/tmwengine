@@ -2311,11 +2311,11 @@ export default function ImportTemplates() {
                     <TableRow>
                        <TableHead>Data</TableHead>
                        <TableHead>File</TableHead>
-                       <TableHead>Stato</TableHead>
-                       <TableHead>Record</TableHead>
-                       <TableHead>Errori</TableHead>
-                       <TableHead>Selezionati</TableHead>
-                       <TableHead>Azioni</TableHead>
+                       <TableHead className="text-center">Stato</TableHead>
+                       <TableHead className="text-center">Record</TableHead>
+                       <TableHead className="text-center">Errori</TableHead>
+                       <TableHead className="text-center">Selezionati</TableHead>
+                       <TableHead className="text-center">Azioni</TableHead>
                        <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2326,13 +2326,13 @@ export default function ImportTemplates() {
                           {new Date(log.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>{log.file_name}</TableCell>
-                        <TableCell>{getStatusBadge(log.stato)}</TableCell>
-                         <TableCell>
+                        <TableCell className="text-center">{getStatusBadge(log.stato)}</TableCell>
+                         <TableCell className="text-center">
                            <span className="font-medium text-primary">{log.righe_totali}</span>
                          </TableCell>
-                        <TableCell className="text-red-600">{log.righe_errori}</TableCell>
-                        <TableCell className="text-blue-600">{log.contatti_selezionati}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-center text-red-600">{log.righe_errori}</TableCell>
+                        <TableCell className="text-center text-blue-600">{log.contatti_selezionati}</TableCell>
+                        <TableCell className="text-center">
                            <div className="flex gap-1">
                               {/* Pulsante per processare file salvati */}
                               {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (

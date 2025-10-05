@@ -48,7 +48,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   return (
     <div 
       className={className} 
-      style={{ height: '140px', background: 'transparent', position: 'relative' }}
+      style={{ height: '100px', background: 'transparent', position: 'relative' }}
     >
       <div className="w-full h-full flex items-center justify-center relative">
         <img

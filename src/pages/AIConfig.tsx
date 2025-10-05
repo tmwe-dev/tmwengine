@@ -270,7 +270,13 @@ const AIConfig = () => {
 
             <div className="space-y-1">
               <Label htmlFor="aiModello" className="text-sm">Modello</Label>
-              {newAiConfig.provider && modelsByProvider[newAiConfig.provider] ? (
+              {(() => {
+                const hasModels = newAiConfig.provider && modelsByProvider[newAiConfig.provider];
+                console.log('Provider:', newAiConfig.provider);
+                console.log('Has models:', hasModels);
+                console.log('All providers keys:', Object.keys(modelsByProvider));
+                return hasModels;
+              })() ? (
                 <Select 
                   value={newAiConfig.modello} 
                   onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}

@@ -291,7 +291,7 @@ const AIConfig = () => {
                   id="aiModello"
                   value={newAiConfig.modello}
                   onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
-                  placeholder="Seleziona prima un provider"
+                  placeholder={newAiConfig.provider ? "Seleziona modello" : "Seleziona prima un provider"}
                   className="h-9"
                   disabled={!newAiConfig.provider}
                 />

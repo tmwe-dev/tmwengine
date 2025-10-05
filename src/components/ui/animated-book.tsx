@@ -25,7 +25,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   useEffect(() => {
     if (isAnimating && videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.playbackRate = 4; // 4x speed - adjust as needed
+      videoRef.current.playbackRate = 6; // 6x speed
       videoRef.current.play();
     }
   }, [isAnimating]);

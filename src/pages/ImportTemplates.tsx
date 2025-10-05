@@ -2424,8 +2424,13 @@ export default function ImportTemplates() {
             {isMobile ? (
               /* Mobile Header - Compact */
               <div className="space-y-3">
-                {/* Mobile Title */}
-                <DialogTitle>Record Importati</DialogTitle>
+                {/* Mobile Title with Total Count */}
+                <div className="flex items-center justify-between">
+                  <DialogTitle>Record Importati</DialogTitle>
+                  <span className="text-sm text-muted-foreground">
+                    <span className="text-primary font-medium">{totalRecords}</span>
+                  </span>
+                </div>
                 
                 {/* Search Field */}
                 <div className="relative">
@@ -2864,17 +2869,18 @@ export default function ImportTemplates() {
             </div>
            )}
           
-          
-          {/* Contatore contatti mobile */}
-          {isMobile && filteredRecords.length > 0 && (
-            <div className="text-sm text-muted-foreground pb-2">
-              <span className="text-primary font-medium">{filteredRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> contatti
-            </div>
-          )}
-          
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
             <div className="flex justify-between items-center pb-2">
+              {/* Filtered Count on Left */}
+              {filteredRecords.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  <span className="text-primary font-medium">{filteredRecords.length}</span> trovati
+                </div>
+              )}
+              
+              {/* Selection Controls and Filters */}
+              <div className="flex items-center gap-2">
               {/* Selection Controls */}
               {filteredRecords.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -2899,8 +2905,8 @@ export default function ImportTemplates() {
                        {selectedRecords.size}
                      </span>
                    )}
-                </div>
-              )}
+                 </div>
+               )}
               
               {/* Filter Button */}
               <Dialog open={showFilters} onOpenChange={setShowFilters}>
@@ -2999,6 +3005,7 @@ export default function ImportTemplates() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
           )}
           

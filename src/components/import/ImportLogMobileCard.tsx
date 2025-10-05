@@ -64,15 +64,6 @@ export function ImportLogMobileCard({
                 <span>{new Date(log.created_at).toLocaleDateString('it-IT')}</span>
               </div>
             </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-              className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
           </div>
 
           {/* Status and Stats */}
@@ -104,13 +95,13 @@ export function ImportLogMobileCard({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 justify-start">
             {canProcess && (
               <Button 
                 size="sm"
                 onClick={onProcess}
                 disabled={isProcessing}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Elabora
@@ -122,10 +113,19 @@ export function ImportLogMobileCard({
               size="sm"
               onClick={onViewRecords}
               disabled={isLoading || !canView}
-              className="flex-1"
+              className="px-3"
             >
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-4 w-4 mr-1" />
               {isLoading ? 'Caricamento...' : 'Gestisci'}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

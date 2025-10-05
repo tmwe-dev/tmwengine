@@ -2424,10 +2424,6 @@ export default function ImportTemplates() {
             {isMobile ? (
               /* Mobile Header - Compact */
               <div className="space-y-3">
-                <DialogTitle className="text-lg font-semibold">
-                  {selectedImport?.file_name}
-                </DialogTitle>
-                
                 {/* Mobile Filters - Collapsible */}
                 <div className="space-y-2">
                   <Button

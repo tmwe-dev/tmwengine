@@ -283,48 +283,50 @@ export function GestisciAttivitaDialog({
             </TabsContent>
             
             <TabsContent value="altro" className="space-y-4 mt-4">
-              {/* Icona contatta */}
-              <div className="flex justify-center">
-                <div 
-                  className={cn(
-                    "flex items-center justify-center w-12 h-12 text-3xl cursor-pointer hover:bg-accent/50 rounded transition-colors",
-                    formData.cellulare && "text-green-600"
-                  )}
-                  onClick={() => setShowCallDialog(true)}
-                  title="Contatta"
-                >
-                  {getActivityIcon(activity.tipo)}
-                </div>
-              </div>
-
-              {/* Telefoni */}
+              {/* Telefoni e Icona */}
               <div className="flex gap-3">
-                <div className="w-40">
-                  <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Telefono
-                  </Label>
-                  <Input
-                    id="telefono"
-                    type="tel"
-                    value={formData.telefono || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
+                <div className="flex flex-col gap-3 w-40">
+                  <div>
+                    <Label htmlFor="telefono" className="text-sm flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Telefono
+                    </Label>
+                    <Input
+                      id="telefono"
+                      type="tel"
+                      value={formData.telefono || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      Cellulare
+                    </Label>
+                    <Input
+                      id="cellulare"
+                      type="tel"
+                      value={formData.cellulare || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
                 
-                <div className="w-40">
-                  <Label htmlFor="cellulare" className="text-sm flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    Cellulare
-                  </Label>
-                  <Input
-                    id="cellulare"
-                    type="tel"
-                    value={formData.cellulare || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cellulare: e.target.value }))}
-                    className="h-9 text-sm"
-                  />
+                {/* Icona contatta allineata con cellulare */}
+                <div className="flex items-end pb-0">
+                  <div 
+                    className={cn(
+                      "flex items-center justify-center w-12 h-12 text-3xl cursor-pointer hover:bg-accent/50 rounded transition-colors",
+                      formData.cellulare && "text-green-600"
+                    )}
+                    onClick={() => setShowCallDialog(true)}
+                    title="Contatta"
+                  >
+                    {getActivityIcon(activity.tipo)}
+                  </div>
                 </div>
               </div>
 

@@ -500,7 +500,7 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 overflow-x-hidden max-w-screen w-full">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
@@ -523,7 +523,7 @@ const EmailDashboard = () => {
         }
       />
       
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden w-full max-w-screen">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar

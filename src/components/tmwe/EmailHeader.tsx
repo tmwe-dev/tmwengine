@@ -67,7 +67,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
   };
 
   return (
-    <header className="flex items-center border-b bg-card-transparent px-4 md:px-6 py-3 md:py-4">
+    <header className="flex items-center border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden">
       <div className="flex items-center gap-1 md:gap-2">
         {isMobile && onMenuClick && (
           <Button 
@@ -158,19 +158,19 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
         </div>
       )}
 
-      <form onSubmit={handleSearch} className="flex-1 ml-2 md:ml-4">
-        <div className="relative flex items-center gap-2">
+      <form onSubmit={handleSearch} className="flex-1 ml-2 md:ml-4 min-w-0">
+        <div className="relative flex items-center gap-1 sm:gap-2 min-w-0">
           <Badge variant="secondary" className="flex items-center gap-1.5 px-2 py-1 whitespace-nowrap">
             <Database className="h-3.5 w-3.5" />
             <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
           </Badge>
           
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder={isMobile ? "Search..." : "Search emails..."}
-              className="pl-10 text-sm"
+              className="pl-8 sm:pl-10 text-xs sm:text-sm h-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

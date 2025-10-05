@@ -3408,7 +3408,7 @@ export default function ImportTemplates() {
                               <ChevronLeft className="h-10 w-10" />
                             </Button>
                             
-                            {/* Azioni multiple - al centro tra le frecce */}
+                            {/* Azioni multiple - a sinistra */}
                             {selectedRecords.size > 0 && (
                               <TooltipProvider>
                                 <Tooltip>
@@ -3417,7 +3417,7 @@ export default function ImportTemplates() {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => setShowMultipleActivityDialog(true)}
-                                      className="p-2"
+                                      className="p-2 absolute left-0"
                                     >
                                       <FileText className="h-4 w-4 text-blue-500" />
                                     </Button>

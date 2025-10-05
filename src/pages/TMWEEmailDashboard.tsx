@@ -534,7 +534,7 @@ const EmailDashboard = () => {
         isMobile={isMobile}
         dbEmailCount={isMobile ? emailCount : undefined}
         downloadProgressComponent={
-          isMobile ? (
+          !isMobile ? (
             <EmailDownloadProgress
               totalEmails={totalEmailCount}
               onDownloadComplete={() => {}}
@@ -543,16 +543,7 @@ const EmailDashboard = () => {
               downloadedCount={downloadedCount}
               downloadError={downloadError}
             />
-          ) : (
-            <EmailDownloadProgress
-              totalEmails={totalEmailCount}
-              onDownloadComplete={() => {}}
-              onStartDownload={startDownload}
-              isDownloading={isDownloading}
-              downloadedCount={downloadedCount}
-              downloadError={downloadError}
-            />
-          )
+          ) : undefined
         }
       />
       

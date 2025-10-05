@@ -21,9 +21,10 @@ interface EmailHeaderProps {
   onMenuClick?: () => void;
   isMobile?: boolean;
   downloadProgressComponent?: React.ReactNode;
+  dbEmailCount?: number;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -211,9 +212,30 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
       <Dialog open={syncPopupOpen} onOpenChange={setSyncPopupOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Opzioni Sincronizzazione</DialogTitle>
+            <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-4">
+            {/* DB Email Count */}
+            {dbEmailCount !== undefined && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
+                <Database className="h-5 w-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">Email nel Database</div>
+                  <div className="text-xs text-muted-foreground">
+                    {dbEmailCount.toLocaleString()} record
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Download Progress Component */}
+            {downloadProgressComponent && (
+              <div className="w-full">
+                {downloadProgressComponent}
+              </div>
+            )}
+
+            {/* Sync All */}
             <Button 
               onClick={() => {
                 onSync();
@@ -226,6 +248,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               <span>Sincronizza tutte le email</span>
             </Button>
             
+            {/* Smart Sync */}
             {onSyncSmart && (
               <Button 
                 onClick={() => {

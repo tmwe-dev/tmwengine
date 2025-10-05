@@ -532,15 +532,27 @@ const EmailDashboard = () => {
         missingEmailCount={missingEmailCount}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
+        dbEmailCount={isMobile ? emailCount : undefined}
         downloadProgressComponent={
-          <EmailDownloadProgress
-            totalEmails={totalEmailCount}
-            onDownloadComplete={() => {}}
-            onStartDownload={startDownload}
-            isDownloading={isDownloading}
-            downloadedCount={downloadedCount}
-            downloadError={downloadError}
-          />
+          isMobile ? (
+            <EmailDownloadProgress
+              totalEmails={totalEmailCount}
+              onDownloadComplete={() => {}}
+              onStartDownload={startDownload}
+              isDownloading={isDownloading}
+              downloadedCount={downloadedCount}
+              downloadError={downloadError}
+            />
+          ) : (
+            <EmailDownloadProgress
+              totalEmails={totalEmailCount}
+              onDownloadComplete={() => {}}
+              onStartDownload={startDownload}
+              isDownloading={isDownloading}
+              downloadedCount={downloadedCount}
+              downloadError={downloadError}
+            />
+          )
         }
       />
       
@@ -600,14 +612,6 @@ const EmailDashboard = () => {
           {/* Sender Filter */}
           <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              {/* Mobile Email Count Badge - transparent background */}
-              {isMobile && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="font-semibold text-xs">{emailCount.toLocaleString()}</span>
-                </div>
-              )}
-              
               <EmailSenderFilter
                 emails={emailsToUse}
                 selectedSender={selectedSender}

@@ -99,7 +99,7 @@ export default function Attivita() {
     origine: ''
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
-  const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Stato per nascondere/mostrare sezione superiore (Clean_Top pattern)
+  const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Clean_Top pattern: controls header visibility
   const [currentPage, setCurrentPage] = useState(0);
   const [recordsPerPage, setRecordsPerPage] = useState(25);
   const scrollPositionRef = useRef<number>(0);

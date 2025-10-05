@@ -236,6 +236,25 @@ export default function Campagne() {
                     </div>
                   </PopoverContent>
                 </Popover>
+                
+                <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Filtri Avanzati</DialogTitle>
+                    </DialogHeader>
+                    <CampaignFilters
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onClose={() => setIsFiltersOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+                
                 <PagePromptManager pageRoute="/campagne" />
                 <AIChatPopup pageRoute="/campagne" />
               </div>
@@ -255,37 +274,13 @@ export default function Campagne() {
                     className="pl-10"
                   />
                 </div>
-                
-                <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="shadow-soft">
-                      <Filter className="h-4 w-4" />
-                      Filtri
-                      {Object.values(filters).filter(Boolean).length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                          {Object.values(filters).filter(Boolean).length}
-                        </Badge>
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Filtri Avanzati</DialogTitle>
-                    </DialogHeader>
-                    <CampaignFilters
-                      filters={filters}
-                      onFiltersChange={setFilters}
-                      onClose={() => setIsFiltersOpen(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Toggle Button */}
+        {/* Toggle Button */}
       <div className="flex justify-center">
         <Button
           variant="ghost"

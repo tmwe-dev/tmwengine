@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import libroGif from '@/assets/libro.gif';
@@ -11,36 +11,16 @@ interface BookProps {
 
 function Book({ direction, onAnimationComplete }: BookProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const animationProgress = useRef(0);
-  const isAnimating = useRef(false);
-  const [showGif, setShowGif] = useState(false);
-  
-  const gifTexture = useLoader(THREE.TextureLoader, libroGif);
 
   useEffect(() => {
     if (direction !== 'idle') {
-      isAnimating.current = true;
-      animationProgress.current = 0;
-      
-      if (direction === 'backward') {
-        setShowGif(true);
-        setTimeout(() => {
-          setShowGif(false);
-          isAnimating.current = false;
-          onAnimationComplete();
-        }, 2000);
-      } else {
-        // For forward direction, just complete immediately
-        setTimeout(() => {
-          isAnimating.current = false;
-          onAnimationComplete();
-        }, 100);
-      }
+      setTimeout(() => {
+        onAnimationComplete();
+      }, 2000);
     }
   }, [direction, onAnimationComplete]);
 
   useFrame(() => {
-    // No animation needed, just display the GIF
     return;
   });
 
@@ -49,9 +29,8 @@ function Book({ direction, onAnimationComplete }: BookProps) {
       <mesh ref={meshRef}>
         <planeGeometry args={[4, 3]} />
         <meshBasicMaterial 
-          map={gifTexture} 
           transparent 
-          opacity={1}
+          opacity={0}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -69,12 +48,19 @@ interface AnimatedBookProps {
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
   const direction = useRef<'forward' | 'backward' | 'idle'>('idle');
+  const [showGif, setShowGif] = useState(false);
+  const [gifKey, setGifKey] = useState(0);
 
   useEffect(() => {
     if (currentPage > previousPage.current) {
       direction.current = 'forward';
     } else if (currentPage < previousPage.current) {
       direction.current = 'backward';
+      setShowGif(true);
+      setGifKey(prev => prev + 1); // Force reload GIF
+      setTimeout(() => {
+        setShowGif(false);
+      }, 2000);
     }
     previousPage.current = currentPage;
   }, [currentPage]);
@@ -84,11 +70,22 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   };
 
   return (
-    <div className={className} style={{ height: '140px', background: 'transparent' }}>
+    <div className={className} style={{ height: '140px', background: 'transparent', position: 'relative' }}>
       <Canvas shadows>
         <OrthographicCamera makeDefault position={[0, 0, 8]} zoom={60} />
         <Book direction={direction.current} onAnimationComplete={handleAnimationComplete} />
       </Canvas>
+      {showGif && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            key={gifKey}
+            src={libroGif} 
+            alt="Book animation" 
+            className="w-full h-full object-contain"
+            style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
+          />
+        </div>
+      )}
     </div>
   );
 }

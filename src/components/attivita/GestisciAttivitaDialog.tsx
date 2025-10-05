@@ -189,8 +189,8 @@ export function GestisciAttivitaDialog({
           <div>
             {/* Form di modifica */}
             <div className="space-y-3">
-              {/* Prima riga: Stato, Priorità, Icona (a sinistra) e Scadenza (a destra) */}
-              <div className="flex justify-between items-end">
+              {/* Prima riga: Stato, Priorità, Icona (a sinistra) e Scadenza (a destra - solo desktop) */}
+              <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-3">
                 <div className="flex gap-2 items-end">
                   <div className="w-32">
                     <Label htmlFor="stato" className="text-sm">Stato</Label>
@@ -232,8 +232,8 @@ export function GestisciAttivitaDialog({
                   </div>
                 </div>
 
-                {/* Scadenza a destra */}
-                <div>
+                {/* Scadenza a destra - solo desktop */}
+                <div className="hidden md:block">
                   <Label className="text-sm">Scadenza</Label>
                   <div className="flex gap-2 mt-1">
                     <Popover>
@@ -266,6 +266,42 @@ export function GestisciAttivitaDialog({
                       className="w-24 h-9 text-sm"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Scadenza sotto - solo mobile */}
+              <div className="md:hidden">
+                <Label className="text-sm">Scadenza</Label>
+                <div className="flex gap-2 mt-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-36 justify-start text-left font-normal h-9 text-sm",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Data'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-24 h-9 text-sm"
+                  />
                 </div>
               </div>
 

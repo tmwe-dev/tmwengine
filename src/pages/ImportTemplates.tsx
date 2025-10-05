@@ -3440,14 +3440,15 @@ export default function ImportTemplates() {
                         <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
                         
                         {/* Pagination Controls */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-[15px]">
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="px-[15px]"
                             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                             disabled={currentPage === 0}
                           >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="h-8 w-8" />
                           </Button>
                           <span className="text-sm px-3 py-1">
                             {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
@@ -3455,10 +3456,11 @@ export default function ImportTemplates() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="px-[15px]"
                             onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
                             disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
                           >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="h-8 w-8" />
                           </Button>
                         </div>
                       </div>

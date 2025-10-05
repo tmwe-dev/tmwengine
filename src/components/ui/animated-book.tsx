@@ -2,8 +2,6 @@ import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import bookForward from '@/assets/book-page-forward.png';
-import bookBackward from '@/assets/book-page-backward.png';
 import libroGif from '@/assets/libro.gif';
 
 interface BookProps {
@@ -15,63 +13,45 @@ function Book({ direction, onAnimationComplete }: BookProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const animationProgress = useRef(0);
   const isAnimating = useRef(false);
-  const [currentTexture, setCurrentTexture] = useState<'idle' | 'forward' | 'backward'>('idle');
   const [showGif, setShowGif] = useState(false);
   
-  const forwardTexture = useLoader(THREE.TextureLoader, bookForward);
-  const backwardTexture = useLoader(THREE.TextureLoader, bookBackward);
   const gifTexture = useLoader(THREE.TextureLoader, libroGif);
 
   useEffect(() => {
     if (direction !== 'idle') {
       isAnimating.current = true;
       animationProgress.current = 0;
-      setCurrentTexture(direction);
       
       if (direction === 'backward') {
         setShowGif(true);
         setTimeout(() => {
           setShowGif(false);
           isAnimating.current = false;
-          setCurrentTexture('idle');
           onAnimationComplete();
         }, 2000);
+      } else {
+        // For forward direction, just complete immediately
+        setTimeout(() => {
+          isAnimating.current = false;
+          onAnimationComplete();
+        }, 100);
       }
     }
   }, [direction, onAnimationComplete]);
 
-  useFrame((state, delta) => {
-    if (!isAnimating.current || !meshRef.current || showGif) return;
-
-    const speed = 2;
-    animationProgress.current += delta * speed;
-
-    if (animationProgress.current >= 1) {
-      animationProgress.current = 1;
-      isAnimating.current = false;
-      setCurrentTexture('idle');
-      onAnimationComplete();
-      return;
-    }
-
-    const progress = animationProgress.current;
-    const easeProgress = 1 - Math.pow(1 - progress, 3);
-    const material = meshRef.current.material as THREE.MeshBasicMaterial;
-    material.opacity = 0.9 + (Math.sin(easeProgress * Math.PI) * 0.1);
+  useFrame(() => {
+    // No animation needed, just display the GIF
+    return;
   });
-
-  const texture = showGif ? gifTexture :
-                 currentTexture === 'forward' ? forwardTexture : 
-                 currentTexture === 'backward' ? backwardTexture : forwardTexture;
 
   return (
     <group rotation={[0.35, 0, 0]}>
       <mesh ref={meshRef}>
         <planeGeometry args={[4, 3]} />
         <meshBasicMaterial 
-          map={texture} 
+          map={gifTexture} 
           transparent 
-          opacity={0.95}
+          opacity={showGif ? 1 : 0}
           side={THREE.DoubleSide}
         />
       </mesh>

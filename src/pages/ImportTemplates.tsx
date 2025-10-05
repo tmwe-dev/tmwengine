@@ -3418,43 +3418,45 @@ export default function ImportTemplates() {
                     {isMobile ? (
                       /* Mobile Pagination - Footer */
                       <div className="flex flex-col items-center border-t">
-                        {/* Selected Records Badge */}
-                        {selectedRecords.size > 0 && (
-                          <div className="w-full flex justify-center pb-0 -mb-2">
-                            <span 
-                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600"
-                              onClick={() => setSelectedRecords(new Set())}
-                            >
-                              {selectedRecords.size}
-                            </span>
-                          </div>
-                        )}
                         {/* Animated Book */}
                         <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
                         
                         {/* Pagination Controls */}
-                        <div className="flex items-center gap-[15px]">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="px-[15px] hover:bg-transparent"
-                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                            disabled={currentPage === 0}
-                          >
-                            <ChevronLeft className="h-10 w-10" />
-                          </Button>
-                          <span className="text-sm px-3 py-1">
-                            {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="px-[15px] hover:bg-transparent"
-                            onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                            disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                          >
-                            <ChevronRight className="h-10 w-10" />
-                          </Button>
+                        <div className="flex items-center justify-center gap-[15px] relative w-full">
+                          {/* Selected Records Badge - Left side */}
+                          {selectedRecords.size > 0 && (
+                            <span 
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-0"
+                              onClick={() => setSelectedRecords(new Set())}
+                            >
+                              {selectedRecords.size}
+                            </span>
+                          )}
+                          
+                          {/* Centered controls */}
+                          <div className="flex items-center gap-[15px]">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                              disabled={currentPage === 0}
+                            >
+                              <ChevronLeft className="h-10 w-10" />
+                            </Button>
+                            <span className="text-sm px-3 py-1">
+                              {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="px-[15px] hover:bg-transparent"
+                              onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                              disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                            >
+                              <ChevronRight className="h-10 w-10" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : (

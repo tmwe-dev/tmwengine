@@ -26,28 +26,33 @@ const AIConfig = () => {
 
   // Modelli disponibili per provider
   const modelsByProvider = {
-    openai: [
-      { value: 'gpt-4', label: 'GPT-4 (più potente)' },
-      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (veloce e potente)' },
-      { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (economico)' }
+    'ChatGPT': [
+      { value: 'gpt-5-2025-08-07', label: 'GPT-5 (più potente)' },
+      { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini (bilanciato)' },
+      { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano (veloce)' },
+      { value: 'gpt-4.1-2025-04-14', label: 'GPT-4.1' },
+      { value: 'gpt-4o', label: 'GPT-4o (legacy)' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini (legacy)' }
     ],
-    anthropic: [
+    'Anthropic (Claude)': [
       { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
       { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
-      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' }
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' },
+      { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet (legacy)' }
     ],
-    google: [
+    'Google AI': [
       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
       { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
     ],
-    huggingface: [
-      { value: 'mistral-7b', label: 'Mistral 7B' },
-      { value: 'llama-2-7b', label: 'Llama 2 7B' },
-      { value: 'falcon-7b', label: 'Falcon 7B' }
-    ],
-    custom: [
-      { value: 'custom-model', label: 'Modello Custom (specifica manualmente)' }
+    'Lovable AI': [
+      { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+      { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (default)' },
+      { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+      { value: 'google/gemini-2.5-flash-image-preview', label: 'Gemini Image Generator' },
+      { value: 'openai/gpt-5', label: 'GPT-5' },
+      { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini' },
+      { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano' }
     ]
   };
 
@@ -255,11 +260,10 @@ const AIConfig = () => {
                   <SelectValue placeholder="Seleziona provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="openai">OpenAI</SelectItem>
-                  <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                  <SelectItem value="google">Google AI</SelectItem>
-                  <SelectItem value="huggingface">HuggingFace</SelectItem>
-                  <SelectItem value="custom">Custom API</SelectItem>
+                  <SelectItem value="ChatGPT">ChatGPT (OpenAI)</SelectItem>
+                  <SelectItem value="Anthropic (Claude)">Anthropic (Claude)</SelectItem>
+                  <SelectItem value="Google AI">Google AI</SelectItem>
+                  <SelectItem value="Lovable AI">Lovable AI Gateway</SelectItem>
                 </SelectContent>
               </Select>
             </div>

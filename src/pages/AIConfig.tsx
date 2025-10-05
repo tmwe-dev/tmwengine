@@ -26,7 +26,7 @@ const AIConfig = () => {
 
   // Modelli disponibili per provider
   const modelsByProvider = {
-    'ChatGPT': [
+    'chatgpt': [
       { value: 'gpt-5-2025-08-07', label: 'GPT-5 (più potente)' },
       { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini (bilanciato)' },
       { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano (veloce)' },
@@ -34,18 +34,18 @@ const AIConfig = () => {
       { value: 'gpt-4o', label: 'GPT-4o (legacy)' },
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini (legacy)' }
     ],
-    'Anthropic (Claude)': [
+    'claude': [
       { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
       { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
       { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' },
       { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet (legacy)' }
     ],
-    'Google AI': [
+    'google': [
       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
       { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
     ],
-    'Lovable AI': [
+    'lovable': [
       { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
       { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (default)' },
       { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
@@ -260,10 +260,10 @@ const AIConfig = () => {
                   <SelectValue placeholder="Seleziona provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ChatGPT">ChatGPT (OpenAI)</SelectItem>
-                  <SelectItem value="Anthropic (Claude)">Anthropic (Claude)</SelectItem>
-                  <SelectItem value="Google AI">Google AI</SelectItem>
-                  <SelectItem value="Lovable AI">Lovable AI Gateway</SelectItem>
+                  <SelectItem value="chatgpt">ChatGPT (OpenAI)</SelectItem>
+                  <SelectItem value="claude">Claude (Anthropic)</SelectItem>
+                  <SelectItem value="google">Google AI</SelectItem>
+                  <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                 </SelectContent>
               </Select>
             </div>

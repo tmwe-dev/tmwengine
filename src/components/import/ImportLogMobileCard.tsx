@@ -68,7 +68,7 @@ export function ImportLogMobileCard({
           </div>
 
           {/* Status and Stats */}
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-2 items-start">
             <div className="text-sm font-medium text-white">{log.stato === 'completato' ? 'Completato' : log.stato === 'errore' ? 'Errore' : log.stato === 'in_corso' || log.stato === 'elaborazione' ? 'In elaborazione' : 'Pronto'}</div>
             
             <div className="flex items-center gap-2">

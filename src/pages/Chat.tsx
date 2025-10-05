@@ -635,7 +635,7 @@ const Chat = () => {
                   </div>
                 </CardHeader>
               )}
-              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-220px)]' : 'max-h-[600px]'}`}>
+              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-280px)]' : 'max-h-[600px]'}`}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -686,7 +686,7 @@ const Chat = () => {
           )}
 
           {/* Area Input */}
-          <Card className="bg-card-transparent">
+          <Card className={`bg-card-transparent ${shouldHideHeader ? 'fixed bottom-0 left-0 right-0 z-10 m-2 sm:relative sm:m-0' : ''}`}>
             {!shouldHideHeader && (
               <CardHeader className="py-4">
                 <CardTitle>
@@ -694,7 +694,7 @@ const Chat = () => {
                 </CardTitle>
               </CardHeader>
             )}
-            <CardContent className={shouldHideHeader ? 'pt-4' : ''}>
+            <CardContent className={shouldHideHeader ? 'pt-4 pb-4' : ''}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Textarea
                   value={prompt}

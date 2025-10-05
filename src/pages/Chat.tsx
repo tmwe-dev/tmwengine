@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMemoryControls } from '@/components/chat/ChatMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Message {
@@ -67,6 +68,7 @@ const Chat = () => {
   const [selectedTab, setSelectedTab] = useState('prompts');
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const [useSystemPrompt, setUseSystemPrompt] = useState(false);
+  const [showPromptConfirm, setShowPromptConfirm] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -383,6 +385,21 @@ const Chat = () => {
   const hasMessages = messages.length > 0;
   const shouldHideHeader = isMobile && hasMessages;
 
+  const handlePromptToggle = () => {
+    if (!useSystemPrompt) {
+      // Sta cercando di attivare i prompts, mostra conferma
+      setShowPromptConfirm(true);
+    } else {
+      // Sta disattivando, nessuna conferma necessaria
+      setUseSystemPrompt(false);
+    }
+  };
+
+  const confirmActivatePrompt = () => {
+    setUseSystemPrompt(true);
+    setShowPromptConfirm(false);
+  };
+
   return (
     <div className={`${shouldHideHeader ? 'h-[calc(100vh-6rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
@@ -391,12 +408,6 @@ const Chat = () => {
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               Chat AI
-              {!useSystemPrompt && (
-                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  Chat Libera
-                </span>
-              )}
             </h1>
             
             {/* Stats orizzontali in grigio sotto il titolo */}
@@ -416,11 +427,11 @@ const Chat = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setUseSystemPrompt(!useSystemPrompt)}
-              className={useSystemPrompt ? '' : 'bg-blue-500/10 border border-blue-500/30'}
+              onClick={handlePromptToggle}
+              className={useSystemPrompt ? 'animate-pulse' : ''}
               title={useSystemPrompt ? 'Disattiva System Prompts' : 'Attiva System Prompts'}
             >
-              <Sparkles className={`h-5 w-5 ${useSystemPrompt ? '' : 'text-blue-500'}`} />
+              <Sparkles className={`h-5 w-5 transition-colors ${useSystemPrompt ? 'text-yellow-500 animate-pulse' : 'text-muted-foreground'}`} />
             </Button>
             <Dialog>
             <DialogTrigger asChild>
@@ -635,19 +646,11 @@ const Chat = () => {
                 <CardHeader className="py-4">
                   <CardTitle className="flex items-center justify-between">
                     <span>Conversazione</span>
-                    <div className="flex items-center gap-2">
-                      {currentConversation?.memoria_completa && (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                          🧠 Memoria Completa
-                        </span>
-                      )}
-                      {!useSystemPrompt && (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" />
-                          Chat Libera
-                        </span>
-                      )}
-                    </div>
+                    {currentConversation?.memoria_completa && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                        🧠 Memoria Completa
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
               )}
@@ -730,10 +733,10 @@ const Chat = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setUseSystemPrompt(!useSystemPrompt)}
-                        className={useSystemPrompt ? '' : 'bg-blue-500/10 border border-blue-500/30'}
+                        onClick={handlePromptToggle}
+                        className={useSystemPrompt ? 'animate-pulse' : ''}
                       >
-                        <Sparkles className={`h-4 w-4 ${useSystemPrompt ? '' : 'text-blue-500'}`} />
+                        <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500 animate-pulse' : 'text-muted-foreground'}`} />
                       </Button>
                       <Dialog>
                         <DialogTrigger asChild>
@@ -802,6 +805,23 @@ const Chat = () => {
           )}
         </div>
       </div>
+
+      {/* Dialog di conferma attivazione System Prompts */}
+      <AlertDialog open={showPromptConfirm} onOpenChange={setShowPromptConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Attivare i System Prompts?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'attivazione dei System Prompts aumenterà il numero di token utilizzati per ogni messaggio, 
+              comportando costi maggiori. Vuoi procedere?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmActivatePrompt}>Conferma</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

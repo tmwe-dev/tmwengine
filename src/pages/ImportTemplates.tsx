@@ -1486,7 +1486,7 @@ export default function ImportTemplates() {
   const getStatusBadge = (stato: string) => {
     switch (stato) {
       case 'completato':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completato</Badge>;
+        return <Badge variant="secondary" className="text-green-800">Completato</Badge>;
       case 'errore':
         return <Badge variant="destructive">Errore</Badge>;
       case 'in_corso':

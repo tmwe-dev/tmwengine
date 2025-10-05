@@ -3420,7 +3420,7 @@ export default function ImportTemplates() {
                       <div className="flex flex-col items-center border-t">
                         {/* Selected Records Badge */}
                         {selectedRecords.size > 0 && (
-                          <div className="w-full flex justify-center py-2">
+                          <div className="w-full flex justify-center pb-0 -mb-2">
                             <span 
                               className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600"
                               onClick={() => setSelectedRecords(new Set())}

@@ -31,22 +31,13 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
 
   return (
     <div className={className} style={{ height: '140px', background: 'transparent', position: 'relative' }}>
-      {showGif ? (
-        <div className="w-full h-full flex items-center justify-center bg-black/10">
+      {showGif && (
+        <div className="w-full h-full flex items-center justify-center">
           <img 
             key={gifKey}
             src={libroGif} 
             alt="Book animation" 
             className="max-w-full max-h-full object-contain"
-            style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
-          />
-        </div>
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <img 
-            src={libroGif} 
-            alt="Book" 
-            className="max-w-full max-h-full object-contain opacity-30"
             style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
           />
         </div>

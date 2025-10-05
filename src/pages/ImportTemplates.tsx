@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -2916,17 +2916,18 @@ export default function ImportTemplates() {
                  </div>
                )}
               
-              {/* Filter Button */}
-              <Dialog open={showFilters} onOpenChange={setShowFilters}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 p-2"
-                  >
-                    <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
-                  </Button>
-                </DialogTrigger>
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-1">
+                <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 p-2"
+                    >
+                      <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-[95vw] w-[95vw]">
                   <DialogHeader>
                     <DialogTitle>Filtri</DialogTitle>
@@ -3007,6 +3008,23 @@ export default function ImportTemplates() {
                   </div>
                 </DialogContent>
               </Dialog>
+              
+              {/* Clear Filters Button */}
+              {(originFilter || countryFilter || hasNotesFilter) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 p-2"
+                  onClick={() => {
+                    setOriginFilter('');
+                    setCountryFilter('');
+                    setHasNotesFilter(false);
+                  }}
+                >
+                  <FilterX className="h-4 w-4 text-red-500" />
+                </Button>
+              )}
+            </div>
               </div>
             </div>
           )}

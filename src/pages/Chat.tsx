@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -66,6 +66,7 @@ const Chat = () => {
   const [showConversations, setShowConversations] = useState(true);
   const [selectedTab, setSelectedTab] = useState('prompts');
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
+  const [useSystemPrompt, setUseSystemPrompt] = useState(true);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -321,9 +322,9 @@ const Chat = () => {
     setPrompt('');
 
     try {
-      // Ottieni il system prompt attivo
-      const activeSystemPrompt = systemPrompts.find(p => p.attivo);
-      const systemPromptContent = activeSystemPrompt?.contenuto || 'Sei un assistente AI utile e amichevole che risponde in italiano.';
+      // Ottieni il system prompt attivo solo se l'utente lo vuole usare
+      const activeSystemPrompt = useSystemPrompt ? systemPrompts.find(p => p.attivo) : null;
+      const systemPromptContent = activeSystemPrompt?.contenuto || 'Rispondi in modo conciso.';
 
       console.log(`Sending message to conversation ${conversationId} with memory settings:`, {
         memoria_completa: currentConversation?.memoria_completa,
@@ -617,11 +618,19 @@ const Chat = () => {
                 <CardHeader className="py-4">
                   <CardTitle className="flex items-center justify-between">
                     <span>Conversazione</span>
-                    {currentConversation?.memoria_completa && (
-                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                        🧠 Memoria Completa Attiva
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {currentConversation?.memoria_completa && (
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                          🧠 Memoria Completa
+                        </span>
+                      )}
+                      {!useSystemPrompt && (
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full flex items-center gap-1">
+                          <Sparkles className="h-3 w-3" />
+                          Chat Libera
+                        </span>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
               )}
@@ -699,43 +708,53 @@ const Chat = () => {
                 />
                 
                 <div className="flex justify-between items-center">
-                  {shouldHideHeader && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
-                        <DialogHeader className="pb-3 sm:pb-4">
-                          <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
-                        </DialogHeader>
-                        
-                        {lastResponseStats && (
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                            <span>{lastResponseStats.tokens} token</span>
-                            <span>•</span>
-                            <span>{lastResponseStats.responseTime}ms</span>
-                            <span>•</span>
-                            <span>{lastResponseStats.memoryMode} memory</span>
+                  {shouldHideHeader ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setUseSystemPrompt(!useSystemPrompt)}
+                        className={useSystemPrompt ? '' : 'bg-blue-500/10 border border-blue-500/30'}
+                      >
+                        <Sparkles className={`h-4 w-4 ${useSystemPrompt ? '' : 'text-blue-500'}`} />
+                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+                          <DialogHeader className="pb-3 sm:pb-4">
+                            <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
+                          </DialogHeader>
+                          
+                          {lastResponseStats && (
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                              <span>{lastResponseStats.tokens} token</span>
+                              <span>•</span>
+                              <span>{lastResponseStats.responseTime}ms</span>
+                              <span>•</span>
+                              <span>{lastResponseStats.memoryMode} memory</span>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-4 sm:space-y-6">
+                            <Select value={selectedTab} onValueChange={setSelectedTab}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Seleziona una sezione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="prompts">🤖 System Prompts</SelectItem>
+                                <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
+                                <SelectItem value="stats">📊 Statistiche</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
-                        
-                        <div className="space-y-4 sm:space-y-6">
-                          <Select value={selectedTab} onValueChange={setSelectedTab}>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Seleziona una sezione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="prompts">🤖 System Prompts</SelectItem>
-                              <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
-                              <SelectItem value="stats">📊 Statistiche</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  ) : null}
                   <div className={shouldHideHeader ? 'ml-auto' : 'w-full flex justify-end'}>
                     <Button 
                       type="submit" 

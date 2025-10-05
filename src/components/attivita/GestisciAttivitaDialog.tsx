@@ -336,7 +336,7 @@ export function GestisciAttivitaDialog({
                   value={formData.note || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
                   placeholder="Note aggiuntive..."
-                  className="h-[200px] text-sm resize-none"
+                  className="h-[150px] text-sm resize-none"
                 />
               </div>
 

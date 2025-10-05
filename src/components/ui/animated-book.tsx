@@ -15,15 +15,9 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
     console.log('AnimatedBook - currentPage changed:', currentPage, 'previousPage:', previousPage.current);
     
     if (currentPage < previousPage.current) {
-      // Backward - show GIF
-      console.log('AnimatedBook - Going backward, showing GIF');
-      setShowGif(true);
+      // Backward - reload GIF
+      console.log('AnimatedBook - Going backward, reloading GIF');
       setGifKey(prev => prev + 1);
-      
-      setTimeout(() => {
-        console.log('AnimatedBook - Hiding GIF after 1s');
-        setShowGif(false);
-      }, 1000);
     }
     
     previousPage.current = currentPage;
@@ -31,17 +25,15 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
 
   return (
     <div className={className} style={{ height: '140px', background: 'transparent', position: 'relative' }}>
-      {showGif && (
-        <div className="w-full h-full flex items-center justify-center">
-          <img 
-            key={gifKey}
-            src={libroGif} 
-            alt="Book animation" 
-            className="max-w-full max-h-full object-contain"
-            style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
-          />
-        </div>
-      )}
+      <div className="w-full h-full flex items-center justify-center">
+        <img 
+          key={gifKey}
+          src={libroGif} 
+          alt="Book animation" 
+          className="max-w-full max-h-full object-contain"
+          style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
+        />
+      </div>
     </div>
   );
 }

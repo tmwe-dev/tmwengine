@@ -75,14 +75,19 @@ export function ImportLogMobileCard({
             </Button>
           </div>
 
-          {/* Status */}
-          <div className="flex items-center gap-2">
-            {getStatusBadge(log.stato)}
-            {log.trasferiti_rubrica && (
-              <Badge variant="outline" className="text-blue-700 border-blue-200">
-                Trasferiti
-              </Badge>
-            )}
+          {/* Status and Stats */}
+          <div className="flex flex-col gap-2 items-start">
+            <div className="text-sm font-medium text-white">{log.stato === 'completato' ? 'Completato' : log.stato === 'errore' ? 'Errore' : log.stato === 'in_corso' || log.stato === 'elaborazione' ? 'In elaborazione' : 'Pronto'}</div>
+            
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-full">
+                <AlertTriangle className="h-3 w-3 text-red-600" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-white">{log.righe_errori}</span>
+                <span className="text-xs text-white ml-1">Errori rilevati</span>
+              </div>
+            </div>
           </div>
 
           {/* Stats */}
@@ -94,17 +99,6 @@ export function ImportLogMobileCard({
               <div>
                 <span className="text-sm font-medium text-white">{log.righe_totali}</span>
                 <span className="text-xs text-white ml-1">Record</span>
-              </div>
-            </div>
-            
-            {/* Errors section */}
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-full">
-                <AlertTriangle className="h-3 w-3 text-red-600" />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-white">{log.righe_errori}</span>
-                <span className="text-xs text-white ml-1">Errori rilevati</span>
               </div>
             </div>
           </div>

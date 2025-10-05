@@ -2424,126 +2424,146 @@ export default function ImportTemplates() {
             {isMobile ? (
               /* Mobile Header - Compact */
               <div className="space-y-3">
-                {/* Mobile Filters - Collapsible */}
+                {/* Mobile Filters - Dialog */}
                 <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="ml-auto flex items-center gap-2"
-                  >
-                    <Filter className="h-4 w-4" />
-                    {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-                  
-                  {showFilters && (
-                    <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                      {/* Search */}
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Cerca..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 h-9"
-                        />
-                      </div>
-                      
-                      {/* Quick Filters Row */}
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-3 gap-2">
-                          <Select value={originFilter} onValueChange={setOriginFilter}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Origine" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
-                              {getUniqueValuesWithCount('origin').map(({ value, count }) => (
-                                <SelectItem key={value} value={value}>
-                                  {value} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          <Select value={countryFilter} onValueChange={setCountryFilter}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Paese" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Tutti</SelectItem>
-                              {getUniqueValues('country').map((country) => (
-                                <SelectItem key={country} value={String(country)}>
-                                  {getCountryFullName(String(country))}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="25">25</SelectItem>
-                              <SelectItem value="50">50</SelectItem>
-                              <SelectItem value="100">100</SelectItem>
-                            </SelectContent>
-                          </Select>
+                  <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto flex items-center gap-2"
+                      >
+                        <Filter className="h-4 w-4" />
+                        Filtri
+                        {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                          <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                            {[searchQuery, originFilter, countryFilter, hasNotesFilter].filter(Boolean).length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] w-[95vw]">
+                      <DialogHeader>
+                        <DialogTitle>Filtri</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        {/* Search */}
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Cerca..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
+                          />
                         </div>
                         
-                        <div className="flex items-center justify-center space-x-2 pt-[6px]">
-                          <Checkbox
-                            id="has-notes-filter-mobile"
-                            checked={hasNotesFilter}
-                            onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                          />
-                          <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 text-sm cursor-pointer">
-                            <StickyNote className="h-4 w-4 text-blue-500" />
-                            Solo con note
-                          </Label>
+                        {/* Filters */}
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label>Origine</Label>
+                            <Select value={originFilter} onValueChange={setOriginFilter}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Tutte le origini" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                  <SelectItem key={value} value={value}>
+                                    {value} ({count})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Paese</Label>
+                            <Select value={countryFilter} onValueChange={setCountryFilter}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Tutti i paesi" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__all__">Tutti</SelectItem>
+                                {getUniqueValues('country').map((country) => (
+                                  <SelectItem key={country} value={String(country)}>
+                                    {getCountryFullName(String(country))}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Record per pagina</Label>
+                            <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="25">25</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 pt-2">
+                            <Checkbox
+                              id="has-notes-filter-mobile"
+                              checked={hasNotesFilter}
+                              onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                            />
+                            <Label htmlFor="has-notes-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                              <StickyNote className="h-4 w-4 text-blue-500" />
+                              Solo con note
+                            </Label>
+                          </div>
                         </div>
+                        
+                        {/* Active Filters */}
+                        {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                          <div className="space-y-2 pt-2 border-t">
+                            <Label className="text-sm text-muted-foreground">Filtri attivi</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {searchQuery && (
+                                <Badge variant="secondary" className="text-xs">
+                                  🔍 {searchQuery}
+                                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setSearchQuery('')}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              )}
+                              {originFilter && (
+                                <Badge variant="secondary" className="text-xs">
+                                  📂 {originFilter}
+                                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setOriginFilter('')}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              )}
+                              {countryFilter && (
+                                <Badge variant="secondary" className="text-xs">
+                                  🌍 {getCountryFullName(countryFilter)}
+                                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setCountryFilter('')}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              )}
+                              {hasNotesFilter && (
+                                <Badge variant="secondary" className="text-xs">
+                                  📝 Con note
+                                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                  
-                  {/* Active Filters Chips */}
-                  {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                    <div className="flex flex-col items-start gap-1">
-                      {searchQuery && (
-                        <Badge variant="secondary" className="text-xs">
-                          🔍 {searchQuery}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setSearchQuery('')}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )}
-                      {originFilter && (
-                        <Badge variant="secondary" className="text-xs">
-                          📂 {originFilter}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setOriginFilter('')}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )}
-                      {countryFilter && (
-                        <Badge variant="secondary" className="text-xs">
-                          🌍 {getCountryFullName(countryFilter)}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setCountryFilter('')}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )}
-                      {hasNotesFilter && (
-                        <Badge variant="secondary" className="text-xs">
-                          📝 Con note
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      )}
-                     </div>
-                   )}
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             ) : (

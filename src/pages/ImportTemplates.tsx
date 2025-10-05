@@ -2561,6 +2561,16 @@ export default function ImportTemplates() {
                             </div>
                           </div>
                         )}
+                        
+                        {/* Confirm Button */}
+                        <div className="pt-4 border-t">
+                          <Button 
+                            className="w-full" 
+                            onClick={() => setShowFilters(false)}
+                          >
+                            Conferma
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>

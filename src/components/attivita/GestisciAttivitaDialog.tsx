@@ -344,7 +344,7 @@ export function GestisciAttivitaDialog({
 
               {/* Storico modifiche */}
               {activity.modifiche_log && activity.modifiche_log.length > 0 && (
-                <div className="border-t pt-4">
+                <div className="border-t pt-0">
                   <Button
                     variant="ghost"
                     onClick={() => setShowHistory(!showHistory)}

@@ -188,114 +188,123 @@ export default function Campagne() {
       }}
     >
       {/* Header */}
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex-1">
-          {isHeaderVisible && (
-            <div className="animate-accordion-down">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div>
-                  <h1 className="text-heading-1 font-bold text-text-primary">Campagne</h1>
-                  <p className="text-body text-text-secondary">
-                    Gestisci e monitora le tue campagne marketing
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                      <Button onClick={openAddForm} className="shadow-soft">
-                        <Plus className="h-4 w-4" />
-                        Nuova Campagna
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <CampaignForm
-                        campaign={selectedCampaign}
-                        onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
-                        onCancel={() => setIsFormOpen(false)}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                  
-                  <div className="flex items-center gap-1">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Search className="h-5 w-5" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="Cerca in CRM..." 
-                            className="pl-10"
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <PagePromptManager pageRoute="/campagne" />
-                    <AIChatPopup pageRoute="/campagne" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Search and Filters */}
-              <Card className="bg-card-transparent border-card shadow-soft">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        placeholder="Cerca per nome o obiettivo..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+      {isHeaderVisible && (
+        <div className="animate-accordion-down space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-heading-1 font-bold text-text-primary">Campagne</h1>
+              <p className="text-body text-text-secondary">
+                Gestisci e monitora le tue campagne marketing
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openAddForm} className="shadow-soft">
+                    <Plus className="h-4 w-4" />
+                    Nuova Campagna
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <CampaignForm
+                    campaign={selectedCampaign}
+                    onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
+                    onCancel={() => setIsFormOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+              
+              <div className="flex items-center gap-1">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Cerca in CRM..." 
                         className="pl-10"
                       />
                     </div>
-                    
-                    <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" className="shadow-soft">
-                          <Filter className="h-4 w-4" />
-                          Filtri
-                          {Object.values(filters).filter(Boolean).length > 0 && (
-                            <Badge variant="secondary" className="ml-2">
-                              {Object.values(filters).filter(Boolean).length}
-                            </Badge>
-                          )}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Filtri Avanzati</DialogTitle>
-                        </DialogHeader>
-                        <CampaignFilters
-                          filters={filters}
-                          onFiltersChange={setFilters}
-                          onClose={() => setIsFiltersOpen(false)}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
+                  </PopoverContent>
+                </Popover>
+                <PagePromptManager pageRoute="/campagne" />
+                <AIChatPopup pageRoute="/campagne" />
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Search and Filters */}
+          <Card className="bg-card-transparent border-card shadow-soft">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    placeholder="Cerca per nome o obiettivo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="shadow-soft">
+                      <Filter className="h-4 w-4" />
+                      Filtri
+                      {Object.values(filters).filter(Boolean).length > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {Object.values(filters).filter(Boolean).length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Filtri Avanzati</DialogTitle>
+                    </DialogHeader>
+                    <CampaignFilters
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onClose={() => setIsFiltersOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        
+      )}
+
+      {/* Toggle Button */}
+      <div className="flex justify-center">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={() => setIsHeaderVisible(!isHeaderVisible)}
-          className="shrink-0"
+          className="gap-2"
         >
-          {isHeaderVisible ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          {isHeaderVisible ? (
+            <>
+              <ChevronUp className="h-4 w-4" />
+              Nascondi filtri
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4" />
+              Mostra filtri
+            </>
+          )}
         </Button>
       </div>
 

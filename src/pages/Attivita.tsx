@@ -1098,22 +1098,22 @@ export default function Attivita() {
               type="single" 
               value={statusFilter} 
               onValueChange={(value) => value && handleStatusFilter(value)}
-              className="grid grid-cols-3 w-full bg-transparent rounded-lg p-0 gap-2"
+              className="grid grid-cols-3 w-full bg-transparent p-0 gap-2"
             >
               <ToggleGroupItem 
                 value="all" 
-                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-foreground"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 pb-1.5 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-foreground"
               >
-                <div className="flex flex-col items-center gap-0.5">
+                <div className="flex flex-col items-center gap-0.5 pb-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Totali</span>
                   <span className="text-lg font-bold text-foreground">{baseFilteredActivities.length}</span>
                 </div>
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="future" 
-                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-warning"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 pb-1.5 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-warning"
               >
-                <div className="flex flex-col items-center gap-0.5">
+                <div className="flex flex-col items-center gap-0.5 pb-1.5">
                   <span className="text-xs font-medium text-muted-foreground">In Sospeso</span>
                   <span className="text-lg font-bold text-foreground">
                     {baseFilteredActivities.filter(a => isActivityFuture(a) && a.stato !== 'completata').length}
@@ -1122,9 +1122,9 @@ export default function Attivita() {
               </ToggleGroupItem>
               <ToggleGroupItem 
                 value="scadute" 
-                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-destructive"
+                className="relative bg-transparent hover:bg-transparent rounded-none transition-all py-3 pb-1.5 data-[state=on]:after:absolute data-[state=on]:after:bottom-0 data-[state=on]:after:left-1/2 data-[state=on]:after:-translate-x-1/2 data-[state=on]:after:w-1/2 data-[state=on]:after:h-[1px] data-[state=on]:after:bg-destructive"
               >
-                <div className="flex flex-col items-center gap-0.5">
+                <div className="flex flex-col items-center gap-0.5 pb-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Scadute</span>
                   <span className="text-lg font-bold text-foreground">
                     {baseFilteredActivities.filter(a => a.scadenza && new Date(a.scadenza) < new Date() && a.stato !== 'completata').length}

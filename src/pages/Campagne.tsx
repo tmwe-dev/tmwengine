@@ -255,6 +255,15 @@ export default function Campagne() {
                   </DialogContent>
                 </Dialog>
                 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsHeaderVisible(!isHeaderVisible)}
+                  className="h-8 w-8"
+                >
+                  {isHeaderVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+                
                 <PagePromptManager pageRoute="/campagne" />
                 <AIChatPopup pageRoute="/campagne" />
               </div>
@@ -280,27 +289,6 @@ export default function Campagne() {
         </div>
       )}
 
-        {/* Toggle Button */}
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsHeaderVisible(!isHeaderVisible)}
-          className="gap-2"
-        >
-          {isHeaderVisible ? (
-            <>
-              <ChevronUp className="h-4 w-4" />
-              Nascondi filtri
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-4 w-4" />
-              Mostra filtri
-            </>
-          )}
-        </Button>
-      </div>
 
       {/* Campaigns List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

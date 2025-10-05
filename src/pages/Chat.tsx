@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -69,6 +69,8 @@ const Chat = () => {
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const [useSystemPrompt, setUseSystemPrompt] = useState(false);
   const [showPromptConfirm, setShowPromptConfirm] = useState(false);
+  const [selectedAIModel, setSelectedAIModel] = useState<string>('google/gemini-2.5-flash');
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -337,7 +339,8 @@ const Chat = () => {
         body: { 
           prompt: currentPrompt, 
           systemPrompt: systemPromptContent,
-          conversationId: conversationId
+          conversationId: conversationId,
+          model: selectedAIModel
         }
       });
 
@@ -410,7 +413,99 @@ const Chat = () => {
               Chat AI
             </h1>
             
-            {/* Stats orizzontali in grigio sotto il titolo */}
+            {/* Modello AI utilizzato */}
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-xs text-muted-foreground">
+                {selectedAIModel === 'google/gemini-2.5-flash' && 'Gemini 2.5 Flash'}
+                {selectedAIModel === 'google/gemini-2.5-pro' && 'Gemini 2.5 Pro'}
+                {selectedAIModel === 'google/gemini-2.5-flash-lite' && 'Gemini 2.5 Flash Lite'}
+                {selectedAIModel === 'openai/gpt-5' && 'ChatGPT 5.0'}
+                {selectedAIModel === 'openai/gpt-5-mini' && 'ChatGPT 5.0 Mini'}
+                {selectedAIModel === 'openai/gpt-5-nano' && 'ChatGPT 5.0 Nano'}
+              </p>
+              <Dialog open={showModelSelector} onOpenChange={setShowModelSelector}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                    <Cpu className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Seleziona Modello AI</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 py-4">
+                    <Button
+                      variant={selectedAIModel === 'google/gemini-2.5-flash' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('google/gemini-2.5-flash');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Flash selezionato' });
+                      }}
+                    >
+                      Gemini 2.5 Flash
+                    </Button>
+                    <Button
+                      variant={selectedAIModel === 'google/gemini-2.5-pro' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('google/gemini-2.5-pro');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Pro selezionato' });
+                      }}
+                    >
+                      Gemini 2.5 Pro
+                    </Button>
+                    <Button
+                      variant={selectedAIModel === 'google/gemini-2.5-flash-lite' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('google/gemini-2.5-flash-lite');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'Gemini 2.5 Flash Lite selezionato' });
+                      }}
+                    >
+                      Gemini 2.5 Flash Lite
+                    </Button>
+                    <Button
+                      variant={selectedAIModel === 'openai/gpt-5' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('openai/gpt-5');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 selezionato' });
+                      }}
+                    >
+                      ChatGPT 5.0
+                    </Button>
+                    <Button
+                      variant={selectedAIModel === 'openai/gpt-5-mini' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('openai/gpt-5-mini');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 Mini selezionato' });
+                      }}
+                    >
+                      ChatGPT 5.0 Mini
+                    </Button>
+                    <Button
+                      variant={selectedAIModel === 'openai/gpt-5-nano' ? 'default' : 'outline'}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setSelectedAIModel('openai/gpt-5-nano');
+                        setShowModelSelector(false);
+                        toast({ title: 'Modello cambiato', description: 'ChatGPT 5.0 Nano selezionato' });
+                      }}
+                    >
+                      ChatGPT 5.0 Nano
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            {/* Stats orizzontali in grigio sotto il modello */}
             {lastResponseStats && (
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
                 <span>{lastResponseStats.tokens} token</span>

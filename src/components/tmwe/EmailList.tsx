@@ -343,7 +343,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-3 py-4 px-4 sm:px-6 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("space-y-2 py-2 px-2 sm:px-4 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -374,30 +374,30 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-4 relative">
-              <div className="flex items-start justify-between gap-4 h-full">
-                <div className="flex-1 space-y-1 overflow-hidden">
-                  <div className="flex items-center gap-2">
+            <div className="flex-1 p-2 sm:p-4 relative">
+              <div className="flex items-start justify-between gap-2 sm:gap-4 h-full min-w-0">
+                <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
-                      'truncate text-sm',
+                      'truncate text-xs sm:text-sm min-w-0',
                       !email.read && 'font-semibold text-email-unread'
                     )}>
                       {email.from}
                     </p>
                     {!email.read && (
-                      <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                      <Badge variant="secondary" className="h-4 px-1 text-[10px] sm:h-5 sm:px-1.5 sm:text-xs shrink-0">
                         New
                       </Badge>
                     )}
                   </div>
                   <h3 className={cn(
-                    'truncate text-base mt-1',
+                    'truncate text-sm sm:text-base mt-0.5 sm:mt-1 min-w-0',
                     !email.read && 'font-semibold'
                   )}>
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex flex-col items-end justify-end gap-2 self-end">
+                <div className="flex flex-col items-end justify-end gap-1 sm:gap-2 self-end shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-base font-bold">

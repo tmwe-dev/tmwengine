@@ -2454,7 +2454,7 @@ export default function ImportTemplates() {
                           </Badge>
                         )}
                         {originFilter && (
-                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2 bg-muted">
                             📂 {originFilter}
                             <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setOriginFilter('')}>
                               <X className="h-2 w-2" />

@@ -2479,7 +2479,7 @@ export default function ImportTemplates() {
                       </div>
                     )}
                   </div>
-                  <span className="text-lg text-muted-foreground absolute right-[50px] top-0">
+                  <span className="text-lg text-muted-foreground absolute right-[50px] top-[2px]">
                     <span className="text-primary font-medium">{totalRecords}</span>
                   </span>
                 </div>

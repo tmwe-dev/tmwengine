@@ -257,9 +257,13 @@ const AIConfig = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="aiProvider" className="text-sm">Provider AI</Label>
-              <Select value={newAiConfig.provider} onValueChange={(value) => 
-                setNewAiConfig(prev => ({ ...prev, provider: value }))
-              }>
+              <Select 
+                value={newAiConfig.provider} 
+                onValueChange={(value) => {
+                  alert(`Provider selezionato: ${value}\nModelli disponibili: ${getModelsForProvider(value).length}`);
+                  setNewAiConfig(prev => ({ ...prev, provider: value, modello: '' }));
+                }}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Seleziona provider" />
                 </SelectTrigger>

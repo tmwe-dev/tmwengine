@@ -2425,13 +2425,13 @@ export default function ImportTemplates() {
               /* Mobile Header - Compact */
               <div className="space-y-3">
                 {/* Mobile Filters - Dialog */}
-                <div className="space-y-2">
+                <div className="flex items-start gap-2">
                   <Dialog open={showFilters} onOpenChange={setShowFilters}>
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="ml-auto flex items-center gap-2"
+                        className="flex items-center gap-2 shrink-0"
                       >
                         <Filter className="h-4 w-4" />
                         Filtri
@@ -2536,36 +2536,36 @@ export default function ImportTemplates() {
                   
                   {/* Active Filters Badges - Outside Dialog */}
                   {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                    <div className="flex flex-col items-start gap-1">
+                    <div className="flex flex-wrap items-start gap-1">
                       {searchQuery && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] h-6 px-2">
                           🔍 {searchQuery}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setSearchQuery('')}>
-                            <X className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setSearchQuery('')}>
+                            <X className="h-2 w-2" />
                           </Button>
                         </Badge>
                       )}
                       {originFilter && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] h-6 px-2">
                           📂 {originFilter}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setOriginFilter('')}>
-                            <X className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setOriginFilter('')}>
+                            <X className="h-2 w-2" />
                           </Button>
                         </Badge>
                       )}
                       {countryFilter && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] h-6 px-2">
                           🌍 {getCountryFullName(countryFilter)}
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setCountryFilter('')}>
-                            <X className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setCountryFilter('')}>
+                            <X className="h-2 w-2" />
                           </Button>
                         </Badge>
                       )}
                       {hasNotesFilter && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-[10px] h-6 px-2">
                           📝 Con note
-                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
-                            <X className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setHasNotesFilter(false)}>
+                            <X className="h-2 w-2" />
                           </Button>
                         </Badge>
                       )}

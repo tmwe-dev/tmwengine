@@ -2427,9 +2427,6 @@ export default function ImportTemplates() {
                 <DialogTitle className="text-lg font-semibold">
                   {selectedImport?.file_name}
                 </DialogTitle>
-                <div className="text-sm text-muted-foreground">
-                  <span className="text-primary font-medium">{filteredRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> contatti
-                </div>
                 
                 {/* Mobile Filters - Collapsible */}
                 <div className="space-y-2">
@@ -3057,6 +3054,13 @@ export default function ImportTemplates() {
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+          
+          {/* Contatore contatti mobile */}
+          {isMobile && filteredRecords.length > 0 && (
+            <div className="text-sm text-muted-foreground pb-2">
+              <span className="text-primary font-medium">{filteredRecords.length}</span> di <span className="text-primary font-medium">{totalRecords}</span> contatti
             </div>
           )}
           

@@ -2509,7 +2509,7 @@ export default function ImportTemplates() {
                   
                   {/* Active Filters Chips */}
                   {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-col items-start gap-1">
                       {searchQuery && (
                         <Badge variant="secondary" className="text-xs">
                           🔍 {searchQuery}

@@ -47,21 +47,22 @@ export function ImportLogMobileCard({
     )}>
       <CardContent className="p-5">
         <div className="space-y-4">
+          {/* Date - centered at top */}
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{new Date(log.created_at).toLocaleDateString('it-IT')}</span>
+          </div>
+
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 <div className="bg-primary/10 p-1.5 rounded-full">
                   <FileSpreadsheet className="h-4 w-4 text-primary" />
                 </div>
                 <span className="font-semibold text-foreground truncate">
                   {log.file_name}
                 </span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>{new Date(log.created_at).toLocaleDateString('it-IT')}</span>
               </div>
             </div>
           </div>

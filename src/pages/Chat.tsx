@@ -380,7 +380,7 @@ const Chat = () => {
   const shouldHideHeader = isMobile && hasMessages;
 
   return (
-    <div className={`mx-auto ${shouldHideHeader ? 'p-0 h-screen flex flex-col' : 'max-w-7xl p-3 sm:p-6'}`}>
+    <div className={`mx-auto ${shouldHideHeader ? 'p-0 h-screen flex flex-col overflow-hidden' : 'max-w-7xl p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
         <div className="mb-3 flex items-center justify-between">
           <div>

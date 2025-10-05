@@ -2989,22 +2989,25 @@ export default function ImportTemplates() {
               {/* Selection Controls */}
               {filteredRecords.length > 0 && (
                 <div className="flex items-center gap-2">
-                   <Checkbox
-                     checked={(() => {
-                       // Controlla se tutti i record della pagina corrente sono selezionati
-                       const currentPageIndexes = [];
-                       for (let i = 0; i < viewingRecords.length; i++) {
-                         const actualIndex = currentPage * recordsPerPage + i;
-                         currentPageIndexes.push(actualIndex);
-                       }
-                       return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
-                     })()}
-                     onCheckedChange={toggleSelectAll}
+                   <Button
+                     variant="ghost"
+                     size="sm"
+                     onClick={toggleSelectAll}
+                     className="p-2 hover:bg-transparent"
                      aria-label="Seleziona tutti della pagina"
-                   />
-                   <span className="text-sm">
-                     Seleziona pagina ({viewingRecords.length})
-                   </span>
+                   >
+                     <FileText 
+                       className={(() => {
+                         const currentPageIndexes = [];
+                         for (let i = 0; i < viewingRecords.length; i++) {
+                           const actualIndex = currentPage * recordsPerPage + i;
+                           currentPageIndexes.push(actualIndex);
+                         }
+                         const isAllSelected = currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
+                         return isAllSelected ? "h-5 w-5 text-green-500" : "h-5 w-5 text-blue-500";
+                       })()}
+                     />
+                   </Button>
                  </div>
                 )}
               </div>

@@ -175,7 +175,7 @@ export function GestisciAttivitaDialog({
                 </Badge>
               </div>
               {activity.rubrica_nome && (
-                <div className="text-xs text-muted-foreground mt-0.5 text-left">
+                <div className="text-base text-muted-foreground mt-0.5 text-center">
                   {activity.rubrica_nome}
                 </div>
               )}

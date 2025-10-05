@@ -11,6 +11,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
+  const animationFrameRef = useRef<number>();
 
   useEffect(() => {
     if (currentPage < previousPage.current) {
@@ -37,24 +38,33 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
         video.playbackRate = 6;
         video.play();
       } else {
-        // Play backward from end
-        video.currentTime = video.duration || 4; // fallback to 4 seconds if duration not loaded
-        video.playbackRate = -6; // negative = reverse
-        video.play();
+        // Simulate reverse by manually decreasing currentTime
+        video.currentTime = video.duration || 4;
+        video.pause();
+        
+        const reversePlay = () => {
+          if (video.currentTime > 0) {
+            video.currentTime -= 0.1; // Decrease time (6x speed ≈ 0.1s per frame at 60fps)
+            animationFrameRef.current = requestAnimationFrame(reversePlay);
+          } else {
+            video.currentTime = 0;
+            setIsAnimating(false);
+          }
+        };
+        
+        animationFrameRef.current = requestAnimationFrame(reversePlay);
       }
     }
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [isAnimating, direction]);
 
   const handleVideoEnd = () => {
     setIsAnimating(false);
-  };
-
-  // Handle reverse playback reaching start
-  const handleTimeUpdate = () => {
-    if (videoRef.current && direction === 'forward' && videoRef.current.currentTime <= 0) {
-      videoRef.current.pause();
-      setIsAnimating(false);
-    }
   };
 
   return (
@@ -67,7 +77,6 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
           ref={videoRef}
           src={libroVideo}
           onEnded={handleVideoEnd}
-          onTimeUpdate={handleTimeUpdate}
           className="max-w-full max-h-full object-contain"
           style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
           muted

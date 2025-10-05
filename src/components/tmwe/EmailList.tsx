@@ -375,7 +375,7 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 p-4 relative">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4 h-full">
                 <div className="flex-1 space-y-1 overflow-hidden">
                   <div className="flex items-center gap-2">
                     <p className={cn(
@@ -397,7 +397,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end justify-end gap-2 self-end">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-base font-bold">

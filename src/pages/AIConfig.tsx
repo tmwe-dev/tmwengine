@@ -24,9 +24,9 @@ const AIConfig = () => {
     attivo: false
   });
 
-  // Modelli disponibili per provider (supporta diverse nomenclature)
-  const modelsByProvider = {
-    'chatgpt': [
+  // Modelli disponibili per provider
+  const modelsByProvider: Record<string, Array<{value: string, label: string}>> = {
+    chatgpt: [
       { value: 'gpt-5-2025-08-07', label: 'GPT-5 (più potente)' },
       { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini (bilanciato)' },
       { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano (veloce)' },
@@ -34,18 +34,18 @@ const AIConfig = () => {
       { value: 'gpt-4o', label: 'GPT-4o (legacy)' },
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini (legacy)' }
     ],
-    'anthropic': [
+    anthropic: [
       { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
       { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
       { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' },
       { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet (legacy)' }
     ],
-    'google': [
+    google: [
       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
       { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
     ],
-    'lovable': [
+    lovable: [
       { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
       { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (default)' },
       { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
@@ -54,6 +54,10 @@ const AIConfig = () => {
       { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini' },
       { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano' }
     ]
+  };
+
+  const getModelsForProvider = (provider: string) => {
+    return modelsByProvider[provider] || [];
   };
 
   useEffect(() => {
@@ -270,33 +274,29 @@ const AIConfig = () => {
 
             <div className="space-y-1">
               <Label htmlFor="aiModello" className="text-sm">Modello</Label>
-              {newAiConfig.provider && modelsByProvider[newAiConfig.provider] ? (
-                <Select 
-                  key={newAiConfig.provider}
-                  value={newAiConfig.modello} 
-                  onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Seleziona modello" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modelsByProvider[newAiConfig.provider].map((model) => (
-                      <SelectItem key={model.value} value={model.value}>
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="aiModello"
-                  value={newAiConfig.modello}
-                  onChange={(e) => setNewAiConfig(prev => ({ ...prev, modello: e.target.value }))}
-                  placeholder={newAiConfig.provider ? "Nessun modello disponibile" : "Seleziona prima un provider"}
-                  className="h-9"
-                  disabled={!newAiConfig.provider}
-                />
-              )}
+              <Select 
+                key={`model-${newAiConfig.provider}`}
+                value={newAiConfig.modello} 
+                onValueChange={(value) => setNewAiConfig(prev => ({ ...prev, modello: value }))}
+                disabled={!newAiConfig.provider || getModelsForProvider(newAiConfig.provider).length === 0}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder={
+                    !newAiConfig.provider 
+                      ? "Seleziona prima un provider" 
+                      : getModelsForProvider(newAiConfig.provider).length === 0
+                        ? "Nessun modello disponibile"
+                        : "Seleziona modello"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {getModelsForProvider(newAiConfig.provider).map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

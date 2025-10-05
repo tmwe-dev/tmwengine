@@ -68,6 +68,8 @@ const Chat = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showMobileHeader, setShowMobileHeader] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll verso il basso quando cambiano i messaggi
   useEffect(() => {
@@ -379,6 +381,31 @@ const Chat = () => {
   const hasMessages = messages.length > 0;
   const shouldHideHeader = isMobile && hasMessages;
 
+  // Gestione scroll mobile per mostrare/nascondere header
+  useEffect(() => {
+    if (!shouldHideHeader || !chatContainerRef.current) return;
+    
+    let lastScrollTop = 0;
+    const handleScroll = () => {
+      const currentScroll = chatContainerRef.current?.scrollTop || 0;
+      
+      // Mostra header se scorriamo verso l'alto di almeno 50px
+      if (currentScroll < lastScrollTop - 50 && currentScroll > 100) {
+        setShowMobileHeader(true);
+      } else if (currentScroll > lastScrollTop + 20) {
+        // Nascondi header se scorriamo verso il basso
+        setShowMobileHeader(false);
+      }
+      
+      lastScrollTop = currentScroll;
+    };
+    
+    const container = chatContainerRef.current;
+    container?.addEventListener('scroll', handleScroll);
+    
+    return () => container?.removeEventListener('scroll', handleScroll);
+  }, [shouldHideHeader]);
+
   return (
     <div className={`mx-auto ${shouldHideHeader ? 'p-0 h-screen flex flex-col' : 'max-w-7xl p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
@@ -605,11 +632,33 @@ const Chat = () => {
           </Card>
         </div>
 
-        {/* Area Chat Principale */}
+          {/* Area Chat Principale */}
         <div className={`space-y-6 order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full' : 'xl:col-span-3'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
             <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none' : ''}`}>
+              {shouldHideHeader && showMobileHeader && (
+                <CardHeader className="py-2 px-3 border-b sticky top-0 bg-background/95 backdrop-blur z-10 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => {
+                        setCurrentConversationId(null);
+                        setMessages([]);
+                        setShowMobileHeader(false);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    {currentConversation?.memoria_completa && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                        🧠 Memoria Completa
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+              )}
               {!shouldHideHeader && (
                 <CardHeader className="py-4">
                   <CardTitle className="flex items-center justify-between">
@@ -622,7 +671,10 @@ const Chat = () => {
                   </CardTitle>
                 </CardHeader>
               )}
-              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'flex-1 pb-2' : 'max-h-[600px]'}`}>
+              <CardContent 
+                ref={chatContainerRef}
+                className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'flex-1 pb-2' : 'max-h-[600px]'}`}
+              >
                 {messages.map((message) => (
                   <div
                     key={message.id}

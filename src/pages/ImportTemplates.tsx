@@ -2983,12 +2983,10 @@ export default function ImportTemplates() {
           
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
-            <div className="flex justify-between items-center pb-2">
-              {/* Selection Controls - Left side */}
-              <div className="flex items-center gap-2">
-              {/* Selection Controls */}
+            <div className="flex justify-between items-center pb-2 relative">
+              {/* Selection Controls - posizionato in basso assoluto */}
               {filteredRecords.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="absolute -bottom-[15px] left-0 z-10">
                    <Button
                      variant="ghost"
                      size="sm"
@@ -3009,8 +3007,7 @@ export default function ImportTemplates() {
                      />
                    </Button>
                  </div>
-                )}
-              </div>
+               )}
             </div>
           )}
           

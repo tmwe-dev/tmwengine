@@ -3443,18 +3443,18 @@ export default function ImportTemplates() {
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                             disabled={currentPage === 0}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
-                          <span className="text-sm px-3 py-1 bg-muted rounded">
+                          <span className="text-sm px-3 py-1">
                             {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
                           </span>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
                             disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
                           >

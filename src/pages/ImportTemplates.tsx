@@ -3389,7 +3389,7 @@ export default function ImportTemplates() {
                           {/* Selected Records Badge - Left side */}
                           {selectedRecords.size > 0 && (
                             <span 
-                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-0"
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-0 -top-[50px]"
                               onClick={() => setSelectedRecords(new Set())}
                             >
                               {selectedRecords.size}

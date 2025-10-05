@@ -110,10 +110,6 @@ const CRMLayout = ({ children }) => {
                 {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
               </h1>
             )}
-            {/* AI Chat Widget */}
-            <div className="relative">
-              <AIChatPopup pageRoute={location.pathname} />
-            </div>
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import libroVideo from '@/assets/libro.mp4';
+import libroReverseVideo from '@/assets/libro-reverse.mp4';
 
 interface AnimatedBookProps {
   currentPage: number;
@@ -11,7 +12,6 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
-  const animationFrameRef = useRef<number>();
 
   useEffect(() => {
     if (currentPage < previousPage.current) {
@@ -31,36 +31,10 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   useEffect(() => {
     if (isAnimating && videoRef.current) {
       const video = videoRef.current;
-      
-      if (direction === 'backward') {
-        // Play forward from start
-        video.currentTime = 0;
-        video.playbackRate = 6;
-        video.play();
-      } else {
-        // Simulate reverse by manually decreasing currentTime
-        video.currentTime = video.duration || 4;
-        video.pause();
-        
-        const reversePlay = () => {
-          if (video.currentTime > 0) {
-            video.currentTime -= 0.1; // Decrease time (6x speed ≈ 0.1s per frame at 60fps)
-            animationFrameRef.current = requestAnimationFrame(reversePlay);
-          } else {
-            video.currentTime = 0;
-            setIsAnimating(false);
-          }
-        };
-        
-        animationFrameRef.current = requestAnimationFrame(reversePlay);
-      }
+      video.currentTime = 0;
+      video.playbackRate = 6;
+      video.play();
     }
-    
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
   }, [isAnimating, direction]);
 
   const handleVideoEnd = () => {
@@ -75,7 +49,7 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       <div className="w-full h-full flex items-center justify-center">
         <video
           ref={videoRef}
-          src={libroVideo}
+          src={direction === 'forward' ? libroReverseVideo : libroVideo}
           onEnded={handleVideoEnd}
           className="max-w-full max-h-full object-contain"
           style={{ transform: 'perspective(1000px) rotateX(20deg)' }}

@@ -2486,7 +2486,7 @@ export default function ImportTemplates() {
                 </div>
                 
                 {/* Search Field */}
-                <div className="relative w-[65%]">
+                <div className="relative w-[65%] mx-auto mt-[10px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Cerca..."

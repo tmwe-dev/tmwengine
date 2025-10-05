@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, MessageSquare, Brain } from 'lucide-react';
+import { Database, MessageSquare } from 'lucide-react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
@@ -630,18 +630,7 @@ const EmailDashboard = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
-                  onClick={() => {
-                    // TODO: Open prompt dialog
-                    toast.info('Prompt AI in sviluppo');
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 hover:bg-primary/10"
                   onClick={() => {
                     if (selectedSender) {
                       setSelectedAIChatSender(selectedSender);
@@ -651,7 +640,7 @@ const EmailDashboard = () => {
                     }
                   }}
                 >
-                  <Brain className="h-4 w-4" />
+                  <MessageSquare className="h-4 w-4 text-primary" />
                 </Button>
               </div>
             )}

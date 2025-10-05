@@ -24,7 +24,7 @@ const AIConfig = () => {
     attivo: false
   });
 
-  // Modelli disponibili per provider
+  // Modelli disponibili per provider (supporta diverse nomenclature)
   const modelsByProvider = {
     'chatgpt': [
       { value: 'gpt-5-2025-08-07', label: 'GPT-5 (più potente)' },
@@ -34,7 +34,7 @@ const AIConfig = () => {
       { value: 'gpt-4o', label: 'GPT-4o (legacy)' },
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini (legacy)' }
     ],
-    'claude': [
+    'anthropic': [
       { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
       { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
       { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' },
@@ -261,7 +261,7 @@ const AIConfig = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="chatgpt">ChatGPT (OpenAI)</SelectItem>
-                  <SelectItem value="claude">Claude (Anthropic)</SelectItem>
+                  <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
                   <SelectItem value="google">Google AI</SelectItem>
                   <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                 </SelectContent>

@@ -209,7 +209,7 @@ export const EmailList = ({
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%] -ml-[100px]',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[75%] -ml-[100px]',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -349,7 +349,7 @@ export const EmailList = ({
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%] -ml-[100px]',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[75%] -ml-[100px]',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read

@@ -203,13 +203,13 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className={cn("space-y-2 py-4 px-4 sm:px-6 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("flex flex-col items-center space-y-2 py-4 px-4 sm:px-6 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%] mx-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%]',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -343,13 +343,13 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
+    <div className={cn("flex flex-col items-center space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 sm:pr-[34px] w-full mx-auto overflow-x-hidden", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%] mx-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[85%]',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read

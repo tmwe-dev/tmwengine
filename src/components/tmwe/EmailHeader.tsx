@@ -173,14 +173,14 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   )}
                 </Button>
               )}
-            </>
-          )}
 
-          {/* Download Progress */}
-          {downloadProgressComponent && (
-            <div className="ml-1">
-              {downloadProgressComponent}
-            </div>
+              {/* Download Progress - SOLO PER DESKTOP */}
+              {downloadProgressComponent && (
+                <div className="ml-1">
+                  {downloadProgressComponent}
+                </div>
+              )}
+            </>
           )}
         </div>
 

@@ -212,27 +212,27 @@ export default function Campagne() {
       {isHeaderVisible && (
         <div className="animate-accordion-down space-y-4">
           <div className="flex justify-between items-center gap-4">
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openAddForm} size="icon" className="shadow-soft">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
-                  </DialogTitle>
-                </DialogHeader>
-                <CampaignForm
-                  campaign={selectedCampaign}
-                  onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
-                  onCancel={() => setIsFormOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-            
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openAddForm} size="icon" className="shadow-soft">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedCampaign ? 'Modifica Campagna' : 'Nuova Campagna'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <CampaignForm
+                    campaign={selectedCampaign}
+                    onSubmit={selectedCampaign ? handleEditCampaign : handleAddCampaign}
+                    onCancel={() => setIsFormOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+              
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-10 w-10">
@@ -267,7 +267,9 @@ export default function Campagne() {
                   />
                 </DialogContent>
               </Dialog>
-              
+            </div>
+            
+            <div className="flex items-center gap-1">
               <PagePromptManager pageRoute="/campagne" />
               <AIChatPopup pageRoute="/campagne" />
             </div>

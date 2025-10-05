@@ -2986,7 +2986,7 @@ export default function ImportTemplates() {
             <div className="flex justify-between items-center pb-2 relative">
               {/* Selection Controls - posizionato in basso assoluto */}
               {filteredRecords.length > 0 && (
-                <div className="absolute -bottom-[590px] left-0 z-10">
+                <div className="absolute -bottom-[41px] left-0 z-10">
                    <Button
                      variant="ghost"
                      size="sm"

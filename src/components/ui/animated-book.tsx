@@ -51,7 +51,7 @@ function Book({ direction, onAnimationComplete }: BookProps) {
         <meshBasicMaterial 
           map={gifTexture} 
           transparent 
-          opacity={showGif ? 1 : 0}
+          opacity={1}
           side={THREE.DoubleSide}
         />
       </mesh>

@@ -262,7 +262,7 @@ const AIConfig = () => {
                 <SelectContent>
                   <SelectItem value="chatgpt">ChatGPT (OpenAI)</SelectItem>
                   <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                  <SelectItem value="google">Google AI</SelectItem>
+                  <SelectItem value="google">Google Gemini</SelectItem>
                   <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                 </SelectContent>
               </Select>

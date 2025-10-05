@@ -2437,12 +2437,9 @@ export default function ImportTemplates() {
                     variant="outline"
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
-                    className="w-full justify-between"
+                    className="ml-auto flex items-center gap-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      Filtri e Ricerca
-                    </div>
+                    <Filter className="h-4 w-4" />
                     {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
                   

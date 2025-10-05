@@ -2424,9 +2424,21 @@ export default function ImportTemplates() {
             {isMobile ? (
               /* Mobile Header - Compact */
               <div className="space-y-3">
-                {/* Mobile Title with Total Count */}
+                {/* Mobile Title with Filtered and Total Count */}
                 <div className="flex items-center justify-between">
-                  <DialogTitle>Record Importati</DialogTitle>
+                  <div className="flex items-center gap-2">
+                    {/* Filtered count - only when filters are active */}
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter) && filteredRecords.length > 0 && (
+                      <span className={`font-medium ${
+                        searchQuery || originFilter || countryFilter || hasNotesFilter 
+                          ? 'text-white text-lg' 
+                          : 'text-primary text-sm'
+                      }`}>
+                        {filteredRecords.length}
+                      </span>
+                    )}
+                    <DialogTitle>Record Importati</DialogTitle>
+                  </div>
                   <span className="text-sm text-muted-foreground">
                     <span className="text-primary font-medium">{totalRecords}</span>
                   </span>
@@ -2872,13 +2884,6 @@ export default function ImportTemplates() {
           {/* Mobile Filters Button and Selection Controls - Above Cards */}
           {isMobile && (
             <div className="flex justify-between items-center pb-2">
-              {/* Filtered Count on Left */}
-              {filteredRecords.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  <span className="text-primary font-medium">{filteredRecords.length}</span> trovati
-                </div>
-              )}
-              
               {/* Selection Controls and Filters */}
               <div className="flex items-center gap-2">
               {/* Selection Controls */}

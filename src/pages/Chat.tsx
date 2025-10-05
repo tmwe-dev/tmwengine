@@ -606,10 +606,10 @@ const Chat = () => {
         </div>
 
         {/* Area Chat Principale */}
-        <div className={`order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full overflow-hidden' : 'xl:col-span-3 space-y-6'}`}>
+        <div className={`order-1 xl:order-2 ${shouldHideHeader ? 'col-span-1 flex flex-col h-full overflow-hidden min-h-0' : 'xl:col-span-3 space-y-6'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
-            <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none' : ''}`}>
+            <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
               {!shouldHideHeader && (
                 <CardHeader className="py-4">
                   <CardTitle className="flex items-center justify-between">
@@ -622,41 +622,43 @@ const Chat = () => {
                   </CardTitle>
                 </CardHeader>
               )}
-              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'flex-1 pb-2' : 'max-h-[600px]'}`}>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex items-start gap-3 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    {message.role === 'assistant' && (
-                      <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                    )}
+              <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
+                <div className={shouldHideHeader ? 'space-y-3' : ''}>
+                  {messages.map((message) => (
                     <div
-                      className={`max-w-[75%] p-3 rounded-lg border ${
-                        message.role === 'user'
-                          ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
-                          : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
+                      key={message.id}
+                      className={`flex items-start gap-3 ${shouldHideHeader ? 'mb-3' : ''} ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      <div 
-                        className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: message.content
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
-                            .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>')
-                            .replace(/\n/g, '<br>')
-                        }}
-                      />
+                      {message.role === 'assistant' && (
+                        <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      )}
+                      <div
+                        className={`max-w-[75%] p-3 rounded-lg border ${
+                          message.role === 'user'
+                            ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
+                            : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
+                        }`}
+                      >
+                        <div 
+                          className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ 
+                            __html: message.content
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                              .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
+                              .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>')
+                              .replace(/\n/g, '<br>')
+                          }}
+                        />
+                      </div>
+                      {message.role === 'user' && (
+                        <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                      )}
                     </div>
-                    {message.role === 'user' && (
-                      <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <div ref={messagesEndRef} />
               </CardContent>
             </Card>
@@ -683,7 +685,7 @@ const Chat = () => {
               </CardHeader>
             )}
             <CardContent className={shouldHideHeader ? 'p-3' : ''}>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className={shouldHideHeader ? 'space-y-3' : 'space-y-4'}>
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}

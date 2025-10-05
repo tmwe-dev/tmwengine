@@ -805,7 +805,7 @@ export default function RubricaAvanzata() {
           {/* Sort Dropdown - Center */}
           {viewingRecords.length > 0 && (
             <div className="flex justify-center">
-              <Card className="border-card shadow-soft w-fit bg-card-transparent">
+              <Card className="border-0 shadow-none w-fit bg-transparent">
                 <CardContent className="p-2 pb-[10px]">
                   <div className="flex items-center gap-2">
                     {/* Create Activity button - only show when contacts are selected */}
@@ -820,7 +820,6 @@ export default function RubricaAvanzata() {
                         <FileText className="h-4 w-4" />
                       </Button>
                     )}
-                    <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                     <Select
                       value={sortConfig.primary?.column || ""}
                       onValueChange={(value) => {
@@ -845,29 +844,6 @@ export default function RubricaAvanzata() {
                         <SelectItem value="created_at">Data creazione</SelectItem>
                       </SelectContent>
                     </Select>
-                    {sortConfig.primary && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          if (sortConfig.primary) {
-                            setSortConfig({
-                              primary: {
-                                ...sortConfig.primary,
-                                direction: sortConfig.primary.direction === 'asc' ? 'desc' : 'asc'
-                              },
-                              secondary: sortConfig.secondary
-                            });
-                          }
-                        }}
-                      >
-                        {sortConfig.primary.direction === 'asc' ? 
-                          <ArrowUp className="h-3 w-3" /> : 
-                          <ArrowDown className="h-3 w-3" />
-                        }
-                      </Button>
-                    )}
                     {/* Delete button - only show when contacts are selected */}
                     {selectedRecords.size > 0 && (
                       <Button

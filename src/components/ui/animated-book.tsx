@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import libroGif from '@/assets/libro.gif';
+import libroVideo from '@/assets/libro.mp4';
 import libroStatic from '@/assets/libro-static.png';
 
 interface AnimatedBookProps {
@@ -9,23 +9,28 @@ interface AnimatedBookProps {
 
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [gifKey, setGifKey] = useState(0);
 
   useEffect(() => {
     if (currentPage < previousPage.current) {
-      // Going backward - show and activate GIF
+      // Going backward - show and play video
       setIsAnimating(true);
-      setGifKey(prev => prev + 1);
       
-      // Wait for GIF to complete (4 seconds)
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 4000);
+      // Play video when it's ready
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.playbackRate = 4; // 4x speed - adjust as needed
+        videoRef.current.play();
+      }
     }
     
     previousPage.current = currentPage;
   }, [currentPage]);
+
+  const handleVideoEnd = () => {
+    setIsAnimating(false);
+  };
 
   return (
     <div 
@@ -33,13 +38,24 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
       style={{ height: '140px', background: 'transparent', position: 'relative' }}
     >
       <div className="w-full h-full flex items-center justify-center">
-        <img 
-          key={isAnimating ? gifKey : 'static'}
-          src={isAnimating ? libroGif : libroStatic} 
-          alt="Book animation" 
-          className="max-w-full max-h-full object-contain"
-          style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
-        />
+        {isAnimating ? (
+          <video
+            ref={videoRef}
+            src={libroVideo}
+            onEnded={handleVideoEnd}
+            className="max-w-full max-h-full object-contain"
+            style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
+            muted
+            playsInline
+          />
+        ) : (
+          <img 
+            src={libroStatic} 
+            alt="Book" 
+            className="max-w-full max-h-full object-contain"
+            style={{ transform: 'perspective(1000px) rotateX(20deg)' }}
+          />
+        )}
       </div>
     </div>
   );

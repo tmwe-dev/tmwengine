@@ -86,29 +86,25 @@ export function ImportLogMobileCard({
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg p-3 border border-border">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-full border border-green-200">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-primary">{log.righe_totali}</div>
-                  <div className="text-xs text-muted-foreground">Record</div>
-                </div>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-full">
+                <TrendingUp className="h-3 w-3 text-green-600" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-white">{log.righe_totali}</span>
+                <span className="text-xs text-white ml-1">Record</span>
               </div>
             </div>
             
             {/* Errors section */}
-            <div className="rounded-lg p-3 border border-red-200">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-full border border-red-200">
-                  <AlertTriangle className="h-3 w-3 text-red-600" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-red-700">{log.righe_errori}</div>
-                  <div className="text-xs text-red-600">Errori rilevati</div>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-full">
+                <AlertTriangle className="h-3 w-3 text-red-600" />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-white">{log.righe_errori}</span>
+                <span className="text-xs text-white ml-1">Errori rilevati</span>
               </div>
             </div>
           </div>

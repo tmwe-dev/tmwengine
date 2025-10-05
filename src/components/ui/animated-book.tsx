@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import libroGif from '@/assets/libro.gif';
+import libroStatic from '@/assets/libro-static.png';
 
 interface AnimatedBookProps {
   currentPage: number;
@@ -8,7 +9,7 @@ interface AnimatedBookProps {
 
 export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
   const previousPage = useRef(currentPage);
-  const [showGif, setShowGif] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [gifKey, setGifKey] = useState(0);
 
   useEffect(() => {
@@ -23,12 +24,26 @@ export function AnimatedBook({ currentPage, className }: AnimatedBookProps) {
     previousPage.current = currentPage;
   }, [currentPage]);
 
+  const handleClick = () => {
+    setIsAnimating(true);
+    setGifKey(prev => prev + 1);
+    
+    // Stop animation after 1 second
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 1000);
+  };
+
   return (
-    <div className={className} style={{ height: '140px', background: 'transparent', position: 'relative' }}>
+    <div 
+      className={className} 
+      style={{ height: '140px', background: 'transparent', position: 'relative', cursor: 'pointer' }}
+      onClick={handleClick}
+    >
       <div className="w-full h-full flex items-center justify-center">
         <img 
-          key={gifKey}
-          src={libroGif} 
+          key={isAnimating ? gifKey : 'static'}
+          src={isAnimating ? libroGif : libroStatic} 
           alt="Book animation" 
           className="max-w-full max-h-full object-contain"
           style={{ transform: 'perspective(1000px) rotateX(20deg)' }}

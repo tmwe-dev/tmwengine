@@ -184,10 +184,7 @@ const Chat = () => {
       setCurrentConversationId(data.id);
       setMessages([]);
       
-      toast({
-        title: "Nuova Conversazione",
-        description: "Conversazione creata con successo.",
-      });
+      // Toast rimosso: non mostrare notifica creazione conversazione
     } catch (error) {
       console.error('Errore creazione conversazione:', error);
       toast({

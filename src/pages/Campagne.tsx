@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Campaign {
   id: string;
@@ -217,9 +218,22 @@ export default function Campagne() {
           </Dialog>
           
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Search className="h-5 w-5" />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Search className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Cerca in CRM..." 
+                    className="pl-10"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
             <PagePromptManager pageRoute="/campagne" />
             <AIChatPopup pageRoute="/campagne" />
           </div>

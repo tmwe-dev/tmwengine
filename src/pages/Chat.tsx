@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMemoryControls } from '@/components/chat/ChatMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Message {
   id: string;
@@ -65,6 +66,7 @@ const Chat = () => {
   const [showConversations, setShowConversations] = useState(true);
   const [selectedTab, setSelectedTab] = useState('prompts');
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Carica system prompts
   useEffect(() => {
@@ -368,34 +370,38 @@ const Chat = () => {
     }
   };
 
+  const hasMessages = messages.length > 0;
+  const shouldHideHeader = isMobile && hasMessages;
+
   return (
     <div className="max-w-7xl mx-auto p-3 sm:p-6">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Chat AI
-          </h1>
+      {!shouldHideHeader && (
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              Chat AI
+            </h1>
+            
+            {/* Stats orizzontali in grigio sotto il titolo */}
+            {lastResponseStats && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                <span>{lastResponseStats.tokens} token</span>
+                <span>•</span>
+                <span>{lastResponseStats.responseTime}ms</span>
+                <span>•</span>
+                <span>{lastResponseStats.memoryMode} memory</span>
+              </div>
+            )}
+          </div>
           
-          {/* Stats orizzontali in grigio sotto il titolo */}
-          {lastResponseStats && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-              <span>{lastResponseStats.tokens} token</span>
-              <span>•</span>
-              <span>{lastResponseStats.responseTime}ms</span>
-              <span>•</span>
-              <span>{lastResponseStats.memoryMode} memory</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Settings Icon */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
+          {/* Settings Icon */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
             <DialogHeader className="pb-3 sm:pb-4">
               <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
@@ -540,11 +546,12 @@ const Chat = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      )}
 
       {/* Layout Responsive */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-1 order-2 xl:order-1">
+        <div className={`xl:col-span-1 order-2 xl:order-1 ${shouldHideHeader ? 'hidden' : ''}`}>
           <Card className="bg-card-transparent">
             <CardHeader className="cursor-pointer py-4" onClick={() => setShowConversations(!showConversations)}>
               <CardTitle className="flex items-center justify-between">
@@ -593,21 +600,42 @@ const Chat = () => {
         </div>
 
         {/* Area Chat Principale */}
-        <div className="xl:col-span-3 space-y-6 order-1 xl:order-2">
+        <div className={`space-y-6 order-1 xl:order-2 ${shouldHideHeader ? 'xl:col-span-4' : 'xl:col-span-3'}`}>
           {/* Messaggi della Conversazione */}
           {currentConversationId && messages.length > 0 && (
             <Card className="bg-card-transparent">
-              <CardHeader className="py-4">
-                <CardTitle className="flex items-center justify-between">
-                  <span>Conversazione</span>
-                  {currentConversation?.memoria_completa && (
-                    <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                      🧠 Memoria Completa Attiva
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-2 sm:px-6">
+              {!shouldHideHeader && (
+                <CardHeader className="py-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Conversazione</span>
+                    {currentConversation?.memoria_completa && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                        🧠 Memoria Completa Attiva
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+              )}
+              {shouldHideHeader && (
+                <CardHeader className="py-2 px-4">
+                  <div className="flex items-center justify-between">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setMessages([])}
+                      className="p-0 h-auto hover:bg-transparent"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    {currentConversation?.memoria_completa && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                        🧠 Memoria Completa
+                      </span>
+                    )}
+                  </div>
+                </CardHeader>
+              )}
+              <CardContent className={`space-y-3 overflow-y-auto px-2 sm:px-6 ${shouldHideHeader ? 'max-h-[calc(100vh-220px)]' : 'max-h-[600px]'}`}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -659,12 +687,14 @@ const Chat = () => {
 
           {/* Area Input */}
           <Card className="bg-card-transparent">
-            <CardHeader className="py-4">
-              <CardTitle>
-                {currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            {!shouldHideHeader && (
+              <CardHeader className="py-4">
+                <CardTitle>
+                  {currentConversationId ? 'Continua la conversazione' : 'Inizia una nuova conversazione'}
+                </CardTitle>
+              </CardHeader>
+            )}
+            <CardContent className={shouldHideHeader ? 'pt-4' : ''}>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Textarea
                   value={prompt}

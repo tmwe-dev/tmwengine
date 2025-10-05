@@ -894,6 +894,23 @@ export default function Attivita() {
                 <Search className="h-5 w-5" />
               </Button>
               
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10">
+                    <CalendarIcon className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-50" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={filterDate}
+                    onSelect={handleDateFilter}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              
               <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-10 w-10">
@@ -936,46 +953,6 @@ export default function Attivita() {
             </CardContent>
           </Card>
 
-          {/* Filters Section - Under Search */}
-          <div className="flex gap-3 justify-center">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {filterDate ? format(filterDate, 'dd/MM/yyyy') : 'Filtra per data'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filterDate}
-                  onSelect={handleDateFilter}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtri Avanzati
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Filtri Attività</DialogTitle>
-                </DialogHeader>
-                <ActivityFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  onClose={() => setIsFiltersOpen(false)}
-                  activities={activities}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
 
           {/* Stats Cards - Under Filters */}
           {!isMobile && (

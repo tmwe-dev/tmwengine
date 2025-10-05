@@ -3365,7 +3365,7 @@ export default function ImportTemplates() {
                         <div className="flex items-center justify-center gap-[15px] relative w-full">
                           {/* File Icon - a sinistra del badge */}
                           {filteredRecords.length > 0 && (
-                            <div className="absolute left-0 -top-[90px] flex flex-col items-center">
+                            <div className="absolute left-0 -top-[100px] flex flex-col items-center">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -3402,7 +3402,7 @@ export default function ImportTemplates() {
                           {/* Selected Records Badge - Centered */}
                           {selectedRecords.size > 0 && (
                             <span 
-                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[90px]"
+                              className="text-xs font-medium text-white bg-blue-500 px-2 py-1 rounded cursor-pointer hover:bg-blue-600 absolute left-1/2 -translate-x-1/2 -top-[100px]"
                               onClick={() => setSelectedRecords(new Set())}
                             >
                               {selectedRecords.size}

@@ -119,22 +119,6 @@ const CRMLayout = ({ children }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Search className="h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Cerca in CRM..." 
-                  className="pl-10"
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

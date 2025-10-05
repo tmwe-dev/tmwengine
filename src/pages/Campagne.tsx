@@ -217,6 +217,9 @@ export default function Campagne() {
           </Dialog>
           
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Search className="h-5 w-5" />
+            </Button>
             <PagePromptManager pageRoute="/campagne" />
             <AIChatPopup pageRoute="/campagne" />
           </div>

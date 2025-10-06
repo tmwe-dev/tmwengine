@@ -498,13 +498,13 @@ export const EmailDetail = ({
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
-                        color: #16a34a !important;
+                        color: #0ea5e9 !important;
                         overflow-x: hidden !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
                       }
                       body * {
-                        color: #16a34a !important;
+                        color: #0ea5e9 !important;
                       }
                       img {
                         max-width: 100% !important;

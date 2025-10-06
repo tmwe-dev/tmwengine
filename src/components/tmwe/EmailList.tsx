@@ -4,7 +4,7 @@ import { it } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -638,7 +638,7 @@ export const EmailList = ({
                 className="h-7 w-7 p-0"
                 onClick={() => setShowActionsSheet(true)}
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
               </Button>
             )}
             <Button

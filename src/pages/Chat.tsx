@@ -456,213 +456,213 @@ const Chat = () => {
   return (
     <div className={`${shouldHideHeader ? 'h-[calc(100vh-6rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
-        <div className="mb-3 flex items-center justify-between">
-          <div>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               Chat AI
             </h1>
             
-            {/* Configurazione AI utilizzata */}
-            <div className="flex items-center gap-2 mt-2 ml-11">
-              {selectedConfigId && aiConfigs.length > 0 && (
-                <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
-                  <SelectTrigger className="h-6 w-auto text-xs border-none">
-                    <Cpu className="h-3 w-3" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aiConfigs.map((config) => (
-                      <SelectItem key={config.id} value={config.id}>
-                        <div className="flex items-center gap-2">
-                          <span className="capitalize">{config.provider}</span>
-                          <span className="text-muted-foreground">-</span>
-                          <span className="text-xs">{config.modello}</span>
-                          {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {aiConfigs.length === 0 && (
-                <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
-              )}
+            {/* Settings Icon e Toggle System Prompt - allineati a destra */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePromptToggle}
+                className="animate-pulse"
+                title={useSystemPrompt ? 'Disattiva System Prompts' : 'Attiva System Prompts'}
+              >
+                <Sparkles className={`h-5 w-5 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
+              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+                  <DialogHeader className="pb-3 sm:pb-4">
+                    <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4 sm:space-y-6">
+                    <Select value={selectedTab} onValueChange={setSelectedTab}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleziona una sezione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="prompts">🤖 System Prompts</SelectItem>
+                        <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
+                        <SelectItem value="stats">📊 Statistiche</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {selectedTab === 'prompts' && (
+                      <div className="space-y-4 sm:space-y-6">
+                        <Card className="bg-card-transparent">
+                          <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
+                            <CollapsibleTrigger asChild>
+                              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3 sm:py-4">
+                                <CardTitle className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 sm:gap-3">
+                                    <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    <span className="text-sm sm:text-base font-medium">System Prompt Management</span>
+                                  </div>
+                                  {isSystemPromptOpen ? <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />}
+                                </CardTitle>
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <CardContent className="space-y-4 sm:space-y-6 pt-0 pb-4 sm:pb-6">
+                                <div>
+                                  <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">System Prompts Esistenti</h4>
+                                  <div className="space-y-3 sm:space-y-4">
+                                    {systemPrompts.map((prompt) => (
+                                      <div
+                                        key={prompt.id}
+                                        className={`p-3 sm:p-4 border rounded-lg ${
+                                          prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
+                                        }`}
+                                      >
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                              <h5 className="font-semibold text-sm sm:text-base">{prompt.nome}</h5>
+                                              {prompt.attivo && (
+                                                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full font-medium">
+                                                  ATTIVO
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="bg-muted/30 p-2 sm:p-3 rounded-md border">
+                                              <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                                                {prompt.contenuto}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
+                                            {!prompt.attivo && (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => activateSystemPrompt(prompt.id)}
+                                                className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
+                                              >
+                                                Attiva
+                                              </Button>
+                                            )}
+                                            <Button
+                                              size="sm"
+                                              variant="destructive"
+                                              onClick={() => deleteSystemPrompt(prompt.id)}
+                                              className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
+                                            >
+                                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="border-t pt-4 sm:pt-6">
+                                  <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">Crea Nuovo System Prompt</h4>
+                                  <div className="space-y-3 sm:space-y-4">
+                                    <div>
+                                      <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
+                                        Nome Prompt
+                                      </label>
+                                      <Input
+                                        placeholder="Inserisci il nome del system prompt..."
+                                        value={newSystemPromptName}
+                                        onChange={(e) => setNewSystemPromptName(e.target.value)}
+                                        className="h-9 sm:h-10 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
+                                        Contenuto Prompt
+                                      </label>
+                                      <Textarea
+                                        placeholder="Inserisci il contenuto del system prompt..."
+                                        value={newSystemPromptContent}
+                                        onChange={(e) => setNewSystemPromptContent(e.target.value)}
+                                        rows={4}
+                                        className="min-h-[80px] sm:min-h-[100px] resize-none text-sm"
+                                      />
+                                    </div>
+                                    <Button onClick={createSystemPrompt} className="w-full h-9 sm:h-10 text-sm">
+                                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                                      Crea System Prompt
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </Card>
+                      </div>
+                    )}
+
+                    {selectedTab === 'controls' && (
+                      <ChatMemoryControls
+                        conversationId={currentConversationId}
+                        memoriaCompleta={currentConversation?.memoria_completa || false}
+                        onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                      />
+                    )}
+
+                    {selectedTab === 'stats' && (
+                      <ConversationStats
+                        conversationId={currentConversationId}
+                        currentTokenUsage={lastResponseStats?.tokens}
+                        responseTime={lastResponseStats?.responseTime}
+                        modelUsed={lastResponseStats?.model}
+                      />
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
-            
-            {/* Stats orizzontali in grigio sotto il modello */}
-            {lastResponseStats && (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 ml-11">
-                <span>{lastResponseStats.tokens} token</span>
-                <span>•</span>
-                <span>{lastResponseStats.responseTime}ms</span>
-                <span>•</span>
-                <span>{lastResponseStats.memoryMode} memory</span>
-              </div>
+          </div>
+          
+          {/* Configurazione AI utilizzata */}
+          <div className="flex items-center gap-2 mt-3 ml-11">
+            {selectedConfigId && aiConfigs.length > 0 && (
+              <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                <SelectTrigger className="h-6 w-auto text-xs border-none">
+                  <Cpu className="h-3 w-3" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiConfigs.map((config) => (
+                    <SelectItem key={config.id} value={config.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize">{config.provider}</span>
+                        <span className="text-muted-foreground">-</span>
+                        <span className="text-xs">{config.modello}</span>
+                        {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {aiConfigs.length === 0 && (
+              <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
             )}
           </div>
           
-          {/* Settings Icon e Toggle System Prompt */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePromptToggle}
-              className="animate-pulse"
-              title={useSystemPrompt ? 'Disattiva System Prompts' : 'Attiva System Prompts'}
-            >
-              <Sparkles className={`h-5 w-5 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
-            </Button>
-            <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="bg-transparent border-0 hover:bg-transparent">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
-            <DialogHeader className="pb-3 sm:pb-4">
-              <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4 sm:space-y-6">
-              <Select value={selectedTab} onValueChange={setSelectedTab}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona una sezione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="prompts">🤖 System Prompts</SelectItem>
-                  <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
-                  <SelectItem value="stats">📊 Statistiche</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {selectedTab === 'prompts' && (
-                <div className="space-y-4 sm:space-y-6">
-                  <Card className="bg-card-transparent">
-                    <Collapsible open={isSystemPromptOpen} onOpenChange={setIsSystemPromptOpen}>
-                      <CollapsibleTrigger asChild>
-                        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3 sm:py-4">
-                          <CardTitle className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                              <span className="text-sm sm:text-base font-medium">System Prompt Management</span>
-                            </div>
-                            {isSystemPromptOpen ? <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" /> : <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />}
-                          </CardTitle>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="space-y-4 sm:space-y-6 pt-0 pb-4 sm:pb-6">
-                          <div>
-                            <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">System Prompts Esistenti</h4>
-                            <div className="space-y-3 sm:space-y-4">
-                              {systemPrompts.map((prompt) => (
-                                <div
-                                  key={prompt.id}
-                                  className={`p-3 sm:p-4 border rounded-lg ${
-                                    prompt.attivo ? 'border-primary bg-primary/5' : 'border-border'
-                                  }`}
-                                >
-                                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                                        <h5 className="font-semibold text-sm sm:text-base">{prompt.nome}</h5>
-                                        {prompt.attivo && (
-                                          <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full font-medium">
-                                            ATTIVO
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="bg-muted/30 p-2 sm:p-3 rounded-md border">
-                                        <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
-                                          {prompt.contenuto}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
-                                      {!prompt.attivo && (
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => activateSystemPrompt(prompt.id)}
-                                          className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
-                                        >
-                                          Attiva
-                                        </Button>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => deleteSystemPrompt(prompt.id)}
-                                        className="min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm"
-                                      >
-                                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="border-t pt-4 sm:pt-6">
-                            <h4 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4">Crea Nuovo System Prompt</h4>
-                            <div className="space-y-3 sm:space-y-4">
-                              <div>
-                                <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
-                                  Nome Prompt
-                                </label>
-                                <Input
-                                  placeholder="Inserisci il nome del system prompt..."
-                                  value={newSystemPromptName}
-                                  onChange={(e) => setNewSystemPromptName(e.target.value)}
-                                  className="h-9 sm:h-10 text-sm"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-xs sm:text-sm font-medium text-foreground mb-1 sm:mb-2 block">
-                                  Contenuto Prompt
-                                </label>
-                                <Textarea
-                                  placeholder="Inserisci il contenuto del system prompt..."
-                                  value={newSystemPromptContent}
-                                  onChange={(e) => setNewSystemPromptContent(e.target.value)}
-                                  rows={4}
-                                  className="min-h-[80px] sm:min-h-[100px] resize-none text-sm"
-                                />
-                              </div>
-                              <Button onClick={createSystemPrompt} className="w-full h-9 sm:h-10 text-sm">
-                                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                                Crea System Prompt
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-                </div>
-              )}
-
-              {selectedTab === 'controls' && (
-                <ChatMemoryControls
-                  conversationId={currentConversationId}
-                  memoriaCompleta={currentConversation?.memoria_completa || false}
-                  onMemoriaCompletaChange={handleMemoriaCompletaChange}
-                />
-              )}
-
-              {selectedTab === 'stats' && (
-                <ConversationStats
-                  conversationId={currentConversationId}
-                  currentTokenUsage={lastResponseStats?.tokens}
-                  responseTime={lastResponseStats?.responseTime}
-                  modelUsed={lastResponseStats?.model}
-                />
-              )}
+          {/* Stats orizzontali in grigio sotto il modello */}
+          {lastResponseStats && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 ml-11">
+              <span>{lastResponseStats.tokens} token</span>
+              <span>•</span>
+              <span>{lastResponseStats.responseTime}ms</span>
+              <span>•</span>
+              <span>{lastResponseStats.memoryMode} memory</span>
             </div>
-          </DialogContent>
-        </Dialog>
-          </div>
+          )}
         </div>
       )}
 

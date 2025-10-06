@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ interface SenderStats {
 }
 
 export default function EmailSenders() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSenders, setSelectedSenders] = useState<string[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
@@ -511,10 +513,7 @@ export default function EmailSenders() {
                 <PagePromptManager pageRoute="/email-senders" />
                 <Brain 
                   className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform" 
-                  onClick={() => {
-                    setSelectedAIChatSender('assistente.mittenti@ai.local');
-                    setAiChatOpen(true);
-                  }}
+                  onClick={() => navigate('/chat?page=/email-senders')}
                 />
               </div>
             </div>

@@ -111,8 +111,8 @@ export const EmailDetail = ({
       try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
         if (iframeDoc?.body) {
-          const height = Math.max(iframeDoc.body.scrollHeight, iframeDoc.documentElement.scrollHeight);
-          iframe.style.height = `${height + 20}px`;
+          const height = iframeDoc.body.scrollHeight;
+          iframe.style.height = `${height}px`;
         }
       } catch (e) {
         console.error('Error resizing iframe:', e);
@@ -120,14 +120,7 @@ export const EmailDetail = ({
     };
 
     iframe.addEventListener('load', resizeIframe);
-    
-    // Also resize after a short delay to ensure content is fully loaded
-    const timer = setTimeout(resizeIframe, 100);
-    
-    return () => {
-      iframe.removeEventListener('load', resizeIframe);
-      clearTimeout(timer);
-    };
+    return () => iframe.removeEventListener('load', resizeIframe);
   }, [email.body]);
 
   // Load sender groups
@@ -495,30 +488,40 @@ export const EmailDetail = ({
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <style>
-                      html, body {
-                        margin: 0;
-                        padding: 0;
+                      * {
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
                       }
                       body {
+                        margin: 0;
                         padding: 16px;
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
                         color: #0ea5e9 !important;
+                        overflow-x: hidden !important;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
                       }
                       body * {
                         color: #0ea5e9 !important;
                       }
                       img {
-                        max-width: none !important;
+                        max-width: 100% !important;
                         height: auto !important;
                         display: block;
                       }
                       table {
+                        max-width: 100% !important;
+                        width: 100% !important;
                         border-collapse: collapse;
                       }
                       td, th {
+                        max-width: 100% !important;
                         word-wrap: break-word;
+                      }
+                      a {
+                        word-break: break-all;
                       }
                     </style>
                   </head>
@@ -529,12 +532,7 @@ export const EmailDetail = ({
               `}
               sandbox="allow-same-origin"
               className="w-full border-0"
-              style={{ 
-                display: 'block', 
-                overflow: 'auto',
-                minHeight: '400px',
-                maxHeight: '80vh'
-              }}
+              style={{ minHeight: '400px' }}
             />
           </div>
         </div>

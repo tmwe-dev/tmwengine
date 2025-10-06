@@ -16,31 +16,46 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to match container
+    // Set canvas size to match container with high DPI support
     const updateCanvasSize = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
       
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      // Scale back down with CSS
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      
+      // Scale all drawing operations
+      ctx.scale(dpr, dpr);
+      
       drawEmailContent();
     };
 
     const drawEmailContent = () => {
+      const rect = canvas.parentElement?.getBoundingClientRect();
+      if (!rect) return;
+      
       // Clear canvas
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, rect.width, rect.height);
 
       const padding = 20;
       let yPosition = padding;
 
-      // Draw subject
+      // Draw subject with better rendering
       ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+      ctx.textBaseline = 'top';
       const subjectText = subject || '(No Subject)';
       
       // Word wrap for subject
-      const subjectLines = wrapText(ctx, subjectText, canvas.width - padding * 2);
+      const subjectLines = wrapText(ctx, subjectText, rect.width - padding * 2);
       subjectLines.forEach(line => {
         ctx.fillText(line, padding, yPosition);
         yPosition += 32;
@@ -48,9 +63,10 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
 
       yPosition += 20; // Space between subject and body
 
-      // Draw body
+      // Draw body with better rendering
       ctx.fillStyle = '#333333';
-      ctx.font = '16px Arial';
+      ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+      ctx.textBaseline = 'top';
       
       // Strip HTML tags and decode entities
       const tempDiv = document.createElement('div');
@@ -58,9 +74,9 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
       const bodyText = tempDiv.textContent || tempDiv.innerText || '';
 
       // Word wrap for body
-      const bodyLines = wrapText(ctx, bodyText, canvas.width - padding * 2);
+      const bodyLines = wrapText(ctx, bodyText, rect.width - padding * 2);
       bodyLines.forEach(line => {
-        if (yPosition < canvas.height - padding) {
+        if (yPosition < rect.height - padding) {
           ctx.fillText(line, padding, yPosition);
           yPosition += 24;
         }

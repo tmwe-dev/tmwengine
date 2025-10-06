@@ -526,7 +526,26 @@ const Chat = () => {
             </div>
             
             {/* Settings Icon e Toggle System Prompt - allineati a destra */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {selectedConfigId && aiConfigs.length > 0 && (
+                <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                  <SelectTrigger className="h-8 w-8 p-0 border-none bg-transparent hover:bg-muted">
+                    <Cpu className="h-4 w-4" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiConfigs.map((config) => (
+                      <SelectItem key={config.id} value={config.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="capitalize">{config.provider}</span>
+                          <span className="text-muted-foreground">-</span>
+                          <span className="text-xs">{config.modello}</span>
+                          {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <PagePromptManager pageRoute="/chat" />
               <Button
                 variant="ghost"
@@ -689,33 +708,7 @@ const Chat = () => {
               </Dialog>
             </div>
           </div>
-          
-          {/* Configurazione AI utilizzata */}
-          <div className="flex items-center gap-2 mt-3 ml-11">
-            {selectedConfigId && aiConfigs.length > 0 && (
-              <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
-                <SelectTrigger className="h-6 w-auto text-xs border-none">
-                  <Cpu className="h-3 w-3" />
-                </SelectTrigger>
-                <SelectContent>
-                  {aiConfigs.map((config) => (
-                    <SelectItem key={config.id} value={config.id}>
-                      <div className="flex items-center gap-2">
-                        <span className="capitalize">{config.provider}</span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="text-xs">{config.modello}</span>
-                        {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {aiConfigs.length === 0 && (
-              <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
-            )}
-          </div>
-          
+
           {/* Stats orizzontali in grigio sotto il modello */}
           {lastResponseStats && (
             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 ml-11">

@@ -672,7 +672,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-y-auto overflow-x-visible">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}
@@ -702,7 +702,7 @@ const EmailDashboard = () => {
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-visible">
             {isLoadingDetail ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground">Caricamento...</p>

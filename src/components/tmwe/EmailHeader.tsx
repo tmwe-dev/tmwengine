@@ -169,8 +169,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           </div>
 
-          {/* CENTER: Mail icon - perfettamente centrato */}
-          <div className="flex items-center justify-center">
+          {/* CENTER: Mail icon - allineato a destra della sezione */}
+          <div className="flex items-center justify-end">
             <Button 
               onClick={onCompose} 
               size="icon"

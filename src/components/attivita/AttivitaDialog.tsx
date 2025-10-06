@@ -56,6 +56,7 @@ interface AttivitaDialogProps {
   filterByContactId?: string | null;
   showBackButton?: boolean;
   onBackToRecords?: () => void;
+  defaultActivityType?: 'email' | 'chiamata';
 }
 
 const TIPO_LABELS = {
@@ -78,7 +79,7 @@ const PRIORITA_LABELS = {
   bassa: 'Bassa'
 };
 
-export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBackButton, onBackToRecords }: AttivitaDialogProps) {
+export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBackButton, onBackToRecords, defaultActivityType }: AttivitaDialogProps) {
   console.log('AttivitaDialog props:', { open, filterByContactId, showBackButton, hasOnBackToRecords: !!onBackToRecords });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

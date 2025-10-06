@@ -145,6 +145,7 @@ const RecordImportati = () => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
+  const [defaultActivityType, setDefaultActivityType] = useState<'email' | 'chiamata'>('chiamata');
 
   const { getActivityCount, isLoading: loadingActivities, refreshActivities, getCompanyActivities } = useCompanyActivities();
 
@@ -618,8 +619,9 @@ const RecordImportati = () => {
                       setIsAttivitaDialogOpen(true);
                     }}
                     onDelete={() => deleteImportedContact(record.id, globalIndex)}
-                    onCreateActivity={() => {
+                    onCreateActivity={(activityType) => {
                       setSelectedContactIdForActivities(record.id);
+                      setDefaultActivityType(activityType === 'email' ? 'email' : 'chiamata');
                       setIsAttivitaDialogOpen(true);
                     }}
                     getCountryFlag={getCountryFlag}
@@ -661,8 +663,14 @@ const RecordImportati = () => {
 
       <AttivitaDialog
         open={isAttivitaDialogOpen}
-        onOpenChange={setIsAttivitaDialogOpen}
+        onOpenChange={(open) => {
+          setIsAttivitaDialogOpen(open);
+          if (!open) {
+            setDefaultActivityType('chiamata');
+          }
+        }}
         filterByContactId={selectedContactIdForActivities}
+        defaultActivityType={defaultActivityType}
       />
     </div>
   );

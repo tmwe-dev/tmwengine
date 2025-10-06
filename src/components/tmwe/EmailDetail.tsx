@@ -111,8 +111,8 @@ export const EmailDetail = ({
       try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
         if (iframeDoc?.body) {
-          const height = iframeDoc.body.scrollHeight;
-          iframe.style.height = `${height}px`;
+          const height = Math.max(iframeDoc.body.scrollHeight, iframeDoc.documentElement.scrollHeight);
+          iframe.style.height = `${height + 20}px`;
         }
       } catch (e) {
         console.error('Error resizing iframe:', e);
@@ -120,7 +120,14 @@ export const EmailDetail = ({
     };
 
     iframe.addEventListener('load', resizeIframe);
-    return () => iframe.removeEventListener('load', resizeIframe);
+    
+    // Also resize after a short delay to ensure content is fully loaded
+    const timer = setTimeout(resizeIframe, 100);
+    
+    return () => {
+      iframe.removeEventListener('load', resizeIframe);
+      clearTimeout(timer);
+    };
   }, [email.body]);
 
   // Load sender groups
@@ -532,7 +539,7 @@ export const EmailDetail = ({
               `}
               sandbox="allow-same-origin"
               className="w-full border-0"
-              style={{ minHeight: '400px' }}
+              style={{ display: 'block', overflow: 'hidden' }}
             />
           </div>
         </div>

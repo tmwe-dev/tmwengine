@@ -357,9 +357,9 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-background" style={{ width: '100vw', maxWidth: '100vw', overflow: 'hidden' }}>
+    <div className="flex h-full flex-col bg-background">
       {/* Top bar with navigation and close */}
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm" style={{ width: '100%', maxWidth: '100%' }}>
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm">
         {/* Left: Management actions */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
@@ -534,44 +534,34 @@ export const EmailDetail = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
-        <div className="p-4 md:p-6 space-y-4" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-          <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-            <h2 
-              className="text-lg md:text-xl font-semibold text-foreground leading-relaxed"
-              style={{ 
-                wordBreak: 'break-word', 
-                overflowWrap: 'break-word',
-                whiteSpace: 'pre-wrap',
-                hyphens: 'auto',
-                width: '100%',
-                maxWidth: '100%',
-                boxSizing: 'border-box'
-              }}
-            >
+      <ScrollArea className="flex-1">
+        <div className="px-4 md:px-6 py-4 space-y-6">
+          {/* Email Subject */}
+          <div className="space-y-2">
+            <p className="text-base md:text-lg font-semibold text-foreground" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
               {email.subject}
-            </h2>
+            </p>
           </div>
-          <div>
-            <Card className="bg-card/50 backdrop-blur-sm">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <p className="font-medium text-sm break-words">{email.from}</p>
-                    <div className="text-xs text-muted-foreground break-words">
-                      <p>To: {email.to.join(', ')}</p>
-                      {email.cc && email.cc.length > 0 && (
-                        <p>Cc: {email.cc.join(', ')}</p>
-                      )}
-                    </div>
+          
+          {/* Email Metadata */}
+          <Card className="bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <p className="font-medium text-sm" style={{ wordWrap: 'break-word' }}>{email.from}</p>
+                  <div className="text-xs text-muted-foreground">
+                    <p style={{ wordWrap: 'break-word' }}>To: {email.to.join(', ')}</p>
+                    {email.cc && email.cc.length > 0 && (
+                      <p style={{ wordWrap: 'break-word' }}>Cc: {email.cc.join(', ')}</p>
+                    )}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {format(emailDate, 'PPp')}
-                  </span>
                 </div>
-              </CardHeader>
-            </Card>
-          </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {format(emailDate, 'PPp')}
+                </span>
+              </div>
+            </CardHeader>
+          </Card>
 
           {downloadableAttachments.length > 0 && (
             <Card className="bg-card/50 backdrop-blur-sm">
@@ -611,8 +601,10 @@ export const EmailDetail = ({
 
           <Separator />
 
+          {/* Email Body */}
           <div 
-            className="prose prose-sm max-w-none text-sm break-words overflow-visible [&_*]:max-w-full [&_img]:max-w-full [&_img]:h-auto"
+            className="prose prose-sm max-w-none text-sm"
+            style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>

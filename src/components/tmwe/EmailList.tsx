@@ -471,33 +471,20 @@ export const EmailList = ({
       <div className="flex flex-col gap-2 p-2 px-4 border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex flex-col items-start gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <Switch
-                id="multi-select"
-                checked={multiSelectMode}
-                onCheckedChange={(checked) => {
-                  setMultiSelectMode(checked);
-                  if (selectedEmailId) onEmailSelect('');
-                }}
-              />
-              <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
-                Multi
-              </Label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Switch
-                id="unread-only"
-                checked={showUnreadOnly}
-                onCheckedChange={(checked) => {
-                  setShowUnreadOnly(checked);
-                  if (selectedEmailId) onEmailSelect('');
-                }}
-                className="data-[state=checked]:bg-orange-400/30"
-              />
-              <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
-                Solo non lette
-              </Label>
-            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  id="multi-select"
+                  checked={multiSelectMode}
+                  onCheckedChange={(checked) => {
+                    setMultiSelectMode(checked);
+                    if (selectedEmailId) onEmailSelect('');
+                  }}
+                />
+                <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
+                  Multi
+                </Label>
+              </div>
 
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
@@ -588,6 +575,22 @@ export const EmailList = ({
                 </Button>
               </div>
             )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Switch
+                id="unread-only"
+                checked={showUnreadOnly}
+                onCheckedChange={(checked) => {
+                  setShowUnreadOnly(checked);
+                  if (selectedEmailId) onEmailSelect('');
+                }}
+                className="data-[state=checked]:bg-orange-400/30"
+              />
+              <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
+                Solo non lette
+              </Label>
+            </div>
           </div>
 
           <div className="flex items-center gap-1 flex-wrap ml-auto">

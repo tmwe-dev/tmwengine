@@ -237,7 +237,16 @@ const EmailDashboard = () => {
 
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),
-      subject: header.subject || '(No Subject)',
+      subject: (() => {
+        const fullSubject = header.subject || '(No Subject)';
+        console.log('🔍 EMAIL SUBJECT DEBUG:', {
+          fullSubject,
+          length: fullSubject.length,
+          firstChars: fullSubject.substring(0, 50),
+          lastChars: fullSubject.substring(fullSubject.length - 50)
+        });
+        return fullSubject;
+      })(),
       from: header.from || 'Unknown',
       to: header.to ? (Array.isArray(header.to) ? header.to : [header.to]) : [],
       cc: header.cc ? (Array.isArray(header.cc) ? header.cc : [header.cc]) : [],

@@ -755,7 +755,7 @@ export function AdvancedMultipleActivityForm({
             <TabsContent value="chiamata" className="space-y-4 mt-6">
               <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
                 <div 
-                  className="flex items-center gap-2 mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-md transition-colors"
+                  className="flex items-center justify-center gap-2 mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-md transition-colors border border-border/30"
                   onClick={() => setShowCallDialog(true)}
                 >
                   <Phone className="h-5 w-5 text-green-500" />

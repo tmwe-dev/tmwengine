@@ -424,10 +424,10 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center">
         <canvas 
           className="border-2 border-primary/20 rounded-lg shadow-2xl bg-card"
-          style={{ width: '80%', height: '80%' }}
+          style={{ width: '100%', height: '100%' }}
         />
       </div>
 

@@ -702,7 +702,7 @@ const Chat = () => {
           </div>
 
           {/* Descrizione prompt sotto il titolo - sempre visibile */}
-          <div className={`text-sm mt-2 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
+          <div className={`text-sm mt-2 ml-11 max-w-md ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
             {pagePromptName || 'Nessun prompt di pagina'}
           </div>
 

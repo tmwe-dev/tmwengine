@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2, Maximize2, Minimize2 } from 'lucide-react';
+import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2, Maximize2, Minimize2, Send, ClockIcon } from 'lucide-react';
 import { CallDialog } from './CallDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -116,6 +116,8 @@ export function AdvancedMultipleActivityForm({
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   const [fullscreenEmailEditor, setFullscreenEmailEditor] = useState(false);
   const [showCallDialog, setShowCallDialog] = useState(false);
+  const [showEmailConfirmDialog, setShowEmailConfirmDialog] = useState(false);
+  const [pendingEmailData, setPendingEmailData] = useState<AdvancedActivityFormData | null>(null);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -278,15 +280,43 @@ export function AdvancedMultipleActivityForm({
         console.error('❌ Validazione fallita: email senza oggetto o testo');
         return;
       }
+      // Mostra dialog per scegliere se inviare subito o programmare
+      setPendingEmailData(data);
+      setShowEmailConfirmDialog(true);
     } else if (data.tipo === 'chiamata') {
       if (!data.note_generali || data.note_generali.trim().length === 0) {
         console.error('❌ Validazione fallita: chiamata senza note');
         return;
       }
+      // Per le chiamate procedi normalmente
+      onSubmit(data);
     }
-    
-    // I dati vengono passati così come sono - la logica di creazione attività è gestita dal parent
-    onSubmit(data);
+  };
+
+  const handleEmailSendNow = () => {
+    if (pendingEmailData) {
+      // Invia l'email immediatamente
+      const dataToSubmit = {
+        ...pendingEmailData,
+        programma_email: false
+      };
+      setShowEmailConfirmDialog(false);
+      setPendingEmailData(null);
+      onSubmit(dataToSubmit);
+    }
+  };
+
+  const handleEmailSchedule = () => {
+    if (pendingEmailData) {
+      // Programma l'email per dopo
+      const dataToSubmit = {
+        ...pendingEmailData,
+        programma_email: true
+      };
+      setShowEmailConfirmDialog(false);
+      setPendingEmailData(null);
+      onSubmit(dataToSubmit);
+    }
   };
 
   const getContactDisplayName = (contact: ContactRecord) => {
@@ -1004,6 +1034,47 @@ export function AdvancedMultipleActivityForm({
         }}
       />
     )}
+
+    {/* Email Send Confirmation Dialog */}
+    <Dialog open={showEmailConfirmDialog} onOpenChange={setShowEmailConfirmDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            Inviare l'email?
+          </DialogTitle>
+          <DialogDescription>
+            L'attività email verrà creata. Vuoi inviare la mail subito o programmarla per dopo?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowEmailConfirmDialog(false);
+              setPendingEmailData(null);
+            }}
+          >
+            Annulla
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleEmailSchedule}
+            className="gap-2"
+          >
+            <ClockIcon className="h-4 w-4" />
+            Programma
+          </Button>
+          <Button
+            onClick={handleEmailSendNow}
+            className="gap-2"
+          >
+            <Send className="h-4 w-4" />
+            Invia Ora
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </div>
     </>
   );

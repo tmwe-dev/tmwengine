@@ -532,7 +532,7 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
             <Button 
               onClick={() => setIsActivityDialogOpen(true)}
               variant="outline"
-              className="w-full"
+              className="w-full bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] border-purple-500/20 transition-all"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />

@@ -266,20 +266,20 @@ export const emailAccountApi = {
     smtp_encryption: string;
     email: string;
     password: string;
-  }) => fetchApi('/email_account', { handler: 'test_connection', ...data }),
+  }) => fetchApi('/app.php?action=email_account', { handler: 'test_connection', ...data }),
 
-  getAccountInfo: () => fetchApi('/email_account', { handler: 'get_account_info' }),
-  getQuota: () => fetchApi('/email_account', { handler: 'get_quota' }),
+  getAccountInfo: () => fetchApi('/app.php?action=email_account', { handler: 'get_account_info' }),
+  getQuota: () => fetchApi('/app.php?action=email_account', { handler: 'get_quota' }),
 };
 
 // Email Sync APIs
 export const emailSyncApi = {
-  fullSync: () => fetchApi('/email_sync', { handler: 'full_sync' }),
-  incrementalSync: () => fetchApi('/email_sync', { handler: 'incremental_sync' }),
+  fullSync: () => fetchApi('/app.php?action=email_sync', { handler: 'full_sync' }),
+  incrementalSync: () => fetchApi('/app.php?action=email_sync', { handler: 'incremental_sync' }),
   syncFolder: (folderName: string) => 
-    fetchApi('/email_sync', { handler: 'sync_folder', folder_name: folderName }),
-  getSyncStatus: () => fetchApi('/email_sync', { handler: 'get_sync_status' }),
-  cancelSync: () => fetchApi('/email_sync', { handler: 'cancel_sync' }),
+    fetchApi('/app.php?action=email_sync', { handler: 'sync_folder', folder_name: folderName }),
+  getSyncStatus: () => fetchApi('/app.php?action=email_sync', { handler: 'get_sync_status' }),
+  cancelSync: () => fetchApi('/app.php?action=email_sync', { handler: 'cancel_sync' }),
 };
 
 // Email Message APIs
@@ -290,12 +290,12 @@ export const emailMessageApi = {
     limit?: number;
     sort?: string;
     order?: 'ASC' | 'DESC';
-  }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
+  }) => fetchApi('/app.php?action=email_message', { handler: 'get_messages', ...params }),
 
   getMessage: (uid: string, folder: string = 'INBOX', markAsRead: boolean = true, includeAttachments: boolean = true, format: 'html' | 'text' = 'html') => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    return fetchApi('/email_message', { 
+    return fetchApi('/app.php?action=email_message', { 
       handler: 'get_message', 
       uid: uidInt, 
       folder,
@@ -313,7 +313,7 @@ export const emailMessageApi = {
     to_date?: string;
     page?: number;
     limit?: number;
-  }) => fetchApi('/email_message', { handler: 'search_messages', ...params }),
+  }) => fetchApi('/app.php?action=email_message', { handler: 'search_messages', ...params }),
 
   sendMessage: (data: {
     to: string[];
@@ -324,7 +324,7 @@ export const emailMessageApi = {
     bcc?: string[];
     attachments?: any[];
     priority?: 'high' | 'normal' | 'low';
-  }) => fetchApi('/email_message', { handler: 'send_message', ...data }),
+  }) => fetchApi('/app.php?action=email_message', { handler: 'send_message', ...data }),
 
   replyMessage: (data: {
     uid: string;
@@ -354,7 +354,7 @@ export const emailMessageApi = {
       requestData.attachments = data.attachments;
     }
     
-    return fetchApi('/email_message', requestData);
+    return fetchApi('/app.php?action=email_message', requestData);
   },
 
   forwardMessage: (data: {
@@ -369,7 +369,7 @@ export const emailMessageApi = {
     const uidInt = parseInt(data.uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${data.uid}`);
     
-    return fetchApi('/email_message', {
+    return fetchApi('/app.php?action=email_message', {
       handler: 'forward_message',
       uid: uidInt,
       to: data.to,
@@ -387,29 +387,29 @@ export const emailMessageApi = {
       if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
       return uidInt;
     });
-    return fetchApi('/email_message', { handler: 'delete_messages', uids: uidInts });
+    return fetchApi('/app.php?action=email_message', { handler: 'delete_messages', uids: uidInts });
   },
 };
 
 // Email Folder APIs
 export const emailFolderApi = {
-  getFolders: () => fetchApi('/email_folder', { handler: 'get_folders' }),
+  getFolders: () => fetchApi('/app.php?action=email_folder', { handler: 'get_folders' }),
   
   getFolderInfo: (folderName: string) => 
-    fetchApi('/email_folder', { handler: 'get_folder_info', folder_name: folderName }),
+    fetchApi('/app.php?action=email_folder', { handler: 'get_folder_info', folder_name: folderName }),
 
   createFolder: (folderName: string, parentFolder?: string) => 
-    fetchApi('/email_folder', { 
+    fetchApi('/app.php?action=email_folder', { 
       handler: 'create_folder', 
       folder_name: folderName,
       parent_folder: parentFolder 
     }),
 
   deleteFolder: (folderName: string) => 
-    fetchApi('/email_folder', { handler: 'delete_folder', folder_name: folderName }),
+    fetchApi('/app.php?action=email_folder', { handler: 'delete_folder', folder_name: folderName }),
 
   renameFolder: (oldName: string, newName: string) => 
-    fetchApi('/email_folder', { 
+    fetchApi('/app.php?action=email_folder', { 
       handler: 'rename_folder', 
       old_name: oldName, 
       new_name: newName 

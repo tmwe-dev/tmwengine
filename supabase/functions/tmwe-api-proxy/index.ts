@@ -7,12 +7,12 @@ const corsHeaders = {
 
 const API_BASE_URL = 'https://findair.it/erp/tmwe_json';
 
-// Valid endpoints according to OpenAPI spec
+// Valid endpoints according to OpenAPI spec (using app.php?action= format)
 const VALID_ENDPOINTS = [
-  '/email_account',
-  '/email_sync', 
-  '/email_message',
-  '/email_folder'
+  '/app.php?action=email_account',
+  '/app.php?action=email_sync', 
+  '/app.php?action=email_message',
+  '/app.php?action=email_folder'
 ];
 
 // Error response helper following OpenAPI spec

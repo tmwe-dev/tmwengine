@@ -427,6 +427,15 @@ const EmailDashboard = () => {
     })
   );
 
+  // Debug logging
+  console.log('📊 Email Data State:', {
+    messagesLoading,
+    pagesCount: messagesData?.pages?.length || 0,
+    emailsFromPagesCount: emailsFromPages.length,
+    downloadedEmailsCount: downloadedEmails.length,
+    firstPage: messagesData?.pages?.[0],
+  });
+
   // Use downloaded emails if available, otherwise use paginated emails
   const emailsToUse = downloadedEmails.length > 0 ? downloadedEmails.map((msg: any) => ({
     id: String(msg.uid || msg.id),

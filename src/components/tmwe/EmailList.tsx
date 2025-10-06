@@ -383,13 +383,13 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex flex-col items-end justify-end gap-1 sm:gap-2 self-end shrink-0 min-w-[120px]">
+                <div className="flex flex-col items-end justify-end gap-1 sm:gap-2 self-end shrink-0 min-w-[60px] sm:min-w-[120px]">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
-                      <span className="whitespace-nowrap text-base font-bold">
+                      <span className="whitespace-nowrap text-xs sm:text-base font-bold">
                         {format(new Date(email.date), 'HH:mm')}
                       </span>
-                      <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      <span className="whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
                     </div>

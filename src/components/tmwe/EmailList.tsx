@@ -105,6 +105,7 @@ export const EmailList = ({
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
   const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('wide');
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [dialogEmailId, setDialogEmailId] = useState<string | null>(null);
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -233,7 +234,7 @@ export const EmailList = ({
             if (multiSelectMode) {
               handleToggleEmailSelection(email.id);
             } else {
-              setSelectedEmailForActions(email);
+              setDialogEmailId(email.id);
               onEmailSelect(email.id);
               setShowDetailDialog(true);
             }
@@ -367,7 +368,7 @@ export const EmailList = ({
             if (multiSelectMode) {
               handleToggleEmailSelection(email.id);
             } else {
-              setSelectedEmailForActions(email);
+              setDialogEmailId(email.id);
               onEmailSelect(email.id);
               setShowDetailDialog(true);
             }
@@ -851,58 +852,27 @@ export const EmailList = ({
       </Sheet>
 
       {/* Dialog dettaglio email */}
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+      <Dialog open={showDetailDialog} onOpenChange={(open) => {
+        setShowDetailDialog(open);
+        if (!open) setDialogEmailId(null);
+      }}>
         <DialogContent className="max-w-4xl h-[90vh] p-0">
           {isLoadingDetail ? (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Caricamento dettaglio email...</p>
             </div>
-          ) : emailDetail ? (
+          ) : emailDetail && dialogEmailId === emailDetail.id ? (
             <EmailDetailNew
-              email={{
-                id: emailDetail.id,
-                subject: emailDetail.subject,
-                from: emailDetail.from,
-                to: emailDetail.to,
-                cc: emailDetail.cc,
-                date: emailDetail.date,
-                body: emailDetail.body,
-                attachments: emailDetail.attachments,
-              }}
-              onReply={() => {
-                setShowDetailDialog(false);
-              }}
-              onForward={() => {
-                setShowDetailDialog(false);
-              }}
-              onDelete={() => {
-                setShowDetailDialog(false);
-              }}
-            />
-          ) : selectedEmailForActions ? (
-            <EmailDetailNew
-              email={{
-                id: selectedEmailForActions.id,
-                subject: selectedEmailForActions.subject,
-                from: selectedEmailForActions.from,
-                to: [],
-                date: selectedEmailForActions.date,
-                body: `<div class="p-4"><p class="text-muted-foreground italic">Anteprima limitata - Il contenuto completo non è disponibile</p><p class="mt-4">${selectedEmailForActions.preview}</p></div>`,
-              }}
-              onReply={() => {
-                setShowDetailDialog(false);
-              }}
-              onForward={() => {
-                setShowDetailDialog(false);
-              }}
-              onDelete={() => {
-                setShowDetailDialog(false);
-              }}
+              email={emailDetail}
+              onReply={() => setShowDetailDialog(false)}
+              onForward={() => setShowDetailDialog(false)}
+              onDelete={() => setShowDetailDialog(false)}
+              onBack={() => setShowDetailDialog(false)}
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Seleziona un'email</p>
+              <p className="text-muted-foreground">Errore nel caricamento dell'email</p>
             </div>
           )}
         </DialogContent>

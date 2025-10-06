@@ -643,10 +643,7 @@ const EmailDashboard = () => {
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => {
-                    console.log('🧠 Opening Page AI Chat for /email-manager');
-                    setPageAiChatOpen(true);
-                  }}
+                  onClick={() => setPageAiChatOpen(true)}
                 >
                   <Brain className="h-4 w-4 text-primary" />
                 </Button>
@@ -741,11 +738,9 @@ const EmailDashboard = () => {
         onOpenChange={setAiChatOpen}
       />
 
-      <AIChatPopup 
-        pageRoute="/email-manager"
-        open={pageAiChatOpen}
-        onOpenChange={setPageAiChatOpen}
-      />
+      {pageAiChatOpen && (
+        <AIChatPopup pageRoute="/email-manager" />
+      )}
     </div>
   );
 };

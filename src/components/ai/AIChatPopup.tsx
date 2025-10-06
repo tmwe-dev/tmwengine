@@ -42,14 +42,10 @@ interface Conversation {
 
 interface AIChatPopupProps {
   pageRoute: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
 }
 
-export function AIChatPopup({ pageRoute, open: externalOpen, onOpenChange }: AIChatPopupProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
-  const setIsOpen = onOpenChange || setInternalOpen;
+export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);

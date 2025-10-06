@@ -54,7 +54,11 @@ interface EmailListProps {
     id: string;
     subject: string;
     from: string;
+    to: string | string[];
+    cc?: string | string[];
+    date: string;
     body: string;
+    attachments?: any[];
   } | null;
   isLoadingDetail?: boolean;
   onOpenDetailPopup?: () => void;
@@ -849,7 +853,34 @@ export const EmailList = ({
       {/* Dialog dettaglio email */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl h-[90vh] p-0">
-          {selectedEmailForActions ? (
+          {isLoadingDetail ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Caricamento dettaglio email...</p>
+            </div>
+          ) : emailDetail ? (
+            <EmailDetailNew
+              email={{
+                id: emailDetail.id,
+                subject: emailDetail.subject,
+                from: emailDetail.from,
+                to: emailDetail.to,
+                cc: emailDetail.cc,
+                date: emailDetail.date,
+                body: emailDetail.body,
+                attachments: emailDetail.attachments,
+              }}
+              onReply={() => {
+                setShowDetailDialog(false);
+              }}
+              onForward={() => {
+                setShowDetailDialog(false);
+              }}
+              onDelete={() => {
+                setShowDetailDialog(false);
+              }}
+            />
+          ) : selectedEmailForActions ? (
             <EmailDetailNew
               email={{
                 id: selectedEmailForActions.id,
@@ -857,7 +888,7 @@ export const EmailList = ({
                 from: selectedEmailForActions.from,
                 to: [],
                 date: selectedEmailForActions.date,
-                body: selectedEmailForActions.preview || '<p>Contenuto non disponibile</p>',
+                body: `<div class="p-4"><p class="text-muted-foreground italic">Anteprima limitata - Il contenuto completo non è disponibile</p><p class="mt-4">${selectedEmailForActions.preview}</p></div>`,
               }}
               onReply={() => {
                 setShowDetailDialog(false);

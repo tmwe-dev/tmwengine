@@ -210,6 +210,18 @@ export const EmailSenderFilter = ({
         </div>
       </SheetContent>
     </Sheet>
+
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-9 w-9 hover:bg-primary/10"
+      onClick={() => {
+        const senderEmail = selectedSender || 'assistente.email@ai.local';
+        onOpenAIChat?.(senderEmail);
+      }}
+    >
+      <Brain className="h-4 w-4 text-primary" />
+    </Button>
     </div>
   );
 };

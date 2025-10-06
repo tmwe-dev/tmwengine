@@ -38,7 +38,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { EmailCanvas } from './EmailCanvas';
 
 interface EmailDetailProps {
   email: {
@@ -425,13 +424,27 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <div className={`flex flex-1 items-center justify-center transition-all duration-300 ${!isHeaderCollapsed ? 'h-[calc(100%-200px)]' : 'h-full'}`}>
-        <EmailCanvas 
-          subject={email.subject}
-          body={email.body}
-          isHeaderCollapsed={isHeaderCollapsed}
-        />
-      </div>
+      <ScrollArea className="flex-1">
+        <div className="p-6 space-y-4">
+          {/* Subject */}
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground break-words">
+              {email.subject || '(No Subject)'}
+            </h2>
+          </div>
+
+          {/* Body */}
+          <div 
+            className="prose prose-sm max-w-none text-foreground/90 break-words"
+            dangerouslySetInnerHTML={{ __html: email.body || '<p>No content available</p>' }}
+            style={{
+              wordWrap: 'break-word',
+              overflowWrap: 'anywhere',
+              maxWidth: '100%'
+            }}
+          />
+        </div>
+      </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
         <SheetContent side="right" className="w-full sm:max-w-md backdrop-blur-md bg-background/95">

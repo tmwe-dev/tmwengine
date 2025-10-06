@@ -646,6 +646,18 @@ const EmailDashboard = () => {
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-primary/10"
+                  onClick={() => {
+                    const senderEmail = selectedSender || 'assistente.email@ai.local';
+                    setSelectedAIChatSender(senderEmail);
+                    setAiChatOpen(true);
+                  }}
+                >
+                  <Brain className="h-4 w-4 text-primary" />
+                </Button>
               </div>
             )}
           </div>

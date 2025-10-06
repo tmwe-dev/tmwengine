@@ -196,6 +196,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           {/* CENTER: Mail icon OR email navigation when collapsed */}
           {isHeaderCollapsed ? (
             <div className="flex items-center gap-2 justify-center">
+              <span className="text-sm font-medium text-muted-foreground">Segnaposto</span>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -217,6 +218,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           ) : (
             <div className="flex items-center justify-center">
+              <span className="text-sm font-medium text-muted-foreground mr-2">Segnaposto</span>
               <Button 
                 onClick={onCompose} 
                 size="icon"

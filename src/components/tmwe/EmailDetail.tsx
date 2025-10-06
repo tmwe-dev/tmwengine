@@ -267,7 +267,6 @@ export const EmailDetail = ({
         {/* Left: Management actions or empty */}
         {!isHeaderCollapsed ? (
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">4</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-12 w-12">
@@ -341,18 +340,15 @@ export const EmailDetail = ({
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">4</span>
           </div>
         )}
 
         {/* Center: Email navigation (sempre visibile) */}
         <div className="flex items-center gap-3 justify-center">
-          <span className="text-sm font-medium text-muted-foreground">5</span>
         </div>
 
         {/* Right: Actions and Close */}
         <div className="flex justify-end gap-3">
-          <span className="text-sm font-medium text-muted-foreground">6</span>
           {!isHeaderCollapsed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

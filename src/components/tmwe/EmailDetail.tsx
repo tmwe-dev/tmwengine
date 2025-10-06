@@ -536,9 +536,10 @@ export const EmailDetail = ({
 
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6 space-y-4">
+          <div className="mb-4">
+            <h1 className="text-lg md:text-xl font-semibold break-words text-primary-foreground dark:text-primary-foreground">{email.subject}</h1>
+          </div>
           <div>
-            <h1 className="text-lg md:text-xl font-semibold mb-4 break-words text-foreground">{email.subject}</h1>
-            
             <Card className="bg-card/50 backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4 flex-wrap">

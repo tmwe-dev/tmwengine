@@ -518,7 +518,7 @@ const Chat = () => {
                 Chat AI
               </h1>
               {pagePromptName && (
-                <div className={`text-sm mt-1 ${useSystemPrompt ? 'text-muted-foreground' : 'text-red-500'}`}>
+                <div className={`text-sm mt-1 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
                   {pagePromptName}
                 </div>
               )}

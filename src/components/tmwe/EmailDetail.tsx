@@ -20,7 +20,8 @@ import {
   FolderCog,
   User,
   Users,
-  Megaphone
+  Megaphone,
+  X
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -302,6 +303,18 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card-transparent">
+      {/* Close button */}
+      <div className="flex justify-end p-4 border-b bg-card-transparent">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={onBack}
+          className="h-10 w-10"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+      </div>
+      
       {/* Top navigation bar */}
       <div className="grid grid-cols-3 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
         {/* Left: Reply actions */}

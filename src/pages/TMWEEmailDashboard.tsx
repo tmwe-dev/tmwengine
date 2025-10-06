@@ -738,9 +738,11 @@ const EmailDashboard = () => {
         onOpenChange={setAiChatOpen}
       />
 
-      {pageAiChatOpen && (
-        <AIChatPopup pageRoute="/email-manager" />
-      )}
+      <AIChatPopup 
+        pageRoute="/email-manager"
+        open={pageAiChatOpen}
+        onOpenChange={setPageAiChatOpen}
+      />
     </div>
   );
 };

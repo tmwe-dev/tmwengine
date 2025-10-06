@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown, ArrowUp, ArrowDown, Activity } from 'lucide-react';
+import { Eye, Edit, Users, Database, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, Mail, MapPin, Tag, Trash2, FileText, SearchCheck, SearchX, ArrowUpDown, ArrowUp, ArrowDown, Activity, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import countriesData from '@/data/countries.json';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -21,6 +21,7 @@ import { ContactMobileCard } from '@/components/rubrica/ContactMobileCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -624,6 +625,16 @@ export default function RubricaAvanzata() {
                 ({filteredRecords.length})
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/chat?page=/rubrica-avanzata')}
+              className="shrink-0"
+              title="Chat AI"
+            >
+              <Brain className="h-5 w-5" />
+            </Button>
+            <PagePromptManager pageRoute="/rubrica-avanzata" />
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

@@ -50,7 +50,7 @@ const EmailDashboard = () => {
     if (isMobile) {
       setShowEmailList(true);
     }
-  }, [selectedFolder, isMobile]);
+  }, [selectedFolder]); // Removed isMobile dependency to prevent unwanted resets
 
   // Handle email selection on mobile
   const handleEmailSelect = (emailId: string) => {

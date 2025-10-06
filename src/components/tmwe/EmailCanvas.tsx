@@ -16,72 +16,69 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to match container with high DPI support
     const updateCanvasSize = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
       
-      const dpr = window.devicePixelRatio || 1;
       const rect = parent.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
       
+      // Reset canvas completely
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       
-      // Scale back down with CSS
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       
-      // Enable text smoothing
+      // Apply scaling for high DPI
+      ctx.scale(dpr, dpr);
+      
+      // Enable antialiasing
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       
-      // Scale all drawing operations
-      ctx.scale(dpr, dpr);
-      
-      drawEmailContent(rect);
+      drawContent(rect.width, rect.height);
     };
 
-    const drawEmailContent = (rect: DOMRect) => {
-      // Clear canvas with white background
+    const drawContent = (width: number, height: number) => {
+      // Clear background
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, rect.width, rect.height);
+      ctx.fillRect(0, 0, width, height);
 
-      // Enable better text rendering
+      const padding = 24;
+      let y = padding;
+
+      // Configure text rendering
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
 
-      const padding = 20;
-      let yPosition = padding;
-
       // Draw subject
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
-      const subjectText = subject || '(No Subject)';
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
       
-      // Word wrap for subject
-      const subjectLines = wrapText(ctx, subjectText, rect.width - padding * 2);
+      const subjectText = subject || '(No Subject)';
+      const subjectLines = wrapText(ctx, subjectText, width - padding * 2);
+      
       subjectLines.forEach(line => {
-        ctx.fillText(line, padding, yPosition);
-        yPosition += 32;
+        ctx.fillText(line, padding, y);
+        y += 28;
       });
 
-      yPosition += 20; // Space between subject and body
+      y += 16;
 
       // Draw body
-      ctx.fillStyle = '#333333';
-      ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+      ctx.fillStyle = '#404040';
+      ctx.font = '14px system-ui, -apple-system, sans-serif';
       
-      // Strip HTML tags and decode entities
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = body || 'No content available';
       const bodyText = tempDiv.textContent || tempDiv.innerText || '';
 
-      // Word wrap for body
-      const bodyLines = wrapText(ctx, bodyText, rect.width - padding * 2);
+      const bodyLines = wrapText(ctx, bodyText, width - padding * 2);
       bodyLines.forEach(line => {
-        if (yPosition < rect.height - padding) {
-          ctx.fillText(line, padding, yPosition);
-          yPosition += 24;
+        if (y < height - padding) {
+          ctx.fillText(line, padding, y);
+          y += 20;
         }
       });
     };

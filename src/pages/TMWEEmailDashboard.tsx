@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Database, MessageSquare, Brain } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
@@ -12,7 +13,6 @@ import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
-import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 
 const EmailDashboard = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -37,8 +38,11 @@ const EmailDashboard = () => {
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
-  const [pageAiChatOpen, setPageAiChatOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  const openAIChat = () => {
+    navigate('/chat?page=/email-manager');
+  };
 
   // Reset selected email when folder changes
   useEffect(() => {
@@ -643,7 +647,7 @@ const EmailDashboard = () => {
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => setPageAiChatOpen(true)}
+                  onClick={openAIChat}
                 >
                   <Brain className="h-4 w-4 text-primary" />
                 </Button>
@@ -737,10 +741,6 @@ const EmailDashboard = () => {
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
       />
-
-      {pageAiChatOpen && (
-        <AIChatPopup pageRoute="/email-manager" />
-      )}
     </div>
   );
 };

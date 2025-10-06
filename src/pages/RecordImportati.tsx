@@ -618,7 +618,7 @@ const RecordImportati = () => {
                       setIsAttivitaDialogOpen(true);
                     }}
                     onDelete={() => deleteImportedContact(record.id, globalIndex)}
-                    onCreateActivity={() => {
+                    onCreateActivity={(activityType) => {
                       setSelectedContactIdForActivities(record.id);
                       setIsAttivitaDialogOpen(true);
                     }}

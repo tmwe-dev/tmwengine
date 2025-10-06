@@ -71,7 +71,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
   return (
     <>
-      <header className="flex items-center justify-between border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden gap-2">
+      <header className="flex items-center border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden gap-2">
         {/* LEFT: Menu + Title */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {isMobile && onMenuClick && (
@@ -91,7 +91,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
         </div>
 
         {/* CENTER: Actions (Compose + Sync buttons) */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 mx-auto">
           <Button 
             onClick={onCompose} 
             size="icon"

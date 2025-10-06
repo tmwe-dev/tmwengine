@@ -85,9 +85,9 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
       <header className="border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
-          {/* LEFT: Title + Sync buttons OR X button when collapsed */}
+          {/* LEFT: Title + Sync buttons OR X + Navigation when collapsed */}
           {isHeaderCollapsed ? (
-            <div className="flex items-center justify-start">
+            <div className="flex items-center gap-2 justify-start">
               {onCloseEmail && (
                 <Button 
                   variant="ghost" 
@@ -98,6 +98,24 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   <X className="h-5 w-5" />
                 </Button>
               )}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onPreviousEmail}
+                disabled={!hasPrevious}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onNextEmail}
+                disabled={!hasNext}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
@@ -193,29 +211,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           )}
 
-          {/* CENTER: Mail icon OR email navigation when collapsed */}
-          {isHeaderCollapsed ? (
-            <div className="flex items-center gap-2 justify-center">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onPreviousEmail}
-                disabled={!hasPrevious}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onNextEmail}
-                disabled={!hasNext}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          ) : (
+          {/* CENTER: Mail icon when not collapsed, empty when collapsed */}
+          {!isHeaderCollapsed && (
             <div className="flex items-center justify-center">
               <Button 
                 onClick={onCompose} 

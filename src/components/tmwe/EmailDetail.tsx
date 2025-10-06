@@ -261,10 +261,10 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card-transparent">
-      {/* Top bar with navigation and close */}
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
-        {/* Left: Management actions or empty */}
-        {!isHeaderCollapsed ? (
+      {/* Top bar with management actions - nascosto quando collapsed */}
+      {!isHeaderCollapsed && (
+        <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+          {/* Left: Management actions */}
           <div className="flex items-center gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -337,33 +337,12 @@ export const EmailDetail = ({
               </Button>
             )}
           </div>
-        ) : (
+
+          {/* Center: Empty */}
           <div></div>
-        )}
 
-        {/* Center: Email navigation (sempre visibile) */}
-        <div className="flex items-center gap-3 justify-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-          >
-            <ChevronLeft className="h-8 w-8" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onNext}
-            disabled={!hasNext}
-          >
-            <ChevronRight className="h-8 w-8" />
-          </Button>
-        </div>
-
-        {/* Right: Actions and Close */}
-        <div className="flex justify-end gap-3">
-          {!isHeaderCollapsed && (
+          {/* Right: Actions */}
+          <div className="flex justify-end gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -406,17 +385,10 @@ export const EmailDetail = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10"
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          </div>
         </div>
-      </div>
+      )}
+      
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (

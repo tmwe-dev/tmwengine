@@ -681,6 +681,7 @@ const RecordImportati = () => {
           {selectedContactForActivity && (
             <AdvancedMultipleActivityForm
               contacts={[selectedContactForActivity]}
+              defaultActivityType={defaultActivityType}
               onSubmit={async (data) => {
                 setIsAttivitaDialogOpen(false);
                 setSelectedContactIdForActivities(null);

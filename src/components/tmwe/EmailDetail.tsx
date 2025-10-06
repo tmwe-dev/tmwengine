@@ -317,8 +317,28 @@ export const EmailDetail = ({
       
       {/* Top navigation bar */}
       <div className="grid grid-cols-3 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
-        {/* Left: Reply actions */}
-        <div className="flex gap-3">
+        {/* Left: Email navigation */}
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+          >
+            <ChevronLeft className="h-8 w-8" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onNext}
+            disabled={!hasNext}
+          >
+            <ChevronRight className="h-8 w-8" />
+          </Button>
+        </div>
+
+        {/* Center: Communication actions */}
+        <div className="flex gap-3 items-center justify-center">
           <Button variant="outline" size="lg" onClick={onReply} className="flex-col h-auto py-3 px-4">
             <div className="flex items-center gap-2 mb-1">
               <Reply className="h-8 w-8" />
@@ -333,98 +353,6 @@ export const EmailDetail = ({
             </div>
             <span className="text-xs">Rispondi a tutti</span>
           </Button>
-        </div>
-
-        {/* Center: Navigation on top, Rules and Star below */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onPrevious}
-              disabled={!hasPrevious}
-            >
-              <ChevronLeft className="h-8 w-8" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onNext}
-              disabled={!hasNext}
-            >
-              <ChevronRight className="h-8 w-8" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
-                  <FolderCog className="h-8 w-8 mb-1" />
-                  <span className="text-xs">Regole</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-56">
-                {senderGroups.map((group) => (
-                  <DropdownMenuItem
-                    key={group.id}
-                    onClick={() => handleAssignGroup(group.id)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: group.colore }}
-                      />
-                      {group.nome_gruppo}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                {isCreatingGroup ? (
-                  <div className="p-2 space-y-2">
-                    <Input
-                      placeholder="Nome gruppo"
-                      value={newGroupName}
-                      onChange={(e) => setNewGroupName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateGroup();
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleCreateGroup} className="flex-1">
-                        Crea
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => {
-                          setIsCreatingGroup(false);
-                          setNewGroupName('');
-                        }}
-                        className="flex-1"
-                      >
-                        Annulla
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
-                    + Nuovo gruppo
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
-              <Star className="h-8 w-8 mb-1" />
-              <span className="text-xs">Preferito</span>
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex gap-3 items-center justify-end">
           <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
             <div className="flex items-center gap-2 mb-1">
               <Forward className="h-8 w-8" />
@@ -432,7 +360,75 @@ export const EmailDetail = ({
             </div>
             <span className="text-xs">Inoltra</span>
           </Button>
-          
+        </div>
+
+        {/* Right: Management actions */}
+        <div className="flex gap-3 items-center justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
+                <FolderCog className="h-8 w-8 mb-1" />
+                <span className="text-xs">Regole</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-56">
+              {senderGroups.map((group) => (
+                <DropdownMenuItem
+                  key={group.id}
+                  onClick={() => handleAssignGroup(group.id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: group.colore }}
+                    />
+                    {group.nome_gruppo}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              {isCreatingGroup ? (
+                <div className="p-2 space-y-2">
+                  <Input
+                    placeholder="Nome gruppo"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateGroup();
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateGroup} className="flex-1">
+                      Crea
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setIsCreatingGroup(false);
+                        setNewGroupName('');
+                      }}
+                      className="flex-1"
+                    >
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
+                  + Nuovo gruppo
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
+            <Star className="h-8 w-8 mb-1" />
+            <span className="text-xs">Preferito</span>
+          </Button>
           {onDelete && (
             <Button variant="destructive" size="lg" onClick={onDelete} className="flex-col h-auto py-3 px-4">
               <Trash2 className="h-8 w-8 mb-1" />

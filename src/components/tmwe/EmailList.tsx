@@ -335,7 +335,7 @@ export const EmailList = ({
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 sm:overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[250px] sm:w-full',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-[250px] sm:w-full h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -350,7 +350,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch min-w-0 w-full">
+          <div className="flex items-start min-w-0 w-full h-full">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3">
                 <Checkbox
@@ -360,7 +360,7 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative">
+            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full">
               <div className="flex items-start justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
                 <div className="flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">

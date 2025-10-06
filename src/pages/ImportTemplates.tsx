@@ -2552,9 +2552,9 @@ export default function ImportTemplates() {
                             <div className="space-y-2">
                               <Label>Ordina per</Label>
                               <Select 
-                                value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : ""} 
+                                value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
                                 onValueChange={(value) => {
-                                  if (!value) {
+                                  if (value === "NONE") {
                                     setSortConfig({ primary: null, secondary: null });
                                     return;
                                   }
@@ -2569,7 +2569,7 @@ export default function ImportTemplates() {
                                   <SelectValue placeholder="Nessun ordinamento" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">Nessun ordinamento</SelectItem>
+                                  <SelectItem value="NONE">Nessun ordinamento</SelectItem>
                                   <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
                                   <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
                                   <SelectItem value="nazione-asc">Paese ↑</SelectItem>
@@ -2584,9 +2584,9 @@ export default function ImportTemplates() {
                               <div className="space-y-2">
                                 <Label>Poi per</Label>
                                 <Select 
-                                  value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : ""} 
+                                  value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
                                   onValueChange={(value) => {
-                                    if (!value) {
+                                    if (value === "NONE") {
                                       setSortConfig(prev => ({ ...prev, secondary: null }));
                                       return;
                                     }
@@ -2601,7 +2601,7 @@ export default function ImportTemplates() {
                                     <SelectValue placeholder="Nessuno" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="">Nessuno</SelectItem>
+                                    <SelectItem value="NONE">Nessuno</SelectItem>
                                     <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
                                     <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
                                     <SelectItem value="nazione-asc">Paese ↑</SelectItem>
@@ -2756,9 +2756,9 @@ export default function ImportTemplates() {
                         <div className="w-40">
                           <Label htmlFor="sort-primary" className="text-sm font-medium">Ordina per</Label>
                           <Select 
-                            value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : ""} 
+                            value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
                             onValueChange={(value) => {
-                              if (!value) {
+                              if (value === "NONE") {
                                 setSortConfig({ primary: null, secondary: null });
                                 return;
                               }
@@ -2773,7 +2773,7 @@ export default function ImportTemplates() {
                               <SelectValue placeholder="Nessun ordinamento" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Nessun ordinamento</SelectItem>
+                              <SelectItem value="NONE">Nessun ordinamento</SelectItem>
                               <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
                               <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
                               <SelectItem value="nazione-asc">Paese ↑</SelectItem>
@@ -2788,9 +2788,9 @@ export default function ImportTemplates() {
                           <div className="w-40">
                             <Label htmlFor="sort-secondary" className="text-sm font-medium">Poi per</Label>
                             <Select 
-                              value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : ""} 
+                              value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
                               onValueChange={(value) => {
-                                if (!value) {
+                                if (value === "NONE") {
                                   setSortConfig(prev => ({ ...prev, secondary: null }));
                                   return;
                                 }
@@ -2805,7 +2805,7 @@ export default function ImportTemplates() {
                                 <SelectValue placeholder="Nessuno" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Nessuno</SelectItem>
+                                <SelectItem value="NONE">Nessuno</SelectItem>
                                 <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
                                 <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
                                 <SelectItem value="nazione-asc">Paese ↑</SelectItem>

@@ -257,39 +257,6 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <Card className="border-primary/20">
-        <CardContent className="p-3">
-          <div className="space-y-2">
-            {/* Import button for imported contacts */}
-            {record.hasOwnProperty('is_imported_to_rubrica') && (
-              <Button 
-                onClick={handleImportToRubrica}
-                disabled={isImporting || record.is_imported_to_rubrica}
-                className="w-full"
-                variant={record.is_imported_to_rubrica ? "outline" : "default"}
-                size="sm"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                {isImporting ? "Importando..." : 
-                 record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
-              </Button>
-            )}
-            
-            {/* Create Activity Button */}
-            <Button 
-              onClick={() => setIsActivityDialogOpen(true)}
-              variant="outline"
-              className="w-full"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Crea Attività
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Contact Person */}
       <Card>
         <CardHeader className="pb-2">
@@ -539,6 +506,39 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <Card className="border-primary/20">
+        <CardContent className="p-3">
+          <div className="space-y-2">
+            {/* Import button for imported contacts */}
+            {record.hasOwnProperty('is_imported_to_rubrica') && (
+              <Button 
+                onClick={handleImportToRubrica}
+                disabled={isImporting || record.is_imported_to_rubrica}
+                className="w-full"
+                variant={record.is_imported_to_rubrica ? "outline" : "default"}
+                size="sm"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {isImporting ? "Importando..." : 
+                 record.is_imported_to_rubrica ? "Già importato" : "Importa in Rubrica"}
+              </Button>
+            )}
+            
+            {/* Create Activity Button */}
+            <Button 
+              onClick={() => setIsActivityDialogOpen(true)}
+              variant="outline"
+              className="w-full"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Crea Attività
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

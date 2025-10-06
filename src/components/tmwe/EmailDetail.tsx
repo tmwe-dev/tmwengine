@@ -425,6 +425,26 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1 overflow-hidden">
+        <style>{`
+          .email-body-content {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+          .email-body-content img {
+            max-width: 100% !important;
+            height: auto !important;
+            object-fit: scale-down !important;
+          }
+          .email-body-content a {
+            display: inline-flex !important;
+            max-width: 100% !important;
+          }
+          .email-body-content table {
+            max-width: 100% !important;
+            table-layout: auto !important;
+          }
+        `}</style>
+        
         <div className="p-6 space-y-4 w-full overflow-hidden">
           {/* Subject */}
           <div className="space-y-2">
@@ -436,18 +456,11 @@ export const EmailDetail = ({
           {/* Body */}
           <div className="w-full overflow-hidden">
             <div
+              className="email-body-content prose prose-sm max-w-none text-foreground/90"
               dangerouslySetInnerHTML={{ __html: email.body || '<p>No content available</p>' }}
-              className="
-                prose prose-sm max-w-none text-foreground/90 
-                [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_img]:block
-                [&_table]:w-full [&_table]:table-auto
-                [&_*]:max-w-full [&_*]:box-border
-              "
               style={{
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
-                maxWidth: '100%',
-                width: '100%',
               }}
             />
           </div>

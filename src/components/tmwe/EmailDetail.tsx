@@ -534,10 +534,10 @@ export const EmailDetail = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4 w-full">
-          <div className="w-full overflow-visible">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground whitespace-normal break-words overflow-wrap-anywhere w-full">{email.subject}</h1>
+      <ScrollArea className="flex-1 overflow-x-hidden">
+        <div className="p-4 md:p-6 space-y-4 w-full max-w-full">
+          <div className="w-full max-w-full">
+            <div className="text-lg md:text-xl font-semibold text-foreground break-words overflow-wrap-anywhere hyphens-auto leading-relaxed w-full">{email.subject}</div>
           </div>
           <div>
             <Card className="bg-card/50 backdrop-blur-sm">

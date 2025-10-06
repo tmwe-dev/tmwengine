@@ -424,18 +424,18 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <ScrollArea className="flex-1 overflow-x-hidden">
-        <div className="p-6 space-y-4 w-full">
+      <ScrollArea className="flex-1">
+        <div className="p-6 space-y-4">
           {/* Subject */}
-          <div className="w-full">
-            <h2 className="text-2xl font-bold text-foreground break-words whitespace-normal overflow-wrap-anywhere w-full">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground break-words">
               {email.subject || '(No Subject)'}
             </h2>
           </div>
 
           {/* Body */}
           <div 
-            className="text-sm text-foreground/90 break-words whitespace-normal w-full [&_*]:max-w-full [&_*]:break-words"
+            className="prose prose-sm max-w-none text-foreground/90 break-words"
             dangerouslySetInnerHTML={{ __html: email.body || '<p>No content available</p>' }}
             style={{
               wordWrap: 'break-word',

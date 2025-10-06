@@ -55,7 +55,7 @@ export function CompactContactCard({
           
           {/* Contenuto principale ultra-compatto */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               {/* Info principale */}
               <div className="flex-1 min-w-0">
                 <div 
@@ -83,8 +83,8 @@ export function CompactContactCard({
                 </div>
               </div>
               
-              {/* Azioni compatte */}
-              <div className="flex items-center gap-1 ml-2">
+              {/* Azioni compatte - allineate al nome */}
+              <div className="flex items-start pt-0.5">
                 <Button
                   variant="ghost"
                   size="sm"

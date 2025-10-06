@@ -609,8 +609,9 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
-          isMobile && !showEmailList && "hidden"
+          "flex-1 flex flex-col min-w-0",
+          isMobile && !showEmailList && "hidden",
+          !isMobile && selectedEmailId && "w-96 border-r"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
@@ -683,25 +684,50 @@ const EmailDashboard = () => {
           />
         </div>
 
-        {/* Email Detail - Full screen on mobile when email is selected */}
-        {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col">
-            <EmailDetail
-              email={selectedEmail}
-              onReply={handleReply}
-              onReplyAll={handleReplyAll}
-              onForward={handleForward}
-              onBack={handleBackToList}
-              isMobile={true}
-              onPrevious={handlePreviousEmail}
-              onNext={handleNextEmail}
-              hasPrevious={hasPreviousEmail()}
-              hasNext={hasNextEmail()}
-              onMarkAsRead={handleMarkAsRead}
-              isHeaderCollapsed={isHeaderCollapsed}
-              onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-            />
-          </div>
+        {/* Email Detail - Desktop: side panel, Mobile: full screen */}
+        {selectedEmail && (
+          <>
+            {/* Mobile full screen */}
+            {isMobile && !showEmailList && (
+              <div className="flex-1 flex flex-col">
+                <EmailDetail
+                  email={selectedEmail}
+                  onReply={handleReply}
+                  onReplyAll={handleReplyAll}
+                  onForward={handleForward}
+                  onBack={handleBackToList}
+                  isMobile={true}
+                  onPrevious={handlePreviousEmail}
+                  onNext={handleNextEmail}
+                  hasPrevious={hasPreviousEmail()}
+                  hasNext={hasNextEmail()}
+                  onMarkAsRead={handleMarkAsRead}
+                  isHeaderCollapsed={isHeaderCollapsed}
+                  onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                />
+              </div>
+            )}
+            
+            {/* Desktop side panel */}
+            {!isMobile && (
+              <div className="flex-1 flex flex-col min-w-0">
+                <EmailDetail
+                  email={selectedEmail}
+                  onReply={handleReply}
+                  onReplyAll={handleReplyAll}
+                  onForward={handleForward}
+                  onDelete={handleDelete}
+                  onPrevious={handlePreviousEmail}
+                  onNext={handleNextEmail}
+                  hasPrevious={hasPreviousEmail()}
+                  hasNext={hasNextEmail()}
+                  onMarkAsRead={handleMarkAsRead}
+                  isHeaderCollapsed={isHeaderCollapsed}
+                  onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 

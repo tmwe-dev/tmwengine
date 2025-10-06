@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Trash2, Pickaxe } from 'lucide-react';
+import { Phone, Mail, MapPin, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +16,7 @@ interface CompactContactCardProps {
   isSelected: boolean;
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
-  onDelete: () => void;
+  
   onCreateActivity: (activityType?: 'chiamata' | 'email') => void;
   getCountryFlag: (countryName: string) => string;
   formatCellValue: (value: any, fieldKey?: string) => string;
@@ -28,7 +28,7 @@ export function CompactContactCard({
   isSelected,
   onSelect,
   onView,
-  onDelete,
+  
   onCreateActivity,
   getCountryFlag,
   formatCellValue
@@ -81,18 +81,6 @@ export function CompactContactCard({
                     </div>
                   )}
                 </div>
-              </div>
-              
-              {/* Azioni compatte - allineate al nome */}
-              <div className="flex items-start -mt-2.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDelete}
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             </div>
             

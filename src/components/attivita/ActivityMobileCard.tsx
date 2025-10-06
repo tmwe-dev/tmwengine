@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Phone, Mail, Users, FileText, Settings, Trash2, Clock, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
+import { Phone, Mail, Users, FileText, Settings, Clock, CheckCircle, AlertCircle, X, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -43,7 +43,7 @@ interface ActivityMobileCardProps {
   onPhoneClick: () => void;
   onCompanyClick: () => void;
   onGestisci: () => void;
-  onDelete: () => void;
+  
 }
 
 const TIPO_LABELS = {
@@ -74,7 +74,6 @@ export function ActivityMobileCard({
   onPhoneClick,
   onCompanyClick,
   onGestisci,
-  onDelete
 }: ActivityMobileCardProps) {
   
   const getActivityIcon = (tipo: string) => {
@@ -276,15 +275,6 @@ export function ActivityMobileCard({
           >
             <Settings className="h-3 w-3 mr-1" />
             Gestisci
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
         </div>

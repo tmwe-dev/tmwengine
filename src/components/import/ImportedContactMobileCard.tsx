@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, FileText, Trash2, Building, MapPin, Flag, Pickaxe } from 'lucide-react';
+import { Phone, Mail, FileText, Building, MapPin, Flag, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +18,7 @@ interface ImportedContactMobileCardProps {
   isSelected: boolean;
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
-  onDelete: () => void;
+  
   onCreateActivity: () => void;
   getCompanyActivities: (companyId: string) => any[];
   getCountryFlag: (countryName: string) => string;
@@ -31,7 +31,7 @@ export function ImportedContactMobileCard({
   isSelected,
   onSelect,
   onView,
-  onDelete,
+  
   onCreateActivity,
   getCompanyActivities,
   getCountryFlag,
@@ -159,31 +159,10 @@ export function ImportedContactMobileCard({
 
               {/* Origin with enhanced styling */}
               {contact.origin && (
-                <div className="flex justify-between items-end">
+                <div className="flex justify-start items-end">
                   <Badge variant="outline" className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 text-primary font-medium px-3 py-1">
                     {formatCellValue(contact.origin)}
                   </Badge>
-                  {/* Delete button moved to bottom */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onDelete}
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-              {!contact.origin && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onDelete}
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               )}
             </div>

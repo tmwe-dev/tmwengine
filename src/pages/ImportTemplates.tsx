@@ -2381,7 +2381,6 @@ export default function ImportTemplates() {
                       log={log}
                       onProcess={() => processFile(log.id)}
                       onViewRecords={() => viewImportRecords(log)}
-                      onDelete={() => deleteImportFile(log)}
                       getStatusBadge={getStatusBadge}
                       isProcessing={importProgress.isProcessing}
                       isLoading={loadingAllRecords && selectedImport?.id === log.id}
@@ -3285,7 +3284,6 @@ export default function ImportTemplates() {
                           isSelected={selectedRecords.has(actualIndex)}
                           onSelect={() => toggleRecordSelection(actualIndex)}
                           onView={() => openRecordDetail(record, actualIndex)}
-                          onDelete={() => deleteImportedContact(record.id, actualIndex)}
                           onCreateActivity={(activityType) => {
                             setSelectedContactIdForActivities(record.id);
                             setSelectedContactForActivity(record);

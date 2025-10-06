@@ -1174,7 +1174,6 @@ export default function Attivita() {
                 onPhoneClick={() => handlePhoneClick(activity)}
                 onCompanyClick={() => activity.rubrica_id && openCompanyDialog(activity.rubrica_id)}
                 onGestisci={() => openGestisciForm(activity)}
-                onDelete={() => handleDeleteActivity(activity.id)}
               />
             ))
            )}

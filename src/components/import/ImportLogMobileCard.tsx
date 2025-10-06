@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Upload, Trash2, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Users, Upload, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +20,7 @@ interface ImportLogMobileCardProps {
   log: ImportLog;
   onProcess: () => void;
   onViewRecords: () => void;
-  onDelete: () => void;
+  
   getStatusBadge: (status: string) => React.ReactNode;
   isProcessing: boolean;
   isLoading: boolean;
@@ -31,7 +31,7 @@ export function ImportLogMobileCard({
   log,
   onProcess,
   onViewRecords,
-  onDelete,
+  
   getStatusBadge,
   isProcessing,
   isLoading,
@@ -121,15 +121,6 @@ export function ImportLogMobileCard({
             >
               <Users className="h-4 w-4 mr-1" />
               {isLoading ? 'Caricamento...' : 'Gestisci'}
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full ml-auto"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

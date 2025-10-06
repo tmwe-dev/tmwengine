@@ -596,10 +596,6 @@ export default function GestisciImport() {
                   log={log}
                   onViewRecords={() => viewImportRecords(log)}
                   onProcess={() => processFile(log.id)}
-                  onDelete={() => {
-                    setImportToDelete(log.id);
-                    setDeleteDialogOpen(true);
-                  }}
                   getStatusBadge={getStatusBadge}
                   isProcessing={monitoringImportId === log.id}
                   isLoading={loadingAllRecords && selectedImport?.id === log.id}
@@ -962,7 +958,6 @@ export default function GestisciImport() {
                             setSelectedRecord(record);
                             setShowRecordDetail(true);
                           }}
-                          onDelete={() => deleteImportedContact(record.id)}
                           onCreateActivity={() => {
                             setSelectedRecord(record);
                             setShowRecordDetail(true);

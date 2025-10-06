@@ -535,12 +535,10 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4 w-full">
-          <h1 className="text-base font-normal break-words">{email.subject}</h1>
+        <div className="p-4 space-y-4">
+          <h1 className="text-base font-normal">{email.subject}</h1>
           
-          <div className="email-body-content w-full">
-            <div dangerouslySetInnerHTML={{ __html: processedBody }} />
-          </div>
+          <div dangerouslySetInnerHTML={{ __html: processedBody }} />
         </div>
       </ScrollArea>
 

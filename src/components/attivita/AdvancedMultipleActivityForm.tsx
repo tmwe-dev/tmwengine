@@ -353,7 +353,7 @@ export function AdvancedMultipleActivityForm({
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="chiamata" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Chiamata Programmata
+                  Call
                 </TabsTrigger>
                 <TabsTrigger value="email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />

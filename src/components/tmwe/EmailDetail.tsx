@@ -339,26 +339,23 @@ export const EmailDetail = ({
 
         {/* Center: Communication actions */}
         <div className="flex gap-3 items-center justify-center">
-          <Button variant="outline" size="lg" onClick={onReply} className="flex-col h-auto py-3 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Reply className="h-8 w-8" />
-              <User className="h-6 w-6" />
+          <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <Reply className="h-5 w-5" />
+              <User className="h-4 w-4" />
             </div>
-            <span className="text-xs">Rispondi</span>
           </Button>
-          <Button variant="outline" size="lg" onClick={onReplyAll} className="flex-col h-auto py-3 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <ReplyAll className="h-8 w-8" />
-              <Users className="h-6 w-6" />
+          <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <ReplyAll className="h-5 w-5" />
+              <Users className="h-4 w-4" />
             </div>
-            <span className="text-xs">Rispondi a tutti</span>
           </Button>
-          <Button variant="outline" size="lg" onClick={onForward} className="flex-col h-auto py-3 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Forward className="h-8 w-8" />
-              <Megaphone className="h-6 w-6" />
+          <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <Forward className="h-5 w-5" />
+              <Megaphone className="h-4 w-4" />
             </div>
-            <span className="text-xs">Inoltra</span>
           </Button>
         </div>
 
@@ -366,9 +363,8 @@ export const EmailDetail = ({
         <div className="flex gap-3 items-center justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="lg" className="flex-col h-auto py-3 px-4">
-                <FolderCog className="h-8 w-8 mb-1" />
-                <span className="text-xs">Regole</span>
+              <Button variant="outline" size="icon" className="h-12 w-12">
+                <FolderCog className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-56">
@@ -425,14 +421,12 @@ export const EmailDetail = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="lg" className="flex-col h-auto py-3 px-4">
-            <Star className="h-8 w-8 mb-1" />
-            <span className="text-xs">Preferito</span>
+          <Button variant="ghost" size="icon" className="h-12 w-12">
+            <Star className="h-6 w-6" />
           </Button>
           {onDelete && (
-            <Button variant="destructive" size="lg" onClick={onDelete} className="flex-col h-auto py-3 px-4">
-              <Trash2 className="h-8 w-8 mb-1" />
-              <span className="text-xs">Elimina</span>
+            <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
+              <Trash2 className="h-6 w-6" />
             </Button>
           )}
         </div>

@@ -466,28 +466,23 @@ const Chat = () => {
             {/* Configurazione AI utilizzata */}
             <div className="flex items-center gap-2 mt-2 ml-11">
               {selectedConfigId && aiConfigs.length > 0 && (
-                <>
-                  <p className="text-xs text-muted-foreground">
-                    {aiConfigs.find(c => c.id === selectedConfigId)?.provider} - {aiConfigs.find(c => c.id === selectedConfigId)?.modello}
-                  </p>
-                  <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
-                    <SelectTrigger className="h-6 w-auto text-xs border-none">
-                      <Cpu className="h-3 w-3" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {aiConfigs.map((config) => (
-                        <SelectItem key={config.id} value={config.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="capitalize">{config.provider}</span>
-                            <span className="text-muted-foreground">-</span>
-                            <span className="text-xs">{config.modello}</span>
-                            {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </>
+                <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                  <SelectTrigger className="h-6 w-auto text-xs border-none">
+                    <Cpu className="h-3 w-3" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiConfigs.map((config) => (
+                      <SelectItem key={config.id} value={config.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="capitalize">{config.provider}</span>
+                          <span className="text-muted-foreground">-</span>
+                          <span className="text-xs">{config.modello}</span>
+                          {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
               {aiConfigs.length === 0 && (
                 <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>

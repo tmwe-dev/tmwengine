@@ -457,55 +457,57 @@ const Chat = () => {
     <div className={`${shouldHideHeader ? 'h-[calc(100vh-6rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
       {!shouldHideHeader && (
         <div className="mb-3 flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Chat AI
-          </h1>
-          
-          {/* Configurazione AI utilizzata */}
-          <div className="flex items-center gap-2">
-            {selectedConfigId && aiConfigs.length > 0 && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  {aiConfigs.find(c => c.id === selectedConfigId)?.descrizione_breve || `${aiConfigs.find(c => c.id === selectedConfigId)?.provider} - ${aiConfigs.find(c => c.id === selectedConfigId)?.modello}`}
-                </p>
-                <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
-                  <SelectTrigger className="h-6 w-auto text-xs border-none">
-                    <Cpu className="h-3 w-3" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aiConfigs.map((config) => (
-                      <SelectItem key={config.id} value={config.id}>
-                        <div className="flex items-center gap-2">
-                          <span className="capitalize">{config.provider}</span>
-                          <span className="text-muted-foreground">-</span>
-                          <span className="text-xs">{config.modello}</span>
-                          {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              Chat AI
+            </h1>
+            
+            {/* Configurazione AI utilizzata */}
+            <div className="flex items-center gap-2 mt-2 ml-11">
+              {selectedConfigId && aiConfigs.length > 0 && (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    {aiConfigs.find(c => c.id === selectedConfigId)?.descrizione_breve || `${aiConfigs.find(c => c.id === selectedConfigId)?.provider} - ${aiConfigs.find(c => c.id === selectedConfigId)?.modello}`}
+                  </p>
+                  <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                    <SelectTrigger className="h-6 w-auto text-xs border-none">
+                      <Cpu className="h-3 w-3" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aiConfigs.map((config) => (
+                        <SelectItem key={config.id} value={config.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="capitalize">{config.provider}</span>
+                            <span className="text-muted-foreground">-</span>
+                            <span className="text-xs">{config.modello}</span>
+                            {config.attivo && <Badge variant="default" className="text-xs ml-2">Attivo</Badge>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              {aiConfigs.length === 0 && (
+                <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
+              )}
+            </div>
+            
+            {/* Stats orizzontali in grigio sotto il modello */}
+            {lastResponseStats && (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 ml-11">
+                <span>{lastResponseStats.tokens} token</span>
+                <span>•</span>
+                <span>{lastResponseStats.responseTime}ms</span>
+                <span>•</span>
+                <span>{lastResponseStats.memoryMode} memory</span>
+              </div>
             )}
-            {aiConfigs.length === 0 && (
-              <p className="text-xs text-destructive">Nessuna configurazione AI disponibile. Vai in Settings per configurare.</p>
-            )}
-        </div>
-        
-        {/* Stats orizzontali in grigio sotto */}
-        {lastResponseStats && (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-            <span>{lastResponseStats.tokens} token</span>
-            <span>•</span>
-            <span>{lastResponseStats.responseTime}ms</span>
-            <span>•</span>
-            <span>{lastResponseStats.memoryMode} memory</span>
           </div>
-        )}
-
-        <div className="mb-3 flex items-center justify-end gap-2 mt-2">
+          
           {/* Settings Icon e Toggle System Prompt */}
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"

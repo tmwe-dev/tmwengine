@@ -11,8 +11,9 @@ import { CampaignFilters } from '@/components/campagne/CampaignFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { useNavigate } from 'react-router-dom';
+import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Campaign {
@@ -47,6 +48,11 @@ export default function Campagne() {
   });
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  const openAIChat = () => {
+    navigate('/chat?page=/campagne');
+  };
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -271,7 +277,14 @@ export default function Campagne() {
             
             <div className="flex items-center gap-1">
               <PagePromptManager pageRoute="/campagne" />
-              <AIChatPopup pageRoute="/campagne" />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={openAIChat}
+                className="h-8 w-8"
+              >
+                <Brain className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 

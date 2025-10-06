@@ -15,8 +15,8 @@ import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Contact {
@@ -59,6 +59,10 @@ export default function Rubrica() {
   const { getCompanyActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+
+  const openAIChat = () => {
+    navigate('/chat?page=/rubrica');
+  };
 
   // Carica i contatti dal database
   useEffect(() => {
@@ -375,7 +379,14 @@ export default function Rubrica() {
               
               <div className="flex items-center gap-1">
                 <PagePromptManager pageRoute="/rubrica" />
-                <AIChatPopup pageRoute="/rubrica" />
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={openAIChat}
+                  className="h-8 w-8"
+                >
+                  <Brain className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +54,10 @@ interface Conversation {
 }
 
 const Chat = () => {
+  const [searchParams] = useSearchParams();
+  const pageRoute = searchParams.get('page') || '/chat';
+  const [pagePromptName, setPagePromptName] = useState<string>('');
+  
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -96,7 +101,35 @@ const Chat = () => {
     loadSystemPrompts();
     loadConversations();
     loadAIConfigurations();
+    loadPagePrompt();
   }, []);
+
+  // Carica il prompt specifico della pagina
+  const loadPagePrompt = async () => {
+    if (pageRoute === '/chat') {
+      setPagePromptName('');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('page_system_prompts')
+        .select('*')
+        .eq('page_route', pageRoute)
+        .eq('attivo', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setPagePromptName(data.page_name);
+        // Auto-attiva l'uso del system prompt per le pagine specifiche
+        setUseSystemPrompt(true);
+      }
+    } catch (error) {
+      console.error('Errore caricamento page prompt:', error);
+    }
+  };
 
   // Setup realtime subscriptions
   useEffect(() => {
@@ -366,9 +399,30 @@ const Chat = () => {
     setPrompt('');
 
     try {
-      // Ottieni il system prompt attivo solo se l'utente lo vuole usare
-      const activeSystemPrompt = useSystemPrompt ? systemPrompts.find(p => p.attivo) : null;
-      const systemPromptContent = activeSystemPrompt?.contenuto || 'Rispondi in modo conciso.';
+      // Ottieni il system prompt - priorità al page prompt se presente
+      let systemPromptContent = 'Rispondi in modo conciso.';
+      
+      if (useSystemPrompt) {
+        if (pageRoute !== '/chat') {
+          // Usa il page prompt se siamo in una sezione specifica
+          const { data: pagePrompt } = await supabase
+            .from('page_system_prompts')
+            .select('*')
+            .eq('page_route', pageRoute)
+            .eq('attivo', true)
+            .maybeSingle();
+          
+          if (pagePrompt) {
+            systemPromptContent = pagePrompt.system_prompt;
+          }
+        } else {
+          // Usa il system prompt generale solo se siamo in /chat
+          const activeSystemPrompt = systemPrompts.find(p => p.attivo);
+          if (activeSystemPrompt) {
+            systemPromptContent = activeSystemPrompt.contenuto;
+          }
+        }
+      }
 
       console.log(`Sending message to conversation ${conversationId} with memory settings:`, {
         memoria_completa: currentConversation?.memoria_completa,
@@ -462,6 +516,11 @@ const Chat = () => {
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               Chat AI
+              {pagePromptName && (
+                <Badge variant="secondary" className="ml-2 text-sm">
+                  {pagePromptName}
+                </Badge>
+              )}
             </h1>
             
             {/* Settings Icon e Toggle System Prompt - allineati a destra */}

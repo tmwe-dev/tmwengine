@@ -24,8 +24,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { Brain } from 'lucide-react';
 
 interface Activity {
   id: string;
@@ -109,6 +109,10 @@ export default function Attivita() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const openAIChat = () => {
+    navigate('/chat?page=/attivita');
+  };
 
   useEffect(() => {
     loadActivities();
@@ -940,7 +944,14 @@ export default function Attivita() {
             <div className="flex items-center gap-1">
               {/* Right-aligned AI/Settings icons */}
               <PagePromptManager pageRoute="/attivita" />
-              <AIChatPopup pageRoute="/attivita" />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={openAIChat}
+                className="h-8 w-8"
+              >
+                <Brain className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 

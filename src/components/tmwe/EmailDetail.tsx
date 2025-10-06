@@ -424,14 +424,14 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
+      <ScrollArea className="flex-1 overflow-x-hidden">
+        <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto w-full">
           {/* Subject */}
           <div className="space-y-2">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground break-words">
               {email.subject || '(Nessun oggetto)'}
             </h2>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground break-words">
               <p>Da: {email.from}</p>
               <p>A: {email.to}</p>
               {email.date && <p>Data: {new Date(email.date).toLocaleString('it-IT')}</p>}
@@ -439,10 +439,15 @@ export const EmailDetail = ({
           </div>
 
           {/* Body */}
-          <div className="w-full overflow-hidden">
+          <div className="w-full overflow-x-hidden">
             <div 
               dangerouslySetInnerHTML={{ __html: email.body }}
-              className="text-foreground break-words [&_*]:max-w-full [&_a]:text-primary [&_a]:underline [&_p]:break-words [&_div]:break-words"
+              style={{ 
+                wordWrap: 'break-word', 
+                overflowWrap: 'anywhere',
+                maxWidth: '100%'
+              }}
+              className="text-foreground [&_*]:max-w-full [&_*]:break-words [&_a]:text-primary [&_a]:underline"
             />
           </div>
         </div>

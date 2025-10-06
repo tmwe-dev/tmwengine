@@ -38,6 +38,7 @@ const EmailDashboard = () => {
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -555,6 +556,8 @@ const EmailDashboard = () => {
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
         dbEmailCount={isMobile ? emailCount : undefined}
+        isHeaderCollapsed={isHeaderCollapsed}
+        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}

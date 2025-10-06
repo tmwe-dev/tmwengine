@@ -330,39 +330,39 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             onClick={() => setIsOpen(false)}
           />
           
-          {/* Chat Card */}
+          {/* Chat Card - Mobile ottimizzato */}
           <Card 
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[95vw] h-[750px] max-h-[90vh] shadow-glow z-50 flex flex-col border-primary/20 animate-scale-in"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[95vw] h-[750px] max-h-[90vh] md:shadow-glow z-50 flex flex-col border-primary/20 animate-scale-in max-md:inset-0 max-md:w-full max-md:h-full max-md:max-w-none max-md:max-h-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none"
             style={{ 
               background: 'linear-gradient(135deg, hsl(var(--card-transparent)) 0%, hsl(var(--card)) 100%)',
               backdropFilter: 'blur(20px)',
             }}
           >
-          {/* Header with gradient */}
+          {/* Header with gradient - template Chat AI mobile */}
           <div 
-            className="flex items-center justify-between p-4 border-b border-primary/20 rounded-t-lg"
+            className="flex items-center justify-between p-4 max-md:py-4 border-b border-primary/20 rounded-t-lg max-md:rounded-none"
             style={{
               background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%)',
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
-                <Brain className="h-5 w-5 text-primary-foreground" />
+              <div className="p-2 max-md:p-2.5 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
+                <Brain className="h-5 w-5 max-md:h-6 max-md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-primary-foreground">AI Assistant</h3>
-                <p className="text-xs text-primary-foreground/70">{pageRoute}</p>
+                <h3 className="font-semibold max-md:text-xl text-primary-foreground">AI Assistant</h3>
+                <p className="text-xs text-primary-foreground/70">/{pageRoute}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-md:gap-1">
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="hover:bg-primary-foreground/10 text-primary-foreground"
+                    className="hover:bg-primary-foreground/10 text-primary-foreground max-md:h-10 max-md:w-10"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4 max-md:h-5 max-md:w-5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -419,47 +419,47 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-primary-foreground/10 text-primary-foreground"
+                className="hover:bg-primary-foreground/10 text-primary-foreground max-md:h-10 max-md:w-10"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 max-md:h-5 max-md:w-5" />
               </Button>
             </div>
           </div>
 
-          {/* Conversations Sidebar with glassmorphism */}
+          {/* Conversations Sidebar - template Chat AI mobile */}
           <div 
-            className="flex gap-2 p-3 border-b border-border/50 overflow-x-auto bg-surface-secondary/30"
+            className="flex gap-2 p-3 max-md:pb-3 border-b border-border/50 overflow-x-auto scrollbar-hide bg-surface-secondary/30"
             style={{ backdropFilter: 'blur(10px)' }}
           >
             <Button
               variant="outline"
               size="sm"
               onClick={createNewConversation}
-              className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all shrink-0"
+              className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all shrink-0 max-md:h-10 max-md:px-4"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 max-md:h-4 max-md:w-4 mr-1" />
               Nuova
             </Button>
             {conversations.slice(0, 5).map((conv) => (
-              <div key={conv.id} className="flex items-center gap-1 shrink-0">
+              <div key={conv.id} className="flex items-center gap-1 max-md:gap-2 shrink-0">
                 <Button
                   variant={currentConversationId === conv.id ? "default" : "ghost"}
                   size="sm"
                   onClick={() => selectConversation(conv.id)}
-                  className={currentConversationId === conv.id 
+                  className={`${currentConversationId === conv.id 
                     ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "hover:bg-muted/50 transition-all"}
+                    : "hover:bg-muted/50 transition-all"} max-md:h-10`}
                 >
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  {conv.titolo?.substring(0, 12) || 'Chat'}
+                  <MessageSquare className="h-4 w-4 max-md:h-4 max-md:w-4 mr-1" />
+                  {conv.titolo?.substring(0, 12) || 'Conversazione'}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-all"
+                  className="h-7 w-7 max-md:h-10 max-md:w-10 hover:bg-destructive/10 hover:text-destructive transition-all"
                   onClick={() => deleteConversation(conv.id)}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3 w-3 max-md:h-4 max-md:w-4" />
                 </Button>
               </div>
             ))}
@@ -589,18 +589,18 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             </div>
           )}
 
-          {/* Input Area with gradient border */}
+          {/* Input Area - template Chat AI mobile */}
           <div 
-            className="p-4 border-t border-border/50 space-y-3"
+            className="p-4 max-md:p-2 border-t border-border/50 space-y-3"
             style={{ 
               background: 'linear-gradient(to top, hsl(var(--surface-secondary)) 0%, transparent 100%)' 
             }}
           >
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 max-md:gap-1 items-center max-md:scale-110">
               <FileUploader onFilesUploaded={setUploadedFiles} />
               <ImageGenerator onImageGenerated={setGeneratedImage} />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-md:gap-1.5">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -611,7 +611,7 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                   }
                 }}
                 placeholder="Scrivi il tuo messaggio... (Shift+Enter per nuova riga)"
-                className="resize-none bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all"
+                className="resize-none bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all max-md:text-sm"
                 rows={2}
                 disabled={isLoading}
               />
@@ -619,12 +619,12 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 onClick={handleSend}
                 disabled={!prompt.trim() || isLoading}
                 size="icon"
-                className="shrink-0 h-auto shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-primary to-primary-hover"
+                className="shrink-0 h-auto max-md:h-[56px] max-md:px-3 shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-primary to-primary-hover"
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 max-md:h-5 max-md:w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4 max-md:h-5 max-md:w-5" />
                 )}
               </Button>
             </div>

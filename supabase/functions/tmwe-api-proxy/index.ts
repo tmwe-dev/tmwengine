@@ -7,14 +7,12 @@ const corsHeaders = {
 
 const API_BASE_URL = 'https://findair.it/erp/tmwe_json';
 
-// Valid endpoints according to OpenAPI spec (mixed old/new format)
+// Valid endpoints according to OpenAPI spec
 const VALID_ENDPOINTS = [
-  '/email_account',           // Unified endpoint
-  '/email_sync',              // Unified endpoint  
-  '/email_message',           // Unified endpoint (for lists)
-  '/email_folder',            // Unified endpoint
-  '/get_email',               // Legacy endpoint (for single email detail)
-  '/get_email_list'           // Legacy endpoint (alternative for lists)
+  '/email_account',
+  '/email_sync', 
+  '/email_message',
+  '/email_folder'
 ];
 
 // Error response helper following OpenAPI spec

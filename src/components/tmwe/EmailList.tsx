@@ -25,8 +25,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { EmailDetailNew } from './EmailDetailNew';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface Email {
   id: string;
@@ -54,11 +52,7 @@ interface EmailListProps {
     id: string;
     subject: string;
     from: string;
-    to: string | string[];
-    cc?: string | string[];
-    date: string;
     body: string;
-    attachments?: any[];
   } | null;
   isLoadingDetail?: boolean;
   onOpenDetailPopup?: () => void;
@@ -104,8 +98,6 @@ export const EmailList = ({
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
   const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('wide');
-  const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [dialogEmailId, setDialogEmailId] = useState<string | null>(null);
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -230,15 +222,7 @@ export const EmailList = ({
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
-          onClick={() => {
-            if (multiSelectMode) {
-              handleToggleEmailSelection(email.id);
-            } else {
-              setDialogEmailId(email.id);
-              onEmailSelect(email.id);
-              setShowDetailDialog(true);
-            }
-          }}
+          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
           <div className="flex items-stretch min-w-0 w-full">
             {multiSelectMode && (
@@ -364,15 +348,7 @@ export const EmailList = ({
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
-          onClick={() => {
-            if (multiSelectMode) {
-              handleToggleEmailSelection(email.id);
-            } else {
-              setDialogEmailId(email.id);
-              onEmailSelect(email.id);
-              setShowDetailDialog(true);
-            }
-          }}
+          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
           <div className="flex items-start min-w-0 w-full h-full">
             {multiSelectMode && (
@@ -850,33 +826,6 @@ export const EmailList = ({
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Dialog dettaglio email */}
-      <Dialog open={showDetailDialog} onOpenChange={(open) => {
-        setShowDetailDialog(open);
-        if (!open) setDialogEmailId(null);
-      }}>
-        <DialogContent className="max-w-4xl h-[90vh] p-0">
-          {isLoadingDetail ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Caricamento dettaglio email...</p>
-            </div>
-          ) : emailDetail ? (
-            <EmailDetailNew
-              email={emailDetail}
-              onReply={() => setShowDetailDialog(false)}
-              onForward={() => setShowDetailDialog(false)}
-              onDelete={() => setShowDetailDialog(false)}
-              onBack={() => setShowDetailDialog(false)}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Email non trovata</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

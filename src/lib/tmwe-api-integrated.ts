@@ -292,18 +292,10 @@ export const emailMessageApi = {
     order?: 'ASC' | 'DESC';
   }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
 
-  // Use legacy endpoint for single email (get_message handler not working)
-  getMessage: (uid: string, folder: string = 'INBOX', markAsRead: boolean = true, includeAttachments: boolean = true, format: 'html' | 'text' = 'html') => {
+  getMessage: (uid: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    // Legacy endpoint doesn't use handler, just uid directly
-    return fetchApi('/get_email', { 
-      uid: uidInt, 
-      folder,
-      include_attachments: includeAttachments,
-      format,
-      mark_as_read: markAsRead 
-    });
+    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
   },
 
   searchMessages: (params: {

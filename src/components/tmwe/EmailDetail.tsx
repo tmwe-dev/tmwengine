@@ -424,10 +424,9 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center">
+      <div className={`flex flex-1 items-center justify-center transition-all duration-300 ${!isHeaderCollapsed ? 'h-[calc(100%-200px)]' : 'h-full'}`}>
         <canvas 
-          className="border-2 border-primary/20 rounded-lg shadow-2xl bg-card"
-          style={{ width: '100%', height: '100%' }}
+          className="border-2 border-primary/20 rounded-lg shadow-2xl bg-card w-full h-full"
         />
       </div>
 

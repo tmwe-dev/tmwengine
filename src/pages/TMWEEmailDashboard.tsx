@@ -54,7 +54,10 @@ const EmailDashboard = () => {
 
   // Handle email selection on mobile
   const handleEmailSelect = (emailId: string) => {
+    console.log('🎯 handleEmailSelect called with:', emailId);
+    console.log('🎯 Current selectedEmailId before:', selectedEmailId);
     setSelectedEmailId(emailId);
+    console.log('🎯 setSelectedEmailId called with:', emailId);
     if (isMobile) {
       setShowEmailList(false);
     }
@@ -198,7 +201,7 @@ const EmailDashboard = () => {
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
-      console.log('🔍 Fetching email with UID:', selectedEmailId);
+      console.log('🔍 Query EXECUTING - Fetching email with UID:', selectedEmailId);
       try {
         const result = await emailMessageApi.getMessage(
           selectedEmailId!, 
@@ -223,6 +226,14 @@ const EmailDashboard = () => {
     },
     enabled: !!selectedEmailId,
     retry: 1,
+  });
+  
+  console.log('🔥 EMAIL DETAIL QUERY STATE:', {
+    selectedEmailId,
+    enabled: !!selectedEmailId,
+    isLoadingDetail,
+    hasData: !!emailDetailResponse,
+    error: detailError
   });
 
   // Map API response to component format

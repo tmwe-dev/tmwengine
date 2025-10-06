@@ -484,7 +484,7 @@ export const EmailList = ({
                 Multi
               </Label>
             </div>
-            <div className="flex items-center gap-1.5 h-7">
+            <div className="flex items-center gap-1.5">
               <Switch
                 id="unread-only"
                 checked={showUnreadOnly}

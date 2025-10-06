@@ -496,17 +496,8 @@ export const EmailDetail = ({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <style>
                       html, body {
-                        max-width: 100% !important;
-                        overflow-x: hidden !important;
                         margin: 0;
                         padding: 0;
-                      }
-                      * {
-                        max-width: 100% !important;
-                        box-sizing: border-box !important;
-                        word-wrap: break-word !important;
-                        overflow-wrap: break-word !important;
-                        word-break: break-word !important;
                       }
                       body {
                         padding: 16px;
@@ -515,31 +506,19 @@ export const EmailDetail = ({
                         line-height: 1.5;
                         color: #0ea5e9 !important;
                       }
-                      body *, p, div, span, td, th {
+                      body * {
                         color: #0ea5e9 !important;
-                        white-space: normal !important;
-                        word-wrap: break-word !important;
-                        overflow-wrap: break-word !important;
                       }
                       img {
-                        max-width: 100% !important;
+                        max-width: none !important;
                         height: auto !important;
                         display: block;
                       }
                       table {
-                        max-width: 100% !important;
-                        width: 100% !important;
                         border-collapse: collapse;
-                        table-layout: fixed !important;
                       }
                       td, th {
-                        max-width: 100% !important;
-                        word-wrap: break-word !important;
-                        overflow: hidden !important;
-                      }
-                      a {
-                        word-break: break-all !important;
-                        display: inline-block !important;
+                        word-wrap: break-word;
                       }
                     </style>
                   </head>
@@ -550,7 +529,12 @@ export const EmailDetail = ({
               `}
               sandbox="allow-same-origin"
               className="w-full border-0"
-              style={{ display: 'block', overflow: 'hidden' }}
+              style={{ 
+                display: 'block', 
+                overflow: 'auto',
+                minHeight: '400px',
+                maxHeight: '80vh'
+              }}
             />
           </div>
         </div>

@@ -21,7 +21,8 @@ import {
   User,
   Users,
   Megaphone,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 
 interface EmailDetailProps {
   email: {
@@ -76,6 +78,7 @@ export const EmailDetail = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [currentSenderGroup, setCurrentSenderGroup] = useState<string | null>(null);
+  const [showAIDialog, setShowAIDialog] = useState(false);
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -400,7 +403,15 @@ export const EmailDetail = ({
         </div>
 
         {/* Right: Close button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setShowAIDialog(true)}
+            className="h-10 w-10"
+          >
+            <Sparkles className="h-5 w-5" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
@@ -506,6 +517,12 @@ export const EmailDetail = ({
           />
         </div>
       </ScrollArea>
+
+      <SenderAIChatDialog 
+        senderEmail={email.from.match(/<(.+)>/) ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from}
+        open={showAIDialog}
+        onOpenChange={setShowAIDialog}
+      />
     </div>
   );
 };

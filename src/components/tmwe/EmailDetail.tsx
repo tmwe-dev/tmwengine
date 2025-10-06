@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -263,11 +262,8 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
-      <div className={cn(
-        "items-center p-4 border-b bg-card-transparent",
-        isHeaderCollapsed ? "flex justify-between" : "grid grid-cols-3"
-      )}>
-        {/* Left: Management actions - nascosto quando collapsed */}
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+        {/* Left: Management actions or empty */}
         {!isHeaderCollapsed ? (
           <div className="flex items-center gap-3">
             <DropdownMenu>
@@ -341,23 +337,12 @@ export const EmailDetail = ({
               </Button>
             )}
           </div>
-        ) : null}
+        ) : (
+          <div></div>
+        )}
 
-        {/* Center/Left (collapsed): Navigation + X */}
-        <div className={cn(
-          "flex items-center gap-3",
-          isHeaderCollapsed ? "justify-start" : "justify-center"
-        )}>
-          {isHeaderCollapsed && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={onBack}
-              className="h-10 w-10"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          )}
+        {/* Center: Email navigation (sempre visibile) */}
+        <div className="flex items-center gap-3 justify-center">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -376,9 +361,9 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Right: Actions and Close (solo quando non collapsed) */}
-        {!isHeaderCollapsed && (
-          <div className="flex justify-end gap-3">
+        {/* Right: Actions and Close */}
+        <div className="flex justify-end gap-3">
+          {!isHeaderCollapsed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -421,16 +406,16 @@ export const EmailDetail = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={onBack}
-              className="h-10 w-10"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-        )}
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onBack}
+            className="h-10 w-10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
       
       {/* Action buttons bar - nascosta quando collapsed */}

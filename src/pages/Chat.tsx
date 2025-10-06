@@ -517,11 +517,6 @@ const Chat = () => {
                 <MessageSquare className="h-8 w-8 text-primary" />
                 Chat AI
               </h1>
-              {(pagePromptName || (pageRoute === '/chat' && selectedSystemPromptId)) && (
-                <div className={`text-sm mt-1 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
-                  {pagePromptName || systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt'}
-                </div>
-              )}
             </div>
             
             {/* Settings Icon e Toggle System Prompt - allineati a destra */}
@@ -707,6 +702,13 @@ const Chat = () => {
               </Dialog>
             </div>
           </div>
+
+          {/* Descrizione prompt sotto il titolo */}
+          {(pagePromptName || (pageRoute === '/chat' && selectedSystemPromptId)) && (
+            <div className={`text-sm mt-2 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
+              {pagePromptName || systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt'}
+            </div>
+          )}
 
           {/* Stats orizzontali in grigio sotto il modello */}
           {lastResponseStats && (

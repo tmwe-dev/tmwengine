@@ -201,32 +201,28 @@ const EmailDashboard = () => {
       // USA SEMPRE L'API TMWE (Supabase solo per backup con Sync Smart)
       const page = Math.floor(pageParam / 30) + 1;
       console.log('📄 Requesting page:', page, 'for folder:', selectedFolder);
+      console.log('🚀 About to call API...');
       
-      try {
-        const result = searchQuery 
-          ? await emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-          : await emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
-        
-        console.log('✅ API returned:', { 
-          messagesCount: result?.messages?.length || 0, 
-          total: result?.total,
-          from: result?.from,
-          to: result?.to,
-          fullResult: result
-        });
-        
-        // Ensure we always return the expected structure
-        if (!result || !result.messages) {
-          console.error('❌ Invalid API response structure:', result);
-          return { messages: [], total: 0 };
-        }
-        
-        return result;
-      } catch (error) {
-        console.error('❌ Error fetching messages:', error);
-        toast.error('Errore nel caricamento delle email');
-        throw error;
+      const result = searchQuery 
+        ? await emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
+        : await emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+      
+      console.log('✅ API returned:', { 
+        messagesCount: result?.messages?.length || 0, 
+        total: result?.total,
+        from: result?.from,
+        to: result?.to,
+        fullResult: result
+      });
+      
+      // Ensure we always return the expected structure
+      if (!result || !result.messages) {
+        console.error('❌ Invalid API response structure:', result);
+        return { messages: [], total: 0 };
       }
+      
+      console.log('🎉 Returning result to useInfiniteQuery');
+      return result;
     },
     getNextPageParam: (lastPage, allPages) => {
       if (downloadedEmails.length > 0) {

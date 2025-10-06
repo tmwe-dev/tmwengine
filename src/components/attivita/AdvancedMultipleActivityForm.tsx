@@ -118,7 +118,7 @@ export function AdvancedMultipleActivityForm({
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
     defaultValues: {
-      tipo: 'chiamata',
+      tipo: defaultActivityType,
       priorita: 'media',
       oggetto_email: '',
       testo_email: '',
@@ -144,6 +144,11 @@ export function AdvancedMultipleActivityForm({
     loadEmailAttachments();
     loadUserProfile();
   }, []);
+
+  // Sincronizza il tipo del form con il tab attivo
+  useEffect(() => {
+    form.setValue('tipo', activeTab);
+  }, [activeTab]);
 
   const loadEmailTemplates = async () => {
     try {

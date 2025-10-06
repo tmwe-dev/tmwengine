@@ -2486,7 +2486,7 @@ export default function ImportTemplates() {
                 </div>
                 
                 {/* Search Field and Filter Buttons Container */}
-                <div className="flex items-center justify-center gap-2 mt-[10px]">
+                <div className="flex items-center justify-center gap-2">
                   <div className="relative w-[65%]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input

@@ -366,10 +366,6 @@ export function AdvancedMultipleActivityForm({
                 {/* Email Form */}
                 <TabsContent value="email" className="space-y-2 mt-2">
                   <div className="space-y-2 p-2 border border-border rounded-lg bg-background">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Mail className="h-3 w-3 text-blue-500" />
-                      <h4 className="font-medium text-xs">Configurazione Email</h4>
-                    </div>
 
                   {/* Selezione Template */}
                   {emailTemplates.length > 0 && (

@@ -558,6 +558,11 @@ const EmailDashboard = () => {
         dbEmailCount={isMobile ? emailCount : undefined}
         isHeaderCollapsed={isHeaderCollapsed}
         onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+        onCloseEmail={handleBackToList}
+        onPreviousEmail={handlePreviousEmail}
+        onNextEmail={handleNextEmail}
+        hasPrevious={hasPreviousEmail()}
+        hasNext={hasNextEmail()}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}

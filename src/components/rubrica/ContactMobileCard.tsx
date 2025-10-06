@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Phone, Mail, MapPin, Tag, Eye, Users } from 'lucide-react';
+import { Building, Phone, Mail, MapPin, Tag, Eye, Users, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,6 +119,12 @@ export function ContactMobileCard({
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
+                <div 
+                  className="p-1 rounded-full cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors"
+                  onClick={onCreateActivity}
+                >
+                  <Pickaxe className="h-4 w-4 text-primary" />
+                </div>
                 <ActivityIndicators 
                   companyId={contact.id} 
                   activities={getCompanyActivities(contact.id)}

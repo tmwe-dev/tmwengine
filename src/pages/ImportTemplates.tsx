@@ -3202,6 +3202,10 @@ export default function ImportTemplates() {
                           onSelect={() => toggleRecordSelection(actualIndex)}
                           onView={() => openRecordDetail(record, actualIndex)}
                           onDelete={() => deleteImportedContact(record.id, actualIndex)}
+                          onCreateActivity={() => {
+                            setSelectedContactIdForActivities(record.id);
+                            setIsAttivitaDialogOpen(true);
+                          }}
                           getCountryFlag={getCountryFlag}
                           formatCellValue={formatCellValue}
                         />

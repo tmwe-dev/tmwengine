@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, FileText, Trash2, Building, MapPin, Flag } from 'lucide-react';
+import { Phone, Mail, FileText, Trash2, Building, MapPin, Flag, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +19,7 @@ interface ImportedContactMobileCardProps {
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onDelete: () => void;
+  onCreateActivity: () => void;
   getCompanyActivities: (companyId: string) => any[];
   getCountryFlag: (countryName: string) => string;
   formatCellValue: (value: any, fieldKey?: string) => string;
@@ -31,6 +32,7 @@ export function ImportedContactMobileCard({
   onSelect,
   onView,
   onDelete,
+  onCreateActivity,
   getCompanyActivities,
   getCountryFlag,
   formatCellValue
@@ -64,20 +66,30 @@ export function ImportedContactMobileCard({
                      </div>
                    )}
                  </div>
-                {/* Mail icon with tooltip - better aligned */}
-                {contact.email && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="bg-blue-100 p-1.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors flex items-center justify-center">
-                        <Mail className="h-3.5 w-3.5 text-blue-600" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{contact.email}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
+                 {/* Icons row */}
+                 <div className="flex items-center gap-2">
+                   {/* Create activity icon */}
+                   <div 
+                     className="bg-primary/10 p-1.5 rounded-full cursor-pointer hover:bg-primary/20 transition-colors flex items-center justify-center"
+                     onClick={onCreateActivity}
+                   >
+                     <Pickaxe className="h-3.5 w-3.5 text-primary" />
+                   </div>
+                   {/* Mail icon with tooltip */}
+                   {contact.email && (
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <div className="bg-blue-100 p-1.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors flex items-center justify-center">
+                           <Mail className="h-3.5 w-3.5 text-blue-600" />
+                         </div>
+                       </TooltipTrigger>
+                       <TooltipContent>
+                         <p>{contact.email}</p>
+                       </TooltipContent>
+                     </Tooltip>
+                   )}
+                 </div>
+               </div>
 
               {/* Company Name with enhanced styling and record number */}
               <div className="mb-4">

@@ -963,6 +963,10 @@ export default function GestisciImport() {
                             setShowRecordDetail(true);
                           }}
                           onDelete={() => deleteImportedContact(record.id)}
+                          onCreateActivity={() => {
+                            setSelectedRecord(record);
+                            setShowRecordDetail(true);
+                          }}
                           getCompanyActivities={() => []}
                           getCountryFlag={getCountryFlag}
                           formatCellValue={formatCellValue}

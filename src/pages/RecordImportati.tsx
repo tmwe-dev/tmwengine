@@ -618,6 +618,10 @@ const RecordImportati = () => {
                       setIsAttivitaDialogOpen(true);
                     }}
                     onDelete={() => deleteImportedContact(record.id, globalIndex)}
+                    onCreateActivity={() => {
+                      setSelectedContactIdForActivities(record.id);
+                      setIsAttivitaDialogOpen(true);
+                    }}
                     getCountryFlag={getCountryFlag}
                     formatCellValue={formatCellValue}
                   />

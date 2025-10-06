@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Trash2 } from 'lucide-react';
+import { Phone, Mail, MapPin, Trash2, Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +17,7 @@ interface CompactContactCardProps {
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onDelete: () => void;
+  onCreateActivity: () => void;
   getCountryFlag: (countryName: string) => string;
   formatCellValue: (value: any, fieldKey?: string) => string;
 }
@@ -28,6 +29,7 @@ export function CompactContactCard({
   onSelect,
   onView,
   onDelete,
+  onCreateActivity,
   getCountryFlag,
   formatCellValue
 }: CompactContactCardProps) {
@@ -113,21 +115,26 @@ export function CompactContactCard({
           </div>
         </div>
 
-        {/* Icone contatti in basso a destra */}
-        {(contact.email || contact.phone || contact.cell) && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
-            {contact.email && (
-              <div className="p-1.5 rounded-full">
-                <Mail className="h-4 w-4 text-blue-600" />
-              </div>
-            )}
-            {(contact.phone || contact.cell) && (
-              <div className="p-1.5 rounded-full">
-                <Phone className="h-4 w-4 text-green-600" />
-              </div>
-            )}
+        {/* Icone contatti e azioni in basso a destra */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
+          {/* Create activity icon */}
+          <div 
+            className="p-1.5 rounded-full cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors"
+            onClick={onCreateActivity}
+          >
+            <Pickaxe className="h-4 w-4 text-primary" />
           </div>
-        )}
+          {contact.email && (
+            <div className="p-1.5 rounded-full">
+              <Mail className="h-4 w-4 text-blue-600" />
+            </div>
+          )}
+          {(contact.phone || contact.cell) && (
+            <div className="p-1.5 rounded-full">
+              <Phone className="h-4 w-4 text-green-600" />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

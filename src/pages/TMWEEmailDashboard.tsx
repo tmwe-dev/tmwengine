@@ -675,6 +675,24 @@ const EmailDashboard = () => {
           />
         </div>
 
+        {/* Email Detail - Full screen on mobile when email is selected */}
+        {isMobile && !showEmailList && selectedEmail && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EmailDetail
+              email={selectedEmail}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onBack={handleBackToList}
+              isMobile={true}
+              onPrevious={handlePreviousEmail}
+              onNext={handleNextEmail}
+              hasPrevious={hasPreviousEmail()}
+              hasNext={hasNextEmail()}
+              onMarkAsRead={handleMarkAsRead}
+            />
+          </div>
+        )}
       </div>
 
       <ComposeDialog
@@ -690,7 +708,30 @@ const EmailDashboard = () => {
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <p className="text-muted-foreground">Email detail removed</p>
+            {isLoadingDetail ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Caricamento...</p>
+              </div>
+            ) : selectedEmail ? (
+              <div key={selectedEmailId}>
+                <EmailDetail
+                  email={selectedEmail}
+                  onReply={handleReply}
+                  onReplyAll={handleReplyAll}
+                  onForward={handleForward}
+                  onDelete={handleDelete}
+                  onPrevious={handlePreviousEmail}
+                  onNext={handleNextEmail}
+                  hasPrevious={hasPreviousEmail()}
+                  hasNext={hasNextEmail()}
+                  onMarkAsRead={handleMarkAsRead}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">No email selected</p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

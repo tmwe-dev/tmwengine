@@ -94,14 +94,18 @@ const EmailDashboard = () => {
     }
   };
 
-  // Prima ottieni il conteggio totale delle email
+  // Prima ottieni il conteggio totale delle email dell'utente
   const [emailCount, setEmailCount] = useState<number>(0);
   
   useEffect(() => {
     const fetchCount = async () => {
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      if (!userEmail) return;
+      
       const { count } = await supabase
         .from('email_messages')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', userEmail);
       if (count !== null) setEmailCount(count);
     };
     fetchCount();
@@ -146,14 +150,18 @@ const EmailDashboard = () => {
     totalEmails: totalEmailCount,
   });
 
-  // Conta le email nel DB per la cartella corrente
+  // Conta le email nel DB per la cartella corrente e utente
   const { data: dbEmailCount } = useQuery({
     queryKey: ['db-email-count', selectedFolder],
     queryFn: async () => {
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      if (!userEmail) return 0;
+      
       const { count } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('cartella', selectedFolder);
+        .eq('cartella', selectedFolder)
+        .eq('user_email', userEmail);
       return count || 0;
     },
   });
@@ -249,6 +257,11 @@ const EmailDashboard = () => {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      if (!userEmail) {
+        throw new Error('Utente non autenticato');
+      }
+      
       // 1. Ottieni il totale delle email dalla cartella
       const folderInfoResponse = await emailMessageApi.getMessages({ 
         folder: selectedFolder, 
@@ -257,11 +270,12 @@ const EmailDashboard = () => {
       });
       const totalEmails = folderInfoResponse.total || 0;
       
-      // 2. Recupera gli ID esistenti nel database
+      // 2. Recupera gli ID esistenti nel database per questo utente
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
-        .eq('cartella', selectedFolder);
+        .eq('cartella', selectedFolder)
+        .eq('user_email', userEmail);
       
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       
@@ -314,6 +328,7 @@ const EmailDashboard = () => {
               stato: email.is_read || email.seen ? 'letto' : 'nuovo',
               flags: email.flags || [],
               attachments: email.attachments || [],
+              user_email: userEmail, // Associa email all'utente
             };
           });
           

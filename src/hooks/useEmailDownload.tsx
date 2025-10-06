@@ -20,12 +20,21 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     setDownloadError(null);
     setAllEmails([]);
 
+    // Get user email from session
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) {
+      toast.error('Utente non autenticato');
+      setIsDownloading(false);
+      return;
+    }
+
     try {
-      // 1. Recupera tutti gli ID delle email già presenti nel database
+      // 1. Recupera tutti gli ID delle email già presenti nel database per questo utente
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
-        .eq('cartella', folder);
+        .eq('cartella', folder)
+        .eq('user_email', userEmail);
 
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       const alreadyInDb = existingIds.size;
@@ -93,6 +102,7 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
                   flags: email.flags || [],
                   attachments: email.attachments || [],
                   provider_id: '00000000-0000-0000-0000-000000000000',
+                  user_email: userEmail, // Associa email all'utente
                 };
               });
 

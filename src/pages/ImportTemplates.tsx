@@ -2276,21 +2276,21 @@ export default function ImportTemplates() {
         )}
 
         {activeSection === 'manage' && (
-          <div className="space-y-4">
+          <div className="space-y-2">
           <Card className="bg-card-transparent">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Database className="h-4 w-4" />
                 Gestisci Import
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Visualizza e gestisci i file importati. Seleziona i contatti da trasferire nella rubrica principale.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {isMobile ? (
                 /* Mobile View - Cards */
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {importLogs.map((log) => (
                     <ImportLogMobileCard
                       key={log.id}

@@ -495,23 +495,31 @@ export const EmailDetail = ({
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <style>
+                      html, body {
+                        max-width: 100% !important;
+                        overflow-x: hidden !important;
+                        margin: 0;
+                        padding: 0;
+                      }
                       * {
                         max-width: 100% !important;
                         box-sizing: border-box !important;
+                        word-wrap: break-word !important;
+                        overflow-wrap: break-word !important;
+                        word-break: break-word !important;
                       }
                       body {
-                        margin: 0;
                         padding: 16px;
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
                         color: #0ea5e9 !important;
-                        overflow-x: hidden !important;
-                        word-wrap: break-word;
-                        overflow-wrap: break-word;
                       }
-                      body * {
+                      body *, p, div, span, td, th {
                         color: #0ea5e9 !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        overflow-wrap: break-word !important;
                       }
                       img {
                         max-width: 100% !important;
@@ -522,13 +530,16 @@ export const EmailDetail = ({
                         max-width: 100% !important;
                         width: 100% !important;
                         border-collapse: collapse;
+                        table-layout: fixed !important;
                       }
                       td, th {
                         max-width: 100% !important;
-                        word-wrap: break-word;
+                        word-wrap: break-word !important;
+                        overflow: hidden !important;
                       }
                       a {
-                        word-break: break-all;
+                        word-break: break-all !important;
+                        display: inline-block !important;
                       }
                     </style>
                   </head>

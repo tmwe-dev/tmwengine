@@ -646,20 +646,6 @@ const EmailDashboard = () => {
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => {
-                    if (selectedSender) {
-                      setSelectedAIChatSender(selectedSender);
-                      setAiChatOpen(true);
-                    } else {
-                      toast.info('Seleziona un mittente prima');
-                    }
-                  }}
-                >
-                  <Brain className="h-4 w-4" />
                 </Button>
               </div>
             )}

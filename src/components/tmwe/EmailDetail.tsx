@@ -439,10 +439,10 @@ export const EmailDetail = ({
           </div>
 
           {/* Body */}
-          <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+          <div className="w-full overflow-hidden">
             <div 
               dangerouslySetInnerHTML={{ __html: email.body }}
-              className="text-foreground [&_a]:text-primary [&_a]:underline"
+              className="text-foreground break-words [&_*]:max-w-full [&_a]:text-primary [&_a]:underline [&_p]:break-words [&_div]:break-words"
             />
           </div>
         </div>

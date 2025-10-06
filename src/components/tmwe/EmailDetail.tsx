@@ -599,7 +599,7 @@ export const EmailDetail = ({
           <Separator />
 
           <div 
-            className="prose prose-sm max-w-none text-sm break-words overflow-hidden [&_*]:max-w-full [&_img]:max-w-full [&_img]:h-auto"
+            className="prose prose-sm max-w-none text-sm break-words overflow-visible [&_*]:max-w-full [&_img]:max-w-full [&_img]:h-auto"
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>

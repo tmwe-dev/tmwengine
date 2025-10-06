@@ -603,8 +603,13 @@ export const EmailDetail = ({
 
           {/* Email Body */}
           <div 
-            className="text-sm leading-relaxed [&_img]:max-w-full [&_img]:w-auto [&_img]:h-auto [&_img]:block [&_table]:w-full [&_table]:border-collapse [&_p]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-3 [&_a]:text-primary [&_a]:underline"
-            style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
+            className="text-sm leading-relaxed break-words [&_*]:break-words [&_*]:overflow-wrap-anywhere [&_img]:max-w-full [&_img]:w-auto [&_img]:h-auto [&_img]:block [&_table]:w-full [&_table]:border-collapse [&_p]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-3 [&_a]:text-primary [&_a]:underline"
+            style={{ 
+              wordWrap: 'break-word', 
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+              whiteSpace: 'normal'
+            }}
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>

@@ -646,11 +646,10 @@ const EmailDashboard = () => {
                 >
                   <MessageSquare className="h-4 w-4" />
                 </Button>
-                </Button>
               </div>
             )}
           </div>
-          
+
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}

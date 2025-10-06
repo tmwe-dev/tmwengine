@@ -471,7 +471,7 @@ export const EmailList = ({
       <div className="flex flex-col gap-2 p-2 px-4 border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-end gap-3 flex-wrap">
-            <div className="flex items-end gap-1.5">
+            <div className="flex items-center gap-1.5 h-7">
               <Switch
                 id="unread-only"
                 checked={showUnreadOnly}

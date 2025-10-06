@@ -534,7 +534,7 @@ export const EmailDetail = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" style={{ width: '100%', maxWidth: '100%' }}>
         <div className="p-4 md:p-6 space-y-4 min-w-0 max-w-full">
           <div className="w-full min-w-0 max-w-full">
             <h2 

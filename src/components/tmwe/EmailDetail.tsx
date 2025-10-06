@@ -365,8 +365,30 @@ export const EmailDetail = ({
           </div>
         )}
 
-        {/* Center: Email navigation (sempre visibile) */}
+        {/* Center: Email navigation */}
         <div className="flex items-center gap-3 justify-center">
+          {onPrevious && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={onPrevious}
+              disabled={!hasPrevious}
+              className="h-12 w-12"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+          )}
+          {onNext && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={onNext}
+              disabled={!hasNext}
+              className="h-12 w-12"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          )}
         </div>
 
         {/* Right: Actions and Close */}

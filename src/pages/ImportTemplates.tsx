@@ -342,6 +342,8 @@ export default function ImportTemplates() {
   // Stati per il dialog delle attività
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
+  const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
+  const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
 
   useEffect(() => {
     loadEmailTemplates();
@@ -3204,6 +3206,8 @@ export default function ImportTemplates() {
                           onDelete={() => deleteImportedContact(record.id, actualIndex)}
                           onCreateActivity={(activityType) => {
                             setSelectedContactIdForActivities(record.id);
+                            setSelectedContactForActivity(record);
+                            setDefaultActivityType(activityType);
                             setIsAttivitaDialogOpen(true);
                           }}
                           getCountryFlag={getCountryFlag}
@@ -3800,22 +3804,38 @@ export default function ImportTemplates() {
         />
       )}
       
-      {/* Dialog per gestione attività con pulsante indietro */}
-      <AttivitaDialog
-        open={isAttivitaDialogOpen}
-        onOpenChange={(open) => {
-          setIsAttivitaDialogOpen(open);
-          if (!open) {
-            setSelectedContactIdForActivities(null);
-          }
-        }}
-        filterByContactId={selectedContactIdForActivities}
-        showBackButton={true}
-        onBackToRecords={() => {
-          setIsAttivitaDialogOpen(false);
+      {/* Dialog per creazione attività */}
+      <Dialog open={isAttivitaDialogOpen} onOpenChange={(open) => {
+        setIsAttivitaDialogOpen(open);
+        if (!open) {
           setSelectedContactIdForActivities(null);
-        }}
-      />
+          setSelectedContactForActivity(null);
+          setDefaultActivityType(undefined);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crea Nuova Attività</DialogTitle>
+          </DialogHeader>
+          {selectedContactForActivity && (
+            <AdvancedMultipleActivityForm
+              contacts={[selectedContactForActivity]}
+              onSubmit={async (data) => {
+                setIsAttivitaDialogOpen(false);
+                setSelectedContactIdForActivities(null);
+                setSelectedContactForActivity(null);
+                setDefaultActivityType(undefined);
+              }}
+              onCancel={() => {
+                setIsAttivitaDialogOpen(false);
+                setSelectedContactIdForActivities(null);
+                setSelectedContactForActivity(null);
+                setDefaultActivityType(undefined);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

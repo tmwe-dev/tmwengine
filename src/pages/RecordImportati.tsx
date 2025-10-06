@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
 import countriesData from '@/data/countries.json';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
+import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Utility functions from ImportTemplates
 const isValidEmail = (email: string): boolean => {
@@ -145,6 +147,8 @@ const RecordImportati = () => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
+  const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
+  const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
 
   const { getActivityCount, isLoading: loadingActivities, refreshActivities, getCompanyActivities } = useCompanyActivities();
 
@@ -620,6 +624,8 @@ const RecordImportati = () => {
                     onDelete={() => deleteImportedContact(record.id, globalIndex)}
                     onCreateActivity={(activityType) => {
                       setSelectedContactIdForActivities(record.id);
+                      setSelectedContactForActivity(record);
+                      setDefaultActivityType(activityType);
                       setIsAttivitaDialogOpen(true);
                     }}
                     getCountryFlag={getCountryFlag}
@@ -659,11 +665,38 @@ const RecordImportati = () => {
         </CardContent>
       </Card>
 
-      <AttivitaDialog
-        open={isAttivitaDialogOpen}
-        onOpenChange={setIsAttivitaDialogOpen}
-        filterByContactId={selectedContactIdForActivities}
-      />
+      {/* Dialog per creazione attività */}
+      <Dialog open={isAttivitaDialogOpen} onOpenChange={(open) => {
+        setIsAttivitaDialogOpen(open);
+        if (!open) {
+          setSelectedContactIdForActivities(null);
+          setSelectedContactForActivity(null);
+          setDefaultActivityType(undefined);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crea Nuova Attività</DialogTitle>
+          </DialogHeader>
+          {selectedContactForActivity && (
+            <AdvancedMultipleActivityForm
+              contacts={[selectedContactForActivity]}
+              onSubmit={async (data) => {
+                setIsAttivitaDialogOpen(false);
+                setSelectedContactIdForActivities(null);
+                setSelectedContactForActivity(null);
+                setDefaultActivityType(undefined);
+              }}
+              onCancel={() => {
+                setIsAttivitaDialogOpen(false);
+                setSelectedContactIdForActivities(null);
+                setSelectedContactForActivity(null);
+                setDefaultActivityType(undefined);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

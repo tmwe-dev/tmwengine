@@ -254,6 +254,20 @@ export const EmailList = ({
                   {email.hasAttachments && (
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
                   )}
+                  {!multiSelectMode && onOpenDetailPopup && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hidden md:flex h-7 w-7 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEmailSelect(email.id);
+                        onOpenDetailPopup();
+                      }}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   {!multiSelectMode && selectedEmailId === email.id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -382,6 +396,20 @@ export const EmailList = ({
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
                     </div>
+                    {!multiSelectMode && onOpenDetailPopup && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="hidden md:flex h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEmailSelect(email.id);
+                          onOpenDetailPopup();
+                        }}
+                      >
+                        <Maximize2 className="h-5 w-5" />
+                      </Button>
+                    )}
                     {!multiSelectMode && selectedEmailId === email.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

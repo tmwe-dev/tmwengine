@@ -4,7 +4,7 @@ import { it } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Maximize, Minimize, Settings } from 'lucide-react';
+import { Mail, Star, Paperclip, Loader2, List, LayoutGrid, Maximize2, Trash2, Archive, Forward, CheckCircle2, FolderInput, Tag, MoreHorizontal, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -97,7 +97,7 @@ export const EmailList = ({
   const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
-  const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('wide');
+  
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -478,7 +478,7 @@ export const EmailList = ({
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-[100px] h-7 text-[11px]">
+                  <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -532,7 +532,7 @@ export const EmailList = ({
 
                 {bulkAction === 'move' && (
                   <Select value={targetFolder} onValueChange={setTargetFolder}>
-                    <SelectTrigger className="w-[90px] h-7 text-[11px]">
+                    <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -585,45 +585,6 @@ export const EmailList = ({
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Width controls - hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-0.5 mr-1 pr-1 border-r border-border">
-              <Button
-                variant={contentWidth === 'narrow' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => setContentWidth('narrow')}
-                title="Larghezza stretta"
-              >
-                S
-              </Button>
-              <Button
-                variant={contentWidth === 'medium' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => setContentWidth('medium')}
-                title="Larghezza media"
-              >
-                M
-              </Button>
-              <Button
-                variant={contentWidth === 'wide' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-7 px-2 text-[11px]"
-                onClick={() => setContentWidth('wide')}
-                title="Larghezza larga"
-              >
-                L
-              </Button>
-              <Button
-                variant={contentWidth === 'full' ? 'default' : 'ghost'}
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setContentWidth('full')}
-                title="Larghezza massima"
-              >
-                <Maximize className="h-3.5 w-3.5" />
-              </Button>
-            </div>
 
             {multiSelectMode && (
               <Button

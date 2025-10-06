@@ -362,7 +362,7 @@ export const EmailList = ({
             )}
             <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative">
               <div className="flex items-start justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
-                <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
+                <div className="flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',

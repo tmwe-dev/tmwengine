@@ -123,8 +123,7 @@ const Chat = () => {
       
       if (data) {
         setPagePromptName(data.page_name);
-        // Auto-attiva l'uso del system prompt per le pagine specifiche
-        setUseSystemPrompt(true);
+        // Non auto-attivare: l'utente deve attivare manualmente
       }
     } catch (error) {
       console.error('Errore caricamento page prompt:', error);
@@ -519,7 +518,7 @@ const Chat = () => {
                 Chat AI
               </h1>
               {pagePromptName && (
-                <div className="text-sm text-muted-foreground mt-1">
+                <div className={`text-sm mt-1 ${useSystemPrompt ? 'text-muted-foreground' : 'text-red-500'}`}>
                   {pagePromptName}
                 </div>
               )}

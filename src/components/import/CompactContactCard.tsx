@@ -17,7 +17,7 @@ interface CompactContactCardProps {
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
   onDelete: () => void;
-  onCreateActivity: () => void;
+  onCreateActivity: (activityType?: 'chiamata' | 'email') => void;
   getCountryFlag: (countryName: string) => string;
   formatCellValue: (value: any, fieldKey?: string) => string;
 }
@@ -120,12 +120,15 @@ export function CompactContactCard({
           {/* Create activity icon */}
           <div 
             className="p-1.5 rounded-full cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors"
-            onClick={onCreateActivity}
+            onClick={() => onCreateActivity()}
           >
             <Pickaxe className="h-4 w-4 text-primary" />
           </div>
           {contact.email && (
-            <div className="p-1.5 rounded-full">
+            <div 
+              className="p-1.5 rounded-full cursor-pointer bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+              onClick={() => onCreateActivity('email')}
+            >
               <Mail className="h-4 w-4 text-blue-600" />
             </div>
           )}

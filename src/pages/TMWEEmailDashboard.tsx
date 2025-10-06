@@ -544,7 +544,7 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 overflow-x-hidden max-w-screen w-full">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
@@ -575,7 +575,7 @@ const EmailDashboard = () => {
         }
       />
       
-      <div className="flex flex-1 overflow-hidden w-full max-w-screen">
+      <div className="flex flex-1 w-full">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar
@@ -609,7 +609,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 overflow-hidden flex flex-col",
+          "flex-1 flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
@@ -685,7 +685,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}

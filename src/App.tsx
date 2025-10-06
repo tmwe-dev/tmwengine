@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useState } from 'react';
+import { GlobalAIDrawer } from './components/ai/GlobalAIDrawer';
+import { GlobalAIButton } from './components/ai/GlobalAIButton';
 
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -33,14 +36,19 @@ import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TMWEAuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <VoiceAgentWidget />
-        <BrowserRouter>
+const App = () => {
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TMWEAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <VoiceAgentWidget />
+          <GlobalAIDrawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen} />
+          <GlobalAIButton onClick={() => setAiDrawerOpen(true)} />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>
@@ -137,6 +145,7 @@ const App = () => (
       </TooltipProvider>
     </TMWEAuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

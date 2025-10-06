@@ -321,21 +321,47 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
         <Brain className="h-5 w-5" />
       </Button>
 
-      {/* Chat Popup - Centered on page */}
+      {/* Chat Popup - Centered with glassmorphism */}
       {isOpen && (
-        <Card 
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[700px] shadow-2xl z-50 flex flex-col bg-background/95 backdrop-blur-md"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">AI Assistant - {pageRoute}</h3>
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 animate-fade-in"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Chat Card */}
+          <Card 
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[95vw] h-[750px] max-h-[90vh] shadow-glow z-50 flex flex-col border-primary/20 animate-scale-in"
+            style={{ 
+              background: 'linear-gradient(135deg, hsl(var(--card-transparent)) 0%, hsl(var(--card)) 100%)',
+              backdropFilter: 'blur(20px)',
+            }}
+          >
+          {/* Header with gradient */}
+          <div 
+            className="flex items-center justify-between p-4 border-b border-primary/20 rounded-t-lg"
+            style={{
+              background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
+                <Brain className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-primary-foreground">AI Assistant</h3>
+                <p className="text-xs text-primary-foreground/70">{pageRoute}</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="hover:bg-primary-foreground/10 text-primary-foreground"
+                  >
                     <Settings className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
@@ -393,36 +419,44 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
+                className="hover:bg-primary-foreground/10 text-primary-foreground"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Conversations Sidebar */}
-          <div className="flex gap-2 p-2 border-b overflow-x-auto">
+          {/* Conversations Sidebar with glassmorphism */}
+          <div 
+            className="flex gap-2 p-3 border-b border-border/50 overflow-x-auto bg-surface-secondary/30"
+            style={{ backdropFilter: 'blur(10px)' }}
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={createNewConversation}
+              className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all shrink-0"
             >
               <Plus className="h-4 w-4 mr-1" />
               Nuova
             </Button>
             {conversations.slice(0, 5).map((conv) => (
-              <div key={conv.id} className="flex items-center gap-1">
+              <div key={conv.id} className="flex items-center gap-1 shrink-0">
                 <Button
                   variant={currentConversationId === conv.id ? "default" : "ghost"}
                   size="sm"
                   onClick={() => selectConversation(conv.id)}
+                  className={currentConversationId === conv.id 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "hover:bg-muted/50 transition-all"}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" />
-                  {conv.titolo?.substring(0, 15) || 'Chat'}
+                  {conv.titolo?.substring(0, 12) || 'Chat'}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-all"
                   onClick={() => deleteConversation(conv.id)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -431,26 +465,28 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             ))}
           </div>
 
-          {/* Messages */}
+          {/* Messages Area */}
           <ScrollArea className="flex-1 p-4">
             {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Inizia una conversazione!</p>
-                <p className="text-xs mt-2">Usa i tools CRM disponibili per questa pagina</p>
+              <div className="text-center text-muted-foreground py-12 animate-fade-in">
+                <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
+                  <Brain className="h-16 w-16 text-primary opacity-70" />
+                </div>
+                <h4 className="font-semibold text-lg mb-2">Inizia una conversazione!</h4>
+                <p className="text-sm">Usa i tools CRM disponibili per questa pagina</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-up`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-lg p-3 ${
+                      className={`max-w-[85%] rounded-xl p-3 shadow-sm transition-all hover:shadow-md ${
                         msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                          ? "bg-gradient-to-br from-primary to-primary-hover text-primary-foreground"
+                          : "bg-muted/80 backdrop-blur-sm border border-border/50"
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -473,18 +509,22 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                         </div>
                       )}
                       
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <span className="text-xs opacity-70">
-                          {new Date(msg.created_at).toLocaleTimeString()}
+                          {new Date(msg.created_at).toLocaleTimeString('it-IT', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
                         </span>
                         {msg.model && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs py-0 px-1.5">
                             {msg.model}
                           </Badge>
                         )}
                         {msg.tokens_used && (
-                          <Badge variant="outline" className="text-xs">
-                            {msg.tokens_used} tokens
+                          <Badge variant="outline" className="text-xs py-0 px-1.5">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {msg.tokens_used}
                           </Badge>
                         )}
                       </div>
@@ -492,9 +532,12 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-muted/80 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Pensando...</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -503,17 +546,22 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             )}
           </ScrollArea>
 
-          {/* Attachments Preview */}
+          {/* Attachments Preview with improved design */}
           {(uploadedFiles.length > 0 || generatedImage) && (
-            <div className="px-4 py-2 border-t">
-              <div className="flex gap-2 items-center">
+            <div className="px-4 py-3 border-t border-border/50 bg-surface-secondary/20">
+              <p className="text-xs text-muted-foreground mb-2">Allegati:</p>
+              <div className="flex gap-2 items-center flex-wrap">
                 {uploadedFiles.map((file) => (
-                  <div key={file.url} className="relative">
-                    <img src={file.url} alt={file.name} className="h-12 w-12 object-cover rounded" />
+                  <div key={file.url} className="relative group">
+                    <img 
+                      src={file.url} 
+                      alt={file.name} 
+                      className="h-14 w-14 object-cover rounded-lg border-2 border-primary/20 group-hover:border-primary/50 transition-all" 
+                    />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-5 w-5"
+                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                       onClick={() => setUploadedFiles(files => files.filter(f => f.url !== file.url))}
                     >
                       <X className="h-3 w-3" />
@@ -521,12 +569,16 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                   </div>
                 ))}
                 {generatedImage && (
-                  <div className="relative">
-                    <img src={generatedImage} alt="Generated" className="h-12 w-12 object-cover rounded" />
+                  <div className="relative group">
+                    <img 
+                      src={generatedImage} 
+                      alt="Generated" 
+                      className="h-14 w-14 object-cover rounded-lg border-2 border-success/20 group-hover:border-success/50 transition-all" 
+                    />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-5 w-5"
+                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                       onClick={() => setGeneratedImage(null)}
                     >
                       <X className="h-3 w-3" />
@@ -537,9 +589,14 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             </div>
           )}
 
-          {/* Input */}
-          <div className="p-4 border-t space-y-2">
-            <div className="flex gap-2">
+          {/* Input Area with gradient border */}
+          <div 
+            className="p-4 border-t border-border/50 space-y-3"
+            style={{ 
+              background: 'linear-gradient(to top, hsl(var(--surface-secondary)) 0%, transparent 100%)' 
+            }}
+          >
+            <div className="flex gap-2 items-center">
               <FileUploader onFilesUploaded={setUploadedFiles} />
               <ImageGenerator onImageGenerated={setGeneratedImage} />
             </div>
@@ -553,8 +610,8 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                     handleSend();
                   }
                 }}
-                placeholder="Scrivi il tuo messaggio..."
-                className="resize-none"
+                placeholder="Scrivi il tuo messaggio... (Shift+Enter per nuova riga)"
+                className="resize-none bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all"
                 rows={2}
                 disabled={isLoading}
               />
@@ -562,7 +619,7 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 onClick={handleSend}
                 disabled={!prompt.trim() || isLoading}
                 size="icon"
-                className="shrink-0"
+                className="shrink-0 h-auto shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-primary to-primary-hover"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -573,6 +630,7 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             </div>
           </div>
         </Card>
+        </>
       )}
     </>
   );

@@ -252,7 +252,19 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-card-transparent">
+    <div className="flex h-full flex-col bg-card-transparent relative">
+      {/* Collapse button - fixed top right */}
+      <div className="absolute top-2 right-2 z-10">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          className="h-10 w-10"
+        >
+          {isHeaderCollapsed ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
+        </Button>
+      </div>
+
       {/* Top bar with navigation and close */}
       <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
         {/* Left: Management actions or empty */}

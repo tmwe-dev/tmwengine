@@ -182,9 +182,12 @@ const EmailDashboard = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    error: messagesError,
   } = useInfiniteQuery({
     queryKey: ['messages', selectedFolder, searchQuery, downloadedEmails.length],
     queryFn: async ({ pageParam = 0 }) => {
+      console.log('🔄 Fetching page with pageParam:', pageParam);
+      
       // Se abbiamo email scaricate in memoria, usale
       if (downloadedEmails.length > 0) {
         const start = pageParam;
@@ -197,9 +200,20 @@ const EmailDashboard = () => {
 
       // USA SEMPRE L'API TMWE (Supabase solo per backup con Sync Smart)
       const page = Math.floor(pageParam / 30) + 1;
-      return searchQuery 
-        ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+      console.log('📄 Requesting page:', page, 'for folder:', selectedFolder);
+      
+      const result = searchQuery 
+        ? await emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
+        : await emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+      
+      console.log('✅ API returned:', { 
+        messagesCount: result?.messages?.length || 0, 
+        total: result?.total,
+        from: result?.from,
+        to: result?.to
+      });
+      
+      return result;
     },
     getNextPageParam: (lastPage, allPages) => {
       if (downloadedEmails.length > 0) {
@@ -212,6 +226,7 @@ const EmailDashboard = () => {
       return allPages.length * 30;
     },
     initialPageParam: 0,
+    retry: 1,
   });
 
 

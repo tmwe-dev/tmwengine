@@ -3548,7 +3548,7 @@ export default function ImportTemplates() {
                         )}
                         
                         {/* Animated Book */}
-                        <AnimatedBook currentPage={currentPage} className="w-full -mb-[41px] pointer-events-none" />
+                        <AnimatedBook currentPage={currentPage} className="w-full -mb-[61px] pointer-events-none" />
                         
                         {/* Pagination Controls */}
                         <div className="flex items-center justify-center gap-[15px] relative w-full">

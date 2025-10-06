@@ -219,11 +219,21 @@ const EmailDashboard = () => {
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
       console.log('🔍 Fetching email with UID:', selectedEmailId);
-      const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
-      console.log('✅ Email detail received:', result);
-      // Invalidate messages query to update the read status in the list
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-      return result;
+      try {
+        const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
+        console.log('✅ Email detail received:', result);
+        // Invalidate messages query to update the read status in the list
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+        return result;
+      } catch (error: any) {
+        console.error('❌ Error loading email:', error);
+        if (error.message?.includes('404') || error.message?.includes('Not Found')) {
+          toast.error('Email non più disponibile sul server. Prova a ricaricare la lista.');
+        } else {
+          toast.error('Errore durante il caricamento dell\'email');
+        }
+        throw error;
+      }
     },
     enabled: !!selectedEmailId,
     retry: 1,
@@ -694,13 +704,27 @@ const EmailDashboard = () => {
         )}
 
         {/* Email Detail - Full screen on mobile when email is selected */}
-        {isMobile && !showEmailList && selectedEmail && (
+        {isMobile && !showEmailList && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            <EmailDetail
-              email={selectedEmail}
-              onReply={handleReply}
-              onReplyAll={handleReplyAll}
-              onForward={handleForward}
+            {isLoadingDetail ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center space-y-2">
+                  <p className="text-muted-foreground">Caricamento email...</p>
+                </div>
+              </div>
+            ) : detailError ? (
+              <div className="flex flex-col items-center justify-center h-full p-6 space-y-4">
+                <p className="text-destructive text-center">Errore nel caricamento dell'email</p>
+                <Button onClick={handleBackToList} variant="outline">
+                  Torna alla lista
+                </Button>
+              </div>
+            ) : selectedEmail ? (
+              <EmailDetail
+                email={selectedEmail}
+                onReply={handleReply}
+                onReplyAll={handleReplyAll}
+                onForward={handleForward}
               onBack={handleBackToList}
               isMobile={true}
               onPrevious={handlePreviousEmail}
@@ -709,6 +733,14 @@ const EmailDashboard = () => {
               hasNext={hasNextEmail()}
               onMarkAsRead={handleMarkAsRead}
             />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-6 space-y-4">
+                <p className="text-muted-foreground text-center">Nessuna email selezionata</p>
+                <Button onClick={handleBackToList} variant="outline">
+                  Torna alla lista
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

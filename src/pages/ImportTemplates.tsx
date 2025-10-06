@@ -2273,13 +2273,16 @@ export default function ImportTemplates() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="file-upload">File da Importare (.xlsx, .xls, .csv)</Label>
+                <Label htmlFor="file-upload">File da Importare (solo .csv con separatore ; o , o TAB)</Label>
                 <Input
                   id="file-upload"
                   type="file"
-                  accept=".xlsx,.xls,.csv"
+                  accept=".csv,.txt"
                   onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ Accettati solo file CSV. Se hai un file Excel (.xlsx), salvalo come CSV prima di caricarlo.
+                </p>
               </div>
 
               {/* Progress Indicator */}

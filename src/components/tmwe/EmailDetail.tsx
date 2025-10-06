@@ -357,9 +357,9 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm">
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
         {/* Left: Management actions */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
@@ -510,7 +510,7 @@ export const EmailDetail = ({
       </div>
       
       {/* Action buttons bar */}
-      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-background/95 backdrop-blur-sm">
+      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
         {/* Communication actions */}
         <div className="flex gap-3 items-center">
           <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
@@ -535,36 +535,32 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-4 md:px-6 py-4 space-y-6">
-          {/* Email Subject */}
-          <div className="space-y-2">
-            <p className="text-base md:text-lg font-semibold text-foreground" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
-              {email.subject}
-            </p>
-          </div>
-          
-          {/* Email Metadata */}
-          <Card className="bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="space-y-1 flex-1 min-w-0">
-                  <p className="font-medium text-sm" style={{ wordWrap: 'break-word' }}>{email.from}</p>
-                  <div className="text-xs text-muted-foreground">
-                    <p style={{ wordWrap: 'break-word' }}>To: {email.to.join(', ')}</p>
-                    {email.cc && email.cc.length > 0 && (
-                      <p style={{ wordWrap: 'break-word' }}>Cc: {email.cc.join(', ')}</p>
-                    )}
+        <div className="p-4 md:p-6 space-y-4 bg-card-transparent">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold mb-4">{email.subject}</h1>
+            
+            <Card className="bg-card-transparent">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <p className="font-semibold">{email.from}</p>
+                    <div className="text-sm text-muted-foreground">
+                      <p>To: {email.to.join(', ')}</p>
+                      {email.cc && email.cc.length > 0 && (
+                        <p>Cc: {email.cc.join(', ')}</p>
+                      )}
+                    </div>
                   </div>
+                  <span className="text-sm text-muted-foreground">
+                    {format(emailDate, 'PPp')}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {format(emailDate, 'PPp')}
-                </span>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          </div>
 
           {downloadableAttachments.length > 0 && (
-            <Card className="bg-card/50 backdrop-blur-sm">
+            <Card className="bg-card-transparent">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-medium mb-3">
                   <Paperclip className="h-4 w-4" />
@@ -601,15 +597,8 @@ export const EmailDetail = ({
 
           <Separator />
 
-          {/* Email Body */}
           <div 
-            className="text-sm leading-relaxed break-words [&_*]:break-words [&_*]:overflow-wrap-anywhere [&_img]:max-w-full [&_img]:w-auto [&_img]:h-auto [&_img]:block [&_table]:w-full [&_table]:border-collapse [&_p]:mb-4 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-3 [&_a]:text-primary [&_a]:underline"
-            style={{ 
-              wordWrap: 'break-word', 
-              overflowWrap: 'anywhere',
-              wordBreak: 'break-word',
-              whiteSpace: 'normal'
-            }}
+            className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>

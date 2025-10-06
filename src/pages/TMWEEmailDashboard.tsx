@@ -237,16 +237,7 @@ const EmailDashboard = () => {
 
     return {
       id: String(header.uid || msg.uid || msg.id || selectedEmailId),
-      subject: (() => {
-        const fullSubject = header.subject || '(No Subject)';
-        console.log('🔍 EMAIL SUBJECT DEBUG:', {
-          fullSubject,
-          length: fullSubject.length,
-          firstChars: fullSubject.substring(0, 50),
-          lastChars: fullSubject.substring(fullSubject.length - 50)
-        });
-        return fullSubject;
-      })(),
+      subject: header.subject || '(No Subject)',
       from: header.from || 'Unknown',
       to: header.to ? (Array.isArray(header.to) ? header.to : [header.to]) : [],
       cc: header.cc ? (Array.isArray(header.cc) ? header.cc : [header.cc]) : [],
@@ -530,7 +521,7 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 overflow-x-hidden max-w-screen w-full">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
@@ -554,7 +545,7 @@ const EmailDashboard = () => {
         }
       />
       
-      <div className="flex flex-1 w-full">
+      <div className="flex flex-1 overflow-hidden w-full max-w-screen">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar
@@ -588,7 +579,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 overflow-hidden flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
@@ -681,7 +672,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col overflow-y-auto overflow-x-visible">
+          <div className="flex-1 flex flex-col overflow-hidden">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}
@@ -707,11 +698,11 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[90vh] flex flex-col p-0" style={{ background: 'var(--gradient-page)' }}>
-          <DialogHeader className="px-6 pt-6">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
+          <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-visible">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {isLoadingDetail ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground">Caricamento...</p>

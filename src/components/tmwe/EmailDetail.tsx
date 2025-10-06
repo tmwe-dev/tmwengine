@@ -535,8 +535,6 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4">
-        </div>
       </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>

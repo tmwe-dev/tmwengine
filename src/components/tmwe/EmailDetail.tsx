@@ -535,72 +535,9 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4 bg-card-transparent">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold mb-4 w-full break-words overflow-wrap-anywhere">{email.subject}</h1>
-            
-            <Card className="bg-card-transparent">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="font-semibold">{email.from}</p>
-                    <div className="text-sm text-muted-foreground">
-                      <p>To: {email.to.join(', ')}</p>
-                      {email.cc && email.cc.length > 0 && (
-                        <p>Cc: {email.cc.join(', ')}</p>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {format(emailDate, 'PPp')}
-                  </span>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {downloadableAttachments.length > 0 && (
-            <Card className="bg-card-transparent">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm font-medium mb-3">
-                  <Paperclip className="h-4 w-4" />
-                  {downloadableAttachments.length} Attachment{downloadableAttachments.length !== 1 && 's'}
-                </div>
-                <div className="space-y-2">
-                  {downloadableAttachments.map((attachment: any, index: number) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{attachment.filename}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(attachment.size)}
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDownloadAttachment(attachment)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Separator />
-
-          <div 
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: processedBody }}
-          />
+        <div className="space-y-4">
+          <h1 className="text-base font-normal">{email.subject}</h1>
+          <div dangerouslySetInnerHTML={{ __html: processedBody }} />
         </div>
       </ScrollArea>
 

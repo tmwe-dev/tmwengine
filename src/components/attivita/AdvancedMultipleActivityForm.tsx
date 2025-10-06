@@ -94,7 +94,6 @@ interface AdvancedMultipleActivityFormProps {
   onCancel: () => void;
   isSubmitting?: boolean;
   showSaveToRubrica?: boolean;
-  defaultActivityType?: 'email' | 'chiamata';
 }
 
 export function AdvancedMultipleActivityForm({ 
@@ -102,10 +101,9 @@ export function AdvancedMultipleActivityForm({
   onSubmit, 
   onCancel, 
   isSubmitting, 
-  showSaveToRubrica = false,
-  defaultActivityType = 'chiamata'
+  showSaveToRubrica = false 
 }: AdvancedMultipleActivityFormProps) {
-  const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>(defaultActivityType);
+  const [activeTab, setActiveTab] = useState<'email' | 'chiamata'>('chiamata');
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -115,7 +113,7 @@ export function AdvancedMultipleActivityForm({
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
     defaultValues: {
-      tipo: defaultActivityType,
+      tipo: 'chiamata',
       priorita: 'media',
       oggetto_email: '',
       testo_email: '',

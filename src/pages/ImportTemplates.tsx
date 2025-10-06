@@ -342,7 +342,6 @@ export default function ImportTemplates() {
   // Stati per il dialog delle attività
   const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
-  const [defaultActivityType, setDefaultActivityType] = useState<'email' | 'chiamata'>('chiamata');
 
   useEffect(() => {
     loadEmailTemplates();
@@ -3203,9 +3202,8 @@ export default function ImportTemplates() {
                           onSelect={() => toggleRecordSelection(actualIndex)}
                           onView={() => openRecordDetail(record, actualIndex)}
                           onDelete={() => deleteImportedContact(record.id, actualIndex)}
-                          onCreateActivity={(activityType) => {
+                          onCreateActivity={() => {
                             setSelectedContactIdForActivities(record.id);
-                            setDefaultActivityType(activityType === 'email' ? 'email' : 'chiamata');
                             setIsAttivitaDialogOpen(true);
                           }}
                           getCountryFlag={getCountryFlag}
@@ -3809,16 +3807,13 @@ export default function ImportTemplates() {
           setIsAttivitaDialogOpen(open);
           if (!open) {
             setSelectedContactIdForActivities(null);
-            setDefaultActivityType('chiamata');
           }
         }}
         filterByContactId={selectedContactIdForActivities}
         showBackButton={true}
-        defaultActivityType={defaultActivityType}
         onBackToRecords={() => {
           setIsAttivitaDialogOpen(false);
           setSelectedContactIdForActivities(null);
-          setDefaultActivityType('chiamata');
         }}
       />
     </div>

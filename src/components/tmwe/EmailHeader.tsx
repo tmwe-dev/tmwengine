@@ -85,21 +85,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
       <header className="border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full max-w-screen overflow-x-hidden">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
-          {/* LEFT: Title + Sync buttons OR X button when collapsed */}
-          {isHeaderCollapsed ? (
-            <div className="flex items-center justify-start">
-              {onCloseEmail && (
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={onCloseEmail}
-                  className="h-8 w-8"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
-          ) : (
+          {/* LEFT: Title + Sync buttons */}
+          {!isHeaderCollapsed && (
             <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
               <div className="flex items-center gap-1 sm:gap-2">
                 {isMobile && onMenuClick && (
@@ -234,19 +221,44 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           )}
 
-          {/* RIGHT: Toggle button (sempre visibile) + Desktop search (nascosto quando collapsed) */}
+          {/* RIGHT: X button + Toggle button quando collapsed, altrimenti solo toggle + search */}
           <div className="flex items-center gap-1 sm:gap-2 justify-end min-w-0">
-            {onToggleCollapse && (
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={onToggleCollapse}
-                className="h-8 w-8"
-              >
-                {isHeaderCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-              </Button>
+            {isHeaderCollapsed ? (
+              <div className="flex items-center gap-1 justify-start w-full">
+                {onCloseEmail && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={onCloseEmail}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                )}
+                {onToggleCollapse && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={onToggleCollapse}
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            ) : (
+              onToggleCollapse && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={onToggleCollapse}
+                  className="h-8 w-8"
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </Button>
+              )
             )}
-
+            
             {!isHeaderCollapsed && (
               <div className="hidden md:flex items-center gap-1 sm:gap-2">
                 <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">

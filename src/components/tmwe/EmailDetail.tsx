@@ -26,7 +26,8 @@ import {
   Users,
   Megaphone,
   X,
-  Settings
+  Settings,
+  Paintbrush
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -272,19 +273,15 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Color picker bar */}
-      <div className="flex items-center justify-between p-2 border-b bg-card-transparent">
-        <div className="flex items-center gap-3">
-          <label htmlFor="textColorPicker" className="text-sm font-medium">
-            Colore testo:
-          </label>
+      <div className="flex items-center justify-center p-2 border-b bg-card-transparent">
+        <div className="relative">
+          <Paintbrush className="h-6 w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
           <input
-            id="textColorPicker"
             type="color"
             value={emailTextColor}
             onChange={(e) => setEmailTextColor(e.target.value)}
-            className="h-8 w-16 cursor-pointer rounded border border-border"
+            className="h-10 w-12 cursor-pointer rounded border border-border opacity-0"
           />
-          <span className="text-xs text-muted-foreground">{emailTextColor}</span>
         </div>
       </div>
 

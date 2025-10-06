@@ -106,11 +106,6 @@ const Chat = () => {
 
   // Carica il prompt specifico della pagina
   const loadPagePrompt = async () => {
-    if (pageRoute === '/chat') {
-      setPagePromptName('');
-      return;
-    }
-
     try {
       const { data, error } = await supabase
         .from('page_system_prompts')
@@ -124,9 +119,12 @@ const Chat = () => {
       if (data) {
         setPagePromptName(data.page_name);
         // Non auto-attivare: l'utente deve attivare manualmente
+      } else {
+        setPagePromptName('');
       }
     } catch (error) {
       console.error('Errore caricamento page prompt:', error);
+      setPagePromptName('');
     }
   };
 
@@ -705,10 +703,7 @@ const Chat = () => {
 
           {/* Descrizione prompt sotto il titolo - sempre visibile */}
           <div className={`text-sm mt-2 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
-            {pageRoute !== '/chat' 
-              ? (pagePromptName || 'Nessun prompt di pagina') 
-              : (systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt selezionato')
-            }
+            {pagePromptName || 'Nessun prompt di pagina'}
           </div>
 
           {/* Stats orizzontali in grigio sotto il modello */}

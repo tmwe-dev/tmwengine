@@ -84,7 +84,7 @@ export function CompactContactCard({
               </div>
               
               {/* Azioni compatte - allineate al nome */}
-              <div className="flex items-start pt-0.5">
+              <div className="flex items-start -mt-2.5">
                 <Button
                   variant="ghost"
                   size="sm"

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Settings } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,14 +88,14 @@ export function PagePromptManager({ pageRoute }: PagePromptManagerProps) {
         onClick={() => setOpen(true)}
         title="Gestisci Prompt AI"
       >
-        <Settings className="h-4 w-4 text-primary" />
+        <FileText className="h-4 w-4 text-primary" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-[728px] backdrop-blur-md bg-background/95 border-white/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
+              <FileText className="h-5 w-5 text-primary" />
               Gestione Prompt AI - {pageName}
             </DialogTitle>
           </DialogHeader>

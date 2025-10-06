@@ -335,6 +335,7 @@ export type Database = {
           mime_type: string
           nome: string
           updated_at: string
+          user_email: string | null
         }
         Insert: {
           created_at?: string
@@ -344,6 +345,7 @@ export type Database = {
           mime_type: string
           nome: string
           updated_at?: string
+          user_email?: string | null
         }
         Update: {
           created_at?: string
@@ -353,6 +355,7 @@ export type Database = {
           mime_type?: string
           nome?: string
           updated_at?: string
+          user_email?: string | null
         }
         Relationships: []
       }
@@ -383,6 +386,7 @@ export type Database = {
           thread_id: string | null
           to_email: string
           updated_at: string
+          user_email: string | null
         }
         Insert: {
           attachments?: Json | null
@@ -410,6 +414,7 @@ export type Database = {
           thread_id?: string | null
           to_email: string
           updated_at?: string
+          user_email?: string | null
         }
         Update: {
           attachments?: Json | null
@@ -437,6 +442,7 @@ export type Database = {
           thread_id?: string | null
           to_email?: string
           updated_at?: string
+          user_email?: string | null
         }
         Relationships: [
           {
@@ -693,6 +699,7 @@ export type Database = {
           sync_start: string
           tipo_sync: string
           total_batches: number | null
+          user_email: string | null
         }
         Insert: {
           completed_batches?: number | null
@@ -709,6 +716,7 @@ export type Database = {
           sync_start?: string
           tipo_sync: string
           total_batches?: number | null
+          user_email?: string | null
         }
         Update: {
           completed_batches?: number | null
@@ -725,6 +733,7 @@ export type Database = {
           sync_start?: string
           tipo_sync?: string
           total_batches?: number | null
+          user_email?: string | null
         }
         Relationships: [
           {
@@ -751,6 +760,7 @@ export type Database = {
           sync_log_id: string | null
           total_messages: number
           updated_at: string
+          user_email: string | null
         }
         Insert: {
           batch_size?: number
@@ -766,6 +776,7 @@ export type Database = {
           sync_log_id?: string | null
           total_messages?: number
           updated_at?: string
+          user_email?: string | null
         }
         Update: {
           batch_size?: number
@@ -781,6 +792,7 @@ export type Database = {
           sync_log_id?: string | null
           total_messages?: number
           updated_at?: string
+          user_email?: string | null
         }
         Relationships: [
           {

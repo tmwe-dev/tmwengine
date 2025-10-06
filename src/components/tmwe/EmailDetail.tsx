@@ -304,26 +304,9 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
-      <div className="flex justify-between items-center p-4 border-b bg-card-transparent">
-        {/* Left: Email navigation and management */}
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+        {/* Left: Management actions */}
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-          >
-            <ChevronLeft className="h-8 w-8" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onNext}
-            disabled={!hasNext}
-          >
-            <ChevronRight className="h-8 w-8" />
-          </Button>
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-12 w-12">
@@ -396,15 +379,37 @@ export const EmailDetail = ({
           )}
         </div>
 
+        {/* Center: Email navigation */}
+        <div className="flex items-center gap-3 justify-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+          >
+            <ChevronLeft className="h-8 w-8" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onNext}
+            disabled={!hasNext}
+          >
+            <ChevronRight className="h-8 w-8" />
+          </Button>
+        </div>
+
         {/* Right: Close button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={onBack}
-          className="h-10 w-10"
-        >
-          <X className="h-6 w-6" />
-        </Button>
+        <div className="flex justify-end">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onBack}
+            className="h-10 w-10"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
       
       {/* Action buttons bar */}

@@ -89,11 +89,19 @@ export const EmailDetail = ({
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [emailTextColor, setEmailTextColor] = useState(() => {
+    return localStorage.getItem('emailTextColor') || '#fdba74';
+  });
   
   // Use external state if provided, otherwise use internal state
   const [internalIsHeaderCollapsed, setInternalIsHeaderCollapsed] = useState(false);
   const isHeaderCollapsed = externalIsHeaderCollapsed !== undefined ? externalIsHeaderCollapsed : internalIsHeaderCollapsed;
   const handleToggleCollapse = externalOnToggleCollapse || (() => setInternalIsHeaderCollapsed(!internalIsHeaderCollapsed));
+
+  // Save color to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('emailTextColor', emailTextColor);
+  }, [emailTextColor]);
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -263,6 +271,23 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card-transparent">
+      {/* Color picker bar */}
+      <div className="flex items-center justify-between p-2 border-b bg-card-transparent">
+        <div className="flex items-center gap-3">
+          <label htmlFor="textColorPicker" className="text-sm font-medium">
+            Colore testo:
+          </label>
+          <input
+            id="textColorPicker"
+            type="color"
+            value={emailTextColor}
+            onChange={(e) => setEmailTextColor(e.target.value)}
+            className="h-8 w-16 cursor-pointer rounded border border-border"
+          />
+          <span className="text-xs text-muted-foreground">{emailTextColor}</span>
+        </div>
+      </div>
+
       {/* Top bar with navigation and close */}
       {!isHeaderCollapsed && (
       <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
@@ -478,12 +503,12 @@ export const EmailDetail = ({
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
-                        color: #fdba74 !important;
+                        color: ${emailTextColor} !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
                       }
                       body * {
-                        color: #fdba74 !important;
+                        color: ${emailTextColor} !important;
                       }
                       * {
                         max-width: 100% !important;

@@ -495,7 +495,7 @@ export const EmailList = ({
                 }}
               />
               <Label htmlFor="multi-select" className="text-xs cursor-pointer whitespace-nowrap">
-                Selezione multipla
+                Multi
               </Label>
             </div>
 

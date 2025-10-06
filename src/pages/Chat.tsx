@@ -517,9 +517,9 @@ const Chat = () => {
                 <MessageSquare className="h-8 w-8 text-primary" />
                 Chat AI
               </h1>
-              {pagePromptName && (
+              {(pagePromptName || (pageRoute === '/chat' && selectedSystemPromptId)) && (
                 <div className={`text-sm mt-1 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
-                  {pagePromptName}
+                  {pagePromptName || systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt'}
                 </div>
               )}
             </div>

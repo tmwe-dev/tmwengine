@@ -693,6 +693,8 @@ const EmailDashboard = () => {
               hasPrevious={hasPreviousEmail()}
               hasNext={hasNextEmail()}
               onMarkAsRead={handleMarkAsRead}
+              isHeaderCollapsed={isHeaderCollapsed}
+              onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
             />
           </div>
         )}

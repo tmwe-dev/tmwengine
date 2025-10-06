@@ -61,6 +61,8 @@ interface EmailDetailProps {
   hasPrevious?: boolean;
   hasNext?: boolean;
   onMarkAsRead?: (emailId: string) => void;
+  isHeaderCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const EmailDetail = ({ 
@@ -75,7 +77,9 @@ export const EmailDetail = ({
   onNext,
   hasPrevious = false,
   hasNext = false,
-  onMarkAsRead
+  onMarkAsRead,
+  isHeaderCollapsed: externalIsHeaderCollapsed,
+  onToggleCollapse: externalOnToggleCollapse
 }: EmailDetailProps) => {
   const [senderGroups, setSenderGroups] = useState<any[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
@@ -84,7 +88,11 @@ export const EmailDetail = ({
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
-  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const [internalIsHeaderCollapsed, setInternalIsHeaderCollapsed] = useState(false);
+  const isHeaderCollapsed = externalIsHeaderCollapsed !== undefined ? externalIsHeaderCollapsed : internalIsHeaderCollapsed;
+  const handleToggleCollapse = externalOnToggleCollapse || (() => setInternalIsHeaderCollapsed(!internalIsHeaderCollapsed));
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -353,8 +361,16 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Right: Actions and Close */}
+        {/* Right: Toggle collapse, Actions and Close */}
         <div className="flex justify-end gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleToggleCollapse}
+            className="h-10 w-10"
+          >
+            {isHeaderCollapsed ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
+          </Button>
           {!isHeaderCollapsed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

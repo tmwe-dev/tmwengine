@@ -759,7 +759,7 @@ export function AdvancedMultipleActivityForm({
                   onClick={() => setShowCallDialog(true)}
                 >
                   <Phone className="h-5 w-5 text-green-500" />
-                  <h4 className="font-semibold">Note Chiamata</h4>
+                  <h4 className="font-semibold">call</h4>
                 </div>
                 
                 <FormField

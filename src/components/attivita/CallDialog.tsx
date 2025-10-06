@@ -212,23 +212,8 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   onClick={() => handlePhoneCall(contact.telefono || '')}
                   disabled={!contact.telefono || !getNumberValidation(contact.telefono)?.isValid}
                 >
-                  <div className="flex items-center justify-center w-6 h-6 bg-red-500 rounded-full mr-1">
-                    <Phone className="h-3 w-3 text-white" />
-                  </div>
+                  <Phone className="h-4 w-4 mr-2" />
                   Chiama
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => handleWhatsApp(contact.telefono || '')}
-                  disabled={!contact.telefono || !isWhatsAppAvailable(contact.telefono || '')}
-                >
-                  <div className="flex items-center justify-center w-6 h-6 bg-green-500 rounded-full mr-1">
-                    <MessageCircle className="h-3 w-3 text-white" />
-                  </div>
-                  WhatsApp
                 </Button>
               </div>
             )}
@@ -307,9 +292,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   onClick={() => handlePhoneCall(contact.cellulare || '')}
                   disabled={!contact.cellulare || !getNumberValidation(contact.cellulare)?.isValid}
                 >
-                  <div className="flex items-center justify-center w-6 h-6 bg-red-500 rounded-full mr-1">
-                    <Phone className="h-3 w-3 text-white" />
-                  </div>
+                  <Phone className="h-4 w-4 mr-2" />
                   Chiama
                 </Button>
                 
@@ -320,9 +303,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
                   onClick={() => handleWhatsApp(contact.cellulare || '')}
                   disabled={!contact.cellulare || !isWhatsAppAvailable(contact.cellulare || '')}
                 >
-                  <div className="flex items-center justify-center w-6 h-6 bg-green-500 rounded-full mr-1">
-                    <MessageCircle className="h-3 w-3 text-white" />
-                  </div>
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   WhatsApp
                 </Button>
               </div>

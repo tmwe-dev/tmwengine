@@ -19,6 +19,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   FolderCog,
   User,
   Users,
@@ -82,6 +84,7 @@ export const EmailDetail = ({
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -252,81 +255,85 @@ export const EmailDetail = ({
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
       <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
-        {/* Left: Management actions */}
-        <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-12 w-12">
-                <FolderCog className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-56">
-              {senderGroups.map((group) => (
-                <DropdownMenuItem
-                  key={group.id}
-                  onClick={() => handleAssignGroup(group.id)}
-                  className="cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: group.colore }}
-                    />
-                    {group.nome_gruppo}
-                  </div>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              {isCreatingGroup ? (
-                <div className="p-2 space-y-2">
-                  <Input
-                    placeholder="Nome gruppo"
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleCreateGroup();
-                      }
-                    }}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleCreateGroup} className="flex-1">
-                      Crea
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => {
-                        setIsCreatingGroup(false);
-                        setNewGroupName('');
+        {/* Left: Management actions or empty */}
+        {!isHeaderCollapsed ? (
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-12 w-12">
+                  <FolderCog className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-56">
+                {senderGroups.map((group) => (
+                  <DropdownMenuItem
+                    key={group.id}
+                    onClick={() => handleAssignGroup(group.id)}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: group.colore }}
+                      />
+                      {group.nome_gruppo}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {isCreatingGroup ? (
+                  <div className="p-2 space-y-2">
+                    <Input
+                      placeholder="Nome gruppo"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateGroup();
+                        }
                       }}
-                      className="flex-1"
-                    >
-                      Annulla
-                    </Button>
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleCreateGroup} className="flex-1">
+                        Crea
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          setIsCreatingGroup(false);
+                          setNewGroupName('');
+                        }}
+                        className="flex-1"
+                      >
+                        Annulla
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
-                  + Nuovo gruppo
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Button variant="ghost" size="icon" className="h-12 w-12">
-            <Star className="h-6 w-6" />
-          </Button>
-          
-          {onDelete && (
-            <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
-              <Trash2 className="h-6 w-6" />
+                ) : (
+                  <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
+                    + Nuovo gruppo
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button variant="ghost" size="icon" className="h-12 w-12">
+              <Star className="h-6 w-6" />
             </Button>
-          )}
-        </div>
+            
+            {onDelete && (
+              <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
+                <Trash2 className="h-6 w-6" />
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div></div>
+        )}
 
-        {/* Center: Email navigation */}
+        {/* Center: Email navigation (sempre visibile) */}
         <div className="flex items-center gap-3 justify-center">
           <Button 
             variant="ghost" 
@@ -346,50 +353,60 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Right: Actions and Close */}
+        {/* Right: Toggle collapse, Actions and Close */}
         <div className="flex justify-end gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="h-10 w-10"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => {
-                setShowActionsSheet(true);
-                setSelectedAction('move_to_folder');
-              }}>
-                <FolderCog className="h-4 w-4 mr-2" />
-                Sposta automaticamente
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setShowActionsSheet(true);
-                setSelectedAction('mark_as_read');
-              }}>
-                <FolderCog className="h-4 w-4 mr-2" />
-                Segna sempre come letto
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                setShowActionsSheet(true);
-                setSelectedAction('archive');
-              }}>
-                <FolderCog className="h-4 w-4 mr-2" />
-                Archivia automaticamente
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setShowActionsSheet(true);
-                setSelectedAction('delete');
-              }}>
-                <FolderCog className="h-4 w-4 mr-2" />
-                Elimina automaticamente
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isHeaderCollapsed && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="h-10 w-10"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => {
+                  setShowActionsSheet(true);
+                  setSelectedAction('move_to_folder');
+                }}>
+                  <FolderCog className="h-4 w-4 mr-2" />
+                  Sposta automaticamente
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setShowActionsSheet(true);
+                  setSelectedAction('mark_as_read');
+                }}>
+                  <FolderCog className="h-4 w-4 mr-2" />
+                  Segna sempre come letto
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  setShowActionsSheet(true);
+                  setSelectedAction('archive');
+                }}>
+                  <FolderCog className="h-4 w-4 mr-2" />
+                  Archivia automaticamente
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setShowActionsSheet(true);
+                  setSelectedAction('delete');
+                }}>
+                  <FolderCog className="h-4 w-4 mr-2" />
+                  Elimina automaticamente
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+            className="h-10 w-10"
+          >
+            {isHeaderCollapsed ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
+          </Button>
           <Button 
             variant="ghost" 
             size="icon"
@@ -401,30 +418,32 @@ export const EmailDetail = ({
         </div>
       </div>
       
-      {/* Action buttons bar */}
-      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
-        {/* Communication actions */}
-        <div className="flex gap-3 items-center">
-          <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <Reply className="h-5 w-5" />
-              <User className="h-4 w-4" />
-            </div>
-          </Button>
-          <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <ReplyAll className="h-5 w-5" />
-              <Users className="h-4 w-4" />
-            </div>
-          </Button>
-          <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <Forward className="h-5 w-5" />
-              <Megaphone className="h-4 w-4" />
-            </div>
-          </Button>
+      {/* Action buttons bar - nascosta quando collapsed */}
+      {!isHeaderCollapsed && (
+        <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+          {/* Communication actions */}
+          <div className="flex gap-3 items-center">
+            <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
+              <div className="flex items-center gap-1">
+                <Reply className="h-5 w-5" />
+                <User className="h-4 w-4" />
+              </div>
+            </Button>
+            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
+              <div className="flex items-center gap-1">
+                <ReplyAll className="h-5 w-5" />
+                <Users className="h-4 w-4" />
+              </div>
+            </Button>
+            <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
+              <div className="flex items-center gap-1">
+                <Forward className="h-5 w-5" />
+                <Megaphone className="h-4 w-4" />
+              </div>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <ScrollArea className="flex-1">
         {/* Body and subject removed - only container kept for future content */}

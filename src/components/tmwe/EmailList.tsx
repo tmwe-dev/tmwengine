@@ -459,20 +459,6 @@ export const EmailList = ({
                 )}
               </div>
             </div>
-            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEmailSelect(email.id);
-                  onOpenDetailPopup?.();
-                }}
-                className="p-0 h-full w-full hover:bg-white/10"
-              >
-                <Maximize2 className="h-4 w-4 text-white" />
-              </Button>
-            </div>
           </div>
         </Card>
       ))}

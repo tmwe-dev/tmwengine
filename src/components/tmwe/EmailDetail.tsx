@@ -503,7 +503,7 @@ export const EmailDetail = ({
                         color: ${emailTextColor} !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
-                        background-color: white !important;
+                        background-color: black !important;
                       }
                       body * {
                         color: ${emailTextColor} !important;

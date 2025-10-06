@@ -114,9 +114,12 @@ const CRMLayout = ({ children }) => {
         </div>
 
         {/* Logo centrato */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
+        <button 
+          onClick={() => navigate(-1)}
+          className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
-        </div>
+        </button>
 
         <div className="flex items-center gap-4">
           

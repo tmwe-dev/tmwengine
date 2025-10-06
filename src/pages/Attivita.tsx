@@ -1020,9 +1020,10 @@ export default function Attivita() {
                   {selectedActivities.length} attività selezionate
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-4">
                 <Button 
-                  size={isMobile ? "default" : "sm"}
+                  variant="ghost"
+                  size="icon"
                   onClick={async () => {
                     try {
                       const { error } = await supabase
@@ -1047,16 +1048,20 @@ export default function Attivita() {
                       });
                     }
                   }}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="hover:bg-transparent"
+                  title="Completa"
                 >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Completa
+                  <CheckCircle className="h-6 w-6" />
                 </Button>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button size={isMobile ? "default" : "sm"} className="bg-blue-600 hover:bg-blue-700">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Riprogramma
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="hover:bg-transparent"
+                      title="Riprogramma"
+                    >
+                      <Calendar className="h-6 w-6" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1072,12 +1077,13 @@ export default function Attivita() {
                   </PopoverContent>
                 </Popover>
                 <Button 
-                  variant="outline" 
-                  size={isMobile ? "default" : "sm"}
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setSelectedActivities([])}
+                  className="hover:bg-transparent"
+                  title="Deseleziona"
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Deseleziona
+                  <X className="h-6 w-6" />
                 </Button>
               </div>
             </div>

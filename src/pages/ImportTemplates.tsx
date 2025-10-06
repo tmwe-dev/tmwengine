@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1116,6 +1116,120 @@ export default function ImportTemplates() {
         startTime: 0
       });
     }
+  };
+
+  
+  // Funzione per esportare il template CSV completo
+  const downloadCSVTemplate = () => {
+    // Header del template con tutti i campi
+    const headers = [
+      'id',
+      'commercial_anagrafiche_id',
+      'name',
+      'alias',
+      'position',
+      'title',
+      'phone',
+      'cell',
+      'email',
+      'country',
+      'note',
+      'stato',
+      'created_by',
+      'agent_id',
+      'completed',
+      'origin',
+      'client_code',
+      'meta_client',
+      'meta_express',
+      'meta_sea_freight',
+      'meta_air_freight',
+      'meta_interested',
+      'meta_reception_required_email',
+      'meta_contact_required_email',
+      'meta_presentation',
+      'meta_exworks',
+      'meta_hight_value_customer',
+      'meta_tutorial',
+      'meta_rejected',
+      'meta_wca',
+      'meta_exclient',
+      'archiviata',
+      'has_actions',
+      'name', // Seconda occorrenza per company_name
+      'company_alias',
+      'address',
+      'city',
+      'zip_code',
+      'last',
+      'scheduled_contact',
+      'next_contact_date'
+    ];
+
+    // Riga di esempio con valori dimostrativi
+    const exampleRow = [
+      '1',
+      'COMM001',
+      'Mario Rossi',
+      'M.Rossi',
+      'CEO',
+      'Dott.',
+      '+39 02 1234567',
+      '+39 333 1234567',
+      'mario.rossi@example.com',
+      'Italy',
+      'Cliente strategico interessato a sea freight',
+      'A',
+      'admin',
+      'AG001',
+      '0',
+      'Website',
+      'CLI001',
+      '1',
+      '0',
+      '1',
+      '0',
+      '1',
+      '0',
+      '0',
+      '1',
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      '0',
+      'ACME SRL',
+      'Acme',
+      'Via Roma 123',
+      'Milano',
+      '20100',
+      '2025-01-15',
+      '2025-02-01',
+      '2025-02-15'
+    ];
+
+    // Crea il contenuto CSV
+    const csvContent = [
+      headers.join(';'),
+      exampleRow.join(';')
+    ].join('\n');
+
+    // Crea e scarica il file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'tmwe_commercial_contact_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Template CSV scaricato con successo');
   };
 
   const insertPlaceholder = (placeholder: string) => {
@@ -2281,13 +2395,27 @@ export default function ImportTemplates() {
           <div className="space-y-2">
           <Card className="bg-card-transparent">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Database className="h-4 w-4" />
-                Gestisci Import
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Visualizza e gestisci i file importati. Seleziona i contatti da trasferire nella rubrica principale.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Database className="h-4 w-4" />
+                    Gestisci Import
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Visualizza e gestisci i file importati. Seleziona i contatti da trasferire nella rubrica principale.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadCSVTemplate}
+                  className="flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                  <span className="hidden sm:inline">Scarica Template CSV</span>
+                  <span className="sm:hidden">Template</span>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
               {isMobile ? (

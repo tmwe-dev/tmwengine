@@ -305,9 +305,7 @@ export const EmailDetail = ({
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
       <div className="flex justify-between items-center p-4 border-b bg-card-transparent">
-        <div className="w-10"></div>
-        
-        {/* Center: Email navigation */}
+        {/* Left: Email navigation and management */}
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
@@ -325,45 +323,7 @@ export const EmailDetail = ({
           >
             <ChevronRight className="h-8 w-8" />
           </Button>
-        </div>
-
-        {/* Right: Close button */}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={onBack}
-          className="h-10 w-10"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-      </div>
-      
-      {/* Action buttons bar */}
-      <div className="grid grid-cols-2 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
-        {/* Left: Communication actions */}
-        <div className="flex gap-3 items-center justify-start">
-          <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <Reply className="h-5 w-5" />
-              <User className="h-4 w-4" />
-            </div>
-          </Button>
-          <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <ReplyAll className="h-5 w-5" />
-              <Users className="h-4 w-4" />
-            </div>
-          </Button>
-          <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
-            <div className="flex items-center gap-1">
-              <Forward className="h-5 w-5" />
-              <Megaphone className="h-4 w-4" />
-            </div>
-          </Button>
-        </div>
-
-        {/* Right: Management actions */}
-        <div className="flex gap-3 items-center justify-end">
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-12 w-12">
@@ -424,14 +384,51 @@ export const EmailDetail = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          
           <Button variant="ghost" size="icon" className="h-12 w-12">
             <Star className="h-6 w-6" />
           </Button>
+          
           {onDelete && (
             <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
               <Trash2 className="h-6 w-6" />
             </Button>
           )}
+        </div>
+
+        {/* Right: Close button */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={onBack}
+          className="h-10 w-10"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+      </div>
+      
+      {/* Action buttons bar */}
+      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+        {/* Communication actions */}
+        <div className="flex gap-3 items-center">
+          <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <Reply className="h-5 w-5" />
+              <User className="h-4 w-4" />
+            </div>
+          </Button>
+          <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <ReplyAll className="h-5 w-5" />
+              <Users className="h-4 w-4" />
+            </div>
+          </Button>
+          <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
+            <div className="flex items-center gap-1">
+              <Forward className="h-5 w-5" />
+              <Megaphone className="h-4 w-4" />
+            </div>
+          </Button>
         </div>
       </div>
 

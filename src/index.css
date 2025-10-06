@@ -337,4 +337,23 @@ Tutti i colori DEVONO essere HSL.
     background-size: 20px 20px;
     background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   }
+
+  /* === EMAIL BODY CONTENT CONSTRAINTS === */
+  .email-body-content * {
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .email-body-content img,
+  .email-body-content table,
+  .email-body-content pre {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .email-body-content table {
+    display: block !important;
+    overflow-x: auto !important;
+  }
 }

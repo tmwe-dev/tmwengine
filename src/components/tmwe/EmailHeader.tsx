@@ -171,12 +171,15 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           </div>
 
-          {/* CENTER: Mail icon - allineato a destra della sezione */}
-          <div className="flex items-center justify-end">
+          {/* CENTER: Empty space */}
+          <div></div>
+
+          {/* RIGHT: Mail icon + Email Count + Search */}
+          <div className="flex items-center gap-1 sm:gap-2 justify-end min-w-0">
             <Button 
               onClick={onCompose} 
               size="icon"
-              className="h-8 w-8 relative"
+              className="h-8 w-8 relative shrink-0"
               title="Compose new email"
             >
               <Mail 
@@ -187,27 +190,26 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 }} 
               />
             </Button>
-          </div>
 
-          {/* RIGHT: Email Count + Search */}
-          <div className="hidden md:flex items-center gap-1 sm:gap-2 justify-end min-w-0">
-            <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
-              <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
-            </Badge>
+            <div className="hidden md:flex items-center gap-1 sm:gap-2 min-w-0">
+              <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
+                <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
+              </Badge>
 
-            <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
-              <div className="relative min-w-0">
-                <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search emails..."
-                  className="pl-8 sm:pl-10 text-xs sm:text-sm h-8 w-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </form>
+              <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
+                <div className="relative min-w-0">
+                  <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search emails..."
+                    className="pl-8 sm:pl-10 text-xs sm:text-sm h-8 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 

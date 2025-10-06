@@ -427,6 +427,7 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
+        {/* Body and subject removed - only container kept for future content */}
       </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>

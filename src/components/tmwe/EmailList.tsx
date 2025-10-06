@@ -590,7 +590,7 @@ export const EmailList = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap ml-auto">
             {/* Width controls - hidden on mobile */}
             <div className="hidden lg:flex items-center gap-0.5 mr-2 border-r pr-2 border-border">
               <Button

@@ -643,7 +643,10 @@ const EmailDashboard = () => {
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => setPageAiChatOpen(true)}
+                  onClick={() => {
+                    console.log('🧠 Opening Page AI Chat for /email-manager');
+                    setPageAiChatOpen(true);
+                  }}
                 >
                   <Brain className="h-4 w-4 text-primary" />
                 </Button>

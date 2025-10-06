@@ -94,7 +94,7 @@ const EmailDashboard = () => {
   // Mark email as read
   const handleMarkAsRead = async (emailId: string) => {
     try {
-      await emailMessageApi.getMessage(emailId, true);
+      await emailMessageApi.getMessage(emailId, selectedFolder || 'INBOX', true);
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     } catch (error) {
       console.error('Error marking email as read:', error);
@@ -198,35 +198,31 @@ const EmailDashboard = () => {
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
-      console.log('🔍 Tentativo di caricamento dettaglio email UID:', selectedEmailId);
-      
-      // WORKAROUND: Usa i dati dalla lista invece di chiamare l'API
-      // perché l'API TMWE non supporta ancora get_message correttamente
-      const emailFromList = emails.find(e => e.id === selectedEmailId);
-      
-      if (!emailFromList) {
-        throw new Error('Email non trovata nella lista');
-      }
-      
-      console.log('✅ Email trovata nella lista, uso quella per il dettaglio:', emailFromList);
-      
-      // Ritorna un oggetto che simula la risposta dell'API
-      return {
-        message: {
-          uid: emailFromList.id,
-          subject: emailFromList.subject,
-          from: emailFromList.from,
-          to: [emailFromList.from], // Temporaneo, non abbiamo il 'to' nella lista
-          cc: [],
-          date: emailFromList.date,
-          body: '<p>Contenuto email non disponibile</p><p class="text-sm text-muted-foreground mt-2">L\'API TMWE non supporta ancora il caricamento completo del corpo dell\'email tramite get_message.</p>',
-          body_html: '<p>Contenuto email non disponibile</p><p class="text-sm text-muted-foreground mt-2">L\'API TMWE non supporta ancora il caricamento completo del corpo dell\'email tramite get_message.</p>',
-          attachments: []
+      console.log('🔍 Fetching email with UID:', selectedEmailId);
+      try {
+        const result = await emailMessageApi.getMessage(
+          selectedEmailId!, 
+          selectedFolder || 'INBOX',  // Passa il folder corrente
+          true,  // markAsRead
+          true,  // includeAttachments
+          'html' // format
+        );
+        console.log('✅ Email detail received:', result);
+        // Invalidate messages query to update the read status in the list
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+        return result;
+      } catch (error: any) {
+        console.error('❌ Error loading email:', error);
+        if (error.message?.includes('404') || error.message?.includes('Not Found')) {
+          toast.error('Email non più disponibile sul server. Prova a ricaricare la lista.');
+        } else {
+          toast.error('Errore durante il caricamento dell\'email');
         }
-      };
+        throw error;
+      }
     },
     enabled: !!selectedEmailId,
-    retry: false,
+    retry: 1,
   });
 
   // Map API response to component format
@@ -436,7 +432,7 @@ const EmailDashboard = () => {
 
   const handleBulkMarkAsRead = async (emailIds: string[]) => {
     try {
-      await Promise.all(emailIds.map(id => emailMessageApi.getMessage(id, true)));
+      await Promise.all(emailIds.map(id => emailMessageApi.getMessage(id, selectedFolder || 'INBOX', true)));
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       toast.success('Email segnate come lette');
     } catch (error) {

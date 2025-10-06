@@ -79,24 +79,26 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons */}
-          <div className="flex items-center gap-1 sm:gap-2 justify-start">
-            {isMobile && onMenuClick && (
-              <Button 
-                onClick={onMenuClick} 
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-            
-            <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
-              {isMobile ? 'Email' : 'TMWE Email'}
-            </h1>
+          <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {isMobile && onMenuClick && (
+                <Button 
+                  onClick={onMenuClick} 
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              )}
+              
+              <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
+                {isMobile ? 'Email' : 'TMWE Email'}
+              </h1>
+            </div>
 
-            {/* Sync buttons accanto al titolo */}
-            <div className="flex items-center gap-1 ml-2">
+            {/* Sync buttons allineati a destra */}
+            <div className="flex items-center gap-1">
               {isMobile ? (
                 <Button 
                   onClick={() => setSyncPopupOpen(true)}

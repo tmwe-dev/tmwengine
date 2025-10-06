@@ -1161,11 +1161,12 @@ export default function ImportTemplates() {
       '20100'
     ];
 
-    // Crea il contenuto CSV
-    const csvContent = [
+    // Crea il contenuto CSV con BOM UTF-8 per compatibilità Excel
+    const BOM = '\uFEFF';
+    const csvContent = BOM + [
       headers.join(';'),
       exampleRow.join(';')
-    ].join('\n');
+    ].join('\r\n'); // Usa \r\n per Windows/Excel
 
     // Crea e scarica il file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

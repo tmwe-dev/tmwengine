@@ -352,7 +352,7 @@ export const EmailList = ({
         >
           <div className="flex items-start min-w-0 w-full h-full">
             {multiSelectMode && (
-              <div className="flex items-center justify-center px-3">
+              <div className="flex items-center justify-center px-3 self-center">
                 <Checkbox
                   checked={selectedEmailIds.has(email.id)}
                   onCheckedChange={() => handleToggleEmailSelection(email.id)}

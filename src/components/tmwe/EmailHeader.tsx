@@ -94,8 +94,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           </h1>
         </div>
 
-        {/* CENTER: Actions (Compose + Sync buttons) */}
-        <div className="flex items-center gap-1 shrink-0 mx-auto">
+        {/* CENTER: Mail icon */}
+        <div className="flex items-center justify-center flex-1">
           <Button 
             onClick={onCompose} 
             size="icon"
@@ -110,7 +110,10 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               }} 
             />
           </Button>
-          
+        </div>
+
+        {/* LEFT: Sync buttons (moved from center) */}
+        <div className="flex items-center gap-1">
           {/* Mobile: Settings icon that opens sync options */}
           {isMobile ? (
             <Button 

@@ -198,37 +198,40 @@ const EmailDashboard = () => {
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
-      console.log('🔍 Fetching email with UID:', selectedEmailId);
-      try {
-        const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
-        console.log('✅ Email detail received:', result);
-        // Invalidate messages query to update the read status in the list
-        queryClient.invalidateQueries({ queryKey: ['messages'] });
-        return result;
-      } catch (error: any) {
-        console.error('❌ Error loading email:', error);
-        if (error.message?.includes('404') || error.message?.includes('Not Found')) {
-          toast.error('Email non più disponibile sul server. Prova a ricaricare la lista.');
-        } else {
-          toast.error('Errore durante il caricamento dell\'email');
-        }
-        throw error;
+      console.log('🔍 Tentativo di caricamento dettaglio email UID:', selectedEmailId);
+      
+      // WORKAROUND: Usa i dati dalla lista invece di chiamare l'API
+      // perché l'API TMWE non supporta ancora get_message correttamente
+      const emailFromList = emails.find(e => e.id === selectedEmailId);
+      
+      if (!emailFromList) {
+        throw new Error('Email non trovata nella lista');
       }
+      
+      console.log('✅ Email trovata nella lista, uso quella per il dettaglio:', emailFromList);
+      
+      // Ritorna un oggetto che simula la risposta dell'API
+      return {
+        message: {
+          uid: emailFromList.id,
+          subject: emailFromList.subject,
+          from: emailFromList.from,
+          to: [emailFromList.from], // Temporaneo, non abbiamo il 'to' nella lista
+          cc: [],
+          date: emailFromList.date,
+          body: '<p>Contenuto email non disponibile</p><p class="text-sm text-muted-foreground mt-2">L\'API TMWE non supporta ancora il caricamento completo del corpo dell\'email tramite get_message.</p>',
+          body_html: '<p>Contenuto email non disponibile</p><p class="text-sm text-muted-foreground mt-2">L\'API TMWE non supporta ancora il caricamento completo del corpo dell\'email tramite get_message.</p>',
+          attachments: []
+        }
+      };
     },
     enabled: !!selectedEmailId,
-    retry: 1,
+    retry: false,
   });
 
-  // Map API response to component format - handle both possible response structures
+  // Map API response to component format
   const selectedEmail = emailDetailResponse ? (() => {
-    // Check if response is empty array or has no data
-    if (Array.isArray(emailDetailResponse) && emailDetailResponse.length === 0) {
-      console.warn('⚠️ API returned empty array for message');
-      return null;
-    }
-
-    // Try to get the message from response
-    const msg = emailDetailResponse.message || emailDetailResponse.data || emailDetailResponse;
+    const msg = emailDetailResponse.message;
     
     if (!msg || typeof msg !== 'object') {
       console.warn('⚠️ No valid message data in response:', emailDetailResponse);
@@ -237,17 +240,14 @@ const EmailDashboard = () => {
 
     console.log('📧 Processing message:', msg);
 
-    // Access header data correctly from the TMWE API response structure
-    const header = msg.header || msg;
-
     return {
-      id: String(header.uid || msg.uid || msg.id || selectedEmailId),
-      subject: header.subject || '(No Subject)',
-      from: header.from || 'Unknown',
-      to: header.to ? (Array.isArray(header.to) ? header.to : [header.to]) : [],
-      cc: header.cc ? (Array.isArray(header.cc) ? header.cc : [header.cc]) : [],
-      date: header.date || new Date().toISOString(),
-      body: msg.body_html || msg.body_plain || msg.body_text || msg.body || '<p>No content available</p>',
+      id: String(msg.uid || selectedEmailId),
+      subject: msg.subject || '(No Subject)',
+      from: msg.from || 'Unknown',
+      to: msg.to ? (Array.isArray(msg.to) ? msg.to : [msg.to]) : [],
+      cc: msg.cc ? (Array.isArray(msg.cc) ? msg.cc : [msg.cc]) : [],
+      date: msg.date || new Date().toISOString(),
+      body: msg.body_html || msg.body || '<p>No content available</p>',
       attachments: msg.attachments || [],
     };
   })() : null;

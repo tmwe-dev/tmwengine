@@ -538,7 +538,7 @@ export const EmailDetail = ({
         <div className="space-y-4">
           <h1 className="text-base font-normal">{email.subject}</h1>
           
-          <div className="max-w-full overflow-x-auto break-words" dangerouslySetInnerHTML={{ __html: processedBody }} />
+          <div className="max-w-full overflow-x-auto break-words text-left" dangerouslySetInnerHTML={{ __html: processedBody }} />
         </div>
       </ScrollArea>
 

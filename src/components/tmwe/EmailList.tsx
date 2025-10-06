@@ -25,6 +25,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { EmailDetailNew } from './EmailDetailNew';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface Email {
   id: string;
@@ -98,6 +100,7 @@ export const EmailList = ({
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
   const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('wide');
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -222,7 +225,14 @@ export const EmailList = ({
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
-          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
+          onClick={() => {
+            if (multiSelectMode) {
+              handleToggleEmailSelection(email.id);
+            } else {
+              onEmailSelect(email.id);
+              setShowDetailDialog(true);
+            }
+          }}
         >
           <div className="flex items-stretch min-w-0 w-full">
             {multiSelectMode && (
@@ -348,7 +358,14 @@ export const EmailList = ({
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
-          onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
+          onClick={() => {
+            if (multiSelectMode) {
+              handleToggleEmailSelection(email.id);
+            } else {
+              onEmailSelect(email.id);
+              setShowDetailDialog(true);
+            }
+          }}
         >
           <div className="flex items-start min-w-0 w-full h-full">
             {multiSelectMode && (
@@ -826,6 +843,33 @@ export const EmailList = ({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Dialog dettaglio email */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0">
+          {emailDetail && (
+            <EmailDetailNew
+              email={{
+                id: emailDetail.id,
+                subject: emailDetail.subject,
+                from: emailDetail.from,
+                to: [],
+                date: new Date().toISOString(),
+                body: emailDetail.body,
+              }}
+              onReply={() => {
+                setShowDetailDialog(false);
+              }}
+              onForward={() => {
+                setShowDetailDialog(false);
+              }}
+              onDelete={() => {
+                setShowDetailDialog(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -535,9 +535,19 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4 min-w-0">
-          <div className="w-full min-w-0">
-            <h2 className="text-lg md:text-xl font-semibold text-foreground whitespace-normal break-all hyphens-auto leading-relaxed w-full">{email.subject}</h2>
+        <div className="p-4 md:p-6 space-y-4 min-w-0 max-w-full">
+          <div className="w-full min-w-0 max-w-full">
+            <h2 
+              className="text-lg md:text-xl font-semibold text-foreground leading-relaxed w-full"
+              style={{ 
+                wordBreak: 'break-word', 
+                overflowWrap: 'break-word',
+                whiteSpace: 'pre-wrap',
+                hyphens: 'auto'
+              }}
+            >
+              {email.subject}
+            </h2>
           </div>
           <div>
             <Card className="bg-card/50 backdrop-blur-sm">

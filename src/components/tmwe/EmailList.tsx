@@ -576,26 +576,28 @@ export const EmailList = ({
               </div>
             )}
             </div>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-1.5">
-              <Switch
-                id="unread-only"
-                checked={showUnreadOnly}
-                onCheckedChange={(checked) => {
-                  setShowUnreadOnly(checked);
-                  if (selectedEmailId) onEmailSelect('');
-                }}
-                className="data-[state=checked]:bg-orange-400/30"
-              />
-              <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
-                Solo non lette
-              </Label>
-            </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Switch
+              id="unread-only"
+              checked={showUnreadOnly}
+              onCheckedChange={(checked) => {
+                setShowUnreadOnly(checked);
+                if (selectedEmailId) onEmailSelect('');
+              }}
+              className="data-[state=checked]:bg-orange-400/30"
+            />
+            <Label htmlFor="unread-only" className="text-xs cursor-pointer whitespace-nowrap">
+              Solo non lette
+            </Label>
           </div>
 
-          <div className="flex items-center gap-1 flex-wrap ml-auto">
+          <div className="flex items-center gap-1">
             {/* Width controls - hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-0.5 mr-2 border-r pr-2 border-border">
+            <div className="hidden lg:flex items-center gap-0.5 mr-1 pr-1 border-r border-border">
               <Button
                 variant={contentWidth === 'narrow' ? 'default' : 'ghost'}
                 size="sm"

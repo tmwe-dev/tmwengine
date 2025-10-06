@@ -97,7 +97,7 @@ export const EmailList = ({
   const [selectedEmailForActions, setSelectedEmailForActions] = useState<Email | null>(null);
   const [selectedDestinationFolder, setSelectedDestinationFolder] = useState<string>('INBOX');
   const [selectedAction, setSelectedAction] = useState<'archive' | 'move' | 'delete' | null>(null);
-  const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('medium');
+  const [contentWidth, setContentWidth] = useState<'narrow' | 'medium' | 'wide' | 'full'>('wide');
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
@@ -108,7 +108,7 @@ export const EmailList = ({
       case 'medium': return 'w-full lg:max-w-5xl'; // ~1024px on desktop
       case 'wide': return 'w-full lg:max-w-7xl'; // ~1280px on desktop
       case 'full': return 'w-full max-w-full';
-      default: return 'w-full lg:max-w-5xl';
+      default: return 'w-full lg:max-w-7xl';
     }
   };
 
@@ -203,7 +203,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className={cn("space-y-2 py-4 px-4 sm:px-6 pr-2 w-full", getWidthClass())}>
+    <div className={cn("space-y-2 py-4 px-2 sm:px-3 w-full", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -236,7 +236,7 @@ export const EmailList = ({
             )}
             <div className="flex-1 min-w-0 p-3 relative">
               <div className="flex items-center gap-4 min-w-0">
-                <div className="min-w-0 flex-shrink-0 w-32 sm:w-48 md:min-w-[200px]">
+                <div className="min-w-0 flex-shrink-0 w-40 sm:w-52 md:w-60">
                   <p className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -244,7 +244,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <h3 className={cn(
                     'truncate text-sm',
                     !email.read && 'font-semibold'
@@ -252,7 +252,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                <div className="flex items-center gap-2 flex-shrink-0 w-auto min-w-[140px]">
                   <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
@@ -322,20 +322,6 @@ export const EmailList = ({
                 )}
               </div>
             </div>
-            <div className="w-[30px] bg-black flex items-center justify-center flex-shrink-0 hidden sm:flex">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEmailSelect(email.id);
-                  onOpenDetailPopup?.();
-                }}
-                className="p-0 h-full w-full hover:bg-white/10"
-              >
-                <Maximize2 className="h-4 w-4 text-white" />
-              </Button>
-            </div>
           </div>
         </Card>
       ))}
@@ -343,7 +329,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-1.5 sm:px-2 pr-1 w-full", getWidthClass())}>
+    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-3 w-full", getWidthClass())}>
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -375,7 +361,7 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative">
-              <div className="flex items-start justify-between gap-1.5 sm:gap-2 md:gap-4 h-full min-w-0">
+              <div className="flex items-start justify-start gap-2 sm:gap-3 md:gap-4 h-full min-w-0">
                 <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
@@ -397,7 +383,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex flex-col items-end justify-end gap-1 sm:gap-2 self-end shrink-0">
+                <div className="flex flex-col items-end justify-end gap-1 sm:gap-2 self-end shrink-0 min-w-[120px]">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-base font-bold">

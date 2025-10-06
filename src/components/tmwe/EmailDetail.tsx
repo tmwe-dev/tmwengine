@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Reply, 
   ReplyAll, 
@@ -77,6 +79,9 @@ export const EmailDetail = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [currentSenderGroup, setCurrentSenderGroup] = useState<string | null>(null);
+  const [showActionsSheet, setShowActionsSheet] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
+  const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -191,6 +196,55 @@ export const EmailDetail = ({
     } catch (error: any) {
       console.error('Error creating group:', error);
       toast.error('Errore nella creazione del gruppo');
+    }
+  };
+
+  const handleCreateRule = async () => {
+    if (!selectedAction) {
+      toast.error('Seleziona un\'azione');
+      return;
+    }
+
+    try {
+      const senderEmail = email.from.match(/<(.+)>/)
+        ? email.from.match(/<(.+)>/)?.[1]
+        : email.from;
+
+      if (!senderEmail) {
+        toast.error('Impossibile estrarre l\'indirizzo email del mittente');
+        return;
+      }
+
+      // Delete existing rule for this sender
+      await supabase
+        .from('email_sender_actions')
+        .delete()
+        .eq('sender_email', senderEmail);
+
+      // Prepare action params
+      const actionParams: any = {};
+      if (selectedAction === 'move_to_folder') {
+        actionParams.folder = destinationFolder;
+      }
+
+      // Insert new rule
+      const { error } = await supabase
+        .from('email_sender_actions')
+        .insert({
+          sender_email: senderEmail,
+          action_type: selectedAction,
+          action_params: actionParams
+        });
+      
+      if (error) throw error;
+      
+      toast.success('Regola automatica creata con successo');
+      setShowActionsSheet(false);
+      setSelectedAction(null);
+      setDestinationFolder('INBOX');
+    } catch (error: any) {
+      console.error('Error creating rule:', error);
+      toast.error('Errore nella creazione della regola');
     }
   };
   // Validate and parse date safely
@@ -413,22 +467,34 @@ export const EmailDetail = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => console.log('Crea regola automatica')}>
-                <FolderCog className="h-4 w-4 mr-2" />
-                Crea regola automatica
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => console.log('Sposta in cartella')}>
+              <DropdownMenuItem onClick={() => {
+                setShowActionsSheet(true);
+                setSelectedAction('move_to_folder');
+              }}>
                 <FolderCog className="h-4 w-4 mr-2" />
                 Sposta automaticamente
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => console.log('Segna come letto')}>
+              <DropdownMenuItem onClick={() => {
+                setShowActionsSheet(true);
+                setSelectedAction('mark_as_read');
+              }}>
                 <FolderCog className="h-4 w-4 mr-2" />
                 Segna sempre come letto
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => console.log('Archivia automaticamente')}>
+              <DropdownMenuItem onClick={() => {
+                setShowActionsSheet(true);
+                setSelectedAction('archive');
+              }}>
                 <FolderCog className="h-4 w-4 mr-2" />
                 Archivia automaticamente
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setShowActionsSheet(true);
+                setSelectedAction('delete');
+              }}>
+                <FolderCog className="h-4 w-4 mr-2" />
+                Elimina automaticamente
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -537,6 +603,55 @@ export const EmailDetail = ({
           />
         </div>
       </ScrollArea>
+
+      <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-md backdrop-blur-md bg-background/95">
+          <SheetHeader>
+            <SheetTitle>Configura Regola Automatica</SheetTitle>
+            <SheetDescription>
+              Crea una regola per le email da: {email.from}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Azione</label>
+              <Select value={selectedAction || ''} onValueChange={(value: any) => setSelectedAction(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona un'azione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="move_to_folder">Sposta in cartella</SelectItem>
+                  <SelectItem value="mark_as_read">Segna come letto</SelectItem>
+                  <SelectItem value="archive">Archivia</SelectItem>
+                  <SelectItem value="delete">Elimina</SelectItem>
+                  <SelectItem value="forward">Inoltra</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedAction === 'move_to_folder' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cartella di destinazione</label>
+                <Input 
+                  value={destinationFolder}
+                  onChange={(e) => setDestinationFolder(e.target.value)}
+                  placeholder="es. INBOX/Lavoro"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button onClick={handleCreateRule} className="flex-1">
+                Crea Regola
+              </Button>
+              <Button variant="ghost" onClick={() => setShowActionsSheet(false)} className="flex-1">
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

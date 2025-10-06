@@ -537,11 +537,6 @@ export const EmailDetail = ({
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
           <h1 className="text-base font-normal whitespace-nowrap overflow-x-auto">{email.subject}</h1>
-          
-          <div 
-            className="whitespace-nowrap overflow-x-auto text-left" 
-            dangerouslySetInnerHTML={{ __html: processedBody }} 
-          />
         </div>
       </ScrollArea>
 

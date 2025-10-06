@@ -229,6 +229,7 @@ export const EmailList = ({
             if (multiSelectMode) {
               handleToggleEmailSelection(email.id);
             } else {
+              setSelectedEmailForActions(email);
               onEmailSelect(email.id);
               setShowDetailDialog(true);
             }
@@ -362,6 +363,7 @@ export const EmailList = ({
             if (multiSelectMode) {
               handleToggleEmailSelection(email.id);
             } else {
+              setSelectedEmailForActions(email);
               onEmailSelect(email.id);
               setShowDetailDialog(true);
             }
@@ -847,19 +849,15 @@ export const EmailList = ({
       {/* Dialog dettaglio email */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl h-[90vh] p-0">
-          {isLoadingDetail ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : emailDetail ? (
+          {selectedEmailForActions ? (
             <EmailDetailNew
               email={{
-                id: emailDetail.id,
-                subject: emailDetail.subject,
-                from: emailDetail.from,
+                id: selectedEmailForActions.id,
+                subject: selectedEmailForActions.subject,
+                from: selectedEmailForActions.from,
                 to: [],
-                date: new Date().toISOString(),
-                body: emailDetail.body,
+                date: selectedEmailForActions.date,
+                body: selectedEmailForActions.preview || '<p>Contenuto non disponibile</p>',
               }}
               onReply={() => {
                 setShowDetailDialog(false);
@@ -873,7 +871,7 @@ export const EmailList = ({
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Nessun dettaglio disponibile</p>
+              <p className="text-muted-foreground">Seleziona un'email</p>
             </div>
           )}
         </DialogContent>

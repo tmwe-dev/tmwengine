@@ -698,8 +698,8 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[90vh] flex flex-col p-0" style={{ background: 'var(--gradient-page)' }}>
+          <DialogHeader className="px-6 pt-6">
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-visible">

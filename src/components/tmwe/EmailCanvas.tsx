@@ -31,27 +31,31 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       
+      // Enable text smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
       // Scale all drawing operations
       ctx.scale(dpr, dpr);
       
-      drawEmailContent();
+      drawEmailContent(rect);
     };
 
-    const drawEmailContent = () => {
-      const rect = canvas.parentElement?.getBoundingClientRect();
-      if (!rect) return;
-      
-      // Clear canvas
+    const drawEmailContent = (rect: DOMRect) => {
+      // Clear canvas with white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, rect.width, rect.height);
+
+      // Enable better text rendering
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
 
       const padding = 20;
       let yPosition = padding;
 
-      // Draw subject with better rendering
+      // Draw subject
       ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
-      ctx.textBaseline = 'top';
+      ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
       const subjectText = subject || '(No Subject)';
       
       // Word wrap for subject
@@ -63,10 +67,9 @@ export const EmailCanvas = ({ subject, body, isHeaderCollapsed }: EmailCanvasPro
 
       yPosition += 20; // Space between subject and body
 
-      // Draw body with better rendering
+      // Draw body
       ctx.fillStyle = '#333333';
-      ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
-      ctx.textBaseline = 'top';
+      ctx.font = '16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
       
       // Strip HTML tags and decode entities
       const tempDiv = document.createElement('div');

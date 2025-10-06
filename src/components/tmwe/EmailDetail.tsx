@@ -537,21 +537,21 @@ export const EmailDetail = ({
       <ScrollArea className="flex-1">
         <div className="p-4 md:p-6 space-y-4 bg-card-transparent">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold mb-4">{email.subject}</h1>
+            <h1 className="text-base md:text-lg font-semibold mb-4 break-words">{email.subject}</h1>
             
             <Card className="bg-card-transparent">
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <p className="font-semibold">{email.from}</p>
-                    <div className="text-sm text-muted-foreground">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <p className="font-medium text-sm break-words">{email.from}</p>
+                    <div className="text-xs text-muted-foreground break-words">
                       <p>To: {email.to.join(', ')}</p>
                       {email.cc && email.cc.length > 0 && (
                         <p>Cc: {email.cc.join(', ')}</p>
                       )}
                     </div>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(emailDate, 'PPp')}
                   </span>
                 </div>
@@ -598,7 +598,7 @@ export const EmailDetail = ({
           <Separator />
 
           <div 
-            className="prose prose-sm max-w-none"
+            className="prose prose-sm max-w-none text-sm break-words overflow-hidden [&_*]:max-w-full [&_img]:max-w-full [&_img]:h-auto"
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />
         </div>

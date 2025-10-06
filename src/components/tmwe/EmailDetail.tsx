@@ -478,12 +478,12 @@ export const EmailDetail = ({
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
-                        color: #d2691e !important;
+                        color: #fb923c !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
                       }
                       body * {
-                        color: #d2691e !important;
+                        color: #fb923c !important;
                       }
                       * {
                         max-width: 100% !important;

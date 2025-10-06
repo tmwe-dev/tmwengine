@@ -303,21 +303,11 @@ export const EmailDetail = ({
 
   return (
     <div className="flex h-full flex-col bg-card-transparent">
-      {/* Close button */}
-      <div className="flex justify-end p-4 border-b bg-card-transparent">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={onBack}
-          className="h-10 w-10"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-      </div>
-      
-      {/* Top navigation bar */}
-      <div className="grid grid-cols-3 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
-        {/* Left: Email navigation */}
+      {/* Top bar with navigation and close */}
+      <div className="flex justify-between items-center p-4 border-b bg-card-transparent">
+        <div className="w-10"></div>
+        
+        {/* Center: Email navigation */}
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
@@ -337,8 +327,21 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Center: Communication actions */}
-        <div className="flex gap-3 items-center justify-center">
+        {/* Right: Close button */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={onBack}
+          className="h-10 w-10"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+      </div>
+      
+      {/* Action buttons bar */}
+      <div className="grid grid-cols-2 items-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+        {/* Left: Communication actions */}
+        <div className="flex gap-3 items-center justify-start">
           <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
             <div className="flex items-center gap-1">
               <Reply className="h-5 w-5" />

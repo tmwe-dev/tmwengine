@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2, Maximize2, Minimize2 } from 'lucide-react';
+import { CallDialog } from './CallDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -114,6 +115,7 @@ export function AdvancedMultipleActivityForm({
   const [userProfile, setUserProfile] = useState<{nomeCompleto: string} | null>(null);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   const [fullscreenEmailEditor, setFullscreenEmailEditor] = useState(false);
+  const [showCallDialog, setShowCallDialog] = useState(false);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -752,7 +754,10 @@ export function AdvancedMultipleActivityForm({
             {/* Chiamata Form */}
             <TabsContent value="chiamata" className="space-y-4 mt-6">
               <div className="space-y-4 p-4 border border-border rounded-lg bg-background">
-                <div className="flex items-center gap-2 mb-4">
+                <div 
+                  className="flex items-center gap-2 mb-4 cursor-pointer hover:bg-accent/50 p-2 rounded-md transition-colors"
+                  onClick={() => setShowCallDialog(true)}
+                >
                   <Phone className="h-5 w-5 text-green-500" />
                   <h4 className="font-semibold">Note Chiamata</h4>
                 </div>
@@ -981,6 +986,24 @@ export function AdvancedMultipleActivityForm({
         </div>
       </form>
     </Form>
+    
+    {/* CallDialog */}
+    {contacts.length > 0 && (
+      <CallDialog
+        isOpen={showCallDialog}
+        onClose={() => setShowCallDialog(false)}
+        contact={{
+          id: contacts[0].id,
+          nome: contacts[0].name || contacts[0].company_name || '',
+          azienda: contacts[0].company_name || '',
+          telefono: contacts[0].phone || '',
+          cellulare: contacts[0].cell || '',
+        }}
+        onSave={(contactId, telefono, cellulare) => {
+          console.log('Updated phone numbers:', telefono, cellulare);
+        }}
+      />
+    )}
     </div>
     </>
   );

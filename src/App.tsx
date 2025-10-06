@@ -46,10 +46,10 @@ const App = () => {
           <Toaster />
           <Sonner />
           <VoiceAgentWidget />
-          <GlobalAIDrawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen} />
-          <GlobalAIButton onClick={() => setAiDrawerOpen(true)} />
           <BrowserRouter>
-          <Routes>
+            <GlobalAIDrawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen} />
+            <GlobalAIButton onClick={() => setAiDrawerOpen(true)} />
+            <Routes>
             <Route path="/" element={
               <ProtectedRoute>
                 <CRMLayout><ImportTemplates /></CRMLayout>

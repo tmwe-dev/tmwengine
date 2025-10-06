@@ -87,7 +87,8 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}
           {isHeaderCollapsed ? (
-            <div className="flex items-center justify-start">
+            <div className="flex items-center justify-start gap-2">
+              <span className="text-sm font-medium text-muted-foreground">1</span>
               {onCloseEmail && (
                 <Button 
                   variant="ghost" 
@@ -102,6 +103,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           ) : (
             <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
               <div className="flex items-center gap-1 sm:gap-2">
+                <span className="text-sm font-medium text-muted-foreground">1</span>
                 {isMobile && onMenuClick && (
                   <Button 
                     onClick={onMenuClick} 
@@ -196,7 +198,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           {/* CENTER: Mail icon OR email navigation when collapsed */}
           {isHeaderCollapsed ? (
             <div className="flex items-center gap-2 justify-center">
-              <span className="text-sm font-medium text-muted-foreground">1</span>
+              <span className="text-sm font-medium text-muted-foreground">2</span>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -218,7 +220,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <span className="text-sm font-medium text-muted-foreground mr-2">1</span>
+              <span className="text-sm font-medium text-muted-foreground mr-2">2</span>
               <Button 
                 onClick={onCompose} 
                 size="icon"
@@ -238,6 +240,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
           {/* RIGHT: Toggle button (sempre visibile) + Desktop search (nascosto quando collapsed) */}
           <div className="flex items-center gap-1 sm:gap-2 justify-end min-w-0">
+            <span className="text-sm font-medium text-muted-foreground">3</span>
             {onToggleCollapse && (
               <Button 
                 variant="ghost" 

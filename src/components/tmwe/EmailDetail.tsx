@@ -425,7 +425,26 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1">
-        {/* Body and subject removed - only container kept for future content */}
+        <div className="p-4 md:p-6 space-y-4">
+          {/* Subject */}
+          <div className="space-y-2">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">
+              {email.subject || '(Nessun oggetto)'}
+            </h2>
+            <div className="text-sm text-muted-foreground">
+              <p>Da: {email.from}</p>
+              <p>A: {email.to}</p>
+              {email.date && <p>Data: {new Date(email.date).toLocaleString('it-IT')}</p>}
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="prose prose-sm md:prose-base max-w-none">
+            <div className="whitespace-pre-wrap text-foreground">
+              {email.body || '(Nessun contenuto)'}
+            </div>
+          </div>
+        </div>
       </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>

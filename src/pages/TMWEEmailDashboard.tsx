@@ -54,21 +54,7 @@ const EmailDashboard = () => {
 
   // Handle email selection
   const handleEmailSelect = (emailId: string) => {
-    console.log('════════════════════════════════════════════');
-    console.log('🎯 handleEmailSelect CALLED');
-    console.log('════════════════════════════════════════════');
-    console.log('📧 Email ID:', emailId);
-    console.log('📱 Is Mobile:', isMobile);
-    console.log('📂 Current Folder:', selectedFolder);
-    console.log('🔍 Current selectedEmailId:', selectedEmailId);
-    console.log('📋 Type of emailId:', typeof emailId);
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    
-    // Set the selected email ID
     setSelectedEmailId(emailId);
-    
-    console.log('✅ setSelectedEmailId called with:', emailId);
-    console.log('════════════════════════════════════════════');
     
     if (isMobile) {
       setShowEmailList(false);
@@ -240,17 +226,6 @@ const EmailDashboard = () => {
     retry: 1,
   });
   
-  // This runs on EVERY render
-  console.log('════════════════════════════════════════════');
-  console.log('📊 EMAIL DETAIL QUERY STATE (EVERY RENDER)');
-  console.log('════════════════════════════════════════════');
-  console.log('🆔 selectedEmailId:', selectedEmailId);
-  console.log('🔌 enabled:', !!selectedEmailId);
-  console.log('⏳ isLoadingDetail:', isLoadingDetail);
-  console.log('📦 hasData:', !!emailDetailResponse);
-  console.log('❌ error:', detailError);
-  console.log('⏰ Timestamp:', new Date().toISOString());
-  console.log('════════════════════════════════════════════');
 
   // Map API response to component format
   const selectedEmail = emailDetailResponse ? (() => {

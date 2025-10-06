@@ -458,10 +458,12 @@ const EmailDashboard = () => {
   // Debug logging
   console.log('📊 Email Data State:', {
     messagesLoading,
+    messagesError: messagesError?.message || null,
     pagesCount: messagesData?.pages?.length || 0,
     emailsFromPagesCount: emailsFromPages.length,
     downloadedEmailsCount: downloadedEmails.length,
     firstPage: messagesData?.pages?.[0],
+    allPages: messagesData?.pages,
   });
 
   // Use downloaded emails if available, otherwise use paginated emails

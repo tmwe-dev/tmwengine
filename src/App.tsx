@@ -29,6 +29,7 @@ import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
+import IntranetAuth from "./pages/IntranetAuth";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
@@ -79,11 +80,8 @@ const App = () => (
                 <CRMLayout><Chat /></CRMLayout>
               </ProtectedRoute>
             } />
-            <Route path="/intranet" element={
-              <ProtectedRoute>
-                <CRMLayout><Intranet /></CRMLayout>
-              </ProtectedRoute>
-            } />
+            <Route path="/intranet" element={<Intranet />} />
+            <Route path="/intranet-auth" element={<IntranetAuth />} />
             <Route path="/import-templates" element={
               <ProtectedRoute>
                 <CRMLayout><ImportTemplates /></CRMLayout>

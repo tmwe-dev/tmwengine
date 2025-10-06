@@ -89,16 +89,14 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           {isHeaderCollapsed ? (
             <div className="flex items-center justify-start gap-2">
               <span className="text-sm font-medium text-muted-foreground">1</span>
-              {onCloseEmail && (
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={onCloseEmail}
-                  className="h-8 w-8"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onCloseEmail}
+                className="h-8 w-8"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">

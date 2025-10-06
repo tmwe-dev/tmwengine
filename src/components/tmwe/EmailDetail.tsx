@@ -262,6 +262,7 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Top bar with navigation and close */}
+      {!isHeaderCollapsed && (
       <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
         {/* Left: Management actions or empty */}
         {!isHeaderCollapsed ? (
@@ -347,22 +348,6 @@ export const EmailDetail = ({
         {/* Center: Email navigation (sempre visibile) */}
         <div className="flex items-center gap-3 justify-center">
           <span className="text-sm font-medium text-muted-foreground">5</span>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onPrevious}
-            disabled={!hasPrevious}
-          >
-            <ChevronLeft className="h-8 w-8" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onNext}
-            disabled={!hasNext}
-          >
-            <ChevronRight className="h-8 w-8" />
-          </Button>
         </div>
 
         {/* Right: Actions and Close */}
@@ -412,16 +397,9 @@ export const EmailDetail = ({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10"
-          >
-            <X className="h-6 w-6" />
-          </Button>
         </div>
       </div>
+      )}
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (

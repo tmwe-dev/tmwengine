@@ -536,10 +536,10 @@ export const EmailDetail = ({
 
       <ScrollArea className="flex-1 overflow-x-hidden">
         <div className="p-4 space-y-4 max-w-full">
-          <h1 className="text-base font-normal break-words">{email.subject}</h1>
+          <h1 className="text-base font-normal whitespace-nowrap">{email.subject}</h1>
           
           <div 
-            className="break-words overflow-hidden text-left [&>*]:max-w-full [&_img]:max-w-full [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto" 
+            className="whitespace-nowrap overflow-hidden text-left [&>*]:max-w-full [&_img]:max-w-full [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto" 
             dangerouslySetInnerHTML={{ __html: processedBody }} 
           />
         </div>

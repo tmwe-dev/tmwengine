@@ -284,7 +284,7 @@ export function CallDialog({ isOpen, onClose, contact, onSave }: CallDialogProps
             </div>
             
             {!isEditing && (
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-row gap-2">
                 <Button
                   variant="default"
                   size="sm"

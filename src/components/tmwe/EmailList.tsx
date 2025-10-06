@@ -862,7 +862,7 @@ export const EmailList = ({
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Caricamento dettaglio email...</p>
             </div>
-          ) : emailDetail && dialogEmailId === emailDetail.id ? (
+          ) : emailDetail ? (
             <EmailDetailNew
               email={emailDetail}
               onReply={() => setShowDetailDialog(false)}
@@ -872,7 +872,7 @@ export const EmailList = ({
             />
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Errore nel caricamento dell'email</p>
+              <p className="text-muted-foreground">Email non trovata</p>
             </div>
           )}
         </DialogContent>

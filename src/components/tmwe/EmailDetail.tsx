@@ -439,10 +439,11 @@ export const EmailDetail = ({
           </div>
 
           {/* Body */}
-          <div className="prose prose-sm md:prose-base max-w-none">
-            <div className="whitespace-pre-wrap text-foreground">
-              {email.body || '(Nessun contenuto)'}
-            </div>
+          <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+            <div 
+              dangerouslySetInnerHTML={{ __html: email.body }}
+              className="text-foreground [&_a]:text-primary [&_a]:underline"
+            />
           </div>
         </div>
       </ScrollArea>

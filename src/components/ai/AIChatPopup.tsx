@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Brain, X, Send, Loader2, Settings, Trash2, MessageSquare, Sparkles, Image as ImageIcon, Paperclip, BarChart3, Plus, Bot, User, FileText } from "lucide-react";
+import { Brain, X, Send, Loader2, Settings, Trash2, MessageSquare, Sparkles, Image as ImageIcon, Paperclip, BarChart3, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -321,48 +321,22 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
         <Brain className="h-5 w-5" />
       </Button>
 
-      {/* Chat Popup - Centered with glassmorphism */}
+      {/* Chat Popup - Centered on page */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 animate-fade-in"
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Chat Card - Mobile ottimizzato */}
-          <Card 
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[95vw] h-[750px] max-h-[90vh] md:shadow-glow z-50 flex flex-col border-primary/20 animate-scale-in max-md:inset-0 max-md:w-full max-md:h-full max-md:max-w-none max-md:max-h-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none"
-            style={{ 
-              background: 'linear-gradient(135deg, hsl(var(--card-transparent)) 0%, hsl(var(--card)) 100%)',
-              backdropFilter: 'blur(20px)',
-            }}
-          >
-          {/* Header with gradient - template Chat AI mobile */}
-          <div 
-            className="flex items-center justify-between p-4 max-md:py-4 border-b border-primary/20 rounded-t-lg max-md:rounded-none"
-            style={{
-              background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 max-md:p-2.5 rounded-lg bg-primary-foreground/10 backdrop-blur-sm">
-                <Brain className="h-5 w-5 max-md:h-6 max-md:w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold max-md:text-xl text-primary-foreground">AI Assistant</h3>
-                <p className="text-xs text-primary-foreground/70">/{pageRoute}</p>
-              </div>
+        <Card 
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[700px] shadow-2xl z-50 flex flex-col bg-background/95 backdrop-blur-md"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">AI Assistant - {pageRoute}</h3>
             </div>
-            <div className="flex items-center gap-2 max-md:gap-1">
+            <div className="flex items-center gap-2">
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="hover:bg-primary-foreground/10 text-primary-foreground max-md:h-10 max-md:w-10"
-                  >
-                    <Settings className="h-4 w-4 max-md:h-5 max-md:w-5" />
+                  <Button variant="ghost" size="icon">
+                    <Settings className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -419,155 +393,108 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-primary-foreground/10 text-primary-foreground max-md:h-10 max-md:w-10"
               >
-                <X className="h-4 w-4 max-md:h-5 max-md:w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Conversations Sidebar - template Chat AI mobile */}
-          <div 
-            className="flex gap-2 p-3 max-md:pb-3 border-b border-border/50 overflow-x-auto scrollbar-hide bg-surface-secondary/30"
-            style={{ backdropFilter: 'blur(10px)' }}
-          >
+          {/* Conversations Sidebar */}
+          <div className="flex gap-2 p-2 border-b overflow-x-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={createNewConversation}
-              className="border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all shrink-0 max-md:h-10 max-md:px-4"
             >
-              <Plus className="h-4 w-4 max-md:h-4 max-md:w-4 mr-1" />
+              <Plus className="h-4 w-4 mr-1" />
               Nuova
             </Button>
             {conversations.slice(0, 5).map((conv) => (
-              <div key={conv.id} className="flex items-center gap-1 max-md:gap-2 shrink-0">
+              <div key={conv.id} className="flex items-center gap-1">
                 <Button
                   variant={currentConversationId === conv.id ? "default" : "ghost"}
                   size="sm"
                   onClick={() => selectConversation(conv.id)}
-                  className={`${currentConversationId === conv.id 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
-                    : "hover:bg-muted/50 transition-all"} max-md:h-10`}
                 >
-                  <MessageSquare className="h-4 w-4 max-md:h-4 max-md:w-4 mr-1" />
-                  {conv.titolo?.substring(0, 12) || 'Conversazione'}
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  {conv.titolo?.substring(0, 15) || 'Chat'}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 max-md:h-10 max-md:w-10 hover:bg-destructive/10 hover:text-destructive transition-all"
+                  className="h-7 w-7"
                   onClick={() => deleteConversation(conv.id)}
                 >
-                  <Trash2 className="h-3 w-3 max-md:h-4 max-md:w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             ))}
           </div>
 
-          {/* Messages Area */}
+          {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-12 animate-fade-in">
-                <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
-                  <Brain className="h-16 w-16 text-primary opacity-70" />
-                </div>
-                <h4 className="font-semibold text-lg mb-2">Inizia una conversazione!</h4>
-                <p className="text-sm">Usa i tools CRM disponibili per questa pagina</p>
+              <div className="text-center text-muted-foreground py-8">
+                <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Inizia una conversazione!</p>
+                <p className="text-xs mt-2">Usa i tools CRM disponibili per questa pagina</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex items-start gap-3 mb-3 ${
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {msg.role === "assistant" && (
-                      <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                    )}
                     <div
-                      className={`max-w-[75%] p-3 rounded-lg border ${
+                      className={`max-w-[85%] rounded-lg p-3 ${
                         msg.role === "user"
-                          ? "bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20"
-                          : "bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
                       }`}
                     >
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                        <span>{new Date(msg.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
-                        <span>{new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-
-                      {/* Show attachments if any */}
-                      {msg.attachments && msg.attachments.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {msg.attachments.map((file, idx) => (
-                            <a 
-                              key={idx}
-                              href={file.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1 hover:bg-muted/80"
-                            >
-                              {file.name}
-                            </a>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Show images if any */}
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      
+                      {/* Show images */}
                       {msg.images && msg.images.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
+                        <div className="mt-2 flex gap-2 flex-wrap">
                           {msg.images.map((img, idx) => (
-                            <img 
-                              key={idx}
-                              src={img}
-                              alt={`Immagine ${idx + 1}`}
-                              className="max-w-xs rounded-lg border"
-                            />
+                            <img key={idx} src={img} alt="Uploaded" className="max-w-[200px] rounded" />
                           ))}
                         </div>
                       )}
-
-                      {/* Show generated images if any */}
+                      
+                      {/* Show generated images */}
                       {msg.generated_images && msg.generated_images.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
+                        <div className="mt-2 flex gap-2 flex-wrap">
                           {msg.generated_images.map((img, idx) => (
-                            <img 
-                              key={idx}
-                              src={img}
-                              alt={`Generata ${idx + 1}`}
-                              className="max-w-xs rounded-lg border"
-                            />
+                            <img key={idx} src={img} alt="Generated" className="max-w-[200px] rounded" />
                           ))}
                         </div>
                       )}
-
-                      <div 
-                        className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: msg.content
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
-                            .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>')
-                            .replace(/\n/g, '<br>')
-                        }}
-                      />
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs opacity-70">
+                          {new Date(msg.created_at).toLocaleTimeString()}
+                        </span>
+                        {msg.model && (
+                          <Badge variant="outline" className="text-xs">
+                            {msg.model}
+                          </Badge>
+                        )}
+                        {msg.tokens_used && (
+                          <Badge variant="outline" className="text-xs">
+                            {msg.tokens_used} tokens
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    {msg.role === "user" && (
-                      <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                    )}
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start animate-fade-in">
-                    <div className="bg-muted/80 backdrop-blur-sm rounded-xl p-3 border border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">Pensando...</span>
-                      </div>
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
                   </div>
                 )}
@@ -576,22 +503,17 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             )}
           </ScrollArea>
 
-          {/* Attachments Preview with improved design */}
+          {/* Attachments Preview */}
           {(uploadedFiles.length > 0 || generatedImage) && (
-            <div className="px-4 py-3 border-t border-border/50 bg-surface-secondary/20">
-              <p className="text-xs text-muted-foreground mb-2">Allegati:</p>
-              <div className="flex gap-2 items-center flex-wrap">
+            <div className="px-4 py-2 border-t">
+              <div className="flex gap-2 items-center">
                 {uploadedFiles.map((file) => (
-                  <div key={file.url} className="relative group">
-                    <img 
-                      src={file.url} 
-                      alt={file.name} 
-                      className="h-14 w-14 object-cover rounded-lg border-2 border-primary/20 group-hover:border-primary/50 transition-all" 
-                    />
+                  <div key={file.url} className="relative">
+                    <img src={file.url} alt={file.name} className="h-12 w-12 object-cover rounded" />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                      className="absolute -top-2 -right-2 h-5 w-5"
                       onClick={() => setUploadedFiles(files => files.filter(f => f.url !== file.url))}
                     >
                       <X className="h-3 w-3" />
@@ -599,16 +521,12 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                   </div>
                 ))}
                 {generatedImage && (
-                  <div className="relative group">
-                    <img 
-                      src={generatedImage} 
-                      alt="Generated" 
-                      className="h-14 w-14 object-cover rounded-lg border-2 border-success/20 group-hover:border-success/50 transition-all" 
-                    />
+                  <div className="relative">
+                    <img src={generatedImage} alt="Generated" className="h-12 w-12 object-cover rounded" />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                      className="absolute -top-2 -right-2 h-5 w-5"
                       onClick={() => setGeneratedImage(null)}
                     >
                       <X className="h-3 w-3" />
@@ -619,18 +537,13 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
             </div>
           )}
 
-          {/* Input Area - template Chat AI mobile */}
-          <div 
-            className="p-4 max-md:p-2 border-t border-border/50 space-y-3"
-            style={{ 
-              background: 'linear-gradient(to top, hsl(var(--surface-secondary)) 0%, transparent 100%)' 
-            }}
-          >
-            <div className="flex gap-2 max-md:gap-1 items-center max-md:scale-110">
+          {/* Input */}
+          <div className="p-4 border-t space-y-2">
+            <div className="flex gap-2">
               <FileUploader onFilesUploaded={setUploadedFiles} />
               <ImageGenerator onImageGenerated={setGeneratedImage} />
             </div>
-            <div className="flex gap-2 max-md:gap-1.5">
+            <div className="flex gap-2">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -640,8 +553,8 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                     handleSend();
                   }
                 }}
-                placeholder="Scrivi il tuo messaggio... (Shift+Enter per nuova riga)"
-                className="resize-none bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all max-md:text-sm"
+                placeholder="Scrivi il tuo messaggio..."
+                className="resize-none"
                 rows={2}
                 disabled={isLoading}
               />
@@ -649,18 +562,17 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 onClick={handleSend}
                 disabled={!prompt.trim() || isLoading}
                 size="icon"
-                className="shrink-0 h-auto max-md:h-[56px] max-md:px-3 shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-primary to-primary-hover"
+                className="shrink-0"
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 max-md:h-5 max-md:w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4 max-md:h-5 max-md:w-5" />
+                  <Send className="h-4 w-4" />
                 )}
               </Button>
             </div>
           </div>
         </Card>
-        </>
       )}
     </>
   );

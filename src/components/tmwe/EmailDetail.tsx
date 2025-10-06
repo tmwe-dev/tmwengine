@@ -427,21 +427,31 @@ export const EmailDetail = ({
       <ScrollArea className="flex-1 overflow-hidden">
         <style>{`
           .email-body-content {
-            max-width: 100%;
-            overflow-x: hidden;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+          }
+          .email-body-content * {
+            max-width: 100% !important;
           }
           .email-body-content img {
             max-width: 100% !important;
+            width: auto !important;
             height: auto !important;
-            object-fit: scale-down !important;
+            object-fit: contain !important;
           }
           .email-body-content a {
-            display: inline-flex !important;
+            display: inline-block !important;
             max-width: 100% !important;
           }
           .email-body-content table {
             max-width: 100% !important;
+            width: 100% !important;
             table-layout: auto !important;
+          }
+          .email-body-content td,
+          .email-body-content th {
+            max-width: 100% !important;
           }
         `}</style>
         

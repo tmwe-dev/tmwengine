@@ -357,9 +357,9 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-card-transparent">
+    <div className="flex h-full flex-col bg-background">
       {/* Top bar with navigation and close */}
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm">
         {/* Left: Management actions */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
@@ -510,7 +510,7 @@ export const EmailDetail = ({
       </div>
       
       {/* Action buttons bar */}
-      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+      <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-background/95 backdrop-blur-sm">
         {/* Communication actions */}
         <div className="flex gap-3 items-center">
           <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
@@ -535,11 +535,11 @@ export const EmailDetail = ({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 md:p-6 space-y-4 bg-card-transparent">
+        <div className="p-4 md:p-6 space-y-4">
           <div>
             <h1 className="text-lg md:text-xl font-semibold mb-4 break-words text-foreground">{email.subject}</h1>
             
-            <Card className="bg-card-transparent">
+            <Card className="bg-card/50 backdrop-blur-sm">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="space-y-1 flex-1 min-w-0">
@@ -560,7 +560,7 @@ export const EmailDetail = ({
           </div>
 
           {downloadableAttachments.length > 0 && (
-            <Card className="bg-card-transparent">
+            <Card className="bg-card/50 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-medium mb-3">
                   <Paperclip className="h-4 w-4" />

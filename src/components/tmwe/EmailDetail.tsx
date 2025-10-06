@@ -603,7 +603,7 @@ export const EmailDetail = ({
 
           {/* Email Body */}
           <div 
-            className="prose prose-sm max-w-none text-sm"
+            className="prose prose-sm max-w-none text-sm [&_img]:max-w-full [&_img]:h-auto [&_img]:object-contain [&_table]:max-w-full [&_table]:overflow-x-auto"
             style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
             dangerouslySetInnerHTML={{ __html: processedBody }}
           />

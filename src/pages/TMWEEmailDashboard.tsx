@@ -636,15 +636,16 @@ const EmailDashboard = () => {
             {isMobile && (
               <div className="flex items-center gap-2 shrink-0">
                 <Button
-                  variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-primary/10"
                   onClick={() => {
-                    // TODO: Open prompt dialog
-                    toast.info('Prompt AI in sviluppo');
+                    const senderEmail = selectedSender || 'assistente.email@ai.local';
+                    setSelectedAIChatSender(senderEmail);
+                    setAiChatOpen(true);
                   }}
                 >
-                  <MessageSquare className="h-4 w-4" />
+                  <Brain className="h-4 w-4 text-primary" />
                 </Button>
                 <Button
                   size="icon"

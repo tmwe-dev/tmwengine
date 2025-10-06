@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Users, ChevronDown, Search, X, Brain } from 'lucide-react';
+import { Users, ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EmailSenderFilterProps {
@@ -210,18 +210,6 @@ export const EmailSenderFilter = ({
         </div>
       </SheetContent>
     </Sheet>
-
-    <Button
-      size="icon"
-      variant="ghost"
-      className="h-9 w-9 hover:bg-primary/10"
-      onClick={() => {
-        const senderEmail = selectedSender || 'assistente.email@ai.local';
-        onOpenAIChat?.(senderEmail);
-      }}
-    >
-      <Brain className="h-4 w-4 text-primary" />
-    </Button>
     </div>
   );
 };

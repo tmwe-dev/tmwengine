@@ -544,15 +544,7 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full relative">
-      {/* Canvas overlay centrato */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-        <canvas 
-          className="border-2 border-primary/20 rounded-lg shadow-2xl pointer-events-auto"
-          width={800}
-          height={600}
-        />
-      </div>
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 

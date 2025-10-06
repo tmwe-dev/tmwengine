@@ -424,9 +424,12 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <ScrollArea className="flex-1">
-        {/* Body and subject removed - only container kept for future content */}
-      </ScrollArea>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <canvas 
+          className="border-2 border-primary/20 rounded-lg shadow-2xl bg-card"
+          style={{ width: '80%', height: '80%' }}
+        />
+      </div>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
         <SheetContent side="right" className="w-full sm:max-w-md backdrop-blur-md bg-background/95">

@@ -343,6 +343,7 @@ export const EmailDetail = ({
 
         {/* Center: Email navigation (sempre visibile) */}
         <div className="flex items-center gap-3 justify-center">
+          <span className="text-sm font-medium text-muted-foreground">2</span>
           <Button 
             variant="ghost" 
             size="icon" 

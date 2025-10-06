@@ -11,6 +11,8 @@ import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { AIChatPopup } from '@/components/ai/AIChatPopup';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,7 @@ const EmailDashboard = () => {
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
+  const [pageAiChatOpen, setPageAiChatOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Reset selected email when folder changes
@@ -635,27 +638,12 @@ const EmailDashboard = () => {
             {/* Right aligned icons for mobile */}
             {isMobile && (
               <div className="flex items-center gap-2 shrink-0">
+                <PagePromptManager pageRoute="/email-manager" />
                 <Button
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => {
-                    const senderEmail = selectedSender || 'assistente.email@ai.local';
-                    setSelectedAIChatSender(senderEmail);
-                    setAiChatOpen(true);
-                  }}
-                >
-                  <Brain className="h-4 w-4 text-primary" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 hover:bg-primary/10"
-                  onClick={() => {
-                    const senderEmail = selectedSender || 'assistente.email@ai.local';
-                    setSelectedAIChatSender(senderEmail);
-                    setAiChatOpen(true);
-                  }}
+                  onClick={() => setPageAiChatOpen(true)}
                 >
                   <Brain className="h-4 w-4 text-primary" />
                 </Button>
@@ -749,6 +737,10 @@ const EmailDashboard = () => {
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
       />
+
+      {pageAiChatOpen && (
+        <AIChatPopup pageRoute="/email-manager" />
+      )}
     </div>
   );
 };

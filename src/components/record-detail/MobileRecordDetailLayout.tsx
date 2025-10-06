@@ -290,42 +290,6 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
         </CardContent>
       </Card>
 
-      {/* Company Information */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Building className="h-4 w-4" />
-            Azienda
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          {(record.company_name || record.azienda) && (
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Nome Azienda</div>
-              <div className="font-semibold text-primary text-lg">
-                {formatCellValue(record.company_name || record.azienda)}
-              </div>
-            </div>
-          )}
-          
-          {record.company_alias && (
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Alias Azienda</div>
-              <div className="text-sm">{formatCellValue(record.company_alias)}</div>
-            </div>
-          )}
-          
-          {(record.origin || record.origine) && (
-            <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-xs text-muted-foreground">Origine</span>
-              <Badge variant="secondary" className="text-xs">
-                {formatCellValue(record.origin || record.origine)}
-              </Badge>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Contact Person */}
       <Card>
         <CardHeader className="pb-2">
@@ -359,6 +323,42 @@ export function MobileRecordDetailLayout({ record, formatCellValue }: MobileReco
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Company Information */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Building className="h-4 w-4" />
+            Azienda
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {(record.company_name || record.azienda) && (
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Nome Azienda</div>
+              <div className="font-semibold text-primary text-lg">
+                {formatCellValue(record.company_name || record.azienda)}
+              </div>
+            </div>
+          )}
+          
+          {record.company_alias && (
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Alias Azienda</div>
+              <div className="text-sm">{formatCellValue(record.company_alias)}</div>
+            </div>
+          )}
+          
+          {(record.origin || record.origine) && (
+            <div className="flex items-center justify-between pt-2 border-t">
+              <span className="text-xs text-muted-foreground">Origine</span>
+              <Badge variant="secondary" className="text-xs">
+                {formatCellValue(record.origin || record.origine)}
+              </Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
 

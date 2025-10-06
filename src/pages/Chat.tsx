@@ -468,7 +468,7 @@ const Chat = () => {
               {selectedConfigId && aiConfigs.length > 0 && (
                 <>
                   <p className="text-xs text-muted-foreground">
-                    {aiConfigs.find(c => c.id === selectedConfigId)?.provider} - {aiConfigs.find(c => c.id === selectedConfigId)?.modello}
+                    {aiConfigs.find(c => c.id === selectedConfigId)?.descrizione_breve || `${aiConfigs.find(c => c.id === selectedConfigId)?.provider} - ${aiConfigs.find(c => c.id === selectedConfigId)?.modello}`}
                   </p>
                   <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
                     <SelectTrigger className="h-6 w-auto text-xs border-none">

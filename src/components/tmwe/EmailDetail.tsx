@@ -503,9 +503,14 @@ export const EmailDetail = ({
                         color: ${emailTextColor} !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
+                        background-color: white !important;
                       }
                       body * {
                         color: ${emailTextColor} !important;
+                      }
+                      /* Escludi immagini e file dal colore */
+                      img, svg, canvas, video, iframe {
+                        color: initial !important;
                       }
                       * {
                         max-width: 100% !important;

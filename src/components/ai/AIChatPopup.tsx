@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Brain, X, Send, Loader2, Settings, Trash2, MessageSquare, Sparkles, Image as ImageIcon, Paperclip, BarChart3, Plus } from "lucide-react";
+import { Brain, X, Send, Loader2, Settings, Trash2, MessageSquare, Sparkles, Image as ImageIcon, Paperclip, BarChart3, Plus, Bot, User, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -476,59 +476,89 @@ export function AIChatPopup({ pageRoute }: AIChatPopupProps) {
                 <p className="text-sm">Usa i tools CRM disponibili per questa pagina</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-up`}
+                    className={`flex items-start gap-3 mb-3 ${
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
                   >
+                    {msg.role === "assistant" && (
+                      <Bot className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                    )}
                     <div
-                      className={`max-w-[85%] rounded-xl p-3 shadow-sm transition-all hover:shadow-md ${
+                      className={`max-w-[75%] p-3 rounded-lg border ${
                         msg.role === "user"
-                          ? "bg-gradient-to-br from-primary to-primary-hover text-primary-foreground"
-                          : "bg-muted/80 backdrop-blur-sm border border-border/50"
+                          ? "bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20"
+                          : "bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      
-                      {/* Show images */}
-                      {msg.images && msg.images.length > 0 && (
-                        <div className="mt-2 flex gap-2 flex-wrap">
-                          {msg.images.map((img, idx) => (
-                            <img key={idx} src={img} alt="Uploaded" className="max-w-[200px] rounded" />
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Show generated images */}
-                      {msg.generated_images && msg.generated_images.length > 0 && (
-                        <div className="mt-2 flex gap-2 flex-wrap">
-                          {msg.generated_images.map((img, idx) => (
-                            <img key={idx} src={img} alt="Generated" className="max-w-[200px] rounded" />
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="text-xs opacity-70">
-                          {new Date(msg.created_at).toLocaleTimeString('it-IT', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </span>
-                        {msg.model && (
-                          <Badge variant="outline" className="text-xs py-0 px-1.5">
-                            {msg.model}
-                          </Badge>
-                        )}
-                        {msg.tokens_used && (
-                          <Badge variant="outline" className="text-xs py-0 px-1.5">
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            {msg.tokens_used}
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                        <span>{new Date(msg.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
+                        <span>{new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
+
+                      {/* Show attachments if any */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {msg.attachments.map((file, idx) => (
+                            <a 
+                              key={idx}
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs bg-muted px-2 py-1 rounded flex items-center gap-1 hover:bg-muted/80"
+                            >
+                              {file.name}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Show images if any */}
+                      {msg.images && msg.images.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {msg.images.map((img, idx) => (
+                            <img 
+                              key={idx}
+                              src={img}
+                              alt={`Immagine ${idx + 1}`}
+                              className="max-w-xs rounded-lg border"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Show generated images if any */}
+                      {msg.generated_images && msg.generated_images.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {msg.generated_images.map((img, idx) => (
+                            <img 
+                              key={idx}
+                              src={img}
+                              alt={`Generata ${idx + 1}`}
+                              className="max-w-xs rounded-lg border"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      <div 
+                        className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: msg.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
+                            .replace(/```([\s\S]*?)```/g, '<pre class="bg-muted p-2 rounded my-2 overflow-x-auto"><code>$1</code></pre>')
+                            .replace(/\n/g, '<br>')
+                        }}
+                      />
                     </div>
+                    {msg.role === "user" && (
+                      <User className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                    )}
                   </div>
                 ))}
                 {isLoading && (

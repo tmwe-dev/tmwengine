@@ -357,9 +357,9 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-background" style={{ width: '100vw', maxWidth: '100vw', overflow: 'hidden' }}>
       {/* Top bar with navigation and close */}
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm">
+      <div className="grid grid-cols-3 items-center p-4 border-b bg-background/95 backdrop-blur-sm" style={{ width: '100%', maxWidth: '100%' }}>
         {/* Left: Management actions */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
@@ -534,16 +534,19 @@ export const EmailDetail = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1" style={{ width: '100%', maxWidth: '100%' }}>
-        <div className="p-4 md:p-6 space-y-4 min-w-0 max-w-full">
-          <div className="w-full min-w-0 max-w-full">
+      <ScrollArea className="flex-1" style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+        <div className="p-4 md:p-6 space-y-4" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             <h2 
-              className="text-lg md:text-xl font-semibold text-foreground leading-relaxed w-full"
+              className="text-lg md:text-xl font-semibold text-foreground leading-relaxed"
               style={{ 
                 wordBreak: 'break-word', 
                 overflowWrap: 'break-word',
                 whiteSpace: 'pre-wrap',
-                hyphens: 'auto'
+                hyphens: 'auto',
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box'
               }}
             >
               {email.subject}

@@ -133,7 +133,10 @@ export function CompactContactCard({
             </div>
           )}
           {(contact.phone || contact.cell) && (
-            <div className="p-1.5 rounded-full">
+            <div 
+              className="p-1.5 rounded-full cursor-pointer bg-green-600/10 hover:bg-green-600/20 transition-colors"
+              onClick={() => onCreateActivity('chiamata')}
+            >
               <Phone className="h-4 w-4 text-green-600" />
             </div>
           )}

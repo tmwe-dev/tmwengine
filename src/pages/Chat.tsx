@@ -513,15 +513,17 @@ const Chat = () => {
       {!shouldHideHeader && (
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <MessageSquare className="h-8 w-8 text-primary" />
-              Chat AI
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                <MessageSquare className="h-8 w-8 text-primary" />
+                Chat AI
+              </h1>
               {pagePromptName && (
-                <Badge variant="secondary" className="ml-2 text-sm">
+                <div className="text-sm text-muted-foreground mt-1">
                   {pagePromptName}
-                </Badge>
+                </div>
               )}
-            </h1>
+            </div>
             
             {/* Settings Icon e Toggle System Prompt - allineati a destra */}
             <div className="flex items-center gap-2">

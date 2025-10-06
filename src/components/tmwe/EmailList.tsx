@@ -847,7 +847,11 @@ export const EmailList = ({
       {/* Dialog dettaglio email */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl h-[90vh] p-0">
-          {emailDetail && (
+          {isLoadingDetail ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : emailDetail ? (
             <EmailDetailNew
               email={{
                 id: emailDetail.id,
@@ -867,6 +871,10 @@ export const EmailList = ({
                 setShowDetailDialog(false);
               }}
             />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">Nessun dettaglio disponibile</p>
+            </div>
           )}
         </DialogContent>
       </Dialog>

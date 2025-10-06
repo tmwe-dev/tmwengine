@@ -102,26 +102,6 @@ export const EmailDetail = ({
     }
   }, [email.id, onMarkAsRead]);
 
-  // Auto-resize iframe based on content
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const resizeIframe = () => {
-      try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDoc?.body) {
-          const height = iframeDoc.body.scrollHeight;
-          iframe.style.height = `${height}px`;
-        }
-      } catch (e) {
-        console.error('Error resizing iframe:', e);
-      }
-    };
-
-    iframe.addEventListener('load', resizeIframe);
-    return () => iframe.removeEventListener('load', resizeIframe);
-  }, [email.body]);
 
   // Load sender groups
   useEffect(() => {
@@ -478,7 +458,7 @@ export const EmailDetail = ({
           </div>
 
           {/* Body in sandboxed iframe */}
-          <div className="w-full overflow-hidden">
+          <div className="w-full">
             <iframe
               ref={iframeRef}
               srcDoc={`
@@ -488,23 +468,26 @@ export const EmailDetail = ({
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <style>
-                      * {
-                        max-width: 100% !important;
-                        box-sizing: border-box !important;
+                      html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
                       }
                       body {
-                        margin: 0;
                         padding: 16px;
                         font-family: system-ui, -apple-system, sans-serif;
                         font-size: 14px;
                         line-height: 1.5;
                         color: #0ea5e9 !important;
-                        overflow-x: hidden !important;
                         word-wrap: break-word;
                         overflow-wrap: break-word;
                       }
                       body * {
                         color: #0ea5e9 !important;
+                      }
+                      * {
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
                       }
                       img {
                         max-width: 100% !important;
@@ -532,7 +515,11 @@ export const EmailDetail = ({
               `}
               sandbox="allow-same-origin"
               className="w-full border-0"
-              style={{ minHeight: '400px' }}
+              style={{ 
+                minHeight: '600px',
+                maxHeight: '80vh',
+                overflow: 'auto'
+              }}
             />
           </div>
         </div>

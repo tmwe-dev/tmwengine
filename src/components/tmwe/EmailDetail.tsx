@@ -22,7 +22,7 @@ import {
   Users,
   Megaphone,
   X,
-  Sparkles
+  Settings
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,7 +34,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 
 interface EmailDetailProps {
   email: {
@@ -78,7 +77,6 @@ export const EmailDetail = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [currentSenderGroup, setCurrentSenderGroup] = useState<string | null>(null);
-  const [showAIDialog, setShowAIDialog] = useState(false);
 
   // Auto mark as read when email is displayed
   useEffect(() => {
@@ -402,16 +400,38 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Right: Close button */}
+        {/* Right: Actions and Close */}
         <div className="flex justify-end gap-3">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowAIDialog(true)}
-            className="h-10 w-10"
-          >
-            <Sparkles className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-10 w-10"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => console.log('Crea regola automatica')}>
+                <FolderCog className="h-4 w-4 mr-2" />
+                Crea regola automatica
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Sposta in cartella')}>
+                <FolderCog className="h-4 w-4 mr-2" />
+                Sposta automaticamente
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => console.log('Segna come letto')}>
+                <FolderCog className="h-4 w-4 mr-2" />
+                Segna sempre come letto
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => console.log('Archivia automaticamente')}>
+                <FolderCog className="h-4 w-4 mr-2" />
+                Archivia automaticamente
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button 
             variant="ghost" 
             size="icon"
@@ -517,12 +537,6 @@ export const EmailDetail = ({
           />
         </div>
       </ScrollArea>
-
-      <SenderAIChatDialog 
-        senderEmail={email.from.match(/<(.+)>/) ? email.from.match(/<(.+)>/)?.[1] || email.from : email.from}
-        open={showAIDialog}
-        onOpenChange={setShowAIDialog}
-      />
     </div>
   );
 };

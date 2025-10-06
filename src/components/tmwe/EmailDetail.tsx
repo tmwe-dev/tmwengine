@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,6 +88,7 @@ export const EmailDetail = ({
   const [showActionsSheet, setShowActionsSheet] = useState(false);
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   
   // Use external state if provided, otherwise use internal state
   const [internalIsHeaderCollapsed, setInternalIsHeaderCollapsed] = useState(false);
@@ -100,6 +101,27 @@ export const EmailDetail = ({
       onMarkAsRead(email.id);
     }
   }, [email.id, onMarkAsRead]);
+
+  // Auto-resize iframe based on content
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const resizeIframe = () => {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc?.body) {
+          const height = iframeDoc.body.scrollHeight;
+          iframe.style.height = `${height}px`;
+        }
+      } catch (e) {
+        console.error('Error resizing iframe:', e);
+      }
+    };
+
+    iframe.addEventListener('load', resizeIframe);
+    return () => iframe.removeEventListener('load', resizeIframe);
+  }, [email.body]);
 
   // Load sender groups
   useEffect(() => {
@@ -425,36 +447,6 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1 overflow-hidden">
-        <style>{`
-          .email-body-content {
-            max-width: 100% !important;
-            overflow-x: auto !important;
-            overflow-y: visible !important;
-          }
-          .email-body-content * {
-            max-width: 100% !important;
-          }
-          .email-body-content img {
-            max-width: 100% !important;
-            width: auto !important;
-            height: auto !important;
-            object-fit: contain !important;
-          }
-          .email-body-content a {
-            display: inline-block !important;
-            max-width: 100% !important;
-          }
-          .email-body-content table {
-            max-width: 100% !important;
-            width: 100% !important;
-            table-layout: auto !important;
-          }
-          .email-body-content td,
-          .email-body-content th {
-            max-width: 100% !important;
-          }
-        `}</style>
-        
         <div className="p-6 space-y-4 w-full overflow-hidden">
           {/* Subject */}
           <div className="space-y-2">
@@ -463,15 +455,59 @@ export const EmailDetail = ({
             </h2>
           </div>
 
-          {/* Body */}
+          {/* Body in sandboxed iframe */}
           <div className="w-full overflow-hidden">
-            <div
-              className="email-body-content prose prose-sm max-w-none text-foreground/90"
-              dangerouslySetInnerHTML={{ __html: email.body || '<p>No content available</p>' }}
-              style={{
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-              }}
+            <iframe
+              ref={iframeRef}
+              srcDoc={`
+                <!DOCTYPE html>
+                <html>
+                  <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                      * {
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                      }
+                      body {
+                        margin: 0;
+                        padding: 16px;
+                        font-family: system-ui, -apple-system, sans-serif;
+                        font-size: 14px;
+                        line-height: 1.5;
+                        color: #333;
+                        overflow-x: hidden !important;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                      }
+                      img {
+                        max-width: 100% !important;
+                        height: auto !important;
+                        display: block;
+                      }
+                      table {
+                        max-width: 100% !important;
+                        width: 100% !important;
+                        border-collapse: collapse;
+                      }
+                      td, th {
+                        max-width: 100% !important;
+                        word-wrap: break-word;
+                      }
+                      a {
+                        word-break: break-all;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    ${email.body || '<p>No content available</p>'}
+                  </body>
+                </html>
+              `}
+              sandbox="allow-same-origin"
+              className="w-full border-0"
+              style={{ minHeight: '400px' }}
             />
           </div>
         </div>

@@ -705,7 +705,10 @@ const Chat = () => {
 
           {/* Descrizione prompt sotto il titolo - sempre visibile */}
           <div className={`text-sm mt-2 ${useSystemPrompt ? 'text-yellow-500' : 'text-red-500'}`}>
-            {pagePromptName || systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt attivo'}
+            {pageRoute !== '/chat' 
+              ? (pagePromptName || 'Nessun prompt di pagina') 
+              : (systemPrompts.find(p => p.id === selectedSystemPromptId)?.nome || 'Nessun prompt selezionato')
+            }
           </div>
 
           {/* Stats orizzontali in grigio sotto il modello */}

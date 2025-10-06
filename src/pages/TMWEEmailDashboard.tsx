@@ -675,6 +675,24 @@ const EmailDashboard = () => {
           />
         </div>
 
+        {/* Email Detail - Desktop view (side-by-side) */}
+        {!isMobile && selectedEmail && (
+          <div className="flex-1 flex flex-col overflow-hidden border-l">
+            <EmailDetail
+              email={selectedEmail}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onDelete={handleDelete}
+              onPrevious={handlePreviousEmail}
+              onNext={handleNextEmail}
+              hasPrevious={hasPreviousEmail()}
+              hasNext={hasNextEmail()}
+              onMarkAsRead={handleMarkAsRead}
+            />
+          </div>
+        )}
+
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
           <div className="flex-1 flex flex-col overflow-hidden">

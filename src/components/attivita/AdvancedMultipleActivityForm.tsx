@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2 } from 'lucide-react';
+import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2, Maximize2, Minimize2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -113,6 +113,7 @@ export function AdvancedMultipleActivityForm({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [userProfile, setUserProfile] = useState<{nomeCompleto: string} | null>(null);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const [fullscreenEmailEditor, setFullscreenEmailEditor] = useState(false);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -296,9 +297,52 @@ export function AdvancedMultipleActivityForm({
   };
 
   return (
-    <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-2">
+    <>
+      {/* Editor email a schermo intero */}
+      {fullscreenEmailEditor && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setFullscreenEmailEditor(false)}
+              className="gap-2"
+            >
+              <Minimize2 className="h-4 w-4" />
+              Chiudi Editor
+            </Button>
+          </div>
+          
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Oggetto Email</label>
+                <Input
+                  value={form.watch('oggetto_email') || ''}
+                  onChange={(e) => form.setValue('oggetto_email', e.target.value)}
+                  placeholder="Inserisci l'oggetto dell'email..."
+                  className="text-base"
+                />
+              </div>
+              
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Testo Email</label>
+                <Textarea
+                  value={form.watch('testo_email') || ''}
+                  onChange={(e) => form.setValue('testo_email', e.target.value)}
+                  placeholder="Scrivi il contenuto dell'email..."
+                  className="min-h-[50vh] text-base resize-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 p-2">
           {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
           {contacts.length > 0 && (
             <div className="space-y-3">
@@ -369,8 +413,19 @@ export function AdvancedMultipleActivityForm({
                 <TabsContent value="email" className="space-y-2 mt-2">
                   <div className="space-y-2 p-2 border border-border rounded-lg bg-background">
                     
-                    {/* Icona bacchetta magica per template e allegati */}
-                    <div className="flex justify-end mb-2">
+                    {/* Pulsanti azione email */}
+                    <div className="flex justify-end gap-2 mb-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-2"
+                        onClick={() => setFullscreenEmailEditor(true)}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                        <span className="text-xs">Scrivi Email</span>
+                      </Button>
+                      
                       <Dialog open={showTemplatesDialog} onOpenChange={setShowTemplatesDialog}>
                         <DialogTrigger asChild>
                           <Button
@@ -922,5 +977,6 @@ export function AdvancedMultipleActivityForm({
       </form>
     </Form>
     </div>
+    </>
   );
 }

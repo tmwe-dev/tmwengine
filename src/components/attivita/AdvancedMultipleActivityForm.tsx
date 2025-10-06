@@ -302,10 +302,6 @@ export function AdvancedMultipleActivityForm({
           {/* Aziende selezionate - Nascondi se array vuoto (attività singola) */}
           {contacts.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                {contacts.length === 1 ? 'Azienda Selezionata' : `Aziende Selezionate (${contacts.length})`}
-              </h3>
               
               <div className="max-h-32 overflow-y-auto border border-border rounded-lg p-3 bg-background-subtle">
                 <div className="space-y-3">
@@ -349,9 +345,6 @@ export function AdvancedMultipleActivityForm({
 
           {/* Tipo di attività */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-text-primary">
-              Tipo di Attività
-            </h3>
             
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid w-full grid-cols-2">

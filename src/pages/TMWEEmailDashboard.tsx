@@ -175,67 +175,23 @@ const EmailDashboard = () => {
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
 
-  // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
+  // Query semplice per le email - USA SEMPRE L'API TMWE
   const { 
-    data: messagesData,
+    data: messagesResponse,
     isLoading: messagesLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     error: messagesError,
-  } = useInfiniteQuery({
-    queryKey: ['messages', selectedFolder, searchQuery, downloadedEmails.length],
-    queryFn: async ({ pageParam = 0 }) => {
-      console.log('🔄 Fetching page with pageParam:', pageParam);
-      
-      // Se abbiamo email scaricate in memoria, usale
-      if (downloadedEmails.length > 0) {
-        const start = pageParam;
-        const end = start + 30;
-        return {
-          messages: downloadedEmails.slice(start, end),
-          total: downloadedEmails.length,
-        };
-      }
-
-      // USA SEMPRE L'API TMWE (Supabase solo per backup con Sync Smart)
-      const page = Math.floor(pageParam / 30) + 1;
-      console.log('📄 Requesting page:', page, 'for folder:', selectedFolder);
-      console.log('🚀 About to call API...');
+  } = useQuery({
+    queryKey: ['messages', selectedFolder, searchQuery],
+    queryFn: async () => {
+      console.log('📄 Fetching messages for folder:', selectedFolder);
       
       const result = searchQuery 
         ? await emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : await emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+        : await emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page: 1 });
       
-      console.log('✅ API returned:', { 
-        messagesCount: result?.messages?.length || 0, 
-        total: result?.total,
-        from: result?.from,
-        to: result?.to,
-        fullResult: result
-      });
-      
-      // Ensure we always return the expected structure
-      if (!result || !result.messages) {
-        console.error('❌ Invalid API response structure:', result);
-        return { messages: [], total: 0 };
-      }
-      
-      console.log('🎉 Returning result to useInfiniteQuery');
+      console.log('✅ Got messages:', result);
       return result;
     },
-    getNextPageParam: (lastPage, allPages) => {
-      if (downloadedEmails.length > 0) {
-        const nextOffset = allPages.length * 30;
-        return nextOffset < downloadedEmails.length ? nextOffset : undefined;
-      }
-      
-      const messages = lastPage?.messages || [];
-      if (messages.length === 0 || messages.length < 30) return undefined;
-      return allPages.length * 30;
-    },
-    initialPageParam: 0,
-    retry: 1,
   });
 
 
@@ -422,48 +378,8 @@ const EmailDashboard = () => {
     },
   });
 
-  const emailsFromPages = (messagesData?.pages || []).flatMap(page => 
-    (page?.messages || []).map((msg: any) => {
-      // Debug: Log message structure to understand attachment indicators
-      if (msg.uid === 6624) {
-        console.log('📎 Message structure for email with known attachment:', msg);
-      }
-      
-      return {
-        id: String(msg.uid || msg.id),
-        subject: msg.subject || '(No Subject)',
-        from: typeof msg.from === 'object' ? msg.from.email : msg.from,
-        preview: '', // TMWE API doesn't provide preview in list
-        date: msg.date,
-        read: msg.is_read === true || msg.seen === 1,
-        starred: msg.is_flagged === true || msg.flagged === 1,
-        // Check various possible attachment indicators from the API
-        hasAttachments: !!(
-          msg.has_attachments || 
-          msg.hasAttachments || 
-          msg.attachment_count > 0 ||
-          msg.attachmentCount > 0 ||
-          (msg.attachments && msg.attachments.length > 0) ||
-          // Use size as a heuristic: emails > 50KB likely have attachments
-          (msg.size && parseInt(msg.size) > 50000)
-        ),
-      };
-    })
-  );
-
-  // Debug logging
-  console.log('📊 Email Data State:', {
-    messagesLoading,
-    messagesError: messagesError?.message || null,
-    pagesCount: messagesData?.pages?.length || 0,
-    emailsFromPagesCount: emailsFromPages.length,
-    downloadedEmailsCount: downloadedEmails.length,
-    firstPage: messagesData?.pages?.[0],
-    allPages: messagesData?.pages,
-  });
-
-  // Use downloaded emails if available, otherwise use paginated emails
-  const emailsToUse = downloadedEmails.length > 0 ? downloadedEmails.map((msg: any) => ({
+  // Converti i messaggi dall'API al formato atteso dall'UI
+  const emailsFromAPI = (messagesResponse?.messages || []).map((msg: any) => ({
     id: String(msg.uid || msg.id),
     subject: msg.subject || '(No Subject)',
     from: typeof msg.from === 'object' ? msg.from.email : msg.from,
@@ -479,12 +395,19 @@ const EmailDashboard = () => {
       (msg.attachments && msg.attachments.length > 0) ||
       (msg.size && parseInt(msg.size) > 50000)
     ),
-  })) : emailsFromPages;
+  }));
 
-  // Filter emails by selected sender
+  console.log('📊 Email Data:', {
+    messagesLoading,
+    messagesError: messagesError?.message || null,
+    emailsCount: emailsFromAPI.length,
+    messagesResponse
+  });
+
+  // Filtra per mittente se selezionato
   const emails = selectedSender 
-    ? emailsToUse.filter(email => email.from === selectedSender)
-    : emailsToUse;
+    ? emailsFromAPI.filter(email => email.from === selectedSender)
+    : emailsFromAPI;
 
   const handleSync = () => {
     toast.info('Starting sync...');
@@ -669,7 +592,7 @@ const EmailDashboard = () => {
           <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <EmailSenderFilter
-                emails={emailsToUse}
+                emails={emailsFromAPI}
                 selectedSender={selectedSender}
                 onSenderSelect={setSelectedSender}
                 onOpenAIChat={(senderEmail) => {
@@ -705,9 +628,6 @@ const EmailDashboard = () => {
             selectedEmailId={selectedEmailId}
             onEmailSelect={handleEmailSelect}
             loading={messagesLoading}
-            onLoadMore={fetchNextPage}
-            hasMore={hasNextPage}
-            isLoadingMore={isFetchingNextPage}
             emailDetail={selectedEmail}
             isLoadingDetail={isLoadingDetail}
             onOpenDetailPopup={() => setDetailPopupOpen(true)}
@@ -716,7 +636,6 @@ const EmailDashboard = () => {
             onBulkForward={handleBulkForward}
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
-            isDownloading={isDownloading}
           />
         </div>
 

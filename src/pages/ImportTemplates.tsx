@@ -2613,6 +2613,67 @@ export default function ImportTemplates() {
                               </div>
                             )}
 
+                            <div className="space-y-2">
+                              <Label>Filtra per attività</Label>
+                              <Select 
+                                value={(() => {
+                                  // Determina il valore del filtro attività
+                                  const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                  if (hasActivityFilter) {
+                                    return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                  }
+                                  return 'all';
+                                })()} 
+                                onValueChange={(value) => {
+                                  // Rimuovi eventuali filtri attività esistenti
+                                  setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                  
+                                  // Aggiungi il nuovo filtro se non è "tutti"
+                                  if (value === 'with_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: true,
+                                      displayValue: 'Con attività'
+                                    }]);
+                                  } else if (value === 'without_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: false,
+                                      displayValue: 'Senza attività'
+                                    }]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutti" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tutti</SelectItem>
+                                  <SelectItem value="with_activities">Con attività</SelectItem>
+                                  <SelectItem value="without_activities">Senza attività</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="hide-today-activities-mobile"
+                                checked={hideContactsWithTodayActivities}
+                                onCheckedChange={setHideContactsWithTodayActivities}
+                              />
+                              <Label htmlFor="hide-today-activities-mobile" className="cursor-pointer">
+                                Nascondi attività oggi
+                              </Label>
+                              {hideContactsWithTodayActivities && (() => {
+                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                return hiddenCount > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hiddenCount} nascosti
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
+
                             <div className="flex items-center space-x-2">
                               <Checkbox
                                 id="has-notes-filter-mobile"

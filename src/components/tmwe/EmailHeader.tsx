@@ -32,9 +32,13 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
   // Fetch initial count and subscribe to realtime updates
   useEffect(() => {
     const fetchCount = async () => {
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      if (!userEmail) return;
+      
       const { count, error } = await supabase
         .from('email_messages')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', userEmail);
       
       if (!error && count !== null) {
         setEmailCount(count);

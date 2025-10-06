@@ -101,17 +101,6 @@ export const EmailList = ({
 
   const filteredEmails = showUnreadOnly ? emails.filter(email => !email.read) : emails;
 
-  const getWidthClass = () => {
-    // Mobile first: sempre 100% su mobile, poi responsive su desktop
-    switch (contentWidth) {
-      case 'narrow': return 'w-full lg:max-w-3xl'; // ~768px on desktop
-      case 'medium': return 'w-full lg:max-w-5xl'; // ~1024px on desktop
-      case 'wide': return 'w-full lg:max-w-7xl'; // ~1280px on desktop
-      case 'full': return 'w-full max-w-full';
-      default: return 'w-full lg:max-w-7xl';
-    }
-  };
-
   const handleToggleEmailSelection = (emailId: string) => {
     const newSelected = new Set(selectedEmailIds);
     if (newSelected.has(emailId)) {
@@ -203,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className={cn("space-y-2 py-4 px-2 sm:px-3 w-full", getWidthClass())}>
+    <div className="space-y-2 py-4 px-2 sm:px-3 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -235,10 +224,10 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 min-w-0 p-3 relative">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="min-w-0 flex-shrink-0 w-40 sm:w-52 md:w-60">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="min-w-0 flex-1 sm:flex-initial">
                   <p className={cn(
-                    'truncate text-sm',
+                    'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
                   )}>
                     {email.from}
@@ -246,13 +235,13 @@ export const EmailList = ({
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <h3 className={cn(
-                    'truncate text-sm',
+                    'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
                   )}>
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 w-auto min-w-[140px]">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
@@ -329,7 +318,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className={cn("space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-3 w-full max-w-[280px] sm:max-w-none mx-auto sm:mx-0", getWidthClass())}>
+    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-3 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -383,7 +372,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0 sm:min-w-[120px]">
+                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-xs sm:text-base font-bold">

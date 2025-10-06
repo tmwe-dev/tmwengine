@@ -340,23 +340,19 @@ export const EmailDetail = ({
           <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
-              size="lg" 
+              size="icon" 
               onClick={onPrevious}
               disabled={!hasPrevious}
-              className="flex-col h-auto py-3 px-4"
             >
-              <ChevronLeft className="h-8 w-8 mb-1" />
-              <span className="text-xs">Precedente</span>
+              <ChevronLeft className="h-8 w-8" />
             </Button>
             <Button 
               variant="ghost" 
-              size="lg" 
+              size="icon" 
               onClick={onNext}
               disabled={!hasNext}
-              className="flex-col h-auto py-3 px-4"
             >
-              <ChevronRight className="h-8 w-8 mb-1" />
-              <span className="text-xs">Successiva</span>
+              <ChevronRight className="h-8 w-8" />
             </Button>
           </div>
           <div className="flex items-center gap-3">

@@ -3717,7 +3717,7 @@ export default function ImportTemplates() {
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center">
               <span></span>
-              <div className="flex items-center gap-2 mt-[25px]">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"

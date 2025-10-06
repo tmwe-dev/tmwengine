@@ -3716,7 +3716,6 @@ export default function ImportTemplates() {
         <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] flex flex-col overflow-hidden p-2 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center">
-              <span></span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -3725,7 +3724,6 @@ export default function ImportTemplates() {
                   disabled={selectedRecordIndex <= 0}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Precedente
                 </Button>
                 
                 <span className="text-sm text-muted-foreground px-3">
@@ -3738,7 +3736,6 @@ export default function ImportTemplates() {
                   onClick={() => navigateRecord('next')}
                   disabled={selectedRecordIndex >= filteredRecords.length - 1}
                 >
-                  Successivo
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

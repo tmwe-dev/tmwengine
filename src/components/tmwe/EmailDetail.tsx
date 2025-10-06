@@ -353,7 +353,7 @@ export const EmailDetail = ({
           </Button>
         </div>
 
-        {/* Right: Toggle collapse, Actions and Close */}
+        {/* Right: Actions and Close */}
         <div className="flex justify-end gap-3">
           {!isHeaderCollapsed && (
             <DropdownMenu>
@@ -399,14 +399,6 @@ export const EmailDetail = ({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-            className="h-10 w-10"
-          >
-            {isHeaderCollapsed ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
-          </Button>
           <Button 
             variant="ghost" 
             size="icon"

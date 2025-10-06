@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, RefreshCw, Mail, Menu, Database, Settings2 } from 'lucide-react';
+import { Search, Plus, RefreshCw, Mail, Menu, Database, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,9 +22,11 @@ interface EmailHeaderProps {
   isMobile?: boolean;
   downloadProgressComponent?: React.ReactNode;
   dbEmailCount?: number;
+  isHeaderCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -207,6 +209,17 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 />
               </div>
             </form>
+
+            {onToggleCollapse && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onToggleCollapse}
+                className="h-8 w-8"
+              >
+                {isHeaderCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+              </Button>
+            )}
           </div>
         </div>
 

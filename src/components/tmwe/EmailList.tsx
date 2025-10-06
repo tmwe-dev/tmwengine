@@ -361,11 +361,11 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative">
-              <div className="flex items-start justify-start gap-2 sm:gap-3 md:gap-4 h-full min-w-0">
+              <div className="flex items-start justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
                 <div className="flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
-                      'truncate text-xs sm:text-sm min-w-0',
+                      'text-xs sm:text-sm min-w-0 break-words sm:truncate',
                       !email.read && 'font-semibold text-email-unread'
                     )}>
                       {email.from}
@@ -377,7 +377,7 @@ export const EmailList = ({
                     )}
                   </div>
                   <h3 className={cn(
-                    'truncate text-sm sm:text-base mt-0.5 sm:mt-1 min-w-0',
+                    'text-sm sm:text-base mt-0.5 sm:mt-1 min-w-0 break-words sm:truncate',
                     !email.read && 'font-semibold'
                   )}>
                     {email.subject || '(No Subject)'}

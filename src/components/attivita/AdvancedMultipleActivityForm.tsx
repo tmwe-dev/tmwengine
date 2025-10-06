@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X } from 'lucide-react';
+import { Building, Mail, Phone, Calendar, Clock, User, FileText, CalendarIcon, Upload, X, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -111,6 +112,7 @@ export function AdvancedMultipleActivityForm({
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [userProfile, setUserProfile] = useState<{nomeCompleto: string} | null>(null);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   
   const form = useForm<AdvancedActivityFormData>({
     resolver: zodResolver(advancedActivitySchema),
@@ -366,140 +368,161 @@ export function AdvancedMultipleActivityForm({
                 {/* Email Form */}
                 <TabsContent value="email" className="space-y-2 mt-2">
                   <div className="space-y-2 p-2 border border-border rounded-lg bg-background">
-
-                  {/* Selezione Template */}
-                  {emailTemplates.length > 0 && (
-                    <div className="mb-3">
-                      <label className="text-xs font-medium mb-1 block">Template Email (opzionale)</label>
-                      <Select onValueChange={handleTemplateSelect}>
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Seleziona un template..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60">
-                          {emailTemplates.map((template) => (
-                            <SelectItem key={template.id} value={template.id}>
-                              <div className="flex items-center gap-2">
-                                <FileText className="h-3 w-3" />
-                                <span className="text-xs">{template.nome}</span>
+                    
+                    {/* Icona bacchetta magica per template e allegati */}
+                    <div className="flex justify-end mb-2">
+                      <Dialog open={showTemplatesDialog} onOpenChange={setShowTemplatesDialog}>
+                        <DialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2"
+                          >
+                            <Wand2 className="h-4 w-4" />
+                            <span className="text-xs">Template & Allegati</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Template Email e Allegati</DialogTitle>
+                          </DialogHeader>
+                          
+                          <div className="space-y-4">
+                            {/* Selezione Template */}
+                            {emailTemplates.length > 0 && (
+                              <div>
+                                <label className="text-sm font-medium mb-2 block">Template Email (opzionale)</label>
+                                <Select onValueChange={handleTemplateSelect}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleziona un template..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-60">
+                                    {emailTemplates.map((template) => (
+                                      <SelectItem key={template.id} value={template.id}>
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4" />
+                                          <span>{template.nome}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                {/* Gestione Allegati Email */}
-                <div className="space-y-2 border border-border rounded p-2 bg-background-subtle">
-                  <h5 className="font-medium text-xs">Allegati Email</h5>
-                  
-                  {/* Allegati esistenti dalla memoria */}
-                  {emailAttachments.length > 0 && (
-                    <div>
-                      <label className="text-xs font-medium mb-1 block">Seleziona dalla memoria</label>
-                      <div className="max-h-20 overflow-y-auto space-y-1">
-                        {emailAttachments.map((attachment) => (
-                          <FormField
-                            key={attachment.id}
-                            control={form.control}
-                            name="allegati_esistenti"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(attachment.id)}
-                                    onCheckedChange={(checked) => {
-                                      const currentValues = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentValues, attachment.id]);
-                                      } else {
-                                        field.onChange(currentValues.filter(id => id !== attachment.id));
-                                      }
-                                    }}
-                                    className="h-3 w-3"
-                                  />
-                                </FormControl>
-                                <div className="flex-1 min-w-0">
-                                  <FormLabel className="text-xs font-normal cursor-pointer truncate block">
-                                    {attachment.nome}
-                                  </FormLabel>
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatFileSize(attachment.file_size)}
-                                  </p>
-                                </div>
-                              </FormItem>
                             )}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Upload nuovi allegati */}
-                  <div>
-                    <label className="text-xs font-medium mb-1 block">Carica nuovi allegati</label>
-                    <div
-                      className={cn(
-                        "border-2 border-dashed rounded p-3 text-center transition-colors",
-                        dragActive 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50"
-                      )}
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                    >
-                      <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Trascina file o clicca
-                      </p>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        id="file-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-xs px-2"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                      >
-                        Seleziona
-                      </Button>
-                    </div>
+                            {/* Gestione Allegati Email */}
+                            <div className="space-y-3 border border-border rounded-lg p-4">
+                              <h5 className="font-medium text-sm">Allegati Email</h5>
+                              
+                              {/* Allegati esistenti dalla memoria */}
+                              {emailAttachments.length > 0 && (
+                                <div>
+                                  <label className="text-sm font-medium mb-2 block">Seleziona dalla memoria</label>
+                                  <div className="max-h-40 overflow-y-auto space-y-2">
+                                    {emailAttachments.map((attachment) => (
+                                      <FormField
+                                        key={attachment.id}
+                                        control={form.control}
+                                        name="allegati_esistenti"
+                                        render={({ field }) => (
+                                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                              <Checkbox
+                                                checked={field.value?.includes(attachment.id)}
+                                                onCheckedChange={(checked) => {
+                                                  const currentValues = field.value || [];
+                                                  if (checked) {
+                                                    field.onChange([...currentValues, attachment.id]);
+                                                  } else {
+                                                    field.onChange(currentValues.filter(id => id !== attachment.id));
+                                                  }
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <div className="flex-1 min-w-0">
+                                              <FormLabel className="text-sm font-normal cursor-pointer truncate block">
+                                                {attachment.nome}
+                                              </FormLabel>
+                                              <p className="text-xs text-muted-foreground">
+                                                {formatFileSize(attachment.file_size)}
+                                              </p>
+                                            </div>
+                                          </FormItem>
+                                        )}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                    {/* Lista file selezionati */}
-                    {selectedFiles.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        <label className="text-xs font-medium">File selezionati:</label>
-                        {selectedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-1 bg-background border border-border rounded text-xs">
-                            <div className="flex items-center gap-1 min-w-0 flex-1">
-                              <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                              <span className="truncate">{file.name}</span>
-                              <span className="text-xs text-muted-foreground flex-shrink-0">
-                                ({formatFileSize(file.size)})
-                              </span>
+                              {/* Upload nuovi allegati */}
+                              <div>
+                                <label className="text-sm font-medium mb-2 block">Carica nuovi allegati</label>
+                                <div
+                                  className={cn(
+                                    "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                                    dragActive 
+                                      ? "border-primary bg-primary/10" 
+                                      : "border-border hover:border-primary/50"
+                                  )}
+                                  onDragEnter={handleDragEnter}
+                                  onDragLeave={handleDragLeave}
+                                  onDragOver={handleDragOver}
+                                  onDrop={handleDrop}
+                                >
+                                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    Trascina file o clicca per selezionare
+                                  </p>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    id="file-upload"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => document.getElementById('file-upload')?.click()}
+                                  >
+                                    Seleziona File
+                                  </Button>
+                                </div>
+
+                                {/* Lista file selezionati */}
+                                {selectedFiles.length > 0 && (
+                                  <div className="mt-3 space-y-2">
+                                    <label className="text-sm font-medium">File selezionati:</label>
+                                    {selectedFiles.map((file, index) => (
+                                      <div key={index} className="flex items-center justify-between p-2 bg-background border border-border rounded-lg">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                          <span className="truncate text-sm">{file.name}</span>
+                                          <span className="text-xs text-muted-foreground flex-shrink-0">
+                                            ({formatFileSize(file.size)})
+                                          </span>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeFile(index)}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                 
                   <FormField
                     control={form.control}

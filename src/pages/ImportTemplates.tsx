@@ -2424,10 +2424,10 @@ export default function ImportTemplates() {
           <DialogHeader>
             {isMobile ? (
               /* Mobile Header - Compact */
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {/* Mobile Title with Filtered and Total Count */}
-                <div className="flex items-start justify-between relative">
-                  <div className="flex flex-col items-start gap-1">
+                <div className="flex items-start justify-between relative pb-1">
+                  <div className="flex flex-col items-start gap-0.5">
                     <div className="flex items-center gap-2">
                       {/* Filtered count - only when filters are active */}
                       {(searchQuery || originFilter || countryFilter || hasNotesFilter) && filteredRecords.length > 0 && (

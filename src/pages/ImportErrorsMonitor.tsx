@@ -17,7 +17,10 @@ import {
   Zap,
   TrendingUp,
   Coins,
-  Activity
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  Plus
 } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { toast } from 'sonner';
@@ -29,6 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface ErrorRecord {
   id: string;
@@ -92,6 +100,8 @@ export default function ImportErrorsMonitor() {
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [lastBatchResult, setLastBatchResult] = useState<BatchResult | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [importingRows, setImportingRows] = useState<Set<string>>(new Set());
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -282,6 +292,48 @@ export default function ImportErrorsMonitor() {
       console.error('Error confirming import:', error);
       addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
       toast.error('Errore durante importazione');
+    }
+  };
+
+  const importSingleRecord = async (errorId: string) => {
+    if (!importLogId) return;
+
+    setImportingRows(prev => new Set(prev).add(errorId));
+
+    try {
+      addLog(`📥 Importazione singola riga...`);
+      
+      const { data, error } = await supabase.functions.invoke('confirm-corrected-errors', {
+        body: { 
+          import_log_id: importLogId,
+          error_id: errorId 
+        }
+      });
+
+      if (error) throw error;
+
+      addLog(`✅ Riga importata con successo!`);
+      toast.success('Record importato in Rubrica');
+      
+      // Rimuovi dalla lista dei corretti
+      setCorrectedRecords(prev => prev.filter(r => r.id !== errorId));
+      
+      // Aggiorna stats
+      setStats(prev => ({
+        ...prev,
+        corrected: Math.max(0, prev.corrected - 1)
+      }));
+
+    } catch (error) {
+      console.error('Error importing single record:', error);
+      addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      toast.error('Errore durante importazione');
+    } finally {
+      setImportingRows(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(errorId);
+        return newSet;
+      });
     }
   };
 
@@ -610,39 +662,115 @@ export default function ImportErrorsMonitor() {
                       </div>
                     ) : (
                       correctedRecords.map((error) => {
-                        const renderValue = (value: any) => {
-                          if (value === null || value === undefined || value === '') {
-                            return <span className="text-red-400 italic">❌ Mancante</span>;
-                          }
-                          return <span className="break-words">{String(value)}</span>;
-                        };
+                        const isExpanded = expandedRows.has(error.id);
+                        const isImporting = importingRows.has(error.id);
+                        const data = error.corrected_data || {};
+                        
+                        // Campi prioritari
+                        const companyName = data.company_name || data.azienda;
+                        const contactName = data.contact_name || data.nome;
+                        const address = data.address || data.indirizzo;
+                        const zipCode = data.zip_code || data.cap;
+                        const city = data.city || data.citta;
+                        const country = data.country || data.paese;
 
                         return (
-                          <div
+                          <Collapsible
                             key={error.id}
-                            className="p-4 rounded-lg border border-green-500/30 bg-green-500/5 space-y-3"
+                            open={isExpanded}
+                            onOpenChange={(open) => {
+                              setExpandedRows(prev => {
+                                const newSet = new Set(prev);
+                                if (open) {
+                                  newSet.add(error.id);
+                                } else {
+                                  newSet.delete(error.id);
+                                }
+                                return newSet;
+                              });
+                            }}
                           >
-                            <div className="flex items-start gap-2">
-                              <Badge variant="outline" className="text-xs bg-green-500/20">
-                                Riga {error.row_number}
-                              </Badge>
-                            </div>
-
-                            {error.corrected_data && typeof error.corrected_data === 'object' && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-xs font-mono">
-                                {Object.entries(error.corrected_data).map(([key, value]) => (
-                                  <div key={key} className="flex flex-col">
-                                    <span className="text-muted-foreground font-semibold uppercase text-[10px]">
-                                      {key.replace(/_/g, ' ')}
-                                    </span>
-                                    <div className="mt-1 break-words whitespace-normal">
-                                      {renderValue(value)}
-                                    </div>
+                            <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-colors">
+                              <div className="flex items-center gap-2 justify-between">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Badge variant="outline" className="text-xs bg-green-500/20 shrink-0">
+                                    #{error.row_number}
+                                  </Badge>
+                                  
+                                  <div className="flex items-center gap-2 flex-1 min-w-0 text-sm">
+                                    {companyName && (
+                                      <span className="font-semibold truncate">{companyName}</span>
+                                    )}
+                                    {contactName && (
+                                      <span className="text-muted-foreground truncate">• {contactName}</span>
+                                    )}
+                                    {address && (
+                                      <span className="text-muted-foreground text-xs truncate">• {address}</span>
+                                    )}
+                                    {zipCode && (
+                                      <span className="text-muted-foreground text-xs truncate">{zipCode}</span>
+                                    )}
+                                    {city && (
+                                      <span className="text-muted-foreground text-xs truncate">{city}</span>
+                                    )}
+                                    {country && (
+                                      <span className="text-muted-foreground text-xs truncate">({country})</span>
+                                    )}
                                   </div>
-                                ))}
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      importSingleRecord(error.id);
+                                    }}
+                                    disabled={isImporting}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    {isImporting ? (
+                                      <Activity className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Plus className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  
+                                  <CollapsibleTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                      {isExpanded ? (
+                                        <ChevronUp className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                </div>
                               </div>
-                            )}
-                          </div>
+
+                              <CollapsibleContent className="mt-3">
+                                {error.corrected_data && typeof error.corrected_data === 'object' && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-xs font-mono pt-3 border-t border-green-500/20">
+                                    {Object.entries(error.corrected_data).map(([key, value]) => (
+                                      <div key={key} className="flex flex-col">
+                                        <span className="text-muted-foreground font-semibold uppercase text-[10px]">
+                                          {key.replace(/_/g, ' ')}
+                                        </span>
+                                        <div className="mt-1 break-words whitespace-normal">
+                                          {value === null || value === undefined || value === '' ? (
+                                            <span className="text-red-400 italic">❌ Mancante</span>
+                                          ) : (
+                                            <span className="break-words">{String(value)}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </CollapsibleContent>
+                            </div>
+                          </Collapsible>
                         );
                       })
                     )}

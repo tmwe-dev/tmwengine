@@ -238,23 +238,24 @@ const EmailDashboard = () => {
         <div className="flex-1">
           {isLoadingDetail ? (
             <div className="flex h-full items-center justify-center">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <p className="text-sm text-muted-foreground">Loading email...</p>
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                <div className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 animate-spin rounded-full border-2 sm:border-3 md:border-4 border-primary border-t-transparent" />
+                <p className="text-xs sm:text-sm text-muted-foreground">Loading email...</p>
               </div>
             </div>
           ) : detailError ? (
             <div className="flex h-full items-center justify-center">
-              <div className="text-center space-y-4 p-8">
-                <p className="text-destructive font-medium text-lg">Failed to load email</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 md:p-8">
+                <p className="text-destructive font-medium text-base sm:text-lg">Failed to load email</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {detailError instanceof Error ? detailError.message : 'The email content could not be retrieved'}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   This might be due to an empty response from the server
                 </p>
                 <Button 
                   variant="outline" 
+                  size="sm"
                   onClick={() => {
                     setSelectedEmailId(null);
                     setTimeout(() => setSelectedEmailId(selectedEmailId), 100);
@@ -274,7 +275,7 @@ const EmailDashboard = () => {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p>Select an email to view</p>
+              <p className="text-sm sm:text-base">Select an email to view</p>
             </div>
           )}
         </div>

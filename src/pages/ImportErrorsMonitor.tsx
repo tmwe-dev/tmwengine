@@ -111,6 +111,8 @@ export default function ImportErrorsMonitor() {
   const [expandedFailedRows, setExpandedFailedRows] = useState<Set<string>>(new Set());
   const [selectedFailedRecords, setSelectedFailedRecords] = useState<Set<string>>(new Set());
   const [processingAI, setProcessingAI] = useState<Set<string>>(new Set());
+  const [showActivityLog, setShowActivityLog] = useState(true);
+  const [showFreePrompt, setShowFreePrompt] = useState(true);
   const [freePrompt, setFreePrompt] = useState<string>(
     `Sei un assistente AI specializzato nella normalizzazione dei dati di importazione.
 
@@ -586,16 +588,28 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         {/* Free Prompt Configuration */}
         <Card className="border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-500/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              Prompt AI Libera (per riprocessamento singolo)
-            </CardTitle>
-            <CardDescription>
-              Questo prompt verrà usato quando premi il bottone AI sui record falliti. 
-              Puoi personalizzarlo per dare istruzioni specifiche all'AI.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-purple-500" />
+                  Prompt AI Libera (per riprocessamento singolo)
+                </CardTitle>
+                <CardDescription>
+                  Questo prompt verrà usato quando premi il bottone AI sui record falliti. 
+                  Puoi personalizzarlo per dare istruzioni specifiche all'AI.
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFreePrompt(!showFreePrompt)}
+              >
+                {showFreePrompt ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          {showFreePrompt && (
+            <CardContent>
             <div className="space-y-2">
               <Label htmlFor="free-prompt">Prompt AI</Label>
               <Textarea
@@ -609,7 +623,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                 💡 Questo prompt spiega all'AI come interpretare i dati grezzi e trasformarli nella struttura corretta.
               </p>
             </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
 
         {/* Contatori Token e Costo */}
@@ -815,12 +830,22 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           {/* Activity Log */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Log Attività
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Log Attività
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowActivityLog(!showActivityLog)}
+                >
+                  {showActivityLog ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
+            {showActivityLog && (
+              <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-1 font-mono text-sm">
                   {activityLog.length === 0 ? (
@@ -834,7 +859,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   )}
                 </div>
               </ScrollArea>
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           {/* Records Corretti */}

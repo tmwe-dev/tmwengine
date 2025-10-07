@@ -72,14 +72,29 @@ export default function TemplateAlias() {
   const { data: templates, isLoading } = useQuery({
     queryKey: ["template-alias"],
     queryFn: async () => {
-      const { data, error, count } = await supabase
-        .from("template_alias")
-        .select("*", { count: 'exact' })
-        .order("created_at", { ascending: false });
+      // Fetch all records without limit
+      let allData: TemplateAlias[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data, error } = await supabase
+          .from("template_alias")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      if (error) throw error;
-      console.log(`Loaded ${data?.length} template_alias records, total count: ${count}`);
-      return data as TemplateAlias[];
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        
+        allData = [...allData, ...data];
+        
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      
+      console.log(`Loaded ${allData.length} template_alias records`);
+      return allData as TemplateAlias[];
     },
   });
 
@@ -219,6 +234,13 @@ export default function TemplateAlias() {
     setSelectedRecords(newSelected);
   };
 
+  const handleDeleteAllFiltered = async () => {
+    if (!filteredAndSortedTemplates || filteredAndSortedTemplates.length === 0) return;
+    
+    const allFilteredIds = filteredAndSortedTemplates.map(t => t.id);
+    deleteMutation.mutate(allFilteredIds);
+  };
+
   const handleDeleteSelected = () => {
     if (selectedRecords.size > 0) {
       deleteMutation.mutate(Array.from(selectedRecords));
@@ -290,6 +312,17 @@ export default function TemplateAlias() {
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Elimina selezionati ({selectedRecords.size})
+                </Button>
+              )}
+              {titleFilter !== "all" && filteredAndSortedTemplates && filteredAndSortedTemplates.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteAllFiltered}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Elimina tutti filtrati ({filteredAndSortedTemplates.length})
                 </Button>
               )}
               <Badge variant="secondary" className="text-base">

@@ -2514,18 +2514,17 @@ export default function ImportTemplates() {
                                  </Button>
                                )}
                                
-                               {/* Pulsante Ripara con AI - mostrato se ci sono errori */}
-                               {log.righe_errori > 0 && (
-                                 <Button 
-                                   variant="default" 
-                                   size="sm"
-                                   onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
-                                   className="bg-orange-600 hover:bg-orange-700"
-                                 >
-                                   <Pickaxe className="h-4 w-4 mr-1" />
-                                   Ripara
-                                 </Button>
-                               )}
+                                {/* Pulsante Ripara con AI - mostrato se ci sono errori */}
+                                {log.righe_errori > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
+                                  >
+                                    <Pickaxe className="h-4 w-4 mr-1" />
+                                    Ripara
+                                  </Button>
+                                )}
 
                                {/* Pulsante Visualizza Records */}
                                <Button 

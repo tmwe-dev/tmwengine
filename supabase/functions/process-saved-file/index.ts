@@ -265,29 +265,6 @@ serve(async (req) => {
             totalValidRecords++;
           } else {
             console.log(`Skipping invalid record at row ${globalRowIndex + 1}: missing essential fields`);
-            
-            // Save error to import_errors table
-            const rawData: any = {};
-            headers.forEach((header: string, index: number) => {
-              if (index < values.length) {
-                const value = values[index];
-                if (value && value !== 'NULL' && value.trim() !== '') {
-                  rawData[header] = value.replace(/^["']|["']$/g, '').trim();
-                }
-              }
-            });
-            
-            await supabaseClient
-              .from('import_errors')
-              .insert({
-                import_log_id: importLogId,
-                row_number: globalRowIndex + 1,
-                raw_data: rawData,
-                error_message: 'Missing essential fields (name/company and contact info)',
-                error_type: 'validation_error',
-                status: 'pending'
-              });
-            
             errors.push({ 
               row: globalRowIndex + 1, 
               error: 'Missing essential fields (name/company and contact info)' 
@@ -299,30 +276,6 @@ serve(async (req) => {
           
         } catch (rowError: any) {
           console.error(`Error processing row ${globalRowIndex + 1}:`, rowError);
-          
-          // Save error to import_errors table
-          const values = row.split(separator);
-          const rawData: any = {};
-          headers.forEach((header: string, index: number) => {
-            if (index < values.length) {
-              const value = values[index];
-              if (value && value !== 'NULL' && value.trim() !== '') {
-                rawData[header] = value.replace(/^["']|["']$/g, '').trim();
-              }
-            }
-          });
-          
-          await supabaseClient
-            .from('import_errors')
-            .insert({
-              import_log_id: importLogId,
-              row_number: globalRowIndex + 1,
-              raw_data: rawData,
-              error_message: rowError.message,
-              error_type: 'processing_error',
-              status: 'pending'
-            });
-          
           errors.push({ row: globalRowIndex + 1, error: rowError.message });
           errorRows++;
           processedRows++;
@@ -337,21 +290,6 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('Insert error:', insertError);
-          
-          // Save batch error to import_errors table for each record in batch
-          const errorRecords = contactsToInsert.map(contact => ({
-            import_log_id: importLogId,
-            row_number: contact.row_number,
-            raw_data: contact,
-            error_message: insertError.message,
-            error_type: 'batch_insert_error',
-            status: 'pending'
-          }));
-          
-          await supabaseClient
-            .from('import_errors')
-            .insert(errorRecords);
-          
           errorRows += contactsToInsert.length;
           totalValidRecords -= contactsToInsert.length;
           errors.push({ batch: Math.floor(batchStart / batchSize) + 1, error: insertError.message });

@@ -32,7 +32,96 @@ serve(async (req) => {
 
     console.log(`🤖 Avvio elaborazione AI per import_log_id: ${import_log_id}`);
 
-    // Recupera errori pending
+    // STEP 1: Verifica se abbiamo già errori in import_errors
+    const { data: existingErrors } = await supabase
+      .from('import_errors')
+      .select('id')
+      .eq('import_log_id', import_log_id)
+      .limit(1);
+
+    // STEP 2: Se non ci sono errori, estraili dal file originale
+    if (!existingErrors || existingErrors.length === 0) {
+      console.log('📂 Estrazione errori dal file originale...');
+      
+      // Recupera import log con info errori
+      const { data: importLog, error: logError } = await supabase
+        .from('import_logs')
+        .select('*, errori')
+        .eq('id', import_log_id)
+        .single();
+
+      if (logError || !importLog) {
+        throw new Error('Import log non trovato');
+      }
+
+      // Recupera file originale
+      const { data: fileImport, error: fileError } = await supabase
+        .from('file_imports')
+        .select('*')
+        .eq('import_log_id', import_log_id)
+        .single();
+
+      if (fileError || !fileImport) {
+        throw new Error('File originale non trovato');
+      }
+
+      const fileContent = fileImport.file_content;
+      const separator = fileImport.separator_detected;
+      const headers = fileImport.headers_detected;
+      const lines = fileContent.split('\n').filter((line: string) => line.trim());
+      const dataRows = lines.slice(1);
+
+      // Estrai numeri di riga errati da import_logs.errori
+      const errorInfo = importLog.errori?.errors || [];
+      const errorRowNumbers = errorInfo.map((e: any) => e.row);
+
+      console.log(`📋 Trovate ${errorRowNumbers.length} righe con errori`);
+
+      // Crea record in import_errors per ogni riga errata
+      const errorRecords = [];
+      for (const rowNum of errorRowNumbers) {
+        const rowIndex = rowNum - 1;
+        if (rowIndex >= 0 && rowIndex < dataRows.length) {
+          const row = dataRows[rowIndex];
+          const values = row.split(separator);
+          
+          const rawData: any = {};
+          headers.forEach((header: string, index: number) => {
+            if (index < values.length) {
+              const value = values[index];
+              if (value && value !== 'NULL' && value.trim() !== '') {
+                rawData[header] = value.replace(/^["']|["']$/g, '').trim();
+              }
+            }
+          });
+
+          const errorMsg = errorInfo.find((e: any) => e.row === rowNum)?.error || 'Errore sconosciuto';
+
+          errorRecords.push({
+            import_log_id: import_log_id,
+            row_number: rowNum,
+            raw_data: rawData,
+            error_message: errorMsg,
+            error_type: 'validation_error',
+            status: 'pending'
+          });
+        }
+      }
+
+      if (errorRecords.length > 0) {
+        const { error: insertError } = await supabase
+          .from('import_errors')
+          .insert(errorRecords);
+
+        if (insertError) {
+          throw new Error(`Errore creazione record errori: ${insertError.message}`);
+        }
+
+        console.log(`✅ Creati ${errorRecords.length} record in import_errors`);
+      }
+    }
+
+    // STEP 3: Ora recupera tutti gli errori pending
     const { data: errors, error: fetchError } = await supabase
       .from('import_errors')
       .select('*')
@@ -193,7 +282,7 @@ Rispondi SOLO con JSON, nessun testo aggiuntivo.`;
 
         console.log('✅ Dati corretti validati:', correctedData);
 
-        // Salva i dati corretti e inserisci in imported_contacts
+        // Salva solo i dati corretti in import_errors (NON inserire ancora in imported_contacts)
         await supabase
           .from('import_errors')
           .update({ 
@@ -203,26 +292,9 @@ Rispondi SOLO con JSON, nessun testo aggiuntivo.`;
           })
           .eq('id', error.id);
 
-        // Inserisci in imported_contacts
-        const { error: insertError } = await supabase
-          .from('imported_contacts')
-          .insert({
-            import_log_id: import_log_id,
-            row_number: error.row_number,
-            ...correctedData
-          });
+        corrected++;
+        console.log(`✅ Riga ${error.row_number} corretta (in attesa di conferma)`);
 
-        if (insertError) {
-          console.error('❌ Errore inserimento in imported_contacts:', insertError);
-          // Torna a pending
-          await supabase
-            .from('import_errors')
-            .update({ status: 'pending' })
-            .eq('id', error.id);
-        } else {
-          corrected++;
-          console.log(`✅ Riga ${error.row_number} corretta e importata`);
-        }
 
       } catch (aiError) {
         console.error(`❌ Errore elaborazione riga ${error.row_number}:`, aiError);

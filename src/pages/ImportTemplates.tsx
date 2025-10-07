@@ -3260,6 +3260,61 @@ export default function ImportTemplates() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => {
+                            window.open('/template-alias', '_blank');
+                          }}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Settings className="h-4 w-4 text-orange-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Apri prompt AI per alias</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
+                            if (selectedIds.length === 0) {
+                              toast.error('Nessun record selezionato');
+                              return;
+                            }
+                            try {
+                              toast.info(`Generazione alias per ${selectedIds.length} contatti...`);
+                              const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                                body: { action: 'update_aliases', data: {}, contact_ids: selectedIds }
+                              });
+                              if (error) throw error;
+                              toast.success(data.message || `${data.updated_count} alias generati`);
+                              loadAllRecords(selectedImport!);
+                            } catch (err: any) {
+                              toast.error('Errore generazione alias');
+                            }
+                          }}
+                          className="h-10 w-10 p-0"
+                        >
+                          <Sparkles className="h-4 w-4 text-purple-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Genera alias AI per {selectedRecords.size} selezionati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => setShowMultipleActivityDialog(true)}
                           className="h-10 w-10 p-0"
                         >
@@ -3271,7 +3326,7 @@ export default function ImportTemplates() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

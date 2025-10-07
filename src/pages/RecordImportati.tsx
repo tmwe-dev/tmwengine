@@ -149,6 +149,8 @@ const RecordImportati = () => {
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
   const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
+  const [generatingAliases, setGeneratingAliases] = useState(false);
+
 
   const { getActivityCount, isLoading: loadingActivities, refreshActivities, getCompanyActivities } = useCompanyActivities();
 
@@ -197,26 +199,6 @@ const RecordImportati = () => {
     }
   };
 
-  const generateAliases = async (contactIds: string[]) => {
-    try {
-      toast.info(`Generazione alias per ${contactIds.length} contatti...`);
-      
-      const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
-        body: {
-          action: 'update_aliases',
-          data: { contact_ids: contactIds }
-        }
-      });
-
-      if (error) throw error;
-
-      toast.success(data.message || `${data.updated_count} alias generati con successo`);
-      await loadAllRecords();
-    } catch (error: any) {
-      console.error('Errore generazione alias:', error);
-      toast.error('Errore nella generazione degli alias');
-    }
-  };
 
 
 
@@ -239,6 +221,29 @@ const RecordImportati = () => {
       toast.success('Record eliminato');
     } catch (error: any) {
       toast.error('Errore nell\'eliminazione del record');
+    }
+  };
+
+  const generateAliases = async (contactIds: string[]) => {
+    setGeneratingAliases(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+        body: {
+          action: 'update_aliases',
+          data: {},
+          contact_ids: contactIds
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message || `${data.updated_count} alias generati`);
+      await loadAllRecords();
+    } catch (error: any) {
+      console.error('Errore generazione alias:', error);
+      toast.error('Errore nella generazione degli alias');
+    } finally {
+      setGeneratingAliases(false);
     }
   };
 
@@ -626,6 +631,31 @@ const RecordImportati = () => {
         </CardHeader>
         
         <CardContent>
+          {/* Barra azioni per record selezionati */}
+          {selectedRecords.size > 0 && (
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selectedRecords.size} record selezionati
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const selectedIds = Array.from(selectedRecords).map(idx => sortedRecords[idx]?.id).filter(Boolean);
+                    generateAliases(selectedIds);
+                  }}
+                  disabled={generatingAliases}
+                  className="gap-2"
+                >
+                  <Sparkles className={cn("h-4 w-4", generatingAliases && "animate-spin")} />
+                  Genera Alias AI
+                </Button>
+              </div>
+            </div>
+          )}
+          
+
           {loadingAllRecords ? (
             <div className="text-center py-8 text-muted-foreground">
               Caricamento in corso...

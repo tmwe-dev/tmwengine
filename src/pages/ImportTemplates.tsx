@@ -25,6 +25,7 @@ import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { AliasPreviewDialog } from '@/components/import/AliasPreviewDialog';
 import countriesData from '@/data/countries.json';
 
 
@@ -283,6 +284,9 @@ export default function ImportTemplates() {
   // Stato per elaborazione AI
   const [processingAI, setProcessingAI] = useState(false);
   const [generatingAliases, setGeneratingAliases] = useState(false);
+  const [showAliasPreview, setShowAliasPreview] = useState(false);
+  const [aliasPreviewData, setAliasPreviewData] = useState<any[]>([]);
+  const [aliasPreviewTotal, setAliasPreviewTotal] = useState(0);
   
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
@@ -3306,20 +3310,27 @@ export default function ImportTemplates() {
                               toast.error('Nessun record selezionato');
                               return;
                             }
+                            
                             setGeneratingAliases(true);
+                            setShowAliasPreview(true);
+                            setAliasPreviewData([]);
+                            setAliasPreviewTotal(selectedIds.length);
+                            
                             try {
-                              toast.info(`Generazione alias per ${selectedIds.length} contatti in corso...`);
+                              toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
                               const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
-                                body: { action: 'update_aliases', data: {}, contact_ids: selectedIds }
+                                body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
                               });
+                              
                               if (error) throw error;
-                              toast.success(data.message || `${data.updated_count} alias generati`);
-                              await loadAllRecords(selectedImport!);
-                            } catch (err: any) {
-                              console.error('Errore generazione alias:', err);
-                              toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
-                            } finally {
+                              
+                              setAliasPreviewData(data.previews || []);
                               setGeneratingAliases(false);
+                            } catch (err: any) {
+                              console.error('Errore generazione preview:', err);
+                              toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
+                              setGeneratingAliases(false);
+                              setShowAliasPreview(false);
                             }
                           }}
                           disabled={generatingAliases || loadingAllRecords}
@@ -4167,6 +4178,40 @@ export default function ImportTemplates() {
           <PagePromptManager pageRoute="/template-alias" />
         </DialogContent>
       </Dialog>
+
+      <AliasPreviewDialog
+        open={showAliasPreview}
+        onOpenChange={setShowAliasPreview}
+        previews={aliasPreviewData}
+        isGenerating={generatingAliases}
+        totalCount={aliasPreviewTotal}
+        onConfirm={async () => {
+          try {
+            toast.info('Applicazione modifiche...');
+            const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+              body: { 
+                action: 'apply_aliases', 
+                data: { previews: aliasPreviewData }
+              }
+            });
+            
+            if (error) throw error;
+            
+            toast.success(data.message || 'Alias applicati con successo');
+            setShowAliasPreview(false);
+            setAliasPreviewData([]);
+            await loadAllRecords(selectedImport!);
+          } catch (err: any) {
+            console.error('Errore applicazione alias:', err);
+            toast.error('Errore applicazione: ' + (err.message || 'Errore sconosciuto'));
+          }
+        }}
+        onCancel={() => {
+          setShowAliasPreview(false);
+          setAliasPreviewData([]);
+          setGeneratingAliases(false);
+        }}
+      />
     </div>
   );
 }

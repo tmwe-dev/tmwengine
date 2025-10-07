@@ -261,6 +261,190 @@ serve(async (req) => {
         break;
       }
 
+      case 'preview_aliases': {
+        const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+        if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY non configurata');
+
+        // Carica prompt
+        const { data: promptData, error: promptError } = await supabaseClient
+          .from('page_system_prompts')
+          .select('system_prompt')
+          .eq('page_route', '/template-alias')
+          .eq('attivo', true)
+          .single();
+        
+        if (promptError || !promptData) throw new Error('Prompt non trovato');
+
+        // Carica contatti
+        const { data: contacts, error: contactsError } = await supabaseClient
+          .from('imported_contacts')
+          .select('id, name, company_name, alias, company_alias')
+          .in('id', contact_ids);
+        
+        if (contactsError) throw contactsError;
+
+        console.log(`🔍 Preview alias per ${contacts.length} contatti`);
+
+        // Processa contatti in batch per evitare rate limit
+        const BATCH_SIZE = 5;
+        const allPreviews: any[] = [];
+        
+        for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
+          const batch = contacts.slice(i, i + BATCH_SIZE);
+          console.log(`📦 Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(contacts.length / BATCH_SIZE)}`);
+          
+          const batchPreviews = await Promise.all(
+            batch.map(async (contact) => {
+              try {
+                const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'google/gemini-2.5-flash',
+                    messages: [
+                      { role: 'system', content: promptData.system_prompt },
+                      { 
+                        role: 'user', 
+                        content: JSON.stringify({
+                          name: contact.name || '',
+                          company_name: contact.company_name || ''
+                        })
+                      }
+                    ],
+                    tools: [{
+                      type: 'function',
+                      function: {
+                        name: 'set_aliases',
+                        parameters: {
+                          type: 'object',
+                          properties: {
+                            alias: { type: 'string' },
+                            company_alias: { type: 'string' }
+                          },
+                          required: ['alias', 'company_alias'],
+                          additionalProperties: false
+                        }
+                      }
+                    }],
+                    tool_choice: { type: 'function', function: { name: 'set_aliases' } }
+                  }),
+                });
+
+                if (!response.ok) {
+                  console.error(`❌ Errore AI per ${contact.id}:`, response.status);
+                  return {
+                    id: contact.id,
+                    name: contact.name,
+                    company_name: contact.company_name,
+                    current_alias: contact.alias,
+                    current_company_alias: contact.company_alias,
+                    new_alias: null,
+                    new_company_alias: null,
+                    error: 'Errore AI'
+                  };
+                }
+
+                const aiResult = await response.json();
+                const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+                
+                if (!toolCall) {
+                  return {
+                    id: contact.id,
+                    name: contact.name,
+                    company_name: contact.company_name,
+                    current_alias: contact.alias,
+                    current_company_alias: contact.company_alias,
+                    new_alias: null,
+                    new_company_alias: null,
+                    error: 'Nessuna risposta AI'
+                  };
+                }
+
+                const aliases = JSON.parse(toolCall.function.arguments);
+
+                return {
+                  id: contact.id,
+                  name: contact.name,
+                  company_name: contact.company_name,
+                  current_alias: contact.alias,
+                  current_company_alias: contact.company_alias,
+                  new_alias: aliases.alias,
+                  new_company_alias: aliases.company_alias,
+                  error: null
+                };
+              } catch (error) {
+                console.error(`❌ Errore processing ${contact.id}:`, error);
+                return {
+                  id: contact.id,
+                  name: contact.name,
+                  company_name: contact.company_name,
+                  current_alias: contact.alias,
+                  current_company_alias: contact.company_alias,
+                  new_alias: null,
+                  new_company_alias: null,
+                  error: 'Errore elaborazione'
+                };
+              }
+            })
+          );
+          
+          allPreviews.push(...batchPreviews);
+        }
+
+        result = { 
+          success: true, 
+          previews: allPreviews,
+          total: contacts.length
+        };
+        break;
+      }
+
+      case 'apply_aliases': {
+        const { previews } = data;
+        
+        console.log(`💾 Applicazione ${previews.length} alias`);
+
+        const updates = await Promise.all(
+          previews.map(async (preview: any) => {
+            if (!preview.new_alias || !preview.new_company_alias) {
+              return null;
+            }
+
+            try {
+              const { error } = await supabaseClient
+                .from('imported_contacts')
+                .update({
+                  alias: preview.new_alias,
+                  company_alias: preview.new_company_alias
+                })
+                .eq('id', preview.id);
+
+              if (error) {
+                console.error(`❌ Errore update ${preview.id}:`, error);
+                return null;
+              }
+
+              return preview.id;
+            } catch (error) {
+              console.error(`❌ Errore ${preview.id}:`, error);
+              return null;
+            }
+          })
+        );
+
+        const successCount = updates.filter(id => id !== null).length;
+        
+        result = { 
+          success: true, 
+          updated_count: successCount,
+          message: `${successCount}/${previews.length} alias applicati`
+        };
+        break;
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

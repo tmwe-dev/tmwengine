@@ -78,7 +78,7 @@ export const EmailSidebar = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // CHIUSA DI DEFAULT
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

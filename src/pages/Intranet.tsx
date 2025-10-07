@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
-import { MessageInput } from '@/components/intranet/MessageInput';
+import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
 import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
@@ -115,7 +115,7 @@ const Intranet = () => {
               <ChatMessages roomId={selectedRoomId} />
 
               {/* Input messaggio */}
-              <MessageInput roomId={selectedRoomId} />
+              <MessageInputWithAttachments roomId={selectedRoomId} />
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">

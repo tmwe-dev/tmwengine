@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -96,7 +98,39 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  {message.message_type === 'image' && message.attachment_url && (
+                    <img 
+                      src={message.attachment_url} 
+                      alt="Image" 
+                      className="max-w-xs rounded-lg mb-2 cursor-pointer"
+                      onClick={() => window.open(message.attachment_url, '_blank')}
+                    />
+                  )}
+                  
+                  {message.message_type === 'audio' && message.attachment_url && (
+                    <audio 
+                      controls 
+                      className="max-w-xs mb-2"
+                      src={message.attachment_url}
+                    />
+                  )}
+                  
+                  {message.message_type === 'file' && message.attachment_url && (
+                    <a 
+                      href={message.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 mb-2 hover:underline"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="text-sm">Scarica file</span>
+                      <Download className="h-3 w-3" />
+                    </a>
+                  )}
+                  
+                  {message.content && (
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground mt-1">
                   {format(new Date(message.created_at), 'HH:mm', { locale: it })}

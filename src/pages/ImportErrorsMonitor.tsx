@@ -300,26 +300,46 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         const estimatedDuration = (result as any).estimated_duration || 100;
         
         setTimeout(async () => {
+          // CRITICO: Verifica se autoRun è ancora attivo PRIMA di fare qualsiasi cosa
+          if (!autoRun) {
+            console.log('⛔ AutoRun disattivato durante background processing, BLOCCO tutto');
+            addLog(`⚠️ Background processing completato ma AutoRun è stato disattivato`);
+            setIsProcessing(false);
+            return;
+          }
+
           addLog(`🔄 Ricarico dati dal database dopo background processing...`);
           await loadErrors();
           setIsProcessing(false); // ORA si può resettare
           
+          // Ricontrolla se autoRun è ancora attivo dopo il caricamento
+          if (!autoRun) {
+            console.log('⛔ AutoRun disattivato dopo loadErrors, BLOCCO');
+            addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+            return;
+          }
+
           // Se autorun è attivo, ricontrolla pending
-          if (autoRun) {
-            const { count: stillPending } = await supabase
-              .from('import_errors')
-              .select('*', { count: 'exact', head: true })
-              .eq('import_log_id', importLogId)
-              .eq('status', 'pending');
-            
-            if (stillPending && stillPending > 0) {
-              addLog(`📊 ${stillPending} righe ancora pending, continuo...`);
-              processBatch(true);
-            } else {
-              addLog(`✨ AutoRun completato: nessuna riga pendente`);
-              setAutoRun(false);
-              toast.success('AutoRun completato!');
-            }
+          const { count: stillPending } = await supabase
+            .from('import_errors')
+            .select('*', { count: 'exact', head: true })
+            .eq('import_log_id', importLogId)
+            .eq('status', 'pending');
+          
+          // Ultimo controllo prima di continuare
+          if (!autoRun) {
+            console.log('⛔ AutoRun disattivato prima di riavviare batch, BLOCCO');
+            addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+            return;
+          }
+
+          if (stillPending && stillPending > 0) {
+            addLog(`📊 ${stillPending} righe ancora pending, continuo...`);
+            processBatch(true);
+          } else {
+            addLog(`✨ AutoRun completato: nessuna riga pendente`);
+            setAutoRun(false);
+            toast.success('AutoRun completato!');
           }
         }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
         
@@ -347,7 +367,15 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         // Se autorun è attivo, continua automaticamente dopo 1s
         if (autoRun) {
           addLog(`⏰ AutoRun attivo: continuo con il prossimo batch tra 1 secondo...`);
-          setTimeout(() => processBatch(true), 1000);
+          setTimeout(() => {
+            // CRITICO: Ricontrolla autoRun prima di avviare nuovo batch
+            if (!autoRun) {
+              console.log('⛔ AutoRun disattivato prima di avviare nuovo batch, ANNULLO');
+              addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+              return;
+            }
+            processBatch(true);
+          }, 1000);
         } else {
           setAwaitingConfirmation(true);
           addLog(`⏸️ Batch completato. In attesa di conferma per continuare...`);

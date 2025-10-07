@@ -871,64 +871,77 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
                 {/* Bottoni */}
                 <div className="flex items-center gap-3">
-                  {!isProcessing && !awaitingConfirmation ? (
-                    <>
-                      <Button
-                        onClick={() => {
-                          console.log('🚀 Avvio batch manuale, pending:', stats.pending, 'isProcessing:', isProcessing);
-                          processBatch(false);
-                        }}
-                        disabled={stats.pending === 0}
-                        className="gap-2"
-                      >
-                        <Play className="h-4 w-4" />
-                        {autoRun ? 'Avvia AutoRun' : `Avvia Batch (${batchSize} righe)`}
-                      </Button>
-                      {stats.corrected > 0 && (
+                  {(() => {
+                    console.log('🔍 Render stato pulsanti - isProcessing:', isProcessing, 'awaitingConfirmation:', awaitingConfirmation);
+                    
+                    if (isProcessing) {
+                      return (
+                        <div className="flex flex-col items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Clock className="h-5 w-5 animate-spin text-blue-600" />
+                            <span>{autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}</span>
+                          </div>
+                          {/* Contatore in tempo reale */}
+                          <div className="text-xs text-muted-foreground flex gap-3">
+                            <span>✅ <span className="font-bold text-green-600">{stats.corrected}</span> corretti</span>
+                            <span>❌ <span className="font-bold text-red-600">{stats.failed}</span> falliti</span>
+                            <span>⏳ <span className="font-bold text-yellow-600">{stats.pending}</span> rimanenti</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    if (awaitingConfirmation && !autoRun) {
+                      return (
+                        <>
+                          <Button
+                            onClick={() => processBatch(false)}
+                            className="gap-2 bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Play className="h-4 w-4" />
+                            Continua Prossimo Batch
+                          </Button>
+                          {stats.corrected > 0 && (
+                            <Button
+                              onClick={confirmAndImport}
+                              variant="default"
+                              className="gap-2 bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Conferma e Importa ({stats.corrected})
+                            </Button>
+                          )}
+                        </>
+                      );
+                    }
+                    
+                    // Default: mostra pulsanti normali
+                    return (
+                      <>
                         <Button
-                          onClick={confirmAndImport}
-                          variant="default"
-                          className="gap-2 bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            console.log('🚀 Avvio batch manuale, pending:', stats.pending, 'isProcessing:', isProcessing);
+                            processBatch(false);
+                          }}
+                          disabled={stats.pending === 0}
+                          className="gap-2"
                         >
-                          <CheckCircle className="h-4 w-4" />
-                          Conferma e Importa ({stats.corrected})
+                          <Play className="h-4 w-4" />
+                          {autoRun ? 'Avvia AutoRun' : `Avvia Batch (${batchSize} righe)`}
                         </Button>
-                      )}
-                    </>
-                  ) : awaitingConfirmation && !autoRun ? (
-                    <>
-                      <Button
-                        onClick={() => processBatch(false)}
-                        className="gap-2 bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Play className="h-4 w-4" />
-                        Continua Prossimo Batch
-                      </Button>
-                      {stats.corrected > 0 && (
-                        <Button
-                          onClick={confirmAndImport}
-                          variant="default"
-                          className="gap-2 bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Conferma e Importa ({stats.corrected})
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 animate-spin" />
-                        {autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}
-                      </div>
-                      {/* Contatore in tempo reale */}
-                      <div className="text-xs text-muted-foreground">
-                        Elaborati: <span className="font-bold text-green-600">{stats.corrected}</span> / 
-                        <span className="font-bold text-red-600"> {stats.failed}</span> falliti / 
-                        <span className="font-bold text-yellow-600"> {stats.pending}</span> rimanenti
-                      </div>
-                    </div>
-                  )}
+                        {stats.corrected > 0 && (
+                          <Button
+                            onClick={confirmAndImport}
+                            variant="default"
+                            className="gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Conferma e Importa ({stats.corrected})
+                          </Button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

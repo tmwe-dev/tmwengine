@@ -405,9 +405,17 @@ export const EmailList = ({
                 <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
-                      <span className="whitespace-nowrap text-xs sm:text-base font-bold">
-                        {format(new Date(email.date), 'HH:mm')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="whitespace-nowrap text-xs sm:text-base font-bold">
+                          {format(new Date(email.date), 'HH:mm')}
+                        </span>
+                        {email.starred && (
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        )}
+                        {email.hasAttachments && (
+                          <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
                       <span className="whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
@@ -451,14 +459,6 @@ export const EmailList = ({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    )}
-                  </div>
-                  <div className="flex gap-1 mt-1">
-                    {email.starred && (
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    )}
-                    {email.hasAttachments && (
-                      <Paperclip className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                 </div>

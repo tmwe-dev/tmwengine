@@ -361,36 +361,38 @@ export default function ImportErrorsMonitor() {
         {/* Progress & Controls */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <CardTitle>Elaborazione Errori AI</CardTitle>
-                <CardDescription>
-                  {stats.pending} errori da elaborare su {stats.total} totali
-                </CardDescription>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <CardTitle>Elaborazione Errori AI</CardTitle>
+                  <CardDescription>
+                    {stats.pending} errori da elaborare su {stats.total} totali
+                  </CardDescription>
+                </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                {/* Dropdown Batch Size */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Righe per batch:</span>
-                  <Select 
-                    value={batchSize.toString()} 
-                    onValueChange={(v) => setBatchSize(Number(v))}
-                    disabled={isProcessing}
-                  >
-                    <SelectTrigger className="w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Dropdown Batch Size - Centrato */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm text-muted-foreground">Righe per batch:</span>
+                <Select 
+                  value={batchSize.toString()} 
+                  onValueChange={(v) => setBatchSize(Number(v))}
+                  disabled={isProcessing}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Pulsanti di controllo */}
+              {/* Pulsanti di controllo - Centrati */}
+              <div className="flex items-center justify-center gap-3">
                 {!isProcessing && !awaitingConfirmation ? (
                   <>
                     <Button

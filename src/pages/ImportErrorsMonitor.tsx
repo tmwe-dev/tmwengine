@@ -286,6 +286,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
       // Se è background processing (batch > 25), avvia polling
       if ((result as any).processing) {
+        console.log('⚙️ Background processing rilevato, isProcessing:', isProcessing);
         addLog(`🚀 Background processing avviato per ${batchSize} records`);
         addLog(`⏱️ Tempo stimato: ~${(result as any).estimated_duration}s`);
         addLog(`📊 Il database verrà aggiornato automaticamente in tempo reale`);
@@ -293,8 +294,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         
         toast.success(`Processing ${batchSize} records in background. Ricarica i dati tra ~${(result as any).estimated_duration}s`, { duration: 5000 });
 
-        // MANTIENI isProcessing = true per mostrare lo spinner
-        // setIsProcessing(false); // NON togliere processing
+        // MANTIENI isProcessing = true per mostrare lo spinner (NON chiamare setIsProcessing(false)!)
+        console.log('✅ isProcessing mantenuto a TRUE per mostrare spinner');
         
         // Attendi completamento e ricarica automaticamente
         const estimatedDuration = (result as any).estimated_duration || 100;

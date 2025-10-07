@@ -274,14 +274,14 @@ export const EmailDetail = ({
     <div className="flex h-full flex-col bg-card-transparent w-full max-w-full overflow-hidden">
       {/* Color picker bar */}
       <div className="flex-shrink-0 flex items-center justify-center p-2 border-b bg-card-transparent">
-        <div className="relative">
-          <Paintbrush className="h-5 w-5 sm:h-6 sm:w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
-          <input
-            type="color"
-            value={emailTextColor}
-            onChange={(e) => setEmailTextColor(e.target.value)}
-            className="h-8 w-10 sm:h-10 sm:w-12 cursor-pointer rounded border border-border opacity-0"
-          />
+      <div className="relative">
+        <Paintbrush className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
+        <input
+          type="color"
+          value={emailTextColor}
+          onChange={(e) => setEmailTextColor(e.target.value)}
+          className="h-7 w-9 sm:h-9 sm:w-11 md:h-10 md:w-12 cursor-pointer rounded border border-border opacity-0"
+        />
         </div>
       </div>
 
@@ -293,8 +293,8 @@ export const EmailDetail = ({
           <div className="flex items-center gap-1 sm:gap-2 md:gap-3 overflow-hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
-                  <FolderCog className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                <Button variant="outline" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
+                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48 sm:w-56 bg-popover z-50">
@@ -352,13 +352,13 @@ export const EmailDetail = ({
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
-              <Star className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
+              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             </Button>
             
             {onDelete && (
-              <Button variant="destructive" size="icon" onClick={onDelete} className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
-                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <Button variant="destructive" size="icon" onClick={onDelete} className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
+                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
               </Button>
             )}
           </div>
@@ -375,9 +375,9 @@ export const EmailDetail = ({
               size="icon" 
               onClick={onPrevious}
               disabled={!hasPrevious}
-              className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12"
+              className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
             >
-              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             </Button>
           )}
           {onNext && (
@@ -386,9 +386,9 @@ export const EmailDetail = ({
               size="icon" 
               onClick={onNext}
               disabled={!hasNext}
-              className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12"
+              className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
             >
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             </Button>
           )}
         </div>
@@ -401,9 +401,9 @@ export const EmailDetail = ({
                 <Button 
                   variant="outline" 
                   size="icon"
-                  className="h-10 w-10"
+                  className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
                 >
-                  <Settings className="h-5 w-5" />
+                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -411,14 +411,14 @@ export const EmailDetail = ({
                   setShowActionsSheet(true);
                   setSelectedAction('move_to_folder');
                 }}>
-                  <FolderCog className="h-4 w-4 mr-2" />
+                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Sposta automaticamente
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   setShowActionsSheet(true);
                   setSelectedAction('mark_as_read');
                 }}>
-                  <FolderCog className="h-4 w-4 mr-2" />
+                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Segna sempre come letto
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -426,14 +426,14 @@ export const EmailDetail = ({
                   setShowActionsSheet(true);
                   setSelectedAction('archive');
                 }}>
-                  <FolderCog className="h-4 w-4 mr-2" />
+                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Archivia automaticamente
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   setShowActionsSheet(true);
                   setSelectedAction('delete');
                 }}>
-                  <FolderCog className="h-4 w-4 mr-2" />
+                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Elimina automaticamente
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -445,25 +445,25 @@ export const EmailDetail = ({
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (
-        <div className="flex items-center justify-center border-b p-3 sm:p-4 md:p-6 lg:p-8 gap-2 sm:gap-3 md:gap-4 bg-card-transparent">
+        <div className="flex items-center justify-center border-b p-2 sm:p-3 md:p-4 lg:p-6 gap-1.5 sm:gap-2 md:gap-3 bg-card-transparent">
           {/* Communication actions */}
-          <div className="flex gap-2 sm:gap-3 items-center">
-            <Button variant="outline" size="icon" onClick={onReply} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <Reply className="h-4 w-4 sm:h-5 sm:w-5" />
-                <User className="h-3 w-3 sm:h-4 sm:w-4" />
+          <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center">
+            <Button variant="outline" size="icon" onClick={onReply} className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10">
+              <div className="flex items-center gap-0.5">
+                <Reply className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                <User className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <ReplyAll className="h-4 w-4 sm:h-5 sm:w-5" />
-                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10">
+              <div className="flex items-center gap-0.5">
+                <ReplyAll className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onForward} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <Forward className="h-4 w-4 sm:h-5 sm:w-5" />
-                <Megaphone className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Button variant="outline" size="icon" onClick={onForward} className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10">
+              <div className="flex items-center gap-0.5">
+                <Forward className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+                <Megaphone className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
               </div>
             </Button>
           </div>

@@ -181,7 +181,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:w-[90vw] sm:max-w-[90vw] md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {replyTo ? (replyTo.isForward ? 'Forward Email' : 'Reply to Email') : 'Compose New Email'}
@@ -237,13 +237,13 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Attachments</Label>
-              <Button
+                <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Paperclip className="mr-2 h-4 w-4" />
+                <Paperclip className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Add Files
               </Button>
               <input
@@ -264,7 +264,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
                     className="flex items-center justify-between gap-2 rounded-md bg-muted p-2"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <FileIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">
                           {attachment.filename}
@@ -281,7 +281,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
                       onClick={() => removeAttachment(index)}
                       className="flex-shrink-0"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 ))}
@@ -292,18 +292,18 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
 
         <div className="flex justify-end gap-2 pt-3 sm:pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
-            <X className="mr-2 h-4 w-4" />
+            <X className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Cancel
           </Button>
           <Button onClick={handleSend} disabled={sending}>
             {sending ? (
               <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                <div className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                 Sending...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
+                <Send className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Send
               </>
             )}

@@ -1816,6 +1816,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_by_tmwe_email: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _tmwe_email: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean

@@ -804,7 +804,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                         </Button>
                       )}
                     </>
-                  ) : awaitingConfirmation ? (
+                  ) : awaitingConfirmation && !autoRun ? (
                     <>
                       <Button
                         onClick={() => processBatch(false)}
@@ -825,14 +825,10 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                       )}
                     </>
                   ) : (
-                    <Button
-                      disabled
-                      variant="outline"
-                      className="gap-2"
-                    >
+                    <div className="flex items-center gap-2 text-sm">
                       <Clock className="h-4 w-4 animate-spin" />
-                      Elaborazione...
-                    </Button>
+                      {autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}
+                    </div>
                   )}
                 </div>
               </div>

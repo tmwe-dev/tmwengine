@@ -2432,7 +2432,7 @@ export default function ImportTemplates() {
                         <TableCell className="text-center text-red-600">{log.righe_errori}</TableCell>
                         <TableCell className="text-center text-blue-600">{log.contatti_selezionati}</TableCell>
                         <TableCell className="text-center">
-                           <div className="flex gap-1">
+                           <div className="flex gap-1 justify-center">
                               {/* Pulsante per processare file salvati */}
                               {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
                                 <Button 
@@ -2444,6 +2444,19 @@ export default function ImportTemplates() {
                                 >
                                   <Upload className="h-4 w-4 mr-1" />
                                   Elabora
+                                </Button>
+                              )}
+                              
+                              {/* Pulsante Ripara con AI - mostrato se ci sono errori */}
+                              {log.righe_errori > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
+                                  className="gap-1 bg-orange-500/10 border-orange-500/50 hover:bg-orange-500/20"
+                                >
+                                  <Pickaxe className="h-4 w-4" />
+                                  Ripara ({log.righe_errori})
                                 </Button>
                               )}
                               

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database, Activity, FileText } from 'lucide-react';
+import { Trash2, Eye, PlayCircle, RefreshCw, Users, X, Search, Filter, ChevronDown, ChevronUp, Database, Activity, FileText, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
@@ -651,6 +651,16 @@ export default function GestisciImport() {
                             onClick={() => processFile(log.id)}
                           >
                             <PlayCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {log.righe_errori > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
+                            className="text-orange-500 hover:text-orange-600"
+                          >
+                            <Wrench className="h-4 w-4" />
                           </Button>
                         )}
                         <Button

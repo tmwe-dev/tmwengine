@@ -192,13 +192,13 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-4 px-2 sm:px-3 w-full">
+    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full max-w-full overflow-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -213,9 +213,9 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch min-w-0 w-full">
+          <div className="flex items-stretch min-w-0 w-full max-w-full overflow-hidden">
             {multiSelectMode && (
-              <div className="flex items-center justify-center px-3">
+              <div className="flex items-center justify-center px-2 sm:px-3">
                 <Checkbox
                   checked={selectedEmailIds.has(email.id)}
                   onCheckedChange={() => handleToggleEmailSelection(email.id)}
@@ -223,9 +223,9 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 min-w-0 p-3 relative">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div className="min-w-0 flex-1 sm:flex-initial">
+            <div className="flex-1 min-w-0 p-2 sm:p-3 relative overflow-hidden">
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 min-w-0 overflow-hidden">
+                <div className="min-w-0 flex-1 sm:flex-initial overflow-hidden">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -241,8 +241,8 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 overflow-hidden">
+                  <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground truncate">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (
@@ -332,13 +332,13 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full">
+    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full max-w-full overflow-hidden">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full sm:w-full h-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -353,9 +353,9 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-start min-w-0 w-full h-full">
+          <div className="flex items-start min-w-0 w-full max-w-full h-full overflow-hidden">
             {multiSelectMode && (
-              <div className="flex items-center justify-center px-3 self-center">
+              <div className="flex items-center justify-center px-2 sm:px-3 self-center">
                 <Checkbox
                   checked={selectedEmailIds.has(email.id)}
                   onCheckedChange={() => handleToggleEmailSelection(email.id)}
@@ -363,10 +363,10 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full">
-              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
-                <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden sm:min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full overflow-hidden">
+              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0 overflow-hidden">
+                <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',
                       !email.read && 'font-semibold text-email-unread'
@@ -386,7 +386,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0">
+                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end shrink-0 overflow-hidden">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-xs sm:text-base font-bold">

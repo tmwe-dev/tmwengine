@@ -3383,8 +3383,6 @@ export default function ImportTemplates() {
                               setStopAliasGeneration(false);
                               setProcessingRecordId(null);
                               setProcessedCount(0);
-                              setSelectedRecords(new Set());
-                              setCurrentPage(0);
                             }
                           }}
                           className="h-10 w-10 p-0"

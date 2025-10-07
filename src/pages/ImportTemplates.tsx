@@ -3983,9 +3983,14 @@ export default function ImportTemplates() {
                           <ChevronLeft className="h-4 w-4" />
                           Precedente
                         </Button>
-                        <span className="text-sm px-3 py-1 bg-muted rounded">
-                          Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-sm px-3 py-1">
+                            Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                          </span>
+                          <span className="text-xs text-red-500 font-medium">
+                            {filteredRecords.length} records
+                          </span>
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"

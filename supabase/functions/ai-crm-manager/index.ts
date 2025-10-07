@@ -137,6 +137,117 @@ serve(async (req) => {
         break;
       }
 
+      case 'update_aliases': {
+        const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+        if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY non configurata');
+
+        // Carica prompt
+        const { data: promptData, error: promptError } = await supabaseClient
+          .from('page_system_prompts')
+          .select('system_prompt')
+          .eq('page_route', '/template-alias')
+          .eq('attivo', true)
+          .single();
+        
+        if (promptError || !promptData) throw new Error('Prompt non trovato');
+
+        // Carica contatti
+        const { data: contacts, error: contactsError } = await supabaseClient
+          .from('imported_contacts')
+          .select('id, name, company_name')
+          .in('id', contact_ids);
+        
+        if (contactsError) throw contactsError;
+
+        console.log(`🤖 Generazione alias per ${contacts.length} contatti`);
+
+        // Processa ogni contatto
+        const updates = await Promise.all(
+          contacts.map(async (contact) => {
+            try {
+              const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: [
+                    { role: 'system', content: promptData.system_prompt },
+                    { 
+                      role: 'user', 
+                      content: JSON.stringify({
+                        name: contact.name || '',
+                        company_name: contact.company_name || ''
+                      })
+                    }
+                  ],
+                  tools: [{
+                    type: 'function',
+                    function: {
+                      name: 'set_aliases',
+                      parameters: {
+                        type: 'object',
+                        properties: {
+                          alias: { type: 'string' },
+                          company_alias: { type: 'string' }
+                        },
+                        required: ['alias', 'company_alias'],
+                        additionalProperties: false
+                      }
+                    }
+                  }],
+                  tool_choice: { type: 'function', function: { name: 'set_aliases' } }
+                }),
+              });
+
+              if (!response.ok) {
+                console.error(`Errore AI per ${contact.id}:`, response.status);
+                return null;
+              }
+
+              const aiResult = await response.json();
+              const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+              
+              if (!toolCall) {
+                console.error(`Nessun tool_call per ${contact.id}`);
+                return null;
+              }
+
+              const aliases = JSON.parse(toolCall.function.arguments);
+
+              // Aggiorna record
+              const { error: updateError } = await supabaseClient
+                .from('imported_contacts')
+                .update({
+                  alias: aliases.alias,
+                  company_alias: aliases.company_alias
+                })
+                .eq('id', contact.id);
+
+              if (updateError) {
+                console.error(`Errore update ${contact.id}:`, updateError);
+                return null;
+              }
+
+              return contact.id;
+            } catch (error) {
+              console.error(`Errore processing ${contact.id}:`, error);
+              return null;
+            }
+          })
+        );
+
+        const successCount = updates.filter(id => id !== null).length;
+        result = { 
+          success: true, 
+          updated_count: successCount,
+          message: `${successCount}/${contacts.length} alias generati`
+        };
+        break;
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

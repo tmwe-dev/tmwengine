@@ -29,7 +29,7 @@ interface TemplateAlias {
   name: string;
   alias: string;
   company_name: string;
-  company_alias: string;
+  company_alias: string | null;
   title: string | null;
   created_at: string;
   updated_at: string;
@@ -129,10 +129,10 @@ export default function TemplateAlias() {
     if (!editingRecord) return;
 
     if (!editingRecord.name.trim() || !editingRecord.alias.trim() || 
-        !editingRecord.company_name.trim() || !editingRecord.company_alias.trim()) {
+        !editingRecord.company_name.trim()) {
       toast({
         title: "Errore di validazione",
-        description: "Nome, Alias, Company e Company Alias sono obbligatori.",
+        description: "Nome, Alias e Company sono obbligatori.",
         variant: "destructive",
       });
       return;
@@ -213,7 +213,7 @@ export default function TemplateAlias() {
                       <TableCell>{template.name}</TableCell>
                       <TableCell>{template.alias}</TableCell>
                       <TableCell>{template.company_name}</TableCell>
-                      <TableCell>{template.company_alias}</TableCell>
+                      <TableCell>{template.company_alias || "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -291,14 +291,14 @@ export default function TemplateAlias() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-company-alias">Company Alias *</Label>
+                  <Label htmlFor="edit-company-alias">Company Alias</Label>
                   <Input
                     id="edit-company-alias"
-                    value={editingRecord.company_alias}
+                    value={editingRecord.company_alias || ""}
                     onChange={(e) =>
                       setEditingRecord({ ...editingRecord, company_alias: e.target.value })
                     }
-                    required
+                    placeholder="Opzionale"
                   />
                 </div>
               </div>

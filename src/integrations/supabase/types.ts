@@ -1537,7 +1537,7 @@ export type Database = {
       template_alias: {
         Row: {
           alias: string
-          company_alias: string
+          company_alias: string | null
           company_name: string
           created_at: string
           id: string
@@ -1547,7 +1547,7 @@ export type Database = {
         }
         Insert: {
           alias: string
-          company_alias: string
+          company_alias?: string | null
           company_name: string
           created_at?: string
           id?: string
@@ -1557,7 +1557,7 @@ export type Database = {
         }
         Update: {
           alias?: string
-          company_alias?: string
+          company_alias?: string | null
           company_name?: string
           created_at?: string
           id?: string

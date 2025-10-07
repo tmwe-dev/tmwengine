@@ -327,12 +327,12 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       addLog(`✅ Batch completato!`);
       addLog(`📊 Processati: ${result.processed} | Corretti: ${result.corrected} | Falliti: ${result.failed}`);
       addLog(`🎯 Token usati: ${(result.total_tokens || 0).toLocaleString()} (Input: ${result.input_tokens || 0} | Output: ${result.output_tokens || 0})`);
-      addLog(`💰 Costo batch: $${result.estimated_cost.toFixed(6)}`);
+      addLog(`💰 Costo batch: $${(result.estimated_cost || 0).toFixed(6)}`);
 
       addLog(`🔄 Ricarico dati aggiornati dal database...`);
       
       if (result.corrected > 0) {
-        toast.success(`${result.corrected} righe riparate! Token: ${result.total_tokens} | Costo: $${result.estimated_cost.toFixed(6)}`);
+        toast.success(`${result.corrected} righe riparate! Token: ${result.total_tokens || 0} | Costo: $${(result.estimated_cost || 0).toFixed(6)}`);
       }
 
       // Ricarica tutto dal database per avere dati reali
@@ -501,7 +501,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       if (error) throw error;
 
       addLog(`✅ Record riprocessato con successo!`);
-      addLog(`🎯 Token: ${data.tokens_used} | Costo: $${data.estimated_cost.toFixed(6)}`);
+      addLog(`🎯 Token: ${data.tokens_used || 0} | Costo: $${(data.estimated_cost || 0).toFixed(6)}`);
       
       toast.success(`Record riparato! Token: ${data.tokens_used}`);
       
@@ -761,7 +761,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   <Coins className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-bold">${stats.estimated_cost.toFixed(6)}</CardTitle>
+                  <CardTitle className="text-2xl font-bold">${(stats.estimated_cost || 0).toFixed(6)}</CardTitle>
                   <CardDescription>Costo Stimato Totale</CardDescription>
                 </div>
               </div>
@@ -935,7 +935,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                     </div>
                     <div>
                       <span className="text-muted-foreground">Costo:</span>
-                      <span className="ml-2 font-semibold">${lastBatchResult.estimated_cost.toFixed(6)}</span>
+                      <span className="ml-2 font-semibold">${(lastBatchResult.estimated_cost || 0).toFixed(6)}</span>
                     </div>
                   </div>
                 </CardContent>

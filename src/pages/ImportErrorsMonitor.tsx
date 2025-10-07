@@ -288,22 +288,24 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       if ((result as any).processing) {
         addLog(`🚀 Background processing avviato per ${batchSize} records`);
         addLog(`⏱️ Tempo stimato: ~${(result as any).estimated_duration}s`);
-        addLog(`📊 Il database verrà aggiornato automaticamente`);
+        addLog(`📊 Il database verrà aggiornato automaticamente in tempo reale`);
+        addLog(`✅ Puoi continuare a usare l'interfaccia mentre l'elaborazione procede`);
         
-        toast.success(`Processing ${batchSize} records in background. Tempo stimato: ~${(result as any).estimated_duration}s`);
+        toast.success(`Processing ${batchSize} records in background. Ricarica i dati tra ~${(result as any).estimated_duration}s`, { duration: 5000 });
 
-        setIsProcessing(false);
+        // MANTIENI isProcessing = true per mostrare lo spinner
+        // setIsProcessing(false); // NON togliere processing
         
-        // Se autorun è attivo, attendi e poi continua
-        if (autoRun) {
-          addLog(`⏰ AutoRun attivo: attendo completamento background task...`);
-          const estimatedDuration = (result as any).estimated_duration || 100;
+        // Attendi completamento e ricarica automaticamente
+        const estimatedDuration = (result as any).estimated_duration || 100;
+        
+        setTimeout(async () => {
+          addLog(`🔄 Ricarico dati dal database dopo background processing...`);
+          await loadErrors();
+          setIsProcessing(false); // FINALMENTE termina processing
           
-          setTimeout(async () => {
-            addLog(`🔄 Ricarico dati dal database...`);
-            await loadErrors();
-            
-            // Ricontrolla se ci sono ancora pending nel database
+          // Se autorun è attivo, ricontrolla pending
+          if (autoRun) {
             const { count: stillPending } = await supabase
               .from('import_errors')
               .select('*', { count: 'exact', head: true })
@@ -318,8 +320,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
               setAutoRun(false);
               toast.success('AutoRun completato!');
             }
-          }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
-        }
+          }
+        }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
         
         return;
       }

@@ -192,7 +192,7 @@ export const EmailSidebar = ({
   return (
     <div className={cn(
       "flex h-full flex-col border-r bg-card-transparent transition-all duration-300 flex-shrink-0",
-      isCollapsed ? "w-12 sm:w-14 md:w-16" : "w-40 sm:w-48 md:w-52 lg:w-56"
+      isCollapsed ? "w-12 sm:w-14" : "w-36 sm:w-40 md:w-44 lg:w-52"
     )}>
       <div className="p-2 flex justify-end">
         <Button

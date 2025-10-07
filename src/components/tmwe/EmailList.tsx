@@ -225,7 +225,7 @@ export const EmailList = ({
             )}
             <div className="flex-1 min-w-0 p-2 sm:p-3 relative overflow-hidden">
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4 min-w-0 overflow-hidden">
-                <div className="min-w-0 flex-1 sm:flex-initial overflow-hidden">
+                <div className="min-w-0 flex-1 overflow-hidden max-w-[30%]">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -233,7 +233,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex-1 min-w-0 overflow-hidden max-w-[40%]">
                   <h3 className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
@@ -241,8 +241,8 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 overflow-hidden">
-                  <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground truncate">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0">
+                  <span className="hidden lg:inline whitespace-nowrap text-xs text-muted-foreground truncate max-w-[120px]">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (

@@ -102,6 +102,16 @@ export const EmailDetail = ({
   // Save color to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('emailTextColor', emailTextColor);
+    // Force iframe reload
+    if (iframeRef.current) {
+      const currentSrc = iframeRef.current.srcdoc;
+      iframeRef.current.srcdoc = '';
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.srcdoc = currentSrc;
+        }
+      }, 0);
+    }
   }, [emailTextColor]);
 
   // Auto mark as read when email is displayed

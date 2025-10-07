@@ -609,36 +609,42 @@ export default function ImportErrorsMonitor() {
                         Nessun record corretto
                       </div>
                     ) : (
-                      correctedRecords.map((error) => (
-                        <div
-                          key={error.id}
-                          className="p-3 rounded-lg border border-green-500/30 bg-green-500/5"
-                        >
-                          <div className="flex items-start gap-2 mb-2">
-                            <Badge variant="outline" className="text-xs bg-green-500/20">
-                              Riga {error.row_number}
-                            </Badge>
-                          </div>
-                          <div className="text-left font-mono text-xs space-y-1">
+                      correctedRecords.map((error) => {
+                        const renderValue = (value: any) => {
+                          if (value === null || value === undefined || value === '') {
+                            return <span className="text-red-400 italic">❌ Mancante</span>;
+                          }
+                          return <span className="break-words">{String(value)}</span>;
+                        };
+
+                        return (
+                          <div
+                            key={error.id}
+                            className="p-4 rounded-lg border border-green-500/30 bg-green-500/5 space-y-3"
+                          >
+                            <div className="flex items-start gap-2">
+                              <Badge variant="outline" className="text-xs bg-green-500/20">
+                                Riga {error.row_number}
+                              </Badge>
+                            </div>
+
                             {error.corrected_data && typeof error.corrected_data === 'object' && (
-                              <>
-                                {error.corrected_data.company_name && (
-                                  <div><span className="text-muted-foreground">Company:</span> {error.corrected_data.company_name}</div>
-                                )}
-                                {error.corrected_data.contact_name && (
-                                  <div><span className="text-muted-foreground">Contact:</span> {error.corrected_data.contact_name}</div>
-                                )}
-                                {error.corrected_data.email && (
-                                  <div><span className="text-muted-foreground">Email:</span> {error.corrected_data.email}</div>
-                                )}
-                                {error.corrected_data.phone && (
-                                  <div><span className="text-muted-foreground">Phone:</span> {error.corrected_data.phone}</div>
-                                )}
-                              </>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-xs font-mono">
+                                {Object.entries(error.corrected_data).map(([key, value]) => (
+                                  <div key={key} className="flex flex-col">
+                                    <span className="text-muted-foreground font-semibold uppercase text-[10px]">
+                                      {key.replace(/_/g, ' ')}
+                                    </span>
+                                    <div className="mt-1 break-words whitespace-normal">
+                                      {renderValue(value)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </ScrollArea>

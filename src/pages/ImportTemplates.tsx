@@ -337,6 +337,11 @@ export default function ImportTemplates() {
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
   const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [isGeneratingAliases, setIsGeneratingAliases] = useState(false);
+  const [stopAliasGeneration, setStopAliasGeneration] = useState(false);
+  const [processingRecordId, setProcessingRecordId] = useState<string | null>(null);
+  const [processedCount, setProcessedCount] = useState(0);
+
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
@@ -1691,6 +1696,32 @@ export default function ImportTemplates() {
       setHasNotesFilter(false);
       setSelectedRecords(new Set());
       setCurrentPage(0);
+      
+      // Setup realtime listener per aggiornamenti alias
+      const channel = supabase
+        .channel('imported-contacts-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'imported_contacts',
+            filter: `import_log_id=eq.${importLog.id}`
+          },
+          (payload) => {
+            console.log('Record aggiornato:', payload);
+            // Aggiorna il record nel state
+            setAllRecords(prev => prev.map(r => 
+              r.id === payload.new.id ? payload.new : r
+            ));
+          }
+        )
+        .subscribe();
+      
+      // Cleanup on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } catch (error) {
       console.error('Errore nel caricamento record:', error);
       toast.error('Errore nel caricamento dei record');
@@ -1699,6 +1730,7 @@ export default function ImportTemplates() {
       setLoadingAllRecords(false);
     }
   };
+
 
   // Mapping sigle paese a nomi completi usando i dati JSON
   const getCountryFullName = (countryCode: string): string => {
@@ -2963,6 +2995,27 @@ export default function ImportTemplates() {
                   <div className="flex flex-col gap-3">
                     {/* Prima riga - Dropdowns centrati con azioni a destra */}
                     <div className="flex items-end justify-center relative">
+                      {/* Pulsante STOP a sinistra */}
+                      {isGeneratingAliases && (
+                        <div className="absolute left-0 flex items-center gap-3">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setStopAliasGeneration(true);
+                              toast.info('Interruzione processo...');
+                            }}
+                            className="h-10 px-4"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            STOP
+                          </Button>
+                          <Badge variant="secondary" className="text-sm px-3 py-1">
+                            {processedCount} / {selectedRecords.size} elaborati
+                          </Badge>
+                        </div>
+                      )}
+                      
                       {/* Dropdowns centrati */}
                       <div className="flex gap-2 items-end">
                         <div className="w-48">
@@ -2981,7 +3034,7 @@ export default function ImportTemplates() {
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div className="w-48">
                           <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
                           <Select value={countryFilter} onValueChange={setCountryFilter}>
@@ -3281,35 +3334,68 @@ export default function ImportTemplates() {
                         <Button
                           size="sm"
                           variant="outline"
+                          disabled={isGeneratingAliases}
                           onClick={async () => {
                             const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
                             if (selectedIds.length === 0) {
                               toast.error('Nessun record selezionato');
                               return;
                             }
+                            
+                            setIsGeneratingAliases(true);
+                            setStopAliasGeneration(false);
+                            setProcessedCount(0);
+                            
                             try {
-                              toast.info(`Generazione alias per ${selectedIds.length} contatti...`);
-                              const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
-                                body: { action: 'update_aliases', data: {}, contact_ids: selectedIds }
-                              });
-                              if (error) throw error;
-                              toast.success(data.message || `${data.updated_count} alias generati`);
-                              loadAllRecords(selectedImport!);
+                              toast.info(`Inizio generazione alias per ${selectedIds.length} contatti...`);
+                              
+                              // Processa uno alla volta per vedere gli aggiornamenti in tempo reale
+                              for (let i = 0; i < selectedIds.length; i++) {
+                                if (stopAliasGeneration) {
+                                  toast.warning(`Processo interrotto. ${i} alias generati su ${selectedIds.length}`);
+                                  break;
+                                }
+                                
+                                const contactId = selectedIds[i];
+                                setProcessingRecordId(contactId);
+                                
+                                const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                                  body: { action: 'update_aliases', data: {}, contact_ids: [contactId] }
+                                });
+                                
+                                if (error) {
+                                  console.error(`Errore per record ${contactId}:`, error);
+                                } else {
+                                  setProcessedCount(i + 1);
+                                }
+                                
+                                // Pausa breve per non sovraccaricare l'API
+                                await new Promise(resolve => setTimeout(resolve, 300));
+                              }
+                              
+                              if (!stopAliasGeneration) {
+                                toast.success(`Completato! ${selectedIds.length} alias generati`);
+                              }
                             } catch (err: any) {
-                              toast.error('Errore generazione alias');
+                              toast.error('Errore generale nella generazione');
+                            } finally {
+                              setIsGeneratingAliases(false);
+                              setStopAliasGeneration(false);
+                              setProcessingRecordId(null);
+                              setProcessedCount(0);
                             }
                           }}
                           className="h-10 w-10 p-0"
                         >
-                          <Sparkles className="h-4 w-4 text-purple-500" />
+                          <Sparkles className={cn("h-4 w-4 text-purple-500", isGeneratingAliases && "animate-spin")} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Genera alias AI per {selectedRecords.size} selezionati</p>
+                        <p>{isGeneratingAliases ? 'Generazione in corso...' : `Genera alias AI per ${selectedRecords.size} selezionati`}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

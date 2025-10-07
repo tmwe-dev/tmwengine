@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ArrowLeft, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
@@ -197,6 +197,28 @@ const RecordImportati = () => {
     }
   };
 
+  const generateAliases = async (contactIds: string[]) => {
+    try {
+      toast.info(`Generazione alias per ${contactIds.length} contatti...`);
+      
+      const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+        body: {
+          action: 'update_aliases',
+          data: { contact_ids: contactIds }
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message || `${data.updated_count} alias generati con successo`);
+      await loadAllRecords();
+    } catch (error: any) {
+      console.error('Errore generazione alias:', error);
+      toast.error('Errore nella generazione degli alias');
+    }
+  };
+
+
 
   const deleteImportedContact = async (contactId: string, index: number) => {
     try {
@@ -376,10 +398,26 @@ const RecordImportati = () => {
                 <CardTitle>Record Importati - {importLog?.file_name}</CardTitle>
                 <CardDescription className="mt-2">
                   {sortedRecords.length} record trovati
+                  {selectedRecords.size > 0 && ` • ${selectedRecords.size} selezionati`}
                 </CardDescription>
               </div>
               
               <div className="flex items-center gap-2">
+                {selectedRecords.size > 0 && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => {
+                      const selectedIds = Array.from(selectedRecords).map(idx => sortedRecords[idx % sortedRecords.length]?.id).filter(Boolean);
+                      generateAliases(selectedIds);
+                    }}
+                    className="h-8 px-3 gap-2 bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs">Genera Alias ({selectedRecords.size})</span>
+                  </Button>
+                )}
+                
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -621,6 +659,7 @@ const RecordImportati = () => {
                       setSelectedContactIdForActivities(record.id);
                       setIsAttivitaDialogOpen(true);
                     }}
+                    onGenerateAliases={() => generateAliases([record.id])}
                     onCreateActivity={(activityType) => {
                       setSelectedContactIdForActivities(record.id);
                       setSelectedContactForActivity(record);

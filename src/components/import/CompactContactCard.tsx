@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Pickaxe } from 'lucide-react';
+import { Phone, Mail, MapPin, Pickaxe, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +16,7 @@ interface CompactContactCardProps {
   isSelected: boolean;
   onSelect: (index: number, selected: boolean) => void;
   onView: () => void;
-  
+  onGenerateAliases?: () => void;
   onCreateActivity: (activityType?: 'chiamata' | 'email') => void;
   getCountryFlag: (countryName: string) => string;
   formatCellValue: (value: any, fieldKey?: string) => string;
@@ -28,7 +28,7 @@ export function CompactContactCard({
   isSelected,
   onSelect,
   onView,
-  
+  onGenerateAliases,
   onCreateActivity,
   getCountryFlag,
   formatCellValue
@@ -105,6 +105,17 @@ export function CompactContactCard({
 
         {/* Icone contatti e azioni in basso a destra */}
         <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10">
+          {/* Generate Aliases icon - mostra solo se mancano alias */}
+          {onGenerateAliases && (!contact.alias || !contact.company_alias) && (
+            <div 
+              className="p-1.5 rounded-full cursor-pointer bg-purple-600/10 hover:bg-purple-600/20 transition-colors"
+              onClick={onGenerateAliases}
+              title="Genera alias AI"
+            >
+              <Sparkles className="h-4 w-4 text-purple-600" />
+            </div>
+          )}
+          
           {/* Create activity icon */}
           <div 
             className="p-1.5 rounded-full cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors"

@@ -290,6 +290,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     let isBackgroundProcessing = false; // Flag per evitare reset nel finally
 
     try {
+      console.log('📤 Invio richiesta con batch_size:', batchSize, 'tipo:', typeof batchSize);
       const { data, error } = await supabase.functions.invoke('process-import-errors-ai', {
         body: {
           import_log_id: importLogId,
@@ -297,6 +298,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           continue_from_batch: currentBatch
         }
       });
+      console.log('📥 Risposta ricevuta:', data);
 
       if (error) throw error;
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -538,6 +539,7 @@ const Chat = () => {
                   </SelectContent>
                 </Select>
               )}
+              <AIGuideDialog />
               <PagePromptManager pageRoute="/chat" />
               <Button
                 variant="ghost"

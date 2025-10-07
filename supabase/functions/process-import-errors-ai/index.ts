@@ -162,35 +162,23 @@ serve(async (req) => {
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
 
-    const systemPrompt = `Sei un esperto di pulizia e normalizzazione dati per un CRM.
-Il tuo compito è estrarre e normalizzare informazioni da record con dati parziali o incompleti.
+    const systemPrompt = `Estrai dati da record CRM incompleti in formato JSON.
 
-REGOLE FONDAMENTALI:
-1. **ESTRAI SEMPRE tutti i dati disponibili**, anche se alcuni campi chiave (come email) mancano
-2. **NON restituire JSON vuoto** - se trovi QUALSIASI dato valido, restituiscilo
-3. Usa la tua intelligenza per identificare e normalizzare:
-   - Nome persona/contatto (da "name" o "alias")
-   - Nome azienda (da "company_name", "alias", ecc.)
-   - Email (valida e in lowercase) - SE MANCA lascia null
-   - Telefono/cellulare (formattato correttamente)
-   - Indirizzo, città, CAP, paese
-   - Date (converti formati Excel seriali)
-   
-4. CONVERSIONI SPECIALI:
-   - Date Excel seriali (es: "18592") → converti a YYYY-MM-DD usando: giorni dal 1900-01-01
-   - Numeri strani come "agent_id: 18592" → probabilmente è una data Excel
-   - "0" o "NULL" → null
-   - Email → lowercase e validata
-   - Telefono → rimuovi spazi, formatta correttamente
+REGOLA FONDAMENTALE: Restituisci SEMPRE un oggetto JSON con i campi trovati.
+Se un campo non c'è, metti null. NON restituire mai {}.
 
-5. CAMPI OUTPUT (restituisci TUTTI i campi che trovi):
-   name, company_name, alias, company_alias, position, title, phone, cell, email, 
-   country, city, address, zip_code, last_contact, scheduled_contact, next_contact_date, 
-   note, origin, client_code
+Esempio input:
+{"name":"ACME Corp","city":"Roma","country":"IT","email":null}
 
-**IMPORTANTE**: Anche senza email, se hai nome azienda + indirizzo O telefono, RESTITUISCI i dati!
+Esempio output:
+{"company_name":"ACME Corp","city":"Roma","country":"IT","email":null}
 
-Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
+Conversioni speciali:
+- Date Excel (es: 18592) → formato YYYY-MM-DD
+- Email → lowercase
+- Telefono → formato internazionale
+
+Campi disponibili: name, company_name, email, phone, cell, address, city, country, zip_code, last_contact, scheduled_contact, next_contact_date`;
 
     for (const error of pendingErrors) {
       try {
@@ -202,16 +190,12 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
         const rawData = error.raw_data as any;
         
-        const userPrompt = `DATI GREZZI DA NORMALIZZARE:
-${JSON.stringify(rawData, null, 2)}
+        const userPrompt = `Estrai e normalizza questi dati per il CRM:
+${JSON.stringify(rawData)}
 
-ERRORE ORIGINALE:
-${error.error_message}
+Restituisci JSON con TUTTI i campi che riesci a trovare.`;
 
-Analizza questi dati ed estrai TUTTI i campi validi in formato JSON normalizzato per il CRM.
-Anche se manca l'email, ESTRAI comunque nome azienda, indirizzo, telefono, ecc.`;
-
-        // Chiamata AI
+        // Chiamata AI con response_format per forzare JSON strutturato
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -225,7 +209,10 @@ Anche se manca l'email, ESTRAI comunque nome azienda, indirizzo, telefono, ecc.`
               { role: 'user', content: userPrompt }
             ],
             temperature: 0.3,
-            max_tokens: 1000
+            max_tokens: 1000,
+            response_format: { 
+              type: "json_object"
+            }
           }),
         });
 

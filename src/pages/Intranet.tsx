@@ -6,6 +6,7 @@ import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
 import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
+import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { supabase } from '@/integrations/supabase/client';
 import { Users } from 'lucide-react';
@@ -105,10 +106,7 @@ const Intranet = () => {
                   )}
                   <UserLanguageSettings />
                 </div>
-                <Badge variant="secondary" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {onlineUsers.length} online
-                </Badge>
+                <OnlineUsers users={onlineUsers} />
               </div>
 
               {/* Messaggi */}

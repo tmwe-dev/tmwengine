@@ -547,54 +547,78 @@ export default function ImportErrorsMonitor() {
             </CardContent>
           </Card>
 
-          {/* Errors List */}
+          {/* Records Corretti */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-                Errori da Elaborare
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                Records Corretti
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-2">
-                  {errors.filter(e => e.status === 'pending' || e.status === 'processing').length === 0 ? (
+                  {errors.filter(e => e.status === 'corrected').length === 0 ? (
                     <div className="text-muted-foreground text-center py-8">
-                      Nessun errore da elaborare
+                      Nessun record corretto
                     </div>
                   ) : (
                     errors
-                      .filter(e => e.status === 'pending' || e.status === 'processing')
+                      .filter(e => e.status === 'corrected')
                       .map((error) => (
                         <div
                           key={error.id}
-                          className={cn(
-                            "p-3 rounded-lg border transition-colors",
-                            error.status === 'processing' && "border-blue-500 bg-blue-500/5"
-                          )}
+                          className="p-3 rounded-lg border border-green-500/30 bg-green-500/5"
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="text-xs">
-                                  Riga {error.row_number}
-                                </Badge>
-                                {error.status === 'processing' && (
-                                  <Badge className="text-xs bg-blue-500">
-                                    <Clock className="h-3 w-3 mr-1 animate-spin" />
-                                    Elaborazione...
-                                  </Badge>
+                          <div className="flex items-start gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs bg-green-500/20">
+                              Riga {error.row_number}
+                            </Badge>
+                          </div>
+                          <div className="text-left font-mono text-xs text-white/90 space-y-1">
+                            {error.corrected_data && typeof error.corrected_data === 'object' && (
+                              <>
+                                {error.corrected_data.company_name && (
+                                  <div><span className="text-muted-foreground">Company:</span> {error.corrected_data.company_name}</div>
                                 )}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {error.error_message}
-                              </div>
-                              {error.attempted_corrections > 0 && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Tentativi: {error.attempted_corrections}
-                                </div>
-                              )}
-                            </div>
+                                {error.corrected_data.contact_name && (
+                                  <div><span className="text-muted-foreground">Contact:</span> {error.corrected_data.contact_name}</div>
+                                )}
+                                {error.corrected_data.email && (
+                                  <div><span className="text-muted-foreground">Email:</span> {error.corrected_data.email}</div>
+                                )}
+                                {error.corrected_data.phone && (
+                                  <div><span className="text-muted-foreground">Phone:</span> {error.corrected_data.phone}</div>
+                                )}
+                                {error.corrected_data.mobile && (
+                                  <div><span className="text-muted-foreground">Mobile:</span> {error.corrected_data.mobile}</div>
+                                )}
+                                {error.corrected_data.address && (
+                                  <div><span className="text-muted-foreground">Address:</span> {error.corrected_data.address}</div>
+                                )}
+                                {error.corrected_data.city && (
+                                  <div><span className="text-muted-foreground">City:</span> {error.corrected_data.city}</div>
+                                )}
+                                {error.corrected_data.zip_code && (
+                                  <div><span className="text-muted-foreground">ZIP:</span> {error.corrected_data.zip_code}</div>
+                                )}
+                                {error.corrected_data.country && (
+                                  <div><span className="text-muted-foreground">Country:</span> {error.corrected_data.country}</div>
+                                )}
+                                {error.corrected_data.state && (
+                                  <div><span className="text-muted-foreground">State:</span> {error.corrected_data.state}</div>
+                                )}
+                                {error.corrected_data.last_contact_date && (
+                                  <div><span className="text-muted-foreground">Last Contact:</span> {error.corrected_data.last_contact_date}</div>
+                                )}
+                                {error.corrected_data.next_contact_date && (
+                                  <div><span className="text-muted-foreground">Next Contact:</span> {error.corrected_data.next_contact_date}</div>
+                                )}
+                                {error.corrected_data.notes && (
+                                  <div className="text-yellow-500/80"><span className="text-muted-foreground">Notes:</span> {error.corrected_data.notes}</div>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       ))

@@ -275,7 +275,7 @@ export const EmailDetail = ({
       {/* Color picker bar */}
       <div className="flex items-center justify-center p-2 border-b bg-card-transparent">
         <div className="relative">
-          <Paintbrush className="h-6 w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
+          <Paintbrush className="h-6 w-6 text-purple-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
           <input
             type="color"
             value={emailTextColor}

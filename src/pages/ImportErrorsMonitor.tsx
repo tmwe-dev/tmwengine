@@ -121,6 +121,9 @@ export default function ImportErrorsMonitor() {
   const [autoRun, setAutoRun] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(true);
   const [showFreePrompt, setShowFreePrompt] = useState(true);
+  const [processingPendingBatch, setProcessingPendingBatch] = useState(false);
+  const [currentPendingBatch, setCurrentPendingBatch] = useState(0);
+  const [autoRunPending, setAutoRunPending] = useState(false);
   const [freePrompt, setFreePrompt] = useState<string>(
     `Sei un assistente AI specializzato nella normalizzazione dei dati di importazione.
 
@@ -158,6 +161,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     activeTimeouts.current.clear();
     activeIntervals.current.clear();
     setIsProcessing(false);
+    setProcessingPendingBatch(false);
+    setAutoRunPending(false);
     addLog('🛑 EMERGENCY STOP: Tutti i processi sono stati bloccati');
     toast.info('Elaborazione interrotta');
   };
@@ -270,6 +275,145 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     } catch (error) {
       console.error('Error loading errors:', error);
       toast.error('Errore caricamento errori');
+    }
+  };
+
+  const processPendingBatch = async (autoTriggered = false) => {
+    if (!importLogId) return;
+
+    // BLOCCO EMERGENZA: se autoRunPending è disattivato durante chiamata automatica
+    if (autoTriggered && !autoRunPending) {
+      console.log('🛑 BLOCCO EMERGENZA: AutoRunPending disattivato, blocco processPendingBatch');
+      setProcessingPendingBatch(false);
+      return;
+    }
+
+    setProcessingPendingBatch(true);
+    addLog(`🚀 Avvio correzione errori pending batch (${batchSize} righe)${autoTriggered ? ' [AUTO]' : ''}...`);
+
+    let isBackgroundProcessing = false;
+
+    try {
+      console.log('🔍 CORREZIONE PENDING - STATO CORRENTE:');
+      console.log('  - batchSize:', batchSize, 'tipo:', typeof batchSize);
+      console.log('  - currentPendingBatch:', currentPendingBatch);
+      console.log('📤 Invio richiesta correzione pending con batch_size:', batchSize);
+      
+      const { data, error } = await supabase.functions.invoke('process-import-errors-ai', {
+        body: {
+          import_log_id: importLogId,
+          batch_size: batchSize,
+          continue_from_batch: currentPendingBatch
+        }
+      });
+      console.log('📥 Risposta ricevuta:', data);
+
+      if (error) throw error;
+
+      const result = data as BatchResult;
+
+      // Se è background processing (batch > 25), avvia polling
+      if ((result as any).processing) {
+        isBackgroundProcessing = true;
+        console.log('⚙️ Background processing pending rilevato, MANTIENI processingPendingBatch = true');
+        addLog(`🚀 Background processing pending avviato per ${batchSize} records`);
+        addLog(`⏱️ Tempo stimato: ~${(result as any).estimated_duration}s`);
+        addLog(`📊 Il database verrà aggiornato automaticamente in tempo reale`);
+        
+        toast.success(`Processing ${batchSize} pending records in background. Ricarica i dati tra ~${(result as any).estimated_duration}s`, { duration: 5000 });
+        
+        const estimatedDuration = (result as any).estimated_duration || 100;
+        
+        const timeoutId = setTimeout(async () => {
+          addLog(`🔄 Ricarico dati dal database dopo background processing pending...`);
+          await loadErrors();
+          setProcessingPendingBatch(false);
+          
+          // SOLO se autoRunPending è attivo, ricontrolla pending
+          if (autoRunPending) {
+            const { count: stillPending } = await supabase
+              .from('import_errors')
+              .select('*', { count: 'exact', head: true })
+              .eq('import_log_id', importLogId)
+              .eq('status', 'pending');
+            
+            if (stillPending && stillPending > 0) {
+              addLog(`📊 ${stillPending} righe ancora pending, continuo correzione...`);
+              processPendingBatch(true);
+            } else {
+              addLog(`✨ AutoRun pending completato: nessuna riga pendente`);
+              setAutoRunPending(false);
+              toast.success('AutoRun pending completato!');
+            }
+          } else {
+            addLog(`✅ Background processing pending completato`);
+          }
+          
+          activeTimeouts.current.delete(timeoutId);
+        }, estimatedDuration * 1000 + 3000);
+        
+        activeTimeouts.current.add(timeoutId);
+        return;
+      }
+
+      addLog(`✅ Batch correzione pending completato!`);
+      addLog(`📊 Processati: ${result.processed} | Corretti: ${result.corrected} | Falliti: ${result.failed}`);
+      addLog(`🎯 Token usati: ${(result.total_tokens || 0).toLocaleString()} (Input: ${result.input_tokens || 0} | Output: ${result.output_tokens || 0})`);
+      addLog(`💰 Costo batch: $${(result.estimated_cost || 0).toFixed(6)}`);
+
+      addLog(`🔄 Ricarico dati aggiornati dal database...`);
+      
+      if (result.corrected > 0) {
+        toast.success(`${result.corrected} righe pending riparate! Token: ${result.total_tokens || 0} | Costo: $${(result.estimated_cost || 0).toFixed(6)}`);
+      }
+
+      await loadErrors();
+
+      // Se ci sono ancora righe pending
+      if (!result.batch_complete) {
+        setCurrentPendingBatch(result.next_batch);
+        
+        // Se autorun pending è attivo, continua automaticamente dopo 1s
+        if (autoRunPending) {
+          addLog(`⏰ AutoRun pending attivo: continuo con il prossimo batch tra 1 secondo...`);
+          const timeoutId = setTimeout(() => {
+            if (!autoRunPending) {
+              console.log('⛔ AutoRunPending disattivato prima di avviare nuovo batch, ANNULLO');
+              addLog(`⚠️ Elaborazione pending interrotta: AutoRun disattivato dall'utente`);
+              activeTimeouts.current.delete(timeoutId);
+              return;
+            }
+            processPendingBatch(true);
+            activeTimeouts.current.delete(timeoutId);
+          }, 1000);
+          activeTimeouts.current.add(timeoutId);
+        } else {
+          addLog(`⏸️ Batch correzione pending completato. Clicca di nuovo per continuare...`);
+        }
+      } else {
+        addLog(`✨ Tutte le righe pending sono state elaborate!`);
+        if (autoRunPending) {
+          addLog(`🎉 AutoRun pending completato con successo!`);
+          setAutoRunPending(false);
+          toast.success('AutoRun pending completato con successo!');
+        }
+      }
+
+    } catch (error) {
+      console.error('Error processing pending:', error);
+      addLog(`❌ Errore correzione pending: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      toast.error('Errore durante correzione pending');
+      
+      if (autoRunPending) {
+        setAutoRunPending(false);
+        addLog(`⚠️ AutoRun pending disattivato a causa dell'errore`);
+      }
+    } finally {
+      if (!isBackgroundProcessing) {
+        setProcessingPendingBatch(false);
+      } else {
+        console.log('🔒 Background processing pending: processingPendingBatch rimane TRUE');
+      }
     }
   };
 
@@ -771,6 +915,81 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     };
   }, [autoRun, isProcessing, importLogId]); // RIMOSSO stats.pending dalle dipendenze!
 
+  // AutoRunPending monitor - controlla continuamente se ci sono pending e autorunpending è attivo
+  useEffect(() => {
+    if (!autoRunPending || processingPendingBatch || !importLogId) {
+      console.log('AutoRunPending monitor DISABILITATO - autoRunPending:', autoRunPending, 'processingPendingBatch:', processingPendingBatch);
+      return;
+    }
+
+    console.log('AutoRunPending monitor ATTIVATO');
+    let timeoutId: NodeJS.Timeout | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const checkAndContinue = async () => {
+      if (!autoRunPending) {
+        console.log('⛔ AutoRunPending disattivato durante check, BLOCCO');
+        if (intervalId) clearInterval(intervalId);
+        if (timeoutId) clearTimeout(timeoutId);
+        return;
+      }
+
+      const { count: stillPending } = await supabase
+        .from('import_errors')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLogId)
+        .eq('status', 'pending');
+      
+      console.log(`AutoRunPending check: ${stillPending} pending, processing: ${processingPendingBatch}, autoRunPending: ${autoRunPending}`);
+      
+      if (!autoRunPending) {
+        console.log('⛔ AutoRunPending disattivato dopo query, BLOCCO');
+        if (intervalId) clearInterval(intervalId);
+        if (timeoutId) clearTimeout(timeoutId);
+        return;
+      }
+      
+      if (stillPending && stillPending > 0 && !processingPendingBatch) {
+        if (!autoRunPending) {
+          console.log('⛔ AutoRunPending disattivato prima di schedulare batch, ANNULLO');
+          return;
+        }
+        
+        addLog(`🔄 AutoRunPending: rilevati ${stillPending} record pending, riavvio correzione...`);
+        timeoutId = setTimeout(() => {
+          if (!autoRunPending) {
+            console.log('🛑 BLOCCO EMERGENZA: AutoRunPending disattivato prima di processPendingBatch, ANNULLO');
+            setProcessingPendingBatch(false);
+            if (timeoutId) activeTimeouts.current.delete(timeoutId);
+            return;
+          }
+          processPendingBatch(true);
+          if (timeoutId) activeTimeouts.current.delete(timeoutId);
+        }, 2000);
+        activeTimeouts.current.add(timeoutId);
+      } else if (!stillPending || stillPending === 0) {
+        addLog(`✨ AutoRunPending: completato, nessun record pending`);
+        setAutoRunPending(false);
+        toast.success('AutoRunPending completato!');
+      }
+    };
+
+    intervalId = setInterval(checkAndContinue, 3000);
+    activeIntervals.current.add(intervalId);
+
+    return () => {
+      console.log('🧹 AutoRunPending cleanup: cancello interval e timeout');
+      if (intervalId) {
+        clearInterval(intervalId);
+        activeIntervals.current.delete(intervalId);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        activeTimeouts.current.delete(timeoutId);
+      }
+    };
+  }, [autoRunPending, processingPendingBatch, importLogId]);
+
   // WATCH AutoRun: quando diventa false, EMERGENCY STOP
   useEffect(() => {
     if (!autoRun && (activeTimeouts.current.size > 0 || activeIntervals.current.size > 0)) {
@@ -778,6 +997,14 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       emergencyStop();
     }
   }, [autoRun]);
+
+  // WATCH AutoRunPending: quando diventa false, EMERGENCY STOP
+  useEffect(() => {
+    if (!autoRunPending && (activeTimeouts.current.size > 0 || activeIntervals.current.size > 0)) {
+      console.log('🚨 AutoRunPending disattivato con timeout/interval attivi! EMERGENCY STOP');
+      emergencyStop();
+    }
+  }, [autoRunPending]);
 
   if (!importLogId) {
     return (
@@ -903,9 +1130,50 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   <CardDescription>Righe Riparate con AI</CardDescription>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-muted-foreground">{stats.failed}</div>
-                <div className="text-sm text-muted-foreground">Fallite</div>
+              <div className="flex items-center gap-6">
+                {/* Badge Errori Pending - Cliccabile per avviare correzione */}
+                <button
+                  onClick={() => {
+                    if (stats.pending > 0 && !processingPendingBatch) {
+                      addLog(`🚀 Avvio correzione batch errori pending...`);
+                      processPendingBatch(false);
+                    }
+                  }}
+                  disabled={stats.pending === 0 || processingPendingBatch}
+                  className={cn(
+                    "text-center transition-all hover:scale-105 active:scale-95",
+                    stats.pending > 0 && !processingPendingBatch && "cursor-pointer",
+                    (stats.pending === 0 || processingPendingBatch) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xl font-bold px-4 py-2 flex items-center gap-2",
+                      processingPendingBatch ? "bg-blue-500/20 border-blue-500 text-blue-600 animate-pulse" : "bg-yellow-500/20 border-yellow-500 text-yellow-600"
+                    )}
+                  >
+                    {processingPendingBatch ? (
+                      <>
+                        <Clock className="h-5 w-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-5 w-5" />
+                        {stats.pending}
+                      </>
+                    )}
+                  </Badge>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {processingPendingBatch ? 'Correzione AI' : 'Pending - Click to fix'}
+                  </div>
+                </button>
+
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-muted-foreground">{stats.failed}</div>
+                  <div className="text-sm text-muted-foreground">Fallite</div>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -952,24 +1220,47 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
               {/* Pulsanti di controllo - Centrati */}
               <div className="flex flex-col items-center gap-3">
-                {/* AutoRun Switch */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 w-full max-w-md">
-                  <div className="space-y-1">
-                    <Label htmlFor="auto-run" className="flex items-center gap-2 cursor-pointer">
-                      <PlayCircle className={`h-4 w-4 ${autoRun ? 'text-green-500 animate-pulse' : 'text-muted-foreground'}`} />
-                      <span className="font-medium">AutoRun</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {autoRun 
-                        ? '🟢 Elaborazione continua automatica attiva'
-                        : 'Attiva per continuare automaticamente i batch'}
-                    </p>
+                {/* AutoRun Switches - Due Switcher affiancati */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-3xl">
+                  {/* AutoRun Failed */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <div className="space-y-1">
+                      <Label htmlFor="auto-run" className="flex items-center gap-2 cursor-pointer">
+                        <PlayCircle className={`h-4 w-4 ${autoRun ? 'text-green-500 animate-pulse' : 'text-muted-foreground'}`} />
+                        <span className="font-medium">AutoRun Failed</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {autoRun 
+                          ? '🟢 Riprocessa errori falliti'
+                          : 'Correggi automaticamente failed'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-run"
+                      checked={autoRun}
+                      onCheckedChange={setAutoRun}
+                    />
                   </div>
-                  <Switch
-                    id="auto-run"
-                    checked={autoRun}
-                    onCheckedChange={setAutoRun}
-                  />
+
+                  {/* AutoRun Pending */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                    <div className="space-y-1">
+                      <Label htmlFor="auto-run-pending" className="flex items-center gap-2 cursor-pointer">
+                        <Zap className={`h-4 w-4 ${autoRunPending ? 'text-green-500 animate-pulse' : 'text-muted-foreground'}`} />
+                        <span className="font-medium">AutoRun Pending</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {autoRunPending 
+                          ? '🟢 Normalizza errori pending'
+                          : 'Correggi automaticamente pending'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-run-pending"
+                      checked={autoRunPending}
+                      onCheckedChange={setAutoRunPending}
+                    />
+                  </div>
                 </div>
 
                 {/* Bottoni */}

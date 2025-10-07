@@ -31,6 +31,7 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       console.log(`📊 Sync Smart avviato: ${totalEmails} totali, ${alreadyInDb} già presenti nel DB`);
 
       if (alreadyInDb >= totalEmails) {
+        toast.success(`✅ Database già sincronizzato (${alreadyInDb.toLocaleString()} email)`);
         setIsSyncing(false);
         return;
       }
@@ -146,10 +147,12 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       
       if (newEmailsCount > 0) {
         toast.success(
-          `Sincronizzate ${newEmailsCount.toLocaleString()} nuove email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`,
-          { duration: 3000 }
+          `🎉 Sincronizzate ${newEmailsCount.toLocaleString()} nuove email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`,
+          { duration: 5000 }
         );
         console.log(`🎉 Sync Smart completato: ${newEmailsCount} nuove email salvate`);
+      } else {
+        toast.success(`✅ Database già aggiornato (${alreadyInDb.toLocaleString()} email presenti)`);
       }
     } catch (error: any) {
       console.error('❌ Sync Smart error:', error);

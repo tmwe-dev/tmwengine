@@ -98,7 +98,7 @@ export const EmailList = ({
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 animate-spin rounded-full border-2 sm:border-3 md:border-4 border-primary border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -106,62 +106,62 @@ export const EmailList = ({
   if (!emails || emails.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-        <Mail className="mb-2 sm:mb-3 md:mb-4 h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 opacity-20" />
-        <p className="text-base sm:text-lg font-medium">No emails found</p>
-        <p className="text-xs sm:text-sm">Try syncing your mailbox</p>
+        <Mail className="mb-4 h-16 w-16 opacity-20" />
+        <p className="text-lg font-medium">No emails found</p>
+        <p className="text-sm">Try syncing your mailbox</p>
       </div>
     );
   }
 
   return (
-    <ScrollArea className="h-full w-full" ref={scrollRef}>
-      <div className="p-2 sm:p-3 md:p-4 max-w-full space-y-2">
+    <ScrollArea className="h-full" ref={scrollRef}>
+      <div className="space-y-1 p-1 md:p-2">
         {emails.map((email, index) => (
           <Card
             key={email.id}
             ref={index === emails.length - 1 ? lastEmailRef : null}
             className={cn(
-              'w-full cursor-pointer border-l-4 p-3 sm:p-4 transition-all hover:bg-email-hover group',
+              'cursor-pointer border-l-4 p-2 transition-all hover:bg-email-hover group min-w-0',
               email.read ? 'border-l-transparent' : 'border-l-email-unread',
               selectedEmailId === email.id && 'bg-email-selected shadow-md'
             )}
             onClick={() => onEmailSelect(email.id)}
           >
-            <div className="flex items-start gap-3 w-full">
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center gap-2 w-full">
+            <div className="flex items-start gap-2 min-w-0">
+              <div className="flex-1 min-w-0 space-y-0.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <p className={cn(
-                    'truncate text-sm max-w-full',
+                    'truncate text-xs md:text-sm min-w-0 flex-1',
                     !email.read && 'font-semibold text-email-unread'
                   )}>
                     {email.from}
                   </p>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px] shrink-0">
+                    <Badge variant="secondary" className="h-4 px-1 text-[10px] shrink-0">
                       New
                     </Badge>
                   )}
                 </div>
                 <h3 className={cn(
-                  'truncate text-sm max-w-full',
+                  'truncate text-xs md:text-sm min-w-0',
                   !email.read && 'font-semibold'
                 )}>
                   {email.subject || '(No Subject)'}
                 </h3>
-                <p className="hidden sm:line-clamp-2 text-xs text-muted-foreground break-words">
+                <p className="hidden md:line-clamp-2 text-xs text-muted-foreground">
                   {email.preview}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
+              <div className="flex flex-col items-end gap-1 shrink-0 ml-auto">
+                <span className="whitespace-nowrap text-[10px] md:text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                 </span>
                 <div className="flex items-center gap-1">
                   {email.starred && (
-                    <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 shrink-0" />
+                    <Star className="h-3.5 w-3.5 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 shrink-0" />
                   )}
                   {email.hasAttachments && (
-                    <Paperclip className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                    <Paperclip className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
                   )}
                   {selectedEmailId === email.id && (
                     <DropdownMenu>
@@ -185,11 +185,11 @@ export const EmailList = ({
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                          <Archive className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <Archive className="mr-2 h-4 w-4" />
                           Archivia
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                          <FolderInput className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <FolderInput className="mr-2 h-4 w-4" />
                           Sposta in...
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -197,7 +197,7 @@ export const EmailList = ({
                           onClick={(e) => e.stopPropagation()}
                           className="text-destructive"
                         >
-                          <Trash2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <Trash2 className="mr-2 h-4 w-4" />
                           Elimina
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -210,8 +210,8 @@ export const EmailList = ({
         ))}
         
         {isLoadingMore && (
-          <div className="flex items-center justify-center py-3 sm:py-4">
-            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         )}
       </div>
@@ -224,30 +224,30 @@ export const EmailList = ({
               Gestisci azioni e regole per: {selectedEmail?.from}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+          <div className="mt-6 space-y-4">
             <div>
-              <h3 className="font-semibold mb-1.5 sm:mb-2">Regole Mittente</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
+              <h3 className="font-semibold mb-2">Regole Mittente</h3>
+              <p className="text-sm text-muted-foreground mb-4">
                 Crea regole automatiche per le email da questo mittente
               </p>
               <Button variant="outline" className="w-full">
-                <Tag className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <Tag className="mr-2 h-4 w-4" />
                 Crea Nuova Regola
               </Button>
             </div>
             <div>
-              <h3 className="font-semibold mb-1.5 sm:mb-2">Azioni Rapide</h3>
-              <div className="space-y-1.5 sm:space-y-2">
+              <h3 className="font-semibold mb-2">Azioni Rapide</h3>
+              <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start">
-                  <Archive className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Archive className="mr-2 h-4 w-4" />
                   Archivia
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
-                  <FolderInput className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <FolderInput className="mr-2 h-4 w-4" />
                   Sposta in Cartella
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-destructive">
-                  <Trash2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Elimina
                 </Button>
               </div>

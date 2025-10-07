@@ -7,15 +7,12 @@ import { EmailList } from '@/components/EmailList';
 import { EmailDetail } from '@/components/EmailDetail';
 import { ComposeDialog } from '@/components/ComposeDialog';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EmailDashboard = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar chiusa di default
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -218,73 +215,46 @@ const EmailDashboard = () => {
     <div className="flex h-screen flex-col">
       <EmailHeader onSearch={setSearchQuery} />
       
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Menu button - visible on all screens */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 left-2 z-10"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+      <div className="flex flex-1 overflow-hidden">
+        <EmailSidebar
+          selectedFolder={selectedFolder}
+          onFolderSelect={setSelectedFolder}
+          onCompose={() => setComposeOpen(true)}
+          onSync={handleSync}
+        />
 
-        {/* Sidebar Sheet - used for all screen sizes, closed by default */}
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-[85vw] sm:w-[75vw] md:w-[320px] max-w-sm">
-            <EmailSidebar
-              selectedFolder={selectedFolder}
-              onFolderSelect={(folder) => {
-                setSelectedFolder(folder);
-                setSidebarOpen(false);
-              }}
-              onCompose={() => {
-                setComposeOpen(true);
-                setSidebarOpen(false);
-              }}
-              onSync={handleSync}
-            />
-          </SheetContent>
-        </Sheet>
-
-        {/* Lista Email - width fisso su desktop */}
-        <div className="w-full lg:w-96 xl:w-[28rem] border-r shrink-0 flex flex-col">
-          <div className="h-12 shrink-0" /> {/* Spacer per il pulsante menu */}
-          <div className="flex-1 overflow-hidden">
-            <EmailList
-              emails={emails}
-              selectedEmailId={selectedEmailId}
-              onEmailSelect={setSelectedEmailId}
-              loading={messagesLoading}
-              onLoadMore={fetchNextPage}
-              hasMore={hasNextPage}
-              isLoadingMore={isFetchingNextPage}
-            />
-          </div>
+        <div className="flex-1 border-r">
+          <EmailList
+            emails={emails}
+            selectedEmailId={selectedEmailId}
+            onEmailSelect={setSelectedEmailId}
+            loading={messagesLoading}
+            onLoadMore={fetchNextPage}
+            hasMore={hasNextPage}
+            isLoadingMore={isFetchingNextPage}
+          />
         </div>
 
-        {/* Dettaglio Email - prende resto spazio */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1">
           {isLoadingDetail ? (
             <div className="flex h-full items-center justify-center">
-              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-                <div className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 animate-spin rounded-full border-2 sm:border-3 md:border-4 border-primary border-t-transparent" />
-                <p className="text-xs sm:text-sm text-muted-foreground">Loading email...</p>
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-sm text-muted-foreground">Loading email...</p>
               </div>
             </div>
           ) : detailError ? (
             <div className="flex h-full items-center justify-center">
-              <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 md:p-8">
-                <p className="text-destructive font-medium text-base sm:text-lg">Failed to load email</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+              <div className="text-center space-y-4 p-8">
+                <p className="text-destructive font-medium text-lg">Failed to load email</p>
+                <p className="text-sm text-muted-foreground">
                   {detailError instanceof Error ? detailError.message : 'The email content could not be retrieved'}
                 </p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   This might be due to an empty response from the server
                 </p>
                 <Button 
                   variant="outline" 
-                  size="sm"
                   onClick={() => {
                     setSelectedEmailId(null);
                     setTimeout(() => setSelectedEmailId(selectedEmailId), 100);
@@ -304,7 +274,7 @@ const EmailDashboard = () => {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p className="text-sm sm:text-base">Select an email to view</p>
+              <p>Select an email to view</p>
             </div>
           )}
         </div>

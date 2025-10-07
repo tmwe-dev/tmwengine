@@ -36,11 +36,11 @@ export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
 
       <form onSubmit={handleSearch} className="flex-1 max-w-2xl md:mx-8">
         <div className="relative">
-          <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search emails..."
-            className="pl-8 sm:pl-10 h-8 sm:h-9"
+            className="pl-10 h-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -48,7 +48,7 @@ export const EmailHeader = ({ onSearch }: EmailHeaderProps) => {
       </form>
 
       <Button variant="ghost" size="sm" onClick={handleLogout} className="hidden md:flex">
-        <LogOut className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <LogOut className="mr-2 h-4 w-4" />
         Logout
       </Button>
     </header>

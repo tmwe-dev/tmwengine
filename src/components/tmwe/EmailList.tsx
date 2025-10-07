@@ -183,39 +183,39 @@ export const EmailList = ({
   if (!emails || emails.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-        <Mail className="mb-3 sm:mb-4 h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 opacity-20" />
-        <p className="text-base sm:text-lg font-medium">No emails found</p>
-        <p className="text-xs sm:text-sm">Try syncing your mailbox</p>
+        <Mail className="mb-4 h-16 w-16 opacity-20" />
+        <p className="text-lg font-medium">No emails found</p>
+        <p className="text-sm">Try syncing your mailbox</p>
       </div>
     );
   }
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full max-w-full min-w-0 overflow-x-hidden">{/* max-w-full aggiunto per contenere padding */}
+    <div className="space-y-2 py-4 px-2 sm:px-3 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors duration-150 w-full min-w-0',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
-            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
+            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
+            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch min-w-0 w-full overflow-hidden">{/* Rimosso max-w-full */}
+          <div className="flex items-stretch min-w-0 w-full">
             {multiSelectMode && (
-              <div className="flex items-center justify-center px-2 sm:px-3">
+              <div className="flex items-center justify-center px-3">
                 <Checkbox
                   checked={selectedEmailIds.has(email.id)}
                   onCheckedChange={() => handleToggleEmailSelection(email.id)}
@@ -223,9 +223,9 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 min-w-0 p-2 sm:p-3 relative overflow-hidden">
-              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 min-w-0 overflow-hidden">
-                <div className="min-w-0 flex-1 overflow-hidden max-w-[30%]">
+            <div className="flex-1 min-w-0 p-3 relative">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="min-w-0 flex-1 sm:flex-initial">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -233,7 +233,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1 min-w-0 overflow-hidden max-w-[40%]">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <h3 className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
@@ -241,31 +241,31 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0">
-                  <span className="hidden lg:inline whitespace-nowrap text-xs text-muted-foreground truncate max-w-[120px]">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <span className="hidden sm:inline whitespace-nowrap text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[10px] sm:text-xs">New</Badge>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
                   )}
                   {email.starred && (
-                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   )}
                   {email.hasAttachments && (
-                    <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
                   )}
                   {!multiSelectMode && onOpenDetailPopup && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hidden md:flex h-6 w-6 sm:h-7 sm:w-7 p-0"
+                      className="hidden md:flex h-7 w-7 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEmailSelect(email.id);
                         onOpenDetailPopup();
                       }}
                     >
-                      <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <Maximize2 className="h-4 w-4" />
                     </Button>
                   )}
                   {!multiSelectMode && selectedEmailId === email.id && (
@@ -274,9 +274,9 @@ export const EmailList = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-6 w-6 sm:h-7 sm:w-7 p-0"
+                          className="h-7 w-7 p-0"
                         >
-                          <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover z-50">
@@ -332,30 +332,30 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full min-w-0 overflow-x-hidden">{/* min-w-0 per shrinkage corretto */}
+    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-3 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors duration-150 w-full min-w-0 h-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full sm:w-full h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
-            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
+            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
+            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-start min-w-0 w-full h-full overflow-hidden">{/* Rimosso max-w-full */}
+          <div className="flex items-start min-w-0 w-full h-full">
             {multiSelectMode && (
-              <div className="flex items-center justify-center px-2 sm:px-3 self-center">
+              <div className="flex items-center justify-center px-3 self-center">
                 <Checkbox
                   checked={selectedEmailIds.has(email.id)}
                   onCheckedChange={() => handleToggleEmailSelection(email.id)}
@@ -363,10 +363,10 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full overflow-hidden">
-              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0 overflow-hidden">
-                <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 overflow-hidden min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full">
+              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
+                <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden sm:min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',
                       !email.read && 'font-semibold text-email-unread'
@@ -374,7 +374,7 @@ export const EmailList = ({
                       {email.from}
                     </p>
                     {!email.read && (
-                      <Badge variant="secondary" className="h-3.5 px-1 text-[9px] sm:h-4 sm:px-1 sm:text-[10px] md:h-5 md:px-1.5 md:text-xs shrink-0">
+                      <Badge variant="secondary" className="h-4 px-1 text-[10px] sm:h-5 sm:px-1.5 sm:text-xs shrink-0">
                         New
                       </Badge>
                     )}
@@ -386,13 +386,13 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end shrink-0 overflow-hidden">
+                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <span className="whitespace-nowrap text-xs sm:text-base font-bold">
                         {format(new Date(email.date), 'HH:mm')}
                       </span>
-                      <span className="whitespace-nowrap text-[9px] sm:text-[10px] md:text-xs text-muted-foreground hidden sm:inline">
+                      <span className="whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
                     </div>
@@ -485,10 +485,10 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-2 px-2 sm:px-4 border-b">
+      <div className="flex flex-col gap-2 p-2 px-4 border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex flex-col items-start gap-1 sm:gap-1.5">
-            <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <Switch
                   id="multi-select"
@@ -506,7 +506,7 @@ export const EmailList = ({
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-20 sm:w-24 h-6 sm:h-7 text-[10px] sm:text-[11px]">
+                  <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -515,8 +515,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Trash2 className="h-3 w-3" />
-                        <span className="text-xs">Elimina</span>
+                        <Trash2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Elimina</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -524,8 +524,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Archive className="h-3 w-3" />
-                        <span className="text-xs">Archivia</span>
+                        <Archive className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Archivia</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -533,8 +533,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Forward className="h-3 w-3" />
-                        <span className="text-xs">Inoltra</span>
+                        <Forward className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Inoltra</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -542,8 +542,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span className="text-xs">Letta</span>
+                        <CheckCircle2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Letta</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -551,8 +551,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <FolderInput className="h-3 w-3" />
-                        <span className="text-xs">Sposta</span>
+                        <FolderInput className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Sposta</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -560,7 +560,7 @@ export const EmailList = ({
 
                 {bulkAction === 'move' && (
                   <Select value={targetFolder} onValueChange={setTargetFolder}>
-                    <SelectTrigger className="w-20 sm:w-24 h-6 sm:h-7 text-[10px] sm:text-[11px]">
+                    <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -579,7 +579,7 @@ export const EmailList = ({
                   size="sm"
                   variant="ghost"
                   className={cn(
-                    "h-6 sm:h-7 text-[10px] sm:text-[11px] px-1.5 sm:px-2 ml-1 sm:ml-1.5 transition-colors",
+                    "h-7 text-[11px] px-2 ml-1.5 transition-colors",
                     bulkAction === 'delete'
                       ? "bg-gradient-to-bl from-red-400/25 via-red-400/15 via-35% to-transparent hover:from-red-400/30 hover:via-red-400/20 hover:bg-gradient-to-bl"
                       : "bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl",
@@ -643,7 +643,7 @@ export const EmailList = ({
           </div>
         </div>
       </div>
-      <ScrollArea className="h-full w-full max-w-full" ref={scrollRef}>
+      <ScrollArea className="h-full" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}
         {viewMode === 'grid' && renderGridView()}
         
@@ -666,7 +666,7 @@ export const EmailList = ({
                     {Array.from(selectedEmailIds).slice(0, 3).map(id => {
                       const email = emails.find(e => e.id === id);
                       return email ? (
-                        <div key={id} className="relative text-[10px] sm:text-xs font-mono px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.3px] sm:backdrop-blur-[0.5px] after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] sm:after:h-[2px] after:bg-gradient-to-r after:from-[hsl(15,55%,45%,0.65)] after:via-black after:via-40% after:to-transparent after:translate-y-full after:rounded-sm">
+                        <div key={id} className="relative text-xs font-mono px-2 py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.5px] after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-[hsl(15,55%,45%,0.65)] after:via-black after:via-40% after:to-transparent after:translate-y-full after:rounded-sm">
                           {email.from}
                         </div>
                       ) : null;
@@ -683,46 +683,46 @@ export const EmailList = ({
               )}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+          <div className="mt-6 space-y-6">
             <div>
-              <h3 className="font-semibold mb-3 sm:mb-4 text-center">Azioni Rapide</h3>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 pb-3 sm:pb-4 border-b border-border/30">
+              <h3 className="font-semibold mb-4 text-center">Azioni Rapide</h3>
+              <div className="grid grid-cols-3 gap-4 pb-4 border-b border-border/30">
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'archive' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => setSelectedAction('archive')}
                 >
-                  <Archive className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
+                  <Archive className="h-8 w-8 mb-2" />
                   <span className="text-sm font-medium">Archivia</span>
                 </button>
 
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'move' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => setSelectedAction('move')}
                 >
-                  <FolderInput className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
+                  <FolderInput className="h-8 w-8 mb-2" />
                   <span className="text-sm font-medium">Sposta</span>
                 </button>
 
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'delete' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => setSelectedAction('delete')}
                 >
-                  <Trash2 className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
+                  <Trash2 className="h-8 w-8 mb-2" />
                   <span className="text-sm font-medium">Elimina</span>
                 </button>
               </div>

@@ -78,7 +78,7 @@ export const EmailSidebar = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
-  const [isCollapsed, setIsCollapsed] = useState(true); // CHIUSA DI DEFAULT
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -191,8 +191,8 @@ export const EmailSidebar = ({
 
   return (
     <div className={cn(
-      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300 flex-shrink-0",
-      isCollapsed ? "w-12 sm:w-14 md:w-16" : "w-40 sm:w-48 md:w-52 lg:w-56"
+      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="p-2 flex justify-end">
         <Button
@@ -316,7 +316,7 @@ export const EmailSidebar = ({
               Ingresa el nombre de la nueva carpeta de correo.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
+          <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="folder-name">Nombre de la carpeta</Label>
               <Input

@@ -82,7 +82,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
   return (
     <>
-      <header className="border-b bg-card-transparent px-2 sm:px-4 py-2 sm:py-3 md:py-4 w-full">
+      <header className="border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}
@@ -111,7 +111,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   </Button>
                 )}
                 
-                <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
+                <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
                   {isMobile ? 'Email' : 'TMWE Email'}
                 </h1>
               </div>
@@ -154,7 +154,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {missingEmailCount !== undefined && missingEmailCount > 0 && !isSyncingSmart && (
                           <Badge 
                             variant="destructive" 
-                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] font-bold"
+                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold"
                           >
                             {missingEmailCount > 999 ? '999+' : missingEmailCount}
                           </Badge>
@@ -163,7 +163,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {isSyncingSmart && syncSmartProgress && (
                           <Badge 
                             variant="default" 
-                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] font-bold bg-blue-500"
+                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold bg-blue-500"
                           >
                             {syncSmartProgress.current}/{syncSmartProgress.missing}
                           </Badge>
@@ -172,7 +172,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {missingEmailCount === 0 && !isSyncingSmart && (
                           <Badge 
                             variant="secondary" 
-                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] bg-green-500 text-white"
+                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] bg-green-500 text-white"
                           >
                             ✓
                           </Badge>
@@ -249,10 +249,10 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               <div className="hidden md:flex items-center gap-1 sm:gap-2">
                 <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
                   <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  <span className="font-semibold text-[9px] sm:text-[10px] md:text-xs">{emailCount.toLocaleString()}</span>
+                  <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
                 </Badge>
 
-                <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-full sm:max-w-sm md:max-w-md">
+                <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
                   <div className="relative min-w-0">
                     <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -274,14 +274,14 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
       {/* Sync Options Dialog (Mobile only) */}
       <Dialog open={syncPopupOpen} onOpenChange={setSyncPopupOpen}>
-        <DialogContent className="w-[95vw] sm:w-[90vw] sm:max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2 sm:gap-3 py-3 sm:py-4">
+          <div className="flex flex-col gap-3 py-4">
             {/* DB Email Count */}
             {dbEmailCount !== undefined && (
-              <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md bg-muted/50">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
                 <Database className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1">
                   <div className="text-sm font-medium">Email nel Database</div>

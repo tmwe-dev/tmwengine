@@ -60,8 +60,8 @@ export const EmailDownloadProgress = ({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[90vw] sm:w-80 md:w-96" align="start">
-        <div className="space-y-3 sm:space-y-4">
+      <PopoverContent className="w-80" align="start">
+        <div className="space-y-4">
           <div>
             <h4 className="font-semibold mb-1">Download Email Completo</h4>
             <p className="text-sm text-muted-foreground">
@@ -97,7 +97,7 @@ export const EmailDownloadProgress = ({
           )}
 
           {isComplete && (
-            <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-sm font-medium">
                 Download completato!
@@ -106,7 +106,7 @@ export const EmailDownloadProgress = ({
           )}
 
           {downloadError && (
-            <div className="flex items-start gap-2 p-2 sm:p-3 rounded-lg bg-destructive/10 text-destructive">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
               <XCircle className="h-5 w-5 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Errore durante il download</p>

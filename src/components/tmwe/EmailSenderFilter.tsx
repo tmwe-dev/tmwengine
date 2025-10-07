@@ -85,16 +85,16 @@ export const EmailSenderFilter = ({
             size="sm"
             className="relative"
           >
-            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            <Users className="h-4 w-4 mr-2" />
             Mittenti
             {selectedSender && (
-              <Badge className="ml-1.5 sm:ml-2 h-4 sm:h-5 px-1 sm:px-1.5 text-xs" variant="default">
+              <Badge className="ml-2 h-5 px-1.5" variant="default">
                 1
               </Badge>
             )}
           </Button>
         </SheetTrigger>
-      <SheetContent side="right" className="w-[95vw] max-w-[95vw] sm:w-[85vw] sm:max-w-md md:max-w-lg lg:max-w-xl">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Filtra per Mittente</SheetTitle>
           <SheetDescription>
@@ -102,31 +102,31 @@ export const EmailSenderFilter = ({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+        <div className="mt-6 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Cerca mittente..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 sm:pl-9 pr-8 sm:pr-9"
+              className="pl-9 pr-9"
             />
             {searchQuery && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute right-0.5 sm:right-1 top-1/2 h-6 w-6 sm:h-7 sm:w-7 -translate-y-1/2 p-0"
+                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
                 onClick={() => setSearchQuery('')}
               >
-                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <X className="h-4 w-4" />
               </Button>
             )}
           </div>
 
           {/* Active Filter */}
           {selectedSender && (
-            <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-muted">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
               <span className="text-sm flex-1">
                 Filtro attivo: <strong>{selectedSender}</strong>
               </span>
@@ -142,11 +142,11 @@ export const EmailSenderFilter = ({
           )}
 
           {/* Sender List */}
-          <ScrollArea className="h-[50vh] sm:h-[60vh] md:h-[calc(100vh-280px)]">
+          <ScrollArea className="h-[calc(100vh-280px)]">
             <div className="space-y-1">
               {filteredSenders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-2 opacity-20" />
+                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
                   <p>Nessun mittente trovato</p>
                 </div>
               ) : (
@@ -154,7 +154,7 @@ export const EmailSenderFilter = ({
                   <Collapsible key={group.sender} defaultOpen={false}>
                     <div
                       className={cn(
-                        'flex items-center justify-between p-2 sm:p-3 rounded-lg transition-colors cursor-pointer hover:bg-muted/50',
+                        'flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer hover:bg-muted/50',
                         selectedSender === group.sender && 'bg-muted'
                       )}
                       onClick={() => handleSenderClick(group.sender)}
@@ -167,7 +167,7 @@ export const EmailSenderFilter = ({
                             {group.count !== 1 ? 's' : ''}
                           </span>
                           {group.unread > 0 && (
-                            <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[10px] sm:text-xs">
+                            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
                               {group.unread} non lette
                             </Badge>
                           )}

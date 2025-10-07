@@ -544,24 +544,52 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full max-w-full overflow-x-hidden">
-      <div className="flex flex-1 w-full max-w-full min-w-0 overflow-x-hidden">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
+      <EmailHeader
+        onSearch={setSearchQuery} 
+        onCompose={() => setComposeOpen(true)} 
+        onSync={handleSync}
+        onSyncSmart={startSyncSmart}
+        isSyncingSmart={isSyncingSmart}
+        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
+        missingEmailCount={missingEmailCount}
+        onMenuClick={() => setSidebarOpen(true)}
+        isMobile={isMobile}
+        dbEmailCount={isMobile ? emailCount : undefined}
+        isHeaderCollapsed={isHeaderCollapsed}
+        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+        onCloseEmail={handleBackToList}
+        onPreviousEmail={handlePreviousEmail}
+        onNextEmail={handleNextEmail}
+        hasPrevious={hasPreviousEmail()}
+        hasNext={hasNextEmail()}
+        downloadProgressComponent={
+          <EmailDownloadProgress
+            totalEmails={totalEmailCount}
+            onDownloadComplete={() => {}}
+            onStartDownload={startDownload}
+            isDownloading={isDownloading}
+            downloadedCount={downloadedCount}
+            downloadError={downloadError}
+          />
+        }
+      />
+      
+      <div className="flex flex-1 w-full">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <div className="flex-shrink-0">
-            <EmailSidebar
-              selectedFolder={selectedFolder}
-              onFolderSelect={setSelectedFolder}
-              onCompose={() => setComposeOpen(true)}
-              onSync={handleSync}
-            />
-          </div>
+          <EmailSidebar
+            selectedFolder={selectedFolder}
+            onFolderSelect={setSelectedFolder}
+            onCompose={() => setComposeOpen(true)}
+            onSync={handleSync}
+          />
         )}
 
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-[85vw] sm:w-[75vw] md:w-[320px] max-w-sm p-0">
+            <SheetContent side="left" className="w-[280px] p-0">
             <EmailSidebar 
               selectedFolder={selectedFolder}
               onFolderSelect={(folder) => {
@@ -581,36 +609,12 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col w-full max-w-full min-w-0 overflow-hidden",
+          "flex-1 flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
-          <EmailHeader
-            onSearch={setSearchQuery}
-            onCompose={() => setComposeOpen(true)}
-            onSync={handleSync}
-            onMenuClick={() => setSidebarOpen(true)}
-            isMobile={isMobile}
-            isHeaderCollapsed={isHeaderCollapsed}
-            onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-            onCloseEmail={handleBackToList}
-            onPreviousEmail={handlePreviousEmail}
-            onNextEmail={handleNextEmail}
-            hasPrevious={hasPreviousEmail()}
-            hasNext={hasNextEmail()}
-            downloadProgressComponent={
-              <EmailDownloadProgress
-                totalEmails={totalEmailCount}
-                onDownloadComplete={() => {}}
-                onStartDownload={startDownload}
-                isDownloading={isDownloading}
-                downloadedCount={downloadedCount}
-                downloadError={downloadError}
-              />
-            }
-          />
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
-            <div className="flex-shrink-0 border-b bg-card-transparent px-2 sm:px-4 py-2">
+            <div className="border-b bg-card-transparent px-2 py-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -625,7 +629,7 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="flex-shrink-0 border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2 w-full max-w-full overflow-hidden">
+          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <EmailSenderFilter
                 emails={emailsToUse}
@@ -643,18 +647,20 @@ const EmailDashboard = () => {
               )}
             </div>
             
-            {/* Right aligned icons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <PagePromptManager pageRoute="/email-manager" />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 hover:bg-primary/10"
-                onClick={openAIChat}
-              >
-                <Brain className="h-4 w-4 text-primary" />
-              </Button>
-            </div>
+            {/* Right aligned icons for mobile */}
+            {isMobile && (
+              <div className="flex items-center gap-2 shrink-0">
+                <PagePromptManager pageRoute="/email-manager" />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-primary/10"
+                  onClick={openAIChat}
+                >
+                  <Brain className="h-4 w-4 text-primary" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <EmailList
@@ -679,7 +685,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}
@@ -707,7 +713,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] sm:w-[90vw] sm:max-w-[90vw] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[85vh] sm:h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>

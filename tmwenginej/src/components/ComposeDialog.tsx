@@ -181,73 +181,70 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-xl lg:max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">
+          <DialogTitle>
             {replyTo ? (replyTo.isForward ? 'Forward Email' : 'Reply to Email') : 'Compose New Email'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-3 sm:space-y-4 overflow-y-auto pr-1.5 sm:pr-2">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="to" className="text-xs sm:text-sm">To *</Label>
+        <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+          <div className="space-y-2">
+            <Label htmlFor="to">To *</Label>
             <Input
               id="to"
               placeholder="recipient@example.com, another@example.com"
               value={to}
               onChange={(e) => setTo(e.target.value)}
               disabled={!!replyTo && !replyTo.isForward}
-              className="text-xs sm:text-sm"
             />
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="cc" className="text-xs sm:text-sm">Cc</Label>
+          <div className="space-y-2">
+            <Label htmlFor="cc">Cc</Label>
             <Input
               id="cc"
               placeholder="cc@example.com"
               value={cc}
               onChange={(e) => setCc(e.target.value)}
-              className="text-xs sm:text-sm"
             />
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="subject" className="text-xs sm:text-sm">Subject *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject *</Label>
             <Input
               id="subject"
               placeholder="Email subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               disabled={!!replyTo && !replyTo.isForward}
-              className="text-xs sm:text-sm"
             />
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="body" className="text-xs sm:text-sm">Message *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="body">Message *</Label>
             <Textarea
               id="body"
               placeholder="Write your message here..."
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={12}
-              className="resize-none text-xs sm:text-sm"
+              className="resize-none"
             />
           </div>
 
           {/* Attachments Section */}
-          <div className="space-y-1.5 sm:space-y-2">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs sm:text-sm">Attachments</Label>
+              <Label>Attachments</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Paperclip className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">Add Files</span>
+                <Paperclip className="mr-2 h-4 w-4" />
+                Add Files
               </Button>
               <input
                 ref={fileInputRef}
@@ -260,19 +257,19 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
             </div>
             
             {attachments.length > 0 && (
-              <div className="space-y-1.5 sm:space-y-2 rounded-md border p-2 sm:p-3">
+              <div className="space-y-2 rounded-md border p-3">
                 {attachments.map((attachment, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between gap-1.5 sm:gap-2 rounded-md bg-muted p-1.5 sm:p-2"
+                    className="flex items-center justify-between gap-2 rounded-md bg-muted p-2"
                   >
-                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                      <FileIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm font-medium truncate">
+                        <p className="text-sm font-medium truncate">
                           {attachment.filename}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {formatFileSize(attachment.size)}
                         </p>
                       </div>
@@ -282,9 +279,9 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
                       variant="ghost"
                       size="sm"
                       onClick={() => removeAttachment(index)}
-                      className="flex-shrink-0 h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      className="flex-shrink-0"
                     >
-                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -293,21 +290,21 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
           </div>
         </div>
 
-        <div className="flex justify-end gap-1.5 sm:gap-2 pt-3 sm:pt-4 border-t">
-          <Button variant="outline" onClick={onClose} size="sm">
-            <X className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="text-xs sm:text-sm">Cancel</span>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            <X className="mr-2 h-4 w-4" />
+            Cancel
           </Button>
-          <Button onClick={handleSend} disabled={sending} size="sm">
+          <Button onClick={handleSend} disabled={sending}>
             {sending ? (
               <>
-                <div className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                <span className="text-xs sm:text-sm">Sending...</span>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                Sending...
               </>
             ) : (
               <>
-                <Send className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">Send</span>
+                <Send className="mr-2 h-4 w-4" />
+                Send
               </>
             )}
           </Button>

@@ -2987,11 +2987,11 @@ export default function ImportTemplates() {
                     <Dialog open={showFilters} onOpenChange={setShowFilters}>
                       <DialogTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant={(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? "default" : "outline"}
                           size="sm"
-                          className={`shrink-0 p-2 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'border-yellow-500 bg-yellow-500/10 animate-pulse' : ''}`}
+                          className={`shrink-0 p-2 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'border-yellow-500 bg-yellow-500 hover:bg-yellow-600 animate-pulse' : 'border-0'}`}
                         >
-                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-yellow-500' : ''}`} />
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-white' : ''}`} />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl">
@@ -3255,7 +3255,7 @@ export default function ImportTemplates() {
                     </Dialog>
                     
                     {/* Clear Filters Button */}
-                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) && (
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
                       <Button
                         variant="outline"
                         size="sm"

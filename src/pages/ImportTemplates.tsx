@@ -3137,25 +3137,6 @@ export default function ImportTemplates() {
                           {/* Toggle Options */}
                           <div className="space-y-3">
                             <div className="flex items-center space-x-2">
-                              <Switch
-                                id="hide-today-activities-desktop"
-                                checked={hideContactsWithTodayActivities}
-                                onCheckedChange={setHideContactsWithTodayActivities}
-                              />
-                              <Label htmlFor="hide-today-activities-desktop" className="cursor-pointer">
-                                Nascondi attività oggi
-                              </Label>
-                              {hideContactsWithTodayActivities && (() => {
-                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
-                                return hiddenCount > 0 ? (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {hiddenCount} nascosti
-                                  </Badge>
-                                ) : null;
-                              })()}
-                            </div>
-
-                            <div className="flex items-center space-x-2">
                               <Checkbox
                                 id="has-notes-filter-desktop-popup"
                                 checked={hasNotesFilter}
@@ -3188,6 +3169,25 @@ export default function ImportTemplates() {
                               <Label htmlFor="filter-only-with-alias-desktop" className="cursor-pointer">
                                 Solo con alias azienda
                               </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="hide-today-activities-desktop"
+                                checked={hideContactsWithTodayActivities}
+                                onCheckedChange={setHideContactsWithTodayActivities}
+                              />
+                              <Label htmlFor="hide-today-activities-desktop" className="cursor-pointer">
+                                Nascondi attività oggi
+                              </Label>
+                              {hideContactsWithTodayActivities && (() => {
+                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                return hiddenCount > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hiddenCount} nascosti
+                                  </Badge>
+                                ) : null;
+                              })()}
                             </div>
                           </div>
 

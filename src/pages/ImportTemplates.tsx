@@ -24,7 +24,9 @@ import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import countriesData from '@/data/countries.json';
+
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -334,6 +336,7 @@ export default function ImportTemplates() {
   
   // Stati per attività multiple
   const [showMultipleActivityDialog, setShowMultipleActivityDialog] = useState(false);
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [creatingMultipleActivities, setCreatingMultipleActivities] = useState(false);
   const [activeSection, setActiveSection] = useState('manage');
   const [showFilters, setShowFilters] = useState(false);
@@ -3260,20 +3263,18 @@ export default function ImportTemplates() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            window.open('/template-alias', '_blank');
-                          }}
+                          onClick={() => setShowPromptDialog(true)}
                           className="h-10 w-10 p-0"
                         >
                           <Settings className="h-4 w-4 text-orange-500" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Apri prompt AI per alias</p>
+                        <p>Modifica prompt AI per alias</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -4109,6 +4110,19 @@ export default function ImportTemplates() {
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per modifica prompt AI */}
+      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifica Prompt AI - Generazione Alias</DialogTitle>
+            <DialogDescription>
+              Personalizza le regole che l'AI usa per generare alias naturali dai nomi formali
+            </DialogDescription>
+          </DialogHeader>
+          <PagePromptManager pageRoute="/template-alias" />
         </DialogContent>
       </Dialog>
     </div>

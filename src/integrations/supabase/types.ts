@@ -1196,6 +1196,33 @@ export type Database = {
           },
         ]
       }
+      intranet_global_ai_prompt: {
+        Row: {
+          attivo: boolean
+          created_at: string
+          id: string
+          nome: string
+          prompt_contenuto: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          prompt_contenuto: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          prompt_contenuto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intranet_messages: {
         Row: {
           attachment_url: string | null
@@ -1229,6 +1256,53 @@ export type Database = {
             foreignKeyName: "intranet_messages_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
+            referencedRelation: "intranet_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intranet_room_ai_prompts: {
+        Row: {
+          created_at: string
+          custom_prompt: string | null
+          enable_ai: boolean
+          enable_auto_speaker: boolean
+          enable_suggestions: boolean
+          enable_translation: boolean
+          id: string
+          is_using_standard: boolean
+          room_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_prompt?: string | null
+          enable_ai?: boolean
+          enable_auto_speaker?: boolean
+          enable_suggestions?: boolean
+          enable_translation?: boolean
+          id?: string
+          is_using_standard?: boolean
+          room_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_prompt?: string | null
+          enable_ai?: boolean
+          enable_auto_speaker?: boolean
+          enable_suggestions?: boolean
+          enable_translation?: boolean
+          id?: string
+          is_using_standard?: boolean
+          room_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_room_ai_prompts_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
             referencedRelation: "intranet_rooms"
             referencedColumns: ["id"]
           },

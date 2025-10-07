@@ -23,6 +23,14 @@ export { CountBadge } from './badges/CountBadge';
 // Data Display
 export { EmptyState } from './data-display/EmptyState';
 export { LoadingState } from './data-display/LoadingState';
+export { DynamicTabs } from './data-display/DynamicTabs';
+export type { TabItem } from './data-display/DynamicTabs';
+export { Timeline } from './data-display/Timeline';
+export type { TimelineItem } from './data-display/Timeline';
+export { StatsGrid } from './data-display/StatsGrid';
+export type { StatItem } from './data-display/StatsGrid';
+export { ProgressSteps } from './data-display/ProgressSteps';
+export type { Step } from './data-display/ProgressSteps';
 
 // Forms
 export { SearchInput } from './forms/SearchInput';
@@ -41,8 +49,19 @@ export type { NavigationItem } from './menus/DynamicNavigation';
 // Layouts
 export { PageLayout } from './layouts/PageLayout';
 export { ContentWrapper } from './layouts/ContentWrapper';
+export { SplitLayout } from './layouts/SplitLayout';
+export { HeroSection } from './layouts/HeroSection';
 
 // Effects
 export { GradientBackground } from './effects/GradientBackground';
 export { GradientText } from './effects/GradientText';
 export { HoverCard } from './effects/HoverCard';
+export { LoadingOverlay } from './effects/LoadingOverlay';
+export { AnimatedBorder } from './effects/AnimatedBorder';
+
+// Feedback
+export { DynamicModal } from './feedback/DynamicModal';
+
+// Navigation
+export { Breadcrumbs } from './navigation/Breadcrumbs';
+export type { BreadcrumbItem } from './navigation/Breadcrumbs';

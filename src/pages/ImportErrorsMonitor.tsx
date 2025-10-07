@@ -15,10 +15,19 @@ import {
   Clock,
   AlertCircle,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Coins,
+  Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ErrorRecord {
   id: string;
@@ -29,6 +38,7 @@ interface ErrorRecord {
   attempted_corrections: number;
   created_at: string;
   updated_at: string;
+  corrected_data?: any;
 }
 
 interface ProcessingStats {
@@ -37,6 +47,20 @@ interface ProcessingStats {
   corrected: number;
   failed: number;
   pending: number;
+  total_tokens: number;
+  estimated_cost: number;
+}
+
+interface BatchResult {
+  processed: number;
+  corrected: number;
+  failed: number;
+  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost: number;
+  batch_complete: boolean;
+  next_batch: number;
 }
 
 export default function ImportErrorsMonitor() {
@@ -52,9 +76,15 @@ export default function ImportErrorsMonitor() {
     processed: 0,
     corrected: 0,
     failed: 0,
-    pending: 0
+    pending: 0,
+    total_tokens: 0,
+    estimated_cost: 0
   });
   const [activityLog, setActivityLog] = useState<string[]>([]);
+  const [batchSize, setBatchSize] = useState<number>(25);
+  const [currentBatch, setCurrentBatch] = useState<number>(0);
+  const [lastBatchResult, setLastBatchResult] = useState<BatchResult | null>(null);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -82,12 +112,29 @@ export default function ImportErrorsMonitor() {
       const pending = data?.filter(e => e.status === 'pending').length || 0;
       const processed = corrected + failed;
 
+      // Calcola token totali e costo dai dati salvati
+      let totalTokens = 0;
+      let totalCost = 0;
+      data?.forEach(e => {
+        if (e.ai_suggestions && typeof e.ai_suggestions === 'object') {
+          const suggestions = e.ai_suggestions as any;
+          if (suggestions.tokens_used) {
+            totalTokens += suggestions.tokens_used;
+          }
+        }
+      });
+      
+      // Stima costo (approssimativa se non abbiamo i dettagli esatti)
+      totalCost = (totalTokens / 1000000) * 0.15; // Media tra input e output
+
       setStats({
         total,
         processed,
         corrected,
         failed,
-        pending
+        pending,
+        total_tokens: totalTokens,
+        estimated_cost: totalCost
       });
 
     } catch (error) {
@@ -96,34 +143,58 @@ export default function ImportErrorsMonitor() {
     }
   };
 
-  const startProcessing = async () => {
+  const processBatch = async () => {
     if (!importLogId) return;
 
     setIsProcessing(true);
-    setIsPaused(false);
-    addLog('🚀 Avvio elaborazione AI...');
+    setAwaitingConfirmation(false);
+    addLog(`🚀 Avvio elaborazione batch (${batchSize} righe)...`);
 
     try {
       const { data, error } = await supabase.functions.invoke('process-import-errors-ai', {
         body: {
           import_log_id: importLogId,
-          max_attempts: 3,
-          pause_requested: false
+          batch_size: batchSize,
+          continue_from_batch: currentBatch
         }
       });
 
       if (error) throw error;
 
-      addLog(`✅ Elaborazione completata!`);
-      addLog(`📊 Processati: ${data.processed}`);
-      addLog(`✨ Corretti: ${data.corrected}`);
-      addLog(`❌ Falliti: ${data.failed}`);
-      
-      if (data.corrected > 0) {
-        toast.success(`${data.corrected} righe riparate con successo!`);
+      const result = data as BatchResult;
+      setLastBatchResult(result);
+
+      addLog(`✅ Batch completato!`);
+      addLog(`📊 Processati: ${result.processed} | Corretti: ${result.corrected} | Falliti: ${result.failed}`);
+      addLog(`🎯 Token usati: ${result.total_tokens.toLocaleString()} (Input: ${result.input_tokens} | Output: ${result.output_tokens})`);
+      addLog(`💰 Costo batch: $${result.estimated_cost.toFixed(6)}`);
+
+      // Aggiorna stats globali
+      setStats(prev => ({
+        ...prev,
+        processed: prev.processed + result.processed,
+        corrected: prev.corrected + result.corrected,
+        failed: prev.failed + result.failed,
+        pending: prev.pending - result.processed,
+        total_tokens: prev.total_tokens + result.total_tokens,
+        estimated_cost: prev.estimated_cost + result.estimated_cost
+      }));
+
+      if (result.corrected > 0) {
+        toast.success(`${result.corrected} righe riparate! Token: ${result.total_tokens} | Costo: $${result.estimated_cost.toFixed(6)}`);
       }
 
       loadErrors();
+
+      // Se ci sono ancora righe pending, chiedi conferma
+      if (!result.batch_complete) {
+        setAwaitingConfirmation(true);
+        setCurrentBatch(result.next_batch);
+        addLog(`⏸️ Batch completato. In attesa di conferma per continuare...`);
+      } else {
+        addLog(`✨ Tutte le righe sono state elaborate!`);
+        setAwaitingConfirmation(false);
+      }
 
     } catch (error) {
       console.error('Error processing:', error);
@@ -132,12 +203,6 @@ export default function ImportErrorsMonitor() {
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const pauseProcessing = () => {
-    setIsPaused(true);
-    addLog('⏸️ Pausa richiesta...');
-    toast.info('Elaborazione in pausa');
   };
 
   const confirmAndImport = async () => {
@@ -166,13 +231,12 @@ export default function ImportErrorsMonitor() {
     }
   };
 
-  const resumeProcessing = () => {
-    setIsPaused(false);
-    addLog('▶️ Ripresa elaborazione...');
-    startProcessing();
+  const continueProcessing = () => {
+    setAwaitingConfirmation(false);
+    processBatch();
   };
 
-  // Real-time subscription and auto-start
+  // Real-time subscription
   useEffect(() => {
     if (!importLogId) return;
 
@@ -242,6 +306,37 @@ export default function ImportErrorsMonitor() {
           </Button>
         </div>
 
+        {/* Contatori Token e Costo */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-blue-500/10">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-500/20">
+                  <Activity className="h-6 w-6 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold">{stats.total_tokens.toLocaleString()}</CardTitle>
+                  <CardDescription>Token Totali Utilizzati</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-green-500/20 bg-gradient-to-r from-green-500/5 to-green-500/10">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-green-500/20">
+                  <Coins className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold">${stats.estimated_cost.toFixed(6)}</CardTitle>
+                  <CardDescription>Costo Stimato Totale</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </div>
+
         {/* Contatore Righe Riparate */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
           <CardHeader>
@@ -266,23 +361,45 @@ export default function ImportErrorsMonitor() {
         {/* Progress & Controls */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <CardTitle>Elaborazione Errori AI</CardTitle>
                 <CardDescription>
                   {stats.pending} errori da elaborare su {stats.total} totali
                 </CardDescription>
               </div>
-              <div className="flex gap-2">
-                {!isProcessing ? (
+              
+              <div className="flex items-center gap-3">
+                {/* Dropdown Batch Size */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Righe per batch:</span>
+                  <Select 
+                    value={batchSize.toString()} 
+                    onValueChange={(v) => setBatchSize(Number(v))}
+                    disabled={isProcessing}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Pulsanti di controllo */}
+                {!isProcessing && !awaitingConfirmation ? (
                   <>
                     <Button
-                      onClick={startProcessing}
+                      onClick={processBatch}
                       disabled={stats.pending === 0}
                       className="gap-2"
                     >
                       <Play className="h-4 w-4" />
-                      Avvia Elaborazione
+                      Avvia Batch ({batchSize} righe)
                     </Button>
                     {stats.corrected > 0 && (
                       <Button
@@ -295,23 +412,22 @@ export default function ImportErrorsMonitor() {
                       </Button>
                     )}
                   </>
-                ) : isPaused ? (
+                ) : awaitingConfirmation ? (
                   <Button
-                    onClick={resumeProcessing}
-                    variant="outline"
-                    className="gap-2"
+                    onClick={continueProcessing}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700"
                   >
                     <Play className="h-4 w-4" />
-                    Riprendi
+                    Continua Prossimo Batch
                   </Button>
                 ) : (
                   <Button
-                    onClick={pauseProcessing}
+                    disabled
                     variant="outline"
                     className="gap-2"
                   >
-                    <Pause className="h-4 w-4" />
-                    Pausa
+                    <Clock className="h-4 w-4 animate-spin" />
+                    Elaborazione...
                   </Button>
                 )}
               </div>
@@ -325,6 +441,33 @@ export default function ImportErrorsMonitor() {
               </div>
               <Progress value={percentage} className="h-3" />
             </div>
+
+            {/* Ultimo Batch Result */}
+            {lastBatchResult && (
+              <Card className="border-blue-500/30 bg-blue-500/5">
+                <CardContent className="pt-4">
+                  <div className="text-sm font-medium mb-2">📊 Risultato Ultimo Batch:</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Processati:</span>
+                      <span className="ml-2 font-semibold">{lastBatchResult.processed}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Corretti:</span>
+                      <span className="ml-2 font-semibold text-green-600">{lastBatchResult.corrected}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Token:</span>
+                      <span className="ml-2 font-semibold">{lastBatchResult.total_tokens.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Costo:</span>
+                      <span className="ml-2 font-semibold">${lastBatchResult.estimated_cost.toFixed(6)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid grid-cols-4 gap-4">
               <div className="text-center p-3 rounded-lg bg-muted">

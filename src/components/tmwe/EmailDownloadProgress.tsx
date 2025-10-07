@@ -60,7 +60,7 @@ export const EmailDownloadProgress = ({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="start">
+      <PopoverContent className="w-[90vw] sm:w-80 md:w-96" align="start">
         <div className="space-y-4">
           <div>
             <h4 className="font-semibold mb-1">Download Email Completo</h4>

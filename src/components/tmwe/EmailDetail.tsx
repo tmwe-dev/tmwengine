@@ -471,10 +471,10 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1 overflow-hidden">
-        <div className="p-6 space-y-4 w-full overflow-hidden">
+        <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 w-full overflow-hidden">
           {/* Subject */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground break-words">
+          <div className="space-y-1 sm:space-y-2">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground break-words">
               {email.subject || '(No Subject)'}
             </h2>
           </div>
@@ -543,8 +543,8 @@ export const EmailDetail = ({
               sandbox="allow-same-origin"
               className="w-full border-0"
               style={{ 
-                minHeight: '600px',
-                maxHeight: '80vh',
+                minHeight: '300px',
+                maxHeight: '60vh',
                 overflow: 'auto'
               }}
             />

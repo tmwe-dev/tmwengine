@@ -142,7 +142,7 @@ export const EmailSenderFilter = ({
           )}
 
           {/* Sender List */}
-          <ScrollArea className="h-[calc(100vh-280px)]">
+          <ScrollArea className="h-[50vh] sm:h-[60vh] md:h-[calc(100vh-280px)]">
             <div className="space-y-1">
               {filteredSenders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">

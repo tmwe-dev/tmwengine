@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -27,7 +28,8 @@ import {
   FileCheck,
   UserCog,
   Palette,
-  Check
+  Check,
+  User
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -52,9 +54,10 @@ import {
 const CRMLayout = ({ children }) => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { userEmail, logout } = useTMWEAuth();
+  const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
 
   const themeColors = {
@@ -62,7 +65,9 @@ const CRMLayout = ({ children }) => {
     ocean: 'from-teal-500 to-orange-500',
     sunset: 'from-orange-500 to-purple-600',
     forest: 'from-emerald-600 to-amber-600',
-    sky: 'from-sky-500 to-yellow-400'
+    sky: 'from-sky-500 to-yellow-400',
+    pearl: 'from-slate-200 to-slate-300',
+    mint: 'from-emerald-200 to-teal-200'
   };
 
   // Chiudi automaticamente la sidebar quando cambia la rotta
@@ -139,6 +144,20 @@ const CRMLayout = ({ children }) => {
 
         <div className="flex items-center gap-2">
           <AIGuideDialog />
+          
+          {/* TMWE Profile Button - only show if user has profile */}
+          {userProfile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsProfileDialogOpen(true)}
+              className="h-8 w-8"
+              title="Profilo TMWE"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          )}
+          
           <ThemeSwitcher />
           
           <DropdownMenu>
@@ -250,6 +269,12 @@ const CRMLayout = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Profile Dialog */}
+      <ProfileDialog 
+        open={isProfileDialogOpen} 
+        onOpenChange={setIsProfileDialogOpen}
+      />
     </div>
   );
 };

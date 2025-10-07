@@ -408,3 +408,8 @@ export const emailFolderApi = {
       new_name: newName 
     }),
 };
+
+// Profile API
+export const profileApi = {
+  getMyProfile: () => fetchApi('/get_my_profile', { handler: 'get_my_profile' }),
+};

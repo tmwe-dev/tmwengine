@@ -12,7 +12,8 @@ const VALID_ENDPOINTS = [
   '/email_account',
   '/email_sync', 
   '/email_message',
-  '/email_folder'
+  '/email_folder',
+  '/get_my_profile'
 ];
 
 // Error response helper following OpenAPI spec

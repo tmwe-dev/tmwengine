@@ -201,8 +201,32 @@ const TMWEAuthCallbackIntegrated = () => {
         sessionStorage.setItem('tmwe_user_email', userEmail);
         sessionStorage.setItem('tmwe_access_token', tokenData.access_token);
 
-        // Update auth context
-        login(userEmail);
+        // Get user profile from TMWE API
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('👤 OBTENIENDO PERFIL DEL USUARIO');
+        console.log('═══════════════════════════════════════════════════════');
+        
+        let userProfile = null;
+        try {
+          const { profileApi } = await import('@/lib/tmwe-api-integrated');
+          const profileResponse = await profileApi.getMyProfile();
+          console.log('📦 Respuesta del perfil:', profileResponse);
+          
+          if (profileResponse && typeof profileResponse === 'object') {
+            userProfile = {
+              email: userEmail,
+              ...profileResponse
+            };
+            console.log('✅ Perfil obtenido:', userProfile);
+          }
+        } catch (profileError) {
+          console.error('⚠️ Error obteniendo perfil (no crítico):', profileError);
+          // Continue even if profile fetch fails
+        }
+        console.log('═══════════════════════════════════════════════════════');
+
+        // Update auth context with profile
+        login(userEmail, userProfile);
 
         // Clear OAuth session data
         sessionStorage.removeItem('oauth_state');

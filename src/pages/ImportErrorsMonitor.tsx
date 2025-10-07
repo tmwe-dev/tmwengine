@@ -99,7 +99,8 @@ export default function ImportErrorsMonitor() {
         .from('import_errors')
         .select('*')
         .eq('import_log_id', importLogId)
-        .order('row_number');
+        .order('row_number')
+        .limit(50000); // Rimuovi il limite di default di 1000
 
       if (error) throw error;
 

@@ -55,14 +55,16 @@ const CRMLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userEmail, logout } = useTMWEAuth();
-  const { theme, setTheme, themes } = useTheme();
+  const { theme, setTheme, darkText, setDarkText, themes } = useTheme();
 
   const themeColors = {
     lilla: 'from-blue-500 to-purple-600',
     ocean: 'from-teal-500 to-orange-500',
     sunset: 'from-orange-500 to-purple-600',
     forest: 'from-emerald-600 to-amber-600',
-    sky: 'from-sky-500 to-yellow-400'
+    sky: 'from-sky-500 to-yellow-400',
+    pearl: 'from-gray-200 to-blue-100',
+    mint: 'from-emerald-200 to-teal-100'
   };
 
   // Chiudi automaticamente la sidebar quando cambia la rotta
@@ -200,6 +202,22 @@ const CRMLayout = ({ children }) => {
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
+              
+              <DropdownMenuItem 
+                onClick={() => setDarkText(!darkText)}
+                className="cursor-pointer flex items-center justify-between"
+              >
+                <span>Testo Scuro</span>
+                <div className={cn(
+                  "w-10 h-6 rounded-full transition-colors",
+                  darkText ? "bg-primary" : "bg-muted"
+                )}>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full bg-white mt-1 transition-transform",
+                    darkText ? "ml-5" : "ml-1"
+                  )} />
+                </div>
+              </DropdownMenuItem>
               
               <DropdownMenuSeparator />
               <DropdownMenuItem 

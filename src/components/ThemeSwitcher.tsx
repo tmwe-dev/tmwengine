@@ -19,7 +19,9 @@ export function ThemeSwitcher() {
     ocean: 'bg-gradient-to-r from-teal-500 to-orange-500',
     sunset: 'bg-gradient-to-r from-orange-500 to-purple-600',
     forest: 'bg-gradient-to-r from-emerald-600 to-amber-600',
-    sky: 'bg-gradient-to-r from-sky-500 to-yellow-400'
+    sky: 'bg-gradient-to-r from-sky-500 to-yellow-400',
+    pearl: 'bg-gradient-to-r from-gray-200 to-blue-100',
+    mint: 'bg-gradient-to-r from-emerald-200 to-teal-100'
   };
 
   return (

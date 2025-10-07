@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
-export type Theme = 'lilla' | 'ocean' | 'sunset' | 'forest' | 'sky';
+export type Theme = 'lilla' | 'ocean' | 'sunset' | 'forest' | 'sky' | 'pearl' | 'mint';
 
 const THEME_STORAGE_KEY = 'crm-theme';
+const TEXT_MODE_STORAGE_KEY = 'crm-text-mode';
 
 export const themes = {
   lilla: {
@@ -29,6 +30,16 @@ export const themes = {
     name: 'Sky',
     description: 'Azzurro cielo e giallo solare',
     className: 'theme-sky'
+  },
+  pearl: {
+    name: 'Pearl',
+    description: 'Tema chiaro elegante',
+    className: 'theme-pearl'
+  },
+  mint: {
+    name: 'Mint',
+    description: 'Verde menta fresco',
+    className: 'theme-mint'
   }
 } as const;
 
@@ -36,6 +47,11 @@ export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     return (saved as Theme) || 'lilla';
+  });
+
+  const [darkText, setDarkTextState] = useState<boolean>(() => {
+    const saved = localStorage.getItem(TEXT_MODE_STORAGE_KEY);
+    return saved === 'true';
   });
 
   useEffect(() => {
@@ -54,13 +70,23 @@ export function useTheme() {
       root.classList.add(themeClassName);
     }
 
+    // Gestisce la modalità testo
+    if (darkText) {
+      root.classList.add('dark-text-mode');
+    } else {
+      root.classList.remove('dark-text-mode');
+    }
+
     // Salva in localStorage
     localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
+    localStorage.setItem(TEXT_MODE_STORAGE_KEY, darkText.toString());
+  }, [theme, darkText]);
 
   return {
     theme,
     setTheme: setThemeState,
+    darkText,
+    setDarkText: setDarkTextState,
     themes
   };
 }

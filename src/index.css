@@ -33,7 +33,7 @@ Tutti i colori DEVONO essere HSL.
 
     /* === COLORI SEMANTICI === */
     --primary: 175 70% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 220 91% 25%;
     --primary-hover: 175 70% 45%;
     --primary-muted: 175 70% 50% / 0.15;
 
@@ -42,7 +42,7 @@ Tutti i colori DEVONO essere HSL.
     --secondary-hover: 210 20% 90%;
 
     --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    --success-foreground: 220 91% 25%;
     --success-muted: 142 76% 36% / 0.15;
 
     --warning: 48 96% 53%;
@@ -50,7 +50,7 @@ Tutti i colori DEVONO essere HSL.
     --warning-muted: 48 96% 53% / 0.15;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 220 91% 25%;
     --destructive-muted: 0 84% 60% / 0.15;
 
     /* === COLORI INTERFACCIA === */
@@ -58,10 +58,10 @@ Tutti i colori DEVONO essere HSL.
     --muted-foreground: 215 16% 47%;
 
     --accent: 15 85% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 220 91% 25%;
 
     --card: 175 70% 50%;
-    --card-foreground: 0 0% 100%;
+    --card-foreground: 220 91% 25%;
     --card-border: 175 70% 60%;
     --card-transparent: 175 70% 50% / 0.35; /* Trasparenza 35% per card */
 
@@ -76,7 +76,7 @@ Tutti i colori DEVONO essere HSL.
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 16% 47%;
     --sidebar-primary: 175 70% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 220 91% 25%;
     --sidebar-accent: 210 20% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 214 32% 91%;

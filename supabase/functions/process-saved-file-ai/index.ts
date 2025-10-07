@@ -174,6 +174,30 @@ serve(async (req) => {
           
         } catch (rowError: any) {
           console.error(`[AI Import] Error processing row ${globalRowIndex + 1}:`, rowError);
+          
+          // Save error to import_errors table
+          const values = row.split(separator);
+          const rawData: any = {};
+          headers.forEach((header: string, index: number) => {
+            if (index < values.length) {
+              const value = values[index];
+              if (value && value !== 'NULL' && value.trim() !== '') {
+                rawData[header] = value.replace(/^["']|["']$/g, '').trim();
+              }
+            }
+          });
+          
+          await supabaseClient
+            .from('import_errors')
+            .insert({
+              import_log_id: importLogId,
+              row_number: globalRowIndex + 1,
+              raw_data: rawData,
+              error_message: rowError.message,
+              error_type: 'processing_error',
+              status: 'pending'
+            });
+          
           errors.push({ row: globalRowIndex + 1, error: rowError.message });
           errorRows++;
           processedRows++;
@@ -188,6 +212,21 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('[AI Import] Insert error:', insertError);
+          
+          // Save batch error to import_errors table for each record in batch
+          const errorRecords = tempRecords.map(record => ({
+            import_log_id: importLogId,
+            row_number: record.row_number,
+            raw_data: record.raw_data,
+            error_message: insertError.message,
+            error_type: 'batch_insert_error',
+            status: 'pending'
+          }));
+          
+          await supabaseClient
+            .from('import_errors')
+            .insert(errorRecords);
+          
           errorRows += tempRecords.length;
           totalValidRecords -= tempRecords.length;
           errors.push({ batch: Math.floor(batchStart / batchSize) + 1, error: insertError.message });

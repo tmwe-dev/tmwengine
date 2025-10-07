@@ -265,6 +265,21 @@ serve(async (req) => {
             totalValidRecords++;
           } else {
             console.log(`Skipping invalid record at row ${globalRowIndex + 1}: missing essential fields`);
+            
+            // Inserisci errore nella tabella import_errors per la riparazione AI
+            await supabaseClient
+              .from('import_errors')
+              .insert({
+                import_log_id: importLogId,
+                row_number: globalRowIndex + 1,
+                raw_data: Object.fromEntries(
+                  headers.map((h: string, idx: number) => [h, values[idx] || null])
+                ),
+                error_message: 'Missing essential fields (name/company and contact info)',
+                error_type: 'validation_error',
+                status: 'pending'
+              });
+            
             errors.push({ 
               row: globalRowIndex + 1, 
               error: 'Missing essential fields (name/company and contact info)' 
@@ -276,6 +291,22 @@ serve(async (req) => {
           
         } catch (rowError: any) {
           console.error(`Error processing row ${globalRowIndex + 1}:`, rowError);
+          
+          // Inserisci errore nella tabella import_errors per la riparazione AI
+          const values = row.split(separator);
+          await supabaseClient
+            .from('import_errors')
+            .insert({
+              import_log_id: importLogId,
+              row_number: globalRowIndex + 1,
+              raw_data: Object.fromEntries(
+                headers.map((h: string, idx: number) => [h, values[idx] || null])
+              ),
+              error_message: rowError.message,
+              error_type: 'processing_error',
+              status: 'pending'
+            });
+          
           errors.push({ row: globalRowIndex + 1, error: rowError.message });
           errorRows++;
           processedRows++;

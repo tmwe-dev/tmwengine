@@ -90,17 +90,18 @@ export const EmailDetail = ({
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // FORZA SEMPRE IL LILLA COME DEFAULT - RESET COMPLETO
+  const LILLA_DEFAULT = '#c084fc';
   const [emailTextColor, setEmailTextColor] = useState(() => {
     const saved = localStorage.getItem('emailTextColor');
     console.log('📧 Color from localStorage:', saved);
-    // Se è il vecchio arancione, sostituiscilo con il nuovo lilla
-    if (saved === '#fdba74' || !saved) {
-      const newColor = '#c084fc';
-      console.log('🎨 Setting new color:', newColor);
-      localStorage.setItem('emailTextColor', newColor);
-      return newColor;
+    // Se NON è esattamente lilla, resetta al lilla
+    if (saved !== LILLA_DEFAULT) {
+      console.log('🔄 RESET to lilla:', LILLA_DEFAULT);
+      localStorage.setItem('emailTextColor', LILLA_DEFAULT);
+      return LILLA_DEFAULT;
     }
-    console.log('✅ Using saved color:', saved);
+    console.log('✅ Using lilla:', saved);
     return saved;
   });
   

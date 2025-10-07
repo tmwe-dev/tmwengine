@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -21,6 +21,7 @@ import { ImportLogMobileCard } from '@/components/import/ImportLogMobileCard';
 import { CompactContactCard } from '@/components/import/CompactContactCard';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
+import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import countriesData from '@/data/countries.json';
@@ -263,6 +264,7 @@ export default function ImportTemplates() {
   const [originFilter, setOriginFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
+  const [myContactsWithActivitiesFilter, setMyContactsWithActivitiesFilter] = useState(false);
   const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [showFiltersArea, setShowFiltersArea] = useState(true);
@@ -337,6 +339,7 @@ export default function ImportTemplates() {
   const [showFilters, setShowFilters] = useState(false);
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
+  const { hasUserActivitiesForContact } = useUserActivities();
   const isMobile = useIsMobile();
   const location = useLocation();
   
@@ -424,6 +427,11 @@ export default function ImportTemplates() {
       result = result.filter(record => record.note && record.note.trim() !== '');
     }
     
+    // Apply my contacts with activities filter
+    if (myContactsWithActivitiesFilter) {
+      result = result.filter(record => hasUserActivitiesForContact(record.id));
+    }
+    
     // Apply hide today activities filter
     if (hideContactsWithTodayActivities) {
       result = result.filter(record => !hasCompletedActivityToday(record.id));
@@ -441,12 +449,12 @@ export default function ImportTemplates() {
     const startIndex = currentPage * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     setViewingRecords(result.slice(startIndex, endIndex));
-  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
+  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
 
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -2578,9 +2586,9 @@ export default function ImportTemplates() {
                   <div className="flex flex-col items-start gap-0.5">
                     <div className="flex items-center gap-2">
                       {/* Filtered count - only when filters are active */}
-                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && filteredRecords.length > 0 && (
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && filteredRecords.length > 0 && (
                         <span className={`font-medium ${
-                          searchQuery || originFilter || countryFilter || hasNotesFilter 
+                          searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter
                             ? 'text-white text-lg' 
                             : 'text-primary text-sm'
                         }`}>
@@ -2594,7 +2602,7 @@ export default function ImportTemplates() {
                     </div>
                     
                     {/* Active Filters Badges - Below title, aligned left */}
-                    {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
                       <div className="flex flex-wrap items-start gap-1">
                         {searchQuery && (
                           <Badge variant="secondary" className="text-[10px] h-6 px-2">
@@ -2628,6 +2636,14 @@ export default function ImportTemplates() {
                             </Button>
                           </Badge>
                         )}
+                        {myContactsWithActivitiesFilter && (
+                          <Badge variant="secondary" className="text-[10px] h-6 px-2">
+                            👤 Mie attività
+                            <Button variant="ghost" size="sm" className="h-3 w-3 p-0 ml-1" onClick={() => setMyContactsWithActivitiesFilter(false)}>
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2653,7 +2669,7 @@ export default function ImportTemplates() {
                           size="sm"
                           className="shrink-0 p-2"
                         >
-                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) ? 'text-sky-500 animate-pulse' : ''}`} />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-[95vw] w-[95vw]">
@@ -2833,6 +2849,18 @@ export default function ImportTemplates() {
                                 Solo con note
                               </Label>
                             </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="my-contacts-activities-filter-mobile"
+                                checked={myContactsWithActivitiesFilter}
+                                onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="my-contacts-activities-filter-mobile" className="flex items-center gap-2 cursor-pointer">
+                                <User className="h-4 w-4 text-primary" />
+                                Solo con mie attività
+                              </Label>
+                            </div>
                           </div>
                           
                           {/* Confirm Button */}
@@ -2849,7 +2877,7 @@ export default function ImportTemplates() {
                     </Dialog>
                     
                     {/* Clear Filters Button */}
-                    {(originFilter || countryFilter || hasNotesFilter) && (
+                    {(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -2858,6 +2886,7 @@ export default function ImportTemplates() {
                           setOriginFilter('');
                           setCountryFilter('');
                           setHasNotesFilter(false);
+                          setMyContactsWithActivitiesFilter(false);
                         }}
                       >
                         <FilterX className="h-4 w-4 text-red-500" />
@@ -3093,17 +3122,18 @@ export default function ImportTemplates() {
                     {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
                     <div className="flex justify-center items-center relative">
                       {/* Pulsante Pulisci filtri e contatore a sinistra */}
-                      {(searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                      {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
                         <div className="absolute left-0 flex items-center gap-3">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
                               setSearchQuery('');
-                              setOriginFilter('');
-                              setCountryFilter('');
-                              setHasNotesFilter(false);
-                            }}
+                            setOriginFilter('');
+                            setCountryFilter('');
+                            setHasNotesFilter(false);
+                            setMyContactsWithActivitiesFilter(false);
+                          }}
                             className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                           >
                             <X className="h-3 w-3 mr-1" />
@@ -3133,7 +3163,7 @@ export default function ImportTemplates() {
                 )}
                 
                 {/* Pulsante Pulisci filtri quando i filtri sono nascosti ma attivi */}
-                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter) && (
+                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
                   <div className="flex justify-start items-center gap-3 mt-2">
                     <Button
                       variant="ghost"
@@ -3143,6 +3173,7 @@ export default function ImportTemplates() {
                         setOriginFilter('');
                         setCountryFilter('');
                         setHasNotesFilter(false);
+                        setMyContactsWithActivitiesFilter(false);
                       }}
                       className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                     >
@@ -3193,6 +3224,30 @@ export default function ImportTemplates() {
                       </Badge>
                     ) : null;
                   })()}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="has-notes-filter-desktop"
+                    checked={hasNotesFilter}
+                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                  />
+                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+                    <StickyNote className="h-4 w-4 text-blue-500" />
+                    Solo con note
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="my-contacts-activities-filter-desktop"
+                    checked={myContactsWithActivitiesFilter}
+                    onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                  />
+                  <Label htmlFor="my-contacts-activities-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+                    <User className="h-4 w-4 text-primary" />
+                    Solo con mie attività
+                  </Label>
                 </div>
               </div>
 

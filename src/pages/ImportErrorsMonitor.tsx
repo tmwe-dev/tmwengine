@@ -326,7 +326,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
       addLog(`✅ Batch completato!`);
       addLog(`📊 Processati: ${result.processed} | Corretti: ${result.corrected} | Falliti: ${result.failed}`);
-      addLog(`🎯 Token usati: ${result.total_tokens.toLocaleString()} (Input: ${result.input_tokens} | Output: ${result.output_tokens})`);
+      addLog(`🎯 Token usati: ${(result.total_tokens || 0).toLocaleString()} (Input: ${result.input_tokens || 0} | Output: ${result.output_tokens || 0})`);
       addLog(`💰 Costo batch: $${result.estimated_cost.toFixed(6)}`);
 
       addLog(`🔄 Ricarico dati aggiornati dal database...`);
@@ -747,7 +747,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   <Activity className="h-6 w-6 text-blue-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl font-bold">{stats.total_tokens.toLocaleString()}</CardTitle>
+                  <CardTitle className="text-2xl font-bold">{(stats.total_tokens || 0).toLocaleString()}</CardTitle>
                   <CardDescription>Token Totali Utilizzati</CardDescription>
                 </div>
               </div>
@@ -923,7 +923,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                     </div>
                     <div>
                       <span className="text-muted-foreground">Token:</span>
-                      <span className="ml-2 font-semibold">{lastBatchResult.total_tokens.toLocaleString()}</span>
+                      <span className="ml-2 font-semibold">{(lastBatchResult.total_tokens || 0).toLocaleString()}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Costo:</span>

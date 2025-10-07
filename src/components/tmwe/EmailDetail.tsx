@@ -363,7 +363,7 @@ export const EmailDetail = ({
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
           </div>
         )}
 
@@ -394,7 +394,7 @@ export const EmailDetail = ({
         </div>
 
         {/* Right: Actions and Close */}
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-2 sm:gap-3">
           {!isHeaderCollapsed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -445,25 +445,25 @@ export const EmailDetail = ({
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (
-        <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+        <div className="flex items-center justify-center border-b p-3 sm:p-4 md:p-6 lg:p-8 gap-2 sm:gap-3 md:gap-4 bg-card-transparent">
           {/* Communication actions */}
-          <div className="flex gap-3 items-center">
-            <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
-              <div className="flex items-center gap-1">
-                <Reply className="h-5 w-5" />
-                <User className="h-4 w-4" />
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <Button variant="outline" size="icon" onClick={onReply} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Reply className="h-4 w-4 sm:h-5 sm:w-5" />
+                <User className="h-3 w-3 sm:h-4 sm:w-4" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
-              <div className="flex items-center gap-1">
-                <ReplyAll className="h-5 w-5" />
-                <Users className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <ReplyAll className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
-              <div className="flex items-center gap-1">
-                <Forward className="h-5 w-5" />
-                <Megaphone className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={onForward} className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12">
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <Forward className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Megaphone className="h-3 w-3 sm:h-4 sm:w-4" />
               </div>
             </Button>
           </div>
@@ -561,7 +561,7 @@ export const EmailDetail = ({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6">
+          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">Azione</label>
               <Select value={selectedAction || ''} onValueChange={(value: any) => setSelectedAction(value)}>
@@ -589,7 +589,7 @@ export const EmailDetail = ({
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <Button onClick={handleCreateRule} className="flex-1">
                 Crea Regola
               </Button>

@@ -485,10 +485,10 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-2 px-4 border-b">
+      <div className="flex flex-col gap-2 p-2 px-2 sm:px-4 border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex flex-col items-start gap-1.5">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col items-start gap-1 sm:gap-1.5">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1.5">
                 <Switch
                   id="multi-select"
@@ -683,13 +683,13 @@ export const EmailList = ({
               )}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-6">
+          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             <div>
-              <h3 className="font-semibold mb-4 text-center">Azioni Rapide</h3>
-              <div className="grid grid-cols-3 gap-4 pb-4 border-b border-border/30">
+              <h3 className="font-semibold mb-3 sm:mb-4 text-center">Azioni Rapide</h3>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 pb-3 sm:pb-4 border-b border-border/30">
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'archive' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"

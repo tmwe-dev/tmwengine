@@ -188,7 +188,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+        <div className="flex-1 space-y-3 sm:space-y-4 overflow-y-auto pr-2">
           <div className="space-y-2">
             <Label htmlFor="to">To *</Label>
             <Input
@@ -257,7 +257,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
             </div>
             
             {attachments.length > 0 && (
-              <div className="space-y-2 rounded-md border p-3">
+              <div className="space-y-2 rounded-md border p-2 sm:p-3">
                 {attachments.map((attachment, index) => (
                   <div
                     key={index}
@@ -290,7 +290,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-3 sm:pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             <X className="mr-2 h-4 w-4" />
             Cancel

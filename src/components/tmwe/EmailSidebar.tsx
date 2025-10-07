@@ -316,7 +316,7 @@ export const EmailSidebar = ({
               Ingresa el nombre de la nueva carpeta de correo.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
             <div className="grid gap-2">
               <Label htmlFor="folder-name">Nombre de la carpeta</Label>
               <Input

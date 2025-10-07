@@ -278,7 +278,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           <DialogHeader>
             <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-2 sm:gap-3 py-3 sm:py-4">
             {/* DB Email Count */}
             {dbEmailCount !== undefined && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">

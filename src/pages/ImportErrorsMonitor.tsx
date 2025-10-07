@@ -110,6 +110,7 @@ export default function ImportErrorsMonitor() {
   const [importingRows, setImportingRows] = useState<Set<string>>(new Set());
   const [expandedFailedRows, setExpandedFailedRows] = useState<Set<string>>(new Set());
   const [selectedFailedRecords, setSelectedFailedRecords] = useState<Set<string>>(new Set());
+  const [processingAI, setProcessingAI] = useState<Set<string>>(new Set());
   const [freePrompt, setFreePrompt] = useState<string>(
     `Sei un assistente AI specializzato nella normalizzazione dei dati di importazione.
 
@@ -412,6 +413,42 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       setSelectedFailedRecords(new Set());
     } else {
       setSelectedFailedRecords(new Set(failedRecords.map(r => r.id)));
+    }
+  };
+
+  const processSingleRecordAI = async (errorId: string) => {
+    setProcessingAI(prev => new Set(prev).add(errorId));
+
+    try {
+      addLog(`🤖 Riprocessamento singolo record con AI libera...`);
+      
+      const { data, error } = await supabase.functions.invoke('process-single-error-ai', {
+        body: { 
+          error_id: errorId,
+          free_prompt: freePrompt
+        }
+      });
+
+      if (error) throw error;
+
+      addLog(`✅ Record riprocessato con successo!`);
+      addLog(`🎯 Token: ${data.tokens_used} | Costo: $${data.estimated_cost.toFixed(6)}`);
+      
+      toast.success(`Record riparato! Token: ${data.tokens_used}`);
+      
+      // Ricarica i dati
+      await loadErrors();
+
+    } catch (error) {
+      console.error('Error processing single record:', error);
+      addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      toast.error('Errore durante riprocessamento AI');
+    } finally {
+      setProcessingAI(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(errorId);
+        return newSet;
+      });
     }
   };
 
@@ -951,6 +988,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                         {failedRecords.map((error) => {
                           const isExpanded = expandedFailedRows.has(error.id);
                           const isSelected = selectedFailedRecords.has(error.id);
+                          const isProcessing = processingAI.has(error.id);
                           const renderValue = (value: any) => {
                             if (value === null || value === undefined || value === '') {
                               return <span className="text-red-400 italic">❌ Mancante</span>;
@@ -1023,8 +1061,17 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                                       variant="ghost"
                                       className="h-7 w-7 p-0"
                                       title="Riprocessa con AI libera"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        processSingleRecordAI(error.id);
+                                      }}
+                                      disabled={isProcessing}
                                     >
-                                      <Sparkles className="h-4 w-4 text-purple-500" />
+                                      {isProcessing ? (
+                                        <Activity className="h-4 w-4 animate-spin text-purple-500" />
+                                      ) : (
+                                        <Sparkles className="h-4 w-4 text-purple-500" />
+                                      )}
                                     </Button>
                                   </div>
                                 </div>

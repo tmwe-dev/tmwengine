@@ -95,23 +95,37 @@ export default function ImportErrorsMonitor() {
     if (!importLogId) return;
 
     try {
-      // Prima ottieni il CONTEGGIO reale con query aggregate (ignora il limite di 1000)
-      const { data: countData, error: countError } = await supabase
+      // Usa COUNT separato per ogni status per evitare il limite di 1000
+      const { count: totalCount } = await supabase
         .from('import_errors')
-        .select('status', { count: 'exact', head: false })
+        .select('*', { count: 'exact', head: true })
         .eq('import_log_id', importLogId);
 
-      if (countError) throw countError;
+      const { count: correctedCount } = await supabase
+        .from('import_errors')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLogId)
+        .eq('status', 'corrected');
 
-      // Calcola statistiche dal conteggio reale
-      const allErrors = countData || [];
-      const total = allErrors.length;
-      const corrected = allErrors.filter(e => e.status === 'corrected').length;
-      const failed = allErrors.filter(e => e.status === 'failed').length;
-      const pending = allErrors.filter(e => e.status === 'pending').length;
+      const { count: failedCount } = await supabase
+        .from('import_errors')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLogId)
+        .eq('status', 'failed');
+
+      const { count: pendingCount } = await supabase
+        .from('import_errors')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLogId)
+        .eq('status', 'pending');
+
+      const total = totalCount || 0;
+      const corrected = correctedCount || 0;
+      const failed = failedCount || 0;
+      const pending = pendingCount || 0;
       const processed = corrected + failed;
 
-      // Carica SOLO gli errori pending/processing per la UI (limitati a 100 per performance)
+      // Carica SOLO i primi 100 errori pending per la UI
       const { data: pendingErrors, error: errorsError } = await supabase
         .from('import_errors')
         .select('*')
@@ -123,12 +137,13 @@ export default function ImportErrorsMonitor() {
       if (errorsError) throw errorsError;
       setErrors(pendingErrors || []);
 
-      // Calcola token totali dai record che hanno ai_suggestions
+      // Calcola token totali SOLO dai record già processati (con ai_suggestions)
       const { data: processedData } = await supabase
         .from('import_errors')
         .select('ai_suggestions')
         .eq('import_log_id', importLogId)
-        .not('ai_suggestions', 'is', null);
+        .not('ai_suggestions', 'is', null)
+        .limit(10000);
 
       let totalTokens = 0;
       processedData?.forEach(e => {
@@ -141,6 +156,8 @@ export default function ImportErrorsMonitor() {
       });
       
       const totalCost = (totalTokens / 1000000) * 0.15;
+
+      console.log('📊 Stats caricate:', { total, corrected, failed, pending, totalTokens, totalCost });
 
       setStats({
         total,

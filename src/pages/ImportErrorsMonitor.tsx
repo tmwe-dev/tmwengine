@@ -524,8 +524,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
   const percentage = stats.total > 0 ? Math.round((stats.processed / stats.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-2 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 scale-95 origin-top">
         
         {/* Header */}
         <div className="flex items-center justify-between">

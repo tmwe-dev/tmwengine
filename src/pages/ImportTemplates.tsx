@@ -2910,7 +2910,7 @@ export default function ImportTemplates() {
                 </div>
               </div>
             ) : (
-              /* Desktop Header - Original */
+              /* Desktop Header - Con popup filtri */
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between relative">
                   <div className="flex-1">
@@ -2936,270 +2936,329 @@ export default function ImportTemplates() {
                             className="h-auto px-2 py-1 flex flex-col items-center gap-1"
                             disabled={loadingAllRecords}
                           >
-                            <RefreshCw className={cn("h-4 w-4", loadingAllRecords && "animate-spin")} />
-                            <span className="text-[10px]">Ricarica i dati</span>
+                            <RefreshCw className={`h-4 w-4 text-blue-500 ${loadingAllRecords ? 'animate-spin' : ''}`} />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Ricarica i dati</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    
-                    {/* Toggle Full screen */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setShowFiltersArea(!showFiltersArea)}
-                            className="h-8 px-2 gap-1"
-                          >
-                            <Monitor className="h-4 w-4" />
-                            {showFiltersArea ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            <span className="text-xs">{showFiltersArea ? 'Full screen' : 'Show filters'}</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{showFiltersArea ? 'Nascondi filtri' : 'Mostra filtri'}</p>
+                          <p>Ricarica dati</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
                 </div>
                 
-                {/* Desktop Search and Filter Controls */}
-                {showFiltersArea && (
-                  <div className="flex flex-col gap-3">
-                    {/* Prima riga - Dropdowns centrati con azioni a destra */}
-                    <div className="flex items-end justify-center relative">
-                      {/* Dropdowns centrati */}
-                      <div className="flex gap-2 items-end">
-                        <div className="w-48">
-                          <Label htmlFor="origin-filter" className="text-sm font-medium">Origine</Label>
-                          <Select value={originFilter} onValueChange={setOriginFilter}>
-                            <SelectTrigger id="origin-filter">
-                              <SelectValue placeholder="Tutte le origini" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Tutte le origini ({allRecords.length})</SelectItem>
-                              {getUniqueValuesWithCount('origin').map(({ value, count }) => (
-                                <SelectItem key={value} value={value}>
-                                  {value} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="w-48">
-                          <Label htmlFor="country-filter" className="text-sm font-medium">Paese</Label>
-                          <Select value={countryFilter} onValueChange={setCountryFilter}>
-                            <SelectTrigger id="country-filter">
-                              <SelectValue placeholder="Tutti i paesi" />
-                            </SelectTrigger>
-                            <SelectContent className="z-50">
-                              <SelectItem value="__all__">Tutti i paesi</SelectItem>
-                              {getUniqueValues('country').map((country) => (
-                                <SelectItem key={country} value={String(country)}>
-                                  {getCountryFullName(String(country))}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="w-40">
-                          <Label htmlFor="sort-primary" className="text-sm font-medium">Ordina per</Label>
-                          <Select 
-                            value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
-                            onValueChange={(value) => {
-                              if (value === "NONE") {
-                                setSortConfig({ primary: null, secondary: null });
-                                return;
-                              }
-                              const [column, direction] = value.split('-');
-                              setSortConfig(prev => ({ 
-                                ...prev, 
-                                primary: { column, direction: direction as 'asc' | 'desc' } 
-                              }));
-                            }}
-                          >
-                            <SelectTrigger id="sort-primary">
-                              <SelectValue placeholder="Nessun ordinamento" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="NONE">Nessun ordinamento</SelectItem>
-                              <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
-                              <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
-                              <SelectItem value="nazione-asc">Paese ↑</SelectItem>
-                              <SelectItem value="nazione-desc">Paese ↓</SelectItem>
-                              <SelectItem value="attivita-asc">Attività ↑</SelectItem>
-                              <SelectItem value="attivita-desc">Attività ↓</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        {sortConfig.primary && (
-                          <div className="w-40">
-                            <Label htmlFor="sort-secondary" className="text-sm font-medium">Poi per</Label>
-                            <Select 
-                              value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
-                              onValueChange={(value) => {
-                                if (value === "NONE") {
-                                  setSortConfig(prev => ({ ...prev, secondary: null }));
-                                  return;
-                                }
-                                const [column, direction] = value.split('-');
-                                setSortConfig(prev => ({ 
-                                  ...prev, 
-                                  secondary: { column, direction: direction as 'asc' | 'desc' } 
-                                }));
-                              }}
-                            >
-                              <SelectTrigger id="sort-secondary">
-                                <SelectValue placeholder="Nessuno" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="NONE">Nessuno</SelectItem>
-                                <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
-                                <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
-                                <SelectItem value="nazione-asc">Paese ↑</SelectItem>
-                                <SelectItem value="nazione-desc">Paese ↓</SelectItem>
-                                <SelectItem value="attivita-asc">Attività ↑</SelectItem>
-                                <SelectItem value="attivita-desc">Attività ↓</SelectItem>
-                              </SelectContent>
-                            </Select>
+                {/* Search and Filter buttons */}
+                <div className="flex items-center justify-center gap-2 relative">
+                  {/* Campo di ricerca centrato */}
+                  <div className="relative w-96">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca per nome azienda, alias, nome, città..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  {/* Filter Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 p-2"
+                        >
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-sky-500 animate-pulse' : ''}`} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Filtri e Opzioni</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                          {/* Filters */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Origine</Label>
+                              <Select value={originFilter} onValueChange={setOriginFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le origini" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('origin').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {value} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Nazione</Label>
+                              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutte le nazioni" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
+                                  {getUniqueValuesWithCount('country').map(({ value, count }) => (
+                                    <SelectItem key={value} value={value}>
+                                      {getCountryFullName(value)} ({count})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Ordina per</Label>
+                              <Select 
+                                value={sortConfig.primary ? `${sortConfig.primary.column}-${sortConfig.primary.direction}` : "NONE"} 
+                                onValueChange={(value) => {
+                                  if (value === "NONE") {
+                                    setSortConfig({ primary: null, secondary: null });
+                                    return;
+                                  }
+                                  const [column, direction] = value.split('-');
+                                  setSortConfig(prev => ({ 
+                                    ...prev, 
+                                    primary: { column, direction: direction as 'asc' | 'desc' } 
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Nessun ordinamento" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NONE">Nessun ordinamento</SelectItem>
+                                  <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                  <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                  <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                  <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                  <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                  <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {sortConfig.primary && (
+                              <div className="space-y-2">
+                                <Label>Poi per</Label>
+                                <Select 
+                                  value={sortConfig.secondary ? `${sortConfig.secondary.column}-${sortConfig.secondary.direction}` : "NONE"} 
+                                  onValueChange={(value) => {
+                                    if (value === "NONE") {
+                                      setSortConfig(prev => ({ ...prev, secondary: null }));
+                                      return;
+                                    }
+                                    const [column, direction] = value.split('-');
+                                    setSortConfig(prev => ({ 
+                                      ...prev, 
+                                      secondary: { column, direction: direction as 'asc' | 'desc' } 
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Nessuno" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="NONE">Nessuno</SelectItem>
+                                    <SelectItem value="company_name-asc">Azienda ↑</SelectItem>
+                                    <SelectItem value="company_name-desc">Azienda ↓</SelectItem>
+                                    <SelectItem value="nazione-asc">Paese ↑</SelectItem>
+                                    <SelectItem value="nazione-desc">Paese ↓</SelectItem>
+                                    <SelectItem value="attivita-asc">Attività ↑</SelectItem>
+                                    <SelectItem value="attivita-desc">Attività ↓</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label>Record per pagina</Label>
+                              <Select value={String(recordsPerPage)} onValueChange={(value) => setRecordsPerPage(Number(value))}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={`${recordsPerPage}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="25">25</SelectItem>
+                                  <SelectItem value="50">50</SelectItem>
+                                  <SelectItem value="100">100</SelectItem>
+                                  <SelectItem value="250">250</SelectItem>
+                                  <SelectItem value="500">500</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Filtra per attività</Label>
+                              <Select 
+                                value={(() => {
+                                  const hasActivityFilter = activeFilters.find(f => f.field === 'has_activities');
+                                  if (hasActivityFilter) {
+                                    return hasActivityFilter.value ? 'with_activities' : 'without_activities';
+                                  }
+                                  return 'all';
+                                })()} 
+                                onValueChange={(value) => {
+                                  setActiveFilters(prev => prev.filter(f => f.field !== 'has_activities'));
+                                  if (value === 'with_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: true,
+                                      displayValue: 'Con attività'
+                                    }]);
+                                  } else if (value === 'without_activities') {
+                                    setActiveFilters(prev => [...prev, {
+                                      field: 'has_activities',
+                                      value: false,
+                                      displayValue: 'Senza attività'
+                                    }]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Tutti" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Tutti</SelectItem>
+                                  <SelectItem value="with_activities">Con attività</SelectItem>
+                                  <SelectItem value="without_activities">Senza attività</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                        )}
-                        
-                        <div className="w-32">
-                          <Label htmlFor="records-per-page" className="text-sm font-medium">Per pagina</Label>
-                          <Select value={String(recordsPerPage)} onValueChange={(value) => {
-                            setRecordsPerPage(Number(value));
-                          }}>
-                            <SelectTrigger id="records-per-page">
-                              <SelectValue placeholder={`${recordsPerPage}`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="25">25</SelectItem>
-                              <SelectItem value="50">50</SelectItem>
-                              <SelectItem value="100">100</SelectItem>
-                              <SelectItem value="250">250</SelectItem>
-                              <SelectItem value="500">500</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      {/* Azioni a destra - compatte */}
-                      <div className="absolute right-0 flex items-center gap-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
+
+                          <Separator />
+
+                          {/* Toggle Options */}
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="hide-today-activities-desktop"
+                                checked={hideContactsWithTodayActivities}
+                                onCheckedChange={setHideContactsWithTodayActivities}
+                              />
+                              <Label htmlFor="hide-today-activities-desktop" className="cursor-pointer">
+                                Nascondi attività oggi
+                              </Label>
+                              {hideContactsWithTodayActivities && (() => {
+                                const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
+                                return hiddenCount > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {hiddenCount} nascosti
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="has-notes-filter-desktop-popup"
+                                checked={hasNotesFilter}
+                                onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="has-notes-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <StickyNote className="h-4 w-4 text-blue-500" />
+                                Solo con note
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="my-contacts-activities-filter-desktop-popup"
+                                checked={myContactsWithActivitiesFilter}
+                                onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
+                              />
+                              <Label htmlFor="my-contacts-activities-filter-desktop-popup" className="flex items-center gap-2 cursor-pointer">
+                                <User className="h-4 w-4 text-primary" />
+                                Solo con mie attività
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id="filter-only-with-alias-desktop"
+                                checked={filterOnlyWithAlias}
+                                onCheckedChange={setFilterOnlyWithAlias}
+                              />
+                              <Label htmlFor="filter-only-with-alias-desktop" className="cursor-pointer">
+                                Solo con alias azienda
+                              </Label>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Column Visibility */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium">Visibilità Colonne</Label>
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant={visibleColumns.details ? "default" : "outline"}
                                 onClick={() => setVisibleColumns(prev => ({ ...prev, details: !prev.details }))}
-                                className="h-8 w-8 p-0"
+                                className="flex items-center gap-2"
                               >
                                 <Briefcase className="h-4 w-4" />
+                                Dettagli Commerciali
                               </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Dettagli Commerciali</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
+                              
                               <Button
                                 size="sm"
                                 variant={visibleColumns.metadata ? "default" : "outline"}
                                 onClick={() => setVisibleColumns(prev => ({ ...prev, metadata: !prev.metadata }))}
-                                className="h-8 w-8 p-0"
+                                className="flex items-center gap-2"
                               >
                                 <Settings className="h-4 w-4" />
+                                Metadata & Sistema
                               </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Metadata & Sistema</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
+                            </div>
+                          </div>
+                          
+                          {/* Confirm Button */}
+                          <div className="pt-4 border-t">
+                            <Button 
+                              className="w-full" 
+                              onClick={() => setShowFilters(false)}
+                            >
+                              Applica Filtri
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     
-                    {/* Seconda riga - Pulisci filtri a sinistra e Campo di ricerca centrato */}
-                    <div className="flex justify-center items-center relative">
-                      {/* Pulsante Pulisci filtri e contatore a sinistra */}
-                      {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
-                        <div className="absolute left-0 flex items-center gap-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSearchQuery('');
-                            setOriginFilter('');
-                            setCountryFilter('');
-                            setHasNotesFilter(false);
-                            setMyContactsWithActivitiesFilter(false);
-                          }}
-                            className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Pulisci filtri
-                          </Button>
-                          <span className="text-base font-bold text-orange-600">
-                            {filteredRecords.length} trovati
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Campo di ricerca centrato */}
-                      <div className="w-[250px]">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="search"
-                            placeholder="Cerca per nome azienda, alias, nome, città..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    {/* Clear Filters Button */}
+                    {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 p-2"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setOriginFilter('');
+                          setCountryFilter('');
+                          setHasNotesFilter(false);
+                          setMyContactsWithActivitiesFilter(false);
+                          setFilterOnlyWithAlias(true);
+                        }}
+                      >
+                        <FilterX className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
                   </div>
-                )}
-                
-                {/* Pulsante Pulisci filtri quando i filtri sono nascosti ma attivi */}
-                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) && (
-                  <div className="flex justify-start items-center gap-3 mt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setOriginFilter('');
-                        setCountryFilter('');
-                        setHasNotesFilter(false);
-                        setMyContactsWithActivitiesFilter(false);
-                        setFilterOnlyWithAlias(true);
-                      }}
-                      className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Pulisci filtri
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
+                  
+                  {/* Filtered count badge */}
+                  {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                    <Badge variant="secondary" className="absolute right-0">
                       {filteredRecords.length} trovati
-                    </span>
-                  </div>
-                )}
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
           </DialogHeader>

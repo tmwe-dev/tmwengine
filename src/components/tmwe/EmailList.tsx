@@ -198,16 +198,16 @@ export const EmailList = ({
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full min-w-0',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors duration-150 w-full min-w-0',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.3)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.005] sm:hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.35)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.005] sm:hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.4)] sm:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.005] sm:scale-[1.01] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.45)] sm:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.005] sm:scale-[1.01] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 !border-red-500'
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
@@ -338,16 +338,16 @@ export const EmailList = ({
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full min-w-0 h-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors duration-150 w-full min-w-0 h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.3)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] sm:hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.35)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] sm:hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.4)] sm:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] sm:scale-[1.02] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.45)] sm:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] sm:scale-[1.02] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 !border-red-500'
             ),
             selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
@@ -515,8 +515,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Trash2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Elimina</span>
+                        <Trash2 className="h-3 w-3" />
+                        <span className="text-xs">Elimina</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -524,8 +524,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Archive className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Archivia</span>
+                        <Archive className="h-3 w-3" />
+                        <span className="text-xs">Archivia</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -533,8 +533,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <Forward className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Inoltra</span>
+                        <Forward className="h-3 w-3" />
+                        <span className="text-xs">Inoltra</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -542,8 +542,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Letta</span>
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span className="text-xs">Letta</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
@@ -551,8 +551,8 @@ export const EmailList = ({
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
                       <div className="flex items-center gap-1.5">
-                        <FolderInput className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Sposta</span>
+                        <FolderInput className="h-3 w-3" />
+                        <span className="text-xs">Sposta</span>
                       </div>
                     </SelectItem>
                   </SelectContent>

@@ -247,20 +247,24 @@ const EmailDashboard = () => {
           </SheetContent>
         </Sheet>
 
-        <div className="flex-1 border-r">
-          <div className="h-12" /> {/* Spacer per il pulsante menu */}
-          <EmailList
-            emails={emails}
-            selectedEmailId={selectedEmailId}
-            onEmailSelect={setSelectedEmailId}
-            loading={messagesLoading}
-            onLoadMore={fetchNextPage}
-            hasMore={hasNextPage}
-            isLoadingMore={isFetchingNextPage}
-          />
+        {/* Lista Email - width fisso su desktop */}
+        <div className="w-full lg:w-96 xl:w-[28rem] border-r shrink-0 flex flex-col">
+          <div className="h-12 shrink-0" /> {/* Spacer per il pulsante menu */}
+          <div className="flex-1 overflow-hidden">
+            <EmailList
+              emails={emails}
+              selectedEmailId={selectedEmailId}
+              onEmailSelect={setSelectedEmailId}
+              loading={messagesLoading}
+              onLoadMore={fetchNextPage}
+              hasMore={hasNextPage}
+              isLoadingMore={isFetchingNextPage}
+            />
+          </div>
         </div>
 
-        <div className="flex-1">
+        {/* Dettaglio Email - prende resto spazio */}
+        <div className="flex-1 overflow-hidden">
           {isLoadingDetail ? (
             <div className="flex h-full items-center justify-center">
               <div className="flex flex-col items-center gap-1.5 sm:gap-2">

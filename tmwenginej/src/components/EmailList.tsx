@@ -114,49 +114,49 @@ export const EmailList = ({
   }
 
   return (
-    <ScrollArea className="h-full" ref={scrollRef}>
-      <div className="space-y-1 p-1 md:p-2">
+    <ScrollArea className="h-full w-full" ref={scrollRef}>
+      <div className="p-2 sm:p-3 md:p-4 max-w-full space-y-2">
         {emails.map((email, index) => (
           <Card
             key={email.id}
             ref={index === emails.length - 1 ? lastEmailRef : null}
             className={cn(
-              'cursor-pointer border-l-4 p-2 transition-all hover:bg-email-hover group min-w-0',
+              'w-full cursor-pointer border-l-4 p-3 sm:p-4 transition-all hover:bg-email-hover group',
               email.read ? 'border-l-transparent' : 'border-l-email-unread',
               selectedEmailId === email.id && 'bg-email-selected shadow-md'
             )}
             onClick={() => onEmailSelect(email.id)}
           >
-            <div className="flex items-start gap-2 min-w-0">
-              <div className="flex-1 min-w-0 space-y-0.5">
-                <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-start gap-3 w-full">
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center gap-2 w-full">
                   <p className={cn(
-                    'truncate text-xs md:text-sm min-w-0 flex-1',
+                    'truncate text-sm max-w-full',
                     !email.read && 'font-semibold text-email-unread'
                   )}>
                     {email.from}
                   </p>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-3.5 sm:h-4 px-1 sm:px-1.5 text-[9px] sm:text-[10px] shrink-0">
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px] shrink-0">
                       New
                     </Badge>
                   )}
                 </div>
                 <h3 className={cn(
-                  'truncate text-xs md:text-sm min-w-0',
+                  'truncate text-sm max-w-full',
                   !email.read && 'font-semibold'
                 )}>
                   {email.subject || '(No Subject)'}
                 </h3>
-                <p className="hidden md:line-clamp-2 text-xs text-muted-foreground">
+                <p className="hidden sm:line-clamp-2 text-xs text-muted-foreground break-words">
                   {email.preview}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0 ml-auto">
-                <span className="whitespace-nowrap text-[10px] md:text-xs text-muted-foreground">
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                 </span>
-                <div className="flex items-center gap-0.5 sm:gap-1">
+                <div className="flex items-center gap-1">
                   {email.starred && (
                     <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 fill-yellow-400 text-yellow-400 shrink-0" />
                   )}

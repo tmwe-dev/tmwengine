@@ -247,18 +247,30 @@ Campi disponibili: name, company_name, alias, company_alias, position, title, ph
         // Estrai JSON dalla risposta
         let correctedData;
         try {
+          console.log(`🤖 AI Response for row ${error.row_number}:`, aiContent);
+          
           const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
           if (!jsonMatch) {
+            console.error(`❌ No JSON found in AI response for row ${error.row_number}`);
             throw new Error('No JSON found in AI response');
           }
+          
           correctedData = JSON.parse(jsonMatch[0]);
+          console.log(`✅ Parsed correctedData for row ${error.row_number}:`, JSON.stringify(correctedData));
+          
+          // Verifica che non sia vuoto
+          if (!correctedData || Object.keys(correctedData).length === 0) {
+            console.error(`⚠️ Empty correctedData for row ${error.row_number}`);
+            throw new Error('AI returned empty data');
+          }
+          
         } catch (parseError) {
-          console.error('Failed to parse AI response:', aiContent);
+          console.error(`❌ Failed to parse AI response for row ${error.row_number}:`, aiContent);
           throw new Error('Invalid JSON from AI');
         }
 
         // Salva dati corretti
-        await supabaseClient
+        const { error: updateError } = await supabaseClient
           .from('import_errors')
           .update({
             status: 'corrected',
@@ -270,6 +282,13 @@ Campi disponibili: name, company_name, alias, company_alias, position, title, ph
             }
           })
           .eq('id', error.id);
+          
+        if (updateError) {
+          console.error(`❌ Failed to update row ${error.row_number}:`, updateError);
+          throw updateError;
+        }
+        
+        console.log(`✅ Successfully saved corrected data for row ${error.row_number}`);
 
         corrected++;
         processed++;

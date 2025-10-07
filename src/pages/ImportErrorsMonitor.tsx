@@ -443,13 +443,25 @@ export default function ImportErrorsMonitor() {
                     )}
                   </>
                 ) : awaitingConfirmation ? (
-                  <Button
-                    onClick={continueProcessing}
-                    className="gap-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Play className="h-4 w-4" />
-                    Continua Prossimo Batch
-                  </Button>
+                  <>
+                    <Button
+                      onClick={continueProcessing}
+                      className="gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Play className="h-4 w-4" />
+                      Continua Prossimo Batch
+                    </Button>
+                    {stats.corrected > 0 && (
+                      <Button
+                        onClick={confirmAndImport}
+                        variant="default"
+                        className="gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Conferma e Importa ({stats.corrected})
+                      </Button>
+                    )}
+                  </>
                 ) : (
                   <Button
                     disabled

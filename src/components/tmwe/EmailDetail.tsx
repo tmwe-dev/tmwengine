@@ -271,7 +271,7 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-card-transparent w-full max-w-full overflow-hidden">
+    <div className="flex h-full flex-col bg-card-transparent w-full max-w-full overflow-x-hidden">
       {/* Color picker bar */}
       <div className="flex-shrink-0 flex items-center justify-center p-2 border-b bg-card-transparent">
       <div className="relative">
@@ -445,9 +445,9 @@ export const EmailDetail = ({
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (
-        <div className="flex items-center justify-center border-b p-2 sm:p-3 md:p-4 lg:p-6 gap-1.5 sm:gap-2 md:gap-3 bg-card-transparent">
+        <div className="flex items-center justify-center border-b p-2 sm:p-4 md:p-6 lg:p-8 gap-1.5 sm:gap-2 md:gap-4 bg-card-transparent w-full max-w-full overflow-x-auto">
           {/* Communication actions */}
-          <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center">
+          <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
             <Button variant="outline" size="icon" onClick={onReply} className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10">
               <div className="flex items-center gap-0.5">
                 <Reply className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
@@ -470,8 +470,8 @@ export const EmailDetail = ({
         </div>
       )}
 
-      <ScrollArea className="flex-1 overflow-hidden">
-        <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 w-full overflow-hidden">
+      <ScrollArea className="flex-1 w-full overflow-hidden">
+        <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 w-full max-w-full overflow-x-hidden">
           {/* Subject */}
           <div className="space-y-1 sm:space-y-2">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground break-words">
@@ -480,7 +480,7 @@ export const EmailDetail = ({
           </div>
 
           {/* Body in sandboxed iframe */}
-          <div className="w-full">
+          <div className="w-full overflow-hidden">
             <iframe
               ref={iframeRef}
               srcDoc={`

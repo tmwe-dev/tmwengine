@@ -111,7 +111,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   </Button>
                 )}
                 
-                <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
+                <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
                   {isMobile ? 'Email' : 'TMWE Email'}
                 </h1>
               </div>
@@ -281,7 +281,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
           <div className="flex flex-col gap-2 sm:gap-3 py-3 sm:py-4">
             {/* DB Email Count */}
             {dbEmailCount !== undefined && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
+              <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md bg-muted/50">
                 <Database className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1">
                   <div className="text-sm font-medium">Email nel Database</div>

@@ -561,7 +561,7 @@ const EmailDashboard = () => {
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+            <SheetContent side="left" className="w-[85vw] sm:w-[75vw] md:w-[320px] max-w-sm p-0">
             <EmailSidebar 
               selectedFolder={selectedFolder}
               onFolderSelect={(folder) => {

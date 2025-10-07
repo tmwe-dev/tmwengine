@@ -183,9 +183,9 @@ export const EmailList = ({
   if (!emails || emails.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-        <Mail className="mb-4 h-16 w-16 opacity-20" />
-        <p className="text-lg font-medium">No emails found</p>
-        <p className="text-sm">Try syncing your mailbox</p>
+        <Mail className="mb-3 sm:mb-4 h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 opacity-20" />
+        <p className="text-base sm:text-lg font-medium">No emails found</p>
+        <p className="text-xs sm:text-sm">Try syncing your mailbox</p>
       </div>
     );
   }
@@ -696,33 +696,33 @@ export const EmailList = ({
                   )}
                   onClick={() => setSelectedAction('archive')}
                 >
-                  <Archive className="h-8 w-8 mb-2" />
+                  <Archive className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
                   <span className="text-sm font-medium">Archivia</span>
                 </button>
 
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'move' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => setSelectedAction('move')}
                 >
-                  <FolderInput className="h-8 w-8 mb-2" />
+                  <FolderInput className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
                   <span className="text-sm font-medium">Sposta</span>
                 </button>
 
                 <button
                   className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all hover:scale-105",
+                    "flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 rounded-lg border-2 transition-all hover:scale-105",
                     selectedAction === 'delete' 
                       ? "border-primary bg-primary/10" 
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => setSelectedAction('delete')}
                 >
-                  <Trash2 className="h-8 w-8 mb-2" />
+                  <Trash2 className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mb-1 sm:mb-2" />
                   <span className="text-sm font-medium">Elimina</span>
                 </button>
               </div>

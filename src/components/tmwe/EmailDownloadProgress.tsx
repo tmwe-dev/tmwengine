@@ -97,7 +97,7 @@ export const EmailDownloadProgress = ({
           )}
 
           {isComplete && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
+            <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-sm font-medium">
                 Download completato!
@@ -106,7 +106,7 @@ export const EmailDownloadProgress = ({
           )}
 
           {downloadError && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+            <div className="flex items-start gap-2 p-2 sm:p-3 rounded-lg bg-destructive/10 text-destructive">
               <XCircle className="h-5 w-5 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Errore durante il download</p>

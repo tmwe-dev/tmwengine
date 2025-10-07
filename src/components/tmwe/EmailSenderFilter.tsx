@@ -126,7 +126,7 @@ export const EmailSenderFilter = ({
 
           {/* Active Filter */}
           {selectedSender && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
+            <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-muted">
               <span className="text-sm flex-1">
                 Filtro attivo: <strong>{selectedSender}</strong>
               </span>
@@ -146,7 +146,7 @@ export const EmailSenderFilter = ({
             <div className="space-y-1">
               {filteredSenders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <Users className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 opacity-20" />
                   <p>Nessun mittente trovato</p>
                 </div>
               ) : (
@@ -154,7 +154,7 @@ export const EmailSenderFilter = ({
                   <Collapsible key={group.sender} defaultOpen={false}>
                     <div
                       className={cn(
-                        'flex items-center justify-between p-3 rounded-lg transition-colors cursor-pointer hover:bg-muted/50',
+                        'flex items-center justify-between p-2 sm:p-3 rounded-lg transition-colors cursor-pointer hover:bg-muted/50',
                         selectedSender === group.sender && 'bg-muted'
                       )}
                       onClick={() => handleSenderClick(group.sender)}

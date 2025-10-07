@@ -423,14 +423,22 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
   };
 
   const confirmAndImport = async () => {
-    if (!importLogId) return;
+    console.log('🟢 confirmAndImport chiamata, importLogId:', importLogId);
+    if (!importLogId) {
+      console.error('❌ Nessun importLogId disponibile');
+      toast.error('ID importazione non disponibile');
+      return;
+    }
 
     try {
       addLog('📥 Conferma importazione record corretti...');
+      console.log('🔄 Chiamata a confirm-corrected-errors con:', { import_log_id: importLogId });
       
       const { data, error } = await supabase.functions.invoke('confirm-corrected-errors', {
         body: { import_log_id: importLogId }
       });
+
+      console.log('📦 Risposta ricevuta:', { data, error });
 
       if (error) throw error;
 
@@ -442,7 +450,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       loadErrors();
 
     } catch (error) {
-      console.error('Error confirming import:', error);
+      console.error('❌ Error confirming import:', error);
       addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
       toast.error('Errore durante importazione');
     }

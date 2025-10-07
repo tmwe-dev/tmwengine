@@ -92,12 +92,15 @@ export const EmailDetail = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [emailTextColor, setEmailTextColor] = useState(() => {
     const saved = localStorage.getItem('emailTextColor');
+    console.log('📧 Color from localStorage:', saved);
     // Se è il vecchio arancione, sostituiscilo con il nuovo lilla
     if (saved === '#fdba74' || !saved) {
       const newColor = '#c084fc';
+      console.log('🎨 Setting new color:', newColor);
       localStorage.setItem('emailTextColor', newColor);
       return newColor;
     }
+    console.log('✅ Using saved color:', saved);
     return saved;
   });
   

@@ -162,7 +162,16 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         title: data.emails_downloaded > 0 ? "Nuove email scaricate!" : "Nessuna nuova email",
         description: data.emails_downloaded > 0 
           ? `${data.emails_downloaded} nuove email importate` 
-          : `Nessuna nuova email trovata. Database: ${data.total_emails_in_db} email`
+          : `Nessuna nuova email trovata. Database: ${data.total_emails_in_db} email`,
+        action: data.emails_downloaded > 0 ? (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.href = '/gestisci-import'}
+          >
+            Vai a Gestisci Import
+          </Button>
+        ) : undefined
       });
 
     } catch (error) {

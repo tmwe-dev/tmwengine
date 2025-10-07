@@ -236,6 +236,7 @@ interface FilterTag {
 }
 
 export default function ImportTemplates() {
+  const navigate = useNavigate();
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
@@ -336,7 +337,6 @@ export default function ImportTemplates() {
   const [isLoadingDialog, setIsLoadingDialog] = useState(false);
   const { getCompanyActivities, hasActivities, refreshActivities, getActivityCount } = useCompanyActivities();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
   const location = useLocation();
   
   // Stati per il dialog delle attività
@@ -981,8 +981,13 @@ export default function ImportTemplates() {
 
         if (processResult?.success) {
           if (useAIImport) {
-            // AI import: data is now in temp table, show success message
-            toast.success(`File caricato: ${totalRows} righe salvate in tabella temporanea. Verifica i dati e avvia l'elaborazione AI.`);
+            // AI import: data is now in temp table, show success message with button
+            toast.success(`File caricato: ${totalRows} righe salvate in tabella temporanea. Verifica i dati e avvia l'elaborazione AI.`, {
+              action: {
+                label: 'Vai a Gestisci Import',
+                onClick: () => navigate('/gestisci-import')
+              }
+            });
           } else {
             // Standard import: data is in imported_contacts
             const { importedRows, errorRows } = processResult.data;
@@ -996,9 +1001,19 @@ export default function ImportTemplates() {
             });
             
             if (errorRows > 0) {
-              toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`);
+              toast.success(`Elaborazione completata con alcuni errori: ${importedRows}/${totalRows} righe elaborate.`, {
+                action: {
+                  label: 'Vai a Gestisci Import',
+                  onClick: () => navigate('/gestisci-import')
+                }
+              });
             } else {
-              toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`);
+              toast.success(`Elaborazione completata: ${importedRows} righe elaborate.`, {
+                action: {
+                  label: 'Vai a Gestisci Import',
+                  onClick: () => navigate('/gestisci-import')
+                }
+              });
             }
           }
         }

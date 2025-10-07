@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CallDialog } from '@/components/attivita/CallDialog';
-import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Edit3, History, Save, X, Phone, ChevronRight, Mail, Maximize2, Wand2, FileText, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +14,9 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Activity {
   id: string;
@@ -54,6 +56,19 @@ export function GestisciAttivitaDialog({
   const [showUpdateCompanyDialog, setShowUpdateCompanyDialog] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<Partial<Activity> | null>(null);
   const [showCallDialog, setShowCallDialog] = useState(false);
+  const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
+  const [emailAttachments, setEmailAttachments] = useState<any[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [fullscreenEmailEditor, setFullscreenEmailEditor] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadEmailTemplates();
+    loadEmailAttachments();
+  }, []);
 
   React.useEffect(() => {
     if (activity) {
@@ -74,6 +89,85 @@ export function GestisciAttivitaDialog({
       }
     }
   }, [activity]);
+
+  const loadEmailTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('attivo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setEmailTemplates(data || []);
+    } catch (error) {
+      console.error('Errore caricamento template:', error);
+    }
+  };
+
+  const loadEmailAttachments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_attachments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEmailAttachments(data || []);
+    } catch (error) {
+      console.error('Errore caricamento allegati:', error);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const files = Array.from(e.dataTransfer.files);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setEmailSubject(template.oggetto);
+      setEmailBody(template.contenuto);
+    }
+  };
 
   const handleSave = () => {
     let scadenza = formData.scadenza;
@@ -136,8 +230,51 @@ export function GestisciAttivitaDialog({
   if (!activity) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-3 sm:p-4">
+    <>
+      {/* Editor email a schermo intero */}
+      {fullscreenEmailEditor && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setFullscreenEmailEditor(false)}
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Chiudi Editor
+            </Button>
+          </div>
+          
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Oggetto Email</label>
+                <Input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="Inserisci l'oggetto dell'email..."
+                  className="text-base"
+                />
+              </div>
+              
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Testo Email</label>
+                <Textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder="Scrivi il contenuto dell'email..."
+                  className="min-h-[50vh] text-base resize-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-3 sm:p-4">
         <DialogHeader className="flex-shrink-0 space-y-2 pb-2">
           {/* Breadcrumb compatto */}
           <Breadcrumb>
@@ -177,8 +314,9 @@ export function GestisciAttivitaDialog({
 
         <div className="flex-1 overflow-y-auto py-2">
           <Tabs defaultValue="dettagli" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="dettagli">Dettagli</TabsTrigger>
+              <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="altro">Altro</TabsTrigger>
             </TabsList>
             
@@ -266,6 +404,202 @@ export function GestisciAttivitaDialog({
                   onChange={(e) => setFormData(prev => ({ ...prev, descrizione: e.target.value }))}
                   className="h-[200px] text-sm resize-none"
                 />
+              </div>
+            </TabsContent>
+
+            {/* Tab Email */}
+            <TabsContent value="email" className="space-y-4 mt-4">
+              <div className="space-y-2 p-2 border border-border rounded-lg bg-background">
+                {/* Pulsanti azione email */}
+                <div className="flex justify-end gap-2 mb-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-2"
+                    onClick={() => setFullscreenEmailEditor(true)}
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                    <span className="text-xs">Scrivi Email</span>
+                  </Button>
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-2"
+                      >
+                        <Wand2 className="h-4 w-4" />
+                        <span className="text-xs">Template & Allegati</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Template Email e Allegati</DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        {/* Selezione Template */}
+                        {emailTemplates.length > 0 && (
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Template Email (opzionale)</Label>
+                            <Select onValueChange={handleTemplateSelect}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleziona un template..." />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60">
+                                {emailTemplates.map((template) => (
+                                  <SelectItem key={template.id} value={template.id}>
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4" />
+                                      <span>{template.nome}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Gestione Allegati Email */}
+                        <div className="space-y-3 border border-border rounded-lg p-4">
+                          <h5 className="font-medium text-sm">Allegati Email</h5>
+                          
+                          {/* Allegati esistenti dalla memoria */}
+                          {emailAttachments.length > 0 && (
+                            <div>
+                              <Label className="text-sm font-medium mb-2 block">Seleziona dalla memoria</Label>
+                              <div className="max-h-40 overflow-y-auto space-y-2">
+                                {emailAttachments.map((attachment) => (
+                                  <div key={attachment.id} className="flex items-center space-x-3">
+                                    <Checkbox
+                                      checked={selectedAttachments.includes(attachment.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedAttachments(prev => [...prev, attachment.id]);
+                                        } else {
+                                          setSelectedAttachments(prev => prev.filter(id => id !== attachment.id));
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <Label className="text-sm font-normal cursor-pointer truncate block">
+                                        {attachment.nome}
+                                      </Label>
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatFileSize(attachment.file_size)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Upload nuovi allegati */}
+                          <div>
+                            <Label className="text-sm font-medium mb-2 block">Carica nuovi allegati</Label>
+                            <div
+                              className={cn(
+                                "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                                dragActive 
+                                  ? "border-primary bg-primary/10" 
+                                  : "border-border hover:border-primary/50"
+                              )}
+                              onDragEnter={handleDragEnter}
+                              onDragLeave={handleDragLeave}
+                              onDragOver={handleDragOver}
+                              onDrop={handleDrop}
+                            >
+                              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Trascina file o clicca per selezionare
+                              </p>
+                              <input
+                                type="file"
+                                multiple
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                id="file-upload"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById('file-upload')?.click()}
+                              >
+                                Seleziona File
+                              </Button>
+                            </div>
+
+                            {/* Lista file selezionati */}
+                            {selectedFiles.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                <Label className="text-sm font-medium">File selezionati:</Label>
+                                {selectedFiles.map((file, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-background border border-border rounded-lg">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                      <span className="truncate text-sm">{file.name}</span>
+                                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                                        ({formatFileSize(file.size)})
+                                      </span>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeFile(index)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Oggetto Email */}
+                <div>
+                  <Label htmlFor="email-subject" className="text-xs">Oggetto Email</Label>
+                  <Input
+                    id="email-subject"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder="es. Proposta commerciale - Seguimento"
+                    className="h-9 text-sm mt-1"
+                  />
+                </div>
+
+                {/* Testo Email */}
+                <div>
+                  <Label htmlFor="email-body" className="text-xs">Testo Email</Label>
+                  <Textarea
+                    id="email-body"
+                    value={emailBody}
+                    onChange={(e) => setEmailBody(e.target.value)}
+                    placeholder="Gentile [Nome], scrivo per..."
+                    className="min-h-[150px] text-sm resize-none mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Suggerimento: Usa [Nome], [Azienda], [Email] come placeholder
+                  </p>
+                </div>
+
+                {/* Pulsante Invia Email */}
+                <div className="flex justify-end mt-4">
+                  <Button type="button" className="gap-2">
+                    <Mail className="h-4 w-4" />
+                    Invia Email
+                  </Button>
+                </div>
               </div>
             </TabsContent>
             
@@ -420,6 +754,7 @@ export function GestisciAttivitaDialog({
           setShowCallDialog(false);
         }}
       />
-    </Dialog>
+      </Dialog>
+    </>
   );
 }

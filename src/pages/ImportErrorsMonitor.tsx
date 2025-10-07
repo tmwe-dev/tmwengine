@@ -95,28 +95,43 @@ export default function ImportErrorsMonitor() {
     if (!importLogId) return;
 
     try {
-      const { data, error } = await supabase
+      // Prima ottieni il CONTEGGIO reale con query aggregate (ignora il limite di 1000)
+      const { data: countData, error: countError } = await supabase
+        .from('import_errors')
+        .select('status', { count: 'exact', head: false })
+        .eq('import_log_id', importLogId);
+
+      if (countError) throw countError;
+
+      // Calcola statistiche dal conteggio reale
+      const allErrors = countData || [];
+      const total = allErrors.length;
+      const corrected = allErrors.filter(e => e.status === 'corrected').length;
+      const failed = allErrors.filter(e => e.status === 'failed').length;
+      const pending = allErrors.filter(e => e.status === 'pending').length;
+      const processed = corrected + failed;
+
+      // Carica SOLO gli errori pending/processing per la UI (limitati a 100 per performance)
+      const { data: pendingErrors, error: errorsError } = await supabase
         .from('import_errors')
         .select('*')
         .eq('import_log_id', importLogId)
+        .in('status', ['pending', 'processing'])
         .order('row_number')
-        .limit(50000); // Rimuovi il limite di default di 1000
+        .limit(100);
 
-      if (error) throw error;
+      if (errorsError) throw errorsError;
+      setErrors(pendingErrors || []);
 
-      setErrors(data || []);
+      // Calcola token totali dai record che hanno ai_suggestions
+      const { data: processedData } = await supabase
+        .from('import_errors')
+        .select('ai_suggestions')
+        .eq('import_log_id', importLogId)
+        .not('ai_suggestions', 'is', null);
 
-      // Calcola statistiche
-      const total = data?.length || 0;
-      const corrected = data?.filter(e => e.status === 'corrected').length || 0;
-      const failed = data?.filter(e => e.status === 'failed').length || 0;
-      const pending = data?.filter(e => e.status === 'pending').length || 0;
-      const processed = corrected + failed;
-
-      // Calcola token totali e costo dai dati salvati
       let totalTokens = 0;
-      let totalCost = 0;
-      data?.forEach(e => {
+      processedData?.forEach(e => {
         if (e.ai_suggestions && typeof e.ai_suggestions === 'object') {
           const suggestions = e.ai_suggestions as any;
           if (suggestions.tokens_used) {
@@ -125,8 +140,7 @@ export default function ImportErrorsMonitor() {
         }
       });
       
-      // Stima costo (approssimativa se non abbiamo i dettagli esatti)
-      totalCost = (totalTokens / 1000000) * 0.15; // Media tra input e output
+      const totalCost = (totalTokens / 1000000) * 0.15;
 
       setStats({
         total,

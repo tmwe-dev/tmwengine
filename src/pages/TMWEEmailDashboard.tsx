@@ -544,8 +544,8 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full max-w-full overflow-hidden">
-      <div className="flex flex-1 w-full max-w-full min-w-0 overflow-hidden">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-1 w-full max-w-full min-w-0 overflow-x-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <div className="flex-shrink-0">

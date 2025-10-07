@@ -155,14 +155,15 @@ serve(async (req) => {
 
     console.log(`Processing ${pendingErrors.length} errors in this batch`);
 
-    // STEP 4: Processa ogni errore con AI
-    let processed = 0;
-    let corrected = 0;
-    let failed = 0;
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
+    // STEP 4: Carica il prompt dal database
+    const { data: promptData } = await supabaseClient
+      .from('page_system_prompts')
+      .select('system_prompt')
+      .eq('page_route', '/import-errors-monitor')
+      .eq('attivo', true)
+      .single();
 
-    const systemPrompt = `Estrai dati da record CRM incompleti in formato JSON.
+    const systemPrompt = promptData?.system_prompt || `Estrai dati da record CRM incompleti in formato JSON.
 
 REGOLA FONDAMENTALE: Restituisci SEMPRE un oggetto JSON con i campi trovati.
 Se un campo non c'è, metti null. NON restituire mai {}.
@@ -179,6 +180,15 @@ Conversioni speciali:
 - Telefono → formato internazionale
 
 Campi disponibili: name, company_name, email, phone, cell, address, city, country, zip_code, last_contact, scheduled_contact, next_contact_date`;
+
+    console.log('Using system prompt from database:', systemPrompt.substring(0, 100) + '...');
+
+    // STEP 5: Processa ogni errore con AI
+    let processed = 0;
+    let corrected = 0;
+    let failed = 0;
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
 
     for (const error of pendingErrors) {
       try {

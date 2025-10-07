@@ -26,7 +26,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import countriesData from '@/data/countries.json';
-import { useTypewriterEffect } from '@/hooks/useTypewriterEffect';
 
 
 // Utility function to format empty values
@@ -357,9 +356,6 @@ export default function ImportTemplates() {
   const [selectedContactIdForActivities, setSelectedContactIdForActivities] = useState<string | null>(null);
   const [defaultActivityType, setDefaultActivityType] = useState<'chiamata' | 'email' | undefined>(undefined);
   const [selectedContactForActivity, setSelectedContactForActivity] = useState<any>(null);
-  
-  // Hook per l'effetto typewriter
-  const { animatingRecords, partialTexts, animateText } = useTypewriterEffect();
 
   useEffect(() => {
     loadEmailTemplates();
@@ -1714,27 +1710,10 @@ export default function ImportTemplates() {
           },
           (payload) => {
             console.log('Record aggiornato:', payload);
-            const oldRecord = allRecords.find(r => r.id === payload.new.id);
-            
-            // Se alias o company_alias sono cambiati, attiva l'animazione
-            if (oldRecord && (oldRecord.alias !== payload.new.alias || oldRecord.company_alias !== payload.new.company_alias)) {
-              animateText(
-                payload.new.id,
-                payload.new.alias || '',
-                payload.new.company_alias || '',
-                (recordId, finalAlias, finalCompanyAlias) => {
-                  // Quando l'animazione è completa, aggiorna il record definitivamente
-                  setAllRecords(prev => prev.map(r => 
-                    r.id === recordId ? { ...r, alias: finalAlias, company_alias: finalCompanyAlias } : r
-                  ));
-                }
-              );
-            } else {
-              // Se non sono cambiati gli alias, aggiorna normalmente
-              setAllRecords(prev => prev.map(r => 
-                r.id === payload.new.id ? payload.new : r
-              ));
-            }
+            // Aggiorna il record nel state
+            setAllRecords(prev => prev.map(r => 
+              r.id === payload.new.id ? payload.new : r
+            ));
           }
         )
         .subscribe();
@@ -3766,17 +3745,15 @@ export default function ImportTemplates() {
                                           <span className="text-base">{getCountryFlag(record[key])}</span>
                                           <span>{formatCellValue(record[key], key)}</span>
                                         </div>
-                                       ) : key === 'company_name' ? (
+                                      ) : key === 'company_name' ? (
                                         <div className="flex items-center gap-2">
-                                          <span className={animatingRecords.has(record.id) ? 'text-purple-600 font-bold animate-pulse' : ''}>
-                                            {formatCellValue(record[key], key)}
-                                          </span>
+                                          <span>{formatCellValue(record[key], key)}</span>
                                           
                                           {(!record.alias || !record.company_alias) && (
                                             <TooltipProvider>
                                               <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                   <button
+                                                  <button
                                                     onClick={async (e) => {
                                                       e.stopPropagation();
                                                       try {
@@ -3786,6 +3763,7 @@ export default function ImportTemplates() {
                                                         });
                                                         if (error) throw error;
                                                         toast.success(data.message || 'Alias generati');
+                                                        loadAllRecords(selectedImport!);
                                                       } catch (err: any) {
                                                         toast.error('Errore generazione alias');
                                                       }
@@ -3842,16 +3820,9 @@ export default function ImportTemplates() {
                                             </TooltipContent>
                                           </Tooltip>
                                         </TooltipProvider>
-                                       ) : key === 'alias' || key === 'company_alias' ? (
-                                        <span className={animatingRecords.has(record.id) ? 'text-purple-600 font-bold' : ''}>
-                                          {animatingRecords.has(record.id) && partialTexts[record.id] 
-                                            ? partialTexts[record.id][key as 'alias' | 'company_alias']
-                                            : formatCellValue(record[key], key)
-                                          }
-                                        </span>
-                                       ) : (
+                                      ) : (
                                         formatCellValue(record[key], key)
-                                       )}
+                                      )}
                                     </TableCell>
                                 );
                               }

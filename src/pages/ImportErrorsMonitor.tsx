@@ -608,6 +608,36 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     };
   }, [importLogId]);
 
+  // AutoRun monitor - controlla continuamente se ci sono pending e autorun è attivo
+  useEffect(() => {
+    if (!autoRun || isProcessing || !importLogId) return;
+
+    const checkAndContinue = async () => {
+      // Controlla se ci sono ancora pending nel database
+      const { count: stillPending } = await supabase
+        .from('import_errors')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_log_id', importLogId)
+        .eq('status', 'pending');
+      
+      console.log(`AutoRun check: ${stillPending} pending, processing: ${isProcessing}, autoRun: ${autoRun}`);
+      
+      if (stillPending && stillPending > 0 && !isProcessing && autoRun) {
+        addLog(`🔄 AutoRun: rilevati ${stillPending} record pending, riavvio elaborazione...`);
+        setTimeout(() => processBatch(true), 2000);
+      } else if (!stillPending || stillPending === 0) {
+        addLog(`✨ AutoRun: completato, nessun record pending`);
+        setAutoRun(false);
+        toast.success('AutoRun completato!');
+      }
+    };
+
+    // Controlla ogni 3 secondi
+    const interval = setInterval(checkAndContinue, 3000);
+
+    return () => clearInterval(interval);
+  }, [autoRun, isProcessing, importLogId, stats.pending]);
+
   if (!importLogId) {
     return (
       <div className="min-h-screen flex items-center justify-center">

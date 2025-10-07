@@ -5,6 +5,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { TranslateButton } from './TranslateButton';
+import { SpeakButton } from './SpeakButton';
+import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -25,6 +28,10 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { profile } = useUserProfile();
+  
+  // Auto-speaker per lettura automatica messaggi
+  const { stopSpeaking } = useAutoSpeaker({ messages, currentUserId });
 
   useEffect(() => {
     // Salva l'ID della stanza corrente nel sessionStorage per il TranslateButton
@@ -57,6 +64,13 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
   };
+
+  useEffect(() => {
+    // Cleanup: ferma la lettura quando il componente viene smontato
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   const loadMessages = async () => {
     const { data, error } = await supabase
@@ -137,10 +151,18 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                   {message.content && (
                     <>
                       <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                      <TranslateButton 
-                        messageContent={message.content}
-                        messageId={message.id}
-                      />
+                      <div className="flex gap-1 flex-wrap mt-1">
+                        <TranslateButton 
+                          messageContent={message.content}
+                          messageId={message.id}
+                        />
+                        {!isOwnMessage && profile && (
+                          <SpeakButton 
+                            text={message.content}
+                            language={profile.readingLanguage}
+                          />
+                        )}
+                      </div>
                     </>
                   )}
                 </div>

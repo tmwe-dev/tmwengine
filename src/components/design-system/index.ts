@@ -26,3 +26,23 @@ export { LoadingState } from './data-display/LoadingState';
 
 // Forms
 export { SearchInput } from './forms/SearchInput';
+
+// Animations
+export { FadeIn } from './animations/FadeIn';
+export { SlideIn } from './animations/SlideIn';
+export { ScaleIn } from './animations/ScaleIn';
+
+// Menus
+export { DynamicDropdown } from './menus/DynamicDropdown';
+export type { DropdownItem } from './menus/DynamicDropdown';
+export { DynamicNavigation } from './menus/DynamicNavigation';
+export type { NavigationItem } from './menus/DynamicNavigation';
+
+// Layouts
+export { PageLayout } from './layouts/PageLayout';
+export { ContentWrapper } from './layouts/ContentWrapper';
+
+// Effects
+export { GradientBackground } from './effects/GradientBackground';
+export { GradientText } from './effects/GradientText';
+export { HoverCard } from './effects/HoverCard';

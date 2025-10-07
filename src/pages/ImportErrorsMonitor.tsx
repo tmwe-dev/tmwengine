@@ -40,6 +40,7 @@ interface ErrorRecord {
   created_at: string;
   updated_at: string;
   corrected_data?: any;
+  raw_data?: any;
 }
 
 interface ProcessingStats {
@@ -72,6 +73,10 @@ export default function ImportErrorsMonitor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [errors, setErrors] = useState<ErrorRecord[]>([]);
+  const [correctedRecords, setCorrectedRecords] = useState<ErrorRecord[]>([]);
+  const [failedRecords, setFailedRecords] = useState<ErrorRecord[]>([]);
+  const [showCorrected, setShowCorrected] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
   const [stats, setStats] = useState<ProcessingStats>({
     total: 0,
     processed: 0,
@@ -137,6 +142,28 @@ export default function ImportErrorsMonitor() {
 
       if (errorsError) throw errorsError;
       setErrors(pendingErrors || []);
+
+      // Carica i record corretti (primi 100)
+      const { data: correctedData } = await supabase
+        .from('import_errors')
+        .select('*')
+        .eq('import_log_id', importLogId)
+        .eq('status', 'corrected')
+        .order('row_number')
+        .limit(100);
+      
+      setCorrectedRecords(correctedData || []);
+
+      // Carica i record falliti (primi 100)
+      const { data: failedData } = await supabase
+        .from('import_errors')
+        .select('*')
+        .eq('import_log_id', importLogId)
+        .eq('status', 'failed')
+        .order('row_number')
+        .limit(100);
+      
+      setFailedRecords(failedData || []);
 
       // Calcola token totali SOLO dai record già processati (con ai_suggestions)
       const { data: processedData } = await supabase
@@ -561,23 +588,27 @@ export default function ImportErrorsMonitor() {
 
           {/* Records Corretti */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                Records Corretti
+            <CardHeader className="cursor-pointer" onClick={() => setShowCorrected(!showCorrected)}>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  Records Corretti ({stats.corrected})
+                </div>
+                <Button variant="ghost" size="sm">
+                  {showCorrected ? 'Nascondi' : 'Mostra'}
+                </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-2">
-                  {errors.filter(e => e.status === 'corrected').length === 0 ? (
-                    <div className="text-muted-foreground text-center py-8">
-                      Nessun record corretto
-                    </div>
-                  ) : (
-                    errors
-                      .filter(e => e.status === 'corrected')
-                      .map((error) => (
+            {showCorrected && (
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
+                    {correctedRecords.length === 0 ? (
+                      <div className="text-muted-foreground text-center py-8">
+                        Nessun record corretto
+                      </div>
+                    ) : (
+                      correctedRecords.map((error) => (
                         <div
                           key={error.id}
                           className="p-3 rounded-lg border border-green-500/30 bg-green-500/5"
@@ -587,7 +618,7 @@ export default function ImportErrorsMonitor() {
                               Riga {error.row_number}
                             </Badge>
                           </div>
-                          <div className="text-left font-mono text-xs text-white/90 space-y-1">
+                          <div className="text-left font-mono text-xs space-y-1">
                             {error.corrected_data && typeof error.corrected_data === 'object' && (
                               <>
                                 {error.corrected_data.company_name && (
@@ -602,42 +633,67 @@ export default function ImportErrorsMonitor() {
                                 {error.corrected_data.phone && (
                                   <div><span className="text-muted-foreground">Phone:</span> {error.corrected_data.phone}</div>
                                 )}
-                                {error.corrected_data.mobile && (
-                                  <div><span className="text-muted-foreground">Mobile:</span> {error.corrected_data.mobile}</div>
-                                )}
-                                {error.corrected_data.address && (
-                                  <div><span className="text-muted-foreground">Address:</span> {error.corrected_data.address}</div>
-                                )}
-                                {error.corrected_data.city && (
-                                  <div><span className="text-muted-foreground">City:</span> {error.corrected_data.city}</div>
-                                )}
-                                {error.corrected_data.zip_code && (
-                                  <div><span className="text-muted-foreground">ZIP:</span> {error.corrected_data.zip_code}</div>
-                                )}
-                                {error.corrected_data.country && (
-                                  <div><span className="text-muted-foreground">Country:</span> {error.corrected_data.country}</div>
-                                )}
-                                {error.corrected_data.state && (
-                                  <div><span className="text-muted-foreground">State:</span> {error.corrected_data.state}</div>
-                                )}
-                                {error.corrected_data.last_contact_date && (
-                                  <div><span className="text-muted-foreground">Last Contact:</span> {error.corrected_data.last_contact_date}</div>
-                                )}
-                                {error.corrected_data.next_contact_date && (
-                                  <div><span className="text-muted-foreground">Next Contact:</span> {error.corrected_data.next_contact_date}</div>
-                                )}
-                                {error.corrected_data.notes && (
-                                  <div className="text-yellow-500/80"><span className="text-muted-foreground">Notes:</span> {error.corrected_data.notes}</div>
-                                )}
                               </>
                             )}
                           </div>
                         </div>
                       ))
-                  )}
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Records Falliti */}
+          <Card>
+            <CardHeader className="cursor-pointer" onClick={() => setShowFailed(!showFailed)}>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-5 w-5 text-red-500" />
+                  Records Falliti ({stats.failed})
                 </div>
-              </ScrollArea>
-            </CardContent>
+                <Button variant="ghost" size="sm">
+                  {showFailed ? 'Nascondi' : 'Mostra'}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            {showFailed && (
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
+                    {failedRecords.length === 0 ? (
+                      <div className="text-muted-foreground text-center py-8">
+                        Nessun record fallito
+                      </div>
+                    ) : (
+                      failedRecords.map((error) => (
+                        <div
+                          key={error.id}
+                          className="p-3 rounded-lg border border-red-500/30 bg-red-500/5"
+                        >
+                          <div className="flex items-start gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs bg-red-500/20">
+                              Riga {error.row_number}
+                            </Badge>
+                          </div>
+                          <div className="text-left text-xs space-y-1">
+                            <div className="text-red-400">
+                              <span className="text-muted-foreground">Errore:</span> {error.error_message}
+                            </div>
+                            {error.raw_data && typeof error.raw_data === 'object' && (
+                              <div className="mt-2 font-mono text-muted-foreground">
+                                {JSON.stringify(error.raw_data, null, 2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            )}
           </Card>
 
         </div>

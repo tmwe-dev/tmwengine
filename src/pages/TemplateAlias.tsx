@@ -64,12 +64,13 @@ export default function TemplateAlias() {
   const { data: templates, isLoading } = useQuery({
     queryKey: ["template-alias"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("template_alias")
-        .select("*")
+        .select("*", { count: 'exact' })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log(`Loaded ${data?.length} template_alias records, total count: ${count}`);
       return data as TemplateAlias[];
     },
   });

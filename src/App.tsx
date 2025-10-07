@@ -30,6 +30,7 @@ import TMWEAuthTest from "./pages/TMWEAuthTest";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
 import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
+import TemplateAlias from "./pages/TemplateAlias";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
@@ -140,6 +141,11 @@ const App = () => (
             <Route path="/import-errors-monitor" element={
               <ProtectedRoute>
                 <ImportErrorsMonitor />
+              </ProtectedRoute>
+            } />
+            <Route path="/template-alias" element={
+              <ProtectedRoute>
+                <CRMLayout><TemplateAlias /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

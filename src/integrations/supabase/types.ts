@@ -1534,6 +1534,39 @@ export type Database = {
           },
         ]
       }
+      template_alias: {
+        Row: {
+          alias: string
+          company_alias: string
+          company_name: string
+          created_at: string
+          id: string
+          name: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          company_alias: string
+          company_name: string
+          created_at?: string
+          id?: string
+          name: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          company_alias?: string
+          company_name?: string
+          created_at?: string
+          id?: string
+          name?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ui_style_configs: {
         Row: {
           attivo: boolean

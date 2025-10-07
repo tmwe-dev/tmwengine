@@ -808,7 +808,15 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                 <span className="text-sm text-muted-foreground">Righe per batch:</span>
                 <Select 
                   value={batchSize.toString()} 
-                  onValueChange={(v) => setBatchSize(Number(v))}
+                  onValueChange={(v) => {
+                    console.log('Changing batch size to:', v);
+                    const newSize = Number(v);
+                    if (!isNaN(newSize) && newSize > 0) {
+                      setBatchSize(newSize);
+                    } else {
+                      console.error('Invalid batch size:', v);
+                    }
+                  }}
                   disabled={isProcessing}
                 >
                   <SelectTrigger className="w-[100px]">

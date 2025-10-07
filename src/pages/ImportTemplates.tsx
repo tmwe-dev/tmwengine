@@ -3266,124 +3266,8 @@ export default function ImportTemplates() {
 
           {/* Blocco azioni record selezionati - Desktop Only */}
           {!isMobile && selectedRecords.size > 0 && (
-            <div className="flex items-center justify-end gap-2 border-b py-3 px-4">
-              <Badge variant="default" className="text-sm px-4 py-2">
-                {selectedRecords.size}
-              </Badge>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedRecords(new Set())}
-                className="h-10 px-4 text-sm"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPromptDialog(true)}
-                      className="h-10 w-10 p-0"
-                    >
-                      <Settings className="h-4 w-4 text-orange-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Modifica prompt AI per alias</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
-                        if (selectedIds.length === 0) {
-                          toast.error('Nessun record selezionato');
-                          return;
-                        }
-                        
-                        setGeneratingAliases(true);
-                        setShowAliasPreview(true);
-                        setAliasPreviewData([]);
-                        setAliasPreviewTotal(selectedIds.length);
-                        
-                        try {
-                          toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
-                          const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
-                            body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
-                          });
-                          
-                          if (error) throw error;
-                          
-                          setAliasPreviewData(data.previews || []);
-                          setGeneratingAliases(false);
-                        } catch (err: any) {
-                          console.error('Errore generazione preview:', err);
-                          toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
-                          setGeneratingAliases(false);
-                          setShowAliasPreview(false);
-                        }
-                      }}
-                      disabled={generatingAliases || loadingAllRecords}
-                      className="h-10 w-10 p-0"
-                    >
-                      {generatingAliases ? (
-                        <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 text-purple-500" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Genera alias AI per {selectedRecords.size} selezionati</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowMultipleActivityDialog(true)}
-                      className="h-10 w-10 p-0"
-                    >
-                      <FileText className="h-4 w-4 text-blue-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Crea attività</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={importSelectedRecords}
-                      className="h-10 w-10 p-0"
-                    >
-                      <Database className="h-4 w-4 text-green-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Importa in rubrica</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
+            <div className="flex items-center justify-between border-b py-3 px-4">
+              {/* Cestino a sinistra */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -3401,6 +3285,126 @@ export default function ImportTemplates() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              {/* Altre icone al centro */}
+              <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+                <Badge variant="default" className="text-sm px-4 py-2">
+                  {selectedRecords.size}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedRecords(new Set())}
+                  className="h-10 px-4 text-sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowPromptDialog(true)}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Settings className="h-4 w-4 text-orange-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Modifica prompt AI per alias</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
+                          if (selectedIds.length === 0) {
+                            toast.error('Nessun record selezionato');
+                            return;
+                          }
+                          
+                          setGeneratingAliases(true);
+                          setShowAliasPreview(true);
+                          setAliasPreviewData([]);
+                          setAliasPreviewTotal(selectedIds.length);
+                          
+                          try {
+                            toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
+                            const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                              body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
+                            });
+                            
+                            if (error) throw error;
+                            
+                            setAliasPreviewData(data.previews || []);
+                            setGeneratingAliases(false);
+                          } catch (err: any) {
+                            console.error('Errore generazione preview:', err);
+                            toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
+                            setGeneratingAliases(false);
+                            setShowAliasPreview(false);
+                          }
+                        }}
+                        disabled={generatingAliases || loadingAllRecords}
+                        className="h-10 w-10 p-0"
+                      >
+                        {generatingAliases ? (
+                          <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 text-purple-500" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Genera alias AI per {selectedRecords.size} selezionati</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowMultipleActivityDialog(true)}
+                        className="h-10 w-10 p-0"
+                      >
+                        <FileText className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Crea attività</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={importSelectedRecords}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Database className="h-4 w-4 text-green-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Importa in rubrica</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           )}
 

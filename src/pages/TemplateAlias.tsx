@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Search, ArrowUpDown, Trash2 } from "lucide-react";
+import { Pencil, Search, ArrowUpDown, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -202,6 +202,14 @@ export default function TemplateAlias() {
     }
   };
 
+  const handleFilterByValue = (value: string) => {
+    setSearchTerm(value);
+  };
+
+  const clearFilter = () => {
+    setSearchTerm("");
+  };
+
   const handleSave = () => {
     if (!editingRecord) return;
 
@@ -259,11 +267,21 @@ export default function TemplateAlias() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cerca per nome, alias, company..."
+                placeholder="Cerca per nome, alias, company... o clicca su un valore"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2"
+                  onClick={clearFilter}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -317,11 +335,41 @@ export default function TemplateAlias() {
                           }
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{template.title || "-"}</TableCell>
-                      <TableCell>{template.name}</TableCell>
-                      <TableCell>{template.alias}</TableCell>
-                      <TableCell>{template.company_name}</TableCell>
-                      <TableCell>{template.company_alias || "-"}</TableCell>
+                      <TableCell 
+                        className="font-medium cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => template.title && handleFilterByValue(template.title)}
+                        title="Clicca per filtrare"
+                      >
+                        {template.title || "-"}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => handleFilterByValue(template.name)}
+                        title="Clicca per filtrare"
+                      >
+                        {template.name}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => handleFilterByValue(template.alias)}
+                        title="Clicca per filtrare"
+                      >
+                        {template.alias}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => handleFilterByValue(template.company_name)}
+                        title="Clicca per filtrare"
+                      >
+                        {template.company_name}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => template.company_alias && handleFilterByValue(template.company_alias)}
+                        title="Clicca per filtrare"
+                      >
+                        {template.company_alias || "-"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button

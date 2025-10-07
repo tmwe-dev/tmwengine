@@ -98,19 +98,20 @@ serve(async (req) => {
 
     console.log(`✅ Profilo sincronizzato per user_id: ${supabaseUser.id}`);
 
-    // 4. Crea una sessione Supabase Auth valida
-    console.log('🔐 Creazione sessione Supabase Auth...');
+    // 4. Genera link magico per ottenere i token di sessione
+    console.log('🔐 Generazione token sessione...');
     
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: supabaseUser.id,
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: tmweEmail,
     });
 
-    if (sessionError) {
-      console.error('Errore creazione sessione:', sessionError);
-      throw sessionError;
+    if (linkError) {
+      console.error('Errore generazione link:', linkError);
+      throw linkError;
     }
 
-    console.log('✅ Sessione Supabase creata con successo');
+    console.log('✅ Token generati con successo');
 
     return new Response(
       JSON.stringify({
@@ -118,10 +119,10 @@ serve(async (req) => {
         supabaseUserId: supabaseUser.id,
         profile: profile,
         session: {
-          access_token: sessionData.session.access_token,
-          refresh_token: sessionData.session.refresh_token,
-          expires_at: sessionData.session.expires_at,
-          expires_in: sessionData.session.expires_in,
+          access_token: linkData.properties.access_token,
+          refresh_token: linkData.properties.refresh_token,
+          expires_at: linkData.properties.expires_at,
+          expires_in: 3600,
         },
         message: 'Sincronizzazione e sessione create con successo'
       }),

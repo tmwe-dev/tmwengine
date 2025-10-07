@@ -3210,6 +3210,27 @@ export default function ImportTemplates() {
             <div className="flex items-center justify-between border-b relative py-3 min-h-[60px] px-4">
               {/* Filtro "Solo con note" e Switch - a sinistra */}
               <div className="flex items-center gap-4">
+                {/* Bulk Delete Button */}
+                {selectedRecords.size > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={deleteSelectedRecords}
+                          className="h-8 w-8 p-0 border-red-500 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Elimina {selectedRecords.size} record selezionati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="has-notes-filter-desktop"

@@ -140,6 +140,32 @@ export default function ImportErrorsMonitor() {
     toast.info('Elaborazione in pausa');
   };
 
+  const confirmAndImport = async () => {
+    if (!importLogId) return;
+
+    try {
+      addLog('📥 Conferma importazione record corretti...');
+      
+      const { data, error } = await supabase.functions.invoke('confirm-corrected-errors', {
+        body: { import_log_id: importLogId }
+      });
+
+      if (error) throw error;
+
+      addLog(`✅ Importazione completata!`);
+      addLog(`📊 ${data.imported} record aggiunti a Rubrica`);
+      
+      toast.success(`${data.imported} record importati con successo!`);
+      
+      loadErrors();
+
+    } catch (error) {
+      console.error('Error confirming import:', error);
+      addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      toast.error('Errore durante importazione');
+    }
+  };
+
   const resumeProcessing = () => {
     setIsPaused(false);
     addLog('▶️ Ripresa elaborazione...');
@@ -249,14 +275,26 @@ export default function ImportErrorsMonitor() {
               </div>
               <div className="flex gap-2">
                 {!isProcessing ? (
-                  <Button
-                    onClick={startProcessing}
-                    disabled={stats.pending === 0}
-                    className="gap-2"
-                  >
-                    <Play className="h-4 w-4" />
-                    Avvia Elaborazione
-                  </Button>
+                  <>
+                    <Button
+                      onClick={startProcessing}
+                      disabled={stats.pending === 0}
+                      className="gap-2"
+                    >
+                      <Play className="h-4 w-4" />
+                      Avvia Elaborazione
+                    </Button>
+                    {stats.corrected > 0 && (
+                      <Button
+                        onClick={confirmAndImport}
+                        variant="default"
+                        className="gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Conferma e Importa ({stats.corrected})
+                      </Button>
+                    )}
+                  </>
                 ) : isPaused ? (
                   <Button
                     onClick={resumeProcessing}

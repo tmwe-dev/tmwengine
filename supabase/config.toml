@@ -211,3 +211,10 @@ verify_jwt = false
 
 [functions.chat-with-ai]
 verify_jwt = true
+
+[functions.process-import-errors-ai]
+verify_jwt = true
+
+[functions.confirm-corrected-errors]
+verify_jwt = true
+

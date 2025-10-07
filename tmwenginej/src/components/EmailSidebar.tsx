@@ -146,13 +146,13 @@ export const EmailSidebar = ({
         onClick={() => onFolderSelect(folder.name)}
       >
         <div className="flex items-center min-w-0">
-          <Icon className="mr-3 h-4 w-4 flex-shrink-0" />
-          <span className="truncate">
+          <Icon className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+          <span className="truncate text-xs sm:text-sm">
             {folder.name} {totalMessages > 0 && `(${totalMessages.toLocaleString()})`}
           </span>
         </div>
         {unseenCount > 0 && (
-          <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 flex-shrink-0">
+          <Badge variant="secondary" className="ml-1.5 sm:ml-2 h-4 sm:h-5 min-w-4 sm:min-w-5 px-1 sm:px-1.5 flex-shrink-0 text-[10px] sm:text-xs">
             {unseenCount}
           </Badge>
         )}
@@ -161,14 +161,14 @@ export const EmailSidebar = ({
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="p-4 space-y-2">
+    <div className="flex h-full w-56 sm:w-60 md:w-64 flex-col border-r bg-card">
+      <div className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
         <Button 
           onClick={onCompose} 
           className="w-full"
           size="lg"
         >
-          <Plus className="mr-2 h-5 w-5" />
+          <Plus className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
           Compose
         </Button>
         <Button 
@@ -177,18 +177,18 @@ export const EmailSidebar = ({
           className="w-full"
           size="sm"
         >
-          <RefreshCw className="mr-2 h-4 w-4" />
+          <RefreshCw className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Sync Now
         </Button>
       </div>
 
       <Separator />
 
-      <ScrollArea className="flex-1 px-2">
-        <div className="space-y-1 py-2">
+      <ScrollArea className="flex-1 px-1.5 sm:px-2">
+        <div className="space-y-0.5 sm:space-y-1 py-1.5 sm:py-2">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center py-6 sm:py-8">
+              <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <>
@@ -200,16 +200,16 @@ export const EmailSidebar = ({
 
               {customFolders.length > 0 && (
                 <>
-                  <Separator className="my-2" />
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                  <Separator className="my-1.5 sm:my-2" />
+                  <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium text-muted-foreground flex items-center justify-between">
                     <span>Folders</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0"
+                      className="h-4 w-4 sm:h-5 sm:w-5 p-0"
                       onClick={() => setIsCreateDialogOpen(true)}
                     >
-                      <FolderPlus className="h-3.5 w-3.5" />
+                      <FolderPlus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Button>
                   </div>
                   {customFolders.map(renderFolder)}
@@ -218,15 +218,15 @@ export const EmailSidebar = ({
               
               {customFolders.length === 0 && (
                 <>
-                  <Separator className="my-2" />
-                  <div className="px-2 py-1">
+                  <Separator className="my-1.5 sm:my-2" />
+                  <div className="px-1.5 sm:px-2 py-0.5 sm:py-1">
                     <Button
                       variant="outline"
                       size="sm"
                       className="w-full"
                       onClick={() => setIsCreateDialogOpen(true)}
                     >
-                      <FolderPlus className="mr-2 h-4 w-4" />
+                      <FolderPlus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Nueva Carpeta
                     </Button>
                   </div>
@@ -239,9 +239,9 @@ export const EmailSidebar = ({
 
       <Separator />
 
-      <div className="p-2">
+      <div className="p-1.5 sm:p-2">
         <Button variant="ghost" className="w-full justify-start" size="sm">
-          <Settings className="mr-3 h-4 w-4" />
+          <Settings className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Settings
         </Button>
       </div>
@@ -254,8 +254,8 @@ export const EmailSidebar = ({
               Ingresa el nombre de la nueva carpeta de correo.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
+          <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
+            <div className="grid gap-1.5 sm:gap-2">
               <Label htmlFor="folder-name">Nombre de la carpeta</Label>
               <Input
                 id="folder-name"
@@ -273,7 +273,7 @@ export const EmailSidebar = ({
                 maxLength={50}
               />
               {folderError && (
-                <p className="text-sm text-destructive">{folderError}</p>
+                <p className="text-xs sm:text-sm text-destructive">{folderError}</p>
               )}
             </div>
           </div>

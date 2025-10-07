@@ -370,14 +370,14 @@ export const EmailList = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hidden md:flex h-8 w-8 p-0 shrink-0 group transition-all duration-200"
+                    className="hidden md:flex h-12 w-12 p-0 shrink-0 group transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       onEmailSelect(email.id);
                       onOpenDetailPopup();
                     }}
                   >
-                    <Maximize2 className="h-5 w-5 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                    <Maximize2 className="h-10 w-10 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
                   </Button>
                 )}
                 

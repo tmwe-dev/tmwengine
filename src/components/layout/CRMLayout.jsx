@@ -8,6 +8,7 @@ import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
+import { IntranetNavItems } from '@/components/layout/IntranetNavItems';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -259,6 +260,11 @@ const CRMLayout = ({ children }) => {
                 />
               );
             })}
+            
+            {/* Intranet Navigation Items with Admin check */}
+            <div className="pt-2 border-t border-border mt-2">
+              <IntranetNavItems isActive={isActive} />
+            </div>
           </nav>
         </aside>
 

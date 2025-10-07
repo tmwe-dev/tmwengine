@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User, Sparkles } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User, Sparkles, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -282,6 +282,7 @@ export default function ImportTemplates() {
   
   // Stato per elaborazione AI
   const [processingAI, setProcessingAI] = useState(false);
+  const [generatingAliases, setGeneratingAliases] = useState(false);
   
   // Stato per l'ordinamento delle colonne
   const [sortConfig, setSortConfig] = useState<{
@@ -3305,23 +3306,30 @@ export default function ImportTemplates() {
                               toast.error('Nessun record selezionato');
                               return;
                             }
+                            setGeneratingAliases(true);
                             try {
-                              toast.info(`Generazione alias per ${selectedIds.length} contatti...`);
+                              toast.info(`Generazione alias per ${selectedIds.length} contatti in corso...`);
                               const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
                                 body: { action: 'update_aliases', data: {}, contact_ids: selectedIds }
                               });
                               if (error) throw error;
                               toast.success(data.message || `${data.updated_count} alias generati`);
-                              toast.info('Ricaricamento dati...');
                               await loadAllRecords(selectedImport!);
                             } catch (err: any) {
                               console.error('Errore generazione alias:', err);
                               toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
+                            } finally {
+                              setGeneratingAliases(false);
                             }
                           }}
+                          disabled={generatingAliases || loadingAllRecords}
                           className="h-10 w-10 p-0"
                         >
-                          <Sparkles className="h-4 w-4 text-purple-500" />
+                          {generatingAliases ? (
+                            <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -3688,23 +3696,30 @@ export default function ImportTemplates() {
                                                   <button
                                                     onClick={async (e) => {
                                                       e.stopPropagation();
+                                                      setGeneratingAliases(true);
                                                       try {
-                                                        toast.info('Generazione alias...');
+                                                        toast.info('Generazione alias in corso...');
                                                         const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
                                                           body: { action: 'update_aliases', data: {}, contact_ids: [record.id] }
                                                         });
                                                         if (error) throw error;
                                                         toast.success(data.message || 'Alias generati');
-                                                        toast.info('Ricaricamento dati...');
                                                         await loadAllRecords(selectedImport!);
                                                       } catch (err: any) {
                                                         console.error('Errore generazione alias:', err);
                                                         toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
+                                                      } finally {
+                                                        setGeneratingAliases(false);
                                                       }
                                                     }}
+                                                    disabled={generatingAliases || loadingAllRecords}
                                                     className="p-1 rounded hover:bg-purple-600/20 transition-colors"
                                                   >
-                                                    <Sparkles className="h-4 w-4 text-purple-600" />
+                                                    {generatingAliases ? (
+                                                      <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
+                                                    ) : (
+                                                      <Sparkles className="h-4 w-4 text-purple-600" />
+                                                    )}
                                                   </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent><p>Genera alias AI</p></TooltipContent>

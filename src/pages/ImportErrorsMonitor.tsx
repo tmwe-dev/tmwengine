@@ -288,18 +288,31 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
         setIsProcessing(false);
         
-        // Se autorun è attivo, attendi e ricarica poi continua
+        // Se autorun è attivo, attendi e poi continua
         if (autoRun) {
           addLog(`⏰ AutoRun attivo: attendo completamento background task...`);
+          const estimatedDuration = (result as any).estimated_duration || 100;
+          
           setTimeout(async () => {
+            addLog(`🔄 Ricarico dati dal database...`);
             await loadErrors();
-            if (stats.pending > 0) {
+            
+            // Ricontrolla se ci sono ancora pending nel database
+            const { count: stillPending } = await supabase
+              .from('import_errors')
+              .select('*', { count: 'exact', head: true })
+              .eq('import_log_id', importLogId)
+              .eq('status', 'pending');
+            
+            if (stillPending && stillPending > 0) {
+              addLog(`📊 ${stillPending} righe ancora pending, continuo...`);
               processBatch(true);
             } else {
               addLog(`✨ AutoRun completato: nessuna riga pendente`);
               setAutoRun(false);
+              toast.success('AutoRun completato!');
             }
-          }, (result as any).estimated_duration * 1000 + 2000);
+          }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
         }
         
         return;
@@ -323,9 +336,9 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       if (!result.batch_complete) {
         setCurrentBatch(result.next_batch);
         
-        // Se autorun è attivo, continua automaticamente
+        // Se autorun è attivo, continua automaticamente dopo 1s
         if (autoRun) {
-          addLog(`⏰ AutoRun attivo: continuo con il prossimo batch...`);
+          addLog(`⏰ AutoRun attivo: continuo con il prossimo batch tra 1 secondo...`);
           setTimeout(() => processBatch(true), 1000);
         } else {
           setAwaitingConfirmation(true);
@@ -337,6 +350,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         if (autoRun) {
           addLog(`🎉 AutoRun completato con successo!`);
           setAutoRun(false);
+          toast.success('AutoRun completato con successo!');
         }
       }
 

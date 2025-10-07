@@ -168,10 +168,39 @@ serve(async (req) => {
             properties: {
               table: {
                 type: "string",
-                enum: ["rubrica", "campagne", "attivita", "email", "allegati", "interazioni"],
+                enum: ["rubrica", "campagne", "attivita", "email_messages", "imported_contacts"],
                 description: "Nome della tabella"
               },
-              filters: { type: "object", description: "Filtri opzionali" }
+              filters: { type: "object", description: "Filtri opzionali (es: {stato: 'aperta'})" }
+            },
+            required: ["table"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_table_data",
+          description: "Ottieni dati da una tabella del CRM con filtri, ordinamento e limite",
+          parameters: {
+            type: "object",
+            properties: {
+              table: {
+                type: "string",
+                enum: ["rubrica", "campagne", "attivita", "email_messages", "imported_contacts"],
+                description: "Nome della tabella"
+              },
+              columns: { type: "string", description: "Colonne da selezionare (default: '*')" },
+              filters: { type: "object", description: "Filtri opzionali (es: {stato: 'aperta'})" },
+              order_by: { 
+                type: "object", 
+                description: "Ordinamento (es: {column: 'created_at', ascending: false})",
+                properties: {
+                  column: { type: "string" },
+                  ascending: { type: "boolean" }
+                }
+              },
+              limit: { type: "number", description: "Numero massimo risultati (default: 10)" }
             },
             required: ["table"]
           }
@@ -181,7 +210,7 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "get_statistics",
-          description: "Ottieni statistiche generali complete del CRM",
+          description: "Ottieni statistiche generali complete del CRM (contatti, campagne, attività, email)",
           parameters: { type: "object", properties: {} }
         }
       },
@@ -194,7 +223,7 @@ serve(async (req) => {
             type: "object",
             properties: {
               query: { type: "string", description: "Termine di ricerca" },
-              limit: { type: "number", description: "Numero massimo risultati" }
+              limit: { type: "number", description: "Numero massimo risultati (default: 10)" }
             },
             required: ["query"]
           }
@@ -204,7 +233,7 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "get_campaign_status",
-          description: "Ottieni informazioni sulle campagne",
+          description: "Ottieni informazioni sulle campagne (tutte o una specifica)",
           parameters: {
             type: "object",
             properties: {
@@ -217,14 +246,14 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "get_activities",
-          description: "Ottieni lista delle attività filtrate",
+          description: "Ottieni lista delle attività filtrate per stato, priorità o assegnatario",
           parameters: {
             type: "object",
             properties: {
-              status: { type: "string", description: "Filtra per stato" },
-              priority: { type: "string", description: "Filtra per priorità" },
-              assignee: { type: "string", description: "Filtra per assegnatario" },
-              limit: { type: "number", description: "Numero massimo risultati" }
+              status: { type: "string", description: "Filtra per stato (aperta, in_corso, completata)" },
+              priority: { type: "string", description: "Filtra per priorità (bassa, media, alta)" },
+              assignee: { type: "string", description: "Filtra per assegnatario (UUID utente)" },
+              limit: { type: "number", description: "Numero massimo risultati (default: 10)" }
             }
           }
         }
@@ -233,17 +262,18 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "insert_activity",
-          description: "Crea una nuova attività",
+          description: "Crea una nuova attività nel CRM",
           parameters: {
             type: "object",
             properties: {
-              titolo: { type: "string", description: "Titolo attività" },
-              tipo: { type: "string", description: "Tipo (task, appuntamento, telefonata)" },
-              priorita: { type: "string", description: "Priorità (bassa, media, alta, urgente)" },
-              stato: { type: "string", description: "Stato iniziale" },
-              scadenza: { type: "string", description: "Data scadenza ISO format" },
-              rubrica_id: { type: "string", description: "ID contatto collegato" },
-              note: { type: "string", description: "Note aggiuntive" }
+              titolo: { type: "string", description: "Titolo dell'attività" },
+              tipo: { type: "string", description: "Tipo attività: chiamata, email, meeting, task, follow_up" },
+              descrizione: { type: "string", description: "Descrizione dettagliata" },
+              priorita: { type: "string", description: "Priorità: bassa, media, alta, urgente (default: media)" },
+              stato: { type: "string", description: "Stato: aperta, in_corso, completata (default: aperta)" },
+              scadenza: { type: "string", description: "Data scadenza in formato ISO (es: 2025-10-15T10:00:00Z)" },
+              rubrica_id: { type: "string", description: "UUID del contatto collegato (opzionale)" },
+              note: { type: "string", description: "Note aggiuntive (opzionale)" }
             },
             required: ["titolo"]
           }
@@ -253,13 +283,20 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "update_record",
-          description: "Aggiorna un record esistente",
+          description: "Aggiorna un record esistente in qualsiasi tabella del CRM",
           parameters: {
             type: "object",
             properties: {
-              table: { type: "string", description: "Nome tabella" },
-              id: { type: "string", description: "ID record" },
-              updates: { type: "object", description: "Campi da aggiornare" }
+              table: { 
+                type: "string", 
+                enum: ["rubrica", "campagne", "attivita", "email_messages"],
+                description: "Nome della tabella da aggiornare" 
+              },
+              id: { type: "string", description: "UUID del record da aggiornare" },
+              updates: { 
+                type: "object", 
+                description: "Oggetto con i campi da aggiornare (es: {stato: 'completata', note: 'Fatto'})" 
+              }
             },
             required: ["table", "id", "updates"]
           }
@@ -269,17 +306,22 @@ serve(async (req) => {
         type: "function",
         function: {
           name: "insert_contact",
-          description: "Aggiunge un nuovo contatto",
+          description: "Aggiunge un nuovo contatto nella rubrica CRM",
           parameters: {
             type: "object",
             properties: {
-              responsabile: { type: "string", description: "Nome responsabile" },
+              nome: { type: "string", description: "Nome del contatto" },
+              responsabile: { type: "string", description: "Nome del responsabile" },
               azienda: { type: "string", description: "Nome azienda" },
-              email: { type: "string", description: "Email" },
-              telefono: { type: "string", description: "Telefono" },
-              tag: { type: "string", description: "Tag/categoria" },
-              note: { type: "string", description: "Note" },
-              stato: { type: "string", description: "Stato" }
+              email: { type: "string", description: "Indirizzo email" },
+              telefono: { type: "string", description: "Numero di telefono" },
+              cellulare: { type: "string", description: "Numero cellulare" },
+              indirizzo: { type: "string", description: "Indirizzo completo" },
+              citta: { type: "string", description: "Città" },
+              paese: { type: "string", description: "Paese" },
+              zip_code: { type: "string", description: "CAP" },
+              note: { type: "string", description: "Note sul contatto" },
+              stato: { type: "string", description: "Stato (A=Attivo, default: A)" }
             },
             required: []
           }

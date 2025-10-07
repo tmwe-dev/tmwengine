@@ -519,7 +519,7 @@ export const EmailDetail = ({
                       body {
                         padding: 16px;
                         font-family: system-ui, -apple-system, sans-serif;
-                        font-size: 14px;
+                        font-size: 16px;
                         line-height: 1.5;
                         color: ${emailTextColor} !important;
                         word-wrap: break-word;

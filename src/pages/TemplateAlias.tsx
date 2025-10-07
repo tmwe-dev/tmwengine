@@ -21,9 +21,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Search, ArrowUpDown, Trash2, X } from "lucide-react";
+import { Pencil, Search, ArrowUpDown, Trash2, X, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +64,7 @@ export default function TemplateAlias() {
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
+  const [titleFilter, setTitleFilter] = useState<string>("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -145,6 +153,15 @@ export default function TemplateAlias() {
 
   const filteredAndSortedTemplates = templates
     ?.filter((template) => {
+      // Title filter
+      if (titleFilter === "with_value" && !template.title) return false;
+      if (titleFilter === "empty" && template.title) return false;
+      if (titleFilter !== "all" && titleFilter !== "with_value" && titleFilter !== "empty") {
+        if (template.title !== titleFilter) return false;
+      }
+
+      // Search term filter
+      if (!searchTerm) return true;
       const searchLower = searchTerm.toLowerCase();
       return (
         template.name.toLowerCase().includes(searchLower) ||
@@ -160,6 +177,15 @@ export default function TemplateAlias() {
       const comparison = aVal.localeCompare(bVal);
       return sortOrder === "asc" ? comparison : -comparison;
     });
+
+  // Get unique title values for filter dropdown
+  const uniqueTitles = Array.from(
+    new Set(
+      templates
+        ?.map(t => t.title)
+        .filter(t => t !== null && t !== "") as string[]
+    )
+  ).sort();
 
   const handleEditClick = (record: TemplateAlias) => {
     setEditingRecord({ ...record });
@@ -287,6 +313,28 @@ export default function TemplateAlias() {
                 </Button>
               )}
             </div>
+            
+            <Select value={titleFilter} onValueChange={setTitleFilter}>
+              <SelectTrigger className="w-[200px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtra per Title" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti i Title</SelectItem>
+                <SelectItem value="with_value">Con Title</SelectItem>
+                <SelectItem value="empty">Senza Title</SelectItem>
+                {uniqueTitles.length > 0 && (
+                  <>
+                    <div className="border-t my-1" />
+                    {uniqueTitles.map((title) => (
+                      <SelectItem key={title} value={title}>
+                        {title}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="border rounded-lg">

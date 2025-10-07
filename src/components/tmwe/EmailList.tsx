@@ -192,13 +192,13 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full max-w-full overflow-hidden">
+    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full min-w-0 overflow-x-hidden">{/* min-w-0 per shrinkage corretto */}
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full min-w-0',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
@@ -213,7 +213,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch min-w-0 w-full max-w-full overflow-hidden">
+          <div className="flex items-stretch min-w-0 w-full overflow-hidden">{/* Rimosso max-w-full */}
             {multiSelectMode && (
               <div className="flex items-center justify-center px-2 sm:px-3">
                 <Checkbox
@@ -332,13 +332,13 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full max-w-full overflow-hidden">
+    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full min-w-0 overflow-x-hidden">{/* min-w-0 per shrinkage corretto */}
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full h-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full min-w-0 h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
@@ -353,7 +353,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-start min-w-0 w-full max-w-full h-full overflow-hidden">
+          <div className="flex items-start min-w-0 w-full h-full overflow-hidden">{/* Rimosso max-w-full */}
             {multiSelectMode && (
               <div className="flex items-center justify-center px-2 sm:px-3 self-center">
                 <Checkbox

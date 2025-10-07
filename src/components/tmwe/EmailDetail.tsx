@@ -91,7 +91,14 @@ export const EmailDetail = ({
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [emailTextColor, setEmailTextColor] = useState(() => {
-    return localStorage.getItem('emailTextColor') || '#c084fc';
+    const saved = localStorage.getItem('emailTextColor');
+    // Se è il vecchio arancione, sostituiscilo con il nuovo lilla
+    if (saved === '#fdba74' || !saved) {
+      const newColor = '#c084fc';
+      localStorage.setItem('emailTextColor', newColor);
+      return newColor;
+    }
+    return saved;
   });
   
   // Use external state if provided, otherwise use internal state

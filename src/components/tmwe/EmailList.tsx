@@ -246,26 +246,26 @@ export const EmailList = ({
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
+                    <Badge variant="secondary" className="h-4 sm:h-5 px-1 sm:px-1.5 text-[10px] sm:text-xs">New</Badge>
                   )}
                   {email.starred && (
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                   )}
                   {email.hasAttachments && (
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                   )}
                   {!multiSelectMode && onOpenDetailPopup && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hidden md:flex h-7 w-7 p-0"
+                      className="hidden md:flex h-6 w-6 sm:h-7 sm:w-7 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEmailSelect(email.id);
                         onOpenDetailPopup();
                       }}
                     >
-                      <Maximize2 className="h-4 w-4" />
+                      <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   )}
                   {!multiSelectMode && selectedEmailId === email.id && (
@@ -274,9 +274,9 @@ export const EmailList = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 w-7 p-0"
+                          className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover z-50">
@@ -374,7 +374,7 @@ export const EmailList = ({
                       {email.from}
                     </p>
                     {!email.read && (
-                      <Badge variant="secondary" className="h-4 px-1 text-[10px] sm:h-5 sm:px-1.5 sm:text-xs shrink-0">
+                      <Badge variant="secondary" className="h-3.5 px-1 text-[9px] sm:h-4 sm:px-1 sm:text-[10px] md:h-5 md:px-1.5 md:text-xs shrink-0">
                         New
                       </Badge>
                     )}
@@ -392,7 +392,7 @@ export const EmailList = ({
                       <span className="whitespace-nowrap text-xs sm:text-base font-bold">
                         {format(new Date(email.date), 'HH:mm')}
                       </span>
-                      <span className="whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
+                      <span className="whitespace-nowrap text-[9px] sm:text-[10px] md:text-xs text-muted-foreground hidden sm:inline">
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
                     </div>
@@ -506,7 +506,7 @@ export const EmailList = ({
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
+                  <SelectTrigger className="w-20 sm:w-24 h-6 sm:h-7 text-[10px] sm:text-[11px]">
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -560,7 +560,7 @@ export const EmailList = ({
 
                 {bulkAction === 'move' && (
                   <Select value={targetFolder} onValueChange={setTargetFolder}>
-                    <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
+                    <SelectTrigger className="w-20 sm:w-24 h-6 sm:h-7 text-[10px] sm:text-[11px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -579,7 +579,7 @@ export const EmailList = ({
                   size="sm"
                   variant="ghost"
                   className={cn(
-                    "h-7 text-[11px] px-2 ml-1.5 transition-colors",
+                    "h-6 sm:h-7 text-[10px] sm:text-[11px] px-1.5 sm:px-2 ml-1 sm:ml-1.5 transition-colors",
                     bulkAction === 'delete'
                       ? "bg-gradient-to-bl from-red-400/25 via-red-400/15 via-35% to-transparent hover:from-red-400/30 hover:via-red-400/20 hover:bg-gradient-to-bl"
                       : "bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 hover:bg-gradient-to-bl",

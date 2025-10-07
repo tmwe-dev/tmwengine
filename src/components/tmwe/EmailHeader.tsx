@@ -154,7 +154,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {missingEmailCount !== undefined && missingEmailCount > 0 && !isSyncingSmart && (
                           <Badge 
                             variant="destructive" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold"
+                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] font-bold"
                           >
                             {missingEmailCount > 999 ? '999+' : missingEmailCount}
                           </Badge>
@@ -163,7 +163,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {isSyncingSmart && syncSmartProgress && (
                           <Badge 
                             variant="default" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold bg-blue-500"
+                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] font-bold bg-blue-500"
                           >
                             {syncSmartProgress.current}/{syncSmartProgress.missing}
                           </Badge>
@@ -172,7 +172,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                         {missingEmailCount === 0 && !isSyncingSmart && (
                           <Badge 
                             variant="secondary" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] bg-green-500 text-white"
+                            className="absolute -top-1 -right-1 h-3.5 sm:h-4 min-w-3.5 sm:min-w-4 px-0.5 sm:px-1 text-[9px] sm:text-[10px] bg-green-500 text-white"
                           >
                             ✓
                           </Badge>
@@ -249,7 +249,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               <div className="hidden md:flex items-center gap-1 sm:gap-2">
                 <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
                   <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
+                  <span className="font-semibold text-[9px] sm:text-[10px] md:text-xs">{emailCount.toLocaleString()}</span>
                 </Badge>
 
                 <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-full sm:max-w-sm md:max-w-md">

@@ -98,10 +98,26 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
     setCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      console.log('User auth check:', { user, userError });
+      
+      if (!user) {
+        toast({
+          title: 'Errore di autenticazione',
+          description: 'Devi essere autenticato per creare una stanza. Effettua il login.',
+          variant: 'destructive'
+        });
+        return;
+      }
 
-      const { data: newRoom, error } = await supabase
+      console.log('Attempting to create room:', {
+        name: newRoomName.trim(),
+        description: newRoomDescription.trim(),
+        created_by: user.id
+      });
+
+      const { data: newRoom, error: roomError } = await supabase
         .from('intranet_rooms')
         .insert({
           name: newRoomName.trim(),
@@ -111,15 +127,30 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Room creation result:', { newRoom, roomError });
+
+      if (roomError) {
+        toast({
+          title: 'Errore creazione stanza',
+          description: roomError.message || 'Impossibile creare la stanza',
+          variant: 'destructive'
+        });
+        throw roomError;
+      }
 
       // Add creator as member
-      await supabase
+      const { error: memberError } = await supabase
         .from('intranet_room_members')
         .insert({
           room_id: newRoom.id,
           user_id: user.id
         });
+
+      console.log('Member add result:', { memberError });
+
+      if (memberError) {
+        console.error('Error adding member:', memberError);
+      }
 
       toast({
         title: 'Successo',
@@ -130,11 +161,11 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
       setNewRoomName('');
       setNewRoomDescription('');
       loadRooms();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating room:', error);
       toast({
         title: 'Errore',
-        description: 'Impossibile creare la stanza',
+        description: error?.message || 'Impossibile creare la stanza',
         variant: 'destructive'
       });
     } finally {

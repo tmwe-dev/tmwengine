@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -138,6 +139,7 @@ const CRMLayout = ({ children }) => {
 
         <div className="flex items-center gap-2">
           <AIGuideDialog />
+          <ThemeSwitcher />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

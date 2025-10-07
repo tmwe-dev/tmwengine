@@ -2989,9 +2989,9 @@ export default function ImportTemplates() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shrink-0 p-2"
+                          className={`shrink-0 p-2 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'border-yellow-500 bg-yellow-500/10 animate-pulse' : ''}`}
                         >
-                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-sky-500 animate-pulse' : ''}`} />
+                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-yellow-500' : ''}`} />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl">

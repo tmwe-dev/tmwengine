@@ -60,10 +60,10 @@ Tutti i colori DEVONO essere HSL.
     --accent: 220 91% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --card: 220 91% 55%;
-    --card-foreground: 0 0% 100%;
-    --card-border: 220 91% 65%;
-    --card-transparent: 220 91% 55% / 0.35; /* Trasparenza 35% per card lilla */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --card-border: 214 32% 91%;
+    --card-transparent: 0 0% 100% / 0.8; /* Trasparenza 80% per card bianche */
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;

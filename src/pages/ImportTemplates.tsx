@@ -268,6 +268,7 @@ export default function ImportTemplates() {
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [myContactsWithActivitiesFilter, setMyContactsWithActivitiesFilter] = useState(false);
   const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
+  const [filterOnlyWithAlias, setFilterOnlyWithAlias] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [showFiltersArea, setShowFiltersArea] = useState(true);
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
@@ -440,6 +441,11 @@ export default function ImportTemplates() {
       result = result.filter(record => !hasCompletedActivityToday(record.id));
     }
     
+    // Apply filter for companies with alias
+    if (filterOnlyWithAlias) {
+      result = result.filter(record => record.company_alias && record.company_alias.trim() !== '');
+    }
+    
     // Apply legacy filters
     result = applyFilters(result, activeFilters);
     
@@ -452,12 +458,12 @@ export default function ImportTemplates() {
     const startIndex = currentPage * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     setViewingRecords(result.slice(startIndex, endIndex));
-  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, recordsPerPage, activeFilters, sortConfig, currentPage]);
+  }, [allRecords, searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, filterOnlyWithAlias, recordsPerPage, activeFilters, sortConfig, currentPage]);
 
   // Reset current page when filters change
   useEffect(() => {
     setCurrentPage(0);
-  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, activeFilters, recordsPerPage]);
+  }, [searchQuery, originFilter, countryFilter, hasNotesFilter, myContactsWithActivitiesFilter, hideContactsWithTodayActivities, filterOnlyWithAlias, activeFilters, recordsPerPage]);
 
   // Funzione per gestire la creazione di attività multiple
   const handleCreateMultipleActivities = async (activityData: any) => {
@@ -3166,7 +3172,7 @@ export default function ImportTemplates() {
                 )}
                 
                 {/* Pulsante Pulisci filtri quando i filtri sono nascosti ma attivi */}
-                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
+                {!showFiltersArea && (searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) && (
                   <div className="flex justify-start items-center gap-3 mt-2">
                     <Button
                       variant="ghost"
@@ -3177,6 +3183,7 @@ export default function ImportTemplates() {
                         setCountryFilter('');
                         setHasNotesFilter(false);
                         setMyContactsWithActivitiesFilter(false);
+                        setFilterOnlyWithAlias(true);
                       }}
                       className="h-10 px-2 text-xs bg-blue-500 text-white hover:bg-blue-600"
                     >
@@ -3238,6 +3245,17 @@ export default function ImportTemplates() {
                   <Label htmlFor="my-contacts-activities-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
                     <User className="h-4 w-4 text-primary" />
                     Solo con mie attività
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="filter-only-with-alias"
+                    checked={filterOnlyWithAlias}
+                    onCheckedChange={setFilterOnlyWithAlias}
+                  />
+                  <Label htmlFor="filter-only-with-alias" className="text-sm cursor-pointer whitespace-nowrap">
+                    Solo con alias azienda
                   </Label>
                 </div>
               </div>
@@ -3661,8 +3679,6 @@ export default function ImportTemplates() {
                                         </div>
                                       ) : key === 'company_name' ? (
                                         <div className="flex items-center gap-2">
-                                          <span>{formatCellValue(record[key], key)}</span>
-                                          
                                           {(!record.alias || !record.company_alias) && (
                                             <TooltipProvider>
                                               <Tooltip>
@@ -3691,6 +3707,8 @@ export default function ImportTemplates() {
                                               </Tooltip>
                                             </TooltipProvider>
                                           )}
+                                          
+                                          <span>{formatCellValue(record[key], key)}</span>
                                           
                                           <div 
                                             onClick={(e) => {

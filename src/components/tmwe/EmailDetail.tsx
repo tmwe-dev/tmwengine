@@ -288,84 +288,19 @@ export const EmailDetail = ({
       {/* Top bar with navigation and close */}
       {!isHeaderCollapsed && (
       <div className="flex-shrink-0 grid grid-cols-3 items-center p-2 sm:p-3 md:p-4 border-b bg-card-transparent w-full max-w-full overflow-hidden">
-        {/* Left: Management actions or empty */}
-        {!isHeaderCollapsed ? (
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 overflow-hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
-                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-48 sm:w-56 bg-popover z-50">
-                {senderGroups.map((group) => (
-                  <DropdownMenuItem
-                    key={group.id}
-                    onClick={() => handleAssignGroup(group.id)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: group.colore }}
-                      />
-                      {group.nome_gruppo}
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                {isCreatingGroup ? (
-                  <div className="p-2 space-y-2">
-                    <Input
-                      placeholder="Nome gruppo"
-                      value={newGroupName}
-                      onChange={(e) => setNewGroupName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateGroup();
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleCreateGroup} className="flex-1">
-                        Crea
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => {
-                          setIsCreatingGroup(false);
-                          setNewGroupName('');
-                        }}
-                        className="flex-1"
-                      >
-                        Annulla
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <DropdownMenuItem onClick={() => setIsCreatingGroup(true)}>
-                    + Nuovo gruppo
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
-              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+        {/* Left: Close button */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 overflow-hidden">
+          {(onBack || isMobile) && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onBack}
+              className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
+            >
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             </Button>
-            
-            {onDelete && (
-              <Button variant="destructive" size="icon" onClick={onDelete} className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10">
-                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 sm:gap-3">
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Center: Email navigation */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 justify-center">
@@ -393,52 +328,20 @@ export const EmailDetail = ({
           )}
         </div>
 
-        {/* Right: Actions and Close */}
+        {/* Right: Toggle collapse button */}
         <div className="flex justify-end gap-2 sm:gap-3">
-          {!isHeaderCollapsed && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
-                >
-                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => {
-                  setShowActionsSheet(true);
-                  setSelectedAction('move_to_folder');
-                }}>
-                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Sposta automaticamente
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  setShowActionsSheet(true);
-                  setSelectedAction('mark_as_read');
-                }}>
-                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Segna sempre come letto
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  setShowActionsSheet(true);
-                  setSelectedAction('archive');
-                }}>
-                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Archivia automaticamente
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  setShowActionsSheet(true);
-                  setSelectedAction('delete');
-                }}>
-                  <FolderCog className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                  Elimina automaticamente
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleToggleCollapse}
+            className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
+          >
+            {isHeaderCollapsed ? (
+              <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            )}
+          </Button>
         </div>
       </div>
       )}

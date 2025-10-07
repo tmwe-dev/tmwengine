@@ -2948,30 +2948,53 @@ export default function ImportTemplates() {
                 </div>
                 
                 {/* Search and Filter buttons */}
-                <div className="flex items-center justify-center gap-2 relative">
-                  {/* Campo di ricerca centrato */}
-                  <div className="relative w-96">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Cerca per nome azienda, alias, nome, città..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  
-                  {/* Filter Buttons */}
-                  <div className="flex items-center gap-1">
-                    <Dialog open={showFilters} onOpenChange={setShowFilters}>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0 p-2"
-                        >
-                          <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-sky-500 animate-pulse' : ''}`} />
-                        </Button>
-                      </DialogTrigger>
+                <div className="flex flex-col items-center gap-3">
+                  {/* Cestino eliminazione - visibile solo quando ci sono record selezionati */}
+                  {selectedRecords.size > 0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteSelectedRecords}
+                            className="h-10 w-10 p-0 border-red-500 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Elimina {selectedRecords.size} record selezionati</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+
+                  {/* Riga con campo ricerca e filtri */}
+                  <div className="flex items-center justify-center gap-2 relative">
+                    {/* Campo di ricerca centrato */}
+                    <div className="relative w-96">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Cerca per nome azienda, alias, nome, città..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    
+                    {/* Filter Buttons */}
+                    <div className="flex items-center gap-1">
+                      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 p-2"
+                          >
+                            <Filter className={`h-4 w-4 ${(originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter || !filterOnlyWithAlias) ? 'text-sky-500 animate-pulse' : ''}`} />
+                          </Button>
+                        </DialogTrigger>
                       <DialogContent className="max-w-2xl">
                         <DialogHeader>
                           <DialogTitle>Filtri e Opzioni</DialogTitle>
@@ -3249,15 +3272,9 @@ export default function ImportTemplates() {
                       >
                         <FilterX className="h-4 w-4 text-red-500" />
                       </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Filtered count badge */}
-                  {(searchQuery || originFilter || countryFilter || hasNotesFilter || myContactsWithActivitiesFilter) && (
-                    <Badge variant="secondary" className="absolute right-0">
-                      {filteredRecords.length} trovati
-                    </Badge>
-                  )}
                 </div>
               </div>
             )}
@@ -3266,28 +3283,9 @@ export default function ImportTemplates() {
 
           {/* Blocco azioni record selezionati - Desktop Only */}
           {!isMobile && selectedRecords.size > 0 && (
-            <div className="flex items-center justify-between border-b py-3 px-4">
-              {/* Cestino a sinistra */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={deleteSelectedRecords}
-                      className="h-10 w-10 p-0"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Elimina selezionati</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Altre icone al centro */}
-              <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+            <div className="flex items-center justify-center border-b py-3 px-4">
+              {/* Icone al centro */}
+              <div className="flex items-center gap-2">
                 <Badge variant="default" className="text-sm px-4 py-2">
                   {selectedRecords.size}
                 </Badge>

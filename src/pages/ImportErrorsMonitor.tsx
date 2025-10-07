@@ -880,7 +880,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                     
                     if (isProcessing) {
                       return (
-                        <div className="flex flex-col items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <div className="flex flex-col items-center gap-2 p-3 rounded-lg">
                           <div className="flex items-center gap-2 text-sm font-medium">
                             <Clock className="h-5 w-5 animate-spin text-blue-600" />
                             <span>{autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}</span>

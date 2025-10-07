@@ -28,7 +28,7 @@ serve(async (req) => {
       continue_from_batch = 0 
     } = await req.json();
 
-    console.log(`Starting AI error processing for import_log_id: ${import_log_id}, batch_size: ${batch_size}, continue_from_batch: ${continue_from_batch}`);
+    console.log(`Starting AI BATCH error processing for import_log_id: ${import_log_id}, batch_size: ${batch_size}, continue_from_batch: ${continue_from_batch}`);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -153,7 +153,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Processing ${pendingErrors.length} errors in this batch`);
+    console.log(`📦 BATCH MODE: Processing ${pendingErrors.length} errors in SINGLE AI call`);
 
     // STEP 4: Carica il prompt dal database
     const { data: promptData } = await supabaseClient
@@ -181,127 +181,198 @@ Conversioni speciali:
 
 Campi disponibili: name, company_name, email, phone, cell, address, city, country, zip_code, last_contact, scheduled_contact, next_contact_date`;
 
-    console.log('Using system prompt from database:', systemPrompt.substring(0, 100) + '...');
+    console.log('📄 Using system prompt from database (length:', systemPrompt.length, 'chars)');
 
-    // STEP 5: Processa ogni errore con AI
+    // STEP 5: BATCH PROCESSING - Processa multipli record in UNA sola chiamata AI
     let processed = 0;
     let corrected = 0;
     let failed = 0;
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
 
-    for (const error of pendingErrors) {
+    // Prepara batch di record con i loro ID per il tracking
+    const batchRecords = pendingErrors.map(error => ({
+      id: error.id,
+      row_number: error.row_number,
+      raw_data: error.raw_data,
+      attempted_corrections: error.attempted_corrections
+    }));
+
+    // Marca tutti come in elaborazione
+    await supabaseClient
+      .from('import_errors')
+      .update({ status: 'processing' })
+      .in('id', batchRecords.map(r => r.id));
+
+    try {
+      // Costruisci il prompt per batch processing
+      const userPrompt = `Normalizza i seguenti ${batchRecords.length} record CRM.
+
+IMPORTANTE: Restituisci un array JSON con ESATTAMENTE ${batchRecords.length} oggetti, nello stesso ordine dei record input.
+
+RECORD DA NORMALIZZARE:
+${batchRecords.map((r, idx) => `
+--- RECORD ${idx + 1} (row ${r.row_number}) ---
+${JSON.stringify(r.raw_data, null, 2)}
+`).join('\n')}
+
+RISPOSTA RICHIESTA:
+Restituisci un array JSON con ${batchRecords.length} oggetti normalizzati, mantenendo l'ordine.
+Esempio formato: [
+  {"company_name":"...", "email":"...", ...},
+  {"company_name":"...", "email":"...", ...}
+]`;
+
+      const estimatedTokens = Math.round((systemPrompt.length + userPrompt.length) / 4);
+      console.log(`📤 Sending batch request to AI...`);
+      console.log(`📊 Estimated tokens: ~${estimatedTokens} (prompt shared once for ${batchRecords.length} records!)`);
+
+      // CHIAMATA AI BATCH - 1 sola chiamata per tutti i record
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 6000, // Aumentato per gestire array di risposte
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('❌ AI API error:', aiResponse.status, errorText);
+        throw new Error(`AI API error: ${aiResponse.status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      const aiContent = aiData.choices[0].message.content;
+      
+      // Traccia token (ora condivisi per tutto il batch!)
+      const inputTokens = aiData.usage?.prompt_tokens || 0;
+      const outputTokens = aiData.usage?.completion_tokens || 0;
+      totalInputTokens = inputTokens;
+      totalOutputTokens = outputTokens;
+
+      console.log(`📥 AI Response received`);
+      console.log(`📊 Tokens: ${inputTokens} input + ${outputTokens} output = ${inputTokens + outputTokens} total`);
+      console.log(`💰 Batch efficiency: Prompt sent 1 time instead of ${batchRecords.length} times!`);
+
+      // Parse della risposta batch
+      let normalizedRecords: any[];
       try {
-        // Marca come in elaborazione
-        await supabaseClient
-          .from('import_errors')
-          .update({ status: 'processing' })
-          .eq('id', error.id);
-
-        const rawData = error.raw_data as any;
+        console.log(`🔍 Parsing batch AI response...`);
         
-        const userPrompt = `Estrai e normalizza questi dati per il CRM:
-${JSON.stringify(rawData)}
-
-Restituisci JSON con TUTTI i campi che riesci a trovare.`;
-
-        // Chiamata AI con response_format per forzare JSON strutturato
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.3,
-            max_tokens: 1000,
-            response_format: { 
-              type: "json_object"
-            }
-          }),
-        });
-
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('AI API error:', aiResponse.status, errorText);
-          throw new Error(`AI API error: ${aiResponse.status}`);
+        // Cerca array JSON nella risposta
+        const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+          console.error(`❌ No JSON array found in AI response`);
+          console.log('AI response sample:', aiContent.substring(0, 500));
+          throw new Error('No JSON array found in AI response');
+        }
+        
+        normalizedRecords = JSON.parse(jsonMatch[0]);
+        
+        if (!Array.isArray(normalizedRecords)) {
+          throw new Error('AI response is not an array');
+        }
+        
+        if (normalizedRecords.length !== batchRecords.length) {
+          console.warn(`⚠️ AI returned ${normalizedRecords.length} records, expected ${batchRecords.length}`);
         }
 
-        const aiData = await aiResponse.json();
-        const aiContent = aiData.choices[0].message.content;
+        console.log(`✅ Successfully parsed ${normalizedRecords.length} normalized records from batch`);
         
-        // Traccia token
-        const inputTokens = aiData.usage?.prompt_tokens || 0;
-        const outputTokens = aiData.usage?.completion_tokens || 0;
-        totalInputTokens += inputTokens;
-        totalOutputTokens += outputTokens;
+      } catch (parseError) {
+        console.error(`❌ Failed to parse batch AI response:`, parseError);
+        console.log('AI response sample:', aiContent.substring(0, 1000));
+        throw new Error('Invalid JSON array from AI');
+      }
 
-        // Estrai JSON dalla risposta
-        let correctedData;
+      // STEP 6: Salva risultati nel database (uno per uno con tracking)
+      const tokenPerRecord = Math.round((inputTokens + outputTokens) / batchRecords.length);
+      
+      for (let i = 0; i < batchRecords.length; i++) {
+        const record = batchRecords[i];
+        const normalizedData = normalizedRecords[i];
+
         try {
-          console.log(`🤖 AI Response for row ${error.row_number}:`, aiContent);
-          
-          const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) {
-            console.error(`❌ No JSON found in AI response for row ${error.row_number}`);
-            throw new Error('No JSON found in AI response');
+          if (!normalizedData || Object.keys(normalizedData).length === 0) {
+            console.warn(`⚠️ Empty data for record ${i + 1} (row ${record.row_number})`);
+            
+            await supabaseClient
+              .from('import_errors')
+              .update({
+                status: 'failed',
+                attempted_corrections: record.attempted_corrections + 1
+              })
+              .eq('id', record.id);
+            
+            failed++;
+            processed++;
+            continue;
           }
-          
-          correctedData = JSON.parse(jsonMatch[0]);
-          console.log(`✅ Parsed correctedData for row ${error.row_number}:`, JSON.stringify(correctedData));
-          
-          // Verifica che non sia vuoto
-          if (!correctedData || Object.keys(correctedData).length === 0) {
-            console.error(`⚠️ Empty correctedData for row ${error.row_number}`);
-            throw new Error('AI returned empty data');
+
+          // Salva record corretto
+          const { error: updateError } = await supabaseClient
+            .from('import_errors')
+            .update({
+              status: 'corrected',
+              corrected_data: normalizedData,
+              attempted_corrections: record.attempted_corrections + 1,
+              ai_suggestions: {
+                tokens_used: tokenPerRecord,
+                model: 'google/gemini-2.5-flash',
+                batch_processed: true,
+                batch_size: batchRecords.length
+              }
+            })
+            .eq('id', record.id);
+
+          if (updateError) {
+            console.error(`❌ DB update error for record ${i + 1}:`, updateError);
+            failed++;
+          } else {
+            console.log(`✅ Saved corrected data for row ${record.row_number}`);
+            corrected++;
           }
+          processed++;
+
+        } catch (recordError) {
+          console.error(`❌ Error processing record ${i + 1}:`, recordError);
           
-        } catch (parseError) {
-          console.error(`❌ Failed to parse AI response for row ${error.row_number}:`, aiContent);
-          throw new Error('Invalid JSON from AI');
-        }
-
-        // Salva dati corretti
-        const { error: updateError } = await supabaseClient
-          .from('import_errors')
-          .update({
-            status: 'corrected',
-            corrected_data: correctedData,
-            attempted_corrections: error.attempted_corrections + 1,
-            ai_suggestions: {
-              tokens_used: inputTokens + outputTokens,
-              model: 'google/gemini-2.5-flash'
-            }
-          })
-          .eq('id', error.id);
+          await supabaseClient
+            .from('import_errors')
+            .update({
+              status: 'failed',
+              attempted_corrections: record.attempted_corrections + 1
+            })
+            .eq('id', record.id);
           
-        if (updateError) {
-          console.error(`❌ Failed to update row ${error.row_number}:`, updateError);
-          throw updateError;
+          failed++;
+          processed++;
         }
-        
-        console.log(`✅ Successfully saved corrected data for row ${error.row_number}`);
+      }
 
-        corrected++;
-        processed++;
-
-      } catch (processingError: any) {
-        console.error(`Error processing error ${error.id}:`, processingError);
-        
+    } catch (batchError) {
+      // Se l'intero batch fallisce, marca tutti come falliti
+      console.error('❌ Batch processing failed:', batchError);
+      
+      for (const record of batchRecords) {
         await supabaseClient
           .from('import_errors')
           .update({
             status: 'failed',
-            error_message: `${error.error_message} | AI: ${processingError.message}`,
-            attempted_corrections: error.attempted_corrections + 1
+            attempted_corrections: record.attempted_corrections + 1
           })
-          .eq('id', error.id);
-
+          .eq('id', record.id);
+        
         failed++;
         processed++;
       }
@@ -312,6 +383,9 @@ Restituisci JSON con TUTTI i campi che riesci a trovare.`;
     const inputCost = (totalInputTokens / 1000000) * COST_PER_MILLION_INPUT_TOKENS;
     const outputCost = (totalOutputTokens / 1000000) * COST_PER_MILLION_OUTPUT_TOKENS;
     const estimatedCost = inputCost + outputCost;
+
+    console.log(`📊 Batch Results: ${corrected} corrected, ${failed} failed out of ${processed} processed`);
+    console.log(`💰 Total cost: $${estimatedCost.toFixed(6)}`);
 
     // Verifica se ci sono ancora errori pending
     const { data: remainingErrors } = await supabaseClient

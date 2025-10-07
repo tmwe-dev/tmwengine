@@ -808,15 +808,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                 <span className="text-sm text-muted-foreground">Righe per batch:</span>
                 <Select 
                   value={batchSize.toString()} 
-                  onValueChange={(v) => {
-                    console.log('Changing batch size to:', v);
-                    const newSize = Number(v);
-                    if (!isNaN(newSize) && newSize > 0) {
-                      setBatchSize(newSize);
-                    } else {
-                      console.error('Invalid batch size:', v);
-                    }
-                  }}
+                  onValueChange={(v) => setBatchSize(Number(v))}
                   disabled={isProcessing}
                 >
                   <SelectTrigger className="w-[100px]">
@@ -858,7 +850,10 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   {!isProcessing && !awaitingConfirmation ? (
                     <>
                       <Button
-                        onClick={() => processBatch(false)}
+                        onClick={() => {
+                          console.log('🚀 Avvio batch manuale, pending:', stats.pending, 'isProcessing:', isProcessing);
+                          processBatch(false);
+                        }}
                         disabled={stats.pending === 0}
                         className="gap-2"
                       >

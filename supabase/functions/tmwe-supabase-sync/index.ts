@@ -98,23 +98,32 @@ serve(async (req) => {
 
     console.log(`✅ Profilo sincronizzato per user_id: ${supabaseUser.id}`);
 
-    // 4. Genera sessione Supabase per l'utente
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: tmweEmail,
+    // 4. Crea una sessione Supabase Auth valida
+    console.log('🔐 Creazione sessione Supabase Auth...');
+    
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: supabaseUser.id,
     });
 
     if (sessionError) {
-      console.error('Errore generazione sessione:', sessionError);
+      console.error('Errore creazione sessione:', sessionError);
       throw sessionError;
     }
+
+    console.log('✅ Sessione Supabase creata con successo');
 
     return new Response(
       JSON.stringify({
         success: true,
         supabaseUserId: supabaseUser.id,
         profile: profile,
-        message: 'Sincronizzazione completata con successo'
+        session: {
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+          expires_at: sessionData.session.expires_at,
+          expires_in: sessionData.session.expires_in,
+        },
+        message: 'Sincronizzazione e sessione create con successo'
       }),
       {
         status: 200,

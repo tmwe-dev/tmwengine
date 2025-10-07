@@ -70,10 +70,23 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (data?.supabaseUserId) {
+      if (data?.supabaseUserId && data?.session) {
         console.log('✅ Sincronizzazione completata:', data.supabaseUserId);
         setSupabaseUserId(data.supabaseUserId);
         sessionStorage.setItem('tmwe_supabase_user_id', data.supabaseUserId);
+        
+        // Imposta la sessione Supabase Auth
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error('Errore impostazione sessione:', sessionError);
+        } else {
+          console.log('✅ Sessione Supabase Auth impostata');
+        }
+        
         return data.supabaseUserId;
       }
 

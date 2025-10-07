@@ -452,6 +452,48 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     }
   };
 
+  const processBatchFailedRecordsAI = async () => {
+    const recordsToProcess = Array.from(selectedFailedRecords);
+    if (recordsToProcess.length === 0) return;
+
+    addLog(`🤖 Avvio riprocessamento batch di ${recordsToProcess.length} record falliti...`);
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const recordId of recordsToProcess) {
+      try {
+        setProcessingAI(prev => new Set(prev).add(recordId));
+        
+        const { data, error } = await supabase.functions.invoke('process-single-error-ai', {
+          body: { 
+            error_id: recordId,
+            free_prompt: freePrompt
+          }
+        });
+
+        if (error) throw error;
+
+        successCount++;
+        addLog(`✅ Record riprocessato! Token: ${data.tokens_used}`);
+        
+      } catch (error) {
+        errorCount++;
+        addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      } finally {
+        setProcessingAI(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(recordId);
+          return newSet;
+        });
+      }
+    }
+
+    toast.success(`Batch completato: ${successCount} riparati, ${errorCount} errori`);
+    setSelectedFailedRecords(new Set());
+    await loadErrors();
+  };
+
   const toggleSelectRecord = (recordId: string) => {
     setSelectedFailedRecords(prev => {
       const newSet = new Set(prev);
@@ -946,18 +988,33 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedFailedRecords.size > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteFailedRecords(Array.from(selectedFailedRecords));
-                      }}
-                      className="gap-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Elimina ({selectedFailedRecords.size})
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          processBatchFailedRecordsAI();
+                        }}
+                        disabled={processingAI.size > 0}
+                        className="gap-2 border-purple-500/30 hover:bg-purple-500/10"
+                      >
+                        <Sparkles className="h-4 w-4 text-purple-500" />
+                        AI Batch ({selectedFailedRecords.size})
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteFailedRecords(Array.from(selectedFailedRecords));
+                        }}
+                        className="gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Elimina ({selectedFailedRecords.size})
+                      </Button>
+                    </>
                   )}
                   <Button
                     variant="outline"

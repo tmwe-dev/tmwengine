@@ -221,3 +221,6 @@ verify_jwt = true
 [functions.process-single-error-ai]
 verify_jwt = true
 
+[functions.intranet-ai-processor]
+verify_jwt = true
+

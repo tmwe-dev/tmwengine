@@ -271,33 +271,33 @@ export const EmailDetail = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-card-transparent">
+    <div className="flex h-full flex-col bg-card-transparent w-full max-w-full overflow-hidden">
       {/* Color picker bar */}
-      <div className="flex items-center justify-center p-2 border-b bg-card-transparent">
+      <div className="flex-shrink-0 flex items-center justify-center p-2 border-b bg-card-transparent">
         <div className="relative">
-          <Paintbrush className="h-6 w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
+          <Paintbrush className="h-5 w-5 sm:h-6 sm:w-6 text-sky-400 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" />
           <input
             type="color"
             value={emailTextColor}
             onChange={(e) => setEmailTextColor(e.target.value)}
-            className="h-10 w-12 cursor-pointer rounded border border-border opacity-0"
+            className="h-8 w-10 sm:h-10 sm:w-12 cursor-pointer rounded border border-border opacity-0"
           />
         </div>
       </div>
 
       {/* Top bar with navigation and close */}
       {!isHeaderCollapsed && (
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+      <div className="flex-shrink-0 grid grid-cols-3 items-center p-2 sm:p-3 md:p-4 border-b bg-card-transparent w-full max-w-full overflow-hidden">
         {/* Left: Management actions or empty */}
         {!isHeaderCollapsed ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 overflow-hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-12 w-12">
-                  <FolderCog className="h-6 w-6" />
+                <Button variant="outline" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
+                  <FolderCog className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-56">
+              <DropdownMenuContent align="center" className="w-48 sm:w-56 bg-popover z-50">
                 {senderGroups.map((group) => (
                   <DropdownMenuItem
                     key={group.id}
@@ -352,13 +352,13 @@ export const EmailDetail = ({
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Button variant="ghost" size="icon" className="h-12 w-12">
-              <Star className="h-6 w-6" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
+              <Star className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
             </Button>
             
             {onDelete && (
-              <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
-                <Trash2 className="h-6 w-6" />
+              <Button variant="destructive" size="icon" onClick={onDelete} className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
+                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               </Button>
             )}
           </div>
@@ -368,16 +368,16 @@ export const EmailDetail = ({
         )}
 
         {/* Center: Email navigation */}
-        <div className="flex items-center gap-3 justify-center">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 justify-center">
           {onPrevious && (
             <Button 
               variant="outline" 
               size="icon" 
               onClick={onPrevious}
               disabled={!hasPrevious}
-              className="h-12 w-12"
+              className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
             </Button>
           )}
           {onNext && (
@@ -386,9 +386,9 @@ export const EmailDetail = ({
               size="icon" 
               onClick={onNext}
               disabled={!hasNext}
-              className="h-12 w-12"
+              className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
             </Button>
           )}
         </div>

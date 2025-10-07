@@ -544,22 +544,24 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
-      <div className="flex flex-1 w-full">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full overflow-hidden">
+      <div className="flex flex-1 w-full min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <EmailSidebar
-            selectedFolder={selectedFolder}
-            onFolderSelect={setSelectedFolder}
-            onCompose={() => setComposeOpen(true)}
-            onSync={handleSync}
-          />
+          <div className="flex-shrink-0">
+            <EmailSidebar
+              selectedFolder={selectedFolder}
+              onFolderSelect={setSelectedFolder}
+              onCompose={() => setComposeOpen(true)}
+              onSync={handleSync}
+            />
+          </div>
         )}
 
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-[280px] p-0">
+            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
             <EmailSidebar 
               selectedFolder={selectedFolder}
               onFolderSelect={(folder) => {
@@ -579,7 +581,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 flex flex-col min-w-0 overflow-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           <EmailHeader
@@ -608,7 +610,7 @@ const EmailDashboard = () => {
           />
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
-            <div className="border-b bg-card-transparent px-2 sm:px-4 py-2">
+            <div className="flex-shrink-0 border-b bg-card-transparent px-2 sm:px-4 py-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -623,7 +625,7 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
+          <div className="flex-shrink-0 border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2 w-full max-w-full overflow-hidden">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <EmailSenderFilter
                 emails={emailsToUse}
@@ -677,7 +679,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}

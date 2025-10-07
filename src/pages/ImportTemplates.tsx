@@ -3228,18 +3228,6 @@ export default function ImportTemplates() {
 
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    id="has-notes-filter-desktop"
-                    checked={hasNotesFilter}
-                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                  />
-                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                    <StickyNote className="h-4 w-4 text-blue-500" />
-                    Solo con note
-                  </Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
                     id="my-contacts-activities-filter-desktop"
                     checked={myContactsWithActivitiesFilter}
                     onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}

@@ -19,6 +19,7 @@ import {
   Coins,
   Activity
 } from 'lucide-react';
+import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -329,6 +330,8 @@ export default function ImportErrorsMonitor() {
             <ArrowLeft className="h-4 w-4" />
             Torna a Import
           </Button>
+          
+          <PagePromptManager pageRoute="/import-errors-monitor" />
         </div>
 
         {/* Contatori Token e Costo */}

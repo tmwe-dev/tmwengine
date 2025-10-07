@@ -1,5 +1,6 @@
 import React from 'react';
-import { Users, Upload, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Upload, FileSpreadsheet, Calendar, TrendingUp, AlertTriangle, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,12 +32,12 @@ export function ImportLogMobileCard({
   log,
   onProcess,
   onViewRecords,
-  
   getStatusBadge,
   isProcessing,
   isLoading,
   isSelected
 }: ImportLogMobileCardProps) {
+  const navigate = useNavigate();
   const canProcess = log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato';
   const canView = !(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato');
 
@@ -72,7 +73,7 @@ export function ImportLogMobileCard({
             <div className="text-sm font-medium text-white">{log.stato === 'completato' ? 'Completato' : log.stato === 'errore' ? 'Errore' : log.stato === 'in_corso' || log.stato === 'elaborazione' ? 'In elaborazione' : 'Pronto'}</div>
           </div>
 
-          {/* Stats - left aligned */}
+          {/* Stats - left aligned with AI Repair button */}
           <div className="flex flex-col gap-2 items-start">
             <div className="flex items-center gap-2">
               <div className="p-1 rounded-full">
@@ -83,6 +84,19 @@ export function ImportLogMobileCard({
                 <span className="text-xs text-white ml-1">Errori rilevati</span>
               </div>
             </div>
+            
+            {/* AI Repair Button - shown if there are errors */}
+            {log.righe_errori > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
+                className="gap-2 bg-orange-500/10 border-orange-500/50 hover:bg-orange-500/20 text-white"
+              >
+                <Wrench className="h-3 w-3" />
+                Ripara con AI ({log.righe_errori})
+              </Button>
+            )}
           </div>
 
           {/* Stats */}

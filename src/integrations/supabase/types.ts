@@ -899,6 +899,59 @@ export type Database = {
           },
         ]
       }
+      import_errors: {
+        Row: {
+          ai_suggestions: Json | null
+          attempted_corrections: number | null
+          corrected_data: Json | null
+          created_at: string
+          error_message: string | null
+          error_type: string | null
+          id: string
+          import_log_id: string
+          raw_data: Json
+          row_number: number | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_suggestions?: Json | null
+          attempted_corrections?: number | null
+          corrected_data?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          import_log_id: string
+          raw_data: Json
+          row_number?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_suggestions?: Json | null
+          attempted_corrections?: number | null
+          corrected_data?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          import_log_id?: string
+          raw_data?: Json
+          row_number?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_errors_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_logs: {
         Row: {
           archived_at: string | null

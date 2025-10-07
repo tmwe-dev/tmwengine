@@ -51,7 +51,7 @@ export default function Tables() {
     if (tableName.startsWith('chat_')) {
       return 'Chat AI';
     }
-    if (tableName.startsWith('import') || tableName === 'file_imports') {
+    if (tableName.startsWith('import') || tableName === 'file_imports' || tableName === 'imported_contacts' || tableName === 'import_errors') {
       return 'Import';
     }
     if (tableName.startsWith('config_')) {

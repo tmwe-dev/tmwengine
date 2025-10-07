@@ -91,7 +91,7 @@ export const EmailDetail = ({
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [emailTextColor, setEmailTextColor] = useState(() => {
-    return localStorage.getItem('emailTextColor') || '#fdba74';
+    return localStorage.getItem('emailTextColor') || '#C8A2C8';
   });
   
   // Use external state if provided, otherwise use internal state

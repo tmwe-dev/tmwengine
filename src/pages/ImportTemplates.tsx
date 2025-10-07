@@ -3281,8 +3281,8 @@ export default function ImportTemplates() {
 
           {/* Blocco azioni record selezionati - Desktop Only */}
           {!isMobile && selectedRecords.size > 0 && (
-            <div className="flex items-center justify-center border-b py-3 px-4">
-              {/* Icone al centro */}
+            <div className="flex items-center justify-between border-b py-3 px-4">
+              {/* Numero e X a sinistra */}
               <div className="flex items-center gap-2">
                 <Badge variant="default" className="text-sm px-4 py-2">
                   {selectedRecords.size}
@@ -3295,7 +3295,10 @@ export default function ImportTemplates() {
                 >
                   <X className="h-4 w-4" />
                 </Button>
-                
+              </div>
+
+              {/* AI e Prompt al centro */}
+              <div className="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -3364,7 +3367,10 @@ export default function ImportTemplates() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                
+              </div>
+
+              {/* Altre icone a destra */}
+              <div className="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>

@@ -121,7 +121,7 @@ Tutti i colori DEVONO essere HSL.
     --shadow-glow: 0 0 20px hsl(220 91% 55% / 0.3);
 
     /* === GRADIENTI === */
-    --gradient-page: linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0%, hsla(0, 0%, 0%, 0.35) 45%, hsl(0, 0%, 0%) 45%);
+    --gradient-page: linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0px, hsla(0, 0%, 0%, 0.35) 600px, hsl(0, 0%, 0%) 600px);
 
     /* === TRANSIZIONI === */
     --transition-fast: 150ms ease;
@@ -183,6 +183,8 @@ Tutti i colori DEVONO essere HSL.
     --sidebar-accent-foreground: 180 10% 95%;
     --sidebar-border: 200 15% 18%;
     --sidebar-ring: 175 70% 50%;
+    
+    --gradient-page: linear-gradient(135deg, hsla(175, 70%, 50%, 0.25) 0%, hsla(200, 20%, 10%, 0.6) 50%, hsl(200, 20%, 10%) 100%);
   }
 
   /* === TEMA SUNSET === */
@@ -239,6 +241,8 @@ Tutti i colori DEVONO essere HSL.
     --sidebar-accent-foreground: 30 10% 95%;
     --sidebar-border: 25 20% 15%;
     --sidebar-ring: 25 95% 55%;
+    
+    --gradient-page: linear-gradient(135deg, hsla(25, 95%, 55%, 0.25) 0%, hsla(280, 70%, 60%, 0.15) 50%, hsl(25, 30%, 8%) 100%);
   }
 
   /* === TEMA FOREST === */
@@ -295,6 +299,8 @@ Tutti i colori DEVONO essere HSL.
     --sidebar-accent-foreground: 140 10% 95%;
     --sidebar-border: 140 20% 15%;
     --sidebar-ring: 160 80% 45%;
+    
+    --gradient-page: linear-gradient(135deg, hsla(160, 80%, 45%, 0.25) 0%, hsla(35, 65%, 50%, 0.15) 50%, hsl(140, 25%, 8%) 100%);
   }
 
   /* === TEMA SKY === */
@@ -351,6 +357,8 @@ Tutti i colori DEVONO essere HSL.
     --sidebar-accent-foreground: 210 10% 95%;
     --sidebar-border: 210 25% 18%;
     --sidebar-ring: 200 95% 55%;
+    
+    --gradient-page: linear-gradient(135deg, hsla(200, 95%, 55%, 0.25) 0%, hsla(55, 95%, 60%, 0.15) 50%, hsl(210, 30%, 10%) 100%);
   }
 
   .dark {

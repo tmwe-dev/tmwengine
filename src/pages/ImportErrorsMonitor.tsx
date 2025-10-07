@@ -938,7 +938,11 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                 <span className="text-sm text-muted-foreground">Righe per batch:</span>
                 <Select 
                   value={batchSize.toString()} 
-                  onValueChange={(v) => setBatchSize(Number(v))}
+                  onValueChange={(v) => {
+                    const newSize = Number(v);
+                    console.log('🔢 Dropdown cambiato:', newSize, 'tipo:', typeof newSize);
+                    setBatchSize(newSize);
+                  }}
                   disabled={isProcessing}
                 >
                   <SelectTrigger className="w-[100px]">

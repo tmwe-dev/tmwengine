@@ -2944,33 +2944,30 @@ export default function ImportTemplates() {
                     
                     <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
                   </div>
-                  
-                  {/* Pulsanti in alto a destra */}
-                  <div className="flex items-center gap-2">
-                    {/* Pulsante Refresh */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => selectedImport && loadAllRecords(selectedImport)}
-                            className="h-auto px-2 py-1 flex flex-col items-center gap-1"
-                            disabled={loadingAllRecords}
-                          >
-                            <RefreshCw className={`h-4 w-4 text-blue-500 ${loadingAllRecords ? 'animate-spin' : ''}`} />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Ricarica dati</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
                 </div>
                 
                 {/* Search and Filter buttons */}
                 <div className="flex items-center justify-center gap-2 relative">
+                  {/* Pulsante Refresh a sinistra del campo cerca */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => selectedImport && loadAllRecords(selectedImport)}
+                          className="h-auto px-2 py-1"
+                          disabled={loadingAllRecords}
+                        >
+                          <RefreshCw className={`h-4 w-4 text-blue-500 ${loadingAllRecords ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Ricarica dati</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
                   {/* Campo di ricerca centrato */}
                   <div className="relative w-96">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

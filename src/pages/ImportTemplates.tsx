@@ -2871,7 +2871,12 @@ export default function ImportTemplates() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between relative">
                   <div className="flex-1">
-                    <DialogTitle>Record Importati</DialogTitle>
+                    <div className="flex items-center gap-3">
+                      <DialogTitle>Record Importati</DialogTitle>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        ({allRecords.length} record{allRecords.length !== 1 ? 's' : ''})
+                      </span>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
                   </div>
                   

@@ -1677,6 +1677,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          auto_translate_writing: boolean
+          created_at: string
+          display_name: string | null
+          enable_auto_speaker: boolean
+          id: string
+          preferred_language: string
+          reading_language: string
+          translation_mode: string
+          updated_at: string
+          user_id: string
+          writing_language: string
+        }
+        Insert: {
+          auto_translate_writing?: boolean
+          created_at?: string
+          display_name?: string | null
+          enable_auto_speaker?: boolean
+          id?: string
+          preferred_language?: string
+          reading_language?: string
+          translation_mode?: string
+          updated_at?: string
+          user_id: string
+          writing_language?: string
+        }
+        Update: {
+          auto_translate_writing?: boolean
+          created_at?: string
+          display_name?: string | null
+          enable_auto_speaker?: boolean
+          id?: string
+          preferred_language?: string
+          reading_language?: string
+          translation_mode?: string
+          updated_at?: string
+          user_id?: string
+          writing_language?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

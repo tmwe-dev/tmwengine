@@ -5,7 +5,9 @@ import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInput } from '@/components/intranet/MessageInput';
 import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
+import { UserProfileSettings } from '@/components/intranet/UserProfileSettings';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
+import { useRoomAISettings } from '@/hooks/useRoomAISettings';
 import { supabase } from '@/integrations/supabase/client';
 import { Users } from 'lucide-react';
 
@@ -14,6 +16,7 @@ const Intranet = () => {
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
+  const { settings: aiSettings } = useRoomAISettings(selectedRoomId);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -101,6 +104,12 @@ const Intranet = () => {
                       roomId={selectedRoomId} 
                       isCreatorOrAdmin={isCreatorOrAdmin}
                     />
+                  )}
+                  <UserProfileSettings />
+                  {aiSettings.enableAI && (
+                    <Badge variant="outline" className="text-xs">
+                      AI 🤖
+                    </Badge>
                   )}
                 </div>
                 <Badge variant="secondary" className="flex items-center gap-2">

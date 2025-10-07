@@ -268,7 +268,7 @@ export default function ImportTemplates() {
   const [countryFilter, setCountryFilter] = useState('');
   const [hasNotesFilter, setHasNotesFilter] = useState(false);
   const [myContactsWithActivitiesFilter, setMyContactsWithActivitiesFilter] = useState(false);
-  const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
+  const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(false);
   const [filterOnlyWithAlias, setFilterOnlyWithAlias] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [showFiltersArea, setShowFiltersArea] = useState(true);

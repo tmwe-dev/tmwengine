@@ -200,16 +200,16 @@ export const EmailList = ({
           className={cn(
             'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
-            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
+            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.3)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.005] sm:hover:scale-[1.01] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.35)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.005] sm:hover:scale-[1.01] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.4)] sm:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.005] sm:scale-[1.01] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.45)] sm:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.005] sm:scale-[1.01] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
+            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
@@ -340,16 +340,16 @@ export const EmailList = ({
           className={cn(
             'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full max-w-full h-auto',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
-            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
+            'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[0.5px] sm:after:h-[1px] after:z-10',
             email.read
-              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
-              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
+              ? 'border-l-transparent bg-gradient-to-bl from-purple-400/15 via-purple-400/8 via-35% to-transparent hover:from-purple-300/20 hover:via-purple-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.3)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.4)] hover:scale-[1.01] sm:hover:scale-[1.02] before:bg-gradient-to-r before:from-purple-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-purple-400/65 after:via-black after:via-40% after:to-transparent'
+              : 'border-l-orange-500/50 bg-gradient-to-bl from-orange-400/15 via-orange-400/8 via-35% to-transparent hover:from-orange-300/20 hover:via-orange-300/12 hover:shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.35)] sm:hover:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.45)] hover:scale-[1.01] sm:hover:scale-[1.02] before:bg-gradient-to-r before:from-orange-400/65 before:via-black before:via-40% before:to-transparent after:bg-gradient-to-r after:from-orange-400/65 after:via-black after:via-40% after:to-transparent',
             selectedEmailId === email.id && (
               email.read 
-                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.02] !border-red-500'
-                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.02] !border-red-500'
+                ? 'bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent border-purple-500/30 shadow-[-2px_2px_3px_0px_rgba(216,180,254,0.4)] sm:shadow-[-3px_3px_5px_0px_rgba(216,180,254,0.5)] scale-[1.01] sm:scale-[1.02] !border-red-500'
+                : 'bg-gradient-to-bl from-orange-400/25 via-orange-400/15 via-35% to-transparent border-orange-500/50 shadow-[-2px_2px_3px_0px_rgba(253,186,116,0.45)] sm:shadow-[-3px_3px_5px_0px_rgba(253,186,116,0.55)] scale-[1.01] sm:scale-[1.02] !border-red-500'
             ),
-            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
+            selectedEmailIds.has(email.id) && 'shadow-[inset_0_0_0_0.5px_transparent] sm:shadow-[inset_0_0_0_1px_transparent] shadow-[0_0_0_0.5px_rgb(249_115_22_/_0.55)] sm:shadow-[0_0_0_1px_rgb(249_115_22_/_0.65)]'
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
@@ -666,7 +666,7 @@ export const EmailList = ({
                     {Array.from(selectedEmailIds).slice(0, 3).map(id => {
                       const email = emails.find(e => e.id === id);
                       return email ? (
-                        <div key={id} className="relative text-xs font-mono px-2 py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.5px] after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-[hsl(15,55%,45%,0.65)] after:via-black after:via-40% after:to-transparent after:translate-y-full after:rounded-sm">
+                        <div key={id} className="relative text-[10px] sm:text-xs font-mono px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gradient-to-r from-purple-500/10 via-purple-500/10 via-40% to-transparent backdrop-blur-[0.3px] sm:backdrop-blur-[0.5px] after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] sm:after:h-[2px] after:bg-gradient-to-r after:from-[hsl(15,55%,45%,0.65)] after:via-black after:via-40% after:to-transparent after:translate-y-full after:rounded-sm">
                           {email.from}
                         </div>
                       ) : null;

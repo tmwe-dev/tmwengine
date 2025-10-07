@@ -553,7 +553,7 @@ export const EmailDetail = ({
       </ScrollArea>
 
       <Sheet open={showActionsSheet} onOpenChange={setShowActionsSheet}>
-        <SheetContent side="right" className="w-[95vw] sm:w-[90vw] sm:max-w-md backdrop-blur-md bg-background/95">
+        <SheetContent side="right" className="w-[95vw] sm:w-[90vw] sm:max-w-md backdrop-blur-sm sm:backdrop-blur-md bg-background/95">
           <SheetHeader>
             <SheetTitle>Configura Regola Automatica</SheetTitle>
             <SheetDescription>

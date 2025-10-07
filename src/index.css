@@ -24,63 +24,62 @@ Tutti i colori DEVONO essere HSL.
 
 @layer base {
   :root {
-    /* === VERSIONE DIURNA === */
     /* === COLORI BASE === */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --surface: 0 0% 98%;
-    --surface-secondary: 210 20% 96%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --surface: 240 10% 3.9%;
+    --surface-secondary: 240 3.7% 15.9%;
 
     /* === COLORI SEMANTICI === */
-    --primary: 175 70% 50%;
-    --primary-foreground: 220 91% 25%;
-    --primary-hover: 175 70% 45%;
-    --primary-muted: 175 70% 50% / 0.15;
+    --primary: 220 91% 55%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 220 91% 50%;
+    --primary-muted: 220 91% 55% / 0.1;
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --secondary-hover: 210 20% 90%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --secondary-hover: 240 5% 84%;
 
     --success: 142 76% 36%;
-    --success-foreground: 220 91% 25%;
-    --success-muted: 142 76% 36% / 0.15;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
 
     --warning: 48 96% 53%;
-    --warning-foreground: 222 47% 11%;
-    --warning-muted: 48 96% 53% / 0.15;
+    --warning-foreground: 240 10% 3.9%;
+    --warning-muted: 48 96% 53% / 0.1;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 220 91% 25%;
-    --destructive-muted: 0 84% 60% / 0.15;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
 
     /* === COLORI INTERFACCIA === */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
 
-    --accent: 15 85% 60%;
-    --accent-foreground: 220 91% 25%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
 
-    --card: 175 70% 50%;
-    --card-foreground: 220 91% 25%;
-    --card-border: 175 70% 60%;
-    --card-transparent: 175 70% 50% / 0.35; /* Trasparenza 35% per card */
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --card-border: 240 3.7% 15.9%;
+    --card-transparent: 240 10% 3.9% / 0.35; /* Trasparenza 35% per card */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 175 70% 50%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 220 91% 55%;
 
     /* === COLORI SIDEBAR === */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 215 16% 47%;
-    --sidebar-primary: 175 70% 50%;
-    --sidebar-primary-foreground: 220 91% 25%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 175 70% 50%;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 5% 64.9%;
+    --sidebar-primary: 220 91% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 220 91% 55%;
 
     /* === GEOMETRIA === */
     --radius: 8px;
@@ -130,14 +129,12 @@ Tutti i colori DEVONO essere HSL.
   }
 
   .dark {
-    /* === VERSIONE NOTTURNA === */
-    /* === COLORI BASE === */
+    /* Nel tema scuro manteniamo gli stessi valori poiché già ottimizzati per dark */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --surface: 240 10% 3.9%;
     --surface-secondary: 240 3.7% 15.9%;
 
-    /* === COLORI SEMANTICI === */
     --primary: 220 91% 55%;
     --primary-foreground: 0 0% 98%;
     --primary-hover: 220 91% 50%;
@@ -159,7 +156,6 @@ Tutti i colori DEVONO essere HSL.
     --destructive-foreground: 0 0% 98%;
     --destructive-muted: 0 84% 60% / 0.1;
 
-    /* === COLORI INTERFACCIA === */
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
@@ -178,7 +174,6 @@ Tutti i colori DEVONO essere HSL.
     --input: 240 3.7% 15.9%;
     --ring: 220 91% 55%;
 
-    /* === COLORI SIDEBAR === */
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 240 5% 64.9%;
     --sidebar-primary: 220 91% 55%;

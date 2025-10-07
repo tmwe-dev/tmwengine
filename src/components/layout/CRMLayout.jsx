@@ -5,7 +5,6 @@ import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -70,8 +69,14 @@ const CRMLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="min-h-screen bg-background">
-
+    <div 
+      className="min-h-screen"
+      style={location.pathname === '/attivita' ? {
+        background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
+      } : {
+        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0px, hsla(0, 0%, 0%, 0.35) 600px, hsl(0, 0%, 0%) 600px)'
+      }}
+    >
       {/* Header */}
       <header 
         className={cn(
@@ -116,7 +121,6 @@ const CRMLayout = ({ children }) => {
         </button>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <AIGuideDialog />
           
           <DropdownMenu>

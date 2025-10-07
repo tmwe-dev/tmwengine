@@ -192,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full min-w-0 overflow-x-hidden">{/* min-w-0 per shrinkage corretto */}
+    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full max-w-full min-w-0 overflow-x-hidden">{/* max-w-full aggiunto per contenere padding */}
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -643,7 +643,7 @@ export const EmailList = ({
           </div>
         </div>
       </div>
-      <ScrollArea className="h-full" ref={scrollRef}>
+      <ScrollArea className="h-full w-full max-w-full" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}
         {viewMode === 'grid' && renderGridView()}
         

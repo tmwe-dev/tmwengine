@@ -110,28 +110,9 @@ export const EmailDetail = ({
   const isHeaderCollapsed = externalIsHeaderCollapsed !== undefined ? externalIsHeaderCollapsed : internalIsHeaderCollapsed;
   const handleToggleCollapse = externalOnToggleCollapse || (() => setInternalIsHeaderCollapsed(!internalIsHeaderCollapsed));
 
-  // Reload color from localStorage when email changes
-  useEffect(() => {
-    const savedColor = localStorage.getItem('emailTextColor');
-    if (savedColor && savedColor !== emailTextColor) {
-      console.log('🔄 Updating color from localStorage:', savedColor);
-      setEmailTextColor(savedColor);
-    }
-  }, [email.id]);
-
   // Save color to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('emailTextColor', emailTextColor);
-    // Force iframe reload
-    if (iframeRef.current) {
-      const currentSrc = iframeRef.current.srcdoc;
-      iframeRef.current.srcdoc = '';
-      setTimeout(() => {
-        if (iframeRef.current) {
-          iframeRef.current.srcdoc = currentSrc;
-        }
-      }, 0);
-    }
   }, [emailTextColor]);
 
   // Auto mark as read when email is displayed

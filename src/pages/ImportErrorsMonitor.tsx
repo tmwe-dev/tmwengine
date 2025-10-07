@@ -41,6 +41,7 @@ interface ErrorRecord {
   updated_at: string;
   corrected_data?: any;
   raw_data?: any;
+  ai_suggestions?: any;
 }
 
 interface ProcessingStats {
@@ -667,28 +668,56 @@ export default function ImportErrorsMonitor() {
                         Nessun record fallito
                       </div>
                     ) : (
-                      failedRecords.map((error) => (
-                        <div
-                          key={error.id}
-                          className="p-3 rounded-lg border border-red-500/30 bg-red-500/5"
-                        >
-                          <div className="flex items-start gap-2 mb-2">
-                            <Badge variant="outline" className="text-xs bg-red-500/20">
-                              Riga {error.row_number}
-                            </Badge>
-                          </div>
-                          <div className="text-left text-xs space-y-1">
-                            <div className="text-red-400">
-                              <span className="text-muted-foreground">Errore:</span> {error.error_message}
+                      failedRecords.map((error) => {
+                        const renderValue = (value: any) => {
+                          if (value === null || value === undefined || value === '') {
+                            return <span className="text-red-400 italic">❌ Mancante</span>;
+                          }
+                          return <span>{String(value)}</span>;
+                        };
+
+                        return (
+                          <div
+                            key={error.id}
+                            className="p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <Badge variant="outline" className="text-xs bg-red-500/20">
+                                Riga {error.row_number}
+                              </Badge>
+                              <div className="text-red-400 text-xs font-semibold">
+                                ❌ {error.error_message}
+                              </div>
                             </div>
+
                             {error.raw_data && typeof error.raw_data === 'object' && (
-                              <div className="mt-2 font-mono text-muted-foreground">
-                                {JSON.stringify(error.raw_data, null, 2)}
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">
+                                {Object.entries(error.raw_data).map(([key, value]) => (
+                                  <div key={key} className="flex flex-col">
+                                    <span className="text-muted-foreground font-semibold uppercase text-[10px]">
+                                      {key.replace(/_/g, ' ')}
+                                    </span>
+                                    <div className="mt-1">
+                                      {renderValue(value)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {error.ai_suggestions && typeof error.ai_suggestions === 'object' && (
+                              <div className="mt-2 pt-2 border-t border-red-500/20">
+                                <div className="text-xs text-muted-foreground font-semibold mb-1">
+                                  Suggerimenti AI:
+                                </div>
+                                <div className="text-xs text-red-300">
+                                  {(error.ai_suggestions as any).reason || 'Nessun suggerimento disponibile'}
+                                </div>
                               </div>
                             )}
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </ScrollArea>

@@ -3312,9 +3312,11 @@ export default function ImportTemplates() {
                               });
                               if (error) throw error;
                               toast.success(data.message || `${data.updated_count} alias generati`);
-                              loadAllRecords(selectedImport!);
+                              toast.info('Ricaricamento dati...');
+                              await loadAllRecords(selectedImport!);
                             } catch (err: any) {
-                              toast.error('Errore generazione alias');
+                              console.error('Errore generazione alias:', err);
+                              toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
                             }
                           }}
                           className="h-10 w-10 p-0"
@@ -3693,9 +3695,11 @@ export default function ImportTemplates() {
                                                         });
                                                         if (error) throw error;
                                                         toast.success(data.message || 'Alias generati');
-                                                        loadAllRecords(selectedImport!);
+                                                        toast.info('Ricaricamento dati...');
+                                                        await loadAllRecords(selectedImport!);
                                                       } catch (err: any) {
-                                                        toast.error('Errore generazione alias');
+                                                        console.error('Errore generazione alias:', err);
+                                                        toast.error('Errore generazione alias: ' + (err.message || 'Errore sconosciuto'));
                                                       }
                                                     }}
                                                     className="p-1 rounded hover:bg-purple-600/20 transition-colors"

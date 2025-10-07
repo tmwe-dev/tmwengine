@@ -82,9 +82,9 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
   return (
     <>
-      <header className="border-b bg-card-transparent px-2 sm:px-4 py-2 sm:py-3 md:py-4 w-full">
+      <header className="border-b bg-card-transparent px-2 sm:px-4 py-2 sm:py-3 md:py-4 w-full flex-shrink-0">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
-        <div className="grid grid-cols-3 items-center gap-2">
+        <div className="grid grid-cols-3 items-center gap-1 sm:gap-2 md:gap-4">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}
           {isHeaderCollapsed ? (
             <div className="flex items-center justify-start gap-2">

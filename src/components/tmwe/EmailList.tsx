@@ -332,7 +332,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full">
+    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-4 w-full min-w-0">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}

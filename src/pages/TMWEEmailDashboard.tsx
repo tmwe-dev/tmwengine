@@ -544,8 +544,8 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
-      <div className="flex flex-1 w-full">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full overflow-hidden">
+      <div className="flex flex-1 w-full min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar
@@ -579,7 +579,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 flex flex-col min-w-0 overflow-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           <EmailHeader

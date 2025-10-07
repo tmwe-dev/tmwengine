@@ -4,6 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
+import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -120,7 +121,8 @@ const CRMLayout = ({ children }) => {
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <AIGuideDialog />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

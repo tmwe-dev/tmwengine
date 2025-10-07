@@ -23,6 +23,7 @@ Tutti i colori DEVONO essere HSL.
 */
 
 @layer base {
+  /* === TEMA LILLA (Default) === */
   :root {
     /* === COLORI BASE === */
     --background: 240 10% 3.9%;
@@ -126,6 +127,230 @@ Tutti i colori DEVONO essere HSL.
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
     --transition-slow: 350ms ease;
+  }
+
+  /* === TEMA OCEAN === */
+  .theme-ocean {
+    --background: 200 20% 10%;
+    --foreground: 180 10% 95%;
+    --surface: 200 20% 10%;
+    --surface-secondary: 200 15% 18%;
+
+    --primary: 175 70% 50%; /* Teal */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 175 70% 45%;
+    --primary-muted: 175 70% 50% / 0.1;
+
+    --secondary: 200 15% 18%;
+    --secondary-foreground: 180 10% 95%;
+    --secondary-hover: 200 15% 25%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
+
+    --warning: 48 96% 53%;
+    --warning-foreground: 200 20% 10%;
+    --warning-muted: 48 96% 53% / 0.1;
+
+    --destructive: 15 85% 60%; /* Coral */
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 15 85% 60% / 0.1;
+
+    --muted: 200 15% 18%;
+    --muted-foreground: 200 10% 60%;
+
+    --accent: 15 85% 60%; /* Coral accent */
+    --accent-foreground: 0 0% 98%;
+
+    --card: 200 20% 10%;
+    --card-foreground: 180 10% 95%;
+    --card-border: 200 15% 18%;
+    --card-transparent: 200 20% 10% / 0.35;
+
+    --popover: 200 20% 10%;
+    --popover-foreground: 180 10% 95%;
+
+    --border: 200 15% 18%;
+    --input: 200 15% 18%;
+    --ring: 175 70% 50%;
+
+    --sidebar-background: 200 20% 10%;
+    --sidebar-foreground: 200 10% 60%;
+    --sidebar-primary: 175 70% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 200 15% 18%;
+    --sidebar-accent-foreground: 180 10% 95%;
+    --sidebar-border: 200 15% 18%;
+    --sidebar-ring: 175 70% 50%;
+  }
+
+  /* === TEMA SUNSET === */
+  .theme-sunset {
+    --background: 25 30% 8%;
+    --foreground: 30 10% 95%;
+    --surface: 25 30% 8%;
+    --surface-secondary: 25 20% 15%;
+
+    --primary: 25 95% 55%; /* Arancione */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 25 95% 50%;
+    --primary-muted: 25 95% 55% / 0.1;
+
+    --secondary: 25 20% 15%;
+    --secondary-foreground: 30 10% 95%;
+    --secondary-hover: 25 20% 22%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
+
+    --warning: 48 96% 53%;
+    --warning-foreground: 25 30% 8%;
+    --warning-muted: 48 96% 53% / 0.1;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
+
+    --muted: 25 20% 15%;
+    --muted-foreground: 25 10% 60%;
+
+    --accent: 280 70% 60%; /* Viola accent */
+    --accent-foreground: 0 0% 98%;
+
+    --card: 25 30% 8%;
+    --card-foreground: 30 10% 95%;
+    --card-border: 25 20% 15%;
+    --card-transparent: 25 30% 8% / 0.35;
+
+    --popover: 25 30% 8%;
+    --popover-foreground: 30 10% 95%;
+
+    --border: 25 20% 15%;
+    --input: 25 20% 15%;
+    --ring: 25 95% 55%;
+
+    --sidebar-background: 25 30% 8%;
+    --sidebar-foreground: 25 10% 60%;
+    --sidebar-primary: 25 95% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 25 20% 15%;
+    --sidebar-accent-foreground: 30 10% 95%;
+    --sidebar-border: 25 20% 15%;
+    --sidebar-ring: 25 95% 55%;
+  }
+
+  /* === TEMA FOREST === */
+  .theme-forest {
+    --background: 140 25% 8%;
+    --foreground: 140 10% 95%;
+    --surface: 140 25% 8%;
+    --surface-secondary: 140 20% 15%;
+
+    --primary: 160 80% 45%; /* Verde smeraldo */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 160 80% 40%;
+    --primary-muted: 160 80% 45% / 0.1;
+
+    --secondary: 140 20% 15%;
+    --secondary-foreground: 140 10% 95%;
+    --secondary-hover: 140 20% 22%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
+
+    --warning: 48 96% 53%;
+    --warning-foreground: 140 25% 8%;
+    --warning-muted: 48 96% 53% / 0.1;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
+
+    --muted: 140 20% 15%;
+    --muted-foreground: 140 10% 60%;
+
+    --accent: 35 65% 50%; /* Marrone/ambra accent */
+    --accent-foreground: 0 0% 98%;
+
+    --card: 140 25% 8%;
+    --card-foreground: 140 10% 95%;
+    --card-border: 140 20% 15%;
+    --card-transparent: 140 25% 8% / 0.35;
+
+    --popover: 140 25% 8%;
+    --popover-foreground: 140 10% 95%;
+
+    --border: 140 20% 15%;
+    --input: 140 20% 15%;
+    --ring: 160 80% 45%;
+
+    --sidebar-background: 140 25% 8%;
+    --sidebar-foreground: 140 10% 60%;
+    --sidebar-primary: 160 80% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 140 20% 15%;
+    --sidebar-accent-foreground: 140 10% 95%;
+    --sidebar-border: 140 20% 15%;
+    --sidebar-ring: 160 80% 45%;
+  }
+
+  /* === TEMA SKY === */
+  .theme-sky {
+    --background: 210 30% 10%;
+    --foreground: 210 10% 95%;
+    --surface: 210 30% 10%;
+    --surface-secondary: 210 25% 18%;
+
+    --primary: 200 95% 55%; /* Azzurro cielo */
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 200 95% 50%;
+    --primary-muted: 200 95% 55% / 0.1;
+
+    --secondary: 210 25% 18%;
+    --secondary-foreground: 210 10% 95%;
+    --secondary-hover: 210 25% 25%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 36% / 0.1;
+
+    --warning: 48 96% 53%;
+    --warning-foreground: 210 30% 10%;
+    --warning-muted: 48 96% 53% / 0.1;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-muted: 0 84% 60% / 0.1;
+
+    --muted: 210 25% 18%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 55 95% 60%; /* Giallo solare accent */
+    --accent-foreground: 210 30% 10%;
+
+    --card: 210 30% 10%;
+    --card-foreground: 210 10% 95%;
+    --card-border: 210 25% 18%;
+    --card-transparent: 210 30% 10% / 0.35;
+
+    --popover: 210 30% 10%;
+    --popover-foreground: 210 10% 95%;
+
+    --border: 210 25% 18%;
+    --input: 210 25% 18%;
+    --ring: 200 95% 55%;
+
+    --sidebar-background: 210 30% 10%;
+    --sidebar-foreground: 210 10% 60%;
+    --sidebar-primary: 200 95% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 25% 18%;
+    --sidebar-accent-foreground: 210 10% 95%;
+    --sidebar-border: 210 25% 18%;
+    --sidebar-ring: 200 95% 55%;
   }
 
   .dark {

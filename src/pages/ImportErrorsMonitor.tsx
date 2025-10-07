@@ -170,22 +170,15 @@ export default function ImportErrorsMonitor() {
       addLog(`🎯 Token usati: ${result.total_tokens.toLocaleString()} (Input: ${result.input_tokens} | Output: ${result.output_tokens})`);
       addLog(`💰 Costo batch: $${result.estimated_cost.toFixed(6)}`);
 
-      // Aggiorna stats globali
-      setStats(prev => ({
-        ...prev,
-        processed: prev.processed + result.processed,
-        corrected: prev.corrected + result.corrected,
-        failed: prev.failed + result.failed,
-        pending: prev.pending - result.processed,
-        total_tokens: prev.total_tokens + result.total_tokens,
-        estimated_cost: prev.estimated_cost + result.estimated_cost
-      }));
-
+      // NON aggiornare stats localmente - ricarica dal database per dati reali
+      addLog(`🔄 Ricarico dati aggiornati dal database...`);
+      
       if (result.corrected > 0) {
         toast.success(`${result.corrected} righe riparate! Token: ${result.total_tokens} | Costo: $${result.estimated_cost.toFixed(6)}`);
       }
 
-      loadErrors();
+      // Ricarica tutto dal database per avere dati reali
+      await loadErrors();
 
       // Se ci sono ancora righe pending, chiedi conferma
       if (!result.batch_complete) {

@@ -82,7 +82,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
   return (
     <>
-      <header className="border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full">
+      <header className="border-b bg-card-transparent px-2 sm:px-4 py-2 sm:py-3 md:py-4 w-full">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}

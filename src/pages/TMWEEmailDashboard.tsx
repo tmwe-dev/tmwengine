@@ -614,7 +614,7 @@ const EmailDashboard = () => {
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
-            <div className="border-b bg-card-transparent px-2 py-2">
+            <div className="border-b bg-card-transparent px-2 sm:px-4 py-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input

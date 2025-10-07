@@ -70,14 +70,8 @@ const CRMLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div 
-      className="min-h-screen"
-      style={location.pathname === '/attivita' ? {
-        background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
-      } : {
-        background: 'linear-gradient(135deg, hsla(270, 70%, 60%, 0.35) 0px, hsla(0, 0%, 0%, 0.35) 600px, hsl(0, 0%, 0%) 600px)'
-      }}
-    >
+    <div className="min-h-screen bg-background">
+
       {/* Header */}
       <header 
         className={cn(

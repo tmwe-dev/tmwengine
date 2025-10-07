@@ -299,6 +299,7 @@ export default function TemplateAlias() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
+                  <TableHead className="w-16 text-center">#</TableHead>
                   <TableHead>
                     <SortButton field="title" label="Title" />
                   </TableHead>
@@ -320,12 +321,12 @@ export default function TemplateAlias() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : filteredAndSortedTemplates && filteredAndSortedTemplates.length > 0 ? (
-                  filteredAndSortedTemplates.map((template) => (
+                  filteredAndSortedTemplates.map((template, index) => (
                     <TableRow key={template.id} className="hover:bg-accent/30">
                       <TableCell>
                         <Checkbox
@@ -334,6 +335,9 @@ export default function TemplateAlias() {
                             handleSelectRecord(template.id, checked as boolean)
                           }
                         />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="font-semibold text-destructive">{index + 1}</span>
                       </TableCell>
                       <TableCell 
                         className="font-medium cursor-pointer hover:bg-accent/50 transition-colors"
@@ -392,7 +396,7 @@ export default function TemplateAlias() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nessun record trovato
                     </TableCell>
                   </TableRow>

@@ -50,12 +50,33 @@ serve(async (req) => {
 
     console.log(`📋 Trovati ${correctedErrors.length} record da importare`);
 
-    // Prepara i record per imported_contacts
-    const contactsToInsert = correctedErrors.map(error => ({
-      import_log_id: import_log_id,
-      row_number: error.row_number,
-      ...error.corrected_data
-    }));
+    // Prepara i record per imported_contacts con mapping corretto dei campi
+    const contactsToInsert = correctedErrors.map(error => {
+      const data = error.corrected_data as any;
+      return {
+        import_log_id: import_log_id,
+        row_number: error.row_number,
+        name: data.contact_name || data.name,
+        company_name: data.company_name,
+        email: data.email,
+        phone: data.phone,
+        cell: data.mobile || data.cell,
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        zip_code: data.zip_code,
+        note: data.notes || data.note,
+        state: data.state,
+        next_contact_date: data.next_contact_date,
+        last_contact: data.last_contact_date,
+        // Altri campi opzionali
+        position: data.position,
+        title: data.title,
+        origin: data.origin,
+        meta_client: data.meta_client,
+        meta_exclient: data.meta_exclient
+      };
+    });
 
     // Inserisci in imported_contacts
     const { error: insertError } = await supabase

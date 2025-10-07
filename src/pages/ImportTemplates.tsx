@@ -3264,249 +3264,146 @@ export default function ImportTemplates() {
           </DialogHeader>
 
 
-          {/* Controlli visibilità colonne - Solo desktop */}
-          {!isMobile && (
-            <div className="flex items-center justify-between border-b relative py-3 min-h-[60px] px-4">
-              {/* Filtro "Solo con note" e Switch - a sinistra */}
-              <div className="flex items-center gap-4">
-                {/* Bulk Delete Button */}
-                {selectedRecords.size > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={deleteSelectedRecords}
-                          className="h-8 w-8 p-0 border-red-500 hover:bg-red-500/10"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Elimina {selectedRecords.size} record selezionati</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+          {/* Blocco azioni record selezionati - Desktop Only */}
+          {!isMobile && selectedRecords.size > 0 && (
+            <div className="flex items-center justify-end gap-2 border-b py-3 px-4">
+              <Badge variant="default" className="text-sm px-4 py-2">
+                {selectedRecords.size}
+              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedRecords(new Set())}
+                className="h-10 px-4 text-sm"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowPromptDialog(true)}
+                      className="h-10 w-10 p-0"
+                    >
+                      <Settings className="h-4 w-4 text-orange-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Modifica prompt AI per alias</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="has-notes-filter-desktop"
-                    checked={hasNotesFilter}
-                    onCheckedChange={(checked) => setHasNotesFilter(checked as boolean)}
-                  />
-                  <Label htmlFor="has-notes-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                    <StickyNote className="h-4 w-4 text-blue-500" />
-                    Solo con note
-                  </Label>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="hide-today-activities"
-                    checked={hideContactsWithTodayActivities}
-                    onCheckedChange={setHideContactsWithTodayActivities}
-                  />
-                  <Label htmlFor="hide-today-activities" className="text-sm cursor-pointer whitespace-nowrap">
-                    Nascondi attività oggi
-                  </Label>
-                  {hideContactsWithTodayActivities && (() => {
-                    const hiddenCount = allRecords.filter(record => hasCompletedActivityToday(record.id)).length;
-                    return hiddenCount > 0 ? (
-                      <Badge variant="secondary" className="text-xs">
-                        {hiddenCount} nascosti
-                      </Badge>
-                    ) : null;
-                  })()}
-                </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
+                        if (selectedIds.length === 0) {
+                          toast.error('Nessun record selezionato');
+                          return;
+                        }
+                        
+                        setGeneratingAliases(true);
+                        setShowAliasPreview(true);
+                        setAliasPreviewData([]);
+                        setAliasPreviewTotal(selectedIds.length);
+                        
+                        try {
+                          toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
+                          const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                            body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
+                          });
+                          
+                          if (error) throw error;
+                          
+                          setAliasPreviewData(data.previews || []);
+                          setGeneratingAliases(false);
+                        } catch (err: any) {
+                          console.error('Errore generazione preview:', err);
+                          toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
+                          setGeneratingAliases(false);
+                          setShowAliasPreview(false);
+                        }
+                      }}
+                      disabled={generatingAliases || loadingAllRecords}
+                      className="h-10 w-10 p-0"
+                    >
+                      {generatingAliases ? (
+                        <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 text-purple-500" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Genera alias AI per {selectedRecords.size} selezionati</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowMultipleActivityDialog(true)}
+                      className="h-10 w-10 p-0"
+                    >
+                      <FileText className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Crea attività</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="my-contacts-activities-filter-desktop"
-                    checked={myContactsWithActivitiesFilter}
-                    onCheckedChange={(checked) => setMyContactsWithActivitiesFilter(checked as boolean)}
-                  />
-                  <Label htmlFor="my-contacts-activities-filter-desktop" className="flex items-center gap-2 text-sm cursor-pointer whitespace-nowrap">
-                    <User className="h-4 w-4 text-primary" />
-                    Solo con mie attività
-                  </Label>
-                </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={importSelectedRecords}
+                      className="h-10 w-10 p-0"
+                    >
+                      <Database className="h-4 w-4 text-green-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Importa in rubrica</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="filter-only-with-alias"
-                    checked={filterOnlyWithAlias}
-                    onCheckedChange={setFilterOnlyWithAlias}
-                  />
-                  <Label htmlFor="filter-only-with-alias" className="text-sm cursor-pointer whitespace-nowrap">
-                    Solo con alias azienda
-                  </Label>
-                </div>
-              </div>
-
-              {/* Blocco azioni record selezionati - a destra */}
-              {selectedRecords.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="default" className="text-sm px-4 py-2">
-                    {selectedRecords.size}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedRecords(new Set())}
-                    className="h-10 px-4 text-sm"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowPromptDialog(true)}
-                          className="h-10 w-10 p-0"
-                        >
-                          <Settings className="h-4 w-4 text-orange-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Modifica prompt AI per alias</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
-                            if (selectedIds.length === 0) {
-                              toast.error('Nessun record selezionato');
-                              return;
-                            }
-                            
-                            setGeneratingAliases(true);
-                            setShowAliasPreview(true);
-                            setAliasPreviewData([]);
-                            setAliasPreviewTotal(selectedIds.length);
-                            
-                            try {
-                              toast.info(`Generazione preview per ${selectedIds.length} contatti...`);
-                              const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
-                                body: { action: 'preview_aliases', data: {}, contact_ids: selectedIds }
-                              });
-                              
-                              if (error) throw error;
-                              
-                              setAliasPreviewData(data.previews || []);
-                              setGeneratingAliases(false);
-                            } catch (err: any) {
-                              console.error('Errore generazione preview:', err);
-                              toast.error('Errore generazione preview: ' + (err.message || 'Errore sconosciuto'));
-                              setGeneratingAliases(false);
-                              setShowAliasPreview(false);
-                            }
-                          }}
-                          disabled={generatingAliases || loadingAllRecords}
-                          className="h-10 w-10 p-0"
-                        >
-                          {generatingAliases ? (
-                            <Loader2 className="h-4 w-4 text-purple-500 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 text-purple-500" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Genera alias AI per {selectedRecords.size} selezionati</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowMultipleActivityDialog(true)}
-                          className="h-10 w-10 p-0"
-                        >
-                          <FileText className="h-4 w-4 text-blue-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Crea attività</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={importSelectedRecords}
-                          className="h-10 w-10 p-0"
-                        >
-                          <Database className="h-4 w-4 text-green-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Importa {selectedRecords.size} in rubrica</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            const allRecordIds = allRecords.map(r => r.id);
-                            setSelectedRecords(new Set(allRecordIds));
-                          }}
-                          className="h-10 w-10 p-0"
-                        >
-                          <ListChecks className="h-4 w-4 text-purple-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Seleziona tutti i record filtrati</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={deleteSelectedRecords}
-                          className="h-10 w-10 p-0"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Elimina {selectedRecords.size} record</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={deleteSelectedRecords}
+                      className="h-10 w-10 p-0"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Elimina selezionati</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
+
 
           {/* Area filtri attivi */}
           {activeFilters.length > 0 && (

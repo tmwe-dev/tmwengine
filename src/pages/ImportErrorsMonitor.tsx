@@ -270,6 +270,8 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     setAwaitingConfirmation(false);
     addLog(`🚀 Avvio elaborazione batch (${batchSize} righe)${autoTriggered ? ' [AUTO]' : ''}...`);
 
+    let isBackgroundProcessing = false; // Flag per evitare reset nel finally
+
     try {
       const { data, error } = await supabase.functions.invoke('process-import-errors-ai', {
         body: {
@@ -286,16 +288,13 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
       // Se è background processing (batch > 25), avvia polling
       if ((result as any).processing) {
-        console.log('⚙️ Background processing rilevato, isProcessing:', isProcessing);
+        isBackgroundProcessing = true; // IMPORTANTE: segnala che è background
+        console.log('⚙️ Background processing rilevato, MANTIENI isProcessing = true');
         addLog(`🚀 Background processing avviato per ${batchSize} records`);
         addLog(`⏱️ Tempo stimato: ~${(result as any).estimated_duration}s`);
         addLog(`📊 Il database verrà aggiornato automaticamente in tempo reale`);
-        addLog(`✅ Puoi continuare a usare l'interfaccia mentre l'elaborazione procede`);
         
         toast.success(`Processing ${batchSize} records in background. Ricarica i dati tra ~${(result as any).estimated_duration}s`, { duration: 5000 });
-
-        // MANTIENI isProcessing = true per mostrare lo spinner (NON chiamare setIsProcessing(false)!)
-        console.log('✅ isProcessing mantenuto a TRUE per mostrare spinner');
         
         // Attendi completamento e ricarica automaticamente
         const estimatedDuration = (result as any).estimated_duration || 100;
@@ -303,7 +302,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         setTimeout(async () => {
           addLog(`🔄 Ricarico dati dal database dopo background processing...`);
           await loadErrors();
-          setIsProcessing(false); // FINALMENTE termina processing
+          setIsProcessing(false); // ORA si può resettare
           
           // Se autorun è attivo, ricontrolla pending
           if (autoRun) {
@@ -324,7 +323,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           }
         }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
         
-        return;
+        return; // ESCI SENZA passare per finally
       }
 
       addLog(`✅ Batch completato!`);
@@ -374,7 +373,12 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         addLog(`⚠️ AutoRun disattivato a causa dell'errore`);
       }
     } finally {
-      setIsProcessing(false);
+      // NON resettare isProcessing se è background processing
+      if (!isBackgroundProcessing) {
+        setIsProcessing(false);
+      } else {
+        console.log('🔒 Background processing: isProcessing rimane TRUE');
+      }
     }
   };
 

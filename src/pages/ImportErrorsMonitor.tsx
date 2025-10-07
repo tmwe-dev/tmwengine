@@ -22,7 +22,8 @@ import {
   ChevronUp,
   Plus,
   FileText,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ErrorRecord {
   id: string;
@@ -107,6 +109,7 @@ export default function ImportErrorsMonitor() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [importingRows, setImportingRows] = useState<Set<string>>(new Set());
   const [expandedFailedRows, setExpandedFailedRows] = useState<Set<string>>(new Set());
+  const [selectedFailedRecords, setSelectedFailedRecords] = useState<Set<string>>(new Set());
   const [freePrompt, setFreePrompt] = useState<string>(
     `Sei un assistente AI specializzato nella normalizzazione dei dati di importazione.
 
@@ -368,6 +371,60 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         return newSet;
       });
     }
+  };
+
+  const deleteFailedRecords = async (recordIds: string[]) => {
+    if (recordIds.length === 0) return;
+
+    try {
+      addLog(`🗑️ Eliminazione ${recordIds.length} record falliti...`);
+      
+      const { error } = await supabase
+        .from('import_errors')
+        .delete()
+        .in('id', recordIds);
+
+      if (error) throw error;
+
+      addLog(`✅ ${recordIds.length} record eliminati!`);
+      toast.success(`${recordIds.length} record eliminati con successo`);
+      
+      // Rimuovi dalla lista locale e deseleziona
+      setFailedRecords(prev => prev.filter(r => !recordIds.includes(r.id)));
+      setSelectedFailedRecords(new Set());
+      
+      // Aggiorna stats
+      setStats(prev => ({
+        ...prev,
+        failed: Math.max(0, prev.failed - recordIds.length),
+        total: Math.max(0, prev.total - recordIds.length)
+      }));
+
+    } catch (error) {
+      console.error('Error deleting records:', error);
+      addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
+      toast.error('Errore durante eliminazione');
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFailedRecords.size === failedRecords.length) {
+      setSelectedFailedRecords(new Set());
+    } else {
+      setSelectedFailedRecords(new Set(failedRecords.map(r => r.id)));
+    }
+  };
+
+  const toggleSelectRecord = (recordId: string) => {
+    setSelectedFailedRecords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(recordId)) {
+        newSet.delete(recordId);
+      } else {
+        newSet.add(recordId);
+      }
+      return newSet;
+    });
   };
 
   const continueProcessing = () => {
@@ -850,9 +907,35 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   <XCircle className="h-5 w-5 text-red-500" />
                   Records Falliti ({stats.failed})
                 </div>
-                <Button variant="ghost" size="sm">
-                  {showFailed ? 'Nascondi' : 'Mostra'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {selectedFailedRecords.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteFailedRecords(Array.from(selectedFailedRecords));
+                      }}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Elimina ({selectedFailedRecords.size})
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelectAll();
+                    }}
+                  >
+                    {selectedFailedRecords.size === failedRecords.length ? 'Deseleziona' : 'Seleziona tutti'}
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    {showFailed ? 'Nascondi' : 'Mostra'}
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             {showFailed && (
@@ -864,64 +947,87 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                         Nessun record fallito
                       </div>
                      ) : (
-                      failedRecords.map((error) => {
-                        const isExpanded = expandedFailedRows.has(error.id);
-                        const renderValue = (value: any) => {
-                          if (value === null || value === undefined || value === '') {
-                            return <span className="text-red-400 italic">❌ Mancante</span>;
-                          }
-                          return <span>{String(value)}</span>;
-                        };
+                      <>
+                        {failedRecords.map((error) => {
+                          const isExpanded = expandedFailedRows.has(error.id);
+                          const isSelected = selectedFailedRecords.has(error.id);
+                          const renderValue = (value: any) => {
+                            if (value === null || value === undefined || value === '') {
+                              return <span className="text-red-400 italic">❌ Mancante</span>;
+                            }
+                            return <span>{String(value)}</span>;
+                          };
 
-                        return (
-                          <Collapsible
-                            key={error.id}
-                            open={isExpanded}
-                            onOpenChange={(open) => {
-                              setExpandedFailedRows(prev => {
-                                const newSet = new Set(prev);
-                                if (open) {
-                                  newSet.add(error.id);
-                                } else {
-                                  newSet.delete(error.id);
-                                }
-                                return newSet;
-                              });
-                            }}
-                          >
-                            <div className="p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs bg-red-500/20">
-                                    Riga {error.row_number}
-                                  </Badge>
-                                  <div className="text-red-400 text-xs font-semibold">
-                                    ❌ {error.error_message}
+                          return (
+                            <Collapsible
+                              key={error.id}
+                              open={isExpanded}
+                              onOpenChange={(open) => {
+                                setExpandedFailedRows(prev => {
+                                  const newSet = new Set(prev);
+                                  if (open) {
+                                    newSet.add(error.id);
+                                  } else {
+                                    newSet.delete(error.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                            >
+                              <div className={cn(
+                                "p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3",
+                                isSelected && "ring-2 ring-red-500/50"
+                              )}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={() => toggleSelectRecord(error.id)}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <Badge variant="outline" className="text-xs bg-red-500/20">
+                                      Riga {error.row_number}
+                                    </Badge>
+                                    <div className="text-red-400 text-xs font-semibold">
+                                      ❌ {error.error_message}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0"
+                                      title="Elimina record"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteFailedRecords([error.id]);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                    
+                                    <CollapsibleTrigger asChild>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="h-7 w-7 p-0"
+                                        title="Mostra dati originali"
+                                      >
+                                        <FileText className="h-4 w-4" />
+                                      </Button>
+                                    </CollapsibleTrigger>
+                                    
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0"
+                                      title="Riprocessa con AI libera"
+                                    >
+                                      <Sparkles className="h-4 w-4 text-purple-500" />
+                                    </Button>
                                   </div>
                                 </div>
-                                
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <CollapsibleTrigger asChild>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      className="h-7 w-7 p-0"
-                                      title="Mostra dati originali"
-                                    >
-                                      <FileText className="h-4 w-4" />
-                                    </Button>
-                                  </CollapsibleTrigger>
-                                  
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    title="Riprocessa con AI libera"
-                                  >
-                                    <Sparkles className="h-4 w-4 text-purple-500" />
-                                  </Button>
-                                </div>
-                              </div>
 
                               <CollapsibleContent className="mt-3">
                                 <div className="p-3 rounded bg-black/20 border border-red-500/20">
@@ -955,10 +1061,11 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                                   </div>
                                 </div>
                               )}
-                            </div>
-                          </Collapsible>
-                        );
-                      })
+                              </div>
+                            </Collapsible>
+                          );
+                        })}
+                      </>
                     )}
                   </div>
                 </ScrollArea>

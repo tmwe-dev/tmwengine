@@ -8,8 +8,9 @@ const corsHeaders = {
 interface ProcessMessageRequest {
   roomId: string;
   messageContent: string;
-  sourceLanguage: string;
-  targetLanguage: string;
+  sourceLanguage?: string;
+  targetLanguage?: string;
+  writingLanguage?: string;
   action: 'translate' | 'suggest' | 'generate_audio';
   userId: string;
 }
@@ -29,7 +30,8 @@ serve(async (req) => {
       roomId, 
       messageContent, 
       sourceLanguage, 
-      targetLanguage, 
+      targetLanguage,
+      writingLanguage,
       action,
       userId 
     }: ProcessMessageRequest = await req.json();
@@ -91,6 +93,8 @@ LINEE GUIDA:
 
     let userPrompt = '';
     let result: any = {};
+    let useTools = false;
+    let tools: any[] = [];
 
     switch (action) {
       case 'translate':
@@ -111,21 +115,46 @@ Fornisci SOLO la traduzione, senza spiegazioni aggiuntive.`;
         break;
 
       case 'suggest':
-        userPrompt = `Basandoti sul seguente messaggio, fornisci 3 suggerimenti brevi e contestuali per rispondere.
+        useTools = true;
+        userPrompt = `Genera 3-5 suggerimenti di risposta per questa conversazione in lingua ${writingLanguage || 'italiano'}.
         
-Messaggio:
-"""
-${messageContent}
-"""
+Crea suggerimenti con toni diversi (formale, informale, neutro, entusiasta) adatti a una chat professionale.`;
 
-Fornisci i suggerimenti in formato JSON:
-{
-  "suggestions": [
-    "Suggerimento 1",
-    "Suggerimento 2",
-    "Suggerimento 3"
-  ]
-}`;
+        tools = [
+          {
+            type: "function",
+            function: {
+              name: "provide_suggestions",
+              description: "Fornisce suggerimenti di risposta per la conversazione",
+              parameters: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        text: { 
+                          type: "string",
+                          description: "Il testo del suggerimento"
+                        },
+                        tone: { 
+                          type: "string",
+                          description: "Il tono del messaggio",
+                          enum: ["formale", "informale", "neutro", "entusiasta"]
+                        }
+                      },
+                      required: ["text", "tone"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["suggestions"],
+                additionalProperties: false
+              }
+            }
+          }
+        ];
         break;
 
       case 'generate_audio':
@@ -139,6 +168,21 @@ Fornisci i suggerimenti in formato JSON:
         });
     }
 
+    // Prepara il body della richiesta
+    const requestBody: any = {
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    };
+
+    // Aggiungi tools se necessari
+    if (useTools && tools.length > 0) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = { type: "function", function: { name: "provide_suggestions" } };
+    }
+
     // Chiama Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -146,15 +190,7 @@ Fornisci i suggerimenti in formato JSON:
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!aiResponse.ok) {
@@ -172,21 +208,25 @@ Fornisci i suggerimenti in formato JSON:
     }
 
     const aiData = await aiResponse.json();
-    const aiResult = aiData.choices?.[0]?.message?.content || '';
-
-    console.log('AI Response:', aiResult);
+    console.log('AI Response:', JSON.stringify(aiData, null, 2));
 
     if (action === 'translate') {
+      const aiResult = aiData.choices?.[0]?.message?.content || '';
       result = {
         translatedText: aiResult.trim(),
         sourceLanguage,
         targetLanguage
       };
     } else if (action === 'suggest') {
-      try {
-        result = JSON.parse(aiResult);
-      } catch (e) {
-        result = { suggestions: [aiResult] };
+      // Estrai i suggerimenti dalla chiamata tool
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      if (toolCall && toolCall.function.name === 'provide_suggestions') {
+        const args = JSON.parse(toolCall.function.arguments);
+        result = { suggestions: args.suggestions };
+      } else {
+        // Fallback
+        const aiResult = aiData.choices?.[0]?.message?.content || '';
+        result = { suggestions: [{ text: aiResult, tone: 'neutro' }] };
       }
     }
 

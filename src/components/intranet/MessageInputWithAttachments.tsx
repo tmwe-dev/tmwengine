@@ -4,6 +4,7 @@ import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AISuggestions } from './AISuggestions';
 
 interface FileAttachment {
   file: File;
@@ -186,8 +187,20 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
     setMessage(prev => prev + emoticon);
   };
 
+  const handleSuggestionSelect = (text: string) => {
+    setMessage(text);
+  };
+
   return (
     <div className="p-4 border-t">
+      {/* AI Suggestions */}
+      <div className="mb-2">
+        <AISuggestions 
+          roomId={roomId} 
+          onSelectSuggestion={handleSuggestionSelect}
+        />
+      </div>
+
       {/* Preview allegati */}
       {attachments.length > 0 && (
         <div className="mb-3 flex gap-2 flex-wrap">

@@ -2488,9 +2488,21 @@ export default function ImportTemplates() {
                              {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                            </Button>
                          </TableCell>
-                         <TableCell>
-                           {new Date(log.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                         </TableCell>
+                          <TableCell>
+                            {new Date(log.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => loadAllRecords(log)}
+                              disabled={loadingRecords && selectedImport?.id === log.id}
+                              className="text-blue-500 hover:text-blue-600"
+                            >
+                              <Search className="h-4 w-4 mr-1" />
+                              {log.righe_importate}
+                            </Button>
+                          </TableCell>
                          <TableCell>{log.file_name}</TableCell>
                          <TableCell className="text-center">{getStatusBadge(log.stato)}</TableCell>
                           <TableCell className="text-center">
@@ -2526,16 +2538,6 @@ export default function ImportTemplates() {
                                   </Button>
                                 )}
 
-                               {/* Pulsante Visualizza Records */}
-                               <Button 
-                                 variant="outline" 
-                                 size="sm"
-                                 onClick={() => loadAllRecords(log)}
-                                 disabled={loadingRecords && selectedImport?.id === log.id}
-                               >
-                                 <Eye className="h-4 w-4 mr-1" />
-                                 {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : `Vedi (${log.righe_importate})`}
-                               </Button>
                             </div>
                           </TableCell>
                           <TableCell>

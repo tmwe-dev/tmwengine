@@ -161,85 +161,98 @@ serve(async (req) => {
 
         console.log(`🤖 Generazione alias per ${contacts.length} contatti`);
 
-        // Processa ogni contatto
-        const updates = await Promise.all(
-          contacts.map(async (contact) => {
-            try {
-              const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  model: 'google/gemini-2.5-flash',
-                  messages: [
-                    { role: 'system', content: promptData.system_prompt },
-                    { 
-                      role: 'user', 
-                      content: JSON.stringify({
-                        name: contact.name || '',
-                        company_name: contact.company_name || ''
-                      })
-                    }
-                  ],
-                  tools: [{
-                    type: 'function',
-                    function: {
-                      name: 'set_aliases',
-                      parameters: {
-                        type: 'object',
-                        properties: {
-                          alias: { type: 'string' },
-                          company_alias: { type: 'string' }
-                        },
-                        required: ['alias', 'company_alias'],
-                        additionalProperties: false
+        // Processa contatti in batch per evitare rate limit
+        const BATCH_SIZE = 5;
+        const allUpdates: (string | null)[] = [];
+        
+        for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
+          const batch = contacts.slice(i, i + BATCH_SIZE);
+          console.log(`📦 Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(contacts.length / BATCH_SIZE)}: processing ${batch.length} contacts`);
+          
+          const batchUpdates = await Promise.all(
+            batch.map(async (contact) => {
+              try {
+                const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: 'google/gemini-2.5-flash',
+                    messages: [
+                      { role: 'system', content: promptData.system_prompt },
+                      { 
+                        role: 'user', 
+                        content: JSON.stringify({
+                          name: contact.name || '',
+                          company_name: contact.company_name || ''
+                        })
                       }
-                    }
-                  }],
-                  tool_choice: { type: 'function', function: { name: 'set_aliases' } }
-                }),
-              });
+                    ],
+                    tools: [{
+                      type: 'function',
+                      function: {
+                        name: 'set_aliases',
+                        parameters: {
+                          type: 'object',
+                          properties: {
+                            alias: { type: 'string' },
+                            company_alias: { type: 'string' }
+                          },
+                          required: ['alias', 'company_alias'],
+                          additionalProperties: false
+                        }
+                      }
+                    }],
+                    tool_choice: { type: 'function', function: { name: 'set_aliases' } }
+                  }),
+                });
 
-              if (!response.ok) {
-                console.error(`Errore AI per ${contact.id}:`, response.status);
+                if (!response.ok) {
+                  console.error(`❌ Errore AI per ${contact.id}:`, response.status);
+                  return null;
+                }
+
+                const aiResult = await response.json();
+                const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+                
+                if (!toolCall) {
+                  console.error(`❌ Nessun tool_call per ${contact.id}`);
+                  return null;
+                }
+
+                const aliases = JSON.parse(toolCall.function.arguments);
+
+                // Aggiorna record
+                const { error: updateError } = await supabaseClient
+                  .from('imported_contacts')
+                  .update({
+                    alias: aliases.alias,
+                    company_alias: aliases.company_alias
+                  })
+                  .eq('id', contact.id);
+
+                if (updateError) {
+                  console.error(`❌ Errore update ${contact.id}:`, updateError);
+                  return null;
+                }
+
+                console.log(`✅ Alias generati per ${contact.name || contact.id}`);
+                return contact.id;
+              } catch (error) {
+                console.error(`❌ Errore processing ${contact.id}:`, error);
                 return null;
               }
+            })
+          );
+          
+          allUpdates.push(...batchUpdates);
+        }
 
-              const aiResult = await response.json();
-              const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-              
-              if (!toolCall) {
-                console.error(`Nessun tool_call per ${contact.id}`);
-                return null;
-              }
-
-              const aliases = JSON.parse(toolCall.function.arguments);
-
-              // Aggiorna record
-              const { error: updateError } = await supabaseClient
-                .from('imported_contacts')
-                .update({
-                  alias: aliases.alias,
-                  company_alias: aliases.company_alias
-                })
-                .eq('id', contact.id);
-
-              if (updateError) {
-                console.error(`Errore update ${contact.id}:`, updateError);
-                return null;
-              }
-
-              return contact.id;
-            } catch (error) {
-              console.error(`Errore processing ${contact.id}:`, error);
-              return null;
-            }
-          })
-        );
-
-        const successCount = updates.filter(id => id !== null).length;
+        const successCount = allUpdates.filter(id => id !== null).length;
+        console.log(`✅ Completato: ${successCount}/${contacts.length} alias generati`);
+        
         result = { 
           success: true, 
           updated_count: successCount,

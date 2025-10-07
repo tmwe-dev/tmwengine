@@ -172,7 +172,7 @@ export default function ImportErrorsMonitor() {
     startProcessing();
   };
 
-  // Real-time subscription
+  // Real-time subscription and auto-start
   useEffect(() => {
     if (!importLogId) return;
 
@@ -205,6 +205,23 @@ export default function ImportErrorsMonitor() {
       supabase.removeChannel(channel);
     };
   }, [importLogId]);
+
+  // Auto-start processing if no errors are loaded yet
+  useEffect(() => {
+    // Only auto-start if:
+    // - We have an import_log_id
+    // - No errors are loaded (first time opening the page)
+    // - Not already processing
+    // - Total is 0 (table is empty for this import)
+    if (importLogId && errors.length === 0 && !isProcessing && stats.total === 0) {
+      const timer = setTimeout(() => {
+        console.log('Auto-starting AI processing for import_log_id:', importLogId);
+        startProcessing();
+      }, 500); // Small delay to ensure loadErrors has completed
+
+      return () => clearTimeout(timer);
+    }
+  }, [importLogId, errors.length, isProcessing, stats.total]);
 
   if (!importLogId) {
     return (

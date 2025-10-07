@@ -161,7 +161,7 @@ export const EmailSidebar = ({
   };
 
   return (
-    <div className="flex h-full w-56 sm:w-60 md:w-64 flex-col border-r bg-card">
+    <div className="flex h-full w-56 sm:w-60 md:w-64 flex-col border-r bg-card">{/* Sempre visibile */}
       <div className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
         <Button 
           onClick={onCompose} 

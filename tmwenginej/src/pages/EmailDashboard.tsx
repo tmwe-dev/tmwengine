@@ -7,12 +7,15 @@ import { EmailList } from '@/components/EmailList';
 import { EmailDetail } from '@/components/EmailDetail';
 import { ComposeDialog } from '@/components/ComposeDialog';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EmailDashboard = () => {
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
@@ -215,15 +218,47 @@ const EmailDashboard = () => {
     <div className="flex h-screen flex-col">
       <EmailHeader onSearch={setSearchQuery} />
       
-      <div className="flex flex-1 overflow-hidden">
-        <EmailSidebar
-          selectedFolder={selectedFolder}
-          onFolderSelect={setSelectedFolder}
-          onCompose={() => setComposeOpen(true)}
-          onSync={handleSync}
-        />
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile menu button - visible only on small screens */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="sm:hidden absolute top-2 left-2 z-10"
+          onClick={() => setMobileMenuOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
 
-        <div className="flex-1 border-r">
+        {/* Mobile Sidebar Sheet */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="p-0 w-[85vw] sm:w-[75vw] max-w-sm">
+            <EmailSidebar
+              selectedFolder={selectedFolder}
+              onFolderSelect={(folder) => {
+                setSelectedFolder(folder);
+                setMobileMenuOpen(false);
+              }}
+              onCompose={() => {
+                setComposeOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              onSync={handleSync}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Desktop Sidebar - always visible on larger screens */}
+        <div className="hidden sm:block">
+          <EmailSidebar
+            selectedFolder={selectedFolder}
+            onFolderSelect={setSelectedFolder}
+            onCompose={() => setComposeOpen(true)}
+            onSync={handleSync}
+          />
+        </div>
+
+        <div className="flex-1 border-r">{/* Aggiungo padding-top su mobile per il button menu */}
+          <div className="sm:hidden h-12" />{/* Spacer per il pulsante menu */}
           <EmailList
             emails={emails}
             selectedEmailId={selectedEmailId}

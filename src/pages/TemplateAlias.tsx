@@ -21,8 +21,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Search, ArrowUpDown } from "lucide-react";
+import { Pencil, Search, ArrowUpDown, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TemplateAlias {
   id: string;
@@ -43,6 +54,9 @@ export default function TemplateAlias() {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [editingRecord, setEditingRecord] = useState<TemplateAlias | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -93,6 +107,32 @@ export default function TemplateAlias() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("template_alias")
+        .delete()
+        .in("id", ids);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["template-alias"] });
+      setSelectedRecords(new Set());
+      toast({
+        title: "Record eliminati",
+        description: `${ids.length} record eliminati con successo.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'eliminazione: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -123,6 +163,43 @@ export default function TemplateAlias() {
   const handleEditClick = (record: TemplateAlias) => {
     setEditingRecord({ ...record });
     setIsEditDialogOpen(true);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && filteredAndSortedTemplates) {
+      setSelectedRecords(new Set(filteredAndSortedTemplates.map(t => t.id)));
+    } else {
+      setSelectedRecords(new Set());
+    }
+  };
+
+  const handleSelectRecord = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedRecords);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedRecords(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedRecords.size > 0) {
+      deleteMutation.mutate(Array.from(selectedRecords));
+    }
+  };
+
+  const handleDeleteSingle = (id: string) => {
+    setRecordToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (recordToDelete) {
+      deleteMutation.mutate([recordToDelete]);
+      setShowDeleteDialog(false);
+      setRecordToDelete(null);
+    }
   };
 
   const handleSave = () => {
@@ -159,9 +236,22 @@ export default function TemplateAlias() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Template Alias</span>
-            <Badge variant="secondary" className="text-base">
-              {filteredAndSortedTemplates?.length ?? 0} records
-            </Badge>
+            <div className="flex items-center gap-2">
+              {selectedRecords.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteSelected}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Elimina selezionati ({selectedRecords.size})
+                </Button>
+              )}
+              <Badge variant="secondary" className="text-base">
+                {filteredAndSortedTemplates?.length ?? 0} records
+              </Badge>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -181,6 +271,16 @@ export default function TemplateAlias() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        filteredAndSortedTemplates &&
+                        filteredAndSortedTemplates.length > 0 &&
+                        selectedRecords.size === filteredAndSortedTemplates.length
+                      }
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>
                     <SortButton field="title" label="Title" />
                   </TableHead>
@@ -202,32 +302,49 @@ export default function TemplateAlias() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Caricamento...
                     </TableCell>
                   </TableRow>
                 ) : filteredAndSortedTemplates && filteredAndSortedTemplates.length > 0 ? (
                   filteredAndSortedTemplates.map((template) => (
                     <TableRow key={template.id} className="hover:bg-accent/30">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedRecords.has(template.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectRecord(template.id, checked as boolean)
+                          }
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{template.title || "-"}</TableCell>
                       <TableCell>{template.name}</TableCell>
                       <TableCell>{template.alias}</TableCell>
                       <TableCell>{template.company_name}</TableCell>
                       <TableCell>{template.company_alias || "-"}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(template)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(template)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteSingle(template.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nessun record trovato
                     </TableCell>
                   </TableRow>
@@ -320,6 +437,26 @@ export default function TemplateAlias() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo record? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

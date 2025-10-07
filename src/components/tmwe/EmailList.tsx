@@ -192,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 md:py-3 px-1.5 sm:px-2 md:px-3 w-full max-w-full min-w-0 overflow-x-hidden">{/* Padding ridotto su tablet */}
+    <div className="space-y-2 py-2 sm:py-3 md:py-4 px-2 sm:px-3 w-full max-w-full min-w-0 overflow-x-hidden">{/* max-w-full aggiunto per contenere padding */}
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -223,26 +223,26 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 min-w-0 p-1.5 sm:p-2 md:p-3 relative overflow-hidden">
-              <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 lg:gap-3 min-w-0 overflow-hidden">
-                <div className="min-w-0 flex-1 overflow-hidden md:max-w-[35%]">
+            <div className="flex-1 min-w-0 p-2 sm:p-3 relative overflow-hidden">
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 min-w-0 overflow-hidden">
+                <div className="min-w-0 flex-1 overflow-hidden max-w-[30%]">
                   <p className={cn(
-                    'truncate text-[11px] sm:text-xs md:text-sm',
+                    'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
                   )}>
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1 min-w-0 overflow-hidden md:max-w-[45%]">
+                <div className="flex-1 min-w-0 overflow-hidden max-w-[40%]">
                   <h3 className={cn(
-                    'truncate text-[11px] sm:text-xs md:text-sm',
+                    'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
                   )}>
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 flex-shrink min-w-0">
-                  <span className="hidden md:inline whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground truncate max-w-[80px] lg:max-w-[120px]">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink min-w-0">
+                  <span className="hidden lg:inline whitespace-nowrap text-xs text-muted-foreground truncate max-w-[120px]">
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (

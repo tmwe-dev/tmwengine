@@ -604,10 +604,31 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as ErrorRecord;
-            addLog(`🔄 Riga ${updated.row_number}: ${updated.status}`);
+            
+            // Aggiorna il contatore in tempo reale
+            if (updated.status === 'corrected') {
+              addLog(`✅ Riga ${updated.row_number}: CORRETTO`);
+              setStats(prev => ({
+                ...prev,
+                corrected: prev.corrected + 1,
+                pending: Math.max(0, prev.pending - 1),
+                processed: prev.processed + 1
+              }));
+            } else if (updated.status === 'failed') {
+              addLog(`❌ Riga ${updated.row_number}: FALLITO`);
+              setStats(prev => ({
+                ...prev,
+                failed: prev.failed + 1,
+                pending: Math.max(0, prev.pending - 1),
+                processed: prev.processed + 1
+              }));
+            }
           }
           
-          loadErrors();
+          // Ricarica i dati completi ogni 5 aggiornamenti per sincronizzare
+          if (Math.random() < 0.2) {
+            loadErrors();
+          }
         }
       )
       .subscribe();
@@ -895,9 +916,17 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 animate-spin" />
-                      {autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 animate-spin" />
+                        {autoRun ? 'AutoRun in corso...' : 'Elaborazione in corso...'}
+                      </div>
+                      {/* Contatore in tempo reale */}
+                      <div className="text-xs text-muted-foreground">
+                        Elaborati: <span className="font-bold text-green-600">{stats.corrected}</span> / 
+                        <span className="font-bold text-red-600"> {stats.failed}</span> falliti / 
+                        <span className="font-bold text-yellow-600"> {stats.pending}</span> rimanenti
+                      </div>
                     </div>
                   )}
                 </div>

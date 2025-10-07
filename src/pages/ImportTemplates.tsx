@@ -274,6 +274,7 @@ export default function ImportTemplates() {
   const [showFiltersArea, setShowFiltersArea] = useState(true);
   const [allRecords, setAllRecords] = useState<ImportedContact[]>([]);
   const [loadingAllRecords, setLoadingAllRecords] = useState(false);
+  const [countrySortMode, setCountrySortMode] = useState<'alpha' | 'count'>('count');
   
   // Switch per attivare/disattivare importazione AI
   const [useAIImport, setUseAIImport] = useState(false);
@@ -1745,6 +1746,21 @@ export default function ImportTemplates() {
       .map(([value, count]) => ({ value, count }));
   };
 
+  // Get country values sorted by mode
+  const getCountryValuesSorted = () => {
+    const countryData = getUniqueValuesWithCount('country');
+    
+    if (countrySortMode === 'alpha') {
+      return countryData.sort((a, b) => {
+        const nameA = getCountryFullName(a.value).toLowerCase();
+        const nameB = getCountryFullName(b.value).toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    }
+    
+    return countryData; // già ordinato per count
+  };
+
   const viewImportRecords = (importLog: ImportLog) => {
     loadAllRecords(importLog);
   };
@@ -3016,14 +3032,36 @@ export default function ImportTemplates() {
                             </div>
 
                             <div className="space-y-2">
-                              <Label>Nazione</Label>
+                              <div className="flex items-center justify-between">
+                                <Label>Nazione</Label>
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'alpha' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('alpha')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    A-Z
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={countrySortMode === 'count' ? 'default' : 'ghost'}
+                                    onClick={() => setCountrySortMode('count')}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    #
+                                  </Button>
+                                </div>
+                              </div>
                               <Select value={countryFilter} onValueChange={setCountryFilter}>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Tutte le nazioni" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__all__">Tutte ({allRecords.length})</SelectItem>
-                                  {getUniqueValuesWithCount('country').map(({ value, count }) => (
+                                  {getCountryValuesSorted().map(({ value, count }) => (
                                     <SelectItem key={value} value={value}>
                                       {getCountryFullName(value)} ({count})
                                     </SelectItem>

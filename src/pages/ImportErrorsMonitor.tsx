@@ -260,6 +260,12 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
   const processBatch = async (autoTriggered = false) => {
     if (!importLogId) return;
 
+    // Blocca se autoRun è disattivato durante chiamata automatica
+    if (autoTriggered && !autoRun) {
+      console.log('⛔ AutoRun disattivato, blocco processBatch');
+      return;
+    }
+
     setIsProcessing(true);
     setAwaitingConfirmation(false);
     addLog(`🚀 Avvio elaborazione batch (${batchSize} righe)${autoTriggered ? ' [AUTO]' : ''}...`);
@@ -612,7 +618,15 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
   useEffect(() => {
     if (!autoRun || isProcessing || !importLogId) return;
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const checkAndContinue = async () => {
+      // Doppio controllo: se autoRun è stato disattivato, blocca
+      if (!autoRun) {
+        console.log('AutoRun disattivato, blocco controlli');
+        return;
+      }
+
       // Controlla se ci sono ancora pending nel database
       const { count: stillPending } = await supabase
         .from('import_errors')
@@ -624,7 +638,9 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       
       if (stillPending && stillPending > 0 && !isProcessing && autoRun) {
         addLog(`🔄 AutoRun: rilevati ${stillPending} record pending, riavvio elaborazione...`);
-        setTimeout(() => processBatch(true), 2000);
+        timeoutId = setTimeout(() => {
+          if (autoRun) processBatch(true);
+        }, 2000);
       } else if (!stillPending || stillPending === 0) {
         addLog(`✨ AutoRun: completato, nessun record pending`);
         setAutoRun(false);
@@ -635,7 +651,11 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     // Controlla ogni 3 secondi
     const interval = setInterval(checkAndContinue, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log('AutoRun cleanup: interval e timeout cancellati');
+    };
   }, [autoRun, isProcessing, importLogId, stats.pending]);
 
   if (!importLogId) {

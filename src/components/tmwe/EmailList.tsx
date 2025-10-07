@@ -365,6 +365,22 @@ export const EmailList = ({
             )}
             <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full">
               <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
+                {/* Icona maximize a sinistra */}
+                {!multiSelectMode && onOpenDetailPopup && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:flex h-8 w-8 p-0 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEmailSelect(email.id);
+                      onOpenDetailPopup();
+                    }}
+                  >
+                    <Maximize2 className="h-5 w-5" />
+                  </Button>
+                )}
+                
                 <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden sm:min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
@@ -396,20 +412,6 @@ export const EmailList = ({
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
                       </span>
                     </div>
-                    {!multiSelectMode && onOpenDetailPopup && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="hidden md:flex h-8 w-8 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEmailSelect(email.id);
-                          onOpenDetailPopup();
-                        }}
-                      >
-                        <Maximize2 className="h-5 w-5" />
-                      </Button>
-                    )}
                     {!multiSelectMode && selectedEmailId === email.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

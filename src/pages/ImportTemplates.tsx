@@ -3827,35 +3827,28 @@ export default function ImportTemplates() {
                       </div>
                     ) : (
                       /* Desktop Pagination */
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                            disabled={currentPage === 0}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            Precedente
-                          </Button>
-                          <span className="text-sm px-3 py-1 bg-muted rounded">
-                            Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
-                            disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
-                          >
-                            Successivo
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {selectedRecords.size > 0 && (
-                          <span className="text-sm text-muted-foreground">
-                            {selectedRecords.size} record selezionati
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Precedente
+                        </Button>
+                        <span className="text-sm px-3 py-1 bg-muted rounded">
+                          Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setCurrentPage(Math.min(Math.ceil(filteredRecords.length / recordsPerPage) - 1, currentPage + 1))}
+                          disabled={currentPage >= Math.ceil(filteredRecords.length / recordsPerPage) - 1}
+                        >
+                          Successivo
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
                       </div>
                     )}
                    </div>

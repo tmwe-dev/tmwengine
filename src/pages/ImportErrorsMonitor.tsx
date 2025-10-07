@@ -644,14 +644,21 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
   // AutoRun monitor - controlla continuamente se ci sono pending e autorun è attivo
   useEffect(() => {
-    if (!autoRun || isProcessing || !importLogId) return;
+    if (!autoRun || isProcessing || !importLogId) {
+      console.log('AutoRun monitor DISABILITATO - autoRun:', autoRun, 'isProcessing:', isProcessing);
+      return;
+    }
 
+    console.log('AutoRun monitor ATTIVATO');
     let timeoutId: NodeJS.Timeout | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
 
     const checkAndContinue = async () => {
-      // Doppio controllo: se autoRun è stato disattivato, blocca
+      // CRITICO: controllo immediato se autoRun è ancora attivo
       if (!autoRun) {
-        console.log('AutoRun disattivato, blocco controlli');
+        console.log('⛔ AutoRun disattivato durante check, BLOCCO');
+        if (intervalId) clearInterval(intervalId);
+        if (timeoutId) clearTimeout(timeoutId);
         return;
       }
 
@@ -664,10 +671,23 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       
       console.log(`AutoRun check: ${stillPending} pending, processing: ${isProcessing}, autoRun: ${autoRun}`);
       
-      if (stillPending && stillPending > 0 && !isProcessing && autoRun) {
+      // Altro controllo autoRun prima di procedere
+      if (!autoRun) {
+        console.log('⛔ AutoRun disattivato dopo query, BLOCCO');
+        if (intervalId) clearInterval(intervalId);
+        if (timeoutId) clearTimeout(timeoutId);
+        return;
+      }
+      
+      if (stillPending && stillPending > 0 && !isProcessing) {
         addLog(`🔄 AutoRun: rilevati ${stillPending} record pending, riavvio elaborazione...`);
         timeoutId = setTimeout(() => {
-          if (autoRun) processBatch(true);
+          // Controllo finale prima di avviare batch
+          if (autoRun) {
+            processBatch(true);
+          } else {
+            console.log('⛔ AutoRun disattivato prima di processBatch, ANNULLO');
+          }
         }, 2000);
       } else if (!stillPending || stillPending === 0) {
         addLog(`✨ AutoRun: completato, nessun record pending`);
@@ -677,14 +697,14 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     };
 
     // Controlla ogni 3 secondi
-    const interval = setInterval(checkAndContinue, 3000);
+    intervalId = setInterval(checkAndContinue, 3000);
 
     return () => {
-      clearInterval(interval);
+      console.log('🧹 AutoRun cleanup: cancello interval e timeout');
+      if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
-      console.log('AutoRun cleanup: interval e timeout cancellati');
     };
-  }, [autoRun, isProcessing, importLogId, stats.pending]);
+  }, [autoRun, isProcessing, importLogId]); // RIMOSSO stats.pending dalle dipendenze!
 
   if (!importLogId) {
     return (

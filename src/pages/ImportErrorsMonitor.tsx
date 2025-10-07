@@ -323,49 +323,28 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         const estimatedDuration = (result as any).estimated_duration || 100;
         
         const timeoutId = setTimeout(async () => {
-          // CRITICO: Verifica se autoRun è ancora attivo PRIMA di fare qualsiasi cosa
-          if (!autoRun) {
-            console.log('⛔ AutoRun disattivato durante background processing, BLOCCO tutto');
-            addLog(`⚠️ Background processing completato ma AutoRun è stato disattivato`);
-            setIsProcessing(false);
-            activeTimeouts.current.delete(timeoutId);
-            return;
-          }
-
           addLog(`🔄 Ricarico dati dal database dopo background processing...`);
           await loadErrors();
           setIsProcessing(false); // ORA si può resettare
           
-          // Ricontrolla se autoRun è ancora attivo dopo il caricamento
-          if (!autoRun) {
-            console.log('⛔ AutoRun disattivato dopo loadErrors, BLOCCO');
-            addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
-            activeTimeouts.current.delete(timeoutId);
-            return;
-          }
-
-          // Se autorun è attivo, ricontrolla pending
-          const { count: stillPending } = await supabase
-            .from('import_errors')
-            .select('*', { count: 'exact', head: true })
-            .eq('import_log_id', importLogId)
-            .eq('status', 'pending');
-          
-          // Ultimo controllo prima di continuare
-          if (!autoRun) {
-            console.log('⛔ AutoRun disattivato prima di riavviare batch, BLOCCO');
-            addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
-            activeTimeouts.current.delete(timeoutId);
-            return;
-          }
-
-          if (stillPending && stillPending > 0) {
-            addLog(`📊 ${stillPending} righe ancora pending, continuo...`);
-            processBatch(true);
+          // SOLO se autoRun è attivo, ricontrolla pending
+          if (autoRun) {
+            const { count: stillPending } = await supabase
+              .from('import_errors')
+              .select('*', { count: 'exact', head: true })
+              .eq('import_log_id', importLogId)
+              .eq('status', 'pending');
+            
+            if (stillPending && stillPending > 0) {
+              addLog(`📊 ${stillPending} righe ancora pending, continuo...`);
+              processBatch(true);
+            } else {
+              addLog(`✨ AutoRun completato: nessuna riga pendente`);
+              setAutoRun(false);
+              toast.success('AutoRun completato!');
+            }
           } else {
-            addLog(`✨ AutoRun completato: nessuna riga pendente`);
-            setAutoRun(false);
-            toast.success('AutoRun completato!');
+            addLog(`✅ Background processing completato`);
           }
           
           activeTimeouts.current.delete(timeoutId);
@@ -944,8 +923,10 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                   value={batchSize.toString()} 
                   onValueChange={(v) => {
                     const newSize = Number(v);
-                    console.log('🔢 Dropdown cambiato:', newSize, 'tipo:', typeof newSize);
+                    console.log('🔢 Dropdown cambiato da', batchSize, 'a', newSize);
                     setBatchSize(newSize);
+                    setCurrentBatch(0); // Reset batch quando cambi dimensione
+                    addLog(`📏 Batch size cambiato a ${newSize} righe`);
                   }}
                   disabled={isProcessing}
                 >

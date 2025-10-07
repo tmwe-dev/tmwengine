@@ -3973,7 +3973,7 @@ export default function ImportTemplates() {
                       </div>
                     ) : (
                       /* Desktop Pagination */
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-start justify-between w-full max-w-2xl mx-auto">
                         <Button
                           size="sm"
                           variant="outline"
@@ -3983,11 +3983,11 @@ export default function ImportTemplates() {
                           <ChevronLeft className="h-4 w-4" />
                           Precedente
                         </Button>
-                        <div className="flex flex-col items-center gap-1">
+                        <div className="flex flex-col items-center">
                           <span className="text-sm px-3 py-1">
                             Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
                           </span>
-                          <span className="text-xs text-red-500 font-medium mt-[15px]">
+                          <span className="text-xs text-red-500 font-medium mt-[25px]">
                             {filteredRecords.length} records
                           </span>
                         </div>

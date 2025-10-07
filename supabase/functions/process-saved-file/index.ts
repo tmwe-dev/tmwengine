@@ -136,6 +136,7 @@ serve(async (req) => {
     let processedRows = existingLog?.righe_importate || 0;
     let errorRows = 0;
     const errors: any[] = [];
+    const errorsToInsert: any[] = []; // Batch di errori da inserire
     const batchSize = customBatchSize; // Use custom batch size from request
     const maxProcessingTime = customTimeout; // Use custom timeout from request
     const startTime = Date.now();
@@ -266,19 +267,17 @@ serve(async (req) => {
           } else {
             console.log(`Skipping invalid record at row ${globalRowIndex + 1}: missing essential fields`);
             
-            // Inserisci errore nella tabella import_errors per la riparazione AI
-            await supabaseClient
-              .from('import_errors')
-              .insert({
-                import_log_id: importLogId,
-                row_number: globalRowIndex + 1,
-                raw_data: Object.fromEntries(
-                  headers.map((h: string, idx: number) => [h, values[idx] || null])
-                ),
-                error_message: 'Missing essential fields (name/company and contact info)',
-                error_type: 'validation_error',
-                status: 'pending'
-              });
+            // Aggiungi errore al batch (non inserire subito)
+            errorsToInsert.push({
+              import_log_id: importLogId,
+              row_number: globalRowIndex + 1,
+              raw_data: Object.fromEntries(
+                headers.map((h: string, idx: number) => [h, values[idx] || null])
+              ),
+              error_message: 'Missing essential fields (name/company and contact info)',
+              error_type: 'validation_error',
+              status: 'pending'
+            });
             
             errors.push({ 
               row: globalRowIndex + 1, 
@@ -292,20 +291,18 @@ serve(async (req) => {
         } catch (rowError: any) {
           console.error(`Error processing row ${globalRowIndex + 1}:`, rowError);
           
-          // Inserisci errore nella tabella import_errors per la riparazione AI
+          // Aggiungi errore al batch (non inserire subito)
           const values = row.split(separator);
-          await supabaseClient
-            .from('import_errors')
-            .insert({
-              import_log_id: importLogId,
-              row_number: globalRowIndex + 1,
-              raw_data: Object.fromEntries(
-                headers.map((h: string, idx: number) => [h, values[idx] || null])
-              ),
-              error_message: rowError.message,
-              error_type: 'processing_error',
-              status: 'pending'
-            });
+          errorsToInsert.push({
+            import_log_id: importLogId,
+            row_number: globalRowIndex + 1,
+            raw_data: Object.fromEntries(
+              headers.map((h: string, idx: number) => [h, values[idx] || null])
+            ),
+            error_message: rowError.message,
+            error_type: 'processing_error',
+            status: 'pending'
+          });
           
           errors.push({ row: globalRowIndex + 1, error: rowError.message });
           errorRows++;
@@ -325,6 +322,20 @@ serve(async (req) => {
           totalValidRecords -= contactsToInsert.length;
           errors.push({ batch: Math.floor(batchStart / batchSize) + 1, error: insertError.message });
         }
+      }
+
+      // Inserisci errori in batch (molto più veloce)
+      if (errorsToInsert.length > 0) {
+        const { error: errorsInsertError } = await supabaseClient
+          .from('import_errors')
+          .insert(errorsToInsert);
+        
+        if (errorsInsertError) {
+          console.error('Error inserting errors batch:', errorsInsertError);
+        }
+        
+        // Svuota il batch dopo l'inserimento
+        errorsToInsert.length = 0;
       }
 
       // Update progress more frequently

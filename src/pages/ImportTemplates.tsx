@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -240,6 +240,7 @@ export default function ImportTemplates() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
+  const [lockedFiles, setLockedFiles] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -2408,6 +2409,7 @@ export default function ImportTemplates() {
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-background">
                     <TableRow>
+                       <TableHead className="w-16"></TableHead>
                        <TableHead className="w-24">Data</TableHead>
                        <TableHead>File</TableHead>
                        <TableHead className="text-center">Stato</TableHead>
@@ -2419,76 +2421,111 @@ export default function ImportTemplates() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {importLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          {new Date(log.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                        </TableCell>
-                        <TableCell>{log.file_name}</TableCell>
-                        <TableCell className="text-center">{getStatusBadge(log.stato)}</TableCell>
-                         <TableCell className="text-center">
-                           <span className="font-medium text-primary">{log.righe_totali}</span>
-                         </TableCell>
-                        <TableCell className="text-center text-red-600">{log.righe_errori}</TableCell>
-                        <TableCell className="text-center text-blue-600">{log.contatti_selezionati}</TableCell>
-                        <TableCell className="text-center">
-                           <div className="flex gap-1 justify-center">
-                              {/* Pulsante per processare file salvati */}
-                              {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
-                                <Button 
-                                  variant="default" 
-                                  size="sm"
-                                  onClick={() => processFile(log.id)}
-                                  disabled={importProgress.isProcessing}
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                  <Upload className="h-4 w-4 mr-1" />
-                                  Elabora
-                                </Button>
-                              )}
-                              
-                              {/* Pulsante Ripara con AI - mostrato se ci sono errori */}
-                              {log.righe_errori > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
-                                  className="gap-1 bg-orange-500/10 border-orange-500/50 hover:bg-orange-500/20"
-                                >
-                                  <Pickaxe className="h-4 w-4" />
-                                  Ripara ({log.righe_errori})
-                                </Button>
-                              )}
-                              
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => viewImportRecords(log)}
-                                disabled={loadingAllRecords || log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato'}
-                              >
-                                <Users className="h-4 w-4" />
-                                {loadingAllRecords && selectedImport?.id === log.id ? 'Caricamento...' : 'Gestisci'}
-                              </Button>
-                               
-                               {log.trasferiti_rubrica && (
-                                 <Badge variant="outline" className="text-blue-800 bg-transparent border-transparent">
-                                   Trasferiti
-                                 </Badge>
-                               )}
-                            </div>
-                         </TableCell>
+                    {importLogs.map((log) => {
+                      const isLocked = lockedFiles.has(log.id);
+                      
+                      return (
+                        <TableRow key={log.id}>
                          <TableCell>
-                           <Button 
-                             variant="outline" 
+                           <Button
+                             variant="ghost"
                              size="sm"
-                             onClick={() => deleteImportFile(log)}
-                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                             onClick={() => {
+                               setLockedFiles(prev => {
+                                 const newSet = new Set(prev);
+                                 if (newSet.has(log.id)) {
+                                   newSet.delete(log.id);
+                                 } else {
+                                   newSet.add(log.id);
+                                 }
+                                 return newSet;
+                               });
+                             }}
+                             className={cn(
+                               "h-8 w-8 p-0",
+                               isLocked ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-foreground"
+                             )}
+                             title={isLocked ? "Sblocca per cancellare" : "Blocca cancellazione"}
                            >
-                             <Trash2 className="h-4 w-4" />
+                             {isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                            </Button>
                          </TableCell>
-                       </TableRow>
-                    ))}
+                         <TableCell>
+                           {new Date(log.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                         </TableCell>
+                         <TableCell>{log.file_name}</TableCell>
+                         <TableCell className="text-center">{getStatusBadge(log.stato)}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-medium text-primary">{log.righe_totali}</span>
+                          </TableCell>
+                         <TableCell className="text-center text-red-600">{log.righe_errori}</TableCell>
+                         <TableCell className="text-center text-blue-600">{log.contatti_selezionati}</TableCell>
+                         <TableCell className="text-center">
+                            <div className="flex gap-1 justify-center">
+                               {/* Pulsante per processare file salvati */}
+                               {(log.stato === 'pronto_per_elaborazione' || log.stato === 'file_salvato') && (
+                                 <Button 
+                                   variant="default" 
+                                   size="sm"
+                                   onClick={() => processFile(log.id)}
+                                   disabled={importProgress.isProcessing}
+                                   className="bg-blue-600 hover:bg-blue-700"
+                                 >
+                                   <Upload className="h-4 w-4 mr-1" />
+                                   Elabora
+                                 </Button>
+                               )}
+                               
+                               {/* Pulsante Ripara con AI - mostrato se ci sono errori */}
+                               {log.righe_errori > 0 && (
+                                 <Button 
+                                   variant="default" 
+                                   size="sm"
+                                   onClick={() => navigate(`/import-errors-monitor?import_log_id=${log.id}`)}
+                                   className="bg-orange-600 hover:bg-orange-700"
+                                 >
+                                   <Pickaxe className="h-4 w-4 mr-1" />
+                                   Ripara
+                                 </Button>
+                               )}
+
+                               {/* Pulsante Visualizza Records */}
+                               <Button 
+                                 variant="outline" 
+                                 size="sm"
+                                 onClick={() => loadAllRecords(log)}
+                                 disabled={loadingRecords && selectedImport?.id === log.id}
+                               >
+                                 <Eye className="h-4 w-4 mr-1" />
+                                 {loadingRecords && selectedImport?.id === log.id ? 'Caricamento...' : `Vedi (${log.righe_importate})`}
+                               </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                if (isLocked) {
+                                  toast.error('File bloccato', {
+                                    description: 'Sblocca il lucchetto per eliminare questo file'
+                                  });
+                                  return;
+                                }
+                                deleteImportFile(log);
+                              }}
+                              className={cn(
+                                "text-red-600 hover:text-red-700 hover:bg-red-50",
+                                isLocked && "opacity-50 cursor-not-allowed"
+                              )}
+                              title={isLocked ? "File bloccato - sblocca per eliminare" : "Elimina"}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

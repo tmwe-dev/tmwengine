@@ -2913,34 +2913,36 @@ export default function ImportTemplates() {
               /* Desktop Header - Con popup filtri */
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between relative">
-                  <div className="flex-1 flex items-center gap-3">
-                    <DialogTitle>Record Importati</DialogTitle>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      ({allRecords.length} record{allRecords.length !== 1 ? 's' : ''})
-                    </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <DialogTitle>Record Importati</DialogTitle>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        ({allRecords.length} record{allRecords.length !== 1 ? 's' : ''})
+                      </span>
+                      
+                      {/* Cestino accanto al titolo */}
+                      {selectedRecords.size > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={deleteSelectedRecords}
+                                className="h-8 w-8 p-0 border-red-500 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Elimina {selectedRecords.size} record selezionati</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     
-                    {/* Cestino accanto al titolo */}
-                    {selectedRecords.size > 0 && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={deleteSelectedRecords}
-                              className="h-8 w-8 p-0 border-red-500 hover:bg-red-500/10"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Elimina {selectedRecords.size} record selezionati</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    
-                    <p className="text-sm text-muted-foreground">{selectedImport?.file_name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedImport?.file_name}</p>
                   </div>
                   
                   {/* Pulsanti in alto a destra */}

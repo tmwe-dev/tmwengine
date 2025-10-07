@@ -647,20 +647,18 @@ const EmailDashboard = () => {
               )}
             </div>
             
-            {/* Right aligned icons for mobile */}
-            {isMobile && (
-              <div className="flex items-center gap-2 shrink-0">
-                <PagePromptManager pageRoute="/email-manager" />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 hover:bg-primary/10"
-                  onClick={openAIChat}
-                >
-                  <Brain className="h-4 w-4 text-primary" />
-                </Button>
-              </div>
-            )}
+            {/* Right aligned icons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <PagePromptManager pageRoute="/email-manager" />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 hover:bg-primary/10"
+                onClick={openAIChat}
+              >
+                <Brain className="h-4 w-4 text-primary" />
+              </Button>
+            </div>
           </div>
 
           <EmailList

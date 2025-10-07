@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User } from 'lucide-react';
+import { Upload, FileSpreadsheet, Plus, Trash2, Eye, Edit, Mail, Users, Database, Clock, X, ChevronLeft, ChevronRight, Building, ChevronUp, ChevronDown, Search, Filter, FilterX, Phone, FileText, CheckSquare, Paperclip, Activity, StickyNote, Briefcase, Settings, Monitor, RefreshCw, ListChecks, Pickaxe, Download, Lock, Unlock, User, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -3606,13 +3606,41 @@ export default function ImportTemplates() {
                                       ) : key === 'company_name' ? (
                                         <div className="flex items-center gap-2">
                                           <span>{formatCellValue(record[key], key)}</span>
+                                          
+                                          {(!record.alias || !record.company_alias) && (
+                                            <TooltipProvider>
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <button
+                                                    onClick={async (e) => {
+                                                      e.stopPropagation();
+                                                      try {
+                                                        toast.info('Generazione alias...');
+                                                        const { data, error } = await supabase.functions.invoke('ai-crm-manager', {
+                                                          body: { action: 'update_aliases', data: {}, contact_ids: [record.id] }
+                                                        });
+                                                        if (error) throw error;
+                                                        toast.success(data.message || 'Alias generati');
+                                                        loadAllRecords(selectedImport!);
+                                                      } catch (err: any) {
+                                                        toast.error('Errore generazione alias');
+                                                      }
+                                                    }}
+                                                    className="p-1 rounded hover:bg-purple-600/20 transition-colors"
+                                                  >
+                                                    <Sparkles className="h-4 w-4 text-purple-600" />
+                                                  </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Genera alias AI</p></TooltipContent>
+                                              </Tooltip>
+                                            </TooltipProvider>
+                                          )}
+                                          
                                           <div 
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              console.log('Clicked on activity indicator for record:', record.id);
                                               setSelectedContactIdForActivities(record.id);
                                               setIsAttivitaDialogOpen(true);
-                                              console.log('Opening dialog with showBackButton=true');
                                             }}
                                             className="cursor-pointer"
                                           >
@@ -3623,6 +3651,7 @@ export default function ImportTemplates() {
                                             />
                                           </div>
                                         </div>
+
                                       ) : key === 'email' && record[key] ? (
                                         <TooltipProvider>
                                           <Tooltip>

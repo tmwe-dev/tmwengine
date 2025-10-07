@@ -10,6 +10,7 @@ import {
   ArrowLeft, 
   Pause, 
   Play, 
+  PlayCircle,
   CheckCircle, 
   XCircle, 
   Clock,
@@ -43,6 +44,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 
 interface ErrorRecord {
   id: string;
@@ -111,6 +114,7 @@ export default function ImportErrorsMonitor() {
   const [expandedFailedRows, setExpandedFailedRows] = useState<Set<string>>(new Set());
   const [selectedFailedRecords, setSelectedFailedRecords] = useState<Set<string>>(new Set());
   const [processingAI, setProcessingAI] = useState<Set<string>>(new Set());
+  const [autoRun, setAutoRun] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(true);
   const [showFreePrompt, setShowFreePrompt] = useState(true);
   const [freePrompt, setFreePrompt] = useState<string>(
@@ -253,12 +257,12 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
     }
   };
 
-  const processBatch = async () => {
+  const processBatch = async (autoTriggered = false) => {
     if (!importLogId) return;
 
     setIsProcessing(true);
     setAwaitingConfirmation(false);
-    addLog(`🚀 Avvio elaborazione batch (${batchSize} righe)...`);
+    addLog(`🚀 Avvio elaborazione batch (${batchSize} righe)${autoTriggered ? ' [AUTO]' : ''}...`);
 
     try {
       const { data, error } = await supabase.functions.invoke('process-import-errors-ai', {
@@ -283,6 +287,21 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         toast.success(`Processing ${batchSize} records in background. Tempo stimato: ~${(result as any).estimated_duration}s`);
 
         setIsProcessing(false);
+        
+        // Se autorun è attivo, attendi e ricarica poi continua
+        if (autoRun) {
+          addLog(`⏰ AutoRun attivo: attendo completamento background task...`);
+          setTimeout(async () => {
+            await loadErrors();
+            if (stats.pending > 0) {
+              processBatch(true);
+            } else {
+              addLog(`✨ AutoRun completato: nessuna riga pendente`);
+              setAutoRun(false);
+            }
+          }, (result as any).estimated_duration * 1000 + 2000);
+        }
+        
         return;
       }
 
@@ -291,7 +310,6 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       addLog(`🎯 Token usati: ${result.total_tokens.toLocaleString()} (Input: ${result.input_tokens} | Output: ${result.output_tokens})`);
       addLog(`💰 Costo batch: $${result.estimated_cost.toFixed(6)}`);
 
-      // NON aggiornare stats localmente - ricarica dal database per dati reali
       addLog(`🔄 Ricarico dati aggiornati dal database...`);
       
       if (result.corrected > 0) {
@@ -301,20 +319,37 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       // Ricarica tutto dal database per avere dati reali
       await loadErrors();
 
-      // Se ci sono ancora righe pending, chiedi conferma
+      // Se ci sono ancora righe pending
       if (!result.batch_complete) {
-        setAwaitingConfirmation(true);
         setCurrentBatch(result.next_batch);
-        addLog(`⏸️ Batch completato. In attesa di conferma per continuare...`);
+        
+        // Se autorun è attivo, continua automaticamente
+        if (autoRun) {
+          addLog(`⏰ AutoRun attivo: continuo con il prossimo batch...`);
+          setTimeout(() => processBatch(true), 1000);
+        } else {
+          setAwaitingConfirmation(true);
+          addLog(`⏸️ Batch completato. In attesa di conferma per continuare...`);
+        }
       } else {
         addLog(`✨ Tutte le righe sono state elaborate!`);
         setAwaitingConfirmation(false);
+        if (autoRun) {
+          addLog(`🎉 AutoRun completato con successo!`);
+          setAutoRun(false);
+        }
       }
 
     } catch (error) {
       console.error('Error processing:', error);
       addLog(`❌ Errore: ${error instanceof Error ? error.message : 'Sconosciuto'}`);
       toast.error('Errore durante elaborazione');
+      
+      // Disattiva autorun in caso di errore
+      if (autoRun) {
+        setAutoRun(false);
+        addLog(`⚠️ AutoRun disattivato a causa dell'errore`);
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -725,58 +760,81 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
               </div>
 
               {/* Pulsanti di controllo - Centrati */}
-              <div className="flex items-center justify-center gap-3">
-                {!isProcessing && !awaitingConfirmation ? (
-                  <>
+              <div className="flex flex-col items-center gap-3">
+                {/* AutoRun Switch */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 w-full max-w-md">
+                  <div className="space-y-1">
+                    <Label htmlFor="auto-run" className="flex items-center gap-2 cursor-pointer">
+                      <PlayCircle className={`h-4 w-4 ${autoRun ? 'text-green-500 animate-pulse' : 'text-muted-foreground'}`} />
+                      <span className="font-medium">AutoRun</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {autoRun 
+                        ? '🟢 Elaborazione continua automatica attiva'
+                        : 'Attiva per continuare automaticamente i batch'}
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-run"
+                    checked={autoRun}
+                    onCheckedChange={setAutoRun}
+                  />
+                </div>
+
+                {/* Bottoni */}
+                <div className="flex items-center gap-3">
+                  {!isProcessing && !awaitingConfirmation ? (
+                    <>
+                      <Button
+                        onClick={() => processBatch(false)}
+                        disabled={stats.pending === 0}
+                        className="gap-2"
+                      >
+                        <Play className="h-4 w-4" />
+                        {autoRun ? 'Avvia AutoRun' : `Avvia Batch (${batchSize} righe)`}
+                      </Button>
+                      {stats.corrected > 0 && (
+                        <Button
+                          onClick={confirmAndImport}
+                          variant="default"
+                          className="gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Conferma e Importa ({stats.corrected})
+                        </Button>
+                      )}
+                    </>
+                  ) : awaitingConfirmation ? (
+                    <>
+                      <Button
+                        onClick={() => processBatch(false)}
+                        className="gap-2 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Play className="h-4 w-4" />
+                        Continua Prossimo Batch
+                      </Button>
+                      {stats.corrected > 0 && (
+                        <Button
+                          onClick={confirmAndImport}
+                          variant="default"
+                          className="gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Conferma e Importa ({stats.corrected})
+                        </Button>
+                      )}
+                    </>
+                  ) : (
                     <Button
-                      onClick={processBatch}
-                      disabled={stats.pending === 0}
+                      disabled
+                      variant="outline"
                       className="gap-2"
                     >
-                      <Play className="h-4 w-4" />
-                      Avvia Batch ({batchSize} righe)
+                      <Clock className="h-4 w-4 animate-spin" />
+                      Elaborazione...
                     </Button>
-                    {stats.corrected > 0 && (
-                      <Button
-                        onClick={confirmAndImport}
-                        variant="default"
-                        className="gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Conferma e Importa ({stats.corrected})
-                      </Button>
-                    )}
-                  </>
-                ) : awaitingConfirmation ? (
-                  <>
-                    <Button
-                      onClick={continueProcessing}
-                      className="gap-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Play className="h-4 w-4" />
-                      Continua Prossimo Batch
-                    </Button>
-                    {stats.corrected > 0 && (
-                      <Button
-                        onClick={confirmAndImport}
-                        variant="default"
-                        className="gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Conferma e Importa ({stats.corrected})
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <Button
-                    disabled
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Clock className="h-4 w-4 animate-spin" />
-                    Elaborazione...
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>

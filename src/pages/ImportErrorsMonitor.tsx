@@ -274,6 +274,18 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       const result = data as BatchResult;
       setLastBatchResult(result);
 
+      // Se è background processing (batch > 25), avvia polling
+      if ((result as any).processing) {
+        addLog(`🚀 Background processing avviato per ${batchSize} records`);
+        addLog(`⏱️ Tempo stimato: ~${(result as any).estimated_duration}s`);
+        addLog(`📊 Il database verrà aggiornato automaticamente`);
+        
+        toast.success(`Processing ${batchSize} records in background. Tempo stimato: ~${(result as any).estimated_duration}s`);
+
+        setIsProcessing(false);
+        return;
+      }
+
       addLog(`✅ Batch completato!`);
       addLog(`📊 Processati: ${result.processed} | Corretti: ${result.corrected} | Falliti: ${result.failed}`);
       addLog(`🎯 Token usati: ${result.total_tokens.toLocaleString()} (Input: ${result.input_tokens} | Output: ${result.output_tokens})`);

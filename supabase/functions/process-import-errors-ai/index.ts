@@ -11,6 +11,224 @@ const corsHeaders = {
 const COST_PER_MILLION_INPUT_TOKENS = 0.075;  // $0.075 per 1M input tokens
 const COST_PER_MILLION_OUTPUT_TOKENS = 0.30;  // $0.30 per 1M output tokens
 
+// Background processing function per batch grandi
+async function processLargeBatch(
+  supabaseClient: any,
+  import_log_id: string,
+  batch_size: number,
+  continue_from_batch: number,
+  chunk_size: number
+) {
+  console.log(`📦 Starting large batch processing: ${batch_size} records in chunks of ${chunk_size}`);
+  
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
+  }
+
+  let totalProcessed = 0;
+  let totalCorrected = 0;
+  let totalFailed = 0;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  
+  // Carica il prompt dal database
+  const { data: promptData } = await supabaseClient
+    .from('page_system_prompts')
+    .select('system_prompt')
+    .eq('page_route', '/import-errors-monitor')
+    .eq('attivo', true)
+    .single();
+
+  const systemPrompt = promptData?.system_prompt || `Estrai dati da record CRM incompleti in formato JSON.
+
+REGOLA FONDAMENTALE: Restituisci SEMPRE un oggetto JSON con i campi trovati.
+Se un campo non c'è, metti null. NON restituire mai {}.
+
+Campi disponibili: name, company_name, email, phone, cell, address, city, country, zip_code, last_contact, scheduled_contact, next_contact_date`;
+
+  // Processa in chunks
+  for (let offset = 0; offset < batch_size; offset += chunk_size) {
+    const currentChunkSize = Math.min(chunk_size, batch_size - offset);
+    const currentOffset = continue_from_batch + offset;
+    
+    console.log(`\n🔄 Processing chunk ${Math.floor(offset / chunk_size) + 1}/${Math.ceil(batch_size / chunk_size)}: offset ${currentOffset}, size ${currentChunkSize}`);
+    
+    try {
+      // Prendi errori per questo chunk
+      const { data: pendingErrors, error: fetchError } = await supabaseClient
+        .from('import_errors')
+        .select('*')
+        .eq('import_log_id', import_log_id)
+        .eq('status', 'pending')
+        .order('row_number')
+        .range(currentOffset, currentOffset + currentChunkSize - 1);
+
+      if (fetchError) throw fetchError;
+      if (!pendingErrors || pendingErrors.length === 0) {
+        console.log(`⏭️ No pending errors for chunk at offset ${currentOffset}`);
+        continue;
+      }
+
+      // Prepara batch di record
+      const batchRecords = pendingErrors.map(error => ({
+        id: error.id,
+        row_number: error.row_number,
+        raw_data: error.raw_data,
+        attempted_corrections: error.attempted_corrections
+      }));
+
+      // Marca come in elaborazione
+      await supabaseClient
+        .from('import_errors')
+        .update({ status: 'processing' })
+        .in('id', batchRecords.map(r => r.id));
+
+      // Costruisci prompt
+      const userPrompt = `Normalizza i seguenti ${batchRecords.length} record CRM.
+
+IMPORTANTE: Restituisci un array JSON con ESATTAMENTE ${batchRecords.length} oggetti, nello stesso ordine dei record input.
+
+RECORD DA NORMALIZZARE:
+${batchRecords.map((r, idx) => `
+--- RECORD ${idx + 1} (row ${r.row_number}) ---
+${JSON.stringify(r.raw_data, null, 2)}
+`).join('\n')}
+
+RISPOSTA RICHIESTA:
+Restituisci un array JSON con ${batchRecords.length} oggetti normalizzati, mantenendo l'ordine.`;
+
+      // Chiamata AI
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 6000,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error(`AI API error: ${aiResponse.status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      const aiContent = aiData.choices[0].message.content;
+      
+      const inputTokens = aiData.usage?.prompt_tokens || 0;
+      const outputTokens = aiData.usage?.completion_tokens || 0;
+      totalInputTokens += inputTokens;
+      totalOutputTokens += outputTokens;
+
+      // Parse risposta
+      const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error('No JSON array found in AI response');
+      }
+      
+      const normalizedRecords = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(normalizedRecords)) {
+        throw new Error('AI response is not an array');
+      }
+
+      // Salva risultati
+      const tokenPerRecord = Math.round((inputTokens + outputTokens) / batchRecords.length);
+      
+      for (let i = 0; i < batchRecords.length; i++) {
+        const record = batchRecords[i];
+        const normalizedData = normalizedRecords[i];
+
+        try {
+          if (!normalizedData || Object.keys(normalizedData).length === 0) {
+            await supabaseClient
+              .from('import_errors')
+              .update({
+                status: 'failed',
+                attempted_corrections: record.attempted_corrections + 1
+              })
+              .eq('id', record.id);
+            
+            totalFailed++;
+          } else {
+            await supabaseClient
+              .from('import_errors')
+              .update({
+                status: 'corrected',
+                corrected_data: normalizedData,
+                attempted_corrections: record.attempted_corrections + 1,
+                ai_suggestions: {
+                  tokens_used: tokenPerRecord,
+                  model: 'google/gemini-2.5-flash',
+                  batch_processed: true,
+                  batch_size: batchRecords.length
+                }
+              })
+              .eq('id', record.id);
+            
+            totalCorrected++;
+          }
+          totalProcessed++;
+        } catch (recordError) {
+          console.error(`❌ Error saving record ${i + 1}:`, recordError);
+          totalFailed++;
+          totalProcessed++;
+        }
+      }
+
+      console.log(`✅ Chunk complete: ${totalCorrected} corrected, ${totalFailed} failed so far`);
+
+    } catch (chunkError) {
+      console.error(`❌ Chunk processing failed at offset ${currentOffset}:`, chunkError);
+      
+      // Marca chunk come fallito
+      const { data: failedChunk } = await supabaseClient
+        .from('import_errors')
+        .select('id')
+        .eq('import_log_id', import_log_id)
+        .eq('status', 'processing')
+        .range(currentOffset, currentOffset + currentChunkSize - 1);
+
+      if (failedChunk) {
+        for (const record of failedChunk) {
+          await supabaseClient
+            .from('import_errors')
+            .update({ status: 'failed' })
+            .eq('id', record.id);
+          totalFailed++;
+          totalProcessed++;
+        }
+      }
+    }
+  }
+
+  const totalTokens = totalInputTokens + totalOutputTokens;
+  const inputCost = (totalInputTokens / 1000000) * COST_PER_MILLION_INPUT_TOKENS;
+  const outputCost = (totalOutputTokens / 1000000) * COST_PER_MILLION_OUTPUT_TOKENS;
+  const estimatedCost = inputCost + outputCost;
+
+  console.log(`\n🎉 Large batch complete!`);
+  console.log(`📊 Total: ${totalProcessed} processed, ${totalCorrected} corrected, ${totalFailed} failed`);
+  console.log(`💰 Total cost: $${estimatedCost.toFixed(6)}`);
+  console.log(`📈 Total tokens: ${totalTokens} (${totalInputTokens} input + ${totalOutputTokens} output)`);
+
+  return {
+    success: true,
+    processed: totalProcessed,
+    corrected: totalCorrected,
+    failed: totalFailed,
+    total_tokens: totalTokens,
+    estimated_cost: estimatedCost
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,6 +247,46 @@ serve(async (req) => {
     } = await req.json();
 
     console.log(`Starting AI BATCH error processing for import_log_id: ${import_log_id}, batch_size: ${batch_size}, continue_from_batch: ${continue_from_batch}`);
+
+    // Determina se usare background processing (batch > 25)
+    const USE_BACKGROUND = batch_size > 25;
+    const CHUNK_SIZE = 25; // Processa internamente in chunks di 25
+
+    if (USE_BACKGROUND) {
+      console.log(`🚀 BACKGROUND MODE: Processing ${batch_size} records in chunks of ${CHUNK_SIZE}`);
+      
+      // Avvia background task
+      const backgroundTask = processLargeBatch(
+        supabaseClient,
+        import_log_id,
+        batch_size,
+        continue_from_batch,
+        CHUNK_SIZE
+      );
+      
+      // Registra background task per evitare timeout
+      // @ts-ignore - EdgeRuntime.waitUntil is available in Deno Deploy
+      if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(backgroundTask);
+      } else {
+        // Fallback per sviluppo locale
+        backgroundTask.catch(err => console.error('Background task error:', err));
+      }
+      
+      // Risposta immediata
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Processing ${batch_size} records in background`,
+        processing: true,
+        batch_size,
+        continue_from_batch,
+        estimated_duration: Math.ceil(batch_size / CHUNK_SIZE) * 25 // ~25s per chunk
+      }), {
+        status: 202, // Accepted
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {

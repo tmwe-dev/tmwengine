@@ -260,9 +260,10 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
   const processBatch = async (autoTriggered = false) => {
     if (!importLogId) return;
 
-    // Blocca se autoRun è disattivato durante chiamata automatica
+    // BLOCCO EMERGENZA: se autoRun è disattivato durante chiamata automatica
     if (autoTriggered && !autoRun) {
-      console.log('⛔ AutoRun disattivato, blocco processBatch');
+      console.log('🛑 BLOCCO EMERGENZA: AutoRun disattivato, blocco processBatch');
+      setIsProcessing(false);
       return;
     }
 
@@ -657,10 +658,10 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
             }
           }
           
-          // Ricarica i dati completi ogni 5 aggiornamenti per sincronizzare
-          if (Math.random() < 0.2) {
-            loadErrors();
-          }
+          // NON ricaricare automaticamente - causa loop infiniti
+          // if (Math.random() < 0.2) {
+          //   loadErrors();
+          // }
         }
       )
       .subscribe();
@@ -708,14 +709,21 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       }
       
       if (stillPending && stillPending > 0 && !isProcessing) {
+        // TRIPLO controllo prima di schedualre
+        if (!autoRun) {
+          console.log('⛔ AutoRun disattivato prima di schedulare batch, ANNULLO');
+          return;
+        }
+        
         addLog(`🔄 AutoRun: rilevati ${stillPending} record pending, riavvio elaborazione...`);
         timeoutId = setTimeout(() => {
           // Controllo finale prima di avviare batch
-          if (autoRun) {
-            processBatch(true);
-          } else {
-            console.log('⛔ AutoRun disattivato prima di processBatch, ANNULLO');
+          if (!autoRun) {
+            console.log('🛑 BLOCCO EMERGENZA: AutoRun disattivato prima di processBatch, ANNULLO');
+            setIsProcessing(false);
+            return;
           }
+          processBatch(true);
         }, 2000);
       } else if (!stillPending || stillPending === 0) {
         addLog(`✨ AutoRun: completato, nessun record pending`);

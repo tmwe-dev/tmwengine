@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
@@ -23,7 +24,9 @@ import {
   Shield,
   ChevronDown,
   FileCheck,
-  UserCog
+  UserCog,
+  Palette,
+  Check
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -33,6 +36,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import {
@@ -47,6 +54,15 @@ const CRMLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userEmail, logout } = useTMWEAuth();
+  const { theme, setTheme, themes } = useTheme();
+
+  const themeColors = {
+    lilla: 'from-blue-500 to-purple-600',
+    ocean: 'from-teal-500 to-orange-500',
+    sunset: 'from-orange-500 to-purple-600',
+    forest: 'from-emerald-600 to-amber-600',
+    sky: 'from-sky-500 to-yellow-400'
+  };
 
   // Chiudi automaticamente la sidebar quando cambia la rotta
   useEffect(() => {
@@ -153,6 +169,36 @@ const CRMLayout = ({ children }) => {
                   Impostazioni
                 </Link>
               </DropdownMenuItem>
+              
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Cambia Tema
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="bg-popover z-50">
+                    {Object.entries(themes).map(([key, value]) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => setTheme(key)}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={cn(
+                            'w-5 h-5 rounded-full bg-gradient-to-r',
+                            themeColors[key]
+                          )} />
+                          <span className="flex-1">{value.name}</span>
+                          {theme === key && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => {

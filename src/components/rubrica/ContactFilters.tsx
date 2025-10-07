@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { StickyNote } from 'lucide-react';
+import { StickyNote, User } from 'lucide-react';
 
 interface Filters {
   tag: string;
@@ -11,6 +11,7 @@ interface Filters {
   nazione: string;
   hasActivities: boolean;
   hasNotes: boolean;
+  myContactsWithActivities: boolean;
 }
 
 interface ContactFiltersProps {
@@ -33,11 +34,12 @@ export function ContactFilters({ filters, onFiltersChange, onClose }: ContactFil
       citta: '',
       nazione: '',
       hasActivities: false,
-      hasNotes: false
+      hasNotes: false,
+      myContactsWithActivities: false
     });
   };
 
-  const hasActiveFilters = filters.tag.trim() !== '' || filters.citta.trim() !== '' || filters.nazione.trim() !== '' || filters.hasActivities || filters.hasNotes;
+  const hasActiveFilters = filters.tag.trim() !== '' || filters.citta.trim() !== '' || filters.nazione.trim() !== '' || filters.hasActivities || filters.hasNotes || filters.myContactsWithActivities;
 
   return (
     <div className="space-y-6">
@@ -81,6 +83,18 @@ export function ContactFilters({ filters, onFiltersChange, onClose }: ContactFil
           <Label htmlFor="has-notes" className="flex items-center gap-2 text-sm cursor-pointer">
             <StickyNote className="h-4 w-4 text-blue-500" />
             Solo contatti con note
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="my-contacts-activities"
+            checked={filters.myContactsWithActivities}
+            onCheckedChange={(checked) => onFiltersChange({...filters, myContactsWithActivities: checked as boolean})}
+          />
+          <Label htmlFor="my-contacts-activities" className="flex items-center gap-2 text-sm cursor-pointer">
+            <User className="h-4 w-4 text-primary" />
+            Solo clienti con mie attività
           </Label>
         </div>
       </div>

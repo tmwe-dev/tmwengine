@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ActivityIndicators } from '@/components/ui/activity-indicators';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
+import { useUserActivities } from '@/hooks/useUserActivities';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
@@ -52,11 +53,13 @@ export default function Rubrica() {
     citta: '',
     nazione: '',
     hasActivities: false,
-    hasNotes: false
+    hasNotes: false,
+    myContactsWithActivities: false
   });
 
   const { toast } = useToast();
   const { getCompanyActivities, refreshActivities, getActivityCount } = useCompanyActivities();
+  const { hasUserActivitiesForContact } = useUserActivities();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -104,6 +107,10 @@ export default function Rubrica() {
     const searchableText = `${contact.nome || ''} ${contact.responsabile || ''} ${contact.azienda || ''} ${contact.email || ''}`.toLowerCase();
     const matchesSearch = searchableText.includes(searchTerm.toLowerCase());
 
+    // Filtro per clienti con attività dell'agente
+    const matchesMyContactsActivities = !filters.myContactsWithActivities || 
+      hasUserActivitiesForContact(contact.id);
+
     const matchesFilters = 
       (!filters.tag || contact.tags?.includes(filters.tag)) &&
       (!filters.citta || contact.citta?.toLowerCase().includes(filters.citta.toLowerCase())) &&
@@ -111,7 +118,7 @@ export default function Rubrica() {
       (!filters.hasActivities || getActivityCount(contact.id) > 0) &&
       (!filters.hasNotes || (contact.note && contact.note.trim() !== ''));
 
-    return matchesSearch && matchesFilters;
+    return matchesSearch && matchesMyContactsActivities && matchesFilters;
   });
 
   const handleAddContact = async (formData: { responsabile: string; azienda?: string; email?: string; telefono?: string; indirizzo?: string; cap?: string; citta?: string; provincia_stato?: string; nazione?: string; note?: string; tag?: string[]; }) => {

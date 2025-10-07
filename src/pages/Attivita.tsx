@@ -90,13 +90,15 @@ export default function Attivita() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
     priorita: '',
     scadenza: '',
     hasNotes: false,
-    origine: ''
+    origine: '',
+    myActivitiesOnly: false
   });
   const [statusFilter, setStatusFilter] = useState<string>('future'); // Default: mostra attività future/da svolgere
   const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true); // Clean_Top pattern: controls header visibility
@@ -116,6 +118,11 @@ export default function Attivita() {
 
   useEffect(() => {
     loadActivities();
+    
+    // Carica l'ID utente corrente
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id || null);
+    });
     
     // Gestione filtro per contatto dalla navigazione
     if (location.state?.filterByContact) {
@@ -321,6 +328,10 @@ export default function Attivita() {
     // Filtro per contatto specifico
     const matchesContact = !filterByContactId || activity.rubrica_id === filterByContactId;
 
+    // Filtro per attività dell'agente loggato
+    const matchesMyActivities = !filters.myActivitiesOnly || 
+      (currentUserId && activity.assegnato_a === currentUserId);
+
     // Gestione filtro stato multiplo (es: "aperta,in_corso") o "all"
     const matchesStato = !filters.stato || filters.stato === 'all' || 
       filters.stato.split(',').includes(activity.stato);
@@ -336,7 +347,7 @@ export default function Attivita() {
     const matchesDateFilter = !filterDate || 
       (activity.scadenza && format(new Date(activity.scadenza), 'yyyy-MM-dd') === format(filterDate, 'yyyy-MM-dd'));
 
-    return matchesSearch && matchesContact && matchesFilters && matchesDateFilter;
+    return matchesSearch && matchesContact && matchesMyActivities && matchesFilters && matchesDateFilter;
   });
 
   // Filtri completi (includendo statusFilter dalle card) per la visualizzazione

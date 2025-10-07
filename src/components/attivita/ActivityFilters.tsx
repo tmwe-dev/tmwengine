@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { StickyNote } from 'lucide-react';
+import { StickyNote, User } from 'lucide-react';
 
 interface Activity {
   rubrica_origine?: string;
@@ -21,6 +21,7 @@ interface Filters {
   scadenza: string;
   hasNotes: boolean;
   origine: string;
+  myActivitiesOnly: boolean;
 }
 
 interface ActivityFiltersProps {
@@ -55,11 +56,12 @@ export function ActivityFilters({ filters, onFiltersChange, onClose, activities 
       priorita: 'all',
       scadenza: 'all',
       hasNotes: false,
-      origine: 'all'
+      origine: 'all',
+      myActivitiesOnly: false
     });
   };
 
-  const hasActiveFilters = filters.stato !== 'all' || filters.tipo !== 'all' || filters.priorita !== 'all' || filters.scadenza !== 'all' || filters.hasNotes || filters.origine !== 'all';
+  const hasActiveFilters = filters.stato !== 'all' || filters.tipo !== 'all' || filters.priorita !== 'all' || filters.scadenza !== 'all' || filters.hasNotes || filters.origine !== 'all' || filters.myActivitiesOnly;
 
   return (
     <div className="space-y-6">
@@ -156,6 +158,18 @@ export function ActivityFilters({ filters, onFiltersChange, onClose, activities 
           <Label htmlFor="has-notes-activity" className="flex items-center gap-2 text-sm cursor-pointer">
             <StickyNote className="h-4 w-4 text-blue-500" />
             Solo attività con note
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="my-activities-only"
+            checked={filters.myActivitiesOnly}
+            onCheckedChange={(checked) => onFiltersChange({...filters, myActivitiesOnly: checked as boolean})}
+          />
+          <Label htmlFor="my-activities-only" className="flex items-center gap-2 text-sm cursor-pointer">
+            <User className="h-4 w-4 text-primary" />
+            Solo mie attività
           </Label>
         </div>
       </div>

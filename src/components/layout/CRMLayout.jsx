@@ -176,7 +176,7 @@ const CRMLayout = ({ children }) => {
                   Cambia Tema
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="bg-popover z-50">
+                  <DropdownMenuSubContent className="bg-background border border-border shadow-lg z-50">
                     {Object.entries(themes).map(([key, value]) => (
                       <DropdownMenuItem
                         key={key}

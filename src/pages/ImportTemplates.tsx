@@ -3987,7 +3987,7 @@ export default function ImportTemplates() {
                           <span className="text-sm px-3 py-1">
                             Pagina {currentPage + 1} di {Math.ceil(filteredRecords.length / recordsPerPage)}
                           </span>
-                          <span className="text-xs text-red-500 font-medium">
+                          <span className="text-xs text-red-500 font-medium mt-[15px]">
                             {filteredRecords.length} records
                           </span>
                         </div>

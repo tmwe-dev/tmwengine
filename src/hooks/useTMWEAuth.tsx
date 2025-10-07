@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
   email: string;
@@ -15,7 +16,8 @@ interface TMWEAuthContextType {
   userProfile: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, profile?: UserProfile) => void;
+  supabaseUserId: string | null;
+  login: (email: string, profile?: UserProfile) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
 }
@@ -25,6 +27,7 @@ const TMWEAuthContext = createContext<TMWEAuthContextType | undefined>(undefined
 export function TMWEAuthProvider({ children }: { children: ReactNode }) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,9 +35,13 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     const email = sessionStorage.getItem('tmwe_user_email');
     const token = sessionStorage.getItem('tmwe_access_token');
     const storedProfile = sessionStorage.getItem('tmwe_user_profile');
+    const storedSupabaseId = sessionStorage.getItem('tmwe_supabase_user_id');
     
     if (email && token) {
       setUserEmail(email);
+      if (storedSupabaseId) {
+        setSupabaseUserId(storedSupabaseId);
+      }
       if (storedProfile) {
         try {
           setUserProfile(JSON.parse(storedProfile));
@@ -47,20 +54,55 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = (email: string, profile?: UserProfile) => {
+  const syncWithSupabase = async (email: string, profile?: UserProfile) => {
+    try {
+      console.log('🔄 Sincronizzazione TMWE → Supabase...');
+      
+      const { data, error } = await supabase.functions.invoke('tmwe-supabase-sync', {
+        body: {
+          tmweEmail: email,
+          tmweProfile: profile
+        }
+      });
+
+      if (error) {
+        console.error('Errore sincronizzazione Supabase:', error);
+        return null;
+      }
+
+      if (data?.supabaseUserId) {
+        console.log('✅ Sincronizzazione completata:', data.supabaseUserId);
+        setSupabaseUserId(data.supabaseUserId);
+        sessionStorage.setItem('tmwe_supabase_user_id', data.supabaseUserId);
+        return data.supabaseUserId;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Errore durante la sincronizzazione:', error);
+      return null;
+    }
+  };
+
+  const login = async (email: string, profile?: UserProfile) => {
     setUserEmail(email);
     if (profile) {
       setUserProfile(profile);
       sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
     }
+    
+    // Sincronizza con Supabase
+    await syncWithSupabase(email, profile);
   };
 
   const logout = () => {
     setUserEmail(null);
     setUserProfile(null);
+    setSupabaseUserId(null);
     sessionStorage.removeItem('tmwe_user_email');
     sessionStorage.removeItem('tmwe_access_token');
     sessionStorage.removeItem('tmwe_user_profile');
+    sessionStorage.removeItem('tmwe_supabase_user_id');
   };
 
   const refreshProfile = async () => {
@@ -83,6 +125,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
   const value = {
     userEmail,
     userProfile,
+    supabaseUserId,
     isAuthenticated: !!userEmail,
     isLoading,
     login,

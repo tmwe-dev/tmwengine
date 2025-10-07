@@ -226,8 +226,10 @@ const TMWEAuthCallbackIntegrated = () => {
         }
         console.log('═══════════════════════════════════════════════════════');
 
-        // Update auth context with profile
-        login(userEmail, userProfile);
+        // Update auth context with profile and sync with Supabase
+        console.log('🔄 Sincronizzazione con Supabase...');
+        await login(userEmail, userProfile);
+        console.log('✅ Sincronizzazione completata');
 
         // Clear OAuth session data
         sessionStorage.removeItem('oauth_state');

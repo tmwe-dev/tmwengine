@@ -1686,6 +1686,7 @@ export type Database = {
           id: string
           preferred_language: string
           reading_language: string
+          tmwe_email: string | null
           translation_mode: string
           updated_at: string
           user_id: string
@@ -1699,6 +1700,7 @@ export type Database = {
           id?: string
           preferred_language?: string
           reading_language?: string
+          tmwe_email?: string | null
           translation_mode?: string
           updated_at?: string
           user_id: string
@@ -1712,6 +1714,7 @@ export type Database = {
           id?: string
           preferred_language?: string
           reading_language?: string
+          tmwe_email?: string | null
           translation_mode?: string
           updated_at?: string
           user_id?: string

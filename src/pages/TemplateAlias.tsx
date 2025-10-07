@@ -149,7 +149,7 @@ export default function TemplateAlias() {
         template.name.toLowerCase().includes(searchLower) ||
         template.alias.toLowerCase().includes(searchLower) ||
         template.company_name.toLowerCase().includes(searchLower) ||
-        template.company_alias.toLowerCase().includes(searchLower) ||
+        (template.company_alias?.toLowerCase().includes(searchLower) ?? false) ||
         (template.title?.toLowerCase().includes(searchLower) ?? false)
       );
     })

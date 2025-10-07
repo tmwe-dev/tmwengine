@@ -8,34 +8,60 @@ import { AdminRoomManager } from '@/components/intranet/admin/AdminRoomManager';
 import { AdminUserManager } from '@/components/intranet/admin/AdminUserManager';
 import { AdminGlobalPrompt } from '@/components/intranet/admin/AdminGlobalPrompt';
 import { AdminStats } from '@/components/intranet/admin/AdminStats';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 const IntranetAdmin = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const { userEmail, isAuthenticated } = useTMWEAuth();
 
   useEffect(() => {
     checkAdminStatus();
-  }, []);
+  }, [userEmail, isAuthenticated]);
 
   const checkAdminStatus = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
+      // Controlla autenticazione TMWE
+      if (!isAuthenticated || !userEmail) {
+        console.log('❌ Non autenticato con TMWE');
         navigate('/auth');
         return;
       }
 
-      const { data: roleData } = await supabase
+      console.log('✅ Autenticato TMWE:', userEmail);
+
+      // Verifica ruolo admin tramite email TMWE
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('tmwe_email', userEmail)
+        .maybeSingle();
+
+      if (profileError || !profileData) {
+        console.error('❌ Profilo non trovato:', profileError);
+        setIsAdmin(false);
+        navigate('/intranet');
+        return;
+      }
+
+      console.log('✅ Profilo trovato:', profileData.user_id);
+
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
+        .eq('user_id', profileData.user_id)
         .eq('role', 'admin')
         .maybeSingle();
 
+      if (roleError) {
+        console.error('❌ Errore controllo ruolo:', roleError);
+      }
+
       if (roleData) {
+        console.log('✅ Utente è admin!');
         setIsAdmin(true);
       } else {
+        console.log('❌ Utente NON è admin');
         setIsAdmin(false);
         navigate('/intranet');
       }

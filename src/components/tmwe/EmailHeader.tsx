@@ -252,7 +252,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
                 </Badge>
 
-                <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
+                <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-full sm:max-w-sm md:max-w-md">
                   <div className="relative min-w-0">
                     <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -274,7 +274,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
       {/* Sync Options Dialog (Mobile only) */}
       <Dialog open={syncPopupOpen} onOpenChange={setSyncPopupOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] sm:w-[90vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>

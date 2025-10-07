@@ -181,7 +181,7 @@ export const ComposeDialog = ({ open, onClose, onSent, replyTo }: ComposeDialogP
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {replyTo ? (replyTo.isForward ? 'Forward Email' : 'Reply to Email') : 'Compose New Email'}

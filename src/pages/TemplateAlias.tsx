@@ -178,7 +178,13 @@ export default function TemplateAlias() {
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
-  // Get unique title values for filter dropdown
+  // Get unique title values for filter dropdown with counts
+  const titleCounts = templates?.reduce((acc, template) => {
+    const titleValue = template.title || "__empty__";
+    acc[titleValue] = (acc[titleValue] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) || {};
+
   const uniqueTitles = Array.from(
     new Set(
       templates
@@ -186,6 +192,9 @@ export default function TemplateAlias() {
         .filter(t => t !== null && t !== "") as string[]
     )
   ).sort();
+
+  const withValueCount = templates?.filter(t => t.title && t.title.trim() !== "").length || 0;
+  const emptyCount = templates?.filter(t => !t.title || t.title.trim() === "").length || 0;
 
   const handleEditClick = (record: TemplateAlias) => {
     setEditingRecord({ ...record });
@@ -320,15 +329,21 @@ export default function TemplateAlias() {
                 <SelectValue placeholder="Filtra per Title" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tutti i Title</SelectItem>
-                <SelectItem value="with_value">Con Title</SelectItem>
-                <SelectItem value="empty">Senza Title</SelectItem>
+                <SelectItem value="all">
+                  Tutti i Title ({templates?.length || 0})
+                </SelectItem>
+                <SelectItem value="with_value">
+                  Con Title ({withValueCount})
+                </SelectItem>
+                <SelectItem value="empty">
+                  Senza Title ({emptyCount})
+                </SelectItem>
                 {uniqueTitles.length > 0 && (
                   <>
                     <div className="border-t my-1" />
                     {uniqueTitles.map((title) => (
                       <SelectItem key={title} value={title}>
-                        {title}
+                        {title} ({titleCounts[title] || 0})
                       </SelectItem>
                     ))}
                   </>

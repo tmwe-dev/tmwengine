@@ -20,7 +20,9 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
-  Plus
+  Plus,
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { toast } from 'sonner';
@@ -37,6 +39,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface ErrorRecord {
   id: string;
@@ -102,6 +106,35 @@ export default function ImportErrorsMonitor() {
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [importingRows, setImportingRows] = useState<Set<string>>(new Set());
+  const [expandedFailedRows, setExpandedFailedRows] = useState<Set<string>>(new Set());
+  const [freePrompt, setFreePrompt] = useState<string>(
+    `Sei un assistente AI specializzato nella normalizzazione dei dati di importazione.
+
+OBIETTIVO: Analizzare il testo grezzo fornito ed estrarre tutte le informazioni possibili per creare un record strutturato.
+
+STRUTTURA DI DESTINAZIONE (campi della tabella imported_contacts):
+- company_name: Nome dell'azienda
+- name: Nome del contatto/persona
+- email: Indirizzo email
+- phone: Telefono fisso
+- cell: Cellulare
+- address: Indirizzo completo
+- city: Città
+- country: Paese/Nazione
+- zip_code: CAP/Codice postale
+- position: Posizione/Ruolo
+- note: Note aggiuntive
+- [altri campi meta_* per flags booleani]
+
+ISTRUZIONI:
+1. Leggi attentamente il testo grezzo fornito
+2. Identifica e estrai tutte le informazioni presenti
+3. Normalizza i dati secondo la struttura di destinazione
+4. Se un campo non è presente nel testo, restituisci null
+5. Usa il tool "normalize_record" per restituire i dati strutturati in formato JSON
+
+IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo libero.`
+  );
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -413,6 +446,35 @@ export default function ImportErrorsMonitor() {
           
           <PagePromptManager pageRoute="/import-errors-monitor" />
         </div>
+
+        {/* Free Prompt Configuration */}
+        <Card className="border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-purple-500/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Prompt AI Libera (per riprocessamento singolo)
+            </CardTitle>
+            <CardDescription>
+              Questo prompt verrà usato quando premi il bottone AI sui record falliti. 
+              Puoi personalizzarlo per dare istruzioni specifiche all'AI.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="free-prompt">Prompt AI</Label>
+              <Textarea
+                id="free-prompt"
+                value={freePrompt}
+                onChange={(e) => setFreePrompt(e.target.value)}
+                className="font-mono text-sm min-h-[200px]"
+                placeholder="Inserisci le istruzioni per l'AI..."
+              />
+              <p className="text-xs text-muted-foreground">
+                💡 Questo prompt spiega all'AI come interpretare i dati grezzi e trasformarli nella struttura corretta.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Contatori Token e Costo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -801,8 +863,9 @@ export default function ImportErrorsMonitor() {
                       <div className="text-muted-foreground text-center py-8">
                         Nessun record fallito
                       </div>
-                    ) : (
+                     ) : (
                       failedRecords.map((error) => {
+                        const isExpanded = expandedFailedRows.has(error.id);
                         const renderValue = (value: any) => {
                           if (value === null || value === undefined || value === '') {
                             return <span className="text-red-400 italic">❌ Mancante</span>;
@@ -811,45 +874,89 @@ export default function ImportErrorsMonitor() {
                         };
 
                         return (
-                          <div
+                          <Collapsible
                             key={error.id}
-                            className="p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3"
+                            open={isExpanded}
+                            onOpenChange={(open) => {
+                              setExpandedFailedRows(prev => {
+                                const newSet = new Set(prev);
+                                if (open) {
+                                  newSet.add(error.id);
+                                } else {
+                                  newSet.delete(error.id);
+                                }
+                                return newSet;
+                              });
+                            }}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <Badge variant="outline" className="text-xs bg-red-500/20">
-                                Riga {error.row_number}
-                              </Badge>
-                              <div className="text-red-400 text-xs font-semibold">
-                                ❌ {error.error_message}
-                              </div>
-                            </div>
-
-                            {error.raw_data && typeof error.raw_data === 'object' && (
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">
-                                {Object.entries(error.raw_data).map(([key, value]) => (
-                                  <div key={key} className="flex flex-col">
-                                    <span className="text-muted-foreground font-semibold uppercase text-[10px]">
-                                      {key.replace(/_/g, ' ')}
-                                    </span>
-                                    <div className="mt-1">
-                                      {renderValue(value)}
-                                    </div>
+                            <div className="p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs bg-red-500/20">
+                                    Riga {error.row_number}
+                                  </Badge>
+                                  <div className="text-red-400 text-xs font-semibold">
+                                    ❌ {error.error_message}
                                   </div>
-                                ))}
+                                </div>
+                                
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <CollapsibleTrigger asChild>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="h-7 w-7 p-0"
+                                      title="Mostra dati originali"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </Button>
+                                  </CollapsibleTrigger>
+                                  
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0"
+                                    title="Riprocessa con AI libera"
+                                  >
+                                    <Sparkles className="h-4 w-4 text-purple-500" />
+                                  </Button>
+                                </div>
                               </div>
-                            )}
 
-                            {error.ai_suggestions && typeof error.ai_suggestions === 'object' && (
-                              <div className="mt-2 pt-2 border-t border-red-500/20">
-                                <div className="text-xs text-muted-foreground font-semibold mb-1">
-                                  Suggerimenti AI:
+                              <CollapsibleContent className="mt-3">
+                                <div className="p-3 rounded bg-black/20 border border-red-500/20">
+                                  <div className="text-xs text-muted-foreground font-semibold mb-2">
+                                    📄 Dati Originali Non Interpretati:
+                                  </div>
+                                  {error.raw_data && typeof error.raw_data === 'object' && (
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono">
+                                      {Object.entries(error.raw_data).map(([key, value]) => (
+                                        <div key={key} className="flex flex-col">
+                                          <span className="text-muted-foreground font-semibold uppercase text-[10px]">
+                                            {key.replace(/_/g, ' ')}
+                                          </span>
+                                          <div className="mt-1">
+                                            {renderValue(value)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-xs text-red-300">
-                                  {(error.ai_suggestions as any).reason || 'Nessun suggerimento disponibile'}
+                              </CollapsibleContent>
+
+                              {error.ai_suggestions && typeof error.ai_suggestions === 'object' && (
+                                <div className="mt-2 pt-2 border-t border-red-500/20">
+                                  <div className="text-xs text-muted-foreground font-semibold mb-1">
+                                    Suggerimenti AI:
+                                  </div>
+                                  <div className="text-xs text-red-300">
+                                    {(error.ai_suggestions as any).reason || 'Nessun suggerimento disponibile'}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          </Collapsible>
                         );
                       })
                     )}

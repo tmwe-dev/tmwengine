@@ -545,36 +545,6 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
-      <EmailHeader
-        onSearch={setSearchQuery} 
-        onCompose={() => setComposeOpen(true)} 
-        onSync={handleSync}
-        onSyncSmart={startSyncSmart}
-        isSyncingSmart={isSyncingSmart}
-        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
-        missingEmailCount={missingEmailCount}
-        onMenuClick={() => setSidebarOpen(true)}
-        isMobile={isMobile}
-        dbEmailCount={isMobile ? emailCount : undefined}
-        isHeaderCollapsed={isHeaderCollapsed}
-        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-        onCloseEmail={handleBackToList}
-        onPreviousEmail={handlePreviousEmail}
-        onNextEmail={handleNextEmail}
-        hasPrevious={hasPreviousEmail()}
-        hasNext={hasNextEmail()}
-        downloadProgressComponent={
-          <EmailDownloadProgress
-            totalEmails={totalEmailCount}
-            onDownloadComplete={() => {}}
-            onStartDownload={startDownload}
-            isDownloading={isDownloading}
-            downloadedCount={downloadedCount}
-            downloadError={downloadError}
-          />
-        }
-      />
-      
       <div className="flex flex-1 w-full">
         {/* Desktop Sidebar */}
         {!isMobile && (
@@ -612,6 +582,30 @@ const EmailDashboard = () => {
           "flex-1 flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
+          <EmailHeader
+            onSearch={setSearchQuery}
+            onCompose={() => setComposeOpen(true)}
+            onSync={handleSync}
+            onMenuClick={() => setSidebarOpen(true)}
+            isMobile={isMobile}
+            isHeaderCollapsed={isHeaderCollapsed}
+            onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+            onCloseEmail={handleBackToList}
+            onPreviousEmail={handlePreviousEmail}
+            onNextEmail={handleNextEmail}
+            hasPrevious={hasPreviousEmail()}
+            hasNext={hasNextEmail()}
+            downloadProgressComponent={
+              <EmailDownloadProgress
+                totalEmails={totalEmailCount}
+                onDownloadComplete={() => {}}
+                onStartDownload={startDownload}
+                isDownloading={isDownloading}
+                downloadedCount={downloadedCount}
+                downloadError={downloadError}
+              />
+            }
+          />
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
             <div className="border-b bg-card-transparent px-2 sm:px-4 py-2">

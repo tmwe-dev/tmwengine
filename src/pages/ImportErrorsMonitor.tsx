@@ -978,7 +978,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
             {showFailed && (
               <CardContent>
                 <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
+                  <div className="space-y-3 p-2">
                     {failedRecords.length === 0 ? (
                       <div className="text-muted-foreground text-center py-8">
                         Nessun record fallito
@@ -1013,8 +1013,11 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
                               }}
                             >
                               <div className={cn(
-                                "p-4 rounded-lg border border-red-500/30 bg-red-500/5 space-y-3",
-                                isSelected && "ring-2 ring-red-500/50"
+                                "p-3 rounded-lg border transition-all duration-200",
+                                isSelected 
+                                  ? "border-red-500 ring-2 ring-red-500/50 bg-red-500/10 shadow-md" 
+                                  : "border-red-500/30 bg-red-500/5 hover:bg-red-500/10",
+                                "space-y-3"
                               )}>
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex items-center gap-2">

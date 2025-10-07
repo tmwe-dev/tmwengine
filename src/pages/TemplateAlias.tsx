@@ -257,7 +257,10 @@ export default function TemplateAlias() {
                 </Button>
               )}
               <Badge variant="secondary" className="text-base">
-                {filteredAndSortedTemplates?.length ?? 0} records
+                {searchTerm 
+                  ? `${filteredAndSortedTemplates?.length ?? 0} di ${templates?.length ?? 0} records`
+                  : `${templates?.length ?? 0} records`
+                }
               </Badge>
             </div>
           </CardTitle>

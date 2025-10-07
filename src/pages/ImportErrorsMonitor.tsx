@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -88,6 +88,10 @@ export default function ImportErrorsMonitor() {
   const [searchParams] = useSearchParams();
   const importLogId = searchParams.get('import_log_id');
 
+  // REF per tracciare TUTTI i timeout attivi - EMERGENCY STOP
+  const activeTimeouts = useRef<Set<NodeJS.Timeout>>(new Set());
+  const activeIntervals = useRef<Set<NodeJS.Timeout>>(new Set());
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [errors, setErrors] = useState<ErrorRecord[]>([]);
@@ -145,6 +149,18 @@ ISTRUZIONI:
 
 IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo libero.`
   );
+
+  // EMERGENCY STOP - cancella TUTTI i timeout/interval attivi
+  const emergencyStop = () => {
+    console.log('🛑 EMERGENCY STOP: Cancello tutti i timeout e interval attivi');
+    activeTimeouts.current.forEach(timeout => clearTimeout(timeout));
+    activeIntervals.current.forEach(interval => clearInterval(interval));
+    activeTimeouts.current.clear();
+    activeIntervals.current.clear();
+    setIsProcessing(false);
+    addLog('🛑 EMERGENCY STOP: Tutti i processi sono stati bloccati');
+    toast.info('Elaborazione interrotta');
+  };
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -300,12 +316,13 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         // Attendi completamento e ricarica automaticamente
         const estimatedDuration = (result as any).estimated_duration || 100;
         
-        setTimeout(async () => {
+        const timeoutId = setTimeout(async () => {
           // CRITICO: Verifica se autoRun è ancora attivo PRIMA di fare qualsiasi cosa
           if (!autoRun) {
             console.log('⛔ AutoRun disattivato durante background processing, BLOCCO tutto');
             addLog(`⚠️ Background processing completato ma AutoRun è stato disattivato`);
             setIsProcessing(false);
+            activeTimeouts.current.delete(timeoutId);
             return;
           }
 
@@ -317,6 +334,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           if (!autoRun) {
             console.log('⛔ AutoRun disattivato dopo loadErrors, BLOCCO');
             addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+            activeTimeouts.current.delete(timeoutId);
             return;
           }
 
@@ -331,6 +349,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           if (!autoRun) {
             console.log('⛔ AutoRun disattivato prima di riavviare batch, BLOCCO');
             addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+            activeTimeouts.current.delete(timeoutId);
             return;
           }
 
@@ -342,7 +361,11 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
             setAutoRun(false);
             toast.success('AutoRun completato!');
           }
-        }, estimatedDuration * 1000 + 3000); // Attendi tempo stimato + 3s buffer
+          
+          activeTimeouts.current.delete(timeoutId);
+        }, estimatedDuration * 1000 + 3000);
+        
+        activeTimeouts.current.add(timeoutId); // Traccia il timeout
         
         return; // ESCI SENZA passare per finally
       }
@@ -368,15 +391,18 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
         // Se autorun è attivo, continua automaticamente dopo 1s
         if (autoRun) {
           addLog(`⏰ AutoRun attivo: continuo con il prossimo batch tra 1 secondo...`);
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             // CRITICO: Ricontrolla autoRun prima di avviare nuovo batch
             if (!autoRun) {
               console.log('⛔ AutoRun disattivato prima di avviare nuovo batch, ANNULLO');
               addLog(`⚠️ Elaborazione interrotta: AutoRun disattivato dall'utente`);
+              activeTimeouts.current.delete(timeoutId);
               return;
             }
             processBatch(true);
+            activeTimeouts.current.delete(timeoutId);
           }, 1000);
+          activeTimeouts.current.add(timeoutId);
         } else {
           setAwaitingConfirmation(true);
           addLog(`⏸️ Batch completato. In attesa di conferma per continuare...`);
@@ -709,7 +735,7 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
       }
       
       if (stillPending && stillPending > 0 && !isProcessing) {
-        // TRIPLO controllo prima di schedualre
+        // TRIPLO controllo prima di schedulare
         if (!autoRun) {
           console.log('⛔ AutoRun disattivato prima di schedulare batch, ANNULLO');
           return;
@@ -721,10 +747,13 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
           if (!autoRun) {
             console.log('🛑 BLOCCO EMERGENZA: AutoRun disattivato prima di processBatch, ANNULLO');
             setIsProcessing(false);
+            if (timeoutId) activeTimeouts.current.delete(timeoutId);
             return;
           }
           processBatch(true);
+          if (timeoutId) activeTimeouts.current.delete(timeoutId);
         }, 2000);
+        activeTimeouts.current.add(timeoutId);
       } else if (!stillPending || stillPending === 0) {
         addLog(`✨ AutoRun: completato, nessun record pending`);
         setAutoRun(false);
@@ -734,13 +763,28 @@ IMPORTANTE: Restituisci SEMPRE i dati usando il tool fornito, mai come testo lib
 
     // Controlla ogni 3 secondi
     intervalId = setInterval(checkAndContinue, 3000);
+    activeIntervals.current.add(intervalId);
 
     return () => {
       console.log('🧹 AutoRun cleanup: cancello interval e timeout');
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) {
+        clearInterval(intervalId);
+        activeIntervals.current.delete(intervalId);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        activeTimeouts.current.delete(timeoutId);
+      }
     };
   }, [autoRun, isProcessing, importLogId]); // RIMOSSO stats.pending dalle dipendenze!
+
+  // WATCH AutoRun: quando diventa false, EMERGENCY STOP
+  useEffect(() => {
+    if (!autoRun && (activeTimeouts.current.size > 0 || activeIntervals.current.size > 0)) {
+      console.log('🚨 AutoRun disattivato con timeout/interval attivi! EMERGENCY STOP');
+      emergencyStop();
+    }
+  }, [autoRun]);
 
   if (!importLogId) {
     return (

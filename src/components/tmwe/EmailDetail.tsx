@@ -395,6 +395,20 @@ export const EmailDetail = ({
 
         {/* Right: Actions and Close */}
         <div className="flex justify-end gap-2 sm:gap-3">
+          {/* Toggle Header Collapse */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleToggleCollapse}
+            className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
+          >
+            {isHeaderCollapsed ? (
+              <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            )}
+          </Button>
+
           {!isHeaderCollapsed && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -406,7 +420,7 @@ export const EmailDetail = ({
                   <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
                 <DropdownMenuItem onClick={() => {
                   setShowActionsSheet(true);
                   setSelectedAction('move_to_folder');
@@ -438,6 +452,18 @@ export const EmailDetail = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {/* Close/Back Button */}
+          {(onBack || isMobile) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10"
+            >
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            </Button>
           )}
         </div>
       </div>

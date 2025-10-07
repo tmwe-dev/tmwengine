@@ -32,10 +32,10 @@ Tutti i colori DEVONO essere HSL.
     --surface-secondary: 210 20% 96%;
 
     /* === COLORI SEMANTICI === */
-    --primary: 220 91% 55%;
+    --primary: 175 70% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 220 91% 50%;
-    --primary-muted: 220 91% 55% / 0.15;
+    --primary-hover: 175 70% 45%;
+    --primary-muted: 175 70% 50% / 0.15;
 
     --secondary: 210 20% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -57,30 +57,30 @@ Tutti i colori DEVONO essere HSL.
     --muted: 210 20% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 220 91% 55%;
+    --accent: 15 85% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --card: 220 91% 55%;
+    --card: 175 70% 50%;
     --card-foreground: 0 0% 100%;
-    --card-border: 220 91% 65%;
-    --card-transparent: 220 91% 55% / 0.35; /* Trasparenza 35% per card lilla */
+    --card-border: 175 70% 60%;
+    --card-transparent: 175 70% 50% / 0.35; /* Trasparenza 35% per card */
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 220 91% 55%;
+    --ring: 175 70% 50%;
 
     /* === COLORI SIDEBAR === */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 16% 47%;
-    --sidebar-primary: 220 91% 55%;
+    --sidebar-primary: 175 70% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 20% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 220 91% 55%;
+    --sidebar-ring: 175 70% 50%;
 
     /* === GEOMETRIA === */
     --radius: 8px;

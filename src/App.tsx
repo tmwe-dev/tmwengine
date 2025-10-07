@@ -29,6 +29,7 @@ import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
+import IntranetAdmin from "./pages/IntranetAdmin";
 import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
 import TemplateAlias from "./pages/TemplateAlias";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
@@ -84,6 +85,11 @@ const App = () => (
             <Route path="/intranet" element={
               <ProtectedRoute>
                 <CRMLayout><Intranet /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/intranet-admin" element={
+              <ProtectedRoute>
+                <CRMLayout><IntranetAdmin /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/import-templates" element={

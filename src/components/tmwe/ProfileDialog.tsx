@@ -49,7 +49,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
             <Mail className="h-5 w-5 mt-0.5 text-primary" />
             <div className="flex-1">
               <p className="text-sm font-medium">Email</p>
-              <p className="text-sm text-muted-foreground">{userEmail || 'Non disponibile'}</p>
+              <p className="text-sm text-muted-foreground">{userProfile?.email || userEmail || 'Non disponibile'}</p>
             </div>
           </div>
 

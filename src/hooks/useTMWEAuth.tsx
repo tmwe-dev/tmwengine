@@ -69,7 +69,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
       const response = await profileApi.getMyProfile();
       if (response.success && response.data) {
         const profile: UserProfile = {
-          email: userEmail || '',
+          email: response.data.email || userEmail || '',
           ...response.data
         };
         setUserProfile(profile);

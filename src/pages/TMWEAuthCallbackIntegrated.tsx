@@ -213,9 +213,10 @@ const TMWEAuthCallbackIntegrated = () => {
           console.log('📦 Respuesta del perfil:', profileResponse);
           
           if (profileResponse && typeof profileResponse === 'object') {
+            const profileData = profileResponse.success ? profileResponse.data : profileResponse;
             userProfile = {
-              email: userEmail,
-              ...profileResponse
+              email: profileData?.email || userEmail,
+              ...profileData
             };
             console.log('✅ Perfil obtenido:', userProfile);
           }

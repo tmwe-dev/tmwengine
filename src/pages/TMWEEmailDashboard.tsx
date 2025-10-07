@@ -544,8 +544,8 @@ const EmailDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full overflow-hidden">
-      <div className="flex flex-1 w-full min-w-0 overflow-hidden">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full max-w-full overflow-hidden">
+      <div className="flex flex-1 w-full max-w-full min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <div className="flex-shrink-0">
@@ -581,7 +581,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col min-w-0 overflow-hidden",
+          "flex-1 flex flex-col w-full max-w-full min-w-0 overflow-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           <EmailHeader
@@ -679,7 +679,7 @@ const EmailDashboard = () => {
 
         {/* Email Detail - Full screen on mobile when email is selected */}
         {isMobile && !showEmailList && selectedEmail && (
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col w-full max-w-full min-w-0 overflow-hidden">
             <EmailDetail
               email={selectedEmail}
               onReply={handleReply}
@@ -707,7 +707,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="w-[95vw] sm:w-[90vw] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[85vh] sm:h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
+        <DialogContent className="w-[95vw] max-w-[95vw] sm:w-[90vw] sm:max-w-[90vw] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[85vh] sm:h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>

@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
+import { TranslateButton } from './TranslateButton';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -24,6 +25,11 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Salva l'ID della stanza corrente nel sessionStorage per il TranslateButton
+    sessionStorage.setItem('current_room_id', roomId);
+  }, [roomId]);
 
   useEffect(() => {
     loadMessages();
@@ -129,7 +135,13 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                   )}
                   
                   {message.content && (
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    <>
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      <TranslateButton 
+                        messageContent={message.content}
+                        messageId={message.id}
+                      />
+                    </>
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground mt-1">

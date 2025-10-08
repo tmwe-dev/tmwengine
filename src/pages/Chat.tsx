@@ -938,7 +938,14 @@ const Chat = () => {
                 
                 <div className="flex justify-between items-start">
                   {shouldHideHeader ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate('/chat')}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -946,13 +953,6 @@ const Chat = () => {
                         className="animate-pulse"
                       >
                         <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate('/chat')}
-                      >
-                        <ArrowLeft className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : null}

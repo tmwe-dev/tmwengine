@@ -257,7 +257,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary overflow-hidden"
               disabled={isSending}
               rows={2}
             />

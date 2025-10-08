@@ -125,16 +125,16 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
+        <div className={`flex-1 ${isLayoutInverted ? 'flex flex-col-reverse' : 'flex flex-col'} overflow-hidden min-h-0 relative`}>
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+              <Card className="flex-1 flex flex-col overflow-hidden min-h-0 border-0 shadow-none">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               
               {/* Input messaggi */}
-              <Card className="flex-shrink-0">
+              <Card className="flex-shrink-0 border-0 shadow-none">
                 <CardContent className="p-3">
                   <MessageInputWithAttachments 
                     roomId={selectedRoomId} 
@@ -143,16 +143,18 @@ const Intranet = () => {
               </Card>
 
               {/* Bottone inversione - posizionato al centro sotto i messaggi */}
-              <Button
-                size="icon"
-                variant="outline"
-                className="absolute left-1/2 transform -translate-x-1/2 z-50 bg-background shadow-lg"
-                style={{ bottom: 'calc(1rem - 8px)' }}
-                onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-              >
-                {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </Button>
+              {!isMobile && (
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="absolute left-1/2 transform -translate-x-1/2 z-50 bg-background shadow-lg"
+                  style={{ bottom: 'calc(1rem - 8px)' }}
+                  onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                  title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                >
+                  {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </Button>
+              )}
 
               {/* Footer - solo mobile */}
               {isMobile && (
@@ -164,7 +166,16 @@ const Intranet = () => {
                     />
                     <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   </div>
-                  <div />
+                  <div className="flex justify-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                      title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                    >
+                      {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 </div>
               )}
 

@@ -129,39 +129,43 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Header FISSO - fuori dal Card scrollabile */}
-              <Card className="flex-shrink-0 rounded-b-none border-b-0">
-                <div className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
-                  {/* Numero sezione */}
-                  <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                    4
+              {/* Header FISSO - sticky top */}
+              <div className="sticky top-0 z-10 bg-background">
+                <Card className="rounded-b-none border-b-0">
+                  <div className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
+                    {/* Numero sezione */}
+                    <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                      4
+                    </div>
+                    
+                    {/* Badge utenti online e controlli */}
+                    <div className="hidden sm:flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                        title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{onlineUsers.length}</span>
+                      </Badge>
+                      <OnlineUsers users={onlineUsers} />
+                    </div>
                   </div>
-                  
-                  {/* Badge utenti online e controlli */}
-                  <div className="hidden sm:flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                      title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      <span>{onlineUsers.length}</span>
-                    </Badge>
-                    <OnlineUsers users={onlineUsers} />
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
 
-              {/* Area messaggi scrollabile - Card separato */}
-              <Card className="flex-1 overflow-hidden rounded-t-none">
-                <div className="h-full overflow-y-auto px-3 py-3">
-                  <ChatMessages roomId={selectedRoomId} />
-                </div>
-              </Card>
+              {/* Area messaggi scrollabile */}
+              <div className="flex-1 overflow-y-auto">
+                <Card className="h-full rounded-t-none">
+                  <div className="px-3 py-3">
+                    <ChatMessages roomId={selectedRoomId} />
+                  </div>
+                </Card>
+              </div>
             </>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">

@@ -33,7 +33,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
   
   // Auto-speaker per lettura automatica messaggi
@@ -115,8 +115,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current && !isLayoutInverted) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (viewportRef.current && !isLayoutInverted) {
+      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
   };
 
@@ -147,7 +147,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <ScrollArea className="h-full w-full">
+    <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
       <div className="space-y-4 p-4">
         {displayMessages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
@@ -222,7 +222,6 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             </div>
           );
         })}
-        <div ref={scrollRef} />
       </div>
     </ScrollArea>
   );

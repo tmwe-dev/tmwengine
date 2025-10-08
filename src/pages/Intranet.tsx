@@ -133,20 +133,25 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Contenitore messaggi + input - con padding per la barra fissa in basso */}
-              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? 'pb-14' : ''}`}>
-                {/* Messaggi - con altezza controllata */}
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+              {/* Contenitore solo messaggi - con padding in basso per input E footer fissi */}
+              <div className={`flex-1 overflow-hidden ${isMobile ? 'pb-28' : ''}`}>
+                <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+              </div>
+
+              {/* Input messaggi - FISSO sopra il footer mobile */}
+              {isMobile ? (
+                <div className="fixed bottom-14 left-0 right-0 z-30">
+                  <MessageInputWithAttachments 
+                    roomId={selectedRoomId} 
+                  />
                 </div>
-                
-                {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
+              ) : (
                 <div className="flex-shrink-0">
                   <MessageInputWithAttachments 
                     roomId={selectedRoomId} 
                   />
                 </div>
-              </div>
+              )}
 
               {/* Barra mobile FISSA IN BASSO - sulla stessa linea dell'ingranaggio */}
               {isMobile && (

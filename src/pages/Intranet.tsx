@@ -88,6 +88,9 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+            <SheetTrigger asChild>
+              <button className="hidden" />
+            </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4 relative">
               {/* Numero sezione */}
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">

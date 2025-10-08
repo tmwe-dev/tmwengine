@@ -98,17 +98,21 @@ serve(async (req) => {
 
     console.log(`✅ Profilo sincronizzato per user_id: ${supabaseUser.id}`);
 
-    // 4. Genera link magico per ottenere i token di sessione
+    // 4. Genera token di sessione usando recovery link (garantisce token validi)
     console.log('🔐 Generazione token sessione...');
     
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: tmweEmail,
     });
 
     if (linkError) {
       console.error('Errore generazione link:', linkError);
       throw linkError;
+    }
+
+    if (!linkData.properties?.access_token || !linkData.properties?.refresh_token) {
+      throw new Error('Token di sessione mancanti nella risposta');
     }
 
     console.log('✅ Token generati con successo');
@@ -122,7 +126,7 @@ serve(async (req) => {
           access_token: linkData.properties.access_token,
           refresh_token: linkData.properties.refresh_token,
           expires_at: linkData.properties.expires_at,
-          expires_in: 3600,
+          expires_in: linkData.properties.expires_in || 3600,
         },
         message: 'Sincronizzazione e sessione create con successo'
       }),

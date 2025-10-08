@@ -146,19 +146,6 @@ const CRMLayout = ({ children }) => {
         <div className="flex items-center gap-0.5">
           <AIGuideDialog />
           
-          {/* TMWE Profile Button - only show if user has profile */}
-          {userProfile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsProfileDialogOpen(true)}
-              className="h-8 w-8"
-              title="Profilo TMWE"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-          )}
-          
           <ThemeSwitcher />
           
           <DropdownMenu>
@@ -265,6 +252,24 @@ const CRMLayout = ({ children }) => {
             <div className="pt-2 border-t border-border mt-2">
               <IntranetNavItems isActive={isActive} />
             </div>
+            
+            {/* TMWE Profile Button - in basso nella sidebar */}
+            {userProfile && (
+              <div className="pt-2 border-t border-border mt-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsProfileDialogOpen(true)}
+                  className={cn(
+                    "w-full justify-start gap-2",
+                    sidebarOpen ? "px-3 py-2" : "px-0 py-2 justify-center"
+                  )}
+                  title="Profilo TMWE"
+                >
+                  <User className="h-5 w-5 flex-shrink-0" />
+                  {sidebarOpen && <span>Profilo TMWE</span>}
+                </Button>
+              </div>
+            )}
           </nav>
         </aside>
 

@@ -127,7 +127,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0` : 'flex flex-col overflow-hidden'}`}>
+        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0` : 'flex flex-col overflow-hidden space-y-6'}`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
@@ -136,8 +136,8 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : 'flex-1 flex flex-col overflow-hidden'}`}>
-                <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 py-4 min-h-0'}`}>
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
+                <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
                   <div className={shouldHideHeader ? 'space-y-3' : ''}>
                     <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
                   </div>
@@ -145,7 +145,7 @@ const Intranet = () => {
               </Card>
 
               {/* Input */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : 'flex-shrink-0'}`}>
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
                 <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />
                 </CardContent>

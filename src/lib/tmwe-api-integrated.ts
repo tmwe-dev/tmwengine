@@ -411,5 +411,5 @@ export const emailFolderApi = {
 
 // Profile API
 export const profileApi = {
-  getMyProfile: () => fetchApi('/get_my_profile', { handler: 'get_my_profile' }),
+  getMyProfile: () => fetchApi('/get_my_profile', {}),
 };

@@ -58,7 +58,72 @@ serve(async (req) => {
       );
     }
 
-    // Validate data object and handler (400 - Bad Request)
+    // Special handling for /get_my_profile (GET method, no body required)
+    if (endpoint === '/get_my_profile') {
+      const url = `${API_BASE_URL}${endpoint}`;
+      
+      const requestHeaders = {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Accept': 'application/json',
+        'User-Agent': 'Deno/1.0',
+      };
+
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📤 SOLICITUD AL API TMWE (GET)');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      console.log('🔗 URL:', url);
+      console.log('📍 Endpoint:', endpoint);
+      console.log('🔑 Authorization:', `Bearer ${bearerToken.substring(0, 20)}...`);
+      console.log('═══════════════════════════════════════════════════════');
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: requestHeaders,
+      });
+
+      const responseText = await response.text();
+
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📥 RESPUESTA DEL API TMWE (GET)');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🔢 HTTP Status:', response.status);
+      console.log('📄 Response Body:', responseText);
+      console.log('═══════════════════════════════════════════════════════');
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { raw: responseText };
+        }
+
+        return createErrorResponse(
+          response.status === 401 ? 'unauthorized' : 'internal_error',
+          response.status === 401 ? 'Authentication failed' : 'Request failed',
+          response.status,
+          errorData
+        );
+      }
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
+      }
+
+      return new Response(
+        JSON.stringify(responseData),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate data object and handler for POST endpoints
     if (!data || typeof data !== 'object') {
       console.error('❌ Invalid data object');
       return createErrorResponse(

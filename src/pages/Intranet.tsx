@@ -84,7 +84,7 @@ const Intranet = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-56 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden" style={{ paddingBottom: selectedRoomId ? '140px' : '0' }}>
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -202,7 +202,7 @@ const Intranet = () => {
 
       {/* Input messaggi fisso sopra il footer */}
       {selectedRoomId && (
-        <div className="fixed bottom-16 left-0 right-0 bg-background border-t z-40">
+        <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-background border-t z-40 p-2">
           <MessageInputWithAttachments 
             roomId={selectedRoomId} 
             isCreatorOrAdmin={isCreatorOrAdmin}
@@ -210,9 +210,9 @@ const Intranet = () => {
         </div>
       )}
 
-      {/* Footer fisso a piè di pagina */}
-      {selectedRoomId && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background z-50">
+      {/* Footer fisso a piè di pagina - solo mobile */}
+      {selectedRoomId && isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background z-50">
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             5

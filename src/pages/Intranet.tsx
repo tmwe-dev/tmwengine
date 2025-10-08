@@ -83,7 +83,7 @@ const Intranet = () => {
     }
   };
 
-  const shouldHideHeader = isMobile && selectedRoomId;
+  const shouldHideHeader = isMobile && !!selectedRoomId;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -139,7 +139,7 @@ const Intranet = () => {
               <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : 'flex-1 flex flex-col overflow-hidden'}`}>
                 <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 py-4 min-h-0'}`}>
                   <div className={shouldHideHeader ? 'space-y-3' : ''}>
-                    <ChatMessages roomId={selectedRoomId} isLayoutInverted={shouldHideHeader ? isLayoutInverted : false} />
+                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
                   </div>
                 </CardContent>
               </Card>

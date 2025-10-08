@@ -26,9 +26,10 @@ interface UserProfile {
 interface ChatMessagesProps {
   roomId: string;
   isLayoutInverted?: boolean;
+  shouldHideHeader?: boolean;
 }
 
-export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeader = false }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
@@ -145,7 +146,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
         return (
           <div
             key={message.id}
-            className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+            className={`flex gap-3 ${shouldHideHeader ? 'mb-3' : ''} ${isOwnMessage ? 'flex-row-reverse' : ''}`}
           >
             <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
               <div
@@ -214,6 +215,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
         );
       })}
       {!isLayoutInverted && <div ref={messagesEndRef} />}
+      <div ref={messagesEndRef} />
     </>
   );
 };

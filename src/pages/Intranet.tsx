@@ -87,16 +87,13 @@ const Intranet = () => {
       <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden" style={{ paddingBottom: selectedRoomId ? '140px' : '0' }}>
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
-          <Sheet open={mobileSheetOpen} onOpenChange={(open) => {
-            console.log('🔴 Sheet onOpenChange chiamato con:', open);
-            setMobileSheetOpen(open);
-          }}>
-            <SheetPortal>
-              <SheetContent side="left" className="w-[90vw] max-w-sm p-4 relative z-[9999]">
-                {/* Numero sezione */}
-                <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                  2
-                </div>
+          <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+            <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
+              {/* Numero sezione */}
+              <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                2
+              </div>
+              <div className="mt-8">
                 <RoomSelector
                   onRoomSelect={(roomId) => {
                     setSearchParams({ room: roomId });
@@ -104,8 +101,8 @@ const Intranet = () => {
                   }}
                   selectedRoomId={selectedRoomId}
                 />
-              </SheetContent>
-            </SheetPortal>
+              </div>
+            </SheetContent>
           </Sheet>
         )}
         {!isMobile && (

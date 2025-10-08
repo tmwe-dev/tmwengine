@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Image, Smile, Mic, Send, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Image, Smile, Mic, Send, X, ChevronUp, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -268,93 +268,123 @@ export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, 
           />
         </div>
 
-        {/* Icone e pulsante invio sotto */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Pulsanti allegati */}
-          <div className="flex gap-1">
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
-              title="Allega file"
-              disabled={isSending}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
+        {/* Icone e pulsante invio */}
+        <div className="flex flex-col gap-2">
+          {/* Prima riga: File, Image, Emoji, Mic a sinistra, Send a destra */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileSelect}
+                multiple
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                title="Allega file"
+                disabled={isSending}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
 
-            <input
-              type="file"
-              ref={imageInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => imageInputRef.current?.click()}
-              title="Allega immagine"
-              disabled={isSending}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
+              <input
+                type="file"
+                ref={imageInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageSelect}
+                multiple
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => imageInputRef.current?.click()}
+                title="Allega immagine"
+                disabled={isSending}
+              >
+                <Image className="h-4 w-4" />
+              </Button>
 
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    title="Emoticon"
+                    disabled={isSending}
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64">
+                  <div className="grid grid-cols-5 gap-2">
+                    {EMOTICONS.map((emoticon, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        className="text-2xl hover:scale-125 transition-transform"
+                        onClick={() => insertEmoticon(emoticon)}
+                      >
+                        {emoticon}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <Button
+                size="icon"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={isRecording ? stopRecording : startRecording}
+                title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
+                disabled={isSending}
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Pulsante invio a destra */}
+            <Button
+              onClick={sendMessage}
+              disabled={(!message.trim() && attachments.length === 0) || isSending}
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Seconda riga: Settings al centro e Chevron */}
+          <div className="flex items-center justify-center gap-2">
+            {/* Menu settings che contiene AIGuide, RoomAI e Language */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   size="icon"
                   variant="ghost"
-                  title="Emoticon"
+                  title="Impostazioni"
                   disabled={isSending}
                 >
-                  <Smile className="h-4 w-4" />
+                  <Settings className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-64">
-                <div className="grid grid-cols-5 gap-2">
-                  {EMOTICONS.map((emoticon, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      className="text-2xl hover:scale-125 transition-transform"
-                      onClick={() => insertEmoticon(emoticon)}
-                    >
-                      {emoticon}
-                    </Button>
-                  ))}
+              <PopoverContent className="w-auto">
+                <div className="flex gap-2">
+                  <AIGuideDialog />
+                  {isCreatorOrAdmin && (
+                    <RoomAIPromptManager 
+                      roomId={roomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
+                  )}
+                  <UserLanguageSettings />
                 </div>
               </PopoverContent>
             </Popover>
 
-            <Button
-              size="icon"
-              variant={isRecording ? "destructive" : "ghost"}
-              onClick={isRecording ? stopRecording : startRecording}
-              title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
-              disabled={isSending}
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Settings centrali sotto il microfono */}
-          <div className="flex items-center justify-center gap-2">
-            <AIGuideDialog />
-            {isCreatorOrAdmin && (
-              <RoomAIPromptManager 
-                roomId={roomId} 
-                isCreatorOrAdmin={isCreatorOrAdmin}
-              />
-            )}
-            <UserLanguageSettings />
+            {/* Chevron up/down */}
             {onToggleFullscreen && (
               <Button
                 size="icon"
@@ -367,15 +397,6 @@ export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, 
               </Button>
             )}
           </div>
-
-          {/* Pulsante invio */}
-          <Button
-            onClick={sendMessage}
-            disabled={(!message.trim() && attachments.length === 0) || isSending}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>

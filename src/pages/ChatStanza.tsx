@@ -94,7 +94,7 @@ const ChatStanza = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/chat')}
+                onClick={() => navigate('/intranet')}
                 className="hover-scale"
               >
                 <ArrowLeft className="h-5 w-5" />

@@ -11,7 +11,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, Maximize2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -170,17 +170,29 @@ const Intranet = () => {
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">
-                <div className="text-center">
-                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h2 className="text-lg md:text-xl font-semibold mb-2">
-                    Seleziona una stanza
-                  </h2>
-                  <p className="text-sm md:text-base text-muted-foreground">
-                    {isMobile 
-                      ? 'Tocca il pulsante del menu per scegliere una stanza'
-                      : 'Scegli una stanza dalla lista per iniziare a chattare'
-                    }
-                  </p>
+                <div className="text-center space-y-4">
+                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
+                  <div>
+                    <h2 className="text-lg md:text-xl font-semibold mb-2">
+                      Seleziona una stanza
+                    </h2>
+                    <p className="text-sm md:text-base text-muted-foreground mb-4">
+                      {isMobile 
+                        ? 'Tocca il pulsante del menu per scegliere una stanza'
+                        : 'Scegli una stanza dalla lista per iniziare a chattare'
+                      }
+                    </p>
+                  </div>
+                  {isMobile && (
+                    <Button 
+                      onClick={() => setMobileSheetOpen(true)}
+                      size="lg"
+                      className="gap-2"
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                      Apri Selettore Stanze
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>

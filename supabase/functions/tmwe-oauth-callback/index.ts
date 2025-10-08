@@ -188,9 +188,6 @@ serve(async (req) => {
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
-      options: {
-        redirectTo: redirectUri.split('/tmwe/callback')[0] + '/',
-      }
     });
 
     if (linkError) {
@@ -198,10 +195,12 @@ serve(async (req) => {
       throw linkError;
     }
 
-    // Extract token from the generated link
-    const url = new URL(linkData.properties.action_link);
-    const token = url.searchParams.get('token');
-    const tokenHash = url.hash.substring(1); // Remove the # from hash
+    if (!linkData || !linkData.properties || !linkData.properties.action_link) {
+      throw new Error('Failed to generate auth link');
+    }
+
+    // Extract access and refresh tokens from the hashed_token
+    console.log('🔑 Link generated:', linkData.properties.action_link);
     
     console.log('✅ Session link generated');
     console.log('✅ OAuth2 flow completed successfully');
@@ -217,9 +216,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        authToken: token,
-        authTokenHash: tokenHash,
-        magicLink: linkData.properties.action_link,
+        actionLink: linkData.properties.action_link,
+        hashedToken: linkData.properties.hashed_token,
       }),
       {
         status: 200,

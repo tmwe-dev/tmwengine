@@ -17,7 +17,6 @@ import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
 
 import Chat from "./pages/Chat";
-import ChatStanza from "./pages/ChatStanza";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
 
@@ -81,11 +80,6 @@ const App = () => (
             <Route path="/chat" element={
               <ProtectedRoute>
                 <CRMLayout><Chat /></CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/chat-stanza" element={
-              <ProtectedRoute>
-                <CRMLayout><ChatStanza /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/intranet" element={

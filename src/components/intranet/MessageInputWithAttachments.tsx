@@ -197,7 +197,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
 
   return (
     <>
-      <div className="px-4 py-2 border-t border-white/10 backdrop-blur-sm bg-background/60">
+      <div className="p-4 border-t">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 
@@ -249,7 +249,25 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
         )}
 
         <div className="flex flex-col gap-3">
-          {/* Icone e pulsante invio in alto */}
+          {/* Input testo centrato */}
+          <div className="flex justify-center">
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Scrivi un messaggio..."
+              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+              disabled={isSending}
+              rows={1}
+            />
+          </div>
+
+          {/* Icone e pulsante invio */}
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
               <input
@@ -265,7 +283,6 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={() => fileInputRef.current?.click()}
                 title="Allega file"
                 disabled={isSending}
-                className="hover-scale"
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
@@ -284,7 +301,6 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={() => imageInputRef.current?.click()}
                 title="Allega immagine"
                 disabled={isSending}
-                className="hover-scale"
               >
                 <Image className="h-4 w-4" />
               </Button>
@@ -296,7 +312,6 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                     variant="ghost"
                     title="Emoticon"
                     disabled={isSending}
-                    className="hover-scale"
                   >
                     <Smile className="h-4 w-4" />
                   </Button>
@@ -323,7 +338,6 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={isRecording ? stopRecording : startRecording}
                 title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
                 disabled={isSending}
-                className="hover-scale"
               >
                 <Mic className="h-4 w-4" />
               </Button>
@@ -334,28 +348,9 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
               onClick={sendMessage}
               disabled={(!message.trim() && attachments.length === 0) || isSending}
               size="icon"
-              className="hover-scale"
             >
               <Send className="h-4 w-4" />
             </Button>
-          </div>
-
-          {/* Input testo sotto le icone */}
-          <div className="flex justify-center">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border border-white/10 bg-background/80 backdrop-blur-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px] transition-all duration-300"
-              disabled={isSending}
-              rows={1}
-            />
           </div>
         </div>
       </div>
@@ -373,8 +368,8 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
             <Settings className="h-5 w-5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 mb-2 p-4">
-          <div className="flex items-center justify-center gap-3">
+        <PopoverContent className="w-auto mb-2">
+          <div className="flex gap-2">
             <AIGuideDialog />
             {isCreatorOrAdmin && (
               <RoomAIPromptManager 

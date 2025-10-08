@@ -10,7 +10,6 @@ import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { AnimatedBorder } from '@/components/design-system/effects/AnimatedBorder';
 
 interface Message {
   id: string;
@@ -23,10 +22,9 @@ interface Message {
 
 interface ChatMessagesProps {
   roomId: string;
-  reverseOrder?: boolean;
 }
 
-export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -52,10 +50,7 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
         table: 'intranet_messages',
         filter: `room_id=eq.${roomId}`
       }, (payload) => {
-        setMessages(prev => reverseOrder 
-          ? [payload.new as Message, ...prev]
-          : [...prev, payload.new as Message]
-        );
+        setMessages(prev => [...prev, payload.new as Message]);
         setTimeout(() => scrollToBottom(), 100);
       })
       .subscribe();
@@ -82,7 +77,7 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
       .from('intranet_messages')
       .select('*')
       .eq('room_id', roomId)
-      .order('created_at', { ascending: !reverseOrder });
+      .order('created_at', { ascending: true });
 
     if (data && !error) {
       setMessages(data);
@@ -101,15 +96,14 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
   };
 
   return (
-    <ScrollArea className="h-full p-4">
+    <ScrollArea className="h-full flex-1 p-4">
       <div className="space-y-4">
         {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
-          
           return (
             <div
               key={message.id}
-              className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} animate-fade-in`}
+              className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback className={isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-secondary'}>
@@ -117,9 +111,45 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
                 </AvatarFallback>
               </Avatar>
               <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} max-w-[70%]`}>
-                {message.message_type === 'text' && message.content ? (
-                  <AnimatedBorder variant={isOwnMessage ? "primary" : "glow"} speed="slow">
-                    <div className={`rounded-lg px-4 py-2 ${isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                <div
+                  className={`rounded-lg px-4 py-2 ${
+                    isOwnMessage
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  {message.message_type === 'image' && message.attachment_url && (
+                    <img 
+                      src={message.attachment_url} 
+                      alt="Image" 
+                      className="max-w-xs rounded-lg mb-2 cursor-pointer"
+                      onClick={() => window.open(message.attachment_url, '_blank')}
+                    />
+                  )}
+                  
+                  {message.message_type === 'audio' && message.attachment_url && (
+                    <audio 
+                      controls 
+                      className="max-w-xs mb-2"
+                      src={message.attachment_url}
+                    />
+                  )}
+                  
+                  {message.message_type === 'file' && message.attachment_url && (
+                    <a 
+                      href={message.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 mb-2 hover:underline"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="text-sm">Scarica file</span>
+                      <Download className="h-3 w-3" />
+                    </a>
+                  )}
+                  
+                  {message.content && (
+                    <>
                       <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                       <div className="flex gap-1 flex-wrap mt-1">
                         <TranslateButton 
@@ -133,65 +163,9 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
                           />
                         )}
                       </div>
-                    </div>
-                  </AnimatedBorder>
-                ) : (
-                  <div
-                    className={`rounded-lg px-4 py-2 ${
-                      isOwnMessage
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    {message.message_type === 'image' && message.attachment_url && (
-                      <img 
-                        src={message.attachment_url} 
-                        alt="Image" 
-                        className="max-w-xs rounded-lg mb-2 cursor-pointer"
-                        onClick={() => window.open(message.attachment_url, '_blank')}
-                      />
-                    )}
-                    
-                    {message.message_type === 'audio' && message.attachment_url && (
-                      <audio 
-                        controls 
-                        className="max-w-xs mb-2"
-                        src={message.attachment_url}
-                      />
-                    )}
-                    
-                    {message.message_type === 'file' && message.attachment_url && (
-                      <a 
-                        href={message.attachment_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 mb-2 hover:underline"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm">Scarica file</span>
-                        <Download className="h-3 w-3" />
-                      </a>
-                    )}
-                    
-                    {message.content && (
-                      <>
-                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                        <div className="flex gap-1 flex-wrap mt-1">
-                          <TranslateButton 
-                            messageContent={message.content}
-                            messageId={message.id}
-                          />
-                          {!isOwnMessage && profile && (
-                            <SpeakButton 
-                              text={message.content}
-                              language={profile.readingLanguage}
-                            />
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
                 <span className="text-xs text-muted-foreground mt-1">
                   {format(new Date(message.created_at), 'HH:mm', { locale: it })}
                 </span>

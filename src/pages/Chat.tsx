@@ -513,7 +513,7 @@ const Chat = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3 cursor-pointer" onClick={() => navigate(-1)}>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                 <MessageSquare className="h-8 w-8 text-primary" />
                 Chat AI
               </h1>
@@ -942,7 +942,7 @@ const Chat = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate('/chat')}
                       >
                         <ArrowLeft className="h-4 w-4" />
                       </Button>

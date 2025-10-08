@@ -80,7 +80,7 @@ export function UserLanguageSettings() {
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpen}>
-        <DialogContent className="max-w-[600px] backdrop-blur-md bg-background/95 border-white/10" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[600px] backdrop-blur-md bg-background/95 border-white/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Languages className="h-5 w-5 text-primary" />

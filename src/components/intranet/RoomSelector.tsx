@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,10 +21,9 @@ interface Room {
 interface RoomSelectorProps {
   onRoomSelect: (roomId: string) => void;
   selectedRoomId?: string;
-  navigateToChat?: boolean; // Nuovo prop per determinare se navigare
 }
 
-export const RoomSelector = ({ onRoomSelect, selectedRoomId, navigateToChat = false }: RoomSelectorProps) => {
+export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -33,14 +31,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, navigateToChat = fa
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const handleRoomSelect = (roomId: string) => {
-    onRoomSelect(roomId);
-    if (navigateToChat) {
-      navigate(`/chat-stanza?room=${roomId}`);
-    }
-  };
 
   useEffect(() => {
     loadRooms();
@@ -204,7 +194,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, navigateToChat = fa
             className={`cursor-pointer transition-all hover:shadow-md ${
               selectedRoomId === room.id ? 'border-primary' : ''
             }`}
-            onClick={() => handleRoomSelect(room.id)}
+            onClick={() => onRoomSelect(room.id)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

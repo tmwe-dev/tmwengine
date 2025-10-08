@@ -11,78 +11,8 @@ import { AdminStats } from '@/components/intranet/admin/AdminStats';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 const IntranetAdmin = () => {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const navigate = useNavigate();
-  const { userEmail, isAuthenticated } = useTMWEAuth();
-
-  useEffect(() => {
-    checkAdminStatus();
-  }, [userEmail, isAuthenticated]);
-
-  const checkAdminStatus = async () => {
-    try {
-      // Controlla autenticazione TMWE
-      if (!isAuthenticated || !userEmail) {
-        console.log('❌ Non autenticato con TMWE');
-        navigate('/auth');
-        return;
-      }
-
-      console.log('✅ Autenticato TMWE:', userEmail);
-
-      // Verifica ruolo admin tramite email TMWE
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('tmwe_email', userEmail)
-        .maybeSingle();
-
-      if (profileError || !profileData) {
-        console.error('❌ Profilo non trovato:', profileError);
-        setIsAdmin(false);
-        navigate('/intranet');
-        return;
-      }
-
-      console.log('✅ Profilo trovato:', profileData.user_id);
-
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', profileData.user_id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('❌ Errore controllo ruolo:', roleError);
-      }
-
-      if (roleData) {
-        console.log('✅ Utente è admin!');
-        setIsAdmin(true);
-      } else {
-        console.log('❌ Utente NON è admin');
-        setIsAdmin(false);
-        navigate('/intranet');
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-      setIsAdmin(false);
-      navigate('/intranet');
-    }
-  };
-
-  if (isAdmin === null) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
+  // SVILUPPO: Controlli di autorizzazione disabilitati
+  console.log('🚧 Admin panel in modalità sviluppo - accesso libero');
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

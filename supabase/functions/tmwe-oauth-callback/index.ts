@@ -200,14 +200,14 @@ serve(async (req) => {
     }
 
     // Generate session token for client
-    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
     });
 
-    if (tokenError) {
-      console.error('Error generating token:', tokenError);
-      throw tokenError;
+    if (magicLinkError) {
+      console.error('Error generating token:', magicLinkError);
+      throw magicLinkError;
     }
 
     console.log('✅ OAuth2 flow completed successfully');
@@ -223,7 +223,7 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        magicLink: tokenData.properties?.action_link || null,
+        magicLink: magicLinkData.properties?.action_link || null,
       }),
       {
         status: 200,

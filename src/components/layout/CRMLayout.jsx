@@ -84,6 +84,7 @@ const CRMLayout = ({ children }) => {
     { name: 'Email Manager', href: '/email-manager', icon: Mail },
     { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
+    { name: 'Luxury Demo', href: '/luxury', icon: Palette },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },
     { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
     { name: 'Impostazioni', href: '/settings', icon: Settings },

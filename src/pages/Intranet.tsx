@@ -149,9 +149,9 @@ const Intranet = () => {
 
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
-                  <div className="flex flex-col h-full">
-                    {/* Input messaggi - fisso in alto */}
-                    <div className="sticky top-0 bg-background z-10 border-b">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+                    {/* Input messaggi - sticky in cima al contenitore scroll */}
+                    <div className="sticky top-0 bg-background z-10 border-b flex-shrink-0">
                       <MessageInputWithAttachments 
                         roomId={selectedRoomId} 
                         isCreatorOrAdmin={isCreatorOrAdmin}
@@ -159,26 +159,26 @@ const Intranet = () => {
                     </div>
 
                     {/* Area messaggi espansa */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 min-h-0">
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
                   </div>
                 ) : (
                   /* Vista normale: Chat sopra, input sotto */
-                  <>
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
                     {/* Area messaggi */}
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <div className="flex-1 min-h-0">
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
 
-                    {/* Input messaggi - fisso in basso */}
-                    <div className="sticky bottom-0 bg-background z-10 border-t">
+                    {/* Input messaggi - sticky in fondo al contenitore scroll */}
+                    <div className="sticky bottom-0 bg-background z-10 border-t flex-shrink-0">
                       <MessageInputWithAttachments 
                         roomId={selectedRoomId} 
                         isCreatorOrAdmin={isCreatorOrAdmin}
                       />
                     </div>
-                  </>
+                  </div>
                 )}
               </>
             ) : (

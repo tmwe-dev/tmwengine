@@ -129,8 +129,8 @@ const Intranet = () => {
           <Card className="h-full flex flex-col overflow-hidden">
             {selectedRoomId ? (
               <>
-                {/* Header responsive con utenti online */}
-                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
+                {/* Header responsive con utenti online - FISSO */}
+                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative flex-shrink-0">
                   {/* Numero sezione */}
                   <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                     4
@@ -154,23 +154,10 @@ const Intranet = () => {
                   </div>
                 </div>
 
-                {isFullscreenMode ? (
-                  /* Vista espansa: Input in alto, chat sotto */
-                  <div className="flex flex-col-reverse flex-1 overflow-hidden min-h-0">
-                    {/* Area messaggi - SOLO questa scrolla */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
-                      <ChatMessages roomId={selectedRoomId} />
-                    </div>
-                  </div>
-                ) : (
-                  /* Vista normale: Chat sopra, input sotto */
-                  <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-                    {/* Area messaggi - SOLO questa scrolla */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
-                      <ChatMessages roomId={selectedRoomId} />
-                    </div>
-                  </div>
-                )}
+                {/* Area messaggi - SOLO questa scrolla */}
+                <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+                  <ChatMessages roomId={selectedRoomId} />
+                </div>
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center p-4">

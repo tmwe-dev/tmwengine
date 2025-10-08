@@ -125,7 +125,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 ${isLayoutInverted ? 'flex flex-col-reverse' : 'flex flex-col'} overflow-hidden min-h-0 relative`}>
+        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
@@ -134,13 +134,11 @@ const Intranet = () => {
               </Card>
               
               {/* Input messaggi */}
-              <Card className="flex-shrink-0 border-0 shadow-none">
-                <CardContent className="p-3">
-                  <MessageInputWithAttachments 
-                    roomId={selectedRoomId} 
-                  />
-                </CardContent>
-              </Card>
+              <div className="flex-shrink-0">
+                <MessageInputWithAttachments 
+                  roomId={selectedRoomId} 
+                />
+              </div>
 
               {/* Bottone inversione - posizionato al centro sotto i messaggi */}
               {!isMobile && (

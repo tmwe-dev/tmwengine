@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft, Users } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -521,15 +521,6 @@ const Chat = () => {
             
             {/* Settings Icon e Toggle System Prompt - allineati a destra */}
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/chat-stanza')}
-                className="gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Chat Stanza
-              </Button>
               {selectedConfigId && aiConfigs.length > 0 && (
                 <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
                   <SelectTrigger className="h-8 w-8 p-0 border-none bg-transparent hover:bg-muted">

@@ -11,7 +11,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, Maximize2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
 import { GlassCard } from '@/components/design-system/cards/GlassCard';
 import { GradientBackground } from '@/components/design-system/effects/GradientBackground';
 
@@ -88,6 +88,22 @@ const Intranet = () => {
     <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
       <GradientBackground variant="primary" intensity="medium" animated direction="br">
         <div className="min-h-screen flex flex-col">
+          {/* Header mobile con pulsante stanza */}
+          {isMobile && (
+            <div className="p-3 border-b border-white/10 backdrop-blur-sm bg-background/60 flex items-center justify-between">
+              <h1 className="text-lg font-semibold">Intranet</h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/chat-stanza')}
+                className="gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Chat Stanza
+              </Button>
+            </div>
+          )}
+          
           <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
           {/* Desktop/Tablet: Sidebar fissa */}
           {!isMobile && (

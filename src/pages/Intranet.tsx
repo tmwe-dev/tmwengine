@@ -103,20 +103,18 @@ const Intranet = () => {
       </div>
 
       {/* Mobile Sheet per Room Selector */}
-      {isMobile && (
-        <Sheet open={isRoomSelectorOpen} onOpenChange={setIsRoomSelectorOpen}>
-          <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
-            <div className="h-full overflow-y-auto">
-              <div className="p-4">
-                <RoomSelector
-                  onRoomSelect={handleRoomSelect}
-                  selectedRoomId={selectedRoomId}
-                />
-              </div>
+      <Sheet open={isRoomSelectorOpen} onOpenChange={setIsRoomSelectorOpen}>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+          <div className="h-full overflow-y-auto">
+            <div className="p-4">
+              <RoomSelector
+                onRoomSelect={handleRoomSelect}
+                selectedRoomId={selectedRoomId}
+              />
             </div>
-          </SheetContent>
-        </Sheet>
-      )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Area chat principale */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -127,16 +125,14 @@ const Intranet = () => {
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                 {/* Menu button solo su mobile */}
                 {isMobile && (
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="flex-shrink-0"
-                      onClick={() => setIsRoomSelectorOpen(true)}
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="flex-shrink-0"
+                    onClick={() => setIsRoomSelectorOpen(true)}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
                 )}
                 
                 <h1 className="text-base md:text-xl font-semibold truncate">{selectedRoomName}</h1>

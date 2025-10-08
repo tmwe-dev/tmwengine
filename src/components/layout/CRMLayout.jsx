@@ -146,8 +146,6 @@ const CRMLayout = ({ children }) => {
         <div className="flex items-center gap-0.5">
           <AIGuideDialog />
           
-          <ThemeSwitcher />
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
@@ -270,6 +268,16 @@ const CRMLayout = ({ children }) => {
                 </Button>
               </div>
             )}
+            
+            {/* Theme Switcher - in basso nella sidebar */}
+            <div className={cn("pt-2", !userProfile && "border-t border-border mt-2")}>
+              <div className={cn(
+                "w-full",
+                sidebarOpen ? "px-3" : "flex justify-center"
+              )}>
+                <ThemeSwitcher />
+              </div>
+            </div>
           </nav>
         </aside>
 

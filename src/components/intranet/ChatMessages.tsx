@@ -100,8 +100,8 @@ export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps
   };
 
   return (
-    <ScrollArea className="h-full w-full">
-      <div className="space-y-4 p-4 pt-[19px] min-h-full">
+    <ScrollArea className="h-full flex-1">
+      <div className="space-y-4 p-4 pt-[19px]">
         {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (

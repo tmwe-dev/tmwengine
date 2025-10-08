@@ -133,7 +133,7 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Contenitore messaggi + input - separato dal footer */}
+              {/* Contenitore messaggi + input + footer - tutto insieme per l'inversione */}
               <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0`}>
                 {/* Messaggi - con altezza controllata */}
                 <div className="flex-1 min-h-0 overflow-hidden">
@@ -146,39 +146,39 @@ const Intranet = () => {
                     roomId={selectedRoomId} 
                   />
                 </div>
-              </div>
 
-              {/* Footer - solo mobile - COMPLETAMENTE SEPARATO dal flex sopra */}
-              {isMobile && (
-                <div className="h-14 flex-shrink-0 flex-grow-0 grid grid-cols-3 items-center border-t bg-background">
-                  {/* Numero sezione */}
-                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                    5
+                {/* Footer - solo mobile - dentro il flex per seguire l'inversione */}
+                {isMobile && (
+                  <div className="h-14 flex-shrink-0 flex-grow-0 grid grid-cols-3 items-center border-t bg-background">
+                    {/* Numero sezione */}
+                    <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                      5
+                    </div>
+                    <div className="flex items-center gap-2 pl-2">
+                      <Menu 
+                        className="h-6 w-6 cursor-pointer text-foreground"
+                        onClick={() => {
+                          console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
+                          setMobileSheetOpen(true);
+                          console.log('🟢 setMobileSheetOpen(true) chiamato');
+                        }}
+                      />
+                      <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
+                    </div>
+                    <div className="flex justify-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                        title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                      >
+                        {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <div />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Menu 
-                      className="h-6 w-6 cursor-pointer text-foreground"
-                      onClick={() => {
-                        console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
-                        setMobileSheetOpen(true);
-                        console.log('🟢 setMobileSheetOpen(true) chiamato');
-                      }}
-                    />
-                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                  </div>
-                  <div className="flex justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                      title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-                    >
-                      {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <div />
-                </div>
-              )}
+                )}
+              </div>
 
               <SettingsButton 
                 roomId={selectedRoomId}

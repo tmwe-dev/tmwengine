@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
 import { supabase } from '@/integrations/supabase/client';
+import { TMWEProfileSync } from '@/components/settings/TMWEProfileSync';
 import { 
   Key, 
   Mail, 
@@ -464,104 +465,110 @@ const Settings = () => {
         
         {/* Renderizza la sezione selezionata */}
         {activeSection === 'profile' && (
-          <Card className="w-full bg-card-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5" />
-                Profilo Utente
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Configura i tuoi dati personali. Questi dati verranno automaticamente assegnati a tutte le attività che crei.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Colonna sinistra */}
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="nomeUtente" className="text-sm">Nome *</Label>
-                    <Input
-                      id="nomeUtente"
-                      value={generalConfig.nomeUtente}
-                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, nomeUtente: e.target.value }))}
-                      placeholder="Mario"
-                      className="h-9"
-                    />
+          <div className="space-y-4">
+            {/* Componente de sincronización TMWE */}
+            <TMWEProfileSync />
+            
+            {/* Card de perfil local existente */}
+            <Card className="w-full bg-card-transparent">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <User className="h-5 w-5" />
+                  Perfil Local (Manual)
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Edita manualmente tus datos personales. Estos datos se asignarán automáticamente a todas las actividades que crees.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Colonna sinistra */}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="nomeUtente" className="text-sm">Nome *</Label>
+                      <Input
+                        id="nomeUtente"
+                        value={generalConfig.nomeUtente}
+                        onChange={(e) => setGeneralConfig(prev => ({ ...prev, nomeUtente: e.target.value }))}
+                        placeholder="Mario"
+                        className="h-9"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="emailUtente" className="text-sm">Email *</Label>
+                      <Input
+                        id="emailUtente"
+                        type="email"
+                        value={generalConfig.emailUtente}
+                        onChange={(e) => setGeneralConfig(prev => ({ ...prev, emailUtente: e.target.value }))}
+                        placeholder="mario.rossi@azienda.com"
+                        className="h-9"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="ruoloUtente" className="text-sm">Ruolo</Label>
+                      <Select value={generalConfig.ruoloUtente} onValueChange={(value) => 
+                        setGeneralConfig(prev => ({ ...prev, ruoloUtente: value }))
+                      }>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Seleziona ruolo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Utente">Utente</SelectItem>
+                          <SelectItem value="Manager">Manager</SelectItem>
+                          <SelectItem value="Amministratore">Amministratore</SelectItem>
+                          <SelectItem value="Commerciale">Commerciale</SelectItem>
+                          <SelectItem value="Marketing">Marketing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="emailUtente" className="text-sm">Email *</Label>
-                    <Input
-                      id="emailUtente"
-                      type="email"
-                      value={generalConfig.emailUtente}
-                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, emailUtente: e.target.value }))}
-                      placeholder="mario.rossi@azienda.com"
-                      className="h-9"
-                    />
-                  </div>
+                  {/* Colonna destra */}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="cognomeUtente" className="text-sm">Cognome *</Label>
+                      <Input
+                        id="cognomeUtente"
+                        value={generalConfig.cognomeUtente}
+                        onChange={(e) => setGeneralConfig(prev => ({ ...prev, cognomeUtente: e.target.value }))}
+                        placeholder="Rossi"
+                        className="h-9"
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="ruoloUtente" className="text-sm">Ruolo</Label>
-                    <Select value={generalConfig.ruoloUtente} onValueChange={(value) => 
-                      setGeneralConfig(prev => ({ ...prev, ruoloUtente: value }))
-                    }>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Seleziona ruolo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Utente">Utente</SelectItem>
-                        <SelectItem value="Manager">Manager</SelectItem>
-                        <SelectItem value="Amministratore">Amministratore</SelectItem>
-                        <SelectItem value="Commerciale">Commerciale</SelectItem>
-                        <SelectItem value="Marketing">Marketing</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-1">
+                      <Label htmlFor="telefonoUtente" className="text-sm">Telefono</Label>
+                      <Input
+                        id="telefonoUtente"
+                        value={generalConfig.telefonoUtente}
+                        onChange={(e) => setGeneralConfig(prev => ({ ...prev, telefonoUtente: e.target.value }))}
+                        placeholder="+39 123 456 7890"
+                        className="h-9"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Colonna destra */}
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="cognomeUtente" className="text-sm">Cognome *</Label>
-                    <Input
-                      id="cognomeUtente"
-                      value={generalConfig.cognomeUtente}
-                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, cognomeUtente: e.target.value }))}
-                      placeholder="Rossi"
-                      className="h-9"
-                    />
-                  </div>
+                <Alert className="mt-3">
+                  <User className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <strong>Auto-assegnazione:</strong> Tutte le attività che crei verranno automaticamente assegnate a te. 
+                    Il nome completo "{generalConfig.nomeUtente} {generalConfig.cognomeUtente}" apparirà nel campo "Assegnato a".
+                  </AlertDescription>
+                </Alert>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="telefonoUtente" className="text-sm">Telefono</Label>
-                    <Input
-                      id="telefonoUtente"
-                      value={generalConfig.telefonoUtente}
-                      onChange={(e) => setGeneralConfig(prev => ({ ...prev, telefonoUtente: e.target.value }))}
-                      placeholder="+39 123 456 7890"
-                      className="h-9"
-                    />
-                  </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSaveGeneralConfig} disabled={saving} className="h-9">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Salvataggio...' : 'Salva Profilo'}
+                  </Button>
                 </div>
-              </div>
-
-              <Alert className="mt-3">
-                <User className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <strong>Auto-assegnazione:</strong> Tutte le attività che crei verranno automaticamente assegnate a te. 
-                  Il nome completo "{generalConfig.nomeUtente} {generalConfig.cognomeUtente}" apparirà nel campo "Assegnato a".
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleSaveGeneralConfig} disabled={saving} className="h-9">
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Salvataggio...' : 'Salva Profilo'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
 

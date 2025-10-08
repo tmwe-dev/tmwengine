@@ -46,7 +46,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Listen to Supabase auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 Supabase auth state changed:', event);
       
       if (session?.user) {
@@ -55,31 +55,37 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         if (email) {
           setUserEmail(email);
           sessionStorage.setItem('tmwe_user_email', email);
-          
-          // Get user profile from Supabase
-          const { data: profileData } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (profileData) {
-            const profile: UserProfile = {
-              email: profileData.tmwe_email || email,
-              name: profileData.display_name || '',
-            };
-            setUserProfile(profile);
-            sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
-          }
-          
           setSupabaseUserId(session.user.id);
           sessionStorage.setItem('tmwe_supabase_user_id', session.user.id);
+          
+          // Defer profile fetch to avoid blocking
+          setTimeout(() => {
+            supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .maybeSingle()
+              .then(({ data: profileData }) => {
+                if (profileData) {
+                  const profile: UserProfile = {
+                    email: profileData.tmwe_email || email,
+                    name: profileData.display_name || '',
+                  };
+                  setUserProfile(profile);
+                  sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
+                }
+              });
+          }, 0);
         }
-        setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
         // User signed out
-        logout();
-        setIsLoading(false);
+        setUserEmail(null);
+        setUserProfile(null);
+        setSupabaseUserId(null);
+        sessionStorage.removeItem('tmwe_user_email');
+        sessionStorage.removeItem('tmwe_access_token');
+        sessionStorage.removeItem('tmwe_user_profile');
+        sessionStorage.removeItem('tmwe_supabase_user_id');
       }
     });
 

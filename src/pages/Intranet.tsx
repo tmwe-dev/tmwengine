@@ -125,7 +125,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden relative`}>
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
@@ -133,21 +133,24 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Messaggi - con altezza controllata */}
-              <div className="flex-1 min-h-0">
-                <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
-              </div>
-              
-              {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
-              <div className="flex-shrink-0">
-                <MessageInputWithAttachments 
-                  roomId={selectedRoomId} 
-                />
+              {/* Contenitore messaggi + input - separato dal footer */}
+              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0`}>
+                {/* Messaggi - con altezza controllata */}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+                </div>
+                
+                {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
+                <div className="flex-shrink-0">
+                  <MessageInputWithAttachments 
+                    roomId={selectedRoomId} 
+                  />
+                </div>
               </div>
 
-              {/* Footer - solo mobile - flex-shrink-0 */}
+              {/* Footer - solo mobile - COMPLETAMENTE SEPARATO dal flex sopra */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-2 grid grid-cols-3 items-center border-t bg-background">
+                <div className="h-14 flex-shrink-0 flex-grow-0 grid grid-cols-3 items-center border-t bg-background">
                   {/* Numero sezione */}
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                     5
@@ -161,7 +164,7 @@ const Intranet = () => {
                         console.log('🟢 setMobileSheetOpen(true) chiamato');
                       }}
                     />
-                    <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   </div>
                   <div className="flex justify-center">
                     <Button

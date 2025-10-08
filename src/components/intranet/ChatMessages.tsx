@@ -147,7 +147,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <ScrollArea className="h-full p-2">
+    <ScrollArea className="h-full">
       <div className="space-y-4">
         {displayMessages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;

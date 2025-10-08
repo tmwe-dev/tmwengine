@@ -193,7 +193,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
   return (
     <>
-      <div className="px-2 py-1 border-t bg-background">
+      <div className="border-t bg-background">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 

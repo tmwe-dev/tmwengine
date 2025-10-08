@@ -10,10 +10,13 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, ArrowLeft, Maximize2 } from 'lucide-react';
+import { Users, Menu, Maximize2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import findairLogo from '@/assets/findair-logo-header.png';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
@@ -125,14 +128,13 @@ const Intranet = () => {
               {/* Header responsive con utenti online */}
               <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedRoomId(undefined)}
-                    title="Torna alle conversazioni"
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Indietro"
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
+                    <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto" />
+                  </button>
                   <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
                 </div>
                 

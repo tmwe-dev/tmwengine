@@ -1,28 +1,71 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeft, Mail, Lock } from 'lucide-react';
 import { initiateAuthorizationCodeFlow } from '@/lib/tmwe-api-integrated';
 import { toast } from 'sonner';
 
 const Auth = () => {
   const { isAuthenticated } = useTMWEAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  // Redirect if already authenticated
+  // Check for existing Supabase session
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session || isAuthenticated) {
+        navigate('/');
+      }
+    };
+    checkSession();
   }, [isAuthenticated, navigate]);
 
-  const handleLogin = () => {
+  const handleTMWELogin = () => {
     try {
       initiateAuthorizationCodeFlow();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Errore durante l\'avvio del login');
+    }
+  };
+
+  const handleSupabaseAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+        if (error) throw error;
+        toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
+        toast.success('Accesso effettuato!');
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Errore durante l\'autenticazione');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,23 +89,73 @@ const Auth = () => {
             </div>
             <CardTitle className="text-2xl">Accedi al CRM</CardTitle>
             <CardDescription>
-              Utilizza il tuo account email per accedere al sistema
+              Scegli il metodo di autenticazione
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <div className="space-y-4">
-              <Button 
-                onClick={handleLogin}
-                className="w-full"
-                size="lg"
-              >
-                Accedi con TMWE OAuth2
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Verrai reindirizzato alla pagina di autorizzazione per inserire le tue credenziali email
-              </p>
-            </div>
+            <Tabs defaultValue="supabase" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="supabase">Supabase Auth</TabsTrigger>
+                <TabsTrigger value="tmwe">TMWE Email</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="supabase" className="space-y-4 pt-4">
+                <form onSubmit={handleSupabaseAuth} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tuo@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? 'Caricamento...' : (isSignUp ? 'Registrati' : 'Accedi')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                  >
+                    {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="tmwe" className="space-y-4 pt-4">
+                <Button 
+                  onClick={handleTMWELogin}
+                  className="w-full"
+                  size="lg"
+                >
+                  Accedi con TMWE OAuth2
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Per gestire le email. Verrai reindirizzato alla pagina di autorizzazione.
+                </p>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

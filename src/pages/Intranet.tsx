@@ -84,8 +84,8 @@ const Intranet = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 px-2 md:px-4">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 px-2 md:px-4 min-h-0">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -125,11 +125,11 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} relative`}>
+        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} relative min-h-0`}>
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 border-0 shadow-none bg-transparent">
+              <Card className="flex-1 flex flex-col border-0 shadow-none bg-transparent min-h-0 overflow-hidden">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               

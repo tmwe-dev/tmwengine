@@ -196,16 +196,19 @@ const Intranet = () => {
 
         {/* Footer fisso fuori dalla card */}
         {selectedRoomId && (
-          <div className="p-3 flex items-center justify-between bg-background">
+          <div className="p-3 grid grid-cols-3 items-center bg-background">
             <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-              title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-            >
-              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+              >
+                {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div />
           </div>
         )}
       </div>

@@ -265,8 +265,8 @@ const CRMLayout = ({ children }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className={location.pathname === '/chat' && isMobile ? '' : 'p-6'}>
+        <main className={cn("flex-1", location.pathname === '/intranet' ? 'overflow-hidden' : 'overflow-auto')}>
+          <div className={location.pathname === '/chat' && isMobile || location.pathname === '/intranet' ? '' : 'p-6'}>
             {children}
           </div>
         </main>

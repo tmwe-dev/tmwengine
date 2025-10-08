@@ -183,15 +183,31 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session for the user
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    // 6. Generate Supabase session tokens for the user
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: true,
+      user_metadata: {
+        tmwe_oauth: true,
+        name: profileData.name || profileData.username,
+        enterprise_name: profileData.enterprise_name,
+      }
+    });
+
+    if (sessionError && sessionError.message !== 'User already registered') {
+      console.error('Error generating session:', sessionError);
+      throw sessionError;
+    }
+
+    // Generate session token for client
+    const { data: tokenData, error: tokenError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
     });
 
-    if (sessionError) {
-      console.error('Error generating session:', sessionError);
-      throw sessionError;
+    if (tokenError) {
+      console.error('Error generating token:', tokenError);
+      throw tokenError;
     }
 
     console.log('✅ OAuth2 flow completed successfully');
@@ -207,7 +223,7 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        accessToken: sessionData.properties?.action_link || null,
+        magicLink: tokenData.properties?.action_link || null,
       }),
       {
         status: 200,

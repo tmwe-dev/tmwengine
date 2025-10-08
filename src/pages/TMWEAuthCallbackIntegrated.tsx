@@ -81,12 +81,35 @@ const TMWEAuthCallbackIntegrated = () => {
       addDetail(`👤 Perfil: ${data.profile?.name || data.profile?.username}`);
       addDetail(`🏢 Empresa: ${data.profile?.enterprise_name || 'N/A'}`);
       addDetail('✅ Credenciales guardadas en base de datos');
-      addDetail('✅ Sesión de Supabase creada');
 
-      // 5. Actualizar contexto local de autenticación
+      // 5. Establecer sesión de Supabase usando el magic link
+      if (data.magicLink) {
+        addDetail('🔐 Estableciendo sesión de Supabase...');
+        
+        // Extraer el token del magic link
+        const url = new URL(data.magicLink);
+        const token = url.searchParams.get('token');
+        const type = url.searchParams.get('type');
+        
+        if (token && type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: type as any,
+          });
+
+          if (verifyError) {
+            console.error('Error verificando sesión:', verifyError);
+            addDetail('⚠️ Advertencia: No se pudo establecer sesión de Supabase');
+          } else {
+            addDetail('✅ Sesión de Supabase establecida');
+          }
+        }
+      }
+
+      // 6. Actualizar contexto local de autenticación
       await login(data.email, data.profile);
 
-      // 6. Limpiar sessionStorage
+      // 7. Limpiar sessionStorage
       sessionStorage.removeItem('oauth_state');
       sessionStorage.removeItem('oauth_client_id');
       sessionStorage.removeItem('oauth_client_secret');

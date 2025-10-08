@@ -133,8 +133,8 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Contenitore messaggi + input - senza footer */}
-              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? (isLayoutInverted ? 'pt-14' : 'pb-14') : ''}`}>
+              {/* Contenitore messaggi + input - con padding per la barra fissa in basso */}
+              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? 'pb-14' : ''}`}>
                 {/* Messaggi - con altezza controllata */}
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
@@ -148,24 +148,14 @@ const Intranet = () => {
                 </div>
               </div>
 
-              {/* Footer - FISSO in basso normale, FISSO in alto quando invertito */}
+              {/* Barra mobile FISSA IN BASSO - sulla stessa linea dell'ingranaggio */}
               {isMobile && (
-                <div 
-                  className={`fixed left-0 right-0 h-14 grid grid-cols-3 items-center border-t bg-background z-40 ${
-                    isLayoutInverted ? 'top-0' : 'bottom-0'
-                  }`}
-                >
-                  {/* Numero sezione */}
-                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                    5
-                  </div>
+                <div className="fixed bottom-0 left-0 right-0 h-14 grid grid-cols-3 items-center border-t bg-background z-40">
                   <div className="flex items-center gap-2 pl-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
                       onClick={() => {
-                        console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
                         setMobileSheetOpen(true);
-                        console.log('🟢 setMobileSheetOpen(true) chiamato');
                       }}
                     />
                     <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>

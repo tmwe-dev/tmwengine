@@ -85,7 +85,7 @@ const Intranet = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 px-2 md:px-4">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -94,7 +94,7 @@ const Intranet = () => {
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                 2
               </div>
-              <div className="mt-8">
+              <div>
                 <RoomSelector
                   onRoomSelect={(roomId) => {
                     setSearchParams({ room: roomId });
@@ -114,7 +114,7 @@ const Intranet = () => {
               2
             </div>
             <Card className="h-full">
-              <div className="p-4">
+              <div className="px-4">
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                   selectedRoomId={selectedRoomId}
@@ -156,7 +156,7 @@ const Intranet = () => {
 
               {/* Footer - solo mobile */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background">
+                <div className="flex-shrink-0 h-14 px-3 grid grid-cols-2 items-center border-t bg-background">
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
@@ -184,8 +184,8 @@ const Intranet = () => {
             </>
           ) : (
             <Card className="h-full flex flex-col">
-              <div className="flex-1 flex items-center justify-center p-4">
-                <div className="text-center space-y-4">
+              <div className="flex-1 flex items-center justify-center px-4">
+                <div className="text-center">
                   <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
                   <div>
                     <h2 className="text-lg md:text-xl font-semibold mb-2">

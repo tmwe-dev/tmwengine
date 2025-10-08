@@ -145,8 +145,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   };
 
   return (
-    <CardContent className={`flex-1 px-3 py-3 min-h-0 overflow-y-auto`}>
-      <div className={isLayoutInverted ? 'flex flex-col-reverse space-y-reverse space-y-4' : 'space-y-4'}>
+    <CardContent className={`flex-1 px-3 min-h-0 overflow-y-auto`}>
+      <div className={isLayoutInverted ? 'flex flex-col-reverse space-y-reverse' : ''}>
         {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (

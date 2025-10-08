@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -11,9 +11,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, Maximize2, ChevronUp, ChevronDown, ArrowLeft } from 'lucide-react';
-import { GlassCard } from '@/components/design-system/cards/GlassCard';
-import { GradientBackground } from '@/components/design-system/effects/GradientBackground';
+import { Users, Settings, ArrowLeft, ArrowUpDown, MessageSquare } from 'lucide-react';
 
 const ChatStanza = () => {
   const isMobile = useIsMobile();
@@ -22,9 +20,11 @@ const ChatStanza = () => {
   const selectedRoomId = searchParams.get('room') || undefined;
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const [isFullscreenMode, setIsFullscreenMode] = useState(false);
+  const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
+
+  // Determina se nascondere l'header (su mobile quando c'è una stanza selezionata)
+  const shouldHideHeader = isMobile && selectedRoomId;
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -85,181 +85,167 @@ const ChatStanza = () => {
   };
 
   return (
-    <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-      <GradientBackground variant="primary" intensity="medium" animated direction="br">
-        <div className="min-h-screen flex flex-col">
-          {/* Header con torna indietro */}
-          <div className="p-3 md:p-4 border-b border-white/10 backdrop-blur-sm bg-background/60">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/intranet')}
-                className="hover-scale"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl font-semibold">Chat Stanza</h1>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header - nascosto su mobile quando c'è una chat attiva */}
+      {!shouldHideHeader && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3 cursor-pointer" onClick={() => navigate(-1)}>
+                <MessageSquare className="h-8 w-8 text-primary" />
+                Chat Stanza
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Comunica con il tuo team nelle stanze dedicate
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
               {selectedRoomName && (
-                <Badge variant="outline" className="ml-auto">
+                <Badge variant="outline" className="text-base px-4 py-2">
                   {selectedRoomName}
+                </Badge>
+              )}
+              {selectedRoomId && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span>{onlineUsers.length} online</span>
                 </Badge>
               )}
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
-            {/* Desktop/Tablet: Sidebar fissa */}
-            {!isMobile && (
-              <div className="w-full md:w-80 flex-shrink-0 animate-fade-in">
-                <GlassCard blur="md" className="h-full transition-all duration-300">
-                  <div className="p-4">
-                    <RoomSelector
-                      onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                      selectedRoomId={selectedRoomId}
-                    />
-                  </div>
-                </GlassCard>
-              </div>
-            )}
-            
-            {/* Mobile: Sheet content */}
-            {isMobile && (
-              <SheetContent side="left" className="w-80 p-4">
-                <RoomSelector
-                  onRoomSelect={(roomId) => {
-                    setSearchParams({ room: roomId });
-                    setMobileSheetOpen(false);
-                  }}
-                  selectedRoomId={selectedRoomId}
-                />
-              </SheetContent>
-            )}
+      {/* Layout Responsive */}
+      <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
+        {/* Sidebar Stanze - nascosta su mobile quando c'è una chat attiva */}
+        <div className={`xl:col-span-1 order-2 xl:order-1 ${shouldHideHeader ? 'hidden' : ''}`}>
+          <Card className="bg-card-transparent">
+            <CardHeader className="py-4">
+              <CardTitle className="flex items-center justify-between">
+                <span>Stanze</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+              <RoomSelector
+                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                selectedRoomId={selectedRoomId}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Area chat principale */}
-            <div className="flex-1 flex flex-col min-h-0 animate-fade-in">
-              <GlassCard blur="lg" gradient className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-full">
+        {/* Area Chat Principale */}
+        <div className={`order-1 xl:order-2 ${shouldHideHeader ? `col-span-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full overflow-hidden min-h-0 transition-all duration-300` : 'xl:col-span-3 space-y-6'}`}>
+          {/* Messaggi della Stanza */}
+          {selectedRoomId ? (
+            <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
+              {!shouldHideHeader && (
+                <CardHeader className="py-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Conversazione</span>
+                    <div className="flex items-center gap-2">
+                      <OnlineUsers users={onlineUsers} />
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+              )}
+              <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
+                <div className={shouldHideHeader ? 'space-y-3' : ''}>
+                  <ChatMessages roomId={selectedRoomId} reverseOrder={!!(isLayoutInverted && shouldHideHeader)} />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-card-transparent">
+              <CardContent className="flex items-center justify-start py-8 px-6">
+                <MessageSquare className="h-5 w-5 text-muted-foreground mr-3 flex-shrink-0" />
+                <p className="text-muted-foreground">
+                  Seleziona una stanza dalla lista per iniziare a chattare con il tuo team.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Area Input */}
+          <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
+            {!shouldHideHeader && (
+              <CardHeader className="py-4">
+                <CardTitle>
+                  {selectedRoomId ? 'Scrivi un messaggio' : 'Seleziona una stanza'}
+                </CardTitle>
+              </CardHeader>
+            )}
+            <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
+              <div className={shouldHideHeader ? 'space-y-3' : 'space-y-4'}>
                 {selectedRoomId ? (
                   <>
-                    {/* Header responsive con utenti online */}
-                    <div className="p-3 md:p-4 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 backdrop-blur-sm bg-background/40">
-                      
-                      {/* Badge utenti online e controlli */}
-                      <div className="hidden sm:flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                          title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                          className="hover-scale"
-                        >
-                          <Maximize2 className="h-4 w-4" />
-                        </Button>
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{onlineUsers.length}</span>
-                        </Badge>
-                        <OnlineUsers users={onlineUsers} />
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
+                    {shouldHideHeader && (
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(-1)}
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+                              <DialogHeader className="pb-3 sm:pb-4">
+                                <DialogTitle className="text-lg sm:text-xl">Impostazioni Stanza</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    <span>{onlineUsers.length} utenti online</span>
+                                  </Badge>
+                                </div>
+                                <OnlineUsers users={onlineUsers} />
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </div>
-                    </div>
-
-                    {isFullscreenMode ? (
-                      /* Vista espansa: Input in alto, chat sotto */
-                      <>
-                        {/* Input messaggi in alto - con bordo inferiore e padding ridotto */}
-                        <div className="border-b border-white/10 py-2 backdrop-blur-sm bg-background/60">
-                          <MessageInputWithAttachments 
-                            roomId={selectedRoomId} 
-                            isCreatorOrAdmin={isCreatorOrAdmin}
-                          />
-                        </div>
-
-                        {/* Area messaggi espansa */}
-                        <div className="flex-1 overflow-y-auto min-h-0">
-                          <ChatMessages roomId={selectedRoomId} reverseOrder={true} />
-                        </div>
-                      </>
-                    ) : (
-                      /* Vista normale: Chat sopra, input sotto */
-                      <>
-                        {/* Area messaggi */}
-                        <div className="flex-1 overflow-y-auto min-h-0">
-                          <ChatMessages roomId={selectedRoomId} />
-                        </div>
-
-                        {/* Input messaggi */}
-                        <MessageInputWithAttachments 
-                          roomId={selectedRoomId} 
-                          isCreatorOrAdmin={isCreatorOrAdmin}
-                        />
-                      </>
                     )}
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center p-4">
-                    <div className="text-center space-y-4">
-                      <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
-                      <h2 className="text-lg md:text-xl font-semibold mb-2">
-                        Seleziona una stanza
-                      </h2>
-                      <p className="text-sm md:text-base text-muted-foreground mb-4">
-                        {isMobile 
-                          ? 'Tocca il pulsante qui sotto per scegliere una stanza'
-                          : 'Scegli una stanza dalla lista per iniziare a chattare'
-                        }
-                      </p>
-                      {isMobile && (
-                        <SheetTrigger asChild>
-                          <Button size="lg" className="gap-2">
-                            <Menu className="h-5 w-5" />
-                            Apri Menu Stanze
-                          </Button>
-                        </SheetTrigger>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-muted-foreground text-center py-4">
+                    Seleziona una stanza per iniziare
+                  </p>
                 )}
-              </GlassCard>
-            </div>
-          </div>
-          
-          {/* Footer fisso a piè di pagina - sempre visibile su mobile */}
-          {isMobile && (
-            <div className="fixed bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-background/80 backdrop-blur-md">
-              <div className="grid grid-cols-3 items-center">
-                <div className="flex items-center gap-2">
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      className="h-10 w-10"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  {selectedRoomName && (
-                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                  )}
-                </div>
-                {selectedRoomId && (
-                  <div className="flex justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                      title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                    >
-                      {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                )}
-                <div />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Toggle Button - Solo mobile */}
+          {shouldHideHeader && (
+            <div className="absolute left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'calc(1rem - 8px)' }}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:shadow-primary/20 transition-all duration-300"
+              >
+                <ArrowUpDown className="h-5 w-5 text-primary" />
+              </Button>
             </div>
           )}
         </div>
-      </GradientBackground>
-    </Sheet>
+      </div>
+    </div>
   );
 };
 

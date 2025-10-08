@@ -22,7 +22,7 @@ export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsBut
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto mb-2">
-          <div className="flex gap-2">
+          <div className="flex gap-4 w-full justify-between">
             <AIGuideDialog />
             {isCreatorOrAdmin && (
               <RoomAIPromptManager 

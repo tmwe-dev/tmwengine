@@ -1,13 +1,10 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Image, Smile, Mic, Send, X, Settings } from 'lucide-react';
+import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AISuggestions } from './AISuggestions';
-import { RoomAIPromptManager } from './RoomAIPromptManager';
-import { UserLanguageSettings } from './UserLanguageSettings';
-import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 
 interface FileAttachment {
   file: File;
@@ -16,12 +13,11 @@ interface FileAttachment {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
-  isCreatorOrAdmin?: boolean;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -354,33 +350,6 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
           </div>
         </div>
       </div>
-
-      {/* Bottone Settings fisso in basso a destra */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            title="Impostazioni"
-            disabled={isSending}
-            className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto mb-2">
-          <div className="flex gap-2">
-            <AIGuideDialog />
-            {isCreatorOrAdmin && (
-              <RoomAIPromptManager 
-                roomId={roomId} 
-                isCreatorOrAdmin={isCreatorOrAdmin}
-              />
-            )}
-            <UserLanguageSettings />
-          </div>
-        </PopoverContent>
-      </Popover>
     </>
   );
 };

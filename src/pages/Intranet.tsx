@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetPortal } from '@/components/ui/
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
+import { SettingsButton } from '@/components/intranet/SettingsButton';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -171,12 +172,17 @@ const Intranet = () => {
 
       {/* Input messaggi fisso sopra il footer */}
       {selectedRoomId && (
-        <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-background border-t z-40 p-2">
-          <MessageInputWithAttachments 
-            roomId={selectedRoomId} 
+        <>
+          <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-background border-t z-40 p-2">
+            <MessageInputWithAttachments 
+              roomId={selectedRoomId} 
+            />
+          </div>
+          <SettingsButton 
+            roomId={selectedRoomId}
             isCreatorOrAdmin={isCreatorOrAdmin}
           />
-        </div>
+        </>
       )}
 
       {/* Footer fisso a piè di pagina - solo mobile */}

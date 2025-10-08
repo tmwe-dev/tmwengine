@@ -11,7 +11,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, ArrowLeft, Maximize2 } from 'lucide-react';
+import { Users, Menu, Maximize2 } from 'lucide-react';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -128,14 +128,6 @@ const Intranet = () => {
               {/* Header responsive con utenti online */}
               <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSearchParams({})}
-                    title="Torna alle conversazioni"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
                   <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
                 </div>
                 

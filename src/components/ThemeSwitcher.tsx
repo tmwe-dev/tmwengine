@@ -16,10 +16,13 @@ export function ThemeSwitcher() {
 
   const themeColors: Record<Theme, string> = {
     lilla: 'bg-gradient-to-r from-blue-500 to-purple-600',
-    ocean: 'bg-gradient-to-r from-teal-500 to-orange-500',
-    sunset: 'bg-gradient-to-r from-orange-500 to-purple-600',
-    forest: 'bg-gradient-to-r from-emerald-600 to-amber-600',
-    sky: 'bg-gradient-to-r from-sky-500 to-yellow-400'
+    gold: 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600',
+    platinum: 'bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300',
+    emerald: 'bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600',
+    royal: 'bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-700',
+    sapphire: 'bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600',
+    ruby: 'bg-gradient-to-r from-rose-500 via-pink-400 to-rose-600',
+    onyx: 'bg-gradient-to-r from-gray-800 via-slate-700 to-gray-900'
   };
 
   return (

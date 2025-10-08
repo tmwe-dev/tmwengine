@@ -72,17 +72,34 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (data?.supabaseUserId) {
+      if (data?.supabaseUserId && data?.magicLink) {
         console.log('✅ Sincronizzazione completata con user_id:', data.supabaseUserId);
-        setSupabaseUserId(data.supabaseUserId);
+        console.log('🔐 Autenticazione con magic link...');
         
-        // Salva con la chiave corretta usata da RoomSelector e altri componenti
-        sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
-        console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
-        
-        return data.supabaseUserId;
+        // Usa il magic link per autenticare l'utente
+        const { data: sessionData, error: authError } = await supabase.auth.verifyOtp({
+          token_hash: data.magicLink.split('#access_token=')[1]?.split('&')[0] || '',
+          type: 'magiclink'
+        });
+
+        if (authError) {
+          console.error('❌ Errore autenticazione:', authError);
+          
+          // Fallback: prova a navigare direttamente al magic link
+          console.log('🔄 Tentativo fallback con magic link...');
+          window.location.href = data.magicLink;
+          return null;
+        }
+
+        if (sessionData.session) {
+          console.log('✅ Sessione Supabase creata');
+          setSupabaseUserId(data.supabaseUserId);
+          sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
+          console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
+          return data.supabaseUserId;
+        }
       } else {
-        console.error('⚠️ Risposta senza supabaseUserId:', data);
+        console.error('⚠️ Risposta senza supabaseUserId o magicLink:', data);
       }
 
       return null;

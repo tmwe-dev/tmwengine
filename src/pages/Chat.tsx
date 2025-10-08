@@ -1003,11 +1003,10 @@ const Chat = () => {
                     />
                     <Button 
                       type="submit" 
+                      size="icon"
                       disabled={(!prompt.trim() && uploadedFiles.length === 0 && !generatedImage) || isLoading}
-                      className="flex items-center gap-2"
                     >
                       <Send className="h-4 w-4" strokeWidth={1.5} />
-                      {isLoading ? 'Invio...' : 'Invia Messaggio'}
                     </Button>
                   </div>
                 </div>

@@ -109,6 +109,15 @@ const CRMLayout = ({ children }) => {
         )}
       >
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden"
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+          
           <div className="flex items-center gap-2">
             {isMobile ? (
               // Mobile: mostra solo l'icona

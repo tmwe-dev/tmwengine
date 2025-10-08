@@ -121,16 +121,16 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
           </div>
           
           {selectedRoomId ? (
-            <div className="h-full flex flex-col">
-              {/* Header FISSO con sticky */}
-              <div className="sticky top-0 z-10 bg-card border border-border rounded-lg rounded-b-none border-b-0">
+            <>
+              {/* Header FISSO - fuori dal Card scrollabile */}
+              <Card className="flex-shrink-0 rounded-b-none border-b-0">
                 <div className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
                   {/* Numero sezione */}
                   <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
@@ -154,15 +154,15 @@ const Intranet = () => {
                     <OnlineUsers users={onlineUsers} />
                   </div>
                 </div>
-              </div>
+              </Card>
 
-              {/* Area messaggi scrollabile */}
-              <div className="flex-1 overflow-y-auto bg-card border border-border border-t-0 rounded-lg rounded-t-none">
-                <div className="px-3 py-3">
+              {/* Area messaggi scrollabile - Card separato */}
+              <Card className="flex-1 overflow-hidden rounded-t-none">
+                <div className="h-full overflow-y-auto px-3 py-3">
                   <ChatMessages roomId={selectedRoomId} />
                 </div>
-              </div>
-            </div>
+              </Card>
+            </>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">

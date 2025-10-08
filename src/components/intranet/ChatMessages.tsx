@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { TranslateButton } from './TranslateButton';
@@ -105,11 +104,6 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
               key={message.id}
               className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
             >
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className={isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-secondary'}>
-                  {getUserInitials(message.user_id)}
-                </AvatarFallback>
-              </Avatar>
               <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
                 <div
                   className={`rounded-lg px-4 py-2 border ${
@@ -166,8 +160,10 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                     </>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(message.created_at), 'HH:mm', { locale: it })}
+                <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center">
+                  <span>{getUserInitials(message.user_id)}</span>
+                  <span>•</span>
+                  <span>{format(new Date(message.created_at), 'HH:mm', { locale: it })}</span>
                 </span>
               </div>
             </div>

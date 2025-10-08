@@ -125,7 +125,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex flex-col overflow-hidden relative ${isLayoutInverted ? 'flex-col-reverse' : ''}`}>
+        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
@@ -133,18 +133,21 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+              {/* Messaggi - flex-1 per espandersi */}
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+              </div>
               
-              {/* Input messaggi */}
-              <div className="bg-background border-t p-2">
+              {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
+              <div className="flex-shrink-0 bg-background border-t p-2">
                 <MessageInputWithAttachments 
                   roomId={selectedRoomId} 
                 />
               </div>
 
-              {/* Footer - solo mobile */}
+              {/* Footer - solo mobile - flex-shrink-0 */}
               {isMobile && (
-                <div className="h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
+                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
                   {/* Numero sezione */}
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                     5

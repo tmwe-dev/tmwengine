@@ -150,21 +150,23 @@ const Intranet = () => {
                 /* Vista espansa: Input in alto, chat sotto */
                 <>
                   {/* Input messaggi in alto */}
-                  <div className="p-3 md:p-4 border-b">
+                  <div className="p-4 border-b">
                     <MessageInputWithAttachments 
                       roomId={selectedRoomId} 
                       isFullscreenMode={isFullscreenMode}
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
                       isCreatorOrAdmin={isCreatorOrAdmin}
                     />
-                    <div className="text-center mt-3">
-                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                    </div>
                   </div>
 
                   {/* Area messaggi espansa */}
                   <div className="flex-1 overflow-hidden">
                     <ChatMessages roomId={selectedRoomId} />
+                  </div>
+                  
+                  {/* Nome stanza in fondo */}
+                  <div className="p-3 border-t bg-muted/30">
+                    <h1 className="text-center text-sm font-medium text-muted-foreground">{selectedRoomName}</h1>
                   </div>
                 </>
               ) : (
@@ -176,16 +178,18 @@ const Intranet = () => {
                   </div>
 
                   {/* Input messaggi */}
-                  <div className="p-3 md:p-4 border-t">
+                  <div className="p-4 border-t">
                     <MessageInputWithAttachments 
                       roomId={selectedRoomId} 
                       isFullscreenMode={isFullscreenMode}
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
                       isCreatorOrAdmin={isCreatorOrAdmin}
                     />
-                    <div className="text-center mt-3">
-                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                    </div>
+                  </div>
+                  
+                  {/* Nome stanza in fondo */}
+                  <div className="p-3 border-t bg-muted/30">
+                    <h1 className="text-center text-sm font-medium text-muted-foreground">{selectedRoomName}</h1>
                   </div>
                 </>
               )}

@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
@@ -15,14 +14,12 @@ export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsBut
     <div className="fixed bottom-4 right-4 z-[100]">
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
+          <div 
+            className="cursor-pointer hover:scale-110 transition-transform"
             title="Impostazioni"
-            className="h-12 w-12 rounded-full shadow-lg bg-background"
           >
-            <Settings className="h-5 w-5" />
-          </Button>
+            <Settings className="h-6 w-6 text-foreground" />
+          </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto mb-2">
           <div className="flex gap-2">

@@ -131,7 +131,7 @@ const Intranet = () => {
             <>
               {/* Header FISSO - sticky top */}
               <div className="sticky top-0 z-10 bg-background">
-                <Card className="rounded-b-none border-b-0">
+                <Card className="rounded-none border-b-0">
                   <div className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
                     {/* Numero sezione */}
                     <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
@@ -160,7 +160,7 @@ const Intranet = () => {
 
               {/* Area messaggi scrollabile */}
               <div className="flex-1 overflow-y-auto">
-                <Card className="h-full rounded-t-none">
+                <Card className="h-full rounded-none">
                   <div className="px-3 py-3">
                     <ChatMessages roomId={selectedRoomId} />
                   </div>

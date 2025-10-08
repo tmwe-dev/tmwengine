@@ -87,7 +87,10 @@ const Intranet = () => {
       <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden" style={{ paddingBottom: selectedRoomId ? '140px' : '0' }}>
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
-          <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <Sheet open={mobileSheetOpen} onOpenChange={(open) => {
+            console.log('🔴 Sheet onOpenChange chiamato con:', open);
+            setMobileSheetOpen(open);
+          }}>
             <SheetPortal>
               <SheetContent side="left" className="w-80 p-4 relative z-[9999]">
                 {/* Numero sezione */}
@@ -188,7 +191,11 @@ const Intranet = () => {
                   </div>
                   {isMobile && (
                     <Button 
-                      onClick={() => setMobileSheetOpen(true)}
+                      onClick={() => {
+                        console.log('🔵 Bottone cliccato! Stato attuale:', mobileSheetOpen);
+                        setMobileSheetOpen(true);
+                        console.log('🔵 setMobileSheetOpen(true) chiamato');
+                      }}
                       size="lg"
                       className="gap-2"
                     >
@@ -224,7 +231,11 @@ const Intranet = () => {
             {isMobile && (
               <Menu 
                 className="h-6 w-6 cursor-pointer text-foreground"
-                onClick={() => setMobileSheetOpen(true)}
+                onClick={() => {
+                  console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
+                  setMobileSheetOpen(true);
+                  console.log('🟢 setMobileSheetOpen(true) chiamato');
+                }}
               />
             )}
             <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>

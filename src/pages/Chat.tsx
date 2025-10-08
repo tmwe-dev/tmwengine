@@ -936,27 +936,28 @@ const Chat = () => {
                   }}
                 />
                 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-start">
                   {shouldHideHeader ? (
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handlePromptToggle}
-                          className="animate-pulse"
-                        >
-                          <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate('/chat')}
-                          title="Torna alle conversazioni"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handlePromptToggle}
+                        className="animate-pulse"
+                      >
+                        <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate('/chat')}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : null}
+                  <div className={shouldHideHeader ? 'flex items-center gap-2' : 'w-full flex justify-end items-center gap-2'}>
+                    {shouldHideHeader && (
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -992,9 +993,7 @@ const Chat = () => {
                           </div>
                         </DialogContent>
                       </Dialog>
-                    </div>
-                  ) : null}
-                  <div className={shouldHideHeader ? 'ml-auto flex items-center gap-2' : 'w-full flex justify-end items-center gap-2'}>
+                    )}
                     <FileUploader 
                       onFilesUploaded={setUploadedFiles}
                       maxFiles={5}

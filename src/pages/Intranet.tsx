@@ -120,7 +120,7 @@ const Intranet = () => {
       {/* Area chat principale */}
       <div className="flex-1 flex flex-col min-w-0">
         {selectedRoomId ? (
-          <Card className="flex-1 flex flex-col h-full rounded-none border-0 md:border md:m-2 md:rounded-lg">
+          <Card className={`flex-1 ${isLayoutInverted ? 'flex flex-col-reverse' : 'flex flex-col'} h-full rounded-none border-0 md:border md:m-2 md:rounded-lg transition-all duration-300`}>
             {/* Header con utenti online e AI settings */}
             <div className="p-3 md:p-4 border-b flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">

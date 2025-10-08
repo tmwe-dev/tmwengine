@@ -197,7 +197,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
 
   return (
     <>
-      <div className="px-4 py-2 border-t">
+      <div className="px-4 py-2 border-t border-white/10 backdrop-blur-sm bg-background/60">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 
@@ -265,6 +265,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={() => fileInputRef.current?.click()}
                 title="Allega file"
                 disabled={isSending}
+                className="hover-scale"
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
@@ -283,6 +284,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={() => imageInputRef.current?.click()}
                 title="Allega immagine"
                 disabled={isSending}
+                className="hover-scale"
               >
                 <Image className="h-4 w-4" />
               </Button>
@@ -294,6 +296,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                     variant="ghost"
                     title="Emoticon"
                     disabled={isSending}
+                    className="hover-scale"
                   >
                     <Smile className="h-4 w-4" />
                   </Button>
@@ -320,6 +323,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 onClick={isRecording ? stopRecording : startRecording}
                 title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
                 disabled={isSending}
+                className="hover-scale"
               >
                 <Mic className="h-4 w-4" />
               </Button>
@@ -330,6 +334,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
               onClick={sendMessage}
               disabled={(!message.trim() && attachments.length === 0) || isSending}
               size="icon"
+              className="hover-scale"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -347,7 +352,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+              className="w-full resize-none rounded-lg border border-white/10 bg-background/80 backdrop-blur-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px] transition-all duration-300"
               disabled={isSending}
               rows={1}
             />

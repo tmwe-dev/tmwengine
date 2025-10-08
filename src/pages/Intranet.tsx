@@ -12,6 +12,8 @@ import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Menu, Maximize2, ChevronUp, ChevronDown } from 'lucide-react';
+import { GlassCard } from '@/components/design-system/cards/GlassCard';
+import { GradientBackground } from '@/components/design-system/effects/GradientBackground';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -84,19 +86,20 @@ const Intranet = () => {
 
   return (
     <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
+      <GradientBackground variant="primary" intensity="medium" animated direction="br">
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
           {/* Desktop/Tablet: Sidebar fissa */}
           {!isMobile && (
-            <div className="w-full md:w-80 flex-shrink-0">
-              <Card className="h-full">
+            <div className="w-full md:w-80 flex-shrink-0 animate-fade-in">
+              <GlassCard blur="md" className="h-full transition-all duration-300">
                 <div className="p-4">
                   <RoomSelector
                     onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                     selectedRoomId={selectedRoomId}
                   />
                 </div>
-              </Card>
+              </GlassCard>
             </div>
           )}
           
@@ -114,12 +117,12 @@ const Intranet = () => {
           )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <Card className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0 animate-fade-in">
+          <GlassCard blur="lg" gradient className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-full">
             {selectedRoomId ? (
               <>
                 {/* Header responsive con utenti online */}
-                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="p-3 md:p-4 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 backdrop-blur-sm bg-background/40">
                   
                   {/* Badge utenti online e controlli */}
                   <div className="hidden sm:flex items-center gap-2">
@@ -128,6 +131,7 @@ const Intranet = () => {
                       size="icon"
                       onClick={() => setIsFullscreenMode(!isFullscreenMode)}
                       title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                      className="hover-scale"
                     >
                       <Maximize2 className="h-4 w-4" />
                     </Button>
@@ -143,7 +147,7 @@ const Intranet = () => {
                   /* Vista espansa: Input in alto, chat sotto */
                   <>
                     {/* Input messaggi in alto - con bordo inferiore e padding ridotto */}
-                    <div className="border-b py-2">
+                    <div className="border-b border-white/10 py-2 backdrop-blur-sm bg-background/60">
                       <MessageInputWithAttachments 
                         roomId={selectedRoomId} 
                         isCreatorOrAdmin={isCreatorOrAdmin}
@@ -151,7 +155,7 @@ const Intranet = () => {
                     </div>
 
                     {/* Area messaggi espansa */}
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                       <ChatMessages roomId={selectedRoomId} reverseOrder={true} />
                     </div>
                   </>
@@ -159,7 +163,7 @@ const Intranet = () => {
                   /* Vista normale: Chat sopra, input sotto */
                   <>
                     {/* Area messaggi */}
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
 
@@ -187,13 +191,13 @@ const Intranet = () => {
                 </div>
               </div>
             )}
-          </Card>
+          </GlassCard>
         </div>
         </div>
         
         {/* Footer fisso a piè di pagina */}
         {selectedRoomId && (
-          <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
+          <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t border-white/10 bg-background/80 backdrop-blur-md">
             <div className="flex items-center gap-2">
               {isMobile && (
                 <SheetTrigger asChild>
@@ -221,7 +225,8 @@ const Intranet = () => {
             <div />
           </div>
         )}
-      </div>
+        </div>
+      </GradientBackground>
     </Sheet>
   );
 };

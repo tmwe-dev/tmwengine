@@ -92,7 +92,7 @@ const Intranet = () => {
               <Button 
                 variant="outline" 
                 size="icon"
-                className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+                className="fixed bottom-20 left-4 z-50 h-12 w-12 rounded-full shadow-lg"
               >
                 <Menu className="h-6 w-6" />
               </Button>

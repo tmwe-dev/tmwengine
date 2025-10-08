@@ -99,18 +99,15 @@ const Intranet = () => {
               <div className="p-4 border-b flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h1 className="text-xl font-semibold">{selectedRoomName}</h1>
-                  {isCreatorOrAdmin && (
-                    <>
-                      <RoomAIPromptManager 
-                        roomId={selectedRoomId} 
-                        isCreatorOrAdmin={isCreatorOrAdmin}
-                      />
-                      <RoomMembersManager 
-                        roomId={selectedRoomId}
-                        isCreatorOrAdmin={isCreatorOrAdmin}
-                      />
-                    </>
-                  )}
+                  {/* SVILUPPO: Mostriamo sempre i pulsanti */}
+                  <RoomAIPromptManager 
+                    roomId={selectedRoomId} 
+                    isCreatorOrAdmin={true}
+                  />
+                  <RoomMembersManager 
+                    roomId={selectedRoomId}
+                    isCreatorOrAdmin={true}
+                  />
                   <UserLanguageSettings />
                 </div>
                 <OnlineUsers users={onlineUsers} />

@@ -134,7 +134,7 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Contenitore messaggi + input - senza footer */}
-              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? (isLayoutInverted ? 'pb-14' : 'pb-14') : ''}`}>
+              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? (isLayoutInverted ? 'pt-14' : 'pb-14') : ''}`}>
                 {/* Messaggi - con altezza controllata */}
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />

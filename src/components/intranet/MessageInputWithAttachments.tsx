@@ -244,7 +244,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
           </div>
         )}
 
-        <div className="flex flex-col gap-3 my-6">
+        <div className="flex flex-col gap-3">
           {/* Input testo centrato */}
           <div className="flex justify-center">
             <textarea

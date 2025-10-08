@@ -143,7 +143,7 @@ const CRMLayout = ({ children }) => {
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
           <AIGuideDialog />
           
           {/* TMWE Profile Button - only show if user has profile */}

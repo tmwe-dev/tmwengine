@@ -25,8 +25,8 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
-          <Palette className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Palette className="h-4 w-4" />
           <span className="sr-only">Cambia tema</span>
         </Button>
       </DropdownMenuTrigger>

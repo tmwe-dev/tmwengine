@@ -51,7 +51,7 @@ export const IntranetNavItems = ({ isActive }: IntranetNavItemsProps) => {
         href="/intranet"
         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
           isActive('/intranet')
-            ? 'bg-primary text-primary-foreground shadow-lg'
+            ? 'text-primary-foreground shadow-lg'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
         }`}
       >

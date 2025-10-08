@@ -246,6 +246,16 @@ const CRMLayout = ({ children }) => {
               );
             })}
             
+            {/* Theme Switcher - sempre visibile */}
+            <div className="pt-2 border-t border-border mt-2">
+              <div className={cn(
+                "flex",
+                sidebarOpen ? "justify-start px-3" : "justify-center"
+              )}>
+                <ThemeSwitcher />
+              </div>
+            </div>
+            
             {/* Intranet Navigation Items with Admin check */}
             <div className="pt-2 border-t border-border mt-2">
               <IntranetNavItems isActive={isActive} />
@@ -268,16 +278,6 @@ const CRMLayout = ({ children }) => {
                 </Button>
               </div>
             )}
-            
-            {/* Theme Switcher - in basso nella sidebar */}
-            <div className={cn("pt-2", !userProfile && "border-t border-border mt-2")}>
-              <div className={cn(
-                "w-full",
-                sidebarOpen ? "px-3" : "flex justify-center"
-              )}>
-                <ThemeSwitcher />
-              </div>
-            </div>
           </nav>
         </aside>
 

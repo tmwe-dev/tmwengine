@@ -44,16 +44,16 @@ const TMWEAuthCallbackIntegrated = () => {
       addDetail(`✅ Código de autorización recibido`);
 
       // 2. Validar state (CSRF protection)
-      const savedState = sessionStorage.getItem('tmwe_oauth_state');
+      const savedState = sessionStorage.getItem('oauth_state');
       if (!savedState || savedState !== state) {
         throw new Error('Invalid state parameter (possible CSRF attack)');
       }
       addDetail(`✅ State validado correctamente`);
 
       // 3. Obtener credenciales OAuth del sessionStorage
-      const clientId = sessionStorage.getItem('tmwe_client_id');
-      const clientSecret = sessionStorage.getItem('tmwe_client_secret');
-      const redirectUri = sessionStorage.getItem('tmwe_redirect_uri');
+      const clientId = sessionStorage.getItem('oauth_client_id');
+      const clientSecret = sessionStorage.getItem('oauth_client_secret');
+      const redirectUri = sessionStorage.getItem('oauth_redirect_uri');
 
       if (!clientId || !clientSecret || !redirectUri) {
         throw new Error('Missing OAuth credentials');

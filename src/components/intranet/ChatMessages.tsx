@@ -139,81 +139,81 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <div className="space-y-4">
+    <>
       {displayMessages.map((message) => {
-          const isOwnMessage = message.user_id === currentUserId;
-          return (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
-            >
-              <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
-                <div
-                  className={`rounded-lg px-4 py-2 border ${
-                    isOwnMessage
-                      ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
-                      : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
-                  }`}
-                >
-                  {message.message_type === 'image' && message.attachment_url && (
-                    <img 
-                      src={message.attachment_url} 
-                      alt="Image" 
-                      className="w-full rounded-lg mb-2 cursor-pointer"
-                      onClick={() => window.open(message.attachment_url, '_blank')}
-                    />
-                  )}
-                  
-                  {message.message_type === 'audio' && message.attachment_url && (
-                    <audio 
-                      controls 
-                      className="w-full mb-2"
-                      src={message.attachment_url}
-                    />
-                  )}
-                  
-                  {message.message_type === 'file' && message.attachment_url && (
-                    <a 
-                      href={message.attachment_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 mb-2 hover:underline"
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="text-sm">Scarica file</span>
-                      <Download className="h-3 w-3" />
-                    </a>
-                  )}
-                  
-                  {message.content && (
-                    <>
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                      <div className="flex gap-1 flex-wrap mt-1">
-                        <TranslateButton 
-                          messageContent={message.content}
-                          messageId={message.id}
+        const isOwnMessage = message.user_id === currentUserId;
+        return (
+          <div
+            key={message.id}
+            className={`flex gap-3 mb-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+          >
+            <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
+              <div
+                className={`rounded-lg px-4 py-2 border ${
+                  isOwnMessage
+                    ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
+                    : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
+                }`}
+              >
+                {message.message_type === 'image' && message.attachment_url && (
+                  <img 
+                    src={message.attachment_url} 
+                    alt="Image" 
+                    className="w-full rounded-lg mb-2 cursor-pointer"
+                    onClick={() => window.open(message.attachment_url, '_blank')}
+                  />
+                )}
+                
+                {message.message_type === 'audio' && message.attachment_url && (
+                  <audio 
+                    controls 
+                    className="w-full mb-2"
+                    src={message.attachment_url}
+                  />
+                )}
+                
+                {message.message_type === 'file' && message.attachment_url && (
+                  <a 
+                    href={message.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 mb-2 hover:underline"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">Scarica file</span>
+                    <Download className="h-3 w-3" />
+                  </a>
+                )}
+                
+                {message.content && (
+                  <>
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      <TranslateButton 
+                        messageContent={message.content}
+                        messageId={message.id}
+                      />
+                      {!isOwnMessage && profile && (
+                        <SpeakButton 
+                          text={message.content}
+                          language={profile.readingLanguage}
                         />
-                        {!isOwnMessage && profile && (
-                          <SpeakButton 
-                            text={message.content}
-                            language={profile.readingLanguage}
-                          />
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center justify-end">
-                  <span>{format(new Date(message.created_at), 'dd/MM HH:mm', { locale: it })}</span>
-                  <span>•</span>
-                  <span>{getUserDisplayInfo(message.user_id).name}</span>
-                  <span>{getUserDisplayInfo(message.user_id).flag}</span>
-                </span>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
+              <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center justify-end">
+                <span>{format(new Date(message.created_at), 'dd/MM HH:mm', { locale: it })}</span>
+                <span>•</span>
+                <span>{getUserDisplayInfo(message.user_id).name}</span>
+                <span>{getUserDisplayInfo(message.user_id).flag}</span>
+              </span>
             </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-    </div>
+          </div>
+        );
+      })}
+      <div ref={messagesEndRef} />
+    </>
   );
 };

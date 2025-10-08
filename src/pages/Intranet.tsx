@@ -89,7 +89,7 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetContent side="left" className="w-[90vw] max-w-sm px-4 bg-background">
+            <SheetContent side="left" className="w-[90vw] max-w-sm px-4 bg-transparent">
               {/* Numero sezione */}
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                 2
@@ -156,7 +156,7 @@ const Intranet = () => {
 
               {/* Footer - solo mobile */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 px-3 grid grid-cols-2 items-center border-t bg-background">
+                <div className="flex-shrink-0 h-14 px-3 grid grid-cols-2 items-center border-t bg-transparent">
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"

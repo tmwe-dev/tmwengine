@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 interface IntranetNavItemsProps {
   isActive: (path: string) => boolean;
+  sidebarOpen?: boolean;
 }
 
-export const IntranetNavItems = ({ isActive }: IntranetNavItemsProps) => {
+export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavItemsProps) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,8 +58,15 @@ export const IntranetNavItems = ({ isActive }: IntranetNavItemsProps) => {
         }`}
       >
         <MessageSquare className="h-5 w-5" />
-        <span>Intranet</span>
+        {sidebarOpen && <span>Intranet</span>}
       </a>
+
+      {/* Theme Switcher sotto Intranet */}
+      {sidebarOpen && (
+        <div className="px-3 py-2">
+          <ThemeSwitcher />
+        </div>
+      )}
 
       {/* Dashboard Admin solo per amministratori */}
       {isAdmin && (
@@ -70,7 +79,7 @@ export const IntranetNavItems = ({ isActive }: IntranetNavItemsProps) => {
           }`}
         >
           <Shield className="h-5 w-5" />
-          <span>Admin Intranet</span>
+          {sidebarOpen && <span>Admin Intranet</span>}
         </a>
       )}
     </>

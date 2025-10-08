@@ -159,8 +159,6 @@ const CRMLayout = ({ children }) => {
             </Button>
           )}
           
-          <ThemeSwitcher />
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
@@ -263,7 +261,7 @@ const CRMLayout = ({ children }) => {
             
             {/* Intranet Navigation Items with Admin check */}
             <div className="pt-2 border-t border-border mt-2">
-              <IntranetNavItems isActive={isActive} />
+              <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
             </div>
           </nav>
         </aside>

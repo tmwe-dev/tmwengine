@@ -25,12 +25,12 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
-          <Palette className="h-5 w-5" />
-          <span className="sr-only">Cambia tema</span>
+        <Button variant="ghost" size="sm" className="relative w-full justify-start gap-2">
+          <Palette className="h-4 w-4" />
+          <span className="text-sm">Seleziona Tema</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+      <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuLabel>Seleziona Tema</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {Object.entries(themes).map(([key, value]) => (

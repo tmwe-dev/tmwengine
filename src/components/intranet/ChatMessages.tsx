@@ -19,6 +19,11 @@ interface Message {
   attachment_url?: string;
 }
 
+interface UserProfile {
+  display_name: string;
+  preferred_language: string;
+}
+
 interface ChatMessagesProps {
   roomId: string;
 }
@@ -26,6 +31,7 @@ interface ChatMessagesProps {
 export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
   
@@ -80,6 +86,25 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
 
     if (data && !error) {
       setMessages(data);
+      
+      // Carica i profili utente
+      const userIds = [...new Set(data.map(m => m.user_id))];
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('user_id, display_name, preferred_language')
+        .in('user_id', userIds);
+      
+      if (profiles) {
+        const profileMap: Record<string, UserProfile> = {};
+        profiles.forEach(p => {
+          profileMap[p.user_id] = {
+            display_name: p.display_name || 'User',
+            preferred_language: p.preferred_language || 'it'
+          };
+        });
+        setUserProfiles(profileMap);
+      }
+      
       setTimeout(() => scrollToBottom(), 100);
     }
   };
@@ -90,8 +115,28 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
     }
   };
 
-  const getUserInitials = (userId: string) => {
-    return userId.substring(0, 2).toUpperCase();
+  const getLanguageFlag = (languageCode: string): string => {
+    const flags: Record<string, string> = {
+      'it': '🇮🇹',
+      'en': '🇬🇧',
+      'es': '🇪🇸',
+      'fr': '🇫🇷',
+      'de': '🇩🇪',
+      'pt': '🇵🇹',
+      'ru': '🇷🇺',
+      'zh': '🇨🇳',
+      'ja': '🇯🇵',
+      'ar': '🇸🇦'
+    };
+    return flags[languageCode] || '🌐';
+  };
+
+  const getUserDisplayInfo = (userId: string) => {
+    const profile = userProfiles[userId];
+    return {
+      name: profile?.display_name || 'User',
+      flag: getLanguageFlag(profile?.preferred_language || 'it')
+    };
   };
 
   return (
@@ -161,7 +206,8 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center">
-                  <span>{getUserInitials(message.user_id)}</span>
+                  <span>{getUserDisplayInfo(message.user_id).flag}</span>
+                  <span>{getUserDisplayInfo(message.user_id).name}</span>
                   <span>•</span>
                   <span>{format(new Date(message.created_at), 'HH:mm', { locale: it })}</span>
                 </span>

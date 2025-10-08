@@ -1833,6 +1833,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_room_member: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       transfer_company_to_rubrica: {
         Args: { imported_contact_id: string }
         Returns: Json

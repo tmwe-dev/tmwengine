@@ -113,6 +113,7 @@ const Intranet = () => {
                   <RoomSelector
                     onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                     selectedRoomId={selectedRoomId}
+                    navigateToChat={true}
                   />
                 </div>
               </GlassCard>
@@ -128,6 +129,7 @@ const Intranet = () => {
                   setMobileSheetOpen(false);
                 }}
                 selectedRoomId={selectedRoomId}
+                navigateToChat={true}
               />
             </SheetContent>
           )}

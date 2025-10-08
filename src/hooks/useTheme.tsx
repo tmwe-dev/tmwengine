@@ -40,18 +40,19 @@ export function useTheme() {
 
   useEffect(() => {
     const root = document.documentElement;
+    if (!root) return;
     
     // Rimuove tutte le classi tema
     Object.values(themes).forEach(t => {
-      if (t.className) {
+      if (t && t.className) {
         root.classList.remove(t.className);
       }
     });
 
     // Aggiunge la classe del tema corrente
-    const themeClassName = themes[theme].className;
-    if (themeClassName) {
-      root.classList.add(themeClassName);
+    const currentTheme = themes[theme];
+    if (currentTheme && currentTheme.className) {
+      root.classList.add(currentTheme.className);
     }
 
     // Salva in localStorage

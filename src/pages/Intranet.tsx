@@ -149,7 +149,7 @@ const Intranet = () => {
 
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
-                  <div className="flex flex-col-reverse h-full overflow-hidden min-h-0">
+                  <div className="flex flex-col-reverse flex-1 overflow-hidden min-h-0">
                     {/* Input messaggi - fisso in alto grazie a flex-col-reverse */}
                     <MessageInputWithAttachments 
                       roomId={selectedRoomId} 
@@ -157,21 +157,17 @@ const Intranet = () => {
                     />
                     
                     {/* Area messaggi - SOLO questa scrolla */}
-                    <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
-                      <CardContent className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
-                        <ChatMessages roomId={selectedRoomId} />
-                      </CardContent>
-                    </Card>
+                    <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+                      <ChatMessages roomId={selectedRoomId} />
+                    </div>
                   </div>
                 ) : (
                   /* Vista normale: Chat sopra, input sotto */
-                  <div className="flex flex-col h-full overflow-hidden min-h-0">
+                  <div className="flex flex-col flex-1 overflow-hidden min-h-0">
                     {/* Area messaggi - SOLO questa scrolla */}
-                    <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
-                      <CardContent className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
-                        <ChatMessages roomId={selectedRoomId} />
-                      </CardContent>
-                    </Card>
+                    <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+                      <ChatMessages roomId={selectedRoomId} />
+                    </div>
                     
                     {/* Input messaggi - fisso in basso naturalmente */}
                     <MessageInputWithAttachments 

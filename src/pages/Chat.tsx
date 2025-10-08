@@ -1007,12 +1007,12 @@ const Chat = () => {
 
           {/* Toggle Button - Solo mobile */}
           {shouldHideHeader && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="absolute left-1/2 transform -translate-x-1/2 z-50" style={{ bottom: 'calc(1rem - 8px)' }}>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm border-2 border-primary/30 hover:border-primary shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:shadow-primary/20 transition-all duration-300"
               >
                 <ArrowUpDown className="h-5 w-5 text-primary" />
               </Button>

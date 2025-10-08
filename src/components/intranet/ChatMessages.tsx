@@ -139,7 +139,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <div className="space-y-3">
+    <>
       {displayMessages.map((message) => {
         const isOwnMessage = message.user_id === currentUserId;
         return (
@@ -213,7 +213,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
           </div>
         );
       })}
-      <div ref={messagesEndRef} />
-    </div>
+      {!isLayoutInverted && <div ref={messagesEndRef} />}
+    </>
   );
 };

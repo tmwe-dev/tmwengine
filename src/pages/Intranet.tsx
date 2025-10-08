@@ -92,7 +92,7 @@ const Intranet = () => {
             setMobileSheetOpen(open);
           }}>
             <SheetPortal>
-              <SheetContent side="left" className="w-80 p-4 relative z-[9999]">
+              <SheetContent side="left" className="w-[90vw] max-w-sm p-4 relative z-[9999]">
                 {/* Numero sezione */}
                 <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                   2

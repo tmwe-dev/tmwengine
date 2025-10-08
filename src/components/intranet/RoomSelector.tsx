@@ -148,11 +148,11 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Stanze Chat</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base md:text-lg font-semibold">Stanze Chat</h2>
         <Button size="sm" variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuova Stanza
+          <Plus className="h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">Nuova Stanza</span>
         </Button>
       </div>
 
@@ -160,24 +160,24 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         {rooms.map((room) => (
           <Card
             key={room.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedRoomId === room.id ? 'border-primary' : ''
+            className={`cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${
+              selectedRoomId === room.id ? 'border-primary bg-primary/5' : ''
             }`}
             onClick={() => onRoomSelect(room.id)}
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  {room.name}
+            <CardHeader className="p-3 md:pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm md:text-base flex items-center gap-2 min-w-0 flex-1">
+                  <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{room.name}</span>
                 </CardTitle>
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1 flex-shrink-0">
                   <Users className="h-3 w-3" />
-                  {room.member_count}
+                  <span className="text-xs">{room.member_count}</span>
                 </Badge>
               </div>
               {room.description && (
-                <CardDescription className="text-sm">
+                <CardDescription className="text-xs md:text-sm line-clamp-2">
                   {room.description}
                 </CardDescription>
               )}
@@ -186,7 +186,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         ))}
 
         {rooms.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-sm md:text-base text-muted-foreground">
             Nessuna stanza disponibile. Crea la prima stanza!
           </div>
         )}
@@ -194,28 +194,29 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
       {/* Create Room Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>Crea Nuova Stanza</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg md:text-xl">Crea Nuova Stanza</DialogTitle>
+            <DialogDescription className="text-sm">
               Crea una nuova stanza di chat per collaborare con il tuo team
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="room-name">Nome Stanza *</Label>
+              <Label htmlFor="room-name" className="text-sm">Nome Stanza *</Label>
               <Input
                 id="room-name"
                 placeholder="Es. Marketing Team"
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
                 disabled={creating}
+                className="text-sm md:text-base"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="room-description">Descrizione</Label>
+              <Label htmlFor="room-description" className="text-sm">Descrizione</Label>
               <Textarea
                 id="room-description"
                 placeholder="Descrivi lo scopo di questa stanza..."
@@ -223,19 +224,25 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
                 onChange={(e) => setNewRoomDescription(e.target.value)}
                 disabled={creating}
                 rows={3}
+                className="text-sm md:text-base resize-none"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={creating}
+              className="w-full sm:w-auto"
             >
               Annulla
             </Button>
-            <Button onClick={handleCreateRoom} disabled={creating}>
+            <Button 
+              onClick={handleCreateRoom} 
+              disabled={creating}
+              className="w-full sm:w-auto"
+            >
               {creating ? 'Creazione...' : 'Crea Stanza'}
             </Button>
           </DialogFooter>

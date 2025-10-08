@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { TranslateButton } from './TranslateButton';
@@ -33,7 +32,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
   
   // Auto-speaker per lettura automatica messaggi
@@ -43,6 +42,12 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
     // Salva l'ID della stanza corrente nel sessionStorage per il TranslateButton
     sessionStorage.setItem('current_room_id', roomId);
   }, [roomId]);
+
+  useEffect(() => {
+    if (!isLayoutInverted) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLayoutInverted]);
 
   useEffect(() => {
     loadMessages();
@@ -57,9 +62,6 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
         filter: `room_id=eq.${roomId}`
       }, (payload) => {
         setMessages(prev => [...prev, payload.new as Message]);
-        if (!isLayoutInverted) {
-          setTimeout(() => scrollToBottom(), 100);
-        }
       })
       .subscribe();
 
@@ -107,16 +109,6 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
         });
         setUserProfiles(profileMap);
       }
-      
-      if (!isLayoutInverted) {
-        setTimeout(() => scrollToBottom(), 100);
-      }
-    }
-  };
-
-  const scrollToBottom = () => {
-    if (viewportRef.current && !isLayoutInverted) {
-      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
   };
 
@@ -147,8 +139,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-      <div className="space-y-4 p-4">
+    <div className="h-full w-full overflow-y-auto p-4">
+      <div className="space-y-4">
         {displayMessages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
@@ -222,7 +214,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             </div>
           );
         })}
+        <div ref={messagesEndRef} />
       </div>
-    </ScrollArea>
+    </div>
   );
 };

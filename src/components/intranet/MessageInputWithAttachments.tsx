@@ -249,25 +249,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
         )}
 
         <div className="flex flex-col gap-3">
-          {/* Input testo centrato */}
-          <div className="flex justify-center">
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
-              disabled={isSending}
-              rows={1}
-            />
-          </div>
-
-          {/* Icone e pulsante invio */}
+          {/* Icone e pulsante invio in alto */}
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
               <input
@@ -351,6 +333,24 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
             >
               <Send className="h-4 w-4" />
             </Button>
+          </div>
+
+          {/* Input testo sotto le icone */}
+          <div className="flex justify-center">
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Scrivi un messaggio..."
+              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+              disabled={isSending}
+              rows={1}
+            />
           </div>
         </div>
       </div>

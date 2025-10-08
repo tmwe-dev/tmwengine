@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,9 @@ import { Users, Menu, ArrowLeft, Maximize2 } from 'lucide-react';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
-  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedRoomId = searchParams.get('room') || undefined;
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -96,7 +99,7 @@ const Intranet = () => {
           <SheetContent side="left" className="w-80 p-4">
             <RoomSelector
               onRoomSelect={(roomId) => {
-                setSelectedRoomId(roomId);
+                setSearchParams({ room: roomId });
                 setMobileSheetOpen(false);
               }}
               selectedRoomId={selectedRoomId}
@@ -109,7 +112,7 @@ const Intranet = () => {
           <Card className="h-full">
             <div className="p-4">
               <RoomSelector
-                onRoomSelect={setSelectedRoomId}
+                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                 selectedRoomId={selectedRoomId}
               />
             </div>
@@ -128,7 +131,7 @@ const Intranet = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setSelectedRoomId(undefined)}
+                    onClick={() => setSearchParams({})}
                     title="Torna alle conversazioni"
                   >
                     <ArrowLeft className="h-4 w-4" />

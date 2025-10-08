@@ -192,7 +192,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
   };
 
   return (
-    <div className="p-4 border-t flex flex-col items-center max-w-4xl mx-auto w-full">
+    <div className="p-4 border-t">
       {/* AI Suggestions */}
       <div className="mb-2">
         <AISuggestions 

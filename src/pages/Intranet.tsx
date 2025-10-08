@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -8,13 +10,16 @@ import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users } from 'lucide-react';
+import { Users, Menu } from 'lucide-react';
 
 const Intranet = () => {
+  const isMobile = useIsMobile();
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
 
   useEffect(() => {
@@ -76,28 +81,52 @@ const Intranet = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 h-screen flex gap-4">
-      {/* Sidebar con lista stanze */}
-      <div className="w-80 flex-shrink-0">
-        <Card className="h-full">
-          <div className="p-4">
+    <div className="h-full flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4">
+      {/* Mobile: Sheet con lista stanze */}
+      {isMobile ? (
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80 p-4">
             <RoomSelector
-              onRoomSelect={setSelectedRoomId}
+              onRoomSelect={(roomId) => {
+                setSelectedRoomId(roomId);
+                setMobileSheetOpen(false);
+              }}
               selectedRoomId={selectedRoomId}
             />
-          </div>
-        </Card>
-      </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        /* Desktop/Tablet: Sidebar fissa */
+        <div className="w-full md:w-80 flex-shrink-0">
+          <Card className="h-full">
+            <div className="p-4">
+              <RoomSelector
+                onRoomSelect={setSelectedRoomId}
+                selectedRoomId={selectedRoomId}
+              />
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Area chat principale */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <Card className="flex-1 flex flex-col">
           {selectedRoomId ? (
             <>
-              {/* Header con utenti online e AI settings */}
-              <div className="p-4 border-b flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl font-semibold">{selectedRoomName}</h1>
+              {/* Header responsive con utenti online e AI settings */}
+              <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
                   {isCreatorOrAdmin && (
                     <RoomAIPromptManager 
                       roomId={selectedRoomId} 
@@ -106,20 +135,40 @@ const Intranet = () => {
                   )}
                   <UserLanguageSettings />
                 </div>
-                <OnlineUsers users={onlineUsers} />
+                
+                {/* Badge utenti online - nascosto su mobile molto piccolo */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    <span>{onlineUsers.length}</span>
+                  </Badge>
+                  <OnlineUsers users={onlineUsers} />
+                </div>
               </div>
 
-              {/* Messaggi */}
-              <ChatMessages roomId={selectedRoomId} />
+              {/* Area messaggi */}
+              <div className="flex-1 overflow-hidden">
+                <ChatMessages roomId={selectedRoomId} />
+              </div>
 
-              {/* Input messaggio */}
-              <MessageInputWithAttachments roomId={selectedRoomId} />
+              {/* Input messaggi */}
+              <div className="p-3 md:p-4 border-t">
+                <MessageInputWithAttachments roomId={selectedRoomId} />
+              </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Seleziona una stanza per iniziare a chattare</p>
+                <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
+                <h2 className="text-lg md:text-xl font-semibold mb-2">
+                  Seleziona una stanza
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground">
+                  {isMobile 
+                    ? 'Tocca il pulsante del menu per scegliere una stanza'
+                    : 'Scegli una stanza dalla lista per iniziare a chattare'
+                  }
+                </p>
               </div>
             </div>
           )}

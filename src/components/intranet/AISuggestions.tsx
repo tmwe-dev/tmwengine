@@ -108,7 +108,7 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
       )}
 
       {isVisible && suggestions.length > 0 && (
-        <Card className="absolute bottom-full left-0 right-0 mb-2 p-4 space-y-2 max-h-64 overflow-y-auto">
+        <Card className="absolute bottom-full left-0 right-0 px-4 space-y-2 max-h-64 overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />

@@ -188,7 +188,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
   };
 
   if (loading) {
-    return <div className="p-4 text-center text-muted-foreground">Caricamento...</div>;
+    return <div className="px-4 text-center text-muted-foreground">Caricamento...</div>;
   }
 
   return (
@@ -210,7 +210,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
             }`}
             onClick={() => onRoomSelect(room.id)}
           >
-            <CardHeader className="pb-3">
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />

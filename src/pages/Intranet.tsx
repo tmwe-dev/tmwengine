@@ -89,7 +89,7 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
+            <SheetContent side="left" className="w-[90vw] max-w-sm px-4 bg-background">
               {/* Numero sezione */}
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                 2

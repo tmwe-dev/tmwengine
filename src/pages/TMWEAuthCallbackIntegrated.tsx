@@ -4,6 +4,7 @@ import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { setApiConfigToDB, profileApi } from '@/lib/tmwe-api-integrated';
 
 const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
@@ -91,38 +92,25 @@ const TMWEAuthCallbackIntegrated = () => {
       addDetail(`✅ Access token obtenido (email: ${email || 'unknown'})`);
       addDetail(`⏰ Token expira en: ${expires_in ? `${expires_in}s` : 'unknown'}`);
 
-      // 5. Guardar tokens en sessionStorage
-      sessionStorage.setItem('tmwe_access_token', access_token);
-      if (refresh_token) {
-        sessionStorage.setItem('tmwe_refresh_token', refresh_token);
-      }
-      if (expires_in) {
-        const expiresAt = Date.now() + (expires_in * 1000);
-        sessionStorage.setItem('tmwe_token_expires_at', expiresAt.toString());
-      }
-      if (email) {
-        sessionStorage.setItem('tmwe_user_email', email);
-      }
-
-      addDetail('👤 Obteniendo perfil del usuario (/get_my_profile)...');
-
-      // 6. Obtener perfil del usuario usando el access_token
-      const profileResponse = await fetch('https://findair.it/erp/tmwe_json/get_my_profile', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          handler: 'get_my_profile'
-        }),
+      // 5. Guardar tokens en la base de datos
+      addDetail('💾 Guardando credenciales en base de datos...');
+      
+      await setApiConfigToDB({
+        email: email,
+        accessToken: access_token,
+        refreshToken: refresh_token,
+        expiresAt: expires_in ? Date.now() + (expires_in * 1000) : undefined,
+        clientId: clientId,
+        clientSecret: clientSecret,
       });
 
-      if (!profileResponse.ok) {
-        throw new Error(`Failed to fetch profile: ${profileResponse.statusText}`);
-      }
+      addDetail(`✅ Credenciales guardadas (email: ${email})`);
+      addDetail(`⏰ Token expira en: ${expires_in ? `${expires_in}s` : 'unknown'}`);
 
-      const profileData = await profileResponse.json();
+      // 6. Obtener perfil del usuario usando el API proxy (evita CORS)
+      addDetail('👤 Obteniendo perfil del usuario (/get_my_profile)...');
+      
+      const profileData = await profileApi.getMyProfile();
       
       addDetail(`✅ Perfil obtenido: ${profileData.name || profileData.username}`);
       addDetail(`🏢 Empresa: ${profileData.enterprise_name || 'N/A'}`);

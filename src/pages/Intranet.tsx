@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -149,35 +149,35 @@ const Intranet = () => {
 
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
-                    {/* Input messaggi - sticky in cima al contenitore scroll */}
-                    <div className="sticky top-0 bg-background z-10 border-b flex-shrink-0">
-                      <MessageInputWithAttachments 
-                        roomId={selectedRoomId} 
-                        isCreatorOrAdmin={isCreatorOrAdmin}
-                      />
-                    </div>
-
-                    {/* Area messaggi espansa */}
-                    <div className="flex-1 min-h-0">
-                      <ChatMessages roomId={selectedRoomId} />
-                    </div>
+                  <div className="flex flex-col-reverse h-full overflow-hidden min-h-0">
+                    {/* Input messaggi - fisso in alto grazie a flex-col-reverse */}
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
+                    
+                    {/* Area messaggi - SOLO questa scrolla */}
+                    <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+                      <CardContent className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+                        <ChatMessages roomId={selectedRoomId} />
+                      </CardContent>
+                    </Card>
                   </div>
                 ) : (
                   /* Vista normale: Chat sopra, input sotto */
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
-                    {/* Area messaggi */}
-                    <div className="flex-1 min-h-0">
-                      <ChatMessages roomId={selectedRoomId} />
-                    </div>
-
-                    {/* Input messaggi - sticky in fondo al contenitore scroll */}
-                    <div className="sticky bottom-0 bg-background z-10 border-t flex-shrink-0">
-                      <MessageInputWithAttachments 
-                        roomId={selectedRoomId} 
-                        isCreatorOrAdmin={isCreatorOrAdmin}
-                      />
-                    </div>
+                  <div className="flex flex-col h-full overflow-hidden min-h-0">
+                    {/* Area messaggi - SOLO questa scrolla */}
+                    <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+                      <CardContent className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+                        <ChatMessages roomId={selectedRoomId} />
+                      </CardContent>
+                    </Card>
+                    
+                    {/* Input messaggi - fisso in basso naturalmente */}
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
                   </div>
                 )}
               </>

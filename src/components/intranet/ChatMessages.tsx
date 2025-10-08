@@ -110,7 +110,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                   {getUserInitials(message.user_id)}
                 </AvatarFallback>
               </Avatar>
-              <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} max-w-[70%]`}>
+              <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
                 <div
                   className={`rounded-lg px-4 py-2 ${
                     isOwnMessage
@@ -122,7 +122,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                     <img 
                       src={message.attachment_url} 
                       alt="Image" 
-                      className="max-w-xs rounded-lg mb-2 cursor-pointer"
+                      className="w-full rounded-lg mb-2 cursor-pointer"
                       onClick={() => window.open(message.attachment_url, '_blank')}
                     />
                   )}
@@ -130,7 +130,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                   {message.message_type === 'audio' && message.attachment_url && (
                     <audio 
                       controls 
-                      className="max-w-xs mb-2"
+                      className="w-full mb-2"
                       src={message.attachment_url}
                     />
                   )}

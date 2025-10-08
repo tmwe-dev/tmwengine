@@ -84,7 +84,7 @@ const Intranet = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden pb-[140px] md:pb-4">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -124,7 +124,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3

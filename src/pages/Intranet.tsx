@@ -199,8 +199,16 @@ const Intranet = () => {
 
       {/* Footer fisso a piè di pagina */}
       {selectedRoomId && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t">
-          <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
+          <div className="flex items-center gap-2">
+            {isMobile && (
+              <Menu 
+                className="h-6 w-6 cursor-pointer text-foreground"
+                onClick={() => setMobileSheetOpen(true)}
+              />
+            )}
+            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+          </div>
           <div className="flex justify-center">
             <Button
               size="icon"

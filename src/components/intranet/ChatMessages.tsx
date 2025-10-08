@@ -139,13 +139,13 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
-    <>
+    <div className="space-y-3">
       {displayMessages.map((message) => {
         const isOwnMessage = message.user_id === currentUserId;
         return (
           <div
             key={message.id}
-            className={`flex gap-3 mb-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
+            className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
           >
             <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
               <div
@@ -214,6 +214,6 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
         );
       })}
       <div ref={messagesEndRef} />
-    </>
+    </div>
   );
 };

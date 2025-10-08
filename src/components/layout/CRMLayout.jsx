@@ -144,8 +144,6 @@ const CRMLayout = ({ children }) => {
         </button>
 
         <div className="flex items-center gap-2">
-          <AIGuideDialog />
-          
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (
             <Button

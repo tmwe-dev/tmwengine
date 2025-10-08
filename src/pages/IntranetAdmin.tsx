@@ -1,18 +1,13 @@
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, Shield, Users, MessageSquare, Sparkles } from 'lucide-react';
+import { Shield, Users, MessageSquare, Sparkles } from 'lucide-react';
 import { AdminRoomManager } from '@/components/intranet/admin/AdminRoomManager';
 import { AdminUserManager } from '@/components/intranet/admin/AdminUserManager';
 import { AdminGlobalPrompt } from '@/components/intranet/admin/AdminGlobalPrompt';
 import { AdminStats } from '@/components/intranet/admin/AdminStats';
-import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 
 const IntranetAdmin = () => {
-  // SVILUPPO: Controlli di autorizzazione disabilitati
-  console.log('🚧 Admin panel in modalità sviluppo - accesso libero');
+  console.log('🚧 MODALITÀ SVILUPPO: Accesso libero alla dashboard Admin');
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

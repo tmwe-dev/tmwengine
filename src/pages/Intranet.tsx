@@ -88,15 +88,6 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="fixed bottom-20 left-4 z-50 h-12 w-12 rounded-full shadow-lg"
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4">
               <RoomSelector
                 onRoomSelect={(roomId) => {

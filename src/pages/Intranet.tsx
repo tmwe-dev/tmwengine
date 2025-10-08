@@ -11,7 +11,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, Maximize2 } from 'lucide-react';
+import { Users, Menu, Maximize2, ChevronUp, ChevronDown } from 'lucide-react';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -150,17 +150,10 @@ const Intranet = () => {
                 /* Vista espansa: Input in alto, chat sotto */
                 <>
                   {/* Input messaggi in alto */}
-                  <div className="p-3 md:p-4 border-b">
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isFullscreenMode={isFullscreenMode}
-                      onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
-                    <div className="text-center mt-3">
-                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                    </div>
-                  </div>
+                  <MessageInputWithAttachments 
+                    roomId={selectedRoomId} 
+                    isCreatorOrAdmin={isCreatorOrAdmin}
+                  />
 
                   {/* Area messaggi espansa */}
                   <div className="flex-1 overflow-hidden">
@@ -176,19 +169,27 @@ const Intranet = () => {
                   </div>
 
                   {/* Input messaggi */}
-                  <div className="p-3 md:p-4 border-t">
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isFullscreenMode={isFullscreenMode}
-                      onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
-                    <div className="text-center mt-3">
-                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                    </div>
-                  </div>
+                  <MessageInputWithAttachments 
+                    roomId={selectedRoomId} 
+                    isCreatorOrAdmin={isCreatorOrAdmin}
+                  />
                 </>
               )}
+
+              {/* Footer fisso con nome stanza e chevron */}
+              <div className="border-t bg-muted/30">
+                <div className="p-3 flex items-center justify-center gap-4">
+                  <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                    title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                  >
+                    {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">

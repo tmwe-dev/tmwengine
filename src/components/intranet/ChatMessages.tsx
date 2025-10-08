@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { TranslateButton } from './TranslateButton';
@@ -144,12 +144,10 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
     };
   };
 
-  const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
-
   return (
-    <ScrollArea className="h-full p-4">
+    <CardContent className={`flex-1 px-3 py-3 min-h-0 overflow-y-auto ${isLayoutInverted ? 'flex flex-col-reverse' : ''}`}>
       <div className="space-y-4">
-        {displayMessages.map((message) => {
+        {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
             <div
@@ -222,8 +220,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             </div>
           );
         })}
-        <div ref={scrollRef} />
+        {!isLayoutInverted && <div ref={scrollRef} />}
       </div>
-    </ScrollArea>
+    </CardContent>
   );
 };

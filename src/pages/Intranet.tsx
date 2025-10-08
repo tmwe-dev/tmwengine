@@ -126,52 +126,43 @@ const Intranet = () => {
 
         {/* Area chat principale */}
         <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
-          {/* Numero sezione */}
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-            3
-          </div>
-          
           {selectedRoomId ? (
             <>
-              {/* Messaggi - flex-1 per espandersi */}
-              <div className="flex-1 overflow-hidden min-h-0">
+              {/* Messaggi */}
+              <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
-              </div>
+              </Card>
               
-              {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
-              <div className="flex-shrink-0 bg-background border-t p-2">
-                <MessageInputWithAttachments 
-                  roomId={selectedRoomId} 
-                />
-              </div>
+              {/* Input messaggi */}
+              <Card className="flex-shrink-0">
+                <CardContent className="p-3">
+                  <MessageInputWithAttachments 
+                    roomId={selectedRoomId} 
+                  />
+                </CardContent>
+              </Card>
 
-              {/* Footer - solo mobile - flex-shrink-0 */}
+              {/* Bottone inversione - posizionato al centro sotto i messaggi */}
+              <Button
+                size="icon"
+                variant="outline"
+                className="absolute left-1/2 transform -translate-x-1/2 z-50 bg-background shadow-lg"
+                style={{ bottom: 'calc(1rem - 8px)' }}
+                onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+              >
+                {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+
+              {/* Footer - solo mobile */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
-                  {/* Numero sezione */}
-                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                    5
-                  </div>
+                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background">
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
-                      onClick={() => {
-                        console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
-                        setMobileSheetOpen(true);
-                        console.log('🟢 setMobileSheetOpen(true) chiamato');
-                      }}
+                      onClick={() => setMobileSheetOpen(true)}
                     />
-                    <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                  </div>
-                  <div className="flex justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                      title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-                    >
-                      {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </Button>
+                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   </div>
                   <div />
                 </div>

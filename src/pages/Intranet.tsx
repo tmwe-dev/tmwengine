@@ -142,8 +142,8 @@ const Intranet = () => {
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
                   <>
-                    {/* Input messaggi in alto - con bordo inferiore */}
-                    <div className="border-b">
+                    {/* Input messaggi in alto - con bordo inferiore e padding ridotto */}
+                    <div className="border-b py-2">
                       <MessageInputWithAttachments 
                         roomId={selectedRoomId} 
                         isCreatorOrAdmin={isCreatorOrAdmin}

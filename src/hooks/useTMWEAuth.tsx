@@ -74,25 +74,33 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
       if (data?.supabaseUserId && data?.magicLink) {
         console.log('✅ Sincronizzazione completata con user_id:', data.supabaseUserId);
-        console.log('🔐 Autenticazione con magic link...');
+        console.log('🔐 Estrazione token dal magic link...');
         
-        // Usa il magic link per autenticare l'utente
-        const { data: sessionData, error: authError } = await supabase.auth.verifyOtp({
-          token_hash: data.magicLink.split('#access_token=')[1]?.split('&')[0] || '',
-          type: 'magiclink'
+        // Estrai access_token e refresh_token dal magic link
+        const url = new URL(data.magicLink);
+        const accessToken = url.searchParams.get('access_token') || url.hash.split('access_token=')[1]?.split('&')[0];
+        const refreshToken = url.searchParams.get('refresh_token') || url.hash.split('refresh_token=')[1]?.split('&')[0];
+
+        if (!accessToken || !refreshToken) {
+          console.error('❌ Token non trovati nel magic link');
+          return null;
+        }
+
+        console.log('✅ Token estratti, creazione sessione...');
+        
+        // Crea la sessione con i token
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
         });
 
-        if (authError) {
-          console.error('❌ Errore autenticazione:', authError);
-          
-          // Fallback: prova a navigare direttamente al magic link
-          console.log('🔄 Tentativo fallback con magic link...');
-          window.location.href = data.magicLink;
+        if (sessionError) {
+          console.error('❌ Errore creazione sessione:', sessionError);
           return null;
         }
 
         if (sessionData.session) {
-          console.log('✅ Sessione Supabase creata');
+          console.log('✅ Sessione Supabase creata con successo!');
           setSupabaseUserId(data.supabaseUserId);
           sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
           console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);

@@ -89,10 +89,13 @@ const Intranet = () => {
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetTrigger asChild>
-              <Menu 
-                className="fixed bottom-20 left-4 z-50 h-8 w-8 cursor-pointer text-foreground"
-                onClick={() => setMobileSheetOpen(true)}
-              />
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="fixed bottom-20 left-4 z-50 h-12 w-12 rounded-full shadow-lg"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4">
               <RoomSelector

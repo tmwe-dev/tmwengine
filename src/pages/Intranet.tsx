@@ -168,7 +168,11 @@ const Intranet = () => {
                 <>
                   {/* Input messaggi in alto */}
                   <div className="p-3 md:p-4 border-b">
-                    <MessageInputWithAttachments roomId={selectedRoomId} />
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isFullscreenMode={isFullscreenMode}
+                      onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
+                    />
                   </div>
 
                   {/* Area messaggi espansa */}
@@ -186,7 +190,11 @@ const Intranet = () => {
 
                   {/* Input messaggi */}
                   <div className="p-3 md:p-4 border-t">
-                    <MessageInputWithAttachments roomId={selectedRoomId} />
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isFullscreenMode={isFullscreenMode}
+                      onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
+                    />
                   </div>
                 </>
               )}

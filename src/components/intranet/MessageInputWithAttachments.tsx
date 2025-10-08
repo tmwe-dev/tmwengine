@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
+import { Paperclip, Image, Smile, Mic, Send, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,11 +13,13 @@ interface FileAttachment {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
+  isFullscreenMode?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, onToggleFullscreen }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -338,6 +340,19 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
               <Mic className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Chevron toggle al centro */}
+          {onToggleFullscreen && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onToggleFullscreen}
+              title={isFullscreenMode ? "Input sotto" : "Input sopra"}
+              disabled={isSending}
+            >
+              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+          )}
 
           {/* Pulsante invio */}
           <Button

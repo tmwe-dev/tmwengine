@@ -196,79 +196,78 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
   };
 
   return (
-    <div className="p-4 border-t">
-      {/* AI Suggestions */}
-      <div className="mb-2">
-        <AISuggestions 
-          roomId={roomId} 
-          onSelectSuggestion={handleSuggestionSelect}
-        />
-      </div>
-
-      {/* Preview allegati */}
-      {attachments.length > 0 && (
-        <div className="mb-3 flex gap-2 flex-wrap">
-          {attachments.map((attachment, index) => (
-            <div key={index} className="relative group">
-              {attachment.preview ? (
-                <div className="relative">
-                  <img 
-                    src={attachment.preview} 
-                    alt="Preview" 
-                    className="h-20 w-20 object-cover rounded-lg border"
-                  />
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeAttachment(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border">
-                  <Paperclip className="h-4 w-4" />
-                  <span className="text-sm max-w-[150px] truncate">
-                    {attachment.file.name}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-5 w-5 ml-2"
-                    onClick={() => removeAttachment(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-3">
-        {/* Input testo centrato */}
-        <div className="flex justify-center">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="Scrivi un messaggio..."
-            className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
-            disabled={isSending}
-            rows={1}
+    <>
+      <div className="p-4 border-t">
+        {/* AI Suggestions */}
+        <div className="mb-2">
+          <AISuggestions 
+            roomId={roomId} 
+            onSelectSuggestion={handleSuggestionSelect}
           />
         </div>
 
-        {/* Icone e pulsante invio */}
-        <div className="flex flex-col gap-2">
-          {/* Prima riga: File, Image, Emoji, Mic a sinistra, Send a destra */}
+        {/* Preview allegati */}
+        {attachments.length > 0 && (
+          <div className="mb-3 flex gap-2 flex-wrap">
+            {attachments.map((attachment, index) => (
+              <div key={index} className="relative group">
+                {attachment.preview ? (
+                  <div className="relative">
+                    <img 
+                      src={attachment.preview} 
+                      alt="Preview" 
+                      className="h-20 w-20 object-cover rounded-lg border"
+                    />
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeAttachment(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border">
+                    <Paperclip className="h-4 w-4" />
+                    <span className="text-sm max-w-[150px] truncate">
+                      {attachment.file.name}
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 ml-2"
+                      onClick={() => removeAttachment(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {/* Input testo centrato */}
+          <div className="flex justify-center">
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Scrivi un messaggio..."
+              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+              disabled={isSending}
+              rows={1}
+            />
+          </div>
+
+          {/* Icone e pulsante invio */}
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
               <input
@@ -353,37 +352,35 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
               <Send className="h-4 w-4" />
             </Button>
           </div>
-
-          {/* Seconda riga: Settings al centro e Chevron */}
-          <div className="flex items-center justify-center gap-2">
-            {/* Menu settings che contiene AIGuide, RoomAI e Language */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  title="Impostazioni"
-                  disabled={isSending}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto">
-                <div className="flex gap-2">
-                  <AIGuideDialog />
-                  {isCreatorOrAdmin && (
-                    <RoomAIPromptManager 
-                      roomId={roomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
-                  )}
-                  <UserLanguageSettings />
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
         </div>
       </div>
-    </div>
+
+      {/* Bottone Settings fisso in basso a destra */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Impostazioni"
+            disabled={isSending}
+            className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto mb-2">
+          <div className="flex gap-2">
+            <AIGuideDialog />
+            {isCreatorOrAdmin && (
+              <RoomAIPromptManager 
+                roomId={roomId} 
+                isCreatorOrAdmin={isCreatorOrAdmin}
+              />
+            )}
+            <UserLanguageSettings />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
   );
 };

@@ -53,13 +53,18 @@ serve(async (req) => {
     }
 
     let supabaseUser = existingUsers.users.find(u => u.email === tmweEmail);
+    let tempPassword: string | null = null;
 
     // 2. Se non esiste, crea nuovo utente Supabase
     if (!supabaseUser) {
       console.log(`➕ Creazione nuovo utente Supabase per: ${tmweEmail}`);
       
+      // Genera password temporanea casuale
+      tempPassword = crypto.randomUUID() + crypto.randomUUID();
+      
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: tmweEmail,
+        password: tempPassword,
         email_confirm: true,
         user_metadata: {
           tmwe_oauth: true,
@@ -97,32 +102,16 @@ serve(async (req) => {
     }
 
     console.log(`✅ Profilo sincronizzato per user_id: ${supabaseUser.id}`);
-
-    // 4. Genera magic link per autenticazione automatica
-    console.log('🔐 Generazione magic link per autenticazione...');
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: tmweEmail,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
-      }
-    });
-
-    if (magicLinkError) {
-      console.error('Errore generazione magic link:', magicLinkError);
-      throw magicLinkError;
-    }
-
-    console.log(`✅ Magic link generato`);
     console.log(`✅ Sincronizzazione completata per user_id: ${supabaseUser.id}`);
 
-    // Ritorna i dati necessari per l'autenticazione
+    // Ritorna i dati per l'autenticazione
     return new Response(
       JSON.stringify({
         success: true,
         supabaseUserId: supabaseUser.id,
         profile: profile,
-        magicLink: magicLinkData.properties.action_link,
+        email: tmweEmail,
+        tempPassword: tempPassword, // Solo se nuovo utente
         message: 'Sincronizzazione completata con successo'
       }),
       {

@@ -72,42 +72,34 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (data?.supabaseUserId && data?.magicLink) {
+      if (data?.supabaseUserId) {
         console.log('✅ Sincronizzazione completata con user_id:', data.supabaseUserId);
-        console.log('🔐 Estrazione token dal magic link...');
         
-        // Estrai access_token e refresh_token dal magic link
-        const url = new URL(data.magicLink);
-        const accessToken = url.searchParams.get('access_token') || url.hash.split('access_token=')[1]?.split('&')[0];
-        const refreshToken = url.searchParams.get('refresh_token') || url.hash.split('refresh_token=')[1]?.split('&')[0];
+        // Se c'è una password temporanea (nuovo utente), fai login
+        if (data.tempPassword) {
+          console.log('🔐 Login con password temporanea...');
+          const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.tempPassword
+          });
 
-        if (!accessToken || !refreshToken) {
-          console.error('❌ Token non trovati nel magic link');
-          return null;
+          if (signInError) {
+            console.error('❌ Errore login:', signInError);
+            return null;
+          }
+
+          if (authData.session) {
+            console.log('✅ Sessione Supabase creata con successo!');
+          }
         }
-
-        console.log('✅ Token estratti, creazione sessione...');
         
-        // Crea la sessione con i token
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
-
-        if (sessionError) {
-          console.error('❌ Errore creazione sessione:', sessionError);
-          return null;
-        }
-
-        if (sessionData.session) {
-          console.log('✅ Sessione Supabase creata con successo!');
-          setSupabaseUserId(data.supabaseUserId);
-          sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
-          console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
-          return data.supabaseUserId;
-        }
+        setSupabaseUserId(data.supabaseUserId);
+        sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
+        console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
+        
+        return data.supabaseUserId;
       } else {
-        console.error('⚠️ Risposta senza supabaseUserId o magicLink:', data);
+        console.error('⚠️ Risposta senza supabaseUserId:', data);
       }
 
       return null;

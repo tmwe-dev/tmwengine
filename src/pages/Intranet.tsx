@@ -22,7 +22,7 @@ const Intranet = () => {
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const [isFullscreenMode, setIsFullscreenMode] = useState(false);
+  const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
 
   useEffect(() => {
@@ -125,14 +125,14 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className={`flex-1 flex flex-col overflow-hidden relative ${isLayoutInverted ? 'flex-col-reverse' : ''}`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
           </div>
           
           {selectedRoomId ? (
-            <ChatMessages roomId={selectedRoomId} />
+            <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">
@@ -209,10 +209,10 @@ const Intranet = () => {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-              title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+              onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+              title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
             >
-              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
           </div>
           <div />

@@ -26,9 +26,10 @@ interface UserProfile {
 
 interface ChatMessagesProps {
   roomId: string;
+  isLayoutInverted?: boolean;
 }
 
-export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
@@ -56,7 +57,9 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
         filter: `room_id=eq.${roomId}`
       }, (payload) => {
         setMessages(prev => [...prev, payload.new as Message]);
-        setTimeout(() => scrollToBottom(), 100);
+        if (!isLayoutInverted) {
+          setTimeout(() => scrollToBottom(), 100);
+        }
       })
       .subscribe();
 
@@ -105,12 +108,14 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
         setUserProfiles(profileMap);
       }
       
-      setTimeout(() => scrollToBottom(), 100);
+      if (!isLayoutInverted) {
+        setTimeout(() => scrollToBottom(), 100);
+      }
     }
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
+    if (scrollRef.current && !isLayoutInverted) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -139,10 +144,12 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
     };
   };
 
+  const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
+
   return (
     <ScrollArea className="h-full p-4">
       <div className="space-y-4">
-        {messages.map((message) => {
+        {displayMessages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
             <div

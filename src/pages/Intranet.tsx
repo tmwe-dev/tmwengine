@@ -178,7 +178,7 @@ const Intranet = () => {
 
               {/* Footer fisso con nome stanza e chevron */}
               <div className="border-t bg-muted/30">
-                <div className="p-3 flex items-center justify-center gap-4">
+                <div className="p-3 flex items-center justify-between">
                   <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   <Button
                     size="icon"

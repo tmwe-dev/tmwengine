@@ -98,72 +98,58 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
     setCreating(true);
     try {
-      // Verifica sessione Supabase
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Prima prova sessionStorage (per utenti TMWE)
+      let userId = sessionStorage.getItem('supabase_user_id');
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
+      // Se non c'è in sessionStorage, prova la sessione Supabase
+      if (!userId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        userId = session?.user?.id;
       }
       
-      if (!session?.user) {
-        // Prova a recuperare da sessionStorage come fallback
-        const supabaseUserId = sessionStorage.getItem('tmwe_supabase_user_id');
-        
-        if (!supabaseUserId) {
-          toast({
-            title: 'Errore',
-            description: 'Sessione non trovata. Riprova ad accedere.',
-            variant: 'destructive'
-          });
-          return;
-        }
-
-        // Usa l'ID recuperato da sessionStorage
-        const { data: newRoom, error: roomError } = await supabase
-          .from('intranet_rooms')
-          .insert({
-            name: newRoomName.trim(),
-            description: newRoomDescription.trim(),
-            created_by: supabaseUserId
-          })
-          .select()
-          .single();
-
-        if (roomError) throw roomError;
-
-        // Aggiungi il creatore come membro
-        const { error: memberError } = await supabase
-          .from('intranet_room_members')
-          .insert({
-            room_id: newRoom.id,
-            user_id: supabaseUserId
-          });
-
-        if (memberError) throw memberError;
-      } else {
-        // Usa la sessione Supabase
-        const { data: newRoom, error: roomError } = await supabase
-          .from('intranet_rooms')
-          .insert({
-            name: newRoomName.trim(),
-            description: newRoomDescription.trim(),
-            created_by: session.user.id
-          })
-          .select()
-          .single();
-
-        if (roomError) throw roomError;
-
-        // Aggiungi il creatore come membro
-        const { error: memberError } = await supabase
-          .from('intranet_room_members')
-          .insert({
-            room_id: newRoom.id,
-            user_id: session.user.id
-          });
-
-        if (memberError) throw memberError;
+      if (!userId) {
+        toast({
+          title: 'Errore',
+          description: 'Sessione non trovata. Riprova ad accedere.',
+          variant: 'destructive'
+        });
+        return;
       }
+
+      console.log('🏗️ Creazione stanza con user_id:', userId);
+
+      // Crea la stanza
+      const { data: newRoom, error: roomError } = await supabase
+        .from('intranet_rooms')
+        .insert({
+          name: newRoomName.trim(),
+          description: newRoomDescription.trim(),
+          created_by: userId
+        })
+        .select()
+        .single();
+
+      if (roomError) {
+        console.error('❌ Errore creazione stanza:', roomError);
+        throw roomError;
+      }
+
+      console.log('✅ Stanza creata:', newRoom.id);
+
+      // Aggiungi il creatore come membro
+      const { error: memberError } = await supabase
+        .from('intranet_room_members')
+        .insert({
+          room_id: newRoom.id,
+          user_id: userId
+        });
+
+      if (memberError) {
+        console.error('❌ Errore aggiunta membro:', memberError);
+        throw memberError;
+      }
+
+      console.log('✅ Membro aggiunto alla stanza');
 
       toast({
         title: 'Successo',

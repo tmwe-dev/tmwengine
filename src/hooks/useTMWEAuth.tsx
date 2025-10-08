@@ -35,7 +35,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     const email = sessionStorage.getItem('tmwe_user_email');
     const token = sessionStorage.getItem('tmwe_access_token');
     const storedProfile = sessionStorage.getItem('tmwe_user_profile');
-    const storedSupabaseId = sessionStorage.getItem('tmwe_supabase_user_id');
+    const storedSupabaseId = sessionStorage.getItem('supabase_user_id');
     
     if (email && token) {
       setUserEmail(email);
@@ -70,22 +70,12 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      if (data?.supabaseUserId && data?.session) {
+      if (data?.supabaseUserId) {
         console.log('✅ Sincronizzazione completata:', data.supabaseUserId);
         setSupabaseUserId(data.supabaseUserId);
-        sessionStorage.setItem('tmwe_supabase_user_id', data.supabaseUserId);
         
-        // Imposta la sessione Supabase Auth
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-
-        if (sessionError) {
-          console.error('Errore impostazione sessione:', sessionError);
-        } else {
-          console.log('✅ Sessione Supabase Auth impostata');
-        }
+        // Salva con la chiave corretta usata da RoomSelector e altri componenti
+        sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
         
         return data.supabaseUserId;
       }
@@ -115,7 +105,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('tmwe_user_email');
     sessionStorage.removeItem('tmwe_access_token');
     sessionStorage.removeItem('tmwe_user_profile');
-    sessionStorage.removeItem('tmwe_supabase_user_id');
+    sessionStorage.removeItem('supabase_user_id');
   };
 
   const refreshProfile = async () => {

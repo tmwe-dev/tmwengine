@@ -98,74 +98,15 @@ serve(async (req) => {
 
     console.log(`✅ Profilo sincronizzato per user_id: ${supabaseUser.id}`);
 
-    // 4. Genera token di sessione usando magiclink (più affidabile per i token)
-    console.log('🔐 Generazione token sessione...');
-    
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: tmweEmail,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
-      }
-    });
+    console.log(`✅ Sincronizzazione completata per user_id: ${supabaseUser.id}`);
 
-    if (linkError) {
-      console.error('Errore generazione link:', linkError);
-      throw linkError;
-    }
-
-    // Verifica che abbiamo i token
-    const accessToken = linkData.properties?.access_token;
-    const refreshToken = linkData.properties?.refresh_token;
-    
-    if (!accessToken || !refreshToken) {
-      console.log('⚠️ Link generato ma senza token, usando approccio alternativo');
-      
-      // Alternativa: crea sessione manualmente usando il JWT
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-        userId: supabaseUser.id,
-      });
-      
-      if (sessionError || !sessionData) {
-        throw new Error('Impossibile creare sessione');
-      }
-      
-      console.log('✅ Sessione creata tramite approccio alternativo');
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          supabaseUserId: supabaseUser.id,
-          profile: profile,
-          session: {
-            access_token: sessionData.access_token,
-            refresh_token: sessionData.refresh_token,
-            expires_at: sessionData.expires_at,
-            expires_in: sessionData.expires_in,
-          },
-          message: 'Sincronizzazione e sessione create con successo'
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    console.log('✅ Token generati con successo');
-
+    // Ritorna solo i dati necessari - il client gestirà l'autenticazione
     return new Response(
       JSON.stringify({
         success: true,
         supabaseUserId: supabaseUser.id,
         profile: profile,
-        session: {
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          expires_at: linkData.properties.expires_at,
-          expires_in: linkData.properties.expires_in || 3600,
-        },
-        message: 'Sincronizzazione e sessione create con successo'
+        message: 'Sincronizzazione completata con successo'
       }),
       {
         status: 200,

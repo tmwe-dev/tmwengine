@@ -12,7 +12,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu } from 'lucide-react';
+import { Users, Menu, ArrowLeft, Maximize2 } from 'lucide-react';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -20,6 +20,7 @@ const Intranet = () => {
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [isFullscreenMode, setIsFullscreenMode] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
 
   useEffect(() => {
@@ -126,6 +127,14 @@ const Intranet = () => {
               {/* Header responsive con utenti online e AI settings */}
               <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedRoomId(undefined)}
+                    title="Torna alle conversazioni"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
                   <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
                   {isCreatorOrAdmin && (
                     <RoomAIPromptManager 
@@ -136,8 +145,16 @@ const Intranet = () => {
                   <UserLanguageSettings />
                 </div>
                 
-                {/* Badge utenti online - nascosto su mobile molto piccolo */}
+                {/* Badge utenti online e controlli */}
                 <div className="hidden sm:flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                    title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </Button>
                   <Badge variant="secondary" className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
                     <span>{onlineUsers.length}</span>
@@ -146,15 +163,33 @@ const Intranet = () => {
                 </div>
               </div>
 
-              {/* Area messaggi */}
-              <div className="flex-1 overflow-hidden">
-                <ChatMessages roomId={selectedRoomId} />
-              </div>
+              {isFullscreenMode ? (
+                /* Vista espansa: Input in alto, chat sotto */
+                <>
+                  {/* Input messaggi in alto */}
+                  <div className="p-3 md:p-4 border-b">
+                    <MessageInputWithAttachments roomId={selectedRoomId} />
+                  </div>
 
-              {/* Input messaggi */}
-              <div className="p-3 md:p-4 border-t">
-                <MessageInputWithAttachments roomId={selectedRoomId} />
-              </div>
+                  {/* Area messaggi espansa */}
+                  <div className="flex-1 overflow-hidden">
+                    <ChatMessages roomId={selectedRoomId} />
+                  </div>
+                </>
+              ) : (
+                /* Vista normale: Chat sopra, input sotto */
+                <>
+                  {/* Area messaggi */}
+                  <div className="flex-1 overflow-hidden">
+                    <ChatMessages roomId={selectedRoomId} />
+                  </div>
+
+                  {/* Input messaggi */}
+                  <div className="p-3 md:p-4 border-t">
+                    <MessageInputWithAttachments roomId={selectedRoomId} />
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">

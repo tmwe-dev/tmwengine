@@ -112,10 +112,10 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
               </Avatar>
               <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
                 <div
-                  className={`rounded-lg px-4 py-2 ${
+                  className={`rounded-lg px-4 py-2 border ${
                     isOwnMessage
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                      ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
+                      : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
                   }`}
                 >
                   {message.message_type === 'image' && message.attachment_url && (

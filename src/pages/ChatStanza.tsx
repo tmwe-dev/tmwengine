@@ -197,17 +197,25 @@ const ChatStanza = () => {
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center p-4">
-                    <div className="text-center">
+                    <div className="text-center space-y-4">
                       <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
                       <h2 className="text-lg md:text-xl font-semibold mb-2">
                         Seleziona una stanza
                       </h2>
-                      <p className="text-sm md:text-base text-muted-foreground">
+                      <p className="text-sm md:text-base text-muted-foreground mb-4">
                         {isMobile 
-                          ? 'Tocca il pulsante del menu per scegliere una stanza'
+                          ? 'Tocca il pulsante qui sotto per scegliere una stanza'
                           : 'Scegli una stanza dalla lista per iniziare a chattare'
                         }
                       </p>
+                      {isMobile && (
+                        <SheetTrigger asChild>
+                          <Button size="lg" className="gap-2">
+                            <Menu className="h-5 w-5" />
+                            Apri Menu Stanze
+                          </Button>
+                        </SheetTrigger>
+                      )}
                     </div>
                   </div>
                 )}
@@ -215,11 +223,11 @@ const ChatStanza = () => {
             </div>
           </div>
           
-          {/* Footer fisso a piè di pagina */}
-          {selectedRoomId && (
-            <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t border-white/10 bg-background/80 backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                {isMobile && (
+          {/* Footer fisso a piè di pagina - sempre visibile su mobile */}
+          {isMobile && (
+            <div className="fixed bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-background/80 backdrop-blur-md">
+              <div className="grid grid-cols-3 items-center">
+                <div className="flex items-center gap-2">
                   <SheetTrigger asChild>
                     <Button 
                       variant="outline" 
@@ -229,20 +237,24 @@ const ChatStanza = () => {
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
+                  {selectedRoomName && (
+                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                  )}
+                </div>
+                {selectedRoomId && (
+                  <div className="flex justify-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                      title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                    >
+                      {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </Button>
+                  </div>
                 )}
-                <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                <div />
               </div>
-              <div className="flex justify-center">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                  title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                >
-                  {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </Button>
-              </div>
-              <div />
             </div>
           )}
         </div>

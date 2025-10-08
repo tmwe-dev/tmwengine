@@ -88,15 +88,6 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4">
               <RoomSelector
                 onRoomSelect={(roomId) => {
@@ -199,8 +190,21 @@ const Intranet = () => {
 
       {/* Footer fisso a piè di pagina */}
       {selectedRoomId && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t">
-          <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
+          <div className="flex items-center gap-2">
+            {isMobile && (
+              <SheetTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="h-10 w-10"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+            )}
+            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+          </div>
           <div className="flex justify-center">
             <Button
               size="icon"

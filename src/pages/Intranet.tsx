@@ -113,7 +113,7 @@ const Intranet = () => {
             <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
               2
             </div>
-            <Card className="h-full">
+            <Card className="h-full bg-transparent border-0">
               <div className="px-4">
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
@@ -129,7 +129,7 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 flex flex-col border-0 shadow-none">
+              <Card className="flex-1 flex flex-col border-0 shadow-none bg-transparent">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               

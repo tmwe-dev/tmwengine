@@ -205,7 +205,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         {rooms.map((room) => (
           <Card
             key={room.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
+            className={`cursor-pointer transition-all hover:shadow-md bg-transparent ${
               selectedRoomId === room.id ? 'border-primary' : ''
             }`}
             onClick={() => onRoomSelect(room.id)}

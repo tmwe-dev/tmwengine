@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +56,7 @@ interface Conversation {
 
 const Chat = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const pageRoute = searchParams.get('page') || '/chat';
   const [pagePromptName, setPagePromptName] = useState<string>('');
   
@@ -937,15 +938,25 @@ const Chat = () => {
                 
                 <div className="flex justify-between items-center">
                   {shouldHideHeader ? (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handlePromptToggle}
-                        className="animate-pulse"
-                      >
-                        <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handlePromptToggle}
+                          className="animate-pulse"
+                        >
+                          <Sparkles className={`h-4 w-4 transition-colors ${useSystemPrompt ? 'text-yellow-500' : 'text-blue-500'}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate('/chat')}
+                          title="Torna alle conversazioni"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon">

@@ -172,6 +172,8 @@ serve(async (req) => {
         expires_at: expiresAt,
         client_id: clientId,
         client_secret: clientSecret,
+      }, {
+        onConflict: 'email'
       });
 
     if (credsError) {

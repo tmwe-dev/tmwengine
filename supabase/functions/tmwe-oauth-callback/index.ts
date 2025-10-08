@@ -183,17 +183,18 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate magic link for client session
-    const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
+    // 6. Create a real Supabase session for the user
+    console.log('🔐 Creating Supabase session...');
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: supabaseUser.id,
     });
 
-    if (magicLinkError) {
-      console.error('Error generating magic link:', magicLinkError);
-      throw magicLinkError;
+    if (sessionError) {
+      console.error('Error creating session:', sessionError);
+      throw sessionError;
     }
 
+    console.log('✅ Supabase session created');
     console.log('✅ OAuth2 flow completed successfully');
 
     return new Response(
@@ -207,7 +208,12 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        magicLink: magicLinkData.properties?.action_link || null,
+        session: {
+          access_token: sessionData.access_token,
+          refresh_token: sessionData.refresh_token,
+          expires_at: sessionData.expires_at,
+          expires_in: sessionData.expires_in,
+        },
       }),
       {
         status: 200,

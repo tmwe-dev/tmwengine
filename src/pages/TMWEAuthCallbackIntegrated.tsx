@@ -82,27 +82,21 @@ const TMWEAuthCallbackIntegrated = () => {
       addDetail(`🏢 Empresa: ${data.profile?.enterprise_name || 'N/A'}`);
       addDetail('✅ Credenciales guardadas en base de datos');
 
-      // 5. Establecer sesión de Supabase usando el magic link
-      if (data.magicLink) {
+      // 5. Establecer sesión de Supabase usando los tokens devueltos
+      if (data.session) {
         addDetail('🔐 Estableciendo sesión de Supabase...');
         
-        // Extraer el token del magic link
-        const url = new URL(data.magicLink);
-        const token = url.searchParams.get('token');
-        const type = url.searchParams.get('type');
-        
-        if (token && type) {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: type as any,
-          });
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
 
-          if (verifyError) {
-            console.error('Error verificando sesión:', verifyError);
-            addDetail('⚠️ Advertencia: No se pudo establecer sesión de Supabase');
-          } else {
-            addDetail('✅ Sesión de Supabase establecida');
-          }
+        if (sessionError) {
+          console.error('Error estableciendo sesión:', sessionError);
+          addDetail('⚠️ Advertencia: No se pudo establecer sesión de Supabase');
+          throw sessionError;
+        } else {
+          addDetail('✅ Sesión de Supabase establecida correctamente');
         }
       }
 

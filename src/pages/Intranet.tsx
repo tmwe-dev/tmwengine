@@ -121,7 +121,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3

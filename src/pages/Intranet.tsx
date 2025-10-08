@@ -127,9 +127,6 @@ const Intranet = () => {
             <>
               {/* Header responsive con utenti online */}
               <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
-                </div>
                 
                 {/* Badge utenti online e controlli */}
                 <div className="hidden sm:flex items-center gap-2">
@@ -160,6 +157,9 @@ const Intranet = () => {
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
                       isCreatorOrAdmin={isCreatorOrAdmin}
                     />
+                    <div className="text-center mt-3">
+                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                    </div>
                   </div>
 
                   {/* Area messaggi espansa */}
@@ -183,6 +183,9 @@ const Intranet = () => {
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
                       isCreatorOrAdmin={isCreatorOrAdmin}
                     />
+                    <div className="text-center mt-3">
+                      <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                    </div>
                   </div>
                 </>
               )}

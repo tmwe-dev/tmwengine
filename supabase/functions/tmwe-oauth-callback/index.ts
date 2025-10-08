@@ -183,30 +183,14 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session tokens for the user
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: true,
-      user_metadata: {
-        tmwe_oauth: true,
-        name: profileData.name || profileData.username,
-        enterprise_name: profileData.enterprise_name,
-      }
-    });
-
-    if (sessionError && sessionError.message !== 'User already registered') {
-      console.error('Error generating session:', sessionError);
-      throw sessionError;
-    }
-
-    // Generate session token for client
+    // 6. Generate magic link for client session
     const { data: magicLinkData, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
     });
 
     if (magicLinkError) {
-      console.error('Error generating token:', magicLinkError);
+      console.error('Error generating magic link:', magicLinkError);
       throw magicLinkError;
     }
 

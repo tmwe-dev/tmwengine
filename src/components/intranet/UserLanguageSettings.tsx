@@ -71,14 +71,12 @@ export function UserLanguageSettings() {
   return (
     <>
       <Button
-        size="sm"
+        size="icon"
         variant="ghost"
-        className="gap-2 h-8 px-3 hover:bg-primary/10"
         onClick={() => handleOpen(true)}
         title="Impostazioni Lingua"
       >
         <Languages className="h-4 w-4 text-primary" />
-        <span className="text-xs">{profile.preferredLanguage.toUpperCase()}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpen}>

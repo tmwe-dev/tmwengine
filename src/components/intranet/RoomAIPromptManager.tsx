@@ -161,15 +161,12 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
   return (
     <>
       <Button
-        size="sm"
+        size="icon"
         variant="ghost"
-        className="gap-2 h-8 px-3 hover:bg-primary/10"
         onClick={() => setOpen(true)}
         title="Gestisci AI della Stanza"
       >
         <Brain className="h-4 w-4 text-primary" />
-        <span className="text-xs">AI Settings</span>
-        {enableAI && <span className="text-xs">🤖</span>}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

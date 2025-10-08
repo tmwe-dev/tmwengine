@@ -12,14 +12,14 @@ interface SettingsButtonProps {
 
 export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsButtonProps) => {
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-[100]">
       <Popover>
         <PopoverTrigger asChild>
           <Button
             size="icon"
             variant="ghost"
             title="Impostazioni"
-            className="h-12 w-12 rounded-full shadow-lg bg-background border"
+            className="h-12 w-12 rounded-full shadow-lg bg-background"
           >
             <Settings className="h-5 w-5" />
           </Button>

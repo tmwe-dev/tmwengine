@@ -132,7 +132,53 @@ const Intranet = () => {
           </div>
           
           {selectedRoomId ? (
-            <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+            <>
+              <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+              
+              {/* Input messaggi */}
+              <div className="bg-background border-t p-2">
+                <MessageInputWithAttachments 
+                  roomId={selectedRoomId} 
+                />
+              </div>
+
+              {/* Footer - solo mobile */}
+              {isMobile && (
+                <div className="h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
+                  {/* Numero sezione */}
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                    5
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Menu 
+                      className="h-6 w-6 cursor-pointer text-foreground"
+                      onClick={() => {
+                        console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
+                        setMobileSheetOpen(true);
+                        console.log('🟢 setMobileSheetOpen(true) chiamato');
+                      }}
+                    />
+                    <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                  </div>
+                  <div className="flex justify-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                      title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                    >
+                      {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <div />
+                </div>
+              )}
+
+              <SettingsButton 
+                roomId={selectedRoomId}
+                isCreatorOrAdmin={isCreatorOrAdmin}
+              />
+            </>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">
@@ -169,55 +215,6 @@ const Intranet = () => {
           )}
         </div>
       </div>
-
-      {/* Input messaggi fisso sopra il footer */}
-      {selectedRoomId && (
-        <>
-          <div className="fixed bottom-14 md:bottom-0 left-0 right-0 bg-background border-t z-40 p-2">
-            <MessageInputWithAttachments 
-              roomId={selectedRoomId} 
-            />
-          </div>
-          <SettingsButton 
-            roomId={selectedRoomId}
-            isCreatorOrAdmin={isCreatorOrAdmin}
-          />
-        </>
-      )}
-
-      {/* Footer fisso a piè di pagina - solo mobile */}
-      {selectedRoomId && isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background z-50">
-          {/* Numero sezione */}
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-            5
-          </div>
-          <div className="flex items-center gap-2">
-            {isMobile && (
-              <Menu 
-                className="h-6 w-6 cursor-pointer text-foreground"
-                onClick={() => {
-                  console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
-                  setMobileSheetOpen(true);
-                  console.log('🟢 setMobileSheetOpen(true) chiamato');
-                }}
-              />
-            )}
-            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-          </div>
-          <div className="flex justify-center">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-              title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-            >
-              {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
-          </div>
-          <div />
-        </div>
-      )}
     </div>
   );
 };

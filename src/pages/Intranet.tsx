@@ -83,6 +83,8 @@ const Intranet = () => {
     }
   };
 
+  const shouldHideHeader = isMobile && selectedRoomId;
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 overflow-hidden">
@@ -125,38 +127,37 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0` : 'flex flex-col overflow-hidden'}`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
           </div>
           
           {selectedRoomId ? (
-            <Card className={`h-full flex flex-col overflow-hidden ${isMobile ? 'border-0 shadow-none' : ''}`}>
-              {/* Contenitore messaggi + input */}
-              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0`}>
-                {/* Messaggi - con overflow diretto */}
-                <CardContent className={`flex-1 overflow-y-auto px-3 py-3 min-h-0 ${isMobile ? 'pb-14' : ''}`}>
-                  <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+            <>
+              {/* Messaggi */}
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : 'flex-1 flex flex-col overflow-hidden'}`}>
+                <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'flex-1 px-2 sm:px-6 py-4 min-h-0'}`}>
+                  <div className={shouldHideHeader ? 'space-y-3' : ''}>
+                    <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
+                  </div>
                 </CardContent>
-                
-                {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
-                <div className="flex-shrink-0 p-4 border-t">
-                  <MessageInputWithAttachments 
-                    roomId={selectedRoomId} 
-                  />
-                </div>
-              </div>
+              </Card>
 
-              {/* Barra mobile FISSA IN BASSO - sulla stessa linea dell'ingranaggio */}
+              {/* Input */}
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : 'flex-shrink-0'}`}>
+                <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
+                  <MessageInputWithAttachments roomId={selectedRoomId} />
+                </CardContent>
+              </Card>
+
+              {/* Barra mobile FISSA IN BASSO */}
               {isMobile && (
                 <div className="fixed bottom-0 left-0 right-0 h-14 grid grid-cols-3 items-center border-t bg-background z-40">
                   <div className="flex items-center gap-2 pl-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
-                      onClick={() => {
-                        setMobileSheetOpen(true);
-                      }}
+                      onClick={() => setMobileSheetOpen(true)}
                     />
                     <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
                   </div>
@@ -178,7 +179,7 @@ const Intranet = () => {
                 roomId={selectedRoomId}
                 isCreatorOrAdmin={isCreatorOrAdmin}
               />
-            </Card>
+            </>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">

@@ -86,11 +86,8 @@ const Intranet = () => {
     <div className="h-screen flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden" style={{ paddingBottom: selectedRoomId ? '140px' : '0' }}>
         {/* Mobile: Sheet con lista stanze */}
-        {isMobile ? (
+        {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetTrigger asChild>
-              <button className="hidden" />
-            </SheetTrigger>
             <SheetContent side="left" className="w-80 p-4 relative">
               {/* Numero sezione */}
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
@@ -105,7 +102,8 @@ const Intranet = () => {
               />
             </SheetContent>
           </Sheet>
-        ) : (
+        )}
+        {!isMobile && (
           /* Desktop/Tablet: Sidebar fissa */
           <div className="w-full md:w-80 flex-shrink-0 relative">
             {/* Numero sezione */}

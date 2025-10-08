@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AISuggestions } from './AISuggestions';
+import { RoomAIPromptManager } from './RoomAIPromptManager';
+import { UserLanguageSettings } from './UserLanguageSettings';
 
 interface FileAttachment {
   file: File;
@@ -15,11 +17,12 @@ interface MessageInputWithAttachmentsProps {
   roomId: string;
   isFullscreenMode?: boolean;
   onToggleFullscreen?: () => void;
+  isCreatorOrAdmin?: boolean;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, onToggleFullscreen }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, onToggleFullscreen, isCreatorOrAdmin = false }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -341,18 +344,27 @@ export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, 
             </Button>
           </div>
 
-          {/* Chevron toggle al centro */}
-          {onToggleFullscreen && (
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={onToggleFullscreen}
-              title={isFullscreenMode ? "Input sotto" : "Input sopra"}
-              disabled={isSending}
-            >
-              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
-          )}
+          {/* Settings centrali sotto il microfono */}
+          <div className="flex items-center justify-center gap-2">
+            {isCreatorOrAdmin && (
+              <RoomAIPromptManager 
+                roomId={roomId} 
+                isCreatorOrAdmin={isCreatorOrAdmin}
+              />
+            )}
+            <UserLanguageSettings />
+            {onToggleFullscreen && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onToggleFullscreen}
+                title={isFullscreenMode ? "Input sotto" : "Input sopra"}
+                disabled={isSending}
+              >
+                {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            )}
+          </div>
 
           {/* Pulsante invio */}
           <Button

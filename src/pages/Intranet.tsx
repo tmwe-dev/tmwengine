@@ -6,8 +6,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
-import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
-import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -124,9 +122,9 @@ const Intranet = () => {
         <Card className="flex-1 flex flex-col">
           {selectedRoomId ? (
             <>
-              {/* Header responsive con utenti online e AI settings */}
+              {/* Header responsive con utenti online */}
               <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -136,13 +134,6 @@ const Intranet = () => {
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
                   <h1 className="text-lg md:text-xl font-semibold">{selectedRoomName}</h1>
-                  {isCreatorOrAdmin && (
-                    <RoomAIPromptManager 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
-                  )}
-                  <UserLanguageSettings />
                 </div>
                 
                 {/* Badge utenti online e controlli */}
@@ -172,6 +163,7 @@ const Intranet = () => {
                       roomId={selectedRoomId} 
                       isFullscreenMode={isFullscreenMode}
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
+                      isCreatorOrAdmin={isCreatorOrAdmin}
                     />
                   </div>
 
@@ -194,6 +186,7 @@ const Intranet = () => {
                       roomId={selectedRoomId} 
                       isFullscreenMode={isFullscreenMode}
                       onToggleFullscreen={() => setIsFullscreenMode(!isFullscreenMode)}
+                      isCreatorOrAdmin={isCreatorOrAdmin}
                     />
                   </div>
                 </>

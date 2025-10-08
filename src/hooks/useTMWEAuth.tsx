@@ -56,7 +56,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const syncWithSupabase = async (email: string, profile?: UserProfile) => {
     try {
-      console.log('🔄 Sincronizzazione TMWE → Supabase...');
+      console.log('🔄 Sincronizzazione TMWE → Supabase per email:', email);
       
       const { data, error } = await supabase.functions.invoke('tmwe-supabase-sync', {
         body: {
@@ -65,29 +65,35 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
+      console.log('📦 Risposta da tmwe-supabase-sync:', { data, error });
+
       if (error) {
-        console.error('Errore sincronizzazione Supabase:', error);
+        console.error('❌ Errore sincronizzazione Supabase:', error);
         return null;
       }
 
       if (data?.supabaseUserId) {
-        console.log('✅ Sincronizzazione completata:', data.supabaseUserId);
+        console.log('✅ Sincronizzazione completata con user_id:', data.supabaseUserId);
         setSupabaseUserId(data.supabaseUserId);
         
         // Salva con la chiave corretta usata da RoomSelector e altri componenti
         sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
+        console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
         
         return data.supabaseUserId;
+      } else {
+        console.error('⚠️ Risposta senza supabaseUserId:', data);
       }
 
       return null;
     } catch (error) {
-      console.error('Errore durante la sincronizzazione:', error);
+      console.error('❌ Errore durante la sincronizzazione:', error);
       return null;
     }
   };
 
   const login = async (email: string, profile?: UserProfile) => {
+    console.log('🔐 Login chiamato per:', email);
     setUserEmail(email);
     if (profile) {
       setUserProfile(profile);
@@ -95,7 +101,13 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     }
     
     // Sincronizza con Supabase
-    await syncWithSupabase(email, profile);
+    const userId = await syncWithSupabase(email, profile);
+    
+    if (userId) {
+      console.log('✅ Login completato con user_id:', userId);
+    } else {
+      console.error('⚠️ Sincronizzazione fallita, ma login TMWE OK');
+    }
   };
 
   const logout = () => {

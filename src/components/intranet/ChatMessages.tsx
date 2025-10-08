@@ -22,9 +22,10 @@ interface Message {
 
 interface ChatMessagesProps {
   roomId: string;
+  isLayoutInverted?: boolean;
 }
 
-export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,7 +78,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
       .from('intranet_messages')
       .select('*')
       .eq('room_id', roomId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: !isLayoutInverted });
 
     if (data && !error) {
       setMessages(data);
@@ -91,13 +92,19 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
     }
   };
 
+  // Ricarica messaggi quando cambia l'inversione del layout
+  useEffect(() => {
+    loadMessages();
+  }, [isLayoutInverted]);
+
   const getUserInitials = (userId: string) => {
     return userId.substring(0, 2).toUpperCase();
   };
 
   return (
     <ScrollArea className="flex-1 p-4">
-      <div className="space-y-4">
+      <div className={`space-y-4 ${isLayoutInverted ? 'flex flex-col-reverse' : ''}`}>
+        {isLayoutInverted && <div ref={scrollRef} />}
         {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
@@ -173,7 +180,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
             </div>
           );
         })}
-        <div ref={scrollRef} />
+        {!isLayoutInverted && <div ref={scrollRef} />}
       </div>
     </ScrollArea>
   );

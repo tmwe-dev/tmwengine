@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
+import { Paperclip, Image, Smile, Mic, Send, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,11 +13,13 @@ interface FileAttachment {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
+  isLayoutInverted: boolean;
+  onToggleLayout: () => void;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId, isLayoutInverted, onToggleLayout }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -344,6 +346,19 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
             size="icon"
           >
             <Send className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Pulsante inversione layout */}
+        <div className="flex justify-center mt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleLayout}
+            className="text-muted-foreground hover:text-foreground"
+            title={isLayoutInverted ? "Layout normale" : "Inverti layout"}
+          >
+            {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
           </Button>
         </div>
       </div>

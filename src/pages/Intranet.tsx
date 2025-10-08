@@ -20,6 +20,7 @@ const Intranet = () => {
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const [isRoomSelectorOpen, setIsRoomSelectorOpen] = useState(false);
+  const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   const isMobile = useIsMobile();
 
@@ -170,10 +171,17 @@ const Intranet = () => {
             </div>
 
             {/* Messaggi */}
-            <ChatMessages roomId={selectedRoomId} />
+            <ChatMessages 
+              roomId={selectedRoomId} 
+              isLayoutInverted={isLayoutInverted}
+            />
 
             {/* Input messaggio */}
-            <MessageInputWithAttachments roomId={selectedRoomId} />
+            <MessageInputWithAttachments 
+              roomId={selectedRoomId}
+              isLayoutInverted={isLayoutInverted}
+              onToggleLayout={() => setIsLayoutInverted(!isLayoutInverted)}
+            />
           </Card>
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground p-4">

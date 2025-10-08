@@ -183,22 +183,27 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Create a real Supabase session for the user
-    console.log('🔐 Creating Supabase session...');
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: supabaseUser.id,
+    // 6. Generate access link for the user session
+    console.log('🔐 Generating session access link...');
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: email,
+      options: {
+        redirectTo: redirectUri.split('/tmwe/callback')[0] + '/',
+      }
     });
 
-    if (sessionError) {
-      console.error('Error creating session:', sessionError);
-      throw sessionError;
+    if (linkError) {
+      console.error('Error generating link:', linkError);
+      throw linkError;
     }
 
-    if (!sessionData || !sessionData.session) {
-      throw new Error('Session creation failed: no session data returned');
-    }
-
-    console.log('✅ Supabase session created');
+    // Extract token from the generated link
+    const url = new URL(linkData.properties.action_link);
+    const token = url.searchParams.get('token');
+    const tokenHash = url.hash.substring(1); // Remove the # from hash
+    
+    console.log('✅ Session link generated');
     console.log('✅ OAuth2 flow completed successfully');
 
     return new Response(
@@ -212,12 +217,9 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        session: {
-          access_token: sessionData.session.access_token,
-          refresh_token: sessionData.session.refresh_token,
-          expires_at: sessionData.session.expires_at,
-          expires_in: sessionData.session.expires_in,
-        },
+        authToken: token,
+        authTokenHash: tokenHash,
+        magicLink: linkData.properties.action_link,
       }),
       {
         status: 200,

@@ -164,7 +164,7 @@ const Intranet = () => {
                     />
                     <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-center">
                     <Button
                       size="icon"
                       variant="ghost"

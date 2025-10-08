@@ -98,28 +98,40 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
     setCreating(true);
     try {
-      console.log('🚧 SVILUPPO: Creazione stanza senza controlli auth');
+      // Ottieni l'utente corrente
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: 'Errore',
+          description: 'Devi essere autenticato per creare una stanza',
+          variant: 'destructive'
+        });
+        return;
+      }
 
+      // Crea la stanza
       const { data: newRoom, error: roomError } = await supabase
         .from('intranet_rooms')
         .insert({
           name: newRoomName.trim(),
           description: newRoomDescription.trim(),
-          created_by: null // SVILUPPO: Creatore nullo per ora
+          created_by: user.id
         })
         .select()
         .single();
 
-      console.log('Room creation result:', { newRoom, roomError });
+      if (roomError) throw roomError;
 
-      if (roomError) {
-        toast({
-          title: 'Errore creazione stanza',
-          description: roomError.message || 'Impossibile creare la stanza',
-          variant: 'destructive'
+      // Aggiungi automaticamente il creatore come membro
+      const { error: memberError } = await supabase
+        .from('intranet_room_members')
+        .insert({
+          room_id: newRoom.id,
+          user_id: user.id
         });
-        throw roomError;
-      }
+
+      if (memberError) throw memberError;
 
       toast({
         title: 'Successo',

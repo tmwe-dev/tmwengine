@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetPortal } from '@/components/ui/sheet';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -91,19 +91,21 @@ const Intranet = () => {
             console.log('🔴 Sheet onOpenChange chiamato con:', open);
             setMobileSheetOpen(open);
           }}>
-            <SheetContent side="left" className="w-80 p-4 relative z-[9999]">
-              {/* Numero sezione */}
-              <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                2
-              </div>
-              <RoomSelector
-                onRoomSelect={(roomId) => {
-                  setSearchParams({ room: roomId });
-                  setMobileSheetOpen(false);
-                }}
-                selectedRoomId={selectedRoomId}
-              />
-            </SheetContent>
+            <SheetPortal>
+              <SheetContent side="left" className="w-80 p-4 relative z-[9999]">
+                {/* Numero sezione */}
+                <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                  2
+                </div>
+                <RoomSelector
+                  onRoomSelect={(roomId) => {
+                    setSearchParams({ room: roomId });
+                    setMobileSheetOpen(false);
+                  }}
+                  selectedRoomId={selectedRoomId}
+                />
+              </SheetContent>
+            </SheetPortal>
           </Sheet>
         )}
         {!isMobile && (

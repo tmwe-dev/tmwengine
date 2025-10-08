@@ -243,82 +243,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
         </div>
       )}
 
-      <div className="flex gap-2">
-        {/* Pulsanti allegati */}
-        <div className="flex gap-1">
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleFileSelect}
-            multiple
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => fileInputRef.current?.click()}
-            title="Allega file"
-            disabled={isSending}
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-
-          <input
-            type="file"
-            ref={imageInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleImageSelect}
-            multiple
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => imageInputRef.current?.click()}
-            title="Allega immagine"
-            disabled={isSending}
-          >
-            <Image className="h-4 w-4" />
-          </Button>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                title="Emoticon"
-                disabled={isSending}
-              >
-                <Smile className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="grid grid-cols-5 gap-2">
-                {EMOTICONS.map((emoticon, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className="text-2xl hover:scale-125 transition-transform"
-                    onClick={() => insertEmoticon(emoticon)}
-                  >
-                    {emoticon}
-                  </Button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Button
-            size="icon"
-            variant={isRecording ? "destructive" : "ghost"}
-            onClick={isRecording ? stopRecording : startRecording}
-            title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
-            disabled={isSending}
-          >
-            <Mic className="h-4 w-4" />
-          </Button>
-        </div>
-
+      <div className="flex flex-col gap-3">
         {/* Input testo */}
         <textarea
           value={message}
@@ -330,19 +255,97 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
             }
           }}
           placeholder="Scrivi un messaggio..."
-          className="flex-1 resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+          className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] max-h-[120px]"
           disabled={isSending}
-          rows={1}
+          rows={2}
         />
 
-        {/* Pulsante invio */}
-        <Button
-          onClick={sendMessage}
-          disabled={(!message.trim() && attachments.length === 0) || isSending}
-          size="icon"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+        {/* Pulsanti */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Pulsanti allegati */}
+          <div className="flex gap-1">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileSelect}
+              multiple
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => fileInputRef.current?.click()}
+              title="Allega file"
+              disabled={isSending}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+
+            <input
+              type="file"
+              ref={imageInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageSelect}
+              multiple
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => imageInputRef.current?.click()}
+              title="Allega immagine"
+              disabled={isSending}
+            >
+              <Image className="h-4 w-4" />
+            </Button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Emoticon"
+                  disabled={isSending}
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="grid grid-cols-5 gap-2">
+                  {EMOTICONS.map((emoticon, index) => (
+                    <Button
+                      key={index}
+                      variant="ghost"
+                      className="text-2xl hover:scale-125 transition-transform"
+                      onClick={() => insertEmoticon(emoticon)}
+                    >
+                      {emoticon}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              size="icon"
+              variant={isRecording ? "destructive" : "ghost"}
+              onClick={isRecording ? stopRecording : startRecording}
+              title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
+              disabled={isSending}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Pulsante invio */}
+          <Button
+            onClick={sendMessage}
+            disabled={(!message.trim() && attachments.length === 0) || isSending}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

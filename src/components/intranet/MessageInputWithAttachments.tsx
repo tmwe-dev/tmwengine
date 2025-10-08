@@ -193,9 +193,9 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
   return (
     <>
-      <div className="p-4 flex-shrink-0">
+      <div className="px-4 flex-shrink-0">
         {/* AI Suggestions */}
-        <div className="mb-2">
+        <div>
           <AISuggestions 
             roomId={roomId} 
             onSelectSuggestion={handleSuggestionSelect}
@@ -204,7 +204,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
         {/* Preview allegati */}
         {attachments.length > 0 && (
-          <div className="mb-3 flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {attachments.map((attachment, index) => (
               <div key={index} className="relative group">
                 {attachment.preview ? (
@@ -224,7 +224,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                     </Button>
                   </div>
                 ) : (
-                  <div className="relative flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border">
+                  <div className="relative flex items-center gap-2 px-3 bg-muted rounded-lg border">
                     <Paperclip className="h-4 w-4" />
                     <span className="text-sm max-w-[150px] truncate">
                       {attachment.file.name}
@@ -257,7 +257,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary overflow-hidden"
+              className="w-full resize-none rounded-lg border bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary overflow-hidden"
               disabled={isSending}
               rows={2}
             />

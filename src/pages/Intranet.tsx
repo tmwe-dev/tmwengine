@@ -175,21 +175,6 @@ const Intranet = () => {
                   />
                 </>
               )}
-
-              {/* Footer fisso con nome stanza e chevron */}
-              <div className="border-t bg-muted/30">
-                <div className="p-3 flex items-center justify-between">
-                  <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                    title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                  >
-                    {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center p-4">
@@ -208,6 +193,21 @@ const Intranet = () => {
             </div>
           )}
         </Card>
+
+        {/* Footer fisso fuori dalla card */}
+        {selectedRoomId && (
+          <div className="p-3 flex items-center justify-between bg-background">
+            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+              title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+            >
+              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

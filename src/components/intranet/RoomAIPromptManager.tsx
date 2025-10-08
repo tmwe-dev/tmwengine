@@ -43,9 +43,9 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
         .from('intranet_global_ai_prompt')
         .select('prompt_contenuto')
         .eq('attivo', true)
-        .single();
+        .maybeSingle();
 
-      if (globalError) throw globalError;
+      if (globalError && globalError.code !== 'PGRST116') throw globalError;
       if (globalData) {
         setStandardPrompt(globalData.prompt_contenuto);
       }

@@ -85,7 +85,7 @@ const Intranet = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 overflow-hidden">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -114,7 +114,7 @@ const Intranet = () => {
               2
             </div>
             <Card className="h-full">
-              <div className="p-4">
+              <div className="p-2">
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                   selectedRoomId={selectedRoomId}
@@ -147,7 +147,7 @@ const Intranet = () => {
 
               {/* Footer - solo mobile - flex-shrink-0 */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
+                <div className="flex-shrink-0 h-14 p-2 grid grid-cols-3 items-center border-t bg-background">
                   {/* Numero sezione */}
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                     5

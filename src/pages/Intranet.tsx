@@ -84,7 +84,7 @@ const Intranet = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 px-2 md:px-4">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
@@ -129,7 +129,7 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 border-0 shadow-none bg-transparent">
+              <Card className="flex-1 flex flex-col overflow-hidden border-0 shadow-none bg-transparent">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               

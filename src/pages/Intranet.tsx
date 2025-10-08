@@ -83,135 +83,137 @@ const Intranet = () => {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4">
-      {/* Mobile: Sheet con lista stanze */}
-      {isMobile ? (
-        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-          <SheetTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-4">
-            <RoomSelector
-              onRoomSelect={(roomId) => {
-                setSearchParams({ room: roomId });
-                setMobileSheetOpen(false);
-              }}
-              selectedRoomId={selectedRoomId}
-            />
-          </SheetContent>
-        </Sheet>
-      ) : (
-        /* Desktop/Tablet: Sidebar fissa */
-        <div className="w-full md:w-80 flex-shrink-0">
-          <Card className="h-full">
-            <div className="p-4">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
+        {/* Mobile: Sheet con lista stanze */}
+        {isMobile ? (
+          <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-4">
               <RoomSelector
-                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                onRoomSelect={(roomId) => {
+                  setSearchParams({ room: roomId });
+                  setMobileSheetOpen(false);
+                }}
                 selectedRoomId={selectedRoomId}
               />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Area chat principale */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <Card className="flex-1 flex flex-col">
-          {selectedRoomId ? (
-            <>
-              {/* Header responsive con utenti online */}
-              <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                
-                {/* Badge utenti online e controlli */}
-                <div className="hidden sm:flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                    title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </Button>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span>{onlineUsers.length}</span>
-                  </Badge>
-                  <OnlineUsers users={onlineUsers} />
-                </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          /* Desktop/Tablet: Sidebar fissa */
+          <div className="w-full md:w-80 flex-shrink-0">
+            <Card className="h-full">
+              <div className="p-4">
+                <RoomSelector
+                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                  selectedRoomId={selectedRoomId}
+                />
               </div>
-
-              {isFullscreenMode ? (
-                /* Vista espansa: Input in alto, chat sotto */
-                <>
-                  {/* Input messaggi in alto */}
-                  <MessageInputWithAttachments 
-                    roomId={selectedRoomId} 
-                    isCreatorOrAdmin={isCreatorOrAdmin}
-                  />
-
-                  {/* Area messaggi espansa */}
-                  <div className="flex-1 overflow-hidden">
-                    <ChatMessages roomId={selectedRoomId} />
-                  </div>
-                </>
-              ) : (
-                /* Vista normale: Chat sopra, input sotto */
-                <>
-                  {/* Area messaggi */}
-                  <div className="flex-1 overflow-hidden">
-                    <ChatMessages roomId={selectedRoomId} />
-                  </div>
-
-                  {/* Input messaggi */}
-                  <MessageInputWithAttachments 
-                    roomId={selectedRoomId} 
-                    isCreatorOrAdmin={isCreatorOrAdmin}
-                  />
-                </>
-              )}
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-4">
-              <div className="text-center">
-                <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
-                <h2 className="text-lg md:text-xl font-semibold mb-2">
-                  Seleziona una stanza
-                </h2>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  {isMobile 
-                    ? 'Tocca il pulsante del menu per scegliere una stanza'
-                    : 'Scegli una stanza dalla lista per iniziare a chattare'
-                  }
-                </p>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Footer fisso fuori dalla card */}
-        {selectedRoomId && (
-          <div className="p-3 grid grid-cols-3 items-center bg-background">
-            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-            <div className="flex justify-center">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-                title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-              >
-                {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div />
+            </Card>
           </div>
         )}
+
+        {/* Area chat principale */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <Card className="flex-1 flex flex-col">
+            {selectedRoomId ? (
+              <>
+                {/* Header responsive con utenti online */}
+                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  
+                  {/* Badge utenti online e controlli */}
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                      title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      <span>{onlineUsers.length}</span>
+                    </Badge>
+                    <OnlineUsers users={onlineUsers} />
+                  </div>
+                </div>
+
+                {isFullscreenMode ? (
+                  /* Vista espansa: Input in alto, chat sotto */
+                  <>
+                    {/* Input messaggi in alto */}
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
+
+                    {/* Area messaggi espansa */}
+                    <div className="flex-1 overflow-hidden">
+                      <ChatMessages roomId={selectedRoomId} />
+                    </div>
+                  </>
+                ) : (
+                  /* Vista normale: Chat sopra, input sotto */
+                  <>
+                    {/* Area messaggi */}
+                    <div className="flex-1 overflow-hidden">
+                      <ChatMessages roomId={selectedRoomId} />
+                    </div>
+
+                    {/* Input messaggi */}
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      isCreatorOrAdmin={isCreatorOrAdmin}
+                    />
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="text-center">
+                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
+                  <h2 className="text-lg md:text-xl font-semibold mb-2">
+                    Seleziona una stanza
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    {isMobile 
+                      ? 'Tocca il pulsante del menu per scegliere una stanza'
+                      : 'Scegli una stanza dalla lista per iniziare a chattare'
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
+
+      {/* Footer fisso a piè di pagina */}
+      {selectedRoomId && (
+        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t">
+          <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+          <div className="flex justify-center">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+              title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+            >
+              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+          </div>
+          <div />
+        </div>
+      )}
     </div>
   );
 };

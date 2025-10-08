@@ -4,7 +4,7 @@ import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { setApiConfigToDB, profileApi } from '@/lib/tmwe-api-integrated';
+import { supabase } from '@/integrations/supabase/client';
 
 const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
@@ -14,28 +14,28 @@ const TMWEAuthCallbackIntegrated = () => {
   const [error, setError] = useState<string>('');
   const [details, setDetails] = useState<string[]>([]);
 
+  const addDetail = (detail: string) => {
+    console.log(detail);
+    setDetails(prev => [...prev, detail]);
+  };
+
   useEffect(() => {
     handleOAuthCallback();
   }, []);
 
   const handleOAuthCallback = async () => {
-    const addDetail = (detail: string) => {
-      console.log(detail);
-      setDetails(prev => [...prev, detail]);
-    };
-
     try {
+      console.log('📥 Procesando callback OAuth2...');
       addDetail('📥 Procesando callback OAuth2...');
 
-      // 1. Obtener parámetros de la URL
+      // 1. Obtener código de autorización de la URL
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
 
-      // Verificar errores de OAuth
       if (error) {
-        throw new Error(`OAuth Error: ${error} - ${errorDescription || 'Unknown error'}`);
+        throw new Error(errorDescription || error);
       }
 
       if (!code) {
@@ -51,104 +51,62 @@ const TMWEAuthCallbackIntegrated = () => {
       }
       addDetail(`✅ State validado correctamente`);
 
-      // 3. Obtener credenciales OAuth del sessionStorage
-      const clientId = sessionStorage.getItem('oauth_client_id');
-      const clientSecret = sessionStorage.getItem('oauth_client_secret');
+      // 3. Obtener redirect_uri del sessionStorage
       const redirectUri = sessionStorage.getItem('oauth_redirect_uri');
 
-      if (!clientId || !clientSecret || !redirectUri) {
-        throw new Error('Missing OAuth credentials');
+      if (!redirectUri) {
+        throw new Error('Missing redirect URI');
       }
 
-      addDetail('🔐 Intercambiando código por token de acceso...');
+      addDetail('🔐 Enviando código a servidor para intercambio...');
 
-      // 4. Intercambiar código por access_token (grant_type: authorization_code)
-      const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          client_id: clientId,
-          client_secret: clientSecret,
+      // 4. Llamar a la edge function para completar el flujo OAuth2
+      const { data, error: functionError } = await supabase.functions.invoke('tmwe-oauth-callback', {
+        body: {
           code: code,
-          redirect_uri: redirectUri,
-        }),
+          redirectUri: redirectUri,
+        }
       });
 
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json().catch(() => ({}));
-        throw new Error(`Token exchange failed: ${errorData.error || tokenResponse.statusText}`);
+      if (functionError) {
+        console.error('Edge function error:', functionError);
+        throw new Error(functionError.message || 'OAuth callback failed');
       }
 
-      const tokenData = await tokenResponse.json();
-      const { access_token, refresh_token, expires_in, email } = tokenData;
-
-      if (!access_token) {
-        throw new Error('No access token received');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'OAuth callback failed');
       }
 
-      addDetail(`✅ Access token obtenido (email: ${email || 'unknown'})`);
-      addDetail(`⏰ Token expira en: ${expires_in ? `${expires_in}s` : 'unknown'}`);
+      addDetail(`✅ Autenticación completada (email: ${data.email})`);
+      addDetail(`👤 Perfil: ${data.profile?.name || data.profile?.username}`);
+      addDetail(`🏢 Empresa: ${data.profile?.enterprise_name || 'N/A'}`);
+      addDetail('✅ Credenciales guardadas en base de datos');
+      addDetail('✅ Sesión de Supabase creada');
 
-      // 5. Guardar tokens en la base de datos
-      addDetail('💾 Guardando credenciales en base de datos...');
-      
-      await setApiConfigToDB({
-        email: email,
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        expiresAt: expires_in ? Date.now() + (expires_in * 1000) : undefined,
-        clientId: clientId,
-        clientSecret: clientSecret,
-      });
+      // 5. Actualizar contexto local de autenticación
+      await login(data.email, data.profile);
 
-      addDetail(`✅ Credenciales guardadas (email: ${email})`);
-      addDetail(`⏰ Token expira en: ${expires_in ? `${expires_in}s` : 'unknown'}`);
+      // 6. Limpiar sessionStorage
+      sessionStorage.removeItem('oauth_state');
+      sessionStorage.removeItem('oauth_client_id');
+      sessionStorage.removeItem('oauth_client_secret');
+      sessionStorage.removeItem('oauth_redirect_uri');
 
-      // 6. Obtener perfil del usuario usando el API proxy (evita CORS)
-      addDetail('👤 Obteniendo perfil del usuario (/get_my_profile)...');
-      
-      const profileData = await profileApi.getMyProfile();
-      
-      addDetail(`✅ Perfil obtenido: ${profileData.name || profileData.username}`);
-      addDetail(`🏢 Empresa: ${profileData.enterprise_name || 'N/A'}`);
-
-      // 7. Crear/actualizar sesión en Supabase
-      addDetail('🔄 Sincronizando con Supabase...');
-      
-      await login(profileData.email || email, {
-        email: profileData.email || email,
-        name: profileData.name,
-        username: profileData.username,
-        enterprise_name: profileData.enterprise_name,
-        rubrica: profileData.rubrica,
-      });
-
-      addDetail('✅ Sesión Supabase creada correctamente');
-
-      // 8. Limpiar datos temporales de OAuth
-      sessionStorage.removeItem('tmwe_oauth_state');
-      sessionStorage.removeItem('tmwe_client_id');
-      sessionStorage.removeItem('tmwe_client_secret');
-      sessionStorage.removeItem('tmwe_redirect_uri');
-
-      addDetail('✨ Login completado con éxito');
+      addDetail('✅ Proceso completado exitosamente');
       setStatus('success');
 
-      // 9. Redirigir al dashboard
+      // Redirigir al dashboard después de 2 segundos
       setTimeout(() => {
         navigate('/');
-      }, 1500);
+      }, 2000);
 
     } catch (error: any) {
       console.error('OAuth callback error:', error);
-      setError(error.message || 'Unknown error occurred');
-      setStatus('error');
+      setError(error.message || 'Unknown error');
       addDetail(`❌ Error: ${error.message}`);
+      setStatus('error');
       
-      // Redirigir a login después de mostrar error
+      // Redirigir a la página de email senders después de 5 segundos en caso de error
       setTimeout(() => {
         navigate('/email-senders');
       }, 5000);

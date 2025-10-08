@@ -82,22 +82,14 @@ const Intranet = () => {
     }
   };
 
-  useEffect(() => {
-    // Blocca lo scroll della pagina
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
-
   return (
     <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-      <div className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden" style={{ paddingBottom: selectedRoomId ? '80px' : '8px' }}>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
           {/* Desktop/Tablet: Sidebar fissa */}
           {!isMobile && (
-            <div className="w-full md:w-80 flex-shrink-0 h-full">
-              <Card className="h-full overflow-hidden">
+            <div className="w-full md:w-80 flex-shrink-0">
+              <Card className="h-full">
                 <div className="p-4">
                   <RoomSelector
                     onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
@@ -122,8 +114,8 @@ const Intranet = () => {
           )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
-          <Card className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
+          <Card className="flex-1 flex flex-col">
             {selectedRoomId ? (
               <>
                 {/* Header responsive con utenti online */}

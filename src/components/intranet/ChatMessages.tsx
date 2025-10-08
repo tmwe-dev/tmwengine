@@ -205,11 +205,11 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                     </>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center">
-                  <span>{getUserDisplayInfo(message.user_id).flag}</span>
-                  <span>{getUserDisplayInfo(message.user_id).name}</span>
+                <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center justify-end">
+                  <span>{format(new Date(message.created_at), 'dd/MM HH:mm', { locale: it })}</span>
                   <span>•</span>
-                  <span>{format(new Date(message.created_at), 'HH:mm', { locale: it })}</span>
+                  <span>{getUserDisplayInfo(message.user_id).name}</span>
+                  <span>{getUserDisplayInfo(message.user_id).flag}</span>
                 </span>
               </div>
             </div>

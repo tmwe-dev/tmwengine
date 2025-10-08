@@ -93,7 +93,7 @@ const CRMLayout = ({ children }) => {
 
   return (
     <div 
-      className="h-screen overflow-hidden"
+      className="min-h-screen"
       style={location.pathname === '/attivita' ? {
         background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
       } : {
@@ -269,7 +269,7 @@ const CRMLayout = ({ children }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-auto">
           <div className={location.pathname === '/chat' && isMobile ? '' : 'p-6'}>
             {children}
           </div>

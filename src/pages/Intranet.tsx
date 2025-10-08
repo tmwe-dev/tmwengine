@@ -84,17 +84,17 @@ const Intranet = () => {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 px-2 md:px-4">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetContent side="left" className="w-[90vw] max-w-sm px-4 bg-transparent">
+            <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
               {/* Numero sezione */}
               <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
                 2
               </div>
-              <div>
+              <div className="mt-8">
                 <RoomSelector
                   onRoomSelect={(roomId) => {
                     setSearchParams({ room: roomId });
@@ -113,8 +113,8 @@ const Intranet = () => {
             <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
               2
             </div>
-            <Card className="h-full bg-transparent border-0">
-              <div className="px-4">
+            <Card className="h-full">
+              <div className="p-4">
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                   selectedRoomId={selectedRoomId}
@@ -125,44 +125,43 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} relative`}>
+        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
+          {/* Numero sezione */}
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+            3
+          </div>
+          
           {selectedRoomId ? (
             <>
-              {/* Messaggi */}
-              <Card className="flex-1 flex flex-col border-0 shadow-none bg-transparent">
+              {/* Messaggi - flex-1 per espandersi */}
+              <div className="flex-1 overflow-hidden min-h-0">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
-              </Card>
+              </div>
               
-              {/* Input messaggi */}
-              <div className="flex-shrink-0">
+              {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
+              <div className="flex-shrink-0 bg-background border-t p-2">
                 <MessageInputWithAttachments 
                   roomId={selectedRoomId} 
                 />
               </div>
 
-              {/* Bottone inversione - posizionato al centro sotto i messaggi */}
-              {!isMobile && (
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="absolute left-1/2 transform -translate-x-1/2 z-50 bg-background shadow-lg"
-                  style={{ bottom: 'calc(1rem - 8px)' }}
-                  onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                  title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-                >
-                  {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </Button>
-              )}
-
-              {/* Footer - solo mobile */}
+              {/* Footer - solo mobile - flex-shrink-0 */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 px-3 grid grid-cols-2 items-center border-t bg-transparent">
+                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-3 items-center border-t bg-background">
+                  {/* Numero sezione */}
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                    5
+                  </div>
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
-                      onClick={() => setMobileSheetOpen(true)}
+                      onClick={() => {
+                        console.log('🟢 Menu icon cliccato! Stato attuale:', mobileSheetOpen);
+                        setMobileSheetOpen(true);
+                        console.log('🟢 setMobileSheetOpen(true) chiamato');
+                      }}
                     />
-                    <h1 className="text-sm font-semibold text-muted-foreground">{selectedRoomName}</h1>
+                    <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
                   </div>
                   <div className="flex justify-center">
                     <Button
@@ -174,6 +173,7 @@ const Intranet = () => {
                       {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                     </Button>
                   </div>
+                  <div />
                 </div>
               )}
 
@@ -183,9 +183,9 @@ const Intranet = () => {
               />
             </>
           ) : (
-            <Card className="h-full flex flex-col">
-              <div className="flex-1 flex items-center justify-center px-4">
-                <div className="text-center">
+            <Card className="h-full flex flex-col overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="text-center space-y-4">
                   <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
                   <div>
                     <h2 className="text-lg md:text-xl font-semibold mb-2">

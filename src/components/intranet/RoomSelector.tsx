@@ -188,7 +188,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
   };
 
   if (loading) {
-    return <div className="px-4 text-center text-muted-foreground">Caricamento...</div>;
+    return <div className="p-4 text-center text-muted-foreground">Caricamento...</div>;
   }
 
   return (
@@ -205,12 +205,12 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         {rooms.map((room) => (
           <Card
             key={room.id}
-            className={`cursor-pointer transition-all hover:shadow-md bg-transparent ${
+            className={`cursor-pointer transition-all hover:shadow-md ${
               selectedRoomId === room.id ? 'border-primary' : ''
             }`}
             onClick={() => onRoomSelect(room.id)}
           >
-            <CardHeader>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />

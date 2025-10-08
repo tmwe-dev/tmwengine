@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Download, FileText } from 'lucide-react';
 import { TranslateButton } from './TranslateButton';
@@ -144,10 +144,12 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
     };
   };
 
+  const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
+
   return (
-    <CardContent className={`flex-1 px-3 min-h-0 overflow-y-auto bg-transparent`}>
-      <div className={isLayoutInverted ? 'flex flex-col-reverse space-y-reverse' : ''}>
-        {messages.map((message) => {
+    <ScrollArea className="h-full p-4">
+      <div className="space-y-4">
+        {displayMessages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
             <div
@@ -156,7 +158,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             >
               <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
                 <div
-                  className={`rounded-lg px-4 border ${
+                  className={`rounded-lg px-4 py-2 border ${
                     isOwnMessage
                       ? 'bg-gradient-to-l from-purple-500/10 via-purple-500/5 via-35% to-transparent border-purple-500/20'
                       : 'bg-gradient-to-l from-orange-500/10 via-orange-500/5 via-35% to-transparent border-orange-500/20'
@@ -220,8 +222,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             </div>
           );
         })}
-        {!isLayoutInverted && <div ref={scrollRef} />}
+        <div ref={scrollRef} />
       </div>
-    </CardContent>
+    </ScrollArea>
   );
 };

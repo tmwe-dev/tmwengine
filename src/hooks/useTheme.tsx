@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export type Theme = 'lilla' | 'gold' | 'platinum' | 'emerald' | 'royal' | 'sapphire' | 'ruby' | 'onyx';
+export type Theme = 'lilla' | 'ocean' | 'sunset' | 'forest' | 'sky';
 
 const THEME_STORAGE_KEY = 'crm-theme';
 
@@ -10,40 +10,25 @@ export const themes = {
     description: 'Tema predefinito con tonalità blu e viola',
     className: ''
   },
-  gold: {
-    name: 'Gold',
-    description: 'Oro elegante e raffinato',
-    className: 'theme-gold'
+  ocean: {
+    name: 'Ocean',
+    description: 'Tonalità teal e coral',
+    className: 'theme-ocean'
   },
-  platinum: {
-    name: 'Platinum',
-    description: 'Platino lucido e sofisticato',
-    className: 'theme-platinum'
+  sunset: {
+    name: 'Sunset',
+    description: 'Arancione caldo e viola',
+    className: 'theme-sunset'
   },
-  emerald: {
-    name: 'Emerald',
-    description: 'Smeraldo prezioso e vibrante',
-    className: 'theme-emerald'
+  forest: {
+    name: 'Forest',
+    description: 'Verde smeraldo e marrone',
+    className: 'theme-forest'
   },
-  royal: {
-    name: 'Royal',
-    description: 'Viola reale maestoso',
-    className: 'theme-royal'
-  },
-  sapphire: {
-    name: 'Sapphire',
-    description: 'Zaffiro blu intenso',
-    className: 'theme-sapphire'
-  },
-  ruby: {
-    name: 'Ruby',
-    description: 'Rubino rosa passionale',
-    className: 'theme-ruby'
-  },
-  onyx: {
-    name: 'Onyx',
-    description: 'Onice nero profondo',
-    className: 'theme-onyx'
+  sky: {
+    name: 'Sky',
+    description: 'Azzurro cielo e giallo solare',
+    className: 'theme-sky'
   }
 } as const;
 

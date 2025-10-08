@@ -98,58 +98,59 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
     setCreating(true);
     try {
-      // Prima prova sessionStorage (per utenti TMWE)
-      let userId = sessionStorage.getItem('supabase_user_id');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      // Se non c'è in sessionStorage, prova la sessione Supabase
-      if (!userId) {
-        const { data: { session } } = await supabase.auth.getSession();
-        userId = session?.user?.id;
-      }
+      console.log('User auth check:', { user, userError });
       
-      if (!userId) {
+      if (!user) {
         toast({
-          title: 'Errore',
-          description: 'Sessione non trovata. Riprova ad accedere.',
+          title: 'Errore di autenticazione',
+          description: 'Devi essere autenticato per creare una stanza. Effettua il login.',
           variant: 'destructive'
         });
         return;
       }
 
-      console.log('🏗️ Creazione stanza con user_id:', userId);
+      console.log('Attempting to create room:', {
+        name: newRoomName.trim(),
+        description: newRoomDescription.trim(),
+        created_by: user.id
+      });
 
-      // Crea la stanza
       const { data: newRoom, error: roomError } = await supabase
         .from('intranet_rooms')
         .insert({
           name: newRoomName.trim(),
           description: newRoomDescription.trim(),
-          created_by: userId
+          created_by: user.id
         })
         .select()
         .single();
 
+      console.log('Room creation result:', { newRoom, roomError });
+
       if (roomError) {
-        console.error('❌ Errore creazione stanza:', roomError);
+        toast({
+          title: 'Errore creazione stanza',
+          description: roomError.message || 'Impossibile creare la stanza',
+          variant: 'destructive'
+        });
         throw roomError;
       }
 
-      console.log('✅ Stanza creata:', newRoom.id);
-
-      // Aggiungi il creatore come membro
+      // Add creator as member
       const { error: memberError } = await supabase
         .from('intranet_room_members')
         .insert({
           room_id: newRoom.id,
-          user_id: userId
+          user_id: user.id
         });
 
-      if (memberError) {
-        console.error('❌ Errore aggiunta membro:', memberError);
-        throw memberError;
-      }
+      console.log('Member add result:', { memberError });
 
-      console.log('✅ Membro aggiunto alla stanza');
+      if (memberError) {
+        console.error('Error adding member:', memberError);
+      }
 
       toast({
         title: 'Successo',
@@ -178,11 +179,11 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base md:text-lg font-semibold">Stanze Chat</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Stanze Chat</h2>
         <Button size="sm" variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 md:mr-2" />
-          <span className="hidden md:inline">Nuova Stanza</span>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuova Stanza
         </Button>
       </div>
 
@@ -190,24 +191,24 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         {rooms.map((room) => (
           <Card
             key={room.id}
-            className={`cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${
-              selectedRoomId === room.id ? 'border-primary bg-primary/5' : ''
+            className={`cursor-pointer transition-all hover:shadow-md ${
+              selectedRoomId === room.id ? 'border-primary' : ''
             }`}
             onClick={() => onRoomSelect(room.id)}
           >
-            <CardHeader className="p-3 md:pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-sm md:text-base flex items-center gap-2 min-w-0 flex-1">
-                  <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{room.name}</span>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  {room.name}
                 </CardTitle>
-                <Badge variant="secondary" className="flex items-center gap-1 flex-shrink-0">
+                <Badge variant="secondary" className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  <span className="text-xs">{room.member_count}</span>
+                  {room.member_count}
                 </Badge>
               </div>
               {room.description && (
-                <CardDescription className="text-xs md:text-sm line-clamp-2">
+                <CardDescription className="text-sm">
                   {room.description}
                 </CardDescription>
               )}
@@ -216,7 +217,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         ))}
 
         {rooms.length === 0 && (
-          <div className="text-center py-8 text-sm md:text-base text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground">
             Nessuna stanza disponibile. Crea la prima stanza!
           </div>
         )}
@@ -224,29 +225,28 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
 
       {/* Create Room Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">Crea Nuova Stanza</DialogTitle>
-            <DialogDescription className="text-sm">
+            <DialogTitle>Crea Nuova Stanza</DialogTitle>
+            <DialogDescription>
               Crea una nuova stanza di chat per collaborare con il tuo team
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="room-name" className="text-sm">Nome Stanza *</Label>
+              <Label htmlFor="room-name">Nome Stanza *</Label>
               <Input
                 id="room-name"
                 placeholder="Es. Marketing Team"
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
                 disabled={creating}
-                className="text-sm md:text-base"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="room-description" className="text-sm">Descrizione</Label>
+              <Label htmlFor="room-description">Descrizione</Label>
               <Textarea
                 id="room-description"
                 placeholder="Descrivi lo scopo di questa stanza..."
@@ -254,25 +254,19 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
                 onChange={(e) => setNewRoomDescription(e.target.value)}
                 disabled={creating}
                 rows={3}
-                className="text-sm md:text-base resize-none"
               />
             </div>
           </div>
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={creating}
-              className="w-full sm:w-auto"
             >
               Annulla
             </Button>
-            <Button 
-              onClick={handleCreateRoom} 
-              disabled={creating}
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={handleCreateRoom} disabled={creating}>
               {creating ? 'Creazione...' : 'Crea Stanza'}
             </Button>
           </DialogFooter>

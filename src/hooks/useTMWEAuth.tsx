@@ -35,7 +35,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     const email = sessionStorage.getItem('tmwe_user_email');
     const token = sessionStorage.getItem('tmwe_access_token');
     const storedProfile = sessionStorage.getItem('tmwe_user_profile');
-    const storedSupabaseId = sessionStorage.getItem('supabase_user_id');
+    const storedSupabaseId = sessionStorage.getItem('tmwe_supabase_user_id');
     
     if (email && token) {
       setUserEmail(email);
@@ -56,7 +56,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const syncWithSupabase = async (email: string, profile?: UserProfile) => {
     try {
-      console.log('🔄 Sincronizzazione TMWE → Supabase per email:', email);
+      console.log('🔄 Sincronizzazione TMWE → Supabase...');
       
       const { data, error } = await supabase.functions.invoke('tmwe-supabase-sync', {
         body: {
@@ -65,52 +65,26 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
         }
       });
 
-      console.log('📦 Risposta da tmwe-supabase-sync:', { data, error });
-
       if (error) {
-        console.error('❌ Errore sincronizzazione Supabase:', error);
+        console.error('Errore sincronizzazione Supabase:', error);
         return null;
       }
 
       if (data?.supabaseUserId) {
-        console.log('✅ Sincronizzazione completata con user_id:', data.supabaseUserId);
-        
-        // Se c'è una password temporanea (nuovo utente), fai login
-        if (data.tempPassword) {
-          console.log('🔐 Login con password temporanea...');
-          const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: data.tempPassword
-          });
-
-          if (signInError) {
-            console.error('❌ Errore login:', signInError);
-            return null;
-          }
-
-          if (authData.session) {
-            console.log('✅ Sessione Supabase creata con successo!');
-          }
-        }
-        
+        console.log('✅ Sincronizzazione completata:', data.supabaseUserId);
         setSupabaseUserId(data.supabaseUserId);
-        sessionStorage.setItem('supabase_user_id', data.supabaseUserId);
-        console.log('💾 User ID salvato in sessionStorage:', data.supabaseUserId);
-        
+        sessionStorage.setItem('tmwe_supabase_user_id', data.supabaseUserId);
         return data.supabaseUserId;
-      } else {
-        console.error('⚠️ Risposta senza supabaseUserId:', data);
       }
 
       return null;
     } catch (error) {
-      console.error('❌ Errore durante la sincronizzazione:', error);
+      console.error('Errore durante la sincronizzazione:', error);
       return null;
     }
   };
 
   const login = async (email: string, profile?: UserProfile) => {
-    console.log('🔐 Login chiamato per:', email);
     setUserEmail(email);
     if (profile) {
       setUserProfile(profile);
@@ -118,13 +92,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     }
     
     // Sincronizza con Supabase
-    const userId = await syncWithSupabase(email, profile);
-    
-    if (userId) {
-      console.log('✅ Login completato con user_id:', userId);
-    } else {
-      console.error('⚠️ Sincronizzazione fallita, ma login TMWE OK');
-    }
+    await syncWithSupabase(email, profile);
   };
 
   const logout = () => {
@@ -134,7 +102,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('tmwe_user_email');
     sessionStorage.removeItem('tmwe_access_token');
     sessionStorage.removeItem('tmwe_user_profile');
-    sessionStorage.removeItem('supabase_user_id');
+    sessionStorage.removeItem('tmwe_supabase_user_id');
   };
 
   const refreshProfile = async () => {

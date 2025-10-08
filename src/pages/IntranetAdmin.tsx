@@ -1,13 +1,62 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, MessageSquare, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Shield, Users, MessageSquare, Sparkles } from 'lucide-react';
 import { AdminRoomManager } from '@/components/intranet/admin/AdminRoomManager';
 import { AdminUserManager } from '@/components/intranet/admin/AdminUserManager';
 import { AdminGlobalPrompt } from '@/components/intranet/admin/AdminGlobalPrompt';
 import { AdminStats } from '@/components/intranet/admin/AdminStats';
 
 const IntranetAdmin = () => {
-  console.log('🚧 MODALITÀ SVILUPPO: Accesso libero alla dashboard Admin');
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleData) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+        navigate('/intranet');
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+      navigate('/intranet');
+    }
+  };
+
+  if (isAdmin === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

@@ -84,7 +84,6 @@ const CRMLayout = ({ children }) => {
     { name: 'Email Manager', href: '/email-manager', icon: Mail },
     { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
-    { name: 'Luxury Demo', href: '/luxury', icon: Palette },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },
     { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
     { name: 'Impostazioni', href: '/settings', icon: Settings },
@@ -144,8 +143,23 @@ const CRMLayout = ({ children }) => {
           <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
         </button>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-2">
           <AIGuideDialog />
+          
+          {/* TMWE Profile Button - only show if user has profile */}
+          {userProfile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsProfileDialogOpen(true)}
+              className="h-8 w-8"
+              title="Profilo TMWE"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <ThemeSwitcher />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -246,27 +260,6 @@ const CRMLayout = ({ children }) => {
                 />
               );
             })}
-            
-            {/* Theme Switcher e Profile - affiancati */}
-            <div className="pt-2 border-t border-border mt-2">
-              <div className={cn(
-                "flex items-center gap-2",
-                sidebarOpen ? "justify-start px-3" : "justify-center"
-              )}>
-                <ThemeSwitcher />
-                {userProfile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsProfileDialogOpen(true)}
-                    title="Profilo TMWE"
-                    className="h-9 w-9"
-                  >
-                    <User className="h-5 w-5" />
-                  </Button>
-                )}
-              </div>
-            </div>
             
             {/* Intranet Navigation Items with Admin check */}
             <div className="pt-2 border-t border-border mt-2">

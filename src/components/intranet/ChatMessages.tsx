@@ -22,10 +22,9 @@ interface Message {
 
 interface ChatMessagesProps {
   roomId: string;
-  isLayoutInverted?: boolean;
 }
 
-export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -87,7 +86,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current && !isLayoutInverted) {
+    if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -99,8 +98,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
   return (
     <ScrollArea className="flex-1 p-4">
       <div className="space-y-4">
-        {isLayoutInverted && <div ref={scrollRef} />}
-        {(isLayoutInverted ? [...messages].reverse() : messages).map((message) => {
+        {messages.map((message) => {
           const isOwnMessage = message.user_id === currentUserId;
           return (
             <div
@@ -175,7 +173,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false }: ChatMessagesP
             </div>
           );
         })}
-        {!isLayoutInverted && <div ref={scrollRef} />}
+        <div ref={scrollRef} />
       </div>
     </ScrollArea>
   );

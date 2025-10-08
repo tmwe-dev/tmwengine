@@ -9,7 +9,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
-import LuxuryLayout from "./components/layout/LuxuryLayout";
 
 import Settings from "./pages/Settings";
 import Rubrica from "./pages/Rubrica";
@@ -33,7 +32,6 @@ import Intranet from "./pages/Intranet";
 import IntranetAdmin from "./pages/IntranetAdmin";
 import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
 import TemplateAlias from "./pages/TemplateAlias";
-import LuxuryDemo from "./pages/LuxuryDemo";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
@@ -154,11 +152,6 @@ const App = () => (
             <Route path="/template-alias" element={
               <ProtectedRoute>
                 <CRMLayout><TemplateAlias /></CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/luxury" element={
-              <ProtectedRoute>
-                <LuxuryLayout><LuxuryDemo /></LuxuryLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

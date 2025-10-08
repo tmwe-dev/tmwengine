@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Loader2 } from 'lucide-react';
 
@@ -10,29 +9,8 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated: isTMWEAuthenticated, isLoading: isTMWELoading } = useTMWEAuth();
-  const [isSupabaseAuthenticated, setIsSupabaseAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { isAuthenticated, isLoading } = useTMWEAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsSupabaseAuthenticated(!!user);
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      setIsSupabaseAuthenticated(false);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
-
-  const isLoading = isTMWELoading || isCheckingAuth;
-  const isAuthenticated = isTMWEAuthenticated || isSupabaseAuthenticated;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

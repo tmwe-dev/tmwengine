@@ -1267,12 +1267,10 @@ export type Database = {
           custom_prompt: string | null
           enable_ai: boolean
           enable_auto_speaker: boolean
-          enable_moderation: boolean
           enable_suggestions: boolean
           enable_translation: boolean
           id: string
           is_using_standard: boolean
-          moderation_prompt: string | null
           room_id: string
           updated_at: string
         }
@@ -1281,12 +1279,10 @@ export type Database = {
           custom_prompt?: string | null
           enable_ai?: boolean
           enable_auto_speaker?: boolean
-          enable_moderation?: boolean
           enable_suggestions?: boolean
           enable_translation?: boolean
           id?: string
           is_using_standard?: boolean
-          moderation_prompt?: string | null
           room_id: string
           updated_at?: string
         }
@@ -1295,12 +1291,10 @@ export type Database = {
           custom_prompt?: string | null
           enable_ai?: boolean
           enable_auto_speaker?: boolean
-          enable_moderation?: boolean
           enable_suggestions?: boolean
           enable_translation?: boolean
           id?: string
           is_using_standard?: boolean
-          moderation_prompt?: string | null
           room_id?: string
           updated_at?: string
         }
@@ -1822,19 +1816,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      has_role_by_tmwe_email: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _tmwe_email: string
-        }
-        Returns: boolean
-      }
       is_admin: {
         Args: { _user_id: string }
-        Returns: boolean
-      }
-      is_room_member: {
-        Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
       transfer_company_to_rubrica: {

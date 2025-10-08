@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Image, Smile, Mic, Send, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Image, Smile, Mic, Send, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,13 +13,11 @@ interface FileAttachment {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
-  isLayoutInverted: boolean;
-  onToggleLayout: () => void;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId, isLayoutInverted, onToggleLayout }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -245,7 +243,82 @@ export const MessageInputWithAttachments = ({ roomId, isLayoutInverted, onToggle
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex gap-2">
+        {/* Pulsanti allegati */}
+        <div className="flex gap-1">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileSelect}
+            multiple
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => fileInputRef.current?.click()}
+            title="Allega file"
+            disabled={isSending}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+
+          <input
+            type="file"
+            ref={imageInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={handleImageSelect}
+            multiple
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => imageInputRef.current?.click()}
+            title="Allega immagine"
+            disabled={isSending}
+          >
+            <Image className="h-4 w-4" />
+          </Button>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                title="Emoticon"
+                disabled={isSending}
+              >
+                <Smile className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="grid grid-cols-5 gap-2">
+                {EMOTICONS.map((emoticon, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="text-2xl hover:scale-125 transition-transform"
+                    onClick={() => insertEmoticon(emoticon)}
+                  >
+                    {emoticon}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            size="icon"
+            variant={isRecording ? "destructive" : "ghost"}
+            onClick={isRecording ? stopRecording : startRecording}
+            title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
+            disabled={isSending}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
+        </div>
+
         {/* Input testo */}
         <textarea
           value={message}
@@ -257,110 +330,19 @@ export const MessageInputWithAttachments = ({ roomId, isLayoutInverted, onToggle
             }
           }}
           placeholder="Scrivi un messaggio..."
-          className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px] max-h-[120px]"
+          className="flex-1 resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
           disabled={isSending}
-          rows={2}
+          rows={1}
         />
 
-        {/* Pulsanti */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Pulsanti allegati */}
-          <div className="flex gap-1">
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
-              title="Allega file"
-              disabled={isSending}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-
-            <input
-              type="file"
-              ref={imageInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageSelect}
-              multiple
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => imageInputRef.current?.click()}
-              title="Allega immagine"
-              disabled={isSending}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  title="Emoticon"
-                  disabled={isSending}
-                >
-                  <Smile className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64">
-                <div className="grid grid-cols-5 gap-2">
-                  {EMOTICONS.map((emoticon, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      className="text-2xl hover:scale-125 transition-transform"
-                      onClick={() => insertEmoticon(emoticon)}
-                    >
-                      {emoticon}
-                    </Button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <Button
-              size="icon"
-              variant={isRecording ? "destructive" : "ghost"}
-              onClick={isRecording ? stopRecording : startRecording}
-              title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
-              disabled={isSending}
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Pulsante invio */}
-          <Button
-            onClick={sendMessage}
-            disabled={(!message.trim() && attachments.length === 0) || isSending}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Pulsante inversione layout */}
-        <div className="flex justify-center mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleLayout}
-            className="text-muted-foreground hover:text-foreground"
-            title={isLayoutInverted ? "Layout normale" : "Inverti layout"}
-          >
-            {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-          </Button>
-        </div>
+        {/* Pulsante invio */}
+        <Button
+          onClick={sendMessage}
+          disabled={(!message.trim() && attachments.length === 0) || isSending}
+          size="icon"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

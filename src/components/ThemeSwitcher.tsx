@@ -16,20 +16,17 @@ export function ThemeSwitcher() {
 
   const themeColors: Record<Theme, string> = {
     lilla: 'bg-gradient-to-r from-blue-500 to-purple-600',
-    gold: 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600',
-    platinum: 'bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300',
-    emerald: 'bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600',
-    royal: 'bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-700',
-    sapphire: 'bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600',
-    ruby: 'bg-gradient-to-r from-rose-500 via-pink-400 to-rose-600',
-    onyx: 'bg-gradient-to-r from-gray-800 via-slate-700 to-gray-900'
+    ocean: 'bg-gradient-to-r from-teal-500 to-orange-500',
+    sunset: 'bg-gradient-to-r from-orange-500 to-purple-600',
+    forest: 'bg-gradient-to-r from-emerald-600 to-amber-600',
+    sky: 'bg-gradient-to-r from-sky-500 to-yellow-400'
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Palette className="h-4 w-4" />
+        <Button variant="outline" size="icon" className="relative">
+          <Palette className="h-5 w-5" />
           <span className="sr-only">Cambia tema</span>
         </Button>
       </DropdownMenuTrigger>

@@ -129,7 +129,7 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 flex flex-col border-0 shadow-none bg-transparent min-h-0">
+              <Card className="flex-1 flex flex-col border-0 shadow-none bg-transparent">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               

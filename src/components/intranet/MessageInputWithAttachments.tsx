@@ -193,7 +193,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
   return (
     <>
-      <div className="p-4">
+      <div className="p-4 flex-shrink-0">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 
@@ -257,9 +257,9 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[120px]"
+              className="w-full resize-none rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={isSending}
-              rows={1}
+              rows={2}
             />
           </div>
 

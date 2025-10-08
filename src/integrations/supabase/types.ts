@@ -1267,10 +1267,12 @@ export type Database = {
           custom_prompt: string | null
           enable_ai: boolean
           enable_auto_speaker: boolean
+          enable_moderation: boolean
           enable_suggestions: boolean
           enable_translation: boolean
           id: string
           is_using_standard: boolean
+          moderation_prompt: string | null
           room_id: string
           updated_at: string
         }
@@ -1279,10 +1281,12 @@ export type Database = {
           custom_prompt?: string | null
           enable_ai?: boolean
           enable_auto_speaker?: boolean
+          enable_moderation?: boolean
           enable_suggestions?: boolean
           enable_translation?: boolean
           id?: string
           is_using_standard?: boolean
+          moderation_prompt?: string | null
           room_id: string
           updated_at?: string
         }
@@ -1291,10 +1295,12 @@ export type Database = {
           custom_prompt?: string | null
           enable_ai?: boolean
           enable_auto_speaker?: boolean
+          enable_moderation?: boolean
           enable_suggestions?: boolean
           enable_translation?: boolean
           id?: string
           is_using_standard?: boolean
+          moderation_prompt?: string | null
           room_id?: string
           updated_at?: string
         }

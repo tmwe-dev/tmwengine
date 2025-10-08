@@ -88,7 +88,11 @@ const Intranet = () => {
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-            <SheetContent side="left" className="w-80 p-4">
+            <SheetContent side="left" className="w-80 p-4 relative">
+              {/* Numero sezione */}
+              <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                2
+              </div>
               <RoomSelector
                 onRoomSelect={(roomId) => {
                   setSearchParams({ room: roomId });
@@ -100,7 +104,11 @@ const Intranet = () => {
           </Sheet>
         ) : (
           /* Desktop/Tablet: Sidebar fissa */
-          <div className="w-full md:w-80 flex-shrink-0">
+          <div className="w-full md:w-80 flex-shrink-0 relative">
+            {/* Numero sezione */}
+            <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+              2
+            </div>
             <Card className="h-full">
               <div className="p-4">
                 <RoomSelector
@@ -113,12 +121,20 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+          {/* Numero sezione */}
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+            3
+          </div>
           <Card className="h-full flex flex-col overflow-hidden">
             {selectedRoomId ? (
               <>
                 {/* Header responsive con utenti online */}
-                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 relative">
+                  {/* Numero sezione */}
+                  <div className="absolute top-2 left-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                    4
+                  </div>
                   
                   {/* Badge utenti online e controlli */}
                   <div className="hidden sm:flex items-center gap-2">
@@ -190,7 +206,11 @@ const Intranet = () => {
 
       {/* Footer fisso a piè di pagina */}
       {selectedRoomId && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
+        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background relative">
+          {/* Numero sezione */}
+          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+            5
+          </div>
           <div className="flex items-center gap-2">
             {isMobile && (
               <Menu 

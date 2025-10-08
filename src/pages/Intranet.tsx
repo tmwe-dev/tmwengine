@@ -6,6 +6,7 @@ import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
 import { RoomAIPromptManager } from '@/components/intranet/RoomAIPromptManager';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
+import { RoomMembersManager } from '@/components/intranet/RoomMembersManager';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,10 +100,16 @@ const Intranet = () => {
                 <div className="flex items-center gap-3">
                   <h1 className="text-xl font-semibold">{selectedRoomName}</h1>
                   {isCreatorOrAdmin && (
-                    <RoomAIPromptManager 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
+                    <>
+                      <RoomAIPromptManager 
+                        roomId={selectedRoomId} 
+                        isCreatorOrAdmin={isCreatorOrAdmin}
+                      />
+                      <RoomMembersManager 
+                        roomId={selectedRoomId}
+                        isCreatorOrAdmin={isCreatorOrAdmin}
+                      />
+                    </>
                   )}
                   <UserLanguageSettings />
                 </div>

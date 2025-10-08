@@ -22,9 +22,10 @@ interface Message {
 
 interface ChatMessagesProps {
   roomId: string;
+  reverseOrder?: boolean;
 }
 
-export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
+export const ChatMessages = ({ roomId, reverseOrder = false }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -50,7 +51,10 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
         table: 'intranet_messages',
         filter: `room_id=eq.${roomId}`
       }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        setMessages(prev => reverseOrder 
+          ? [payload.new as Message, ...prev]
+          : [...prev, payload.new as Message]
+        );
         setTimeout(() => scrollToBottom(), 100);
       })
       .subscribe();
@@ -77,7 +81,7 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
       .from('intranet_messages')
       .select('*')
       .eq('room_id', roomId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: !reverseOrder });
 
     if (data && !error) {
       setMessages(data);

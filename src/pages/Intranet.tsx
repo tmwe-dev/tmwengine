@@ -150,7 +150,7 @@ const Intranet = () => {
 
                     {/* Area messaggi espansa */}
                     <div className="flex-1 overflow-hidden">
-                      <ChatMessages roomId={selectedRoomId} />
+                      <ChatMessages roomId={selectedRoomId} reverseOrder={true} />
                     </div>
                   </>
                 ) : (

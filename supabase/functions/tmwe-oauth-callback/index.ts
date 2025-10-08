@@ -194,6 +194,10 @@ serve(async (req) => {
       throw sessionError;
     }
 
+    if (!sessionData || !sessionData.session) {
+      throw new Error('Session creation failed: no session data returned');
+    }
+
     console.log('✅ Supabase session created');
     console.log('✅ OAuth2 flow completed successfully');
 
@@ -209,10 +213,10 @@ serve(async (req) => {
         },
         supabaseUserId: supabaseUser.id,
         session: {
-          access_token: sessionData.access_token,
-          refresh_token: sessionData.refresh_token,
-          expires_at: sessionData.expires_at,
-          expires_in: sessionData.expires_in,
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+          expires_at: sessionData.session.expires_at,
+          expires_in: sessionData.session.expires_in,
         },
       }),
       {

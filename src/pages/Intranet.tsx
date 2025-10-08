@@ -83,11 +83,25 @@ const Intranet = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
-        {/* Mobile: Sheet con lista stanze */}
-        {isMobile ? (
-          <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+    <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20">
+          {/* Desktop/Tablet: Sidebar fissa */}
+          {!isMobile && (
+            <div className="w-full md:w-80 flex-shrink-0">
+              <Card className="h-full">
+                <div className="p-4">
+                  <RoomSelector
+                    onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                    selectedRoomId={selectedRoomId}
+                  />
+                </div>
+              </Card>
+            </div>
+          )}
+          
+          {/* Mobile: Sheet content */}
+          {isMobile && (
             <SheetContent side="left" className="w-80 p-4">
               <RoomSelector
                 onRoomSelect={(roomId) => {
@@ -97,20 +111,7 @@ const Intranet = () => {
                 selectedRoomId={selectedRoomId}
               />
             </SheetContent>
-          </Sheet>
-        ) : (
-          /* Desktop/Tablet: Sidebar fissa */
-          <div className="w-full md:w-80 flex-shrink-0">
-            <Card className="h-full">
-              <div className="p-4">
-                <RoomSelector
-                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                  selectedRoomId={selectedRoomId}
-                />
-              </div>
-            </Card>
-          </div>
-        )}
+          )}
 
         {/* Area chat principale */}
         <div className="flex-1 flex flex-col min-h-0">
@@ -186,39 +187,40 @@ const Intranet = () => {
             )}
           </Card>
         </div>
-      </div>
-
-      {/* Footer fisso a piè di pagina */}
-      {selectedRoomId && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
-          <div className="flex items-center gap-2">
-            {isMobile && (
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  className="h-10 w-10"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-            )}
-            <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
-          </div>
-          <div className="flex justify-center">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setIsFullscreenMode(!isFullscreenMode)}
-              title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
-            >
-              {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
-          </div>
-          <div />
         </div>
-      )}
-    </div>
+        
+        {/* Footer fisso a piè di pagina */}
+        {selectedRoomId && (
+          <div className="fixed bottom-0 left-0 right-0 p-3 grid grid-cols-3 items-center border-t bg-background">
+            <div className="flex items-center gap-2">
+              {isMobile && (
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-10 w-10"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+              )}
+              <h1 className="text-sm md:text-base font-semibold text-muted-foreground">{selectedRoomName}</h1>
+            </div>
+            <div className="flex justify-center">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setIsFullscreenMode(!isFullscreenMode)}
+                title={isFullscreenMode ? "Vista normale" : "Vista espansa"}
+              >
+                {isFullscreenMode ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div />
+          </div>
+        )}
+      </div>
+    </Sheet>
   );
 };
 

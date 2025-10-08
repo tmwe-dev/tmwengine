@@ -139,7 +139,7 @@ const Intranet = () => {
               </div>
               
               {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
-              <div className="flex-shrink-0 bg-background border-t p-2">
+              <div className="flex-shrink-0">
                 <MessageInputWithAttachments 
                   roomId={selectedRoomId} 
                 />

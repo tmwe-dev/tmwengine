@@ -156,7 +156,7 @@ const Intranet = () => {
 
               {/* Footer - solo mobile */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background">
+                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background overflow-hidden">
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"

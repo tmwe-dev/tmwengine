@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AISuggestions } from './AISuggestions';
 import { RoomAIPromptManager } from './RoomAIPromptManager';
 import { UserLanguageSettings } from './UserLanguageSettings';
+import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 
 interface FileAttachment {
   file: File;
@@ -346,6 +347,7 @@ export const MessageInputWithAttachments = ({ roomId, isFullscreenMode = false, 
 
           {/* Settings centrali sotto il microfono */}
           <div className="flex items-center justify-center gap-2">
+            <AIGuideDialog />
             {isCreatorOrAdmin && (
               <RoomAIPromptManager 
                 roomId={roomId} 

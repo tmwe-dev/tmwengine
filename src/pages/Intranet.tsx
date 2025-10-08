@@ -142,11 +142,13 @@ const Intranet = () => {
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
                   <>
-                    {/* Input messaggi in alto */}
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
+                    {/* Input messaggi in alto - con bordo inferiore */}
+                    <div className="border-b">
+                      <MessageInputWithAttachments 
+                        roomId={selectedRoomId} 
+                        isCreatorOrAdmin={isCreatorOrAdmin}
+                      />
+                    </div>
 
                     {/* Area messaggi espansa */}
                     <div className="flex-1 overflow-hidden">

@@ -149,18 +149,20 @@ const Intranet = () => {
 
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
-                  <>
-                    {/* Input messaggi in alto */}
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
+                  <div className="flex flex-col h-full">
+                    {/* Input messaggi - fisso in alto */}
+                    <div className="sticky top-0 bg-background z-10 border-b">
+                      <MessageInputWithAttachments 
+                        roomId={selectedRoomId} 
+                        isCreatorOrAdmin={isCreatorOrAdmin}
+                      />
+                    </div>
 
                     {/* Area messaggi espansa */}
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto">
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
-                  </>
+                  </div>
                 ) : (
                   /* Vista normale: Chat sopra, input sotto */
                   <>
@@ -169,8 +171,8 @@ const Intranet = () => {
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
 
-                    {/* Input messaggi - fisso */}
-                    <div className="flex-shrink-0">
+                    {/* Input messaggi - fisso in basso */}
+                    <div className="sticky bottom-0 bg-background z-10 border-t">
                       <MessageInputWithAttachments 
                         roomId={selectedRoomId} 
                         isCreatorOrAdmin={isCreatorOrAdmin}

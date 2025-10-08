@@ -197,7 +197,7 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
 
   return (
     <>
-      <div className="p-4 border-t">
+      <div className="p-4">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 

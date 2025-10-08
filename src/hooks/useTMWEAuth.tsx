@@ -4,6 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 interface UserProfile {
   email: string;
   name?: string;
+  username?: string;
+  enterprise_name?: string;
+  telephone?: string;
+  rubrica?: {
+    address?: string;
+    city?: string;
+    prov?: string;
+    country?: string;
+    airport?: string;
+    cap?: string;
+    address_name?: string;
+    telephone?: string;
+    email?: string;
+  };
   quota?: {
     used: number;
     total: number;

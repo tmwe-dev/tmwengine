@@ -1,0 +1,646 @@
+openapi: 3.0.4
+info:
+  title: TMWE ERP OAuth2 API
+  description: |
+    OAuth2 authentication and authorization API for TMWE ERP system.
+
+    Implements OAuth2 RFC standards including:
+    - RFC 6749: OAuth 2.0 Authorization Framework
+    - RFC 7009: OAuth 2.0 Token Revocation
+    - RFC 7662: OAuth 2.0 Token Introspection
+
+    Supported grant types:
+    - Client Credentials (machine-to-machine)
+    - Authorization Code (user authorization)
+    - Refresh Token (token renewal)
+    - Authorization from Google (Google SSO integration)
+  version: 2.0.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: TMWE ERP OAuth2 API Server
+
+tags:
+  - name: Token
+    description: Token management endpoints
+  - name: Authorization
+    description: User authorization endpoints
+  - name: Token Management
+    description: Token introspection and revocation
+
+paths:
+  /token:
+    post:
+      tags:
+        - Token
+      summary: Get access token
+      description: |
+        Main endpoint for obtaining OAuth2 access tokens.
+        The grant type is specified via the `grant_type` parameter.
+      operationId: getToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ClientCredentialsRequest'
+                - $ref: '#/components/schemas/AuthorizationCodeRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+                - $ref: '#/components/schemas/GoogleAuthorizationRequest'
+              discriminator:
+                propertyName: grant_type
+                mapping:
+                  client_credentials: '#/components/schemas/ClientCredentialsRequest'
+                  authorization_code: '#/components/schemas/AuthorizationCodeRequest'
+                  refresh_token: '#/components/schemas/RefreshTokenRequest'
+                  authorization_from_google: '#/components/schemas/GoogleAuthorizationRequest'
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security: []
+
+  /authorization:
+    get:
+      tags:
+        - Authorization
+      summary: Authorization endpoint for OAuth2 Authorization Code flow
+      description: |
+        Initiates the Authorization Code flow to obtain an authorization code.
+        This endpoint redirects the user to /auth for login if not authenticated,
+        or directly generates the authorization code if already authenticated.
+      operationId: getAuthorizationCode
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: Registered redirect URI where the authorization code will be sent
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: Response type (always 'code' for Authorization Code flow)
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Value to prevent CSRF attacks (will be returned with the code)
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Requested scopes (space-separated)
+      responses:
+        '302':
+          description: Redirect to login page (/auth) or to redirect_uri with authorization code
+          headers:
+            Location:
+              schema:
+                type: string
+              examples:
+                toLogin:
+                  value: "/auth?client_id=abc&redirect_uri=https://example.com/callback&state=xyz"
+                  summary: Redirect to login page
+                toCallback:
+                  value: "https://example.com/callback?code=AUTH_CODE&state=xyz"
+                  summary: Redirect with authorization code
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security: []
+
+  /auth:
+    get:
+      tags:
+        - Authorization
+      summary: User login page
+      description: |
+        Displays the login form for user authentication.
+        This endpoint is used by /authorization when the user needs to authenticate.
+        After successful login, the user is redirected back to complete the authorization flow.
+      operationId: showLoginPage
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: Registered redirect URI
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: Response type (always 'code')
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Value to prevent CSRF attacks
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Requested scopes
+      responses:
+        '200':
+          description: Login/authorization form
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security: []
+
+    post:
+      tags:
+        - Authorization
+      summary: Process user login
+      description: |
+        Processes user login credentials.
+        After successful authentication, redirects back to continue the authorization flow.
+        If the user cancels, redirects to redirect_uri with an error.
+      operationId: processLogin
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Username
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                cancel_submit:
+                  type: boolean
+                  description: Whether the user cancels the authorization
+      responses:
+        '302':
+          description: Redirect with authorization code
+          headers:
+            Location:
+              schema:
+                type: string
+                example: https://client-app.com/callback?code=abc123&state=xyz789
+        '401':
+          description: Invalid credentials
+          content:
+            text/html:
+              schema:
+                type: string
+      security: []
+
+  /revoke:
+    post:
+      tags:
+        - Token Management
+      summary: Revoke token
+      description: |
+        Revokes an access token or refresh token (RFC 7009).
+        Also revokes associated tokens in cascade.
+        Always returns 200 to prevent scanning attacks.
+      operationId: revokeToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - client_id
+                - client_secret
+                - token
+              properties:
+                client_id:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client ID
+                client_secret:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client secret
+                token:
+                  type: string
+                  description: Token to revoke (access_token or refresh_token)
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: Token type (optional, improves performance)
+      responses:
+        '200':
+          description: Token revoked successfully (or not found)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          description: Method not allowed (POST only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /introspect:
+    post:
+      tags:
+        - Token Management
+      summary: Token introspection
+      description: |
+        Validates a token and returns its metadata (RFC 7662).
+        Only allows introspection of tokens from the same client.
+      operationId: introspectToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - client_id
+                - client_secret
+                - token
+              properties:
+                client_id:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client ID
+                client_secret:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client secret
+                token:
+                  type: string
+                  description: Token to inspect
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: Token type (optional, improves performance)
+      responses:
+        '200':
+          description: Token information
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ActiveTokenIntrospection'
+                  - $ref: '#/components/schemas/InactiveTokenIntrospection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          description: Method not allowed (POST only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+components:
+  schemas:
+    ClientCredentialsRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID (hexadecimal, min 32 characters)
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret (hexadecimal, min 32 characters)
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+
+    AuthorizationCodeRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+        - code
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret
+        code:
+          type: string
+          minLength: 16
+          description: Authorization code obtained from authorization flow
+        redirect_uri:
+          type: string
+          format: uri
+          description: Redirect URI (must match the one from authorization)
+        scope:
+          type: string
+          description: Requested scopes
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        refresh_token:
+          type: string
+          minLength: 32
+          pattern: '^[a-zA-Z0-9]+$'
+          description: Valid refresh token
+
+    GoogleAuthorizationRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+        - google_code
+        - google_client_id
+        - google_client_secret
+        - google_redirect_url
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_from_google]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: TMWE OAuth2 client ID
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: TMWE OAuth2 client secret
+        google_code:
+          type: string
+          description: Google OAuth authorization code
+        google_client_id:
+          type: string
+          description: Google OAuth client ID
+        google_client_secret:
+          type: string
+          description: Google OAuth client secret
+        google_redirect_url:
+          type: string
+          format: uri
+          description: Google OAuth redirect URL
+        scope:
+          type: string
+          description: Requested scopes
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: JWT access token or random string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          enum: [Bearer]
+          description: Token type (always Bearer)
+        expires_in:
+          type: integer
+          description: Seconds until token expiration
+          example: 3600
+        refresh_token:
+          type: string
+          description: Refresh token (only in authorization_code and authorization_from_google)
+          example: "def50200abc123..."
+        refresh_token_expires_in:
+          type: integer
+          description: Seconds until refresh token expiration
+          example: 2592000
+        scope:
+          type: string
+          description: Granted scopes
+          example: "read write"
+
+    ActiveTokenIntrospection:
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          type: boolean
+          enum: [true]
+          description: Indicates if the token is active
+        client_id:
+          type: string
+          description: Client ID that owns the token
+        token_type:
+          type: string
+          enum: [access_token, refresh_token]
+          description: Token type
+        exp:
+          type: integer
+          format: int64
+          description: Expiration timestamp (Unix epoch)
+          example: 1735689600
+        iat:
+          type: integer
+          format: int64
+          description: Creation timestamp (Unix epoch)
+          example: 1735603200
+        sub:
+          type: string
+          description: User ID (subject)
+          example: "12345"
+        username:
+          type: string
+          description: Username or email
+          example: "user@example.com"
+        scope:
+          type: string
+          description: Token scopes
+          example: "read write"
+        aud:
+          type: string
+          description: Token audience
+          example: "https://api.tmwe.com"
+
+    InactiveTokenIntrospection:
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          type: boolean
+          enum: [false]
+          description: Indicates that the token is not active or does not exist
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          enum:
+            - invalid_request
+            - invalid_client
+            - invalid_grant
+            - unauthorized_client
+            - unsupported_grant_type
+            - invalid_scope
+            - method_not_allowed
+          description: OAuth2 error code
+        error_description:
+          type: string
+          description: Human-readable error description
+          example: "Missing required parameter: client_id"
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingParameter:
+              value:
+                error: "invalid_request"
+                error_description: "Missing required parameter: grant_type"
+            invalidFormat:
+              value:
+                error: "invalid_request"
+                error_description: "Invalid parameter format"
+            unsupportedGrantType:
+              value:
+                error: "unsupported_grant_type"
+                error_description: "Unsupported grant_type: password"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidClient:
+              value:
+                error: "invalid_client"
+                error_description: "Client authentication failed"
+            invalidGrant:
+              value:
+                error: "invalid_grant"
+                error_description: "Invalid or expired authorization code"
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: OAuth2 authentication
+      flows:
+        clientCredentials:
+          tokenUrl: /token
+          scopes:
+            read: Read access
+            write: Write access
+        authorizationCode:
+          authorizationUrl: /authorization
+          tokenUrl: /token
+          scopes:
+            read: Read access
+            write: Write access
+
+security:
+  - OAuth2: []

@@ -1,288 +1,235 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const TMWEAuthCallbackIntegrated = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
   const { login } = useTMWEAuth();
+  const [status, setStatus] = useState<'processing' | 'error' | 'success'>('processing');
+  const [error, setError] = useState<string>('');
+  const [details, setDetails] = useState<string[]>([]);
 
   useEffect(() => {
-    const handleCallback = async () => {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🔐 INICIO DEL CALLBACK OAUTH2');
-      console.log('═══════════════════════════════════════════════════════');
-      
+    handleOAuthCallback();
+  }, []);
+
+  const handleOAuthCallback = async () => {
+    const addDetail = (detail: string) => {
+      console.log(detail);
+      setDetails(prev => [...prev, detail]);
+    };
+
+    try {
+      addDetail('📥 Procesando callback OAuth2...');
+
+      // 1. Obtener parámetros de la URL
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const errorParam = searchParams.get('error');
+      const error = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
 
-      console.log('📋 Parámetros recibidos:');
-      console.log('  - code:', code ? code.substring(0, 20) + '...' : 'null');
-      console.log('  - state:', state);
-      console.log('  - error:', errorParam);
-      console.log('  - error_description:', errorDescription);
-
-      // Check for errors
-      if (errorParam) {
-        const errorMsg = errorDescription || errorParam;
-        console.error('❌ Error en autorización:', errorMsg);
-        setError(errorMsg);
-        toast.error(`Authorization failed: ${errorMsg}`);
-        setTimeout(() => navigate('/email-manager'), 3000);
-        return;
+      // Verificar errores de OAuth
+      if (error) {
+        throw new Error(`OAuth Error: ${error} - ${errorDescription || 'Unknown error'}`);
       }
 
       if (!code) {
-        console.error('❌ No se recibió código de autorización');
-        setError('No authorization code received');
-        toast.error('No authorization code received');
-        setTimeout(() => navigate('/email-manager'), 3000);
-        return;
+        throw new Error('Authorization code not received');
       }
 
-      // Retrieve stored OAuth state
-      const storedState = sessionStorage.getItem('oauth_state');
-      const clientId = sessionStorage.getItem('oauth_client_id');
-      const clientSecret = sessionStorage.getItem('oauth_client_secret');
-      const redirectUri = sessionStorage.getItem('oauth_redirect_uri');
+      addDetail(`✅ Código de autorización recibido`);
 
-      console.log('🔑 OAuth config desde sessionStorage:');
-      console.log('  - storedState:', storedState);
-      console.log('  - clientId:', clientId ? clientId.substring(0, 20) + '...' : 'null');
-      console.log('  - clientSecret:', clientSecret ? 'presente' : 'null');
-      console.log('  - redirectUri:', redirectUri);
+      // 2. Validar state (CSRF protection)
+      const savedState = sessionStorage.getItem('tmwe_oauth_state');
+      if (!savedState || savedState !== state) {
+        throw new Error('Invalid state parameter (possible CSRF attack)');
+      }
+      addDetail(`✅ State validado correctamente`);
 
-      if (!storedState || !clientId || !clientSecret || !redirectUri) {
-        console.error('❌ Falta configuración OAuth en sessionStorage');
-        setError('Missing OAuth configuration');
-        toast.error('Missing OAuth configuration');
-        setTimeout(() => navigate('/email-manager'), 3000);
-        return;
+      // 3. Obtener credenciales OAuth del sessionStorage
+      const clientId = sessionStorage.getItem('tmwe_client_id');
+      const clientSecret = sessionStorage.getItem('tmwe_client_secret');
+      const redirectUri = sessionStorage.getItem('tmwe_redirect_uri');
+
+      if (!clientId || !clientSecret || !redirectUri) {
+        throw new Error('Missing OAuth credentials');
       }
 
-      // Verify state to prevent CSRF
-      if (state !== storedState) {
-        console.error('❌ Estado no coincide - posible ataque CSRF');
-        console.error('  - State recibido:', state);
-        console.error('  - State almacenado:', storedState);
-        setError('State mismatch - possible CSRF attack');
-        toast.error('Security validation failed');
-        setTimeout(() => navigate('/email-manager'), 3000);
-        return;
+      addDetail('🔐 Intercambiando código por token de acceso...');
+
+      // 4. Intercambiar código por access_token (grant_type: authorization_code)
+      const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: clientId,
+          client_secret: clientSecret,
+          code: code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json().catch(() => ({}));
+        throw new Error(`Token exchange failed: ${errorData.error || tokenResponse.statusText}`);
       }
 
-      console.log('✅ Validación de estado exitosa');
+      const tokenData = await tokenResponse.json();
+      const { access_token, refresh_token, expires_in, email } = tokenData;
 
-      // Exchange authorization code for access token
-      try {
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('📤 INTERCAMBIO DE CÓDIGO POR TOKEN');
-        console.log('═══════════════════════════════════════════════════════');
-        
-        const formData = new URLSearchParams();
-        formData.append('grant_type', 'authorization_code');
-        formData.append('client_id', clientId);
-        formData.append('client_secret', clientSecret);
-        formData.append('code', code);
-        formData.append('redirect_uri', redirectUri);
+      if (!access_token) {
+        throw new Error('No access token received');
+      }
 
-        console.log('📦 Datos del request:');
-        console.log('  - URL:', 'https://findair.it/erp/tmwe_json/token');
-        console.log('  - grant_type:', 'authorization_code');
-        console.log('  - client_id:', clientId.substring(0, 20) + '...');
-        console.log('  - redirect_uri:', redirectUri);
+      addDetail(`✅ Access token obtenido (email: ${email || 'unknown'})`);
+      addDetail(`⏰ Token expira en: ${expires_in ? `${expires_in}s` : 'unknown'}`);
 
-        const response = await fetch('https://findair.it/erp/tmwe_json/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData.toString(),
-        });
+      // 5. Guardar tokens en sessionStorage
+      sessionStorage.setItem('tmwe_access_token', access_token);
+      if (refresh_token) {
+        sessionStorage.setItem('tmwe_refresh_token', refresh_token);
+      }
+      if (expires_in) {
+        const expiresAt = Date.now() + (expires_in * 1000);
+        sessionStorage.setItem('tmwe_token_expires_at', expiresAt.toString());
+      }
+      if (email) {
+        sessionStorage.setItem('tmwe_user_email', email);
+      }
 
-        console.log('📥 Respuesta del servidor de tokens:');
-        console.log('  - Status:', response.status);
-        console.log('  - Status Text:', response.statusText);
-        console.log('  - OK:', response.ok);
+      addDetail('👤 Obteniendo perfil del usuario (/get_my_profile)...');
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('❌ Error en intercambio de token:', errorData);
-          throw new Error(errorData.error_description || errorData.error || 'Token exchange failed');
-        }
+      // 6. Obtener perfil del usuario usando el access_token
+      const profileResponse = await fetch('https://findair.it/erp/tmwe_json/get_my_profile', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          handler: 'get_my_profile'
+        }),
+      });
 
-        const tokenData = await response.json();
-        
-        console.log('✅ Token recibido exitosamente');
-        console.log('📦 RESPUESTA LITERAL DEL API:');
-        console.log(JSON.stringify(tokenData, null, 2));
-        console.log('  - expires_in:', tokenData.expires_in, 'segundos');
-        console.log('  - access_token presente:', !!tokenData.access_token);
-        console.log('  - refresh_token presente:', !!tokenData.refresh_token);
-        console.log('  - email presente:', !!tokenData.email);
-        
-        const expiresAt = Date.now() + (tokenData.expires_in * 1000);
+      if (!profileResponse.ok) {
+        throw new Error(`Failed to fetch profile: ${profileResponse.statusText}`);
+      }
 
-        // Get user email from token response
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('📧 EXTRAYENDO EMAIL DE LA RESPUESTA DEL TOKEN');
-        console.log('═══════════════════════════════════════════════════════');
-        
-        let userEmail = tokenData.email;
-        
-        // Si no viene el email en la respuesta, mostrar error
-        if (!userEmail) {
-          console.error('❌ No se recibió email en la respuesta del token');
-          throw new Error('No se recibió email del API de TMWE');
-        }
-        
-        console.log('✅ Email del usuario:', userEmail);
+      const profileData = await profileResponse.json();
+      
+      addDetail(`✅ Perfil obtenido: ${profileData.name || profileData.username}`);
+      addDetail(`🏢 Empresa: ${profileData.enterprise_name || 'N/A'}`);
 
-        // Save TMWE credentials to database
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('💾 GUARDANDO CREDENCIALES TMWE');
-        console.log('═══════════════════════════════════════════════════════');
-        
-        // Check if credentials already exist for this email
-        const { data: existingCreds } = await supabase
-          .from('user_tmwe_credentials')
-          .select('*')
-          .eq('email', userEmail)
-          .maybeSingle();
+      // 7. Crear/actualizar sesión en Supabase
+      addDetail('🔄 Sincronizando con Supabase...');
+      
+      await login(profileData.email || email, {
+        email: profileData.email || email,
+        name: profileData.name,
+        username: profileData.username,
+        enterprise_name: profileData.enterprise_name,
+        rubrica: profileData.rubrica,
+      });
 
-        if (existingCreds) {
-          // Update existing credentials
-          console.log('🔄 Actualizando credenciales existentes para:', userEmail);
-          const { error: updateError } = await supabase
-            .from('user_tmwe_credentials')
-            .update({
-              access_token: tokenData.access_token,
-              refresh_token: tokenData.refresh_token,
-              expires_at: expiresAt,
-              client_id: clientId,
-              client_secret: clientSecret,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('email', userEmail);
+      addDetail('✅ Sesión Supabase creada correctamente');
 
-          if (updateError) {
-            console.error('❌ Error actualizando credenciales:', updateError);
-            throw updateError;
-          }
-        } else {
-          // Insert new credentials
-          console.log('🆕 Creando nuevas credenciales para:', userEmail);
-          const { error: insertError } = await supabase
-            .from('user_tmwe_credentials')
-            .insert({
-              email: userEmail,
-              access_token: tokenData.access_token,
-              refresh_token: tokenData.refresh_token,
-              expires_at: expiresAt,
-              client_id: clientId,
-              client_secret: clientSecret,
-            });
+      // 8. Limpiar datos temporales de OAuth
+      sessionStorage.removeItem('tmwe_oauth_state');
+      sessionStorage.removeItem('tmwe_client_id');
+      sessionStorage.removeItem('tmwe_client_secret');
+      sessionStorage.removeItem('tmwe_redirect_uri');
 
-          if (insertError) {
-            console.error('❌ Error insertando credenciales:', insertError);
-            throw insertError;
-          }
-        }
+      addDetail('✨ Login completado con éxito');
+      setStatus('success');
 
-        console.log('✅ Credenciales guardadas exitosamente');
-
-        // Save email to session storage for the app to use
-        sessionStorage.setItem('tmwe_user_email', userEmail);
-        sessionStorage.setItem('tmwe_access_token', tokenData.access_token);
-
-        // Get user profile from TMWE API
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('👤 OBTENIENDO PERFIL DEL USUARIO');
-        console.log('═══════════════════════════════════════════════════════');
-        
-        let userProfile = null;
-        try {
-          const { profileApi } = await import('@/lib/tmwe-api-integrated');
-          const profileResponse = await profileApi.getMyProfile();
-          console.log('📦 Respuesta del perfil:', profileResponse);
-          
-          if (profileResponse && typeof profileResponse === 'object') {
-            const profileData = profileResponse.success ? profileResponse.data : profileResponse;
-            userProfile = {
-              email: profileData?.email || userEmail,
-              ...profileData
-            };
-            console.log('✅ Perfil obtenido:', userProfile);
-          }
-        } catch (profileError) {
-          console.error('⚠️ Error obteniendo perfil (no crítico):', profileError);
-          // Continue even if profile fetch fails
-        }
-        console.log('═══════════════════════════════════════════════════════');
-
-        // Update auth context with profile and sync with Supabase
-        console.log('🔄 Sincronizzazione con Supabase...');
-        await login(userEmail, userProfile);
-        console.log('✅ Sincronizzazione completata');
-
-        // Clear OAuth session data
-        sessionStorage.removeItem('oauth_state');
-        sessionStorage.removeItem('oauth_client_id');
-        sessionStorage.removeItem('oauth_client_secret');
-        sessionStorage.removeItem('oauth_redirect_uri');
-
-        console.log('🧹 SessionStorage limpiado');
-        console.log('═══════════════════════════════════════════════════════');
-        console.log('✅ AUTENTICACIÓN COMPLETADA EXITOSAMENTE');
-        console.log('═══════════════════════════════════════════════════════');
-
-        toast.success('Accesso effettuato con successo!');
+      // 9. Redirigir al dashboard
+      setTimeout(() => {
         navigate('/');
-      } catch (err) {
-        console.log('═══════════════════════════════════════════════════════');
-        console.error('🔥 ERROR EN EL PROCESO DE CALLBACK');
-        console.log('═══════════════════════════════════════════════════════');
-        console.error('Error:', err);
-        console.error('Message:', err instanceof Error ? err.message : 'Unknown error');
-        console.error('Stack:', err instanceof Error ? err.stack : 'No stack trace');
-        console.log('═══════════════════════════════════════════════════════');
-        
-        const errorMsg = err instanceof Error ? err.message : 'Token exchange failed';
-        setError(errorMsg);
-        toast.error(errorMsg);
-        setTimeout(() => navigate('/email-manager'), 3000);
-      }
-    };
+      }, 1500);
 
-    handleCallback();
-  }, [searchParams, navigate]);
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-subtle">
-        <div className="text-center">
-          <div className="mb-4 text-destructive">
-            <p className="text-lg font-semibold">Authentication Error</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-          <p className="text-sm text-muted-foreground">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
+    } catch (error: any) {
+      console.error('OAuth callback error:', error);
+      setError(error.message || 'Unknown error occurred');
+      setStatus('error');
+      addDetail(`❌ Error: ${error.message}`);
+      
+      // Redirigir a login después de mostrar error
+      setTimeout(() => {
+        navigate('/email-senders');
+      }, 5000);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-subtle">
-      <div className="text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">Connecting TMWE account...</p>
-      </div>
+    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {status === 'processing' && (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                Procesando autenticación...
+              </>
+            )}
+            {status === 'success' && (
+              <>
+                <span className="text-2xl">✅</span>
+                ¡Autenticación exitosa!
+              </>
+            )}
+            {status === 'error' && (
+              <>
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                Error de autenticación
+              </>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {status === 'processing' && 'Validando credenciales y configurando sesión...'}
+            {status === 'success' && 'Redirigiendo al dashboard...'}
+            {status === 'error' && 'Ocurrió un error durante la autenticación'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {status === 'error' && error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Log de detalles */}
+          <div className="bg-muted rounded-lg p-4 max-h-96 overflow-y-auto">
+            <h4 className="text-sm font-semibold mb-2">Detalles del proceso:</h4>
+            <div className="space-y-1 text-xs font-mono">
+              {details.map((detail, index) => (
+                <div key={index} className="text-muted-foreground">
+                  {detail}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {status === 'success' && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Redirigiendo...
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="text-center text-sm text-muted-foreground">
+              Serás redirigido al gestor de email en 5 segundos...
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

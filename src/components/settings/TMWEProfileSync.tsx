@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { profileApi } from '@/lib/tmwe-api-integrated';
 import { 
   RefreshCw, 
   User, 
@@ -102,33 +103,9 @@ export const TMWEProfileSync = () => {
 
   const fetchTMWEProfile = async () => {
     try {
-      const accessToken = sessionStorage.getItem('tmwe_access_token');
+      // Usar el API proxy en lugar de llamada directa
+      const profileData = await profileApi.getMyProfile();
       
-      if (!accessToken) {
-        toast({
-          title: "No autenticado",
-          description: "Debes iniciar sesión primero",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await fetch('https://findair.it/erp/tmwe_json/get_my_profile', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          handler: 'get_my_profile'
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-
-      const profileData = await response.json();
       setTmweProfile(profileData);
       setLastSync(new Date());
 

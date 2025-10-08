@@ -73,6 +73,10 @@ const Settings = () => {
     enabled: false
   });
 
+  const [tmweProfileData, setTmweProfileData] = useState(null);
+  const [hasProfileChanges, setHasProfileChanges] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
   // Sincronizza con il hook usePhoneActions
   useEffect(() => {
     const savedConfig = localStorage.getItem('phone_config');
@@ -96,10 +100,57 @@ const Settings = () => {
     }
   }, []);
 
-  // Carica le configurazioni esistenti
+  // Carica le configurazioni esistenti e profilo TMWE
   useEffect(() => {
     loadConfigurations();
+    loadTMWEProfile();
   }, []);
+
+  const loadTMWEProfile = async () => {
+    setLoadingProfile(true);
+    try {
+      const { profileApi } = await import('@/lib/tmwe-api-integrated');
+      const response = await profileApi.getMyProfile();
+      
+      if (response) {
+        setTmweProfileData(response);
+        checkProfileChanges(response);
+      }
+    } catch (error) {
+      console.error('Error loading TMWE profile:', error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const checkProfileChanges = (tmweData) => {
+    if (!tmweData) return;
+
+    const changes = 
+      (tmweData.name && tmweData.name !== generalConfig.nomeUtente) ||
+      (tmweData.email && tmweData.email !== generalConfig.emailUtente) ||
+      (tmweData.telephone && tmweData.telephone !== generalConfig.telefonoUtente);
+
+    setHasProfileChanges(changes);
+  };
+
+  const handleSyncFromTMWE = async () => {
+    if (!tmweProfileData) return;
+
+    setGeneralConfig(prev => ({
+      ...prev,
+      nomeUtente: tmweProfileData.name || prev.nomeUtente,
+      emailUtente: tmweProfileData.email || prev.emailUtente,
+      telefonoUtente: tmweProfileData.telephone || prev.telefonoUtente,
+    }));
+
+    setHasProfileChanges(false);
+
+    toast({
+      title: "Dati sincronizzati",
+      description: "I dati sono stati aggiornati da TMWE. Ricordati di salvare le modifiche.",
+    });
+  };
 
   const loadConfigurations = async () => {
     try {
@@ -466,13 +517,37 @@ const Settings = () => {
         {activeSection === 'profile' && (
           <Card className="w-full bg-card-transparent">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5" />
-                Profilo Utente
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Configura i tuoi dati personali. Questi dati verranno automaticamente assegnati a tutte le attività che crei.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <User className="h-5 w-5" />
+                    Profilo Utente
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Configura i tuoi dati personali. Questi dati verranno automaticamente assegnati a tutte le attività che crei.
+                  </CardDescription>
+                </div>
+                {hasProfileChanges && (
+                  <Button
+                    onClick={handleSyncFromTMWE}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={loadingProfile}
+                  >
+                    <Database className="h-4 w-4" />
+                    Aggiorna da TMWE
+                  </Button>
+                )}
+              </div>
+              {hasProfileChanges && (
+                <Alert className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    I dati nel tuo profilo TMWE sono diversi da quelli salvati qui. Clicca "Aggiorna da TMWE" per sincronizzare.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

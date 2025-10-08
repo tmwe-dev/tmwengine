@@ -132,16 +132,16 @@ const Intranet = () => {
           </div>
           
           {selectedRoomId ? (
-            <>
-              {/* Contenitore messaggi + input - con padding per la barra fissa in basso */}
-              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 ${isMobile ? 'pb-14' : ''}`}>
-                {/* Messaggi - con altezza controllata */}
-                <div className="flex-1 min-h-0 overflow-hidden">
+            <Card className={`h-full flex flex-col overflow-hidden ${isMobile ? 'border-0 shadow-none' : ''}`}>
+              {/* Contenitore messaggi + input */}
+              <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0`}>
+                {/* Messaggi - con overflow diretto */}
+                <CardContent className={`flex-1 overflow-y-auto px-3 py-3 min-h-0 ${isMobile ? 'pb-14' : ''}`}>
                   <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
-                </div>
+                </CardContent>
                 
                 {/* Input messaggi - flex-shrink-0 per mantenere dimensione fissa */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 p-4 border-t">
                   <MessageInputWithAttachments 
                     roomId={selectedRoomId} 
                   />
@@ -178,7 +178,7 @@ const Intranet = () => {
                 roomId={selectedRoomId}
                 isCreatorOrAdmin={isCreatorOrAdmin}
               />
-            </>
+            </Card>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">
               <div className="flex-1 flex items-center justify-center p-4">

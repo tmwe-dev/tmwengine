@@ -61,18 +61,32 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
       if (error) throw error;
 
       if (roomsData) {
-        const roomsWithCounts = await Promise.all(
+        const roomsWithCounts = await Promise.allSettled(
           roomsData.map(async (room) => {
-            const { count } = await supabase
-              .from('intranet_room_members')
-              .select('*', { count: 'exact', head: true })
-              .eq('room_id', room.id);
-            
-            return { ...room, member_count: count || 0 };
+            try {
+              const { count, error } = await supabase
+                .from('intranet_room_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('room_id', room.id);
+              
+              if (error) {
+                console.error(`Error counting members for room ${room.id}:`, error);
+                return { ...room, member_count: 0 };
+              }
+              
+              return { ...room, member_count: count || 0 };
+            } catch (err) {
+              console.error(`Exception counting members for room ${room.id}:`, err);
+              return { ...room, member_count: 0 };
+            }
           })
         );
-        
-        setRooms(roomsWithCounts);
+
+        const validRooms = roomsWithCounts
+          .filter(result => result.status === 'fulfilled')
+          .map(result => result.value);
+
+        setRooms(validRooms.length > 0 ? validRooms : roomsData.map(r => ({ ...r, member_count: 0 })));
       }
     } catch (error) {
       console.error('Error loading rooms:', error);

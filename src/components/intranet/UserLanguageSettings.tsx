@@ -76,14 +76,14 @@ export function UserLanguageSettings() {
         onClick={() => handleOpen(true)}
         title="Impostazioni Lingua"
       >
-        <Languages className="h-4 w-4 text-primary" />
+        <Languages className="h-[15px] w-[15px] text-primary" />
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpen}>
         <DialogContent className="max-w-[600px] backdrop-blur-md bg-background/95 border-white/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Languages className="h-5 w-5 text-primary" />
+              <Languages className="h-[19px] w-[19px] text-primary" />
               Impostazioni Lingua e Traduzione
             </DialogTitle>
           </DialogHeader>
@@ -97,10 +97,11 @@ export function UserLanguageSettings() {
                   value={tempSettings.preferredLanguage}
                   onValueChange={(value) => setTempSettings(prev => ({ ...prev, preferredLanguage: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="px-1">
+
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="px-1">
                     {LANGUAGES.map(lang => (
                       <SelectItem key={lang.code} value={lang.code}>
                         {lang.name}
@@ -122,10 +123,10 @@ export function UserLanguageSettings() {
                   value={tempSettings.translationMode}
                   onValueChange={(value: any) => setTempSettings(prev => ({ ...prev, translationMode: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="px-1">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="px-1">
                     {TRANSLATION_MODES.map(mode => (
                       <SelectItem key={mode.value} value={mode.value}>
                         <div>
@@ -146,10 +147,10 @@ export function UserLanguageSettings() {
                   onValueChange={(value) => setTempSettings(prev => ({ ...prev, readingLanguage: value }))}
                   disabled={tempSettings.translationMode === 'none'}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="px-1">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="px-1">
                     {LANGUAGES.map(lang => (
                       <SelectItem key={lang.code} value={lang.code}>
                         {lang.name}
@@ -169,10 +170,10 @@ export function UserLanguageSettings() {
                   value={tempSettings.writingLanguage}
                   onValueChange={(value) => setTempSettings(prev => ({ ...prev, writingLanguage: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="px-1">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="px-1">
                     {LANGUAGES.map(lang => (
                       <SelectItem key={lang.code} value={lang.code}>
                         {lang.name}
@@ -230,7 +231,7 @@ export function UserLanguageSettings() {
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-[15px] w-[15px] animate-spin" />
                       Salvataggio...
                     </>
                   ) : (

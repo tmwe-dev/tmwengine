@@ -45,27 +45,84 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const email = sessionStorage.getItem('tmwe_user_email');
-    const token = sessionStorage.getItem('tmwe_access_token');
-    const storedProfile = sessionStorage.getItem('tmwe_user_profile');
-    const storedSupabaseId = sessionStorage.getItem('tmwe_supabase_user_id');
-    
-    if (email && token) {
-      setUserEmail(email);
-      if (storedSupabaseId) {
-        setSupabaseUserId(storedSupabaseId);
+    // Listen to Supabase auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Supabase auth state changed:', event);
+      
+      if (session?.user) {
+        // User is logged in via Supabase
+        const email = session.user.email;
+        if (email) {
+          setUserEmail(email);
+          sessionStorage.setItem('tmwe_user_email', email);
+          
+          // Get user profile from Supabase
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          if (profileData) {
+            const profile: UserProfile = {
+              email: profileData.tmwe_email || email,
+              name: profileData.display_name || '',
+            };
+            setUserProfile(profile);
+            sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
+          }
+          
+          setSupabaseUserId(session.user.id);
+          sessionStorage.setItem('tmwe_supabase_user_id', session.user.id);
+        }
+        setIsLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out
+        logout();
+        setIsLoading(false);
       }
-      if (storedProfile) {
-        try {
-          setUserProfile(JSON.parse(storedProfile));
-        } catch (e) {
-          console.error('Error parsing stored profile:', e);
+    });
+
+    // Check for existing session on mount
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const email = session.user.email;
+        if (email) {
+          setUserEmail(email);
+          sessionStorage.setItem('tmwe_user_email', email);
+          setSupabaseUserId(session.user.id);
+          sessionStorage.setItem('tmwe_supabase_user_id', session.user.id);
+        }
+      } else {
+        // Fallback to sessionStorage if no Supabase session
+        const email = sessionStorage.getItem('tmwe_user_email');
+        const token = sessionStorage.getItem('tmwe_access_token');
+        const storedProfile = sessionStorage.getItem('tmwe_user_profile');
+        const storedSupabaseId = sessionStorage.getItem('tmwe_supabase_user_id');
+        
+        if (email && token) {
+          setUserEmail(email);
+          if (storedSupabaseId) {
+            setSupabaseUserId(storedSupabaseId);
+          }
+          if (storedProfile) {
+            try {
+              setUserProfile(JSON.parse(storedProfile));
+            } catch (e) {
+              console.error('Error parsing stored profile:', e);
+            }
+          }
         }
       }
-    }
+      
+      setIsLoading(false);
+    };
     
-    setIsLoading(false);
+    checkSession();
+    
+    return () => subscription.unsubscribe();
   }, []);
 
   const syncWithSupabase = async (email: string, profile?: UserProfile) => {

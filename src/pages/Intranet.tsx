@@ -84,8 +84,8 @@ const Intranet = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 overflow-hidden">
+    <div className="h-full flex flex-col">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -125,11 +125,11 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0 relative`}>
+        <div className={`flex-1 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} relative`}>
           {selectedRoomId ? (
             <>
               {/* Messaggi */}
-              <Card className="flex-1 flex flex-col overflow-hidden min-h-0 border-0 shadow-none">
+              <Card className="flex-1 flex flex-col border-0 shadow-none">
                 <ChatMessages roomId={selectedRoomId} isLayoutInverted={isLayoutInverted} />
               </Card>
               
@@ -156,7 +156,7 @@ const Intranet = () => {
 
               {/* Footer - solo mobile */}
               {isMobile && (
-                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background overflow-hidden">
+                <div className="flex-shrink-0 h-14 p-3 grid grid-cols-2 items-center border-t bg-background">
                   <div className="flex items-center gap-2">
                     <Menu 
                       className="h-6 w-6 cursor-pointer text-foreground"
@@ -183,7 +183,7 @@ const Intranet = () => {
               />
             </>
           ) : (
-            <Card className="h-full flex flex-col overflow-hidden">
+            <Card className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="text-center space-y-4">
                   <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />

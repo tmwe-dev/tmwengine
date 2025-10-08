@@ -368,8 +368,8 @@ export const MessageInputWithAttachments = ({ roomId, isCreatorOrAdmin = false }
             <Settings className="h-5 w-5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto mb-2">
-          <div className="flex gap-2">
+        <PopoverContent className="w-80 mb-2 p-4">
+          <div className="flex items-center justify-center gap-3">
             <AIGuideDialog />
             {isCreatorOrAdmin && (
               <RoomAIPromptManager 

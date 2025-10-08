@@ -100,6 +100,8 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, profile?: UserProfile) => {
     setUserEmail(email);
+    sessionStorage.setItem('tmwe_user_email', email); // CRÍTICO: Guardar en sessionStorage
+    
     if (profile) {
       setUserProfile(profile);
       sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));

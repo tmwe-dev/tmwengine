@@ -149,11 +149,6 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
               key={message.id}
               className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}
             >
-              {/* Ora allineata a sinistra sulla stessa linea */}
-              <span className="text-xs text-muted-foreground self-start mt-3">
-                {format(new Date(message.created_at), 'HH:mm', { locale: it })}
-              </span>
-              
               <div className={`flex flex-col ${isOwnMessage ? 'items-end' : ''} flex-1`}>
                 <div
                   className={`rounded-lg px-4 py-2 border ${
@@ -210,9 +205,8 @@ export const ChatMessages = ({ roomId }: ChatMessagesProps) => {
                     </>
                   )}
                 </div>
-                {/* Nome e bandiera allineati a destra */}
                 <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center justify-end">
-                  <span>{format(new Date(message.created_at), 'dd/MM/yy', { locale: it })}</span>
+                  <span>{format(new Date(message.created_at), 'dd/MM HH:mm', { locale: it })}</span>
                   <span>•</span>
                   <span>{getUserDisplayInfo(message.user_id).name}</span>
                   <span>{getUserDisplayInfo(message.user_id).flag}</span>

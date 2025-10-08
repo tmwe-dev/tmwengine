@@ -84,7 +84,7 @@ const Intranet = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-20 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 pb-56 overflow-hidden">
         {/* Mobile: Sheet con lista stanze */}
         {isMobile ? (
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
@@ -157,12 +157,6 @@ const Intranet = () => {
                 {isFullscreenMode ? (
                   /* Vista espansa: Input in alto, chat sotto */
                   <div className="flex flex-col-reverse flex-1 overflow-hidden min-h-0">
-                    {/* Input messaggi - fisso in alto grazie a flex-col-reverse */}
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
-                    
                     {/* Area messaggi - SOLO questa scrolla */}
                     <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
                       <ChatMessages roomId={selectedRoomId} />
@@ -175,12 +169,6 @@ const Intranet = () => {
                     <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
                       <ChatMessages roomId={selectedRoomId} />
                     </div>
-                    
-                    {/* Input messaggi - fisso in basso naturalmente */}
-                    <MessageInputWithAttachments 
-                      roomId={selectedRoomId} 
-                      isCreatorOrAdmin={isCreatorOrAdmin}
-                    />
                   </div>
                 )}
               </>
@@ -203,6 +191,16 @@ const Intranet = () => {
           </Card>
         </div>
       </div>
+
+      {/* Input messaggi fisso sopra il footer */}
+      {selectedRoomId && (
+        <div className="fixed bottom-16 left-0 right-0 bg-background border-t z-40">
+          <MessageInputWithAttachments 
+            roomId={selectedRoomId} 
+            isCreatorOrAdmin={isCreatorOrAdmin}
+          />
+        </div>
+      )}
 
       {/* Footer fisso a piè di pagina */}
       {selectedRoomId && (

@@ -194,7 +194,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
   return (
     <>
       <div className="border-t-2 border-border bg-transparent p-2">
-        {/* AI Suggestions - spazio fisso */}
+        {/* AI Suggestions - spazio riservato fisso 100px */}
         <div className="mb-2">
           <AISuggestions 
             roomId={roomId} 
@@ -202,47 +202,51 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
           />
         </div>
 
-        {/* Preview allegati - scroll orizzontale */}
-        {attachments.length > 0 && (
-          <div className="mb-2 flex gap-2 overflow-x-auto h-20">
-            {attachments.map((attachment, index) => (
-              <div key={index} className="relative group flex-shrink-0">
-                {attachment.preview ? (
-                  <div className="relative">
-                    <img 
-                      src={attachment.preview} 
-                      alt="Preview" 
-                      className="h-16 w-16 object-cover rounded-lg border"
-                    />
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeAttachment(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="relative flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border h-16">
-                    <Paperclip className="h-4 w-4" />
-                    <span className="text-xs max-w-[100px] truncate">
-                      {attachment.file.name}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-4 w-4 ml-2"
-                      onClick={() => removeAttachment(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Attachment Previews - spazio riservato fisso 80px */}
+        <div className="mb-2 h-20 overflow-x-auto">
+          {attachments.length > 0 && (
+            <div className="flex gap-2 h-full">
+              {attachments.map((attachment, index) => (
+                <div key={index} className="relative flex-shrink-0">
+                  {attachment.preview ? (
+                    <div className="relative h-16 w-16">
+                      <img
+                        src={attachment.preview}
+                        alt={attachment.file.name}
+                        className="h-full w-full object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0"
+                        onClick={() => removeAttachment(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-16 px-3 bg-muted rounded flex items-center gap-2">
+                      <Paperclip className="h-4 w-4" />
+                      <span className="text-xs max-w-[100px] truncate">
+                        {attachment.file.name}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 ml-1"
+                        onClick={() => removeAttachment(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           {/* Input testo ridotto */}
@@ -257,7 +261,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[80px]"
+              className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary h-[60px] overflow-y-auto"
               disabled={isSending}
               rows={1}
             />

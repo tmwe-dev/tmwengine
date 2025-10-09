@@ -81,8 +81,8 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
 
       if (error) throw error;
 
-      if (data?.result?.text) {
-        setTranslatedText(data.result.text);
+      if (data?.translatedText) {
+        setTranslatedText(data.translatedText);
         // dual_view mostra sempre, altri solo se autoShow
         if (profile.translationMode === 'dual_view' || autoShow) {
           setShowTranslation(true);

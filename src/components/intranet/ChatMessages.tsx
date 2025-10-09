@@ -6,8 +6,10 @@ import { TranslateButton } from './TranslateButton';
 import { SpeakButton } from './SpeakButton';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useRoomAISettings } from '@/hooks/useRoomAISettings';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -34,8 +36,10 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
+  const { settings } = useRoomAISettings(roomId);
   
   // Auto-speaker per lettura automatica messaggi
   const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId });
@@ -154,6 +158,46 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
     };
   };
 
+  // Traduzione automatica dei messaggi quando necessario
+  useEffect(() => {
+    if (!profile || !settings?.enableTranslation || profile.translationMode === 'none') return;
+    
+    const autoTranslateModes = ['read_only', 'both', 'dual_view'];
+    if (!autoTranslateModes.includes(profile.translationMode)) return;
+
+    messages.forEach(async (message) => {
+      // Non tradurre i propri messaggi o messaggi già tradotti
+      if (message.user_id === currentUserId || translatedMessages[message.id]) return;
+      
+      const sourceLanguage = message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined;
+      
+      // Solo se lingua diversa dalla propria
+      if (sourceLanguage && sourceLanguage !== profile.readingLanguage && message.content) {
+        try {
+          const { data, error } = await supabase.functions.invoke('intranet-ai-processor', {
+            body: {
+              roomId,
+              messageContent: message.content,
+              sourceLanguage,
+              targetLanguage: profile.readingLanguage,
+              action: 'translate',
+              userId: currentUserId
+            }
+          });
+
+          if (!error && data?.translatedText) {
+            setTranslatedMessages(prev => ({
+              ...prev,
+              [message.id]: data.translatedText
+            }));
+          }
+        } catch (error) {
+          console.error('Auto-translation error:', error);
+        }
+      }
+    });
+  }, [messages, profile, settings, currentUserId, userProfiles]);
+
   const displayMessages = isLayoutInverted ? [...messages].reverse() : messages;
 
   return (
@@ -206,6 +250,17 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                 {message.content && (
                   <>
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    
+                    {/* Mostra traduzione automatica se disponibile e modalità dual_view */}
+                    {translatedMessages[message.id] && profile?.translationMode === 'dual_view' && (
+                      <div className="mt-2 p-2 bg-muted/30 rounded text-sm border-l-2 border-primary/50">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          🌐 {profile.readingLanguage}:
+                        </p>
+                        <p className="whitespace-pre-wrap break-words">{translatedMessages[message.id]}</p>
+                      </div>
+                    )}
+                    
                     <div className="flex gap-1 flex-wrap mt-1">
                       <TranslateButton
                         messageContent={message.content}
@@ -215,7 +270,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                       />
                       {!isOwnMessage && profile && (
                         <SpeakButton 
-                          text={message.content}
+                          text={translatedMessages[message.id] || message.content}
                           language={profile.readingLanguage}
                         />
                       )}

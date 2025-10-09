@@ -206,9 +206,20 @@ serve(async (req) => {
       type: 'recovery',
     });
 
-    if (verifyError || !sessionData?.session) {
+    console.log('🔍 verifyOtp response:', { 
+      hasError: !!verifyError, 
+      hasSession: !!sessionData?.session,
+      dataKeys: sessionData ? Object.keys(sessionData) : null
+    });
+
+    if (verifyError) {
       console.error('Error verifying recovery token:', verifyError);
-      throw new Error('Failed to create session');
+      throw new Error(`Failed to verify token: ${verifyError.message}`);
+    }
+
+    if (!sessionData?.session) {
+      console.error('No session in verifyOtp response:', sessionData);
+      throw new Error('No session returned from verifyOtp');
     }
 
     console.log('✅ Supabase session created successfully');

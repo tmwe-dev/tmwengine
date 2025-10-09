@@ -107,15 +107,10 @@ serve(async (req) => {
 
     console.log('🔄 Syncing with Supabase...');
 
-    // 3. Find or create Supabase user
-    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    // 3. Find or create Supabase user - use getUserByEmail instead of listUsers
+    const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
     
-    if (listError) {
-      console.error('Error listing users:', listError);
-      throw listError;
-    }
-
-    let supabaseUser = existingUsers.users.find(u => u.email === email);
+    let supabaseUser = existingUser?.user || null;
 
     // Create user if doesn't exist
     if (!supabaseUser) {

@@ -151,7 +151,7 @@ const Intranet = () => {
 
               {/* Barra mobile - FUORI dal Card, sempre in alto quando invertita */}
               {isMobile && shouldHideHeader && (
-                <div className={`h-14 grid grid-cols-3 items-center border-t bg-background flex-shrink-0 ${isLayoutInverted ? 'order-first' : ''}`}>
+                <div className={`h-14 grid grid-cols-3 items-center border-t flex-shrink-0 ${isLayoutInverted ? 'order-first' : ''}`}>
                   <div className="flex items-center gap-2 pl-2">
                     <Menu 
                       className="h-5 w-5 cursor-pointer text-foreground"

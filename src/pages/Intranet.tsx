@@ -142,8 +142,8 @@ const Intranet = () => {
                 </CardContent>
               </Card>
 
-              {/* Input - Area fissa con altezza limitata */}
-              <Card className={`bg-card-transparent flex-shrink-0 ${shouldHideHeader ? 'border-0 shadow-none max-h-[250px] overflow-hidden' : ''}`}>
+              {/* Input - Area fissa con flex-shrink-0 */}
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
                 <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />
                 </CardContent>

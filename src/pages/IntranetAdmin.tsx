@@ -90,50 +90,67 @@ const IntranetAdmin = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="stats">
-          <AdminStats />
+        <TabsContent value="stats" className="mt-6">
+          <div className="space-y-4">
+            <AdminStats />
+          </div>
         </TabsContent>
 
-        <TabsContent value="rooms">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Gestione Stanze</CardTitle>
-              <CardDescription className="text-sm">
-                Visualizza e gestisci tutte le stanze dell'intranet
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <AdminRoomManager />
-            </CardContent>
-          </Card>
+        <TabsContent value="rooms" className="mt-6">
+          <div className="space-y-4">
+            <Card className="shadow-lg">
+              <CardHeader className="border-b">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <DoorOpen className="h-5 w-5" />
+                  Gestione Stanze
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Visualizza e gestisci tutte le stanze dell'intranet
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6 py-6">
+                <AdminRoomManager />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Gestione Utenti e Ruoli</CardTitle>
-              <CardDescription className="text-sm">
-                Assegna ruoli amministrativi agli utenti
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <AdminUserManager />
-            </CardContent>
-          </Card>
+        <TabsContent value="users" className="mt-6">
+          <div className="space-y-4">
+            <Card className="shadow-lg">
+              <CardHeader className="border-b">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Gestione Utenti e Ruoli
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Assegna ruoli amministrativi agli utenti
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6 py-6">
+                <AdminUserManager />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="ai">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Prompt AI Globale</CardTitle>
-              <CardDescription className="text-sm">
-                Configura il prompt AI utilizzato in tutte le stanze che usano le impostazioni standard
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <AdminGlobalPrompt />
-            </CardContent>
-          </Card>
+        <TabsContent value="ai" className="mt-6">
+          <div className="space-y-4">
+            <Card className="shadow-lg">
+              <CardHeader className="border-b">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Prompt AI Globale
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Configura il prompt AI utilizzato in tutte le stanze che usano le impostazioni standard
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6 py-6">
+                <AdminGlobalPrompt />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -78,80 +78,63 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [requests]);
+  }, []); // Rimossa dipendenza 'requests' per evitare loop infinito
 
   const loadRooms = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: roomsData, error } = await supabase
+      // Carica tutte le stanze
+      const { data: roomsData, error: roomsError } = await supabase
         .from('intranet_rooms')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (roomsError) throw roomsError;
+      if (!roomsData) return;
 
-      if (roomsData) {
-        const roomsWithCounts = await Promise.allSettled(
-          roomsData.map(async (room) => {
-            try {
-              const { count, error } = await supabase
-                .from('intranet_room_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('room_id', room.id);
-              
-              if (error) {
-                console.error(`Error counting members for room ${room.id}:`, error);
-              }
+      // Carica tutti i membri in UNA query
+      const { data: allMembersData } = await supabase
+        .from('intranet_room_members')
+        .select('room_id, user_id');
 
-              // Check if user is member
-              const { data: memberData } = await supabase
-                .from('intranet_room_members')
-                .select('id')
-                .eq('room_id', room.id)
-                .eq('user_id', user.id)
-                .maybeSingle();
+      // Carica tutte le richieste pendenti in UNA query
+      const { data: pendingRequestsData } = await supabase
+        .from('intranet_room_access_requests')
+        .select('room_id, user_id')
+        .eq('status', 'pending')
+        .eq('user_id', user.id);
 
-              // Check for pending request
-              const hasPendingRequest = requests.some(
-                r => r.room_id === room.id && r.user_id === user.id && r.status === 'pending'
-              );
-              
-              return { 
-                ...room, 
-                member_count: count || 0,
-                is_private: room.is_private || false,
-                access_type: room.access_type || 'public',
-                is_member: !!memberData,
-                has_pending_request: hasPendingRequest
-              };
-            } catch (err) {
-              console.error(`Exception counting members for room ${room.id}:`, err);
-              return { 
-                ...room, 
-                member_count: 0, 
-                is_private: room.is_private || false,
-                access_type: room.access_type || 'public',
-                is_member: false,
-                has_pending_request: false
-              };
-            }
-          })
-        );
+      // Crea mappe per accesso O(1)
+      const memberCountMap = new Map<string, number>();
+      const userMembershipSet = new Set<string>();
+      const pendingRequestsSet = new Set<string>();
 
-        const validRooms = roomsWithCounts
-          .filter(result => result.status === 'fulfilled')
-          .map(result => result.value);
+      // Conta membri per stanza
+      allMembersData?.forEach(member => {
+        memberCountMap.set(member.room_id, (memberCountMap.get(member.room_id) || 0) + 1);
+        if (member.user_id === user.id) {
+          userMembershipSet.add(member.room_id);
+        }
+      });
 
-        setRooms(validRooms.length > 0 ? validRooms : roomsData.map(r => ({ 
-          ...r, 
-          member_count: 0,
-          access_type: r.access_type || 'public',
-          is_member: false,
-          has_pending_request: false
-        })));
-      }
+      // Crea set delle richieste pendenti
+      pendingRequestsData?.forEach(request => {
+        pendingRequestsSet.add(request.room_id);
+      });
+
+      // Arricchisci le stanze con i dati
+      const enrichedRooms = roomsData.map(room => ({
+        ...room,
+        member_count: memberCountMap.get(room.id) || 0,
+        is_private: room.is_private || false,
+        access_type: room.access_type || 'public',
+        is_member: userMembershipSet.has(room.id),
+        has_pending_request: pendingRequestsSet.has(room.id)
+      }));
+
+      setRooms(enrichedRooms);
     } catch (error) {
       console.error('Error loading rooms:', error);
       toast({

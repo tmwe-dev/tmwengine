@@ -12,10 +12,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export const AccessRequestsPanel = () => {
   const { requests, isLoading, approveRequest, rejectRequest } = useRoomAccessRequests();
-  const { state } = useSidebar();
+  
+  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
+  let sidebarState = 'expanded';
+  try {
+    const sidebar = useSidebar();
+    sidebarState = sidebar.state;
+  } catch (error) {
+    // Non siamo in un contesto Sidebar, usa stato di default
+  }
 
   const pendingRequests = requests.filter(r => r.status === 'pending' && !r.is_invite);
-  const isCollapsed = state === 'collapsed';
+  const isCollapsed = sidebarState === 'collapsed';
 
   if (isLoading) {
     return (

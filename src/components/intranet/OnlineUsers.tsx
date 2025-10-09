@@ -34,12 +34,25 @@ interface OnlineUsersProps {
 export const OnlineUsers = ({ users }: OnlineUsersProps) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
-  const { state } = useSidebar();
+  
+  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
+  let sidebarState = 'expanded';
+  try {
+    const sidebar = useSidebar();
+    sidebarState = sidebar.state;
+  } catch (error) {
+    // Non siamo in un contesto Sidebar, usa stato di default
+  }
 
+  // Carica current user solo al mount
   useEffect(() => {
     loadCurrentUser();
+  }, []);
+
+  // Carica user profiles solo quando cambia la lista di users
+  useEffect(() => {
     loadUserProfiles();
-  }, [users]);
+  }, [users.map(u => u.user_id).join(',')]);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -99,7 +112,7 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
     return userId.substring(0, 2).toUpperCase();
   };
 
-  const isCollapsed = state === 'collapsed';
+  const isCollapsed = sidebarState === 'collapsed';
 
   return (
     <TooltipProvider>

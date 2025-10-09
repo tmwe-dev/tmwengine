@@ -59,7 +59,7 @@ const IntranetAdmin = () => {
   }
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
+    <div className="container mx-auto p-3 sm:p-6 max-w-5xl">
       <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2">
           <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
@@ -108,7 +108,7 @@ const IntranetAdmin = () => {
                   Visualizza e gestisci tutte le stanze dell'intranet
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6 py-6">
+              <CardContent className="px-3 sm:px-6 py-6 overflow-x-auto">
                 <AdminRoomManager />
               </CardContent>
             </Card>
@@ -127,7 +127,7 @@ const IntranetAdmin = () => {
                   Assegna ruoli amministrativi agli utenti
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6 py-6">
+              <CardContent className="px-3 sm:px-6 py-6 overflow-x-auto">
                 <AdminUserManager />
               </CardContent>
             </Card>
@@ -146,7 +146,7 @@ const IntranetAdmin = () => {
                   Configura il prompt AI utilizzato in tutte le stanze che usano le impostazioni standard
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6 py-6">
+              <CardContent className="px-3 sm:px-6 py-6 overflow-x-auto">
                 <AdminGlobalPrompt />
               </CardContent>
             </Card>

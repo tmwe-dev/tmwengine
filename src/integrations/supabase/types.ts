@@ -1261,6 +1261,53 @@ export type Database = {
           },
         ]
       }
+      intranet_room_access_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          room_id: string
+          status: Database["public"]["Enums"]["access_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id: string
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string
+          status?: Database["public"]["Enums"]["access_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_room_access_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "intranet_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intranet_room_ai_prompts: {
         Row: {
           created_at: string
@@ -1345,6 +1392,7 @@ export type Database = {
       }
       intranet_rooms: {
         Row: {
+          access_type: Database["public"]["Enums"]["room_access_type"]
           created_at: string
           created_by: string | null
           description: string | null
@@ -1354,6 +1402,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_type?: Database["public"]["Enums"]["room_access_type"]
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1363,6 +1412,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_type?: Database["public"]["Enums"]["room_access_type"]
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -1724,12 +1774,14 @@ export type Database = {
       user_profiles: {
         Row: {
           auto_translate_writing: boolean
+          availability_status: Database["public"]["Enums"]["user_availability_status"]
           created_at: string
           display_name: string | null
           enable_auto_speaker: boolean
           id: string
           preferred_language: string
           reading_language: string
+          status_message: string | null
           tmwe_email: string | null
           translation_mode: string
           updated_at: string
@@ -1738,12 +1790,14 @@ export type Database = {
         }
         Insert: {
           auto_translate_writing?: boolean
+          availability_status?: Database["public"]["Enums"]["user_availability_status"]
           created_at?: string
           display_name?: string | null
           enable_auto_speaker?: boolean
           id?: string
           preferred_language?: string
           reading_language?: string
+          status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
           updated_at?: string
@@ -1752,12 +1806,14 @@ export type Database = {
         }
         Update: {
           auto_translate_writing?: boolean
+          availability_status?: Database["public"]["Enums"]["user_availability_status"]
           created_at?: string
           display_name?: string | null
           enable_auto_speaker?: boolean
           id?: string
           preferred_language?: string
           reading_language?: string
+          status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
           updated_at?: string
@@ -1893,6 +1949,7 @@ export type Database = {
       }
     }
     Enums: {
+      access_request_status: "pending" | "approved" | "rejected"
       app_role: "admin" | "user"
       email_action_type:
         | "move_to_folder"
@@ -1900,6 +1957,8 @@ export type Database = {
         | "archive"
         | "delete"
         | "forward"
+      room_access_type: "public" | "request" | "private"
+      user_availability_status: "online" | "busy" | "dnd" | "offline"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2027,6 +2086,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      access_request_status: ["pending", "approved", "rejected"],
       app_role: ["admin", "user"],
       email_action_type: [
         "move_to_folder",
@@ -2035,6 +2095,8 @@ export const Constants = {
         "delete",
         "forward",
       ],
+      room_access_type: ["public", "request", "private"],
+      user_availability_status: ["online", "busy", "dnd", "offline"],
     },
   },
 } as const

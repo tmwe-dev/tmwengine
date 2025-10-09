@@ -127,7 +127,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full` : 'flex flex-col overflow-hidden space-y-6'}`}>
+        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-screen overflow-hidden` : 'flex flex-col overflow-hidden space-y-6'}`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3

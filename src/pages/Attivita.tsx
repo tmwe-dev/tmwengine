@@ -493,6 +493,88 @@ export default function Attivita() {
     }
   };
 
+  const handleMultipleActivities = async (activityData: any) => {
+    try {
+      console.log('📝 Creazione attività multiple per:', multipleContacts);
+      
+      if (multipleContacts.length === 0) {
+        toast({
+          title: "Errore",
+          description: "Nessun contatto selezionato per creare attività multiple",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      let descrizione = '';
+      let tipo = activityData.tipo;
+      
+      if (activityData.tipo === 'email') {
+        if (!activityData.oggetto_email || !activityData.testo_email) {
+          toast({
+            title: "Campi mancanti",
+            description: "Compila oggetto e testo dell'email per continuare.",
+            variant: "destructive"
+          });
+          return;
+        }
+        descrizione = `Email: ${activityData.oggetto_email || 'Nessun oggetto'}`;
+      } else if (activityData.tipo === 'chiamata') {
+        if (!activityData.note_generali || activityData.note_generali.trim().length === 0) {
+          toast({
+            title: "Campi mancanti",
+            description: "Compila le note della chiamata per continuare.",
+            variant: "destructive"
+          });
+          return;
+        }
+        descrizione = `Chiamata: ${activityData.note_generali || 'Nessuna descrizione'}`;
+      }
+
+      // Crea un'attività per ogni contatto selezionato
+      const activitiesToCreate = multipleContacts.map(contact => ({
+        tipo: tipo,
+        descrizione: descrizione,
+        stato: 'aperta',
+        scadenza: null,
+        priorita: activityData.priorita || 'media',
+        assegnato_a: null,
+        creato_da: null,
+        rubrica_id: contact.id
+      }));
+
+      const { data, error } = await supabase
+        .from('attivita')
+        .insert(activitiesToCreate)
+        .select();
+
+      if (error) {
+        console.error('❌ Errore creazione attività multiple:', error);
+        throw error;
+      }
+      
+      console.log('✅ Attività multiple create con successo:', data);
+      
+      setIsFormOpen(false);
+      setMultipleContacts([]);
+      setSelectedActivities([]);
+      await loadActivities();
+      
+      toast({
+        title: "Attività create",
+        description: `${data.length} attività create con successo per i contatti selezionati.`,
+      });
+    } catch (error: any) {
+      console.error('❌ Errore catch:', error);
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la creazione delle attività.",
+        variant: "destructive"
+      });
+    }
+  };
+
+
   const handleEditActivity = async (activityData: any) => {
     if (!selectedActivity) return;
 
@@ -912,7 +994,11 @@ export default function Attivita() {
                   <div className="flex-1 overflow-y-auto">
                     <AdvancedMultipleActivityForm
                       contacts={multipleContacts}
-                      onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
+                      onSubmit={
+                        multipleContacts.length > 0 
+                          ? handleMultipleActivities 
+                          : (selectedActivity ? handleEditActivity : handleAddActivity)
+                      }
                       onCancel={() => {
                         setIsFormOpen(false);
                         setMultipleContacts([]);

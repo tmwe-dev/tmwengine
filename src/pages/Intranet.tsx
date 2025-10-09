@@ -59,6 +59,16 @@ const Intranet = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !selectedRoomId) return;
 
+      // Verifica tipo di accesso della stanza
+      const { data: room } = await supabase
+        .from('intranet_rooms')
+        .select('access_type')
+        .eq('id', selectedRoomId)
+        .single();
+
+      // Solo per stanze pubbliche, aggiungi automaticamente
+      if (room?.access_type !== 'public') return;
+
       // Verifica se l'utente è già membro
       const { data: existingMember } = await supabase
         .from('intranet_room_members')
@@ -79,7 +89,7 @@ const Intranet = () => {
         if (error) {
           console.error('Error adding user to room:', error);
         } else {
-          console.log('✅ User automatically added to room');
+          console.log('✅ User automatically added to public room');
         }
       }
     } catch (error) {

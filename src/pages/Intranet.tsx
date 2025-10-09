@@ -154,7 +154,7 @@ const Intranet = () => {
                 <div className={`h-14 grid grid-cols-3 items-center border-t bg-background flex-shrink-0 ${isLayoutInverted ? 'order-first' : ''}`}>
                   <div className="flex items-center gap-2 pl-2">
                     <Menu 
-                      className="h-6 w-6 cursor-pointer text-foreground"
+                      className="h-5 w-5 cursor-pointer text-foreground"
                       onClick={() => setMobileSheetOpen(true)}
                     />
                     <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>

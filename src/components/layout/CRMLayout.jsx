@@ -89,20 +89,6 @@ const CRMLayout = ({ children }) => {
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 
-  // Route speciali che non appaiono nel menu principale
-  const specialRoutes = {
-    '/': { name: 'Import Templates', icon: FileUp },
-    '/best': { name: 'Best Chat', icon: MessageSquare },
-    '/intranet': { name: 'Intranet', icon: Users }
-  };
-
-  // Funzione helper per trovare route speciale dal pathname
-  const getSpecialRoute = (pathname) => {
-    // Rimuovi query params e trailing slash
-    const cleanPath = pathname.split('?')[0].replace(/\/$/, '') || '/';
-    return specialRoutes[cleanPath];
-  };
-
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
@@ -141,21 +127,14 @@ const CRMLayout = ({ children }) => {
               // Mobile: mostra solo l'icona
               (() => {
                 const currentNav = navigation.find(nav => isActive(nav.href));
-                const specialRoute = getSpecialRoute(location.pathname);
-                const Icon = currentNav?.icon || specialRoute?.icon || Home;
+                const Icon = currentNav?.icon || Home;
                 return <Icon className="h-6 w-6 text-foreground" />;
               })()
             ) : (
               // Desktop: mostra il nome
-              (() => {
-                const currentNav = navigation.find(nav => isActive(nav.href));
-                const specialRoute = getSpecialRoute(location.pathname);
-                return (
-                  <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                    {currentNav?.name || specialRoute?.name || 'Dashboard'}
-                  </h1>
-                );
-              })()
+              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+              </h1>
             )}
           </div>
         </div>

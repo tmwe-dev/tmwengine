@@ -64,12 +64,11 @@ interface Conversation {
 const Best = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const roomIdFromUrl = searchParams.get('room');
   const pageRoute = searchParams.get('page') || '/best';
   const [pagePromptName, setPagePromptName] = useState<string>('');
   
   // Intranet state
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(roomIdFromUrl);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [isCreatorOrAdmin, setIsCreatorOrAdmin] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   

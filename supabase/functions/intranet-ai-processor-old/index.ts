@@ -210,23 +210,38 @@ Crea suggerimenti con toni diversi (formale, informale, neutro, entusiasta) adat
     const aiData = await aiResponse.json();
     console.log('AI Response:', JSON.stringify(aiData, null, 2));
 
+    // Estrai token usage dall'AI response
+    const usage = aiData.usage || {};
+    const tokens = {
+      input: usage.prompt_tokens || 0,
+      output: usage.completion_tokens || 0,
+      total: usage.total_tokens || 0
+    };
+
     if (action === 'translate') {
       const aiResult = aiData.choices?.[0]?.message?.content || '';
       result = {
         translatedText: aiResult.trim(),
         sourceLanguage,
-        targetLanguage
+        targetLanguage,
+        tokens
       };
     } else if (action === 'suggest') {
       // Estrai i suggerimenti dalla chiamata tool
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall && toolCall.function.name === 'provide_suggestions') {
         const args = JSON.parse(toolCall.function.arguments);
-        result = { suggestions: args.suggestions };
+        result = { 
+          suggestions: args.suggestions,
+          tokens
+        };
       } else {
         // Fallback
         const aiResult = aiData.choices?.[0]?.message?.content || '';
-        result = { suggestions: [{ text: aiResult, tone: 'neutro' }] };
+        result = { 
+          suggestions: [{ text: aiResult, tone: 'neutro' }],
+          tokens
+        };
       }
     }
 

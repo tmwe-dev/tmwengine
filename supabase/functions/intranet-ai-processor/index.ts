@@ -38,46 +38,56 @@ serve(async (req) => {
 
     console.log('Processing message:', { roomId, action, sourceLanguage, targetLanguage });
 
-    // Carica il prompt AI della stanza
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    const roomSettingsResponse = await fetch(
-      `${supabaseUrl}/rest/v1/intranet_room_ai_prompts?room_id=eq.${roomId}&select=*`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
-
-    const roomSettings = await roomSettingsResponse.json();
     let systemPrompt = '';
+    let userPrompt = '';
+    let result: any = {};
+    let useTools = false;
+    let tools: any[] = [];
 
-    if (roomSettings && roomSettings.length > 0) {
-      const settings = roomSettings[0];
-      
-      if (settings.is_using_standard) {
-        // Carica prompt standard
-        const globalPromptResponse = await fetch(
-          `${supabaseUrl}/rest/v1/intranet_global_ai_prompt?attivo=eq.true&select=prompt_contenuto`,
-          {
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`,
-            },
-          }
-        );
-        const globalPrompt = await globalPromptResponse.json();
-        systemPrompt = globalPrompt[0]?.prompt_contenuto || '';
-      } else {
-        systemPrompt = settings.custom_prompt || '';
-      }
+    // Per la traduzione, usa un prompt minimale hardcoded (ottimizzazione token)
+    if (action === 'translate') {
+      systemPrompt = 'You are a professional translator.';
+      userPrompt = `Translate from ${sourceLanguage} to ${targetLanguage}. Return ONLY the translation:\n\n${messageContent}`;
     } else {
-      // Default prompt
-      systemPrompt = `Sei un assistente AI per la traduzione e comunicazione in tempo reale in una chat aziendale.
-      
+      // Per le altre azioni (suggest, generate_audio), carica il prompt completo
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+      const roomSettingsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/intranet_room_ai_prompts?room_id=eq.${roomId}&select=*`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        }
+      );
+
+      const roomSettings = await roomSettingsResponse.json();
+
+      if (roomSettings && roomSettings.length > 0) {
+        const settings = roomSettings[0];
+        
+        if (settings.is_using_standard) {
+          // Carica prompt standard
+          const globalPromptResponse = await fetch(
+            `${supabaseUrl}/rest/v1/intranet_global_ai_prompt?attivo=eq.true&select=prompt_contenuto`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+              },
+            }
+          );
+          const globalPrompt = await globalPromptResponse.json();
+          systemPrompt = globalPrompt[0]?.prompt_contenuto || '';
+        } else {
+          systemPrompt = settings.custom_prompt || '';
+        }
+      } else {
+        // Default prompt
+        systemPrompt = `Sei un assistente AI per la traduzione e comunicazione in tempo reale in una chat aziendale.
+        
 COMPITI PRINCIPALI:
 1. Traduzione automatica: Traduci i messaggi tra diverse lingue mantenendo il tono e il contesto
 2. Suggerimenti di risposta: Fornisci suggerimenti contestuali quando richiesto
@@ -89,29 +99,12 @@ LINEE GUIDA:
 - Preserva formattazione, emoticon e contesto culturale
 - Segnala quando una traduzione potrebbe avere multiple interpretazioni
 - Non tradurre nomi propri, brand o termini tecnici specifici`;
+      }
     }
-
-    let userPrompt = '';
-    let result: any = {};
-    let useTools = false;
-    let tools: any[] = [];
 
     switch (action) {
       case 'translate':
-        userPrompt = `Traduci il seguente messaggio da ${sourceLanguage} a ${targetLanguage}.
-        
-IMPORTANTE:
-- Mantieni il tono e lo stile del messaggio originale
-- Preserva emoticon e formattazione
-- Non tradurre nomi propri, brand o termini tecnici
-- Se ci sono ambiguità, usa l'interpretazione più comune
-        
-Messaggio da tradurre:
-"""
-${messageContent}
-"""
-
-Fornisci SOLO la traduzione, senza spiegazioni aggiuntive.`;
+        // Il prompt è già stato impostato sopra (minimale)
         break;
 
       case 'suggest':
@@ -183,6 +176,8 @@ Crea suggerimenti con toni diversi (formale, informale, neutro, entusiasta) adat
       requestBody.tool_choice = { type: "function", function: { name: "provide_suggestions" } };
     }
 
+    console.log('Request to AI - Action:', action, 'System prompt length:', systemPrompt.length, 'User prompt length:', userPrompt.length);
+
     // Chiama Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -217,6 +212,8 @@ Crea suggerimenti con toni diversi (formale, informale, neutro, entusiasta) adat
       output: usage.completion_tokens || 0,
       total: usage.total_tokens || 0
     };
+
+    console.log('Token usage:', tokens);
 
     if (action === 'translate') {
       const aiResult = aiData.choices?.[0]?.message?.content || '';

@@ -136,41 +136,45 @@ const Intranet = () => {
           {selectedRoomId ? (
             <>
               {/* Messaggi - Area scrollabile indipendente con flex-1 */}
-              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 overflow-y-auto min-h-0 px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}`}>
-                <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
-              </div>
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
+                <CardContent className={`${shouldHideHeader ? 'overflow-y-auto flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}`}>
+                  <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
+                </CardContent>
+              </Card>
 
               {/* SEZIONE 3 RAGGRUPPATA: Input + Barra Mobile - Area fissa con flex-shrink-0 */}
-              <div className={`bg-card-transparent ${shouldHideHeader ? `flex-shrink-0 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'}` : ''}`}>
-                {/* Input */}
-                <div className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
-                  <MessageInputWithAttachments roomId={selectedRoomId} />
-                </div>
-
-                {/* Barra mobile */}
-                {isMobile && (
-                  <div className="h-14 grid grid-cols-3 items-center border-t bg-background">
-                    <div className="flex items-center gap-2 pl-2">
-                      <Menu 
-                        className="h-6 w-6 cursor-pointer text-foreground"
-                        onClick={() => setMobileSheetOpen(true)}
-                      />
-                      <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
-                    </div>
-                    <div className="flex justify-center">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                        title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-                      >
-                        {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <div />
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
+                <CardContent className={`${shouldHideHeader ? `p-0 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'}` : 'p-3 sm:p-6'}`}>
+                  {/* Input */}
+                  <div className={shouldHideHeader ? 'p-3' : ''}>
+                    <MessageInputWithAttachments roomId={selectedRoomId} />
                   </div>
-                )}
-              </div>
+
+                  {/* Barra mobile */}
+                  {isMobile && shouldHideHeader && (
+                    <div className="h-14 grid grid-cols-3 items-center border-t bg-background">
+                      <div className="flex items-center gap-2 pl-2">
+                        <Menu 
+                          className="h-6 w-6 cursor-pointer text-foreground"
+                          onClick={() => setMobileSheetOpen(true)}
+                        />
+                        <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                          title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                        >
+                          {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <div />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               <SettingsButton 
                 roomId={selectedRoomId}

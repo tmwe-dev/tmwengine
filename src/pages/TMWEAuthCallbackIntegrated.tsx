@@ -82,25 +82,22 @@ const TMWEAuthCallbackIntegrated = () => {
       addDetail(`🏢 Empresa: ${data.profile?.enterprise_name || 'N/A'}`);
       addDetail('✅ Credenciales guardadas en base de datos');
 
-      // 5. Establecer sesión de Supabase usando el hashed token
-      if (data.hashedToken) {
+      // 5. Establecer sesión de Supabase con tokens (OAuth2-compliant)
+      if (data.access_token && data.refresh_token) {
         addDetail('🔐 Estableciendo sesión de Supabase...');
         
-        const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: data.hashedToken,
-          type: 'magiclink',
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
         });
 
-        if (verifyError) {
-          console.error('Error estableciendo sesión:', verifyError);
-          addDetail(`❌ Error: ${verifyError.message}`);
-          throw verifyError;
+        if (sessionError) {
+          console.error('Error estableciendo sesión:', sessionError);
+          addDetail(`❌ Error: ${sessionError.message}`);
+          throw sessionError;
         }
         
-        if (sessionData?.session) {
-          addDetail('✅ Sesión de Supabase establecida correctamente');
-          addDetail(`🎫 Session expires: ${new Date(sessionData.session.expires_at! * 1000).toLocaleString()}`);
-        }
+        addDetail('✅ Sesión de Supabase establecida correctamente');
       }
 
       // 6. Actualizar contexto local de autenticación

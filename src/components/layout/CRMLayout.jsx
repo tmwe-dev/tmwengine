@@ -96,6 +96,13 @@ const CRMLayout = ({ children }) => {
     '/intranet': { name: 'Intranet', icon: Users }
   };
 
+  // Funzione helper per trovare route speciale dal pathname
+  const getSpecialRoute = (pathname) => {
+    // Rimuovi query params e trailing slash
+    const cleanPath = pathname.split('?')[0].replace(/\/$/, '') || '/';
+    return specialRoutes[cleanPath];
+  };
+
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
@@ -134,15 +141,21 @@ const CRMLayout = ({ children }) => {
               // Mobile: mostra solo l'icona
               (() => {
                 const currentNav = navigation.find(nav => isActive(nav.href));
-                const specialRoute = specialRoutes[location.pathname];
+                const specialRoute = getSpecialRoute(location.pathname);
                 const Icon = currentNav?.icon || specialRoute?.icon || Home;
                 return <Icon className="h-6 w-6 text-foreground" />;
               })()
             ) : (
               // Desktop: mostra il nome
-              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                {navigation.find(nav => isActive(nav.href))?.name || specialRoutes[location.pathname]?.name || 'Dashboard'}
-              </h1>
+              (() => {
+                const currentNav = navigation.find(nav => isActive(nav.href));
+                const specialRoute = getSpecialRoute(location.pathname);
+                return (
+                  <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                    {currentNav?.name || specialRoute?.name || 'Dashboard'}
+                  </h1>
+                );
+              })()
             )}
           </div>
         </div>

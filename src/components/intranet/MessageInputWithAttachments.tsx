@@ -269,8 +269,91 @@ export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageI
         )}
 
         <div className="flex flex-col gap-2">
-          {/* Input testo ridotto */}
-          <div className="flex justify-center">
+          {/* Icone */}
+          <div className="flex gap-1">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileSelect}
+              multiple
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => fileInputRef.current?.click()}
+              title="Allega file"
+              disabled={isSending}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+
+            <input
+              type="file"
+              ref={imageInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageSelect}
+              multiple
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => imageInputRef.current?.click()}
+              title="Allega immagine"
+              disabled={isSending}
+            >
+              <Image className="h-4 w-4" />
+            </Button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Emoticon"
+                  disabled={isSending}
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="grid grid-cols-5 gap-2">
+                  {EMOTICONS.map((emoticon, index) => (
+                    <Button
+                      key={index}
+                      variant="ghost"
+                      className="text-2xl hover:scale-125 transition-transform"
+                      onClick={() => insertEmoticon(emoticon)}
+                    >
+                      {emoticon}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Invoker AI Albert */}
+            <AIChatInvoker roomId={roomId} />
+
+            <Button
+              size="icon"
+              variant={isRecording ? "destructive" : "ghost"}
+              onClick={isRecording ? stopRecording : startRecording}
+              title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
+              disabled={isSending}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+
+            <AutoSpeakerToggle isSpeaking={isSpeaking} />
+            
+            {/* Settings button accanto allo speaker */}
+            {settingsButton}
+          </div>
+
+          {/* Input testo e pulsante invio sulla stessa riga */}
+          <div className="flex items-center gap-2">
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -281,101 +364,16 @@ export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageI
                 }
               }}
               placeholder="Scrivi un messaggio..."
-              className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[80px]"
+              className="flex-1 resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] max-h-[80px]"
               disabled={isSending}
               rows={1}
             />
-          </div>
-
-          {/* Icone e pulsante invio */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                onChange={handleFileSelect}
-                multiple
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => fileInputRef.current?.click()}
-                title="Allega file"
-                disabled={isSending}
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-
-              <input
-                type="file"
-                ref={imageInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageSelect}
-                multiple
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => imageInputRef.current?.click()}
-                title="Allega immagine"
-                disabled={isSending}
-              >
-                <Image className="h-4 w-4" />
-              </Button>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    title="Emoticon"
-                    disabled={isSending}
-                  >
-                    <Smile className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <div className="grid grid-cols-5 gap-2">
-                    {EMOTICONS.map((emoticon, index) => (
-                      <Button
-                        key={index}
-                        variant="ghost"
-                        className="text-2xl hover:scale-125 transition-transform"
-                        onClick={() => insertEmoticon(emoticon)}
-                      >
-                        {emoticon}
-                      </Button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Invoker AI Albert */}
-              <AIChatInvoker roomId={roomId} />
-
-              <Button
-                size="icon"
-                variant={isRecording ? "destructive" : "ghost"}
-                onClick={isRecording ? stopRecording : startRecording}
-                title={isRecording ? "Termina registrazione" : "Registra messaggio vocale"}
-                disabled={isSending}
-              >
-                <Mic className="h-4 w-4" />
-              </Button>
-
-              <AutoSpeakerToggle isSpeaking={isSpeaking} />
-              
-              {/* Settings button accanto allo speaker */}
-              {settingsButton}
-            </div>
-
-            {/* Pulsante invio a destra */}
+            
             <Button
               onClick={sendMessage}
               disabled={(!message.trim() && attachments.length === 0) || isSending}
               size="icon"
+              className="flex-shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>

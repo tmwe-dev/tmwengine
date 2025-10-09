@@ -230,7 +230,6 @@ const Intranet = () => {
           </div>
         )}
         <div className={`grid grid-cols-1 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
-          {/* Mobile: Sheet con lista stanze */}
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
               {/* Numero sezione */}
@@ -238,14 +237,16 @@ const Intranet = () => {
                 2
               </div>
               <div className="mt-8">
-                <RoomSelector
-                  onRoomSelect={(roomId) => {
-                    setSearchParams({ room: roomId });
-                    setMobileSheetOpen(false);
-                  }}
-                  selectedRoomId={selectedRoomId}
-                  getUnreadCount={getUnreadCount}
-                />
+                <SidebarProvider>
+                  <RoomSelector
+                    onRoomSelect={(roomId) => {
+                      setSearchParams({ room: roomId });
+                      setMobileSheetOpen(false);
+                    }}
+                    selectedRoomId={selectedRoomId}
+                    getUnreadCount={getUnreadCount}
+                  />
+                </SidebarProvider>
               </div>
             </SheetContent>
           </Sheet>

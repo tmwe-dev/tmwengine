@@ -1159,6 +1159,44 @@ export default function Attivita() {
             </ToggleGroup>
           </div>
 
+          {/* Selezione multipla mobile */}
+          {paginatedActivities.length > 0 && (
+            <Card className="border-card shadow-soft mb-4">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={
+                        paginatedActivities.length > 0 && 
+                        paginatedActivities.every(activity => selectedActivities.includes(activity.id))
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const newSelected = [...selectedActivities];
+                          paginatedActivities.forEach(activity => {
+                            if (!newSelected.includes(activity.id)) {
+                              newSelected.push(activity.id);
+                            }
+                          });
+                          setSelectedActivities(newSelected);
+                        } else {
+                          const pageActivityIds = paginatedActivities.map(activity => activity.id);
+                          setSelectedActivities(selectedActivities.filter(id => !pageActivityIds.includes(id)));
+                        }
+                      }}
+                    />
+                    <span className="text-sm font-medium">Seleziona tutti</span>
+                  </div>
+                  {selectedActivities.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {selectedActivities.length} selezionati
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
            {paginatedActivities.length === 0 ? (
             <Card className="border-card shadow-soft">
               <CardContent className="p-8 text-center">

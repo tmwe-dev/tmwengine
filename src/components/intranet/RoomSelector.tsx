@@ -289,7 +289,8 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
 
       <div className="space-y-2">
         {rooms.map((room) => {
-          const canAccess = room.is_member || room.access_type === 'public';
+          // Per stanze pubbliche, sempre accessibili. Per altre, solo se membro
+          const canAccess = room.access_type === 'public' || room.is_member;
           
           return (
             <Card

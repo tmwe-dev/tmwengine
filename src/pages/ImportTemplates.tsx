@@ -4293,28 +4293,27 @@ export default function ImportTemplates() {
             </DialogDescription>
           </DialogHeader>
           
-          {showMultipleActivityDialog && (
-            <AdvancedMultipleActivityForm
-              contacts={Array.from(selectedRecords).map(index => {
-                const record = allRecords[index];
-                return {
-                  id: record.id,
-                  company_name: record.company_name,
-                  company_alias: record.company_alias,
-                  name: record.name,
-                  alias: record.alias,
-                  email: record.email,
-                  phone: record.phone,
-                  cell: record.cell,
-                  ...record
-                };
-              })}
-              onSubmit={handleCreateMultipleActivities}
-              onCancel={() => setShowMultipleActivityDialog(false)}
-              isSubmitting={creatingMultipleActivities}
-              showSaveToRubrica={true}
-            />
-          )}
+          <AdvancedMultipleActivityForm
+            contacts={Array.from(selectedRecords)
+              .map(recordId => allRecords.find(r => r.id === recordId))
+              .filter(record => record !== undefined)
+              .map(record => ({
+                id: record.id,
+                company_name: record.company_name,
+                company_alias: record.company_alias,
+                name: record.name,
+                alias: record.alias,
+                email: record.email,
+                phone: record.phone,
+                cell: record.cell,
+                ...record
+              }))
+            }
+            onSubmit={handleCreateMultipleActivities}
+            onCancel={() => setShowMultipleActivityDialog(false)}
+            isSubmitting={creatingMultipleActivities}
+            showSaveToRubrica={true}
+          />
         </DialogContent>
       </Dialog>
 

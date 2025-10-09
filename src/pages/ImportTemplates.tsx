@@ -4292,9 +4292,13 @@ export default function ImportTemplates() {
             if (error) throw error;
             
             toast.success(data.message || 'Alias applicati con successo');
+            
+            // Ricarica i record - i filtri verranno automaticamente riapplicati
+            // dall'useEffect che monitora allRecords, searchQuery, originFilter, etc.
+            await loadAllRecords(selectedImport!);
+            
             setShowAliasPreview(false);
             setAliasPreviewData([]);
-            await loadAllRecords(selectedImport!);
           } catch (err: any) {
             console.error('Errore applicazione alias:', err);
             toast.error('Errore applicazione: ' + (err.message || 'Errore sconosciuto'));

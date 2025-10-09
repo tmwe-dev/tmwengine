@@ -988,7 +988,10 @@ export default function Attivita() {
                 <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
                   <DialogHeader className="flex-shrink-0">
                     <DialogTitle>
-                      {selectedActivity ? 'Modifica Attività' : 'Nuova Attività'}
+                      {multipleContacts.length > 0 
+                        ? `Crea Attività Multiple (${multipleContacts.length} contatti)` 
+                        : (selectedActivity ? 'Modifica Attività' : 'Nuova Attività')
+                      }
                     </DialogTitle>
                   </DialogHeader>
                   <div className="flex-1 overflow-y-auto">

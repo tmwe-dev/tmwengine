@@ -84,6 +84,22 @@ serve(async (req) => {
         continue;
       }
 
+      // ⚠️ CONTROLLO TENTATIVI - Se ha superato max_tentativi, segna come errore permanente
+      if (emailToSend.tentativi_invio >= emailToSend.max_tentativi) {
+        console.log(`❌ Email ${emailToSend.destinatario_email} ha superato max tentativi (${emailToSend.max_tentativi})`);
+        
+        await supabaseClient
+          .from('email_campagne_queue')
+          .update({ 
+            stato: 'errore',
+            errore_dettaglio: `Superato numero massimo di tentativi (${emailToSend.max_tentativi})`
+          })
+          .eq('id', emailToSend.id);
+        
+        totalErrors++;
+        continue;
+      }
+
       // Segna come "in_invio"
       await supabaseClient
         .from('email_campagne_queue')
@@ -106,13 +122,16 @@ serve(async (req) => {
       if (sendError) {
         console.error(`❌ Errore invio ${emailToSend.destinatario_email}:`, sendError);
         
-        // Aggiorna come errore
+        const nuoviTentativi = emailToSend.tentativi_invio + 1;
+        const haRaggiuntoMax = nuoviTentativi >= emailToSend.max_tentativi;
+        
+        // Aggiorna come errore (se ha raggiunto max) o rimetti in coda per ritentare
         await supabaseClient
           .from('email_campagne_queue')
           .update({
-            stato: 'errore',
-            errore_dettaglio: sendError.message,
-            tentativi_invio: emailToSend.tentativi_invio + 1
+            stato: haRaggiuntoMax ? 'errore' : 'programmata', // Riprova o errore definitivo
+            errore_dettaglio: `${sendError.message} (Tentativo ${nuoviTentativi}/${emailToSend.max_tentativi})`,
+            tentativi_invio: nuoviTentativi
           })
           .eq('id', emailToSend.id);
         

@@ -57,7 +57,8 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
       return;
     }
 
-    if (translatedText) {
+    // Per modalità non dual_view, toggle se già tradotto
+    if (translatedText && profile.translationMode !== 'dual_view') {
       setShowTranslation(!showTranslation);
       return;
     }
@@ -82,9 +83,8 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
 
       if (data?.result?.text) {
         setTranslatedText(data.result.text);
-        if (autoShow) {
-          setShowTranslation(true);
-        } else {
+        // dual_view mostra sempre, altri solo se autoShow
+        if (profile.translationMode === 'dual_view' || autoShow) {
           setShowTranslation(true);
         }
       } else {
@@ -107,29 +107,37 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
     return null;
   }
 
+  const isDualView = profile.translationMode === 'dual_view';
+
   return (
     <div className="flex flex-col gap-1 mt-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 w-auto px-2 text-xs gap-1"
-        onClick={() => handleTranslate(false)}
-        disabled={isTranslating}
-      >
-        {isTranslating ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <Languages className="h-3 w-3" />
-        )}
-        {translatedText 
-          ? (showTranslation ? 'Mostra originale' : 'Mostra traduzione')
-          : 'Traduci'
-        }
-      </Button>
+      {/* Mostra solo il pulsante per modalità non dual_view */}
+      {!isDualView && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-auto px-2 text-xs gap-1"
+          onClick={() => handleTranslate(false)}
+          disabled={isTranslating}
+        >
+          {isTranslating ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Languages className="h-3 w-3" />
+          )}
+          {translatedText 
+            ? (showTranslation ? 'Mostra originale' : 'Mostra traduzione')
+            : 'Traduci'
+          }
+        </Button>
+      )}
       
-      {showTranslation && translatedText && (
+      {/* Mostra traduzione per dual_view sempre, per altri solo se showTranslation */}
+      {(isDualView || showTranslation) && translatedText && (
         <div className="mt-2 p-2 bg-muted/50 rounded text-sm border-l-2 border-primary">
-          <p className="text-xs text-muted-foreground mb-1">Traduzione in {profile.readingLanguage}:</p>
+          <p className="text-xs text-muted-foreground mb-1">
+            {isDualView ? `🌐 ${profile.readingLanguage}` : `Traduzione in ${profile.readingLanguage}`}:
+          </p>
           <p className="whitespace-pre-wrap break-words">{translatedText}</p>
         </div>
       )}

@@ -3540,7 +3540,7 @@ export default function ImportTemplates() {
                         size="sm"
                         variant="outline"
                         onClick={async () => {
-                          const selectedIds = Array.from(selectedRecords).map(idx => allRecords[idx]?.id).filter(Boolean);
+                          const selectedIds = Array.from(selectedRecords);
                           if (selectedIds.length === 0) {
                             toast.error('Nessun record selezionato');
                             return;

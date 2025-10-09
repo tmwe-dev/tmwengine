@@ -37,6 +37,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [messageTokens, setMessageTokens] = useState<Record<string, { input: number; output: number; total: number }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
   const { settings } = useRoomAISettings(roomId);
@@ -190,6 +191,14 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
               ...prev,
               [message.id]: data.translatedText
             }));
+            
+            // Salva i token ricevuti
+            if (data.tokens) {
+              setMessageTokens(prev => ({
+                ...prev,
+                [message.id]: data.tokens
+              }));
+            }
           }
         } catch (error) {
           console.error('Auto-translation error:', error);
@@ -249,7 +258,14 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                 
                 {message.content && (
                   <>
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    {/* Mostra traduzione per modalità read_only o both se disponibile */}
+                    {(profile?.translationMode === 'read_only' || profile?.translationMode === 'both') && 
+                     translatedMessages[message.id] && 
+                     !isOwnMessage ? (
+                      <p className="text-sm whitespace-pre-wrap break-words">{translatedMessages[message.id]}</p>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    )}
                     
                     {/* Mostra traduzione automatica se disponibile e modalità dual_view */}
                     {translatedMessages[message.id] && profile?.translationMode === 'dual_view' && (
@@ -261,18 +277,30 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                       </div>
                     )}
                     
-                    <div className="flex gap-1 flex-wrap mt-1">
-                      <TranslateButton
-                        messageContent={message.content}
-                        messageId={message.id}
-                        sourceLanguage={message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined}
-                        roomId={roomId}
-                      />
-                      {!isOwnMessage && profile && (
-                        <SpeakButton 
-                          text={translatedMessages[message.id] || message.content}
-                          language={profile.readingLanguage}
-                        />
+                    <div className="flex gap-1 flex-wrap mt-1 items-center justify-between">
+                      <div className="flex gap-1">
+                        {/* Pulsante solo per modalità none */}
+                        {profile?.translationMode === 'none' && (
+                          <TranslateButton
+                            messageContent={message.content}
+                            messageId={message.id}
+                            sourceLanguage={message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined}
+                            roomId={roomId}
+                          />
+                        )}
+                        {!isOwnMessage && profile && (
+                          <SpeakButton 
+                            text={translatedMessages[message.id] || message.content}
+                            language={profile.readingLanguage}
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Mostra token in basso a destra */}
+                      {messageTokens[message.id] && (
+                        <span className="text-xs text-muted-foreground/60 ml-auto">
+                          {messageTokens[message.id].total} tokens
+                        </span>
                       )}
                     </div>
                   </>

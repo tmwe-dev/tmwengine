@@ -107,11 +107,7 @@ const CRMLayout = ({ children }) => {
           location.pathname !== '/attivita' && "border-b border-border",
           isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
-      >
-        {/* Numero sezione */}
-        <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-          1
-        </div>
+        >
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"

@@ -346,10 +346,13 @@ const Intranet = () => {
 
   // Tablet/Desktop: usa SidebarProvider ma mantiene l'header originale
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={false} style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "5rem" } as React.CSSProperties}>
       <div className="flex w-full min-h-screen">
         {/* Sidebar collapsible */}
         <Sidebar collapsible="icon" className="!bg-transparent border-r">
+          <div className="p-2 border-b flex items-center justify-between">
+            <SidebarTrigger />
+          </div>
           <SidebarContent className="!bg-transparent">
             <SidebarGroup>
               <SidebarGroupLabel>Stanze</SidebarGroupLabel>
@@ -386,7 +389,7 @@ const Intranet = () => {
             {/* Header originale con pulsante Utenti Organizzazione */}
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <SidebarTrigger />
+                <SidebarTrigger className="lg:hidden" />
                 <h1 className="text-2xl font-bold">Intranet</h1>
               </div>
               <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>

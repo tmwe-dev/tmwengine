@@ -144,22 +144,24 @@ const CRMLayout = ({ children }) => {
           )}
         </div>
 
-        {/* Logo centrato */}
-        <button 
-          onClick={() => navigate(-1)}
-          className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
-        </button>
+        <div className="flex-1" />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Logo */}
+          <button 
+            onClick={() => navigate(-1)}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
+          </button>
+
           {/* TMWE Profile Button - only show if user has profile */}
           {userProfile && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsProfileDialogOpen(true)}
-              className="h-8 w-8"
+              className="h-8 w-8 shrink-0"
               title="Profilo TMWE"
             >
               <User className="h-4 w-4" />

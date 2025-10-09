@@ -17,7 +17,6 @@ import Attivita from "./pages/Attivita";
 import Campagne from "./pages/Campagne";
 
 import Chat from "./pages/Chat";
-import Best from "./pages/Best";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
 
@@ -86,11 +85,6 @@ const App = () => (
             <Route path="/intranet" element={
               <ProtectedRoute>
                 <CRMLayout><Intranet /></CRMLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/best" element={
-              <ProtectedRoute>
-                <CRMLayout><Best /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/intranet-admin" element={

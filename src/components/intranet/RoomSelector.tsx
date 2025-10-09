@@ -355,17 +355,18 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
               );
 
               return (
-                <SidebarMenuItem key={room.id} className={isCollapsed ? "flex items-center gap-1 pr-2" : ""}>
+                <SidebarMenuItem key={room.id}>
                   {isCollapsed ? (
-                    <>
+                    <div className="flex flex-col items-center gap-1 w-full py-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <SidebarMenuButton
                             onClick={() => canAccess && onRoomSelect(room.id)}
                             isActive={selectedRoomId === room.id}
                             disabled={!canAccess}
+                            className="w-full justify-center"
                           >
-                            <AccessIcon className="h-4 w-4 shrink-0" />
+                            <AccessIcon className="h-4 w-4" />
                           </SidebarMenuButton>
                         </TooltipTrigger>
                         <TooltipContent side="right" className="flex flex-col gap-1">
@@ -386,11 +387,11 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
                         </TooltipContent>
                       </Tooltip>
                       {unreadCount > 0 && (
-                        <Badge variant="destructive" className="h-5 min-w-5 px-1 text-[10px] shrink-0">
+                        <Badge variant="destructive" className="h-4 min-w-4 px-1 text-[9px]">
                           {unreadCount > 9 ? '9+' : unreadCount}
                         </Badge>
                       )}
-                    </>
+                    </div>
                   ) : (
                     button
                   )}

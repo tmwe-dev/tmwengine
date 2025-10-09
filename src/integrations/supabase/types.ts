@@ -74,6 +74,75 @@ export type Database = {
         }
         Relationships: []
       }
+      attivita_archiviate: {
+        Row: {
+          archiviato_da: string | null
+          assegnato_a: string | null
+          attivita_id_originale: string
+          created_at: string
+          creato_da: string | null
+          data_archiviazione: string
+          data_creazione: string
+          data_ultima_modifica: string | null
+          descrizione: string
+          id: string
+          modifiche_log: Json | null
+          motivo_archiviazione: string | null
+          note: string | null
+          ora_creazione: string | null
+          priorita: string
+          rubrica_id: string | null
+          scadenza: string | null
+          stato: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          archiviato_da?: string | null
+          assegnato_a?: string | null
+          attivita_id_originale: string
+          created_at?: string
+          creato_da?: string | null
+          data_archiviazione?: string
+          data_creazione?: string
+          data_ultima_modifica?: string | null
+          descrizione: string
+          id?: string
+          modifiche_log?: Json | null
+          motivo_archiviazione?: string | null
+          note?: string | null
+          ora_creazione?: string | null
+          priorita?: string
+          rubrica_id?: string | null
+          scadenza?: string | null
+          stato?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          archiviato_da?: string | null
+          assegnato_a?: string | null
+          attivita_id_originale?: string
+          created_at?: string
+          creato_da?: string | null
+          data_archiviazione?: string
+          data_creazione?: string
+          data_ultima_modifica?: string | null
+          descrizione?: string
+          id?: string
+          modifiche_log?: Json | null
+          motivo_archiviazione?: string | null
+          note?: string | null
+          ora_creazione?: string | null
+          priorita?: string
+          rubrica_id?: string | null
+          scadenza?: string | null
+          stato?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -1196,6 +1265,171 @@ export type Database = {
           },
         ]
       }
+      imported_contacts_archiviati: {
+        Row: {
+          address: string | null
+          agent_id: string | null
+          alias: string | null
+          archiviata: boolean | null
+          archiviato_da: string | null
+          cell: string | null
+          city: string | null
+          client_code: string | null
+          commercial_anagrafiche_id: string | null
+          company_alias: string | null
+          company_name: string | null
+          completed: boolean | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          data_archiviazione: string
+          email: string | null
+          has_actions: boolean | null
+          id: string
+          import_log_id: string | null
+          imported_contact_id_originale: string
+          is_imported_to_rubrica: boolean | null
+          last_contact: string | null
+          meta_air_freight: boolean | null
+          meta_client: boolean | null
+          meta_contact_required_email: boolean | null
+          meta_exclient: boolean | null
+          meta_express: boolean | null
+          meta_exworks: boolean | null
+          meta_hight_value_customer: boolean | null
+          meta_interested: boolean | null
+          meta_presentation: boolean | null
+          meta_reception_required_email: boolean | null
+          meta_rejected: boolean | null
+          meta_sea_freight: boolean | null
+          meta_tutorial: boolean | null
+          meta_wca: boolean | null
+          motivo_archiviazione: string | null
+          name: string | null
+          next_contact_date: string | null
+          note: string | null
+          origin: string | null
+          original_id: string | null
+          phone: string | null
+          position: string | null
+          row_number: number | null
+          scheduled_contact: string | null
+          state: string | null
+          stato: string | null
+          title: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          agent_id?: string | null
+          alias?: string | null
+          archiviata?: boolean | null
+          archiviato_da?: string | null
+          cell?: string | null
+          city?: string | null
+          client_code?: string | null
+          commercial_anagrafiche_id?: string | null
+          company_alias?: string | null
+          company_name?: string | null
+          completed?: boolean | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          import_log_id?: string | null
+          imported_contact_id_originale: string
+          is_imported_to_rubrica?: boolean | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          name?: string | null
+          next_contact_date?: string | null
+          note?: string | null
+          origin?: string | null
+          original_id?: string | null
+          phone?: string | null
+          position?: string | null
+          row_number?: number | null
+          scheduled_contact?: string | null
+          state?: string | null
+          stato?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          agent_id?: string | null
+          alias?: string | null
+          archiviata?: boolean | null
+          archiviato_da?: string | null
+          cell?: string | null
+          city?: string | null
+          client_code?: string | null
+          commercial_anagrafiche_id?: string | null
+          company_alias?: string | null
+          company_name?: string | null
+          completed?: boolean | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          import_log_id?: string | null
+          imported_contact_id_originale?: string
+          is_imported_to_rubrica?: boolean | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          name?: string | null
+          next_contact_date?: string | null
+          note?: string | null
+          origin?: string | null
+          original_id?: string | null
+          phone?: string | null
+          position?: string | null
+          row_number?: number | null
+          scheduled_contact?: string | null
+          state?: string | null
+          stato?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       intranet_global_ai_prompt: {
         Row: {
           attivo: boolean
@@ -1636,6 +1870,159 @@ export type Database = {
           paese?: string | null
           position?: string | null
           responsabile?: string | null
+          scheduled_contact?: string | null
+          state?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      rubrica_archiviata: {
+        Row: {
+          alias: string | null
+          archiviata: boolean | null
+          archiviato_da: string | null
+          azienda: string | null
+          cellulare: string | null
+          citta: string | null
+          client_code: string | null
+          company_alias: string | null
+          completed: boolean | null
+          created_at: string
+          created_by: string | null
+          data_archiviazione: string
+          email: string | null
+          has_actions: boolean | null
+          id: string
+          indirizzo: string | null
+          last_contact: string | null
+          meta_air_freight: boolean | null
+          meta_client: boolean | null
+          meta_contact_required_email: boolean | null
+          meta_exclient: boolean | null
+          meta_express: boolean | null
+          meta_exworks: boolean | null
+          meta_hight_value_customer: boolean | null
+          meta_interested: boolean | null
+          meta_presentation: boolean | null
+          meta_reception_required_email: boolean | null
+          meta_rejected: boolean | null
+          meta_sea_freight: boolean | null
+          meta_tutorial: boolean | null
+          meta_wca: boolean | null
+          motivo_archiviazione: string | null
+          next_contact_date: string | null
+          nome: string | null
+          note: string | null
+          origine: string | null
+          paese: string | null
+          position: string | null
+          responsabile: string | null
+          rubrica_id_originale: string
+          scheduled_contact: string | null
+          state: string | null
+          stato: string | null
+          tags: string[] | null
+          telefono: string | null
+          title: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          alias?: string | null
+          archiviata?: boolean | null
+          archiviato_da?: string | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          responsabile?: string | null
+          rubrica_id_originale: string
+          scheduled_contact?: string | null
+          state?: string | null
+          stato?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          title?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          alias?: string | null
+          archiviata?: boolean | null
+          archiviato_da?: string | null
+          azienda?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          client_code?: string | null
+          company_alias?: string | null
+          completed?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          data_archiviazione?: string
+          email?: string | null
+          has_actions?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          last_contact?: string | null
+          meta_air_freight?: boolean | null
+          meta_client?: boolean | null
+          meta_contact_required_email?: boolean | null
+          meta_exclient?: boolean | null
+          meta_express?: boolean | null
+          meta_exworks?: boolean | null
+          meta_hight_value_customer?: boolean | null
+          meta_interested?: boolean | null
+          meta_presentation?: boolean | null
+          meta_reception_required_email?: boolean | null
+          meta_rejected?: boolean | null
+          meta_sea_freight?: boolean | null
+          meta_tutorial?: boolean | null
+          meta_wca?: boolean | null
+          motivo_archiviazione?: string | null
+          next_contact_date?: string | null
+          nome?: string | null
+          note?: string | null
+          origine?: string | null
+          paese?: string | null
+          position?: string | null
+          responsabile?: string | null
+          rubrica_id_originale?: string
           scheduled_contact?: string | null
           state?: string | null
           stato?: string | null

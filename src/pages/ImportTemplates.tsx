@@ -2607,7 +2607,7 @@ export default function ImportTemplates() {
           setHasNotesFilter(false);
         }
       }}>
-        <DialogContent className="max-w-[98vw] w-[98vw] max-h-[95vh] h-[95vh] flex flex-col mx-auto my-auto overflow-hidden">
+        <DialogContent className="w-full max-w-7xl h-[90vh] sm:h-[92vh] md:h-[95vh] flex flex-col overflow-hidden p-4 sm:p-6">
           <DialogHeader>
             {isMobile ? (
               /* Mobile Header - Compact */

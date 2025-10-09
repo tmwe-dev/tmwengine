@@ -83,7 +83,7 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
   }
 
   return (
-    <div className="relative">
+    <div className="h-[100px] flex flex-col">
       {!isVisible && (
         <Button
           type="button"
@@ -108,10 +108,10 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
       )}
 
       {isVisible && suggestions.length > 0 && (
-        <Card className="absolute bottom-full left-0 right-0 mb-2 p-4 space-y-2 max-h-64 overflow-y-auto">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
+        <Card className="flex-1 p-3 space-y-2 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold flex items-center gap-1">
+              <Sparkles className="h-3 w-3 text-primary" />
               Suggerimenti AI
             </h4>
             <Button
@@ -121,25 +121,25 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
                 setIsVisible(false);
                 setSuggestions([]);
               }}
-              className="h-6 w-6 p-0"
+              className="h-5 w-5 p-0"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {suggestions.map((suggestion, index) => (
               <Button
                 key={index}
                 variant="outline"
-                className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
+                className="w-full justify-start text-left h-auto py-2 px-2 hover:bg-primary/10"
                 onClick={() => handleSelectSuggestion(suggestion)}
               >
-                <div className="flex flex-col gap-1 w-full">
+                <div className="flex flex-col gap-0.5 w-full">
                   <span className="text-xs text-muted-foreground capitalize">
                     {suggestion.tone}
                   </span>
-                  <span className="text-sm whitespace-pre-wrap">
+                  <span className="text-xs whitespace-pre-wrap line-clamp-2">
                     {suggestion.text}
                   </span>
                 </div>

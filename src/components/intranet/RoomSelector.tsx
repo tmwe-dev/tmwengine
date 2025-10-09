@@ -320,38 +320,38 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
               const AccessIcon = getAccessIcon(room.access_type);
               
               const button = (
-                <SidebarMenuButton
-                  onClick={() => canAccess && onRoomSelect(room.id)}
-                  isActive={selectedRoomId === room.id}
-                  disabled={!canAccess}
-                  className="relative"
-                >
-                  <AccessIcon className="h-4 w-4 shrink-0" />
-                  {!isCollapsed && (
-                    <>
-                      <span className="truncate flex-1">{room.name}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {room.member_count > 0 && (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                            {room.member_count}
-                          </Badge>
-                        )}
-                        {unreadCount > 0 && (
-                          <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
-                            {unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                    </>
-                  )}
+                <div className="flex items-center gap-2 w-full">
+                  <SidebarMenuButton
+                    onClick={() => canAccess && onRoomSelect(room.id)}
+                    isActive={selectedRoomId === room.id}
+                    disabled={!canAccess}
+                    className="flex-1"
+                  >
+                    <AccessIcon className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="truncate flex-1">{room.name}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {room.member_count > 0 && (
+                            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                              {room.member_count}
+                            </Badge>
+                          )}
+                          {unreadCount > 0 && (
+                            <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </SidebarMenuButton>
                   {isCollapsed && unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive flex items-center justify-center">
-                      <span className="text-[10px] text-destructive-foreground font-medium">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    </div>
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs shrink-0">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
                   )}
-                </SidebarMenuButton>
+                </div>
               );
 
               return (

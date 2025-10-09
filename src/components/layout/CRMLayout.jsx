@@ -109,14 +109,12 @@ const CRMLayout = ({ children }) => {
         )}
         >
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
+          <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden"
+            className="cursor-pointer hover:opacity-80 transition-opacity"
           >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+            <img src={findairLogo} alt="FindAir Logo" className="h-8 w-auto md:h-11" />
+          </button>
         </div>
 
         {/* Titolo allineato al bordo destro della sidebar */}

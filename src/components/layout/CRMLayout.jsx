@@ -121,22 +121,31 @@ const CRMLayout = ({ children }) => {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          
-          <div className="flex items-center gap-2">
-            {isMobile ? (
-              // Mobile: mostra solo l'icona
-              (() => {
-                const currentNav = navigation.find(nav => isActive(nav.href));
-                const Icon = currentNav?.icon || Home;
-                return <Icon className="h-6 w-6 text-foreground" />;
-              })()
-            ) : (
-              // Desktop: mostra il nome
-              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-                {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
-              </h1>
-            )}
-          </div>
+        </div>
+
+        {/* Titolo allineato al bordo destro della sidebar */}
+        <div 
+          className="absolute left-0 flex items-center gap-2 transition-all duration-300"
+          style={{
+            marginLeft: sidebarOpen 
+              ? isMobile ? '16rem' : '16rem'
+              : isMobile ? '0' : '4rem',
+            paddingLeft: '1rem'
+          }}
+        >
+          {isMobile ? (
+            // Mobile: mostra solo l'icona
+            (() => {
+              const currentNav = navigation.find(nav => isActive(nav.href));
+              const Icon = currentNav?.icon || Home;
+              return <Icon className="h-6 w-6 text-foreground" />;
+            })()
+          ) : (
+            // Desktop: mostra il nome
+            <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+            </h1>
+          )}
         </div>
 
         {/* Logo centrato */}

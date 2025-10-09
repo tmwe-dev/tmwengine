@@ -29,7 +29,7 @@ interface EmailQueue {
 export default function EmailCampagne() {
   const [emailQueue, setEmailQueue] = useState<EmailQueue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nextSchedulerRun, setNextSchedulerRun] = useState<number>(120); // 2 minuti in secondi
+  const [nextSchedulerRun, setNextSchedulerRun] = useState<number>(1800); // 30 minuti in secondi
   const [isManualRunning, setIsManualRunning] = useState(false);
 
   const fetchEmailQueue = async () => {
@@ -79,7 +79,7 @@ export default function EmailCampagne() {
   useEffect(() => {
     const interval = setInterval(() => {
       setNextSchedulerRun((prev) => {
-        if (prev <= 1) return 120; // Reset a 2 minuti
+        if (prev <= 1) return 1800; // Reset a 30 minuti
         return prev - 1;
       });
     }, 1000);
@@ -99,7 +99,7 @@ export default function EmailCampagne() {
         description: `${data.totalSent} email inviate, ${data.totalErrors} errori`,
       });
       
-      setNextSchedulerRun(120); // Reset countdown
+      setNextSchedulerRun(1800); // Reset countdown a 30 minuti
     } catch (error: any) {
       toast({
         title: "Errore",
@@ -170,6 +170,9 @@ export default function EmailCampagne() {
               <div className="text-sm text-muted-foreground">
                 Prossima esecuzione tra: <span className="font-mono font-bold text-primary">{formatTime(nextSchedulerRun)}</span>
               </div>
+              <div className="text-xs text-muted-foreground">
+                (ogni 30 minuti)
+              </div>
             </div>
             <Button 
               onClick={handleManualRun} 
@@ -191,7 +194,7 @@ export default function EmailCampagne() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            Lo scheduler verifica automaticamente ogni 2 minuti se ci sono email da inviare, 
+            Lo scheduler verifica automaticamente ogni 30 minuti se ci sono email da inviare, 
             rispettando data/ora programmata e intervallo configurato.
           </p>
         </CardContent>

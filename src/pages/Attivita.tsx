@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { Brain } from 'lucide-react';
+import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
 interface Activity {
   id: string;
@@ -1061,6 +1062,7 @@ export default function Attivita() {
             
             <div className="flex items-center gap-1">
               {/* Right-aligned AI/Settings icons */}
+              <EmailQueueBadge />
               <PagePromptManager pageRoute="/attivita" />
               <Button 
                 variant="ghost" 

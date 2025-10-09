@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
 import { AdvancedMultipleActivityForm } from '@/components/attivita/AdvancedMultipleActivityForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
 // Utility functions from ImportTemplates
 const isValidEmail = (email: string): boolean => {
@@ -408,6 +409,7 @@ const RecordImportati = () => {
               </div>
               
               <div className="flex items-center gap-2">
+                <EmailQueueBadge />
                 {selectedRecords.size > 0 && (
                   <Button
                     size="sm"

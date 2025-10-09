@@ -22,6 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyActivities } from '@/hooks/useCompanyActivities';
 import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
 // Utility function to format empty values
 const formatCellValue = (value: any, fieldKey?: string): string => {
@@ -625,6 +626,7 @@ export default function RubricaAvanzata() {
                 ({filteredRecords.length})
               </div>
             )}
+            <EmailQueueBadge />
             <Button
               variant="ghost"
               size="sm"

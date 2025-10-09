@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { EmailQueueBadge } from '@/components/email-campagne/EmailQueueBadge';
 
 interface Contact {
   id: string;
@@ -306,6 +307,8 @@ export default function Rubrica() {
           <div className="overflow-hidden animate-accordion-down space-y-4">
             <div className="flex justify-between items-center gap-4">
               <div className="flex items-center gap-2">
+                <EmailQueueBadge />
+                
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                   <DialogTrigger asChild>
                     <Button onClick={openAddForm} size="icon" className="shadow-soft">

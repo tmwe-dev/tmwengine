@@ -346,7 +346,7 @@ const Intranet = () => {
 
   // Tablet/Desktop: usa SidebarProvider ma mantiene l'header originale
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       <div className="flex w-full min-h-screen">
         {/* Sidebar collapsible */}
         <Sidebar collapsible="icon" className="!bg-transparent border-r">

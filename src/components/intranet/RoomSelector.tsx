@@ -16,6 +16,7 @@ interface Room {
   description: string;
   created_at: string;
   member_count?: number;
+  is_private?: boolean;
 }
 
 interface RoomSelectorProps {
@@ -74,10 +75,10 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
                 return { ...room, member_count: 0 };
               }
               
-              return { ...room, member_count: count || 0 };
+              return { ...room, member_count: count || 0, is_private: room.is_private || false };
             } catch (err) {
               console.error(`Exception counting members for room ${room.id}:`, err);
-              return { ...room, member_count: 0 };
+              return { ...room, member_count: 0, is_private: room.is_private || false };
             }
           })
         );
@@ -215,6 +216,9 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
                 <CardTitle className="text-base flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
                   {room.name}
+                  {room.is_private && (
+                    <Badge variant="outline" className="text-xs ml-2">Privata</Badge>
+                  )}
                 </CardTitle>
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <Users className="h-3 w-3" />

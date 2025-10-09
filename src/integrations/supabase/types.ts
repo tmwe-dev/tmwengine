@@ -1349,6 +1349,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_private: boolean | null
           name: string
           updated_at: string
         }
@@ -1357,6 +1358,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_private?: boolean | null
           name: string
           updated_at?: string
         }
@@ -1365,6 +1367,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_private?: boolean | null
           name?: string
           updated_at?: string
         }
@@ -1797,6 +1800,10 @@ export type Database = {
       create_activity_records: {
         Args: { activity_data: Json }
         Returns: undefined
+      }
+      get_or_create_private_room: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: string
       }
       get_tables_with_counts: {
         Args: Record<PropertyKey, never>

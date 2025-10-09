@@ -3,16 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetPortal } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetPortal, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
 import { SettingsButton } from '@/components/intranet/SettingsButton';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
+import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Intranet = () => {
   const isMobile = useIsMobile();
@@ -23,7 +25,14 @@ const Intranet = () => {
   const [selectedRoomName, setSelectedRoomName] = useState<string>('');
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showOrgUsers, setShowOrgUsers] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -31,6 +40,46 @@ const Intranet = () => {
       loadRoomName();
     }
   }, [selectedRoomId]);
+
+  const loadCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
+
+  const handleOpenPrivateChat = async (userId: string, userName: string) => {
+    try {
+      if (!currentUserId) {
+        toast({
+          title: "Errore",
+          description: "Devi essere autenticato per aprire una chat",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('get_or_create_private_room', {
+        user1_id: currentUserId,
+        user2_id: userId,
+      });
+
+      if (error) throw error;
+
+      setSearchParams({ room: data });
+      setShowOrgUsers(false);
+      
+      toast({
+        title: "Chat aperta",
+        description: `Chat con ${userName}`,
+      });
+    } catch (error) {
+      console.error('Error opening private chat:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aprire la chat privata",
+        variant: "destructive",
+      });
+    }
+  };
 
   const checkCreatorOrAdmin = async () => {
     try {
@@ -87,6 +136,31 @@ const Intranet = () => {
 
   return (
     <div className={`${shouldHideHeader ? 'h-[calc(100vh-9rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
+      {/* Header con pulsante Utenti Organizzazione */}
+      {!shouldHideHeader && (
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Intranet</h1>
+          <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Users className="h-4 w-4 mr-2" />
+                Utenti Organizzazione
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px]">
+              <SheetHeader>
+                <SheetTitle>Utenti Organizzazione</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <OrganizationUsers
+                  currentUserId={currentUserId}
+                  onOpenPrivateChat={handleOpenPrivateChat}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
       <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (

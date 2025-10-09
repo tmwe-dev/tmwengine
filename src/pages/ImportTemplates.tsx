@@ -3681,11 +3681,11 @@ export default function ImportTemplates() {
                 {isMobile ? (
                   /* Mobile View - Ultra-Compact Cards */
                   <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x pt-[20px] pb-[10px]" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    {viewingRecords.map((record, viewIndex) => {
+                    {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
                       const actualIndex = currentPage * recordsPerPage + viewIndex;
                       return (
                         <CompactContactCard
-                          key={viewIndex}
+                          key={record.id}
                           contact={record}
                           index={actualIndex}
                           isSelected={selectedRecords.has(record.id)}

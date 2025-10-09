@@ -3794,10 +3794,10 @@ export default function ImportTemplates() {
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {viewingRecords.map((record, viewIndex) => {
+                         {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
                            const actualIndex = currentPage * recordsPerPage + viewIndex;
                            return (
-                           <TableRow key={viewIndex}>
+                           <TableRow key={record.id}>
                                <TableCell className="w-12 px-4 py-[10px]">
                                  <Checkbox
                                   checked={selectedRecords.has(record.id)}

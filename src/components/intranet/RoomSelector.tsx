@@ -282,7 +282,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
   };
 
   if (loading) {
-    return <div className="p-4 text-center text-muted-foreground">Caricamento...</div>;
+    return null; // Non mostrare nulla durante il caricamento
   }
 
   const isCollapsed = sidebarState === 'collapsed';

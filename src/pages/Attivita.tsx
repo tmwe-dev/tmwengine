@@ -1098,7 +1098,7 @@ export default function Attivita() {
                           setIsFormOpen(true);
                         }}
                       >
-                        <Circle className="w-4 h-4" />
+                        <Users className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

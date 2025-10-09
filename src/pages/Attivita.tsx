@@ -94,6 +94,7 @@ export default function Attivita() {
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [multipleContacts, setMultipleContacts] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     stato: 'aperta,in_corso', // Default: mostra solo attività da svolgere
     tipo: '',
@@ -910,9 +911,12 @@ export default function Attivita() {
                   </DialogHeader>
                   <div className="flex-1 overflow-y-auto">
                     <AdvancedMultipleActivityForm
-                      contacts={[]}
+                      contacts={multipleContacts}
                       onSubmit={selectedActivity ? handleEditActivity : handleAddActivity}
-                      onCancel={() => setIsFormOpen(false)}
+                      onCancel={() => {
+                        setIsFormOpen(false);
+                        setMultipleContacts([]);
+                      }}
                       isSubmitting={false}
                       showSaveToRubrica={false}
                     />
@@ -1057,6 +1061,44 @@ export default function Attivita() {
                 </span>
               </div>
               <div className="flex items-center justify-center gap-4">
+                <Button
+                  variant="default"
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => {
+                    const selectedContacts = activities
+                      .filter(a => selectedActivities.includes(a.id))
+                      .filter(a => a.rubrica_id)
+                      .map(a => ({
+                        id: a.rubrica_id!,
+                        name: a.rubrica_nome || '',
+                        company_name: a.rubrica_azienda || '',
+                        source: a.contact_source || 'rubrica'
+                      }));
+                    
+                    // Rimuovi duplicati per ID
+                    const uniqueContacts = Array.from(
+                      new Map(selectedContacts.map(c => [c.id, c])).values()
+                    );
+                    
+                    if (uniqueContacts.length === 0) {
+                      toast({
+                        title: "Nessun contatto",
+                        description: "Le attività selezionate non hanno contatti associati",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    // Apri il form multiplo con i contatti
+                    setMultipleContacts(uniqueContacts);
+                    setSelectedActivity(null);
+                    setIsFormOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  {isMobile ? "Crea Multiple" : "Crea Attività Multiple"}
+                </Button>
                 <Button 
                   variant="ghost"
                   size="icon"

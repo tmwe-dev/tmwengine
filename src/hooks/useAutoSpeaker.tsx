@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useRoomAISettings } from '@/hooks/useRoomAISettings';
 
 interface Message {
   id: string;
@@ -12,10 +13,12 @@ interface Message {
 interface AutoSpeakerProps {
   messages: Message[];
   currentUserId: string;
+  roomId: string;
 }
 
-export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) => {
+export const useAutoSpeaker = ({ messages, currentUserId, roomId }: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
+  const { settings: roomSettings } = useRoomAISettings(roomId);
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -27,7 +30,8 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
   }, []);
 
   useEffect(() => {
-    if (!profile?.enableAutoSpeaker || !synthRef.current) return;
+    // Verifica che sia abilitato sia a livello utente che a livello stanza
+    if (!profile?.enableAutoSpeaker || !roomSettings?.enableAutoSpeaker || !synthRef.current) return;
     if (messages.length === 0) return;
 
     const latestMessage = messages[messages.length - 1];
@@ -82,7 +86,7 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
 
     // Pronuncia
     synthRef.current.speak(utterance);
-  }, [messages, currentUserId, profile]);
+  }, [messages, currentUserId, profile, roomSettings]);
 
   const stopSpeaking = () => {
     if (synthRef.current) {

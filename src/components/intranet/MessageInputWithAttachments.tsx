@@ -29,7 +29,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
-  const { isSpeaking } = useAutoSpeaker({ messages: [], currentUserId: '' });
+  const { isSpeaking } = useAutoSpeaker({ messages: [], currentUserId: '', roomId });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -360,7 +360,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 <Mic className="h-4 w-4" />
               </Button>
 
-              <AutoSpeakerToggle isSpeaking={isSpeaking} />
+              <AutoSpeakerToggle isSpeaking={isSpeaking} roomId={roomId} />
             </div>
 
             {/* Pulsante invio a destra */}

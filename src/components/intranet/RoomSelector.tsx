@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, Users, Plus } from 'lucide-react';
+import { MessageSquare, Users, Plus, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 interface Room {
@@ -31,6 +32,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
   const [newRoomDescription, setNewRoomDescription] = useState('');
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadRooms();
@@ -205,10 +207,9 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
         {rooms.map((room) => (
           <Card
             key={room.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
+            className={`transition-all hover:shadow-md ${
               selectedRoomId === room.id ? 'border-primary' : ''
             }`}
-            onClick={() => onRoomSelect(room.id)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -226,6 +227,26 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
                   {room.description}
                 </CardDescription>
               )}
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => navigate(`/intranet?room=${room.id}`)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => navigate(`/best?room=${room.id}`)}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Best
+                </Button>
+              </div>
             </CardHeader>
           </Card>
         ))}

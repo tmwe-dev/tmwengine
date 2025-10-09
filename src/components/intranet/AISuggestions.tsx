@@ -83,7 +83,7 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
   }
 
   return (
-    <div className="h-[100px] flex flex-col items-center justify-center">
+    <div className="h-[100px] flex flex-col">
       {!isVisible && (
         <Button
           type="button"
@@ -108,8 +108,8 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
       )}
 
       {isVisible && suggestions.length > 0 && (
-        <Card className="w-full h-full p-3 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
+        <Card className="flex-1 p-3 space-y-2 overflow-y-auto">
+          <div className="flex items-center justify-between">
             <h4 className="text-xs font-semibold flex items-center gap-1">
               <Sparkles className="h-3 w-3 text-primary" />
               Suggerimenti AI
@@ -127,7 +127,7 @@ export const AISuggestions = ({ roomId, onSelectSuggestion }: AISuggestionsProps
             </Button>
           </div>
           
-          <div className="flex-1 overflow-y-auto space-y-1.5">
+          <div className="space-y-1.5">
             {suggestions.map((suggestion, index) => (
               <Button
                 key={index}

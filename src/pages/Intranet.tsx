@@ -143,8 +143,8 @@ const Intranet = () => {
               </Card>
 
               {/* Input - Area fissa con flex-shrink-0 e max-height */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden flex flex-col' : ''}`}>
-                <CardContent className={shouldHideHeader ? 'p-0 flex-1' : 'p-3 sm:p-6'}>
+              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden' : ''}`}>
+                <CardContent className={shouldHideHeader ? 'p-0' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />
                 </CardContent>
               </Card>

@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
 import { ImageGenerator } from '@/components/chat/ImageGenerator';
+import { VoiceRecorder } from '@/components/chat/VoiceRecorder';
 
 interface Message {
   id: string;
@@ -968,34 +969,22 @@ const Chat = () => {
                           <DialogHeader className="pb-3 sm:pb-4">
                             <DialogTitle className="text-lg sm:text-xl">Gestione Chat AI</DialogTitle>
                           </DialogHeader>
-                          
-                          {lastResponseStats && (
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                              <span>{lastResponseStats.tokens} token</span>
-                              <span>•</span>
-                              <span>{lastResponseStats.responseTime}ms</span>
-                              <span>•</span>
-                              <span>{lastResponseStats.memoryMode} memory</span>
-                            </div>
-                          )}
-                          
-                          <div className="space-y-4 sm:space-y-6">
-                            <Select value={selectedTab} onValueChange={setSelectedTab}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleziona una sezione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="prompts">🤖 System Prompts</SelectItem>
-                                <SelectItem value="controls">⚙️ Controlli Memoria</SelectItem>
-                                <SelectItem value="stats">📊 Statistiche</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <div className="space-y-4 sm:space-y-6 pb-3 sm:pb-4">
+                            <ConversationStats conversationId={currentConversationId} />
+                            <ChatMemoryControls 
+                              conversationId={currentConversationId}
+                              memoriaCompleta={currentConversation?.memoria_completa || false}
+                              onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                            />
                           </div>
                         </DialogContent>
                       </Dialog>
                     )}
+                    <VoiceRecorder 
+                      onTranscription={(text) => setPrompt(prev => prev ? `${prev} ${text}` : text)}
+                    />
                     <FileUploader 
-                      onFilesUploaded={setUploadedFiles}
+                      onFilesUploaded={(files) => setUploadedFiles(files)}
                       maxFiles={5}
                     />
                     <ImageGenerator 

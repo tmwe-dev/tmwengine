@@ -549,12 +549,23 @@ export default function ImportTemplates() {
       console.log('🔍 DEBUG - activityData:', activityData);
       
       for (const company of selectedCompanies) {
-        console.log('🔍 DEBUG - Processing company:', company);
+        console.log('🔍 DEBUG - Processing company:', {
+          id: company.id,
+          name: company.name,
+          email: company.record.email,
+          company_name: company.record.company_name
+        });
+        
         // ATTIVITÀ IMMEDIATA (quello che ho fatto ora)
         let descrizione = '';
         let emailSendResult = null;
         
-        if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
+        if (activityData.tipo === 'email') {
+          if (!activityData.oggetto_email || !activityData.testo_email) {
+            console.error('❌ Missing email subject or body');
+            continue; // Skip this company if email data is missing
+          }
+          
           // Mostra progresso
           currentEmailIndex++;
           if (progressToastId) {
@@ -620,9 +631,21 @@ export default function ImportTemplates() {
             });
             descrizione = `❌ Email NON INVIATA - Email mancante\n\nOggetto: ${activityData.oggetto_email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
           }
-        } else if (activityData.tipo === 'chiamata' && activityData.note_generali) {
+        } else if (activityData.tipo === 'chiamata') {
+          if (!activityData.note_generali || activityData.note_generali.trim().length === 0) {
+            console.error('❌ Missing call notes');
+            continue; // Skip this company if call notes are missing
+          }
           descrizione = `Chiamata effettuata\n\nContatto: ${company.record.name || 'Non specificato'}\nTelefono: ${company.record.phone || company.record.cell || 'Non disponibile'}\nAzienda: ${company.record.company_name || ''}\n\nNote:\n${activityData.note_generali}`;
         }
+
+        // Verifica che la descrizione non sia vuota prima di creare l'attività
+        if (!descrizione || descrizione.trim().length === 0) {
+          console.error('❌ Empty description, skipping activity for company:', company.id);
+          continue;
+        }
+
+        console.log('✅ Creating activity for company:', company.id, 'with description length:', descrizione.length);
 
         // Attività immediata - stato 'completata' solo se email inviata con successo
         activities.push({
@@ -696,21 +719,23 @@ export default function ImportTemplates() {
         }
       }
 
-      // Inserisci le attività nel database usando SQL diretto
-      const { error } = await supabase
-        .from('attivita')
-        .insert(activities.map(activity => ({
-          rubrica_id: activity.rubrica_id,
-          tipo: activity.tipo,
-          descrizione: activity.descrizione,
-          stato: activity.stato || 'aperta',
-          scadenza: activity.scadenza ? activity.scadenza : null,
-          priorita: activity.priorita || 'media',
-          assegnato_a: activity.assegnato_a || null,
-          creato_da: activity.creato_da || null
-        })));
+      console.log('🔵 FINAL DEBUG - Total activities to insert:', activities.length);
+      console.log('🔵 FINAL DEBUG - Activities array:', JSON.stringify(activities, null, 2));
 
-      if (error) throw error;
+      // Inserisci le attività nel database
+      const { data: insertedActivities, error } = await supabase
+        .from('attivita')
+        .insert(activities)
+        .select();
+
+      console.log('🔵 FINAL DEBUG - Insert result:', { insertedActivities, error });
+
+      if (error) {
+        console.error('❌ Error inserting activities:', error);
+        throw error;
+      }
+
+      console.log('✅ Activities inserted successfully:', insertedActivities?.length || 0);
 
       // Rimuovi toast di progresso
       if (progressToastId) {

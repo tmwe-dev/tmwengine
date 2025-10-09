@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, CheckCircle2, Clock, AlertCircle, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { GlassCard } from "@/components/design-system/cards/GlassCard";
 
 interface EmailQueue {
   id: string;
@@ -68,80 +68,77 @@ export function EmailQueueList({ emails }: EmailQueueListProps) {
   }, {} as Record<string, EmailQueue[]>);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Coda Email ({emails.length} totali)
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {emails.length === 0 ? (
-          <div className="text-center py-12">
-            <Mail className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Nessuna email in coda</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Le email verranno aggiunte automaticamente quando crei una campagna dalla pagina "Template Email"
-            </p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-6">
-              {Object.entries(groupedByCampaign).map(([campaignName, campaignEmails]) => (
-                <div key={campaignName} className="space-y-3">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <h3 className="font-semibold text-sm">📋 {campaignName}</h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {campaignEmails.length} email
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {campaignEmails.map((email) => (
-                      <div
-                        key={email.id}
-                        className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="mt-1">
-                          {getStatusIcon(email.stato)}
+    <GlassCard
+      title={`Coda Email (${emails.length} totali)`}
+      headerAction={<Mail className="h-5 w-5 text-primary" />}
+      gradient
+      className="h-full"
+    >
+      {emails.length === 0 ? (
+        <div className="text-center py-8 md:py-12">
+          <Mail className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-sm md:text-base text-muted-foreground">Nessuna email in coda</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-2 px-4">
+            Le email verranno aggiunte automaticamente quando crei una campagna dalla pagina "Template Email"
+          </p>
+        </div>
+      ) : (
+        <ScrollArea className="h-[400px] md:h-[500px] xl:h-[600px] pr-2 md:pr-4">
+          <div className="space-y-4 md:space-y-6">
+            {Object.entries(groupedByCampaign).map(([campaignName, campaignEmails]) => (
+              <div key={campaignName} className="space-y-2 md:space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-2 border-b">
+                  <h3 className="font-semibold text-xs md:text-sm truncate">📋 {campaignName}</h3>
+                  <Badge variant="secondary" className="text-xs w-fit">
+                    {campaignEmails.length} email
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  {campaignEmails.map((email) => (
+                    <div
+                      key={email.id}
+                      className="flex items-start gap-2 md:gap-3 p-2 md:p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="mt-0.5 md:mt-1 flex-shrink-0">
+                        {getStatusIcon(email.stato)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                          <p className="font-medium text-xs md:text-sm truncate">
+                            {email.destinatario_nome || email.destinatario_email}
+                          </p>
+                          {getStatusBadge(email.stato)}
                         </div>
                         
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm truncate">
-                              {email.destinatario_nome || email.destinatario_email}
-                            </p>
-                            {getStatusBadge(email.stato)}
-                          </div>
-                          
-                          <p className="text-xs text-muted-foreground truncate">
-                            {email.destinatario_email}
-                            {email.destinatario_azienda && ` - ${email.destinatario_azienda}`}
-                          </p>
-                          
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {email.stato === 'inviata' && email.data_ora_invio ? (
-                              <>Inviata: {format(new Date(email.data_ora_invio), "dd MMM HH:mm", { locale: it })}</>
-                            ) : (
-                              <>Programmata: {format(new Date(email.data_ora_programmata), "dd MMM HH:mm", { locale: it })}</>
-                            )}
-                          </p>
-                          
-                          {email.errore_dettaglio && (
-                            <p className="text-xs text-destructive mt-1">
-                              ⚠️ {email.errore_dettaglio}
-                            </p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                          {email.destinatario_email}
+                          {email.destinatario_azienda && ` - ${email.destinatario_azienda}`}
+                        </p>
+                        
+                        <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                          {email.stato === 'inviata' && email.data_ora_invio ? (
+                            <>Inviata: {format(new Date(email.data_ora_invio), "dd MMM HH:mm", { locale: it })}</>
+                          ) : (
+                            <>Programmata: {format(new Date(email.data_ora_programmata), "dd MMM HH:mm", { locale: it })}</>
                           )}
-                        </div>
+                        </p>
+                        
+                        {email.errore_dettaglio && (
+                          <p className="text-[10px] md:text-xs text-destructive mt-1 break-words">
+                            ⚠️ {email.errore_dettaglio}
+                          </p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+    </GlassCard>
   );
 }

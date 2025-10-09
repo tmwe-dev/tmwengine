@@ -4,6 +4,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Users } from 'lucide-react';
+import { UserAvailabilityBadge } from './UserAvailabilityBadge';
+import { UserAvailabilitySelector } from './UserAvailabilitySelector';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface UserPresence {
   user_id: string;
@@ -11,11 +15,56 @@ interface UserPresence {
   status: 'online' | 'away' | 'busy';
 }
 
+interface UserProfile {
+  user_id: string;
+  display_name: string | null;
+  availability_status: 'online' | 'busy' | 'dnd' | 'offline';
+  status_emoji: string | null;
+  status_color: string | null;
+  status_message: string | null;
+}
+
 interface OnlineUsersProps {
   users: UserPresence[];
 }
 
 export const OnlineUsers = ({ users }: OnlineUsersProps) => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
+
+  useEffect(() => {
+    loadCurrentUser();
+    loadUserProfiles();
+  }, [users]);
+
+  const loadCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, availability_status, status_emoji, status_color, status_message')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) setCurrentUser(data);
+  };
+
+  const loadUserProfiles = async () => {
+    const userIds = users.map(u => u.user_id);
+    if (userIds.length === 0) return;
+
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, availability_status, status_emoji, status_color, status_message')
+      .in('user_id', userIds);
+
+    if (data) {
+      const profilesMap = new Map(data.map(p => [p.user_id, p]));
+      setUserProfiles(profilesMap);
+    }
+  };
+
   const getStatusColor = (status: 'online' | 'away' | 'busy') => {
     switch (status) {
       case 'online':
@@ -60,35 +109,61 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-sm">Utenti online</h4>
-            <Badge variant="secondary">{users.length}</Badge>
+            <div className="flex items-center gap-2">
+              {currentUser && (
+                <UserAvailabilitySelector
+                  currentStatus={currentUser.availability_status}
+                  currentEmoji={currentUser.status_emoji || undefined}
+                  currentColor={currentUser.status_color || undefined}
+                  currentMessage={currentUser.status_message || undefined}
+                />
+              )}
+              <Badge variant="secondary">{users.length}</Badge>
+            </div>
           </div>
           <ScrollArea className="h-[300px] pr-4">
             <div className="space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user.user_id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="text-xs">
-                        {getUserInitials(user.user_id)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div
-                      className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${getStatusColor(user.status)}`}
-                    />
+              {users.map((user) => {
+                const profile = userProfiles.get(user.user_id);
+                return (
+                  <div
+                    key={user.user_id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="text-xs">
+                          {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {profile && (
+                        <div className="absolute bottom-0 right-0">
+                          <UserAvailabilityBadge
+                            status={profile.availability_status}
+                            emoji={profile.status_emoji || undefined}
+                            color={profile.status_color || undefined}
+                            size="sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
+                      </p>
+                      {profile?.status_message ? (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {profile.status_message}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {getStatusLabel(user.status)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      Utente {getUserInitials(user.user_id)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {getStatusLabel(user.status)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {users.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />

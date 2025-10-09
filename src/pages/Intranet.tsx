@@ -10,6 +10,7 @@ import { MessageInputWithAttachments } from '@/components/intranet/MessageInputW
 import { SettingsButton } from '@/components/intranet/SettingsButton';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
+import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -201,15 +202,21 @@ const Intranet = () => {
             <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
               2
             </div>
-            <Card className="h-full">
-              <div className="p-2">
-                <RoomSelector
-                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                  selectedRoomId={selectedRoomId}
-                  getUnreadCount={getUnreadCount}
-                />
-              </div>
-            </Card>
+            <div className="h-full space-y-4 overflow-y-auto">
+              <Card>
+                <div className="p-2">
+                  <RoomSelector
+                    onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                    selectedRoomId={selectedRoomId}
+                    getUnreadCount={getUnreadCount}
+                  />
+                </div>
+              </Card>
+              
+              <OnlineUsers users={onlineUsers} />
+              
+              {isCreatorOrAdmin && <AccessRequestsPanel />}
+            </div>
           </div>
         )}
 

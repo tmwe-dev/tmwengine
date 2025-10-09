@@ -83,7 +83,10 @@ serve(async (req) => {
 
     // Build message history
     let messages = [
-      { role: 'system', content: systemPrompt || 'Sei un assistente AI utile e amichevole che risponde in italiano.' }
+      { 
+        role: 'system', 
+        content: systemPrompt || 'Sei un assistente AI professionale che risponde SEMPRE in italiano in modo chiaro, preciso e utile. Non lasciare mai risposte vuote. Se non hai informazioni sufficienti, chiedi chiarimenti all\'utente.' 
+      }
     ];
 
     if (conversationId) {
@@ -340,10 +343,17 @@ serve(async (req) => {
         'Authorization': `Bearer ${aiConfig.api_key}`,
         'Content-Type': 'application/json',
       };
+      
+      // GPT-5 e modelli più recenti richiedono max_completion_tokens invece di max_tokens
+      const isGPT5OrNewer = aiConfig.modello.includes('gpt-5') || 
+                            aiConfig.modello.includes('o3') || 
+                            aiConfig.modello.includes('o4') ||
+                            aiConfig.modello.includes('gpt-4.1');
+      
       requestBody = {
         model: aiConfig.modello,
         messages: messages,
-        max_completion_tokens: 1000,
+        ...(isGPT5OrNewer ? { max_completion_tokens: 4096 } : { max_tokens: 4096 }),
         ...(requiresCRMTools && { tools, tool_choice: "auto" })
       };
     } else if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
@@ -397,6 +407,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log('[DEBUG] Full API Response:', JSON.stringify(data, null, 2));
     
     // Handle response based on provider
     let aiResponse: string;
@@ -406,8 +417,32 @@ serve(async (req) => {
       aiResponse = data.content?.[0]?.text || '';
       choice = { message: { tool_calls: data.content?.filter((c: any) => c.type === 'tool_use') } };
     } else {
-      choice = data.choices[0];
-      aiResponse = choice.message.content;
+      choice = data.choices?.[0];
+      if (!choice) {
+        console.error('[ERROR] No choices in API response');
+        throw new Error('Risposta API vuota o malformata');
+      }
+      
+      aiResponse = choice.message?.content || '';
+      console.log('[DEBUG] AI Response extracted:', aiResponse);
+      console.log('[DEBUG] Finish reason:', choice.finish_reason);
+      
+      // Se la risposta è vuota, logga il motivo
+      if (!aiResponse && choice.finish_reason) {
+        console.log('[WARNING] Empty response, finish_reason:', choice.finish_reason);
+      }
+      
+      // Gestione refusal per GPT-5 e modelli più recenti
+      if (!aiResponse && choice.message?.refusal) {
+        console.log('[WARNING] Request refused:', choice.message.refusal);
+        aiResponse = `Mi dispiace, non posso rispondere a questa richiesta: ${choice.message.refusal}`;
+      }
+    }
+    
+    // Validazione finale
+    if (!aiResponse || aiResponse.trim() === '') {
+      console.error('[ERROR] Empty AI response after extraction');
+      aiResponse = 'Mi dispiace, si è verificato un errore nel generare la risposta. Per favore riprova o riformula la domanda.';
     }
     
     // Handle tool calls
@@ -451,22 +486,36 @@ serve(async (req) => {
       // Second call with tool results
       const followUpMessages = [...messages, choice.message, ...toolResults];
       
+      // Usa gli stessi parametri del primo call per compatibilità
+      const isGPT5OrNewer = aiConfig.modello.includes('gpt-5') || 
+                            aiConfig.modello.includes('o3') || 
+                            aiConfig.modello.includes('o4') ||
+                            aiConfig.modello.includes('gpt-4.1');
+      
       const followUpResponse = await fetch(apiUrl, {
         method: 'POST',
         headers: requestHeaders,
         body: JSON.stringify({
           model: aiConfig.modello,
           messages: followUpMessages,
-          max_completion_tokens: 1000,
+          ...(isGPT5OrNewer ? { max_completion_tokens: 2000 } : { max_tokens: 2000 }),
         }),
       });
       
       if (followUpResponse.ok) {
         const followUpData = await followUpResponse.json();
+        console.log('[DEBUG] Follow-up response:', JSON.stringify(followUpData, null, 2));
+        
         if (aiConfig.provider === 'anthropic' || aiConfig.provider === 'claude') {
           aiResponse = followUpData.content?.[0]?.text || '';
         } else {
-          aiResponse = followUpData.choices[0].message.content;
+          aiResponse = followUpData.choices?.[0]?.message?.content || '';
+        }
+        
+        // Validazione risposta follow-up
+        if (!aiResponse || aiResponse.trim() === '') {
+          console.error('[ERROR] Empty follow-up response');
+          aiResponse = 'Errore durante l\'elaborazione della risposta con gli strumenti CRM. Riprova.';
         }
       }
     }
@@ -492,7 +541,7 @@ serve(async (req) => {
           .insert({
             conversation_id: conversationId,
             role: 'assistant',
-            content: aiResponse
+            content: aiResponse || '[Errore: risposta vuota dal modello AI]'
           });
 
         // Update conversation updated_at

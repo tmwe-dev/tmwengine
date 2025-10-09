@@ -232,10 +232,6 @@ const Intranet = () => {
         <div className={`grid grid-cols-1 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
-              {/* Numero sezione */}
-              <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-                2
-              </div>
               <div className="mt-8">
                 <SidebarProvider>
                   <RoomSelector
@@ -253,11 +249,6 @@ const Intranet = () => {
 
           {/* Area chat principale */}
           <div className={`flex-1 ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-[calc(100vh-4rem)] overflow-hidden justify-between transition-all duration-300` : 'relative flex flex-col overflow-hidden space-y-6'}`}>
-            {/* Numero sezione */}
-            <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-              3
-            </div>
-            
             {selectedRoomId ? (
               <>
                 {/* Messaggi - Area scrollabile indipendente con flex-1 */}
@@ -278,20 +269,23 @@ const Intranet = () => {
                 {shouldHideHeader && (
                   <div className={`h-14 grid grid-cols-3 items-center border-t flex-shrink-0 z-50 ${isLayoutInverted ? 'order-first' : ''}`}>
                     <div className="flex items-center gap-2 pl-2 relative">
-                      <div className="relative">
-                        <Menu 
-                          className="h-5 w-5 cursor-pointer text-foreground"
-                          onClick={() => setMobileSheetOpen(true)}
-                        />
-                        {totalUnread > 0 && (
-                          <Badge 
-                            variant="destructive" 
-                            className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
-                          >
-                            {totalUnread}
-                          </Badge>
-                        )}
-                      </div>
+                      <button 
+                        className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors"
+                        onClick={() => setMobileSheetOpen(true)}
+                        aria-label="Apri menu"
+                      >
+                        <div className="relative">
+                          <Menu className="h-5 w-5 text-foreground" />
+                          {totalUnread > 0 && (
+                            <Badge 
+                              variant="destructive" 
+                              className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
+                            >
+                              {totalUnread}
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
                       <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
                     </div>
                     <div className="flex justify-center">

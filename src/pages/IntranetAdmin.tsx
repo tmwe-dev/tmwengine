@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Shield, Users, MessageSquare, Sparkles } from 'lucide-react';
+import { Loader2, Shield, Users, DoorOpen, Brain, BarChart3 } from 'lucide-react';
 import { AdminRoomManager } from '@/components/intranet/admin/AdminRoomManager';
 import { AdminUserManager } from '@/components/intranet/admin/AdminUserManager';
 import { AdminGlobalPrompt } from '@/components/intranet/admin/AdminGlobalPrompt';
@@ -73,11 +73,11 @@ const IntranetAdmin = () => {
       <Tabs defaultValue="stats" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="stats" className="gap-2">
-            <Sparkles className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4" />
             Statistiche
           </TabsTrigger>
           <TabsTrigger value="rooms" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
+            <DoorOpen className="h-4 w-4" />
             Stanze
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
@@ -85,7 +85,7 @@ const IntranetAdmin = () => {
             Utenti
           </TabsTrigger>
           <TabsTrigger value="ai" className="gap-2">
-            <Sparkles className="h-4 w-4" />
+            <Brain className="h-4 w-4" />
             Prompt AI
           </TabsTrigger>
         </TabsList>

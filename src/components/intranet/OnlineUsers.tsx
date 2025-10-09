@@ -8,6 +8,9 @@ import { UserAvailabilityBadge } from './UserAvailabilityBadge';
 import { UserAvailabilitySelector } from './UserAvailabilitySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserPresence {
   user_id: string;
@@ -31,6 +34,7 @@ interface OnlineUsersProps {
 export const OnlineUsers = ({ users }: OnlineUsersProps) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const { state } = useSidebar();
 
   useEffect(() => {
     loadCurrentUser();
@@ -95,85 +99,123 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
     return userId.substring(0, 2).toUpperCase();
   };
 
+  const isCollapsed = state === 'collapsed';
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Users className="h-4 w-4" />
-          <Badge variant="secondary" className="rounded-full">
-            {users.length}
-          </Badge>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-sm">Utenti online</h4>
-            <div className="flex items-center gap-2">
-              {currentUser && (
-                <UserAvailabilitySelector
-                  currentStatus={currentUser.availability_status}
-                  currentEmoji={currentUser.status_emoji || undefined}
-                  currentColor={currentUser.status_color || undefined}
-                  currentMessage={currentUser.status_message || undefined}
-                />
-              )}
-              <Badge variant="secondary">{users.length}</Badge>
-            </div>
-          </div>
-          <ScrollArea className="h-[300px] pr-4">
-            <div className="space-y-3">
-              {users.map((user) => {
-                const profile = userProfiles.get(user.user_id);
-                return (
-                  <div
-                    key={user.user_id}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="text-xs">
-                          {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {profile && (
-                        <div className="absolute bottom-0 right-0">
-                          <UserAvailabilityBadge
-                            status={profile.availability_status}
-                            emoji={profile.status_emoji || undefined}
-                            color={profile.status_color || undefined}
-                            size="sm"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
-                      </p>
-                      {profile?.status_message ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {profile.status_message}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          {getStatusLabel(user.status)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {users.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm">Nessun utente online</p>
+    <TooltipProvider>
+      <SidebarGroup>
+        <SidebarGroupLabel className="px-2">
+          {!isCollapsed && "Utenti Online"}
+          {isCollapsed && (
+            <Badge variant="secondary" className="ml-auto">
+              {users.length}
+            </Badge>
+          )}
+        </SidebarGroupLabel>
+
+        <SidebarGroupContent>
+          <div className="px-2">
+            {!isCollapsed ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-2">
+                  {currentUser && (
+                    <UserAvailabilitySelector
+                      currentStatus={currentUser.availability_status}
+                      currentEmoji={currentUser.status_emoji || undefined}
+                      currentColor={currentUser.status_color || undefined}
+                      currentMessage={currentUser.status_message || undefined}
+                    />
+                  )}
+                  <Badge variant="secondary">{users.length}</Badge>
                 </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      </PopoverContent>
-    </Popover>
+
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-2 pr-4">
+                    {users.map((user) => {
+                      const profile = userProfiles.get(user.user_id);
+                      return (
+                        <div
+                          key={user.user_id}
+                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="relative">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs">
+                                {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {profile && (
+                              <div className="absolute -bottom-0.5 -right-0.5">
+                                <UserAvailabilityBadge
+                                  status={profile.availability_status}
+                                  emoji={profile.status_emoji || undefined}
+                                  color={profile.status_color || undefined}
+                                  size="sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
+                            </p>
+                            {profile?.status_message && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {profile.status_message}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {users.length === 0 && (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-xs">Nessuno online</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="w-full h-10">
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[300px]">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm mb-2">
+                      Utenti Online ({users.length})
+                    </div>
+                    {users.slice(0, 5).map((user) => {
+                      const profile = userProfiles.get(user.user_id);
+                      return (
+                        <div key={user.user_id} className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[10px]">
+                              {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs truncate">
+                            {profile?.display_name || 'Utente'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {users.length > 5 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{users.length - 5} altri
+                      </div>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </TooltipProvider>
   );
 };

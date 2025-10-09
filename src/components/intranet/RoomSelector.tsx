@@ -10,6 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Users, Plus, Globe, Lock, UserPlus, Clock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRoomAccessRequests } from '@/hooks/useRoomAccessRequests';
+import { useSidebar } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroupLabel, SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Room {
   id: string;
@@ -41,6 +44,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
   const [requestMessage, setRequestMessage] = useState('');
   const { toast } = useToast();
   const { requests, requestAccess } = useRoomAccessRequests();
+  const { state } = useSidebar();
 
   useEffect(() => {
     loadRooms();
@@ -251,6 +255,19 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     }
   };
 
+  const getAccessIcon = (accessType?: string) => {
+    switch (accessType) {
+      case 'public':
+        return Globe;
+      case 'request':
+        return Mail;
+      case 'private':
+        return Lock;
+      default:
+        return MessageSquare;
+    }
+  };
+
   const getAccessBadge = (accessType?: string) => {
     switch (accessType) {
       case 'public':
@@ -277,97 +294,105 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     return <div className="p-4 text-center text-muted-foreground">Caricamento...</div>;
   }
 
+  const isCollapsed = state === 'collapsed';
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Stanze Chat</h2>
-        <Button size="sm" variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuova Stanza
-        </Button>
-      </div>
+    <TooltipProvider>
+      <SidebarGroup>
+        <div className="flex items-center justify-between px-2 mb-2">
+          {!isCollapsed && <SidebarGroupLabel>Stanze Chat</SidebarGroupLabel>}
+          <Button 
+            size={isCollapsed ? "icon" : "sm"} 
+            variant="outline" 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className={isCollapsed ? "h-8 w-8" : ""}
+          >
+            <Plus className="h-4 w-4" />
+            {!isCollapsed && <span className="ml-2">Nuova</span>}
+          </Button>
+        </div>
 
-      <div className="space-y-2">
-        {rooms.map((room) => {
-          // Per stanze pubbliche, sempre accessibili. Per altre, solo se membro
-          const canAccess = room.access_type === 'public' || room.is_member;
-          
-          return (
-            <Card
-              key={room.id}
-              className={`transition-all hover:shadow-md ${
-                selectedRoomId === room.id ? 'border-primary' : ''
-              } ${!canAccess ? 'opacity-75' : ''}`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div 
-                    className={`flex items-center gap-2 flex-1 min-w-0 ${canAccess ? 'cursor-pointer' : ''}`}
-                    onClick={() => canAccess && onRoomSelect(room.id)}
-                  >
-                    <MessageSquare className="h-4 w-4 shrink-0" />
-                    <span className="truncate font-medium">{room.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {getAccessBadge(room.access_type)}
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {room.member_count}
-                    </Badge>
-                    {getUnreadCount && getUnreadCount(room.id) > 0 && (
-                      <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
-                        {getUnreadCount(room.id)}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                {room.description && (
-                  <CardDescription className="text-sm mt-2">
-                    {room.description}
-                  </CardDescription>
-                )}
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {rooms.map((room) => {
+              const canAccess = room.access_type === 'public' || room.is_member;
+              const unreadCount = getUnreadCount ? getUnreadCount(room.id) : 0;
+              const AccessIcon = getAccessIcon(room.access_type);
+              
+              const button = (
+                <SidebarMenuButton
+                  onClick={() => canAccess && onRoomSelect(room.id)}
+                  isActive={selectedRoomId === room.id}
+                  disabled={!canAccess}
+                  className="relative"
+                >
+                  <AccessIcon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="truncate flex-1">{room.name}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {room.member_count > 0 && (
+                          <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                            {room.member_count}
+                          </Badge>
+                        )}
+                        {unreadCount > 0 && (
+                          <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                            {unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {isCollapsed && unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive flex items-center justify-center">
+                      <span className="text-[10px] text-destructive-foreground font-medium">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              );
 
-                {/* Action buttons for non-members */}
-                {!room.is_member && (
-                  <div className="mt-3 pt-3 border-t">
-                    {room.has_pending_request ? (
-                      <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Richiesta in attesa
-                      </Badge>
-                    ) : room.access_type === 'request' ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedRoom(room);
-                          setRequestDialogOpen(true);
-                        }}
-                        className="w-full"
-                      >
-                        <Mail className="w-4 h-4 mr-2" />
-                        Richiedi Accesso
-                      </Button>
-                    ) : room.access_type === 'private' ? (
-                      <Badge variant="outline" className="w-full justify-center bg-red-500/10 text-red-600 border-red-500/20">
-                        <Lock className="w-3 h-3 mr-1" />
-                        Solo su invito
-                      </Badge>
-                    ) : null}
-                  </div>
-                )}
-              </CardHeader>
-            </Card>
-          );
-        })}
+              return (
+                <SidebarMenuItem key={room.id}>
+                  {isCollapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {button}
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="flex flex-col gap-1">
+                        <div className="font-medium">{room.name}</div>
+                        {room.description && (
+                          <div className="text-xs text-muted-foreground max-w-[200px]">
+                            {room.description}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 text-xs">
+                          {getAccessBadge(room.access_type)}
+                          {!canAccess && (
+                            <Badge variant="outline" className="text-xs">
+                              {room.has_pending_request ? 'In attesa' : 'Non accessibile'}
+                            </Badge>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    button
+                  )}
+                </SidebarMenuItem>
+              );
+            })}
 
-        {rooms.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            Nessuna stanza disponibile. Crea la prima stanza!
-          </div>
-        )}
-      </div>
+            {rooms.length === 0 && !isCollapsed && (
+              <div className="text-center py-8 px-2 text-muted-foreground text-sm">
+                Nessuna stanza disponibile
+              </div>
+            )}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
 
       {/* Request Access Dialog */}
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
@@ -454,6 +479,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </TooltipProvider>
   );
 };

@@ -11,6 +11,7 @@ import { SettingsButton } from '@/components/intranet/SettingsButton';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
+import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
@@ -29,6 +30,16 @@ const Intranet = () => {
   const [showOrgUsers, setShowOrgUsers] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   const { toast } = useToast();
+  
+  const { getUnreadCount, totalUnread } = useIntranetNotifications(
+    currentUserId || undefined,
+    selectedRoomId,
+    {
+      enableSound: true,
+      enableToast: true,
+      soundVolume: 0.5
+    }
+  );
 
   useEffect(() => {
     loadCurrentUser();
@@ -177,6 +188,7 @@ const Intranet = () => {
                     setMobileSheetOpen(false);
                   }}
                   selectedRoomId={selectedRoomId}
+                  getUnreadCount={getUnreadCount}
                 />
               </div>
             </SheetContent>
@@ -194,6 +206,7 @@ const Intranet = () => {
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                   selectedRoomId={selectedRoomId}
+                  getUnreadCount={getUnreadCount}
                 />
               </div>
             </Card>
@@ -226,11 +239,21 @@ const Intranet = () => {
               {/* Barra mobile - FUORI dal Card, sempre in alto quando invertita */}
               {isMobile && shouldHideHeader && (
                 <div className={`h-14 grid grid-cols-3 items-center border-t flex-shrink-0 z-50 ${isLayoutInverted ? 'order-first' : ''}`}>
-                  <div className="flex items-center gap-2 pl-2">
-                    <Menu 
-                      className="h-5 w-5 cursor-pointer text-foreground"
-                      onClick={() => setMobileSheetOpen(true)}
-                    />
+                  <div className="flex items-center gap-2 pl-2 relative">
+                    <div className="relative">
+                      <Menu 
+                        className="h-5 w-5 cursor-pointer text-foreground"
+                        onClick={() => setMobileSheetOpen(true)}
+                      />
+                      {totalUnread > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
+                        >
+                          {totalUnread}
+                        </Badge>
+                      )}
+                    </div>
                     <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
                   </div>
                   <div className="flex justify-center">

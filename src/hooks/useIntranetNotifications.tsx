@@ -1,132 +1,112 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserProfile } from './useUserProfile';
+import { useNotificationSound } from './useNotificationSound';
 import { toast } from '@/hooks/use-toast';
 
-interface Message {
-  id: string;
-  content: string;
-  user_id: string;
-  room_id: string;
-  created_at: string;
-  message_type: string;
-}
-
-interface Room {
-  id: string;
-  name: string;
-  is_private: boolean;
-}
-
 interface UnreadCount {
-  [roomId: string]: number;
+  roomId: string;
+  count: number;
 }
 
-export const useIntranetNotifications = (currentRoomId?: string) => {
-  const { profile } = useUserProfile();
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCount>({});
-  const lastMessageIdRef = useRef<string | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+interface IntranetNotificationsConfig {
+  enableSound: boolean;
+  enableToast: boolean;
+  soundVolume?: number;
+}
+
+export const useIntranetNotifications = (
+  currentUserId: string | undefined,
+  currentRoomId: string | undefined,
+  config: IntranetNotificationsConfig = {
+    enableSound: true,
+    enableToast: true,
+    soundVolume: 0.5
+  }
+) => {
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCount[]>([]);
   const [totalUnread, setTotalUnread] = useState(0);
+  const { playSound } = useNotificationSound({ 
+    enabled: config.enableSound, 
+    volume: config.soundVolume || 0.5 
+  });
 
-  // Inizializza AudioContext
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      audioContextRef.current = new AudioContext();
-    }
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
-  // Funzione per riprodurre il suono di notifica
-  const playNotificationSound = (isPrivateChat: boolean = false) => {
-    if (!audioContextRef.current) return;
-
-    const audioContext = audioContextRef.current;
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    // Suono diverso per chat private
-    oscillator.frequency.value = isPrivateChat ? 880 : 660; // A5 per private, E5 per normali
-    oscillator.type = 'sine';
-
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-  };
-
-  // Aggiorna lo stato di lettura quando cambi stanza
-  const markRoomAsRead = async (roomId: string) => {
-    if (!profile?.userId) return;
+  // Carica i conteggi non letti
+  const loadUnreadCounts = useCallback(async () => {
+    if (!currentUserId) return;
 
     try {
-      await supabase
-        .from('intranet_user_room_status')
-        .upsert({
-          user_id: profile.userId,
-          room_id: roomId,
-          last_read_at: new Date().toISOString(),
-        });
+      // Ottieni tutte le stanze dell'utente
+      const { data: rooms } = await supabase
+        .from('intranet_room_members')
+        .select('room_id')
+        .eq('user_id', currentUserId);
 
-      // Aggiorna il contatore locale
-      setUnreadCounts(prev => ({
-        ...prev,
-        [roomId]: 0,
-      }));
-    } catch (error) {
-      console.error('Error marking room as read:', error);
-    }
-  };
+      if (!rooms) return;
 
-  // Carica i contatori iniziali
-  useEffect(() => {
-    if (!profile?.userId) return;
-
-    const loadUnreadCounts = async () => {
-      try {
-        // Ottieni tutte le stanze dell'utente
-        const { data: rooms } = await supabase
-          .from('intranet_room_members')
-          .select('room_id, intranet_rooms(id, name, is_private)')
-          .eq('user_id', profile.userId);
-
-        if (!rooms) return;
-
-        const counts: UnreadCount = {};
-        let total = 0;
-
-        for (const room of rooms) {
-          const { data: count } = await supabase.rpc('get_unread_messages_count', {
-            p_user_id: profile.userId,
-            p_room_id: room.room_id,
+      const counts: UnreadCount[] = [];
+      
+      for (const room of rooms) {
+        const { data, error } = await supabase
+          .rpc('get_unread_messages_count', {
+            p_user_id: currentUserId,
+            p_room_id: room.room_id
           });
 
-          const unreadCount = count || 0;
-          counts[room.room_id] = unreadCount;
-          total += unreadCount;
+        if (!error && data !== null) {
+          counts.push({
+            roomId: room.room_id,
+            count: data
+          });
         }
-
-        setUnreadCounts(counts);
-        setTotalUnread(total);
-      } catch (error) {
-        console.error('Error loading unread counts:', error);
       }
-    };
 
+      setUnreadCounts(counts);
+      setTotalUnread(counts.reduce((sum, c) => sum + c.count, 0));
+    } catch (error) {
+      console.error('Error loading unread counts:', error);
+    }
+  }, [currentUserId]);
+
+  // Marca come letto quando si entra in una stanza
+  const markAsRead = useCallback(async (roomId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from('intranet_user_room_status')
+        .upsert({
+          user_id: currentUserId,
+          room_id: roomId,
+          last_read_at: new Date().toISOString()
+        });
+
+      if (!error) {
+        // Aggiorna i conteggi localmente
+        setUnreadCounts(prev => 
+          prev.map(c => c.roomId === roomId ? { ...c, count: 0 } : c)
+        );
+        await loadUnreadCounts();
+      }
+    } catch (error) {
+      console.error('Error marking as read:', error);
+    }
+  }, [currentUserId, loadUnreadCounts]);
+
+  // Carica conteggi all'avvio
+  useEffect(() => {
     loadUnreadCounts();
-  }, [profile?.userId]);
+  }, [loadUnreadCounts]);
+
+  // Marca come letto quando si cambia stanza
+  useEffect(() => {
+    if (currentRoomId) {
+      markAsRead(currentRoomId);
+    }
+  }, [currentRoomId, markAsRead]);
 
   // Ascolta nuovi messaggi in real-time
   useEffect(() => {
-    if (!profile?.userId) return;
+    if (!currentUserId) return;
 
     const channel = supabase
       .channel('intranet-notifications')
@@ -135,18 +115,14 @@ export const useIntranetNotifications = (currentRoomId?: string) => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'intranet_messages',
+          table: 'intranet_messages'
         },
-        async (payload) => {
-          const newMessage = payload.new as Message;
-
-          // Ignora i propri messaggi
-          if (newMessage.user_id === profile.userId) return;
-
-          // Ignora se è il messaggio già gestito
-          if (newMessage.id === lastMessageIdRef.current) return;
-          lastMessageIdRef.current = newMessage.id;
-
+        async (payload: any) => {
+          const newMessage = payload.new;
+          
+          // Non notificare i propri messaggi
+          if (newMessage.user_id === currentUserId) return;
+          
           // Ottieni info sulla stanza
           const { data: room } = await supabase
             .from('intranet_rooms')
@@ -154,25 +130,39 @@ export const useIntranetNotifications = (currentRoomId?: string) => {
             .eq('id', newMessage.room_id)
             .single();
 
-          // Se non è la stanza corrente, incrementa il contatore
-          if (newMessage.room_id !== currentRoomId) {
-            setUnreadCounts(prev => ({
-              ...prev,
-              [newMessage.room_id]: (prev[newMessage.room_id] || 0) + 1,
-            }));
-            setTotalUnread(prev => prev + 1);
+          // Verifica se l'utente è membro della stanza
+          const { data: isMember } = await supabase
+            .from('intranet_room_members')
+            .select('id')
+            .eq('room_id', newMessage.room_id)
+            .eq('user_id', currentUserId)
+            .single();
 
-            // Suono di notifica
-            playNotificationSound(room?.is_private || false);
+          if (!isMember) return;
 
-            // Toast per chat private
-            if (room?.is_private) {
-              toast({
-                title: 'Nuova chat privata',
-                description: `Nuovo messaggio in ${room.name}`,
-              });
-            }
+          // Ottieni info sull'utente che ha inviato
+          const { data: sender } = await supabase
+            .from('user_profiles')
+            .select('display_name')
+            .eq('user_id', newMessage.user_id)
+            .single();
+
+          // Suona solo se non sei nella stanza corrente
+          if (newMessage.room_id !== currentRoomId && config.enableSound) {
+            playSound(room?.is_private ? 'private-chat' : 'message');
           }
+
+          // Toast per chat private o se non sei nella stanza
+          if (config.enableToast && (room?.is_private || newMessage.room_id !== currentRoomId)) {
+            toast({
+              title: room?.is_private ? '💬 Nuova chat privata' : `💬 ${room?.name || 'Nuovo messaggio'}`,
+              description: `${sender?.display_name || 'Qualcuno'}: ${newMessage.content.substring(0, 50)}${newMessage.content.length > 50 ? '...' : ''}`,
+              duration: 4000,
+            });
+          }
+
+          // Ricarica conteggi
+          await loadUnreadCounts();
         }
       )
       .subscribe();
@@ -180,18 +170,17 @@ export const useIntranetNotifications = (currentRoomId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.userId, currentRoomId]);
+  }, [currentUserId, currentRoomId, config.enableSound, config.enableToast, playSound, loadUnreadCounts]);
 
-  // Marca come letta la stanza corrente quando cambia
-  useEffect(() => {
-    if (currentRoomId) {
-      markRoomAsRead(currentRoomId);
-    }
-  }, [currentRoomId]);
+  const getUnreadCount = useCallback((roomId: string): number => {
+    return unreadCounts.find(c => c.roomId === roomId)?.count || 0;
+  }, [unreadCounts]);
 
   return {
     unreadCounts,
     totalUnread,
-    markRoomAsRead,
+    getUnreadCount,
+    markAsRead,
+    refreshCounts: loadUnreadCounts
   };
 };

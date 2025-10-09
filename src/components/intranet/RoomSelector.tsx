@@ -22,9 +22,10 @@ interface Room {
 interface RoomSelectorProps {
   onRoomSelect: (roomId: string) => void;
   selectedRoomId?: string;
+  getUnreadCount?: (roomId: string) => number;
 }
 
-export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps) => {
+export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: RoomSelectorProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -213,11 +214,16 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId }: RoomSelectorProps
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-base flex items-center gap-2 flex-1">
                   <MessageSquare className="h-4 w-4" />
-                  {room.name}
+                  <span className="truncate">{room.name}</span>
                   {room.is_private && (
                     <Badge variant="outline" className="text-xs ml-2">Privata</Badge>
+                  )}
+                  {getUnreadCount && getUnreadCount(room.id) > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs ml-2">
+                      {getUnreadCount(room.id)}
+                    </Badge>
                   )}
                 </CardTitle>
                 <Badge variant="secondary" className="flex items-center gap-1">

@@ -349,11 +349,11 @@ const Intranet = () => {
     <SidebarProvider defaultOpen={true}>
       <div className="flex w-full min-h-screen">
         {/* Sidebar collapsible */}
-        <Sidebar collapsible="icon">
-          <SidebarContent className="bg-transparent">
+        <Sidebar collapsible="icon" className="bg-background border-r">
+          <SidebarContent className="bg-background">
             <SidebarGroup>
               <SidebarGroupLabel>Stanze</SidebarGroupLabel>
-              <SidebarGroupContent className="bg-transparent">
+              <SidebarGroupContent>
                 <RoomSelector
                   onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
                   selectedRoomId={selectedRoomId}
@@ -364,7 +364,7 @@ const Intranet = () => {
 
             <SidebarGroup>
               <SidebarGroupLabel>Utenti Online</SidebarGroupLabel>
-              <SidebarGroupContent className="bg-transparent">
+              <SidebarGroupContent>
                 <OnlineUsers users={onlineUsers} />
               </SidebarGroupContent>
             </SidebarGroup>
@@ -372,7 +372,7 @@ const Intranet = () => {
             {isCreatorOrAdmin && (
               <SidebarGroup>
                 <SidebarGroupLabel>Richieste Accesso</SidebarGroupLabel>
-                <SidebarGroupContent className="bg-transparent">
+                <SidebarGroupContent>
                   <AccessRequestsPanel />
                 </SidebarGroupContent>
               </SidebarGroup>

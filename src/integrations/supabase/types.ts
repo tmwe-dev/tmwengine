@@ -1265,6 +1265,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invited_by: string | null
+          is_invite: boolean
           message: string | null
           requested_at: string
           reviewed_at: string | null
@@ -1277,6 +1279,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          invited_by?: string | null
+          is_invite?: boolean
           message?: string | null
           requested_at?: string
           reviewed_at?: string | null
@@ -1289,6 +1293,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          invited_by?: string | null
+          is_invite?: boolean
           message?: string | null
           requested_at?: string
           reviewed_at?: string | null
@@ -1781,6 +1787,8 @@ export type Database = {
           id: string
           preferred_language: string
           reading_language: string
+          status_color: string | null
+          status_emoji: string | null
           status_message: string | null
           tmwe_email: string | null
           translation_mode: string
@@ -1797,6 +1805,8 @@ export type Database = {
           id?: string
           preferred_language?: string
           reading_language?: string
+          status_color?: string | null
+          status_emoji?: string | null
           status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
@@ -1813,6 +1823,8 @@ export type Database = {
           id?: string
           preferred_language?: string
           reading_language?: string
+          status_color?: string | null
+          status_emoji?: string | null
           status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
@@ -1888,6 +1900,10 @@ export type Database = {
         Args: { table_name: string }
         Returns: boolean
       }
+      clean_expired_access_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_activity_records: {
         Args: { activity_data: Json }
         Returns: undefined
@@ -1895,6 +1911,10 @@ export type Database = {
       get_or_create_private_room: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
+      }
+      get_pending_requests_count: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       get_tables_with_counts: {
         Args: Record<PropertyKey, never>

@@ -93,7 +93,7 @@ const CRMLayout = ({ children }) => {
 
   return (
     <div 
-      className="min-h-screen pb-safe"
+      className="min-h-screen"
       style={location.pathname === '/attivita' ? {
         background: 'linear-gradient(135deg, rgba(0, 240, 50, 0.15) 0px, rgba(0, 0, 0, 0.35) 600px, rgb(0, 0, 0) 600px)'
       } : {
@@ -237,7 +237,7 @@ const CRMLayout = ({ children }) => {
         </div>
       </header>
 
-      <div className={cn("flex pb-20", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
+      <div className={cn("flex", isMobile ? "h-[calc(100vh-6rem)]" : "h-[calc(100vh-7rem)]")}>
         {/* Sidebar */}
         <aside className={`bg-card-transparent border-r border-border transition-all duration-300 ${
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'

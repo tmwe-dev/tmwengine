@@ -355,29 +355,42 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
               );
 
               return (
-                <SidebarMenuItem key={room.id}>
+                <SidebarMenuItem key={room.id} className={isCollapsed ? "flex items-center gap-1 pr-2" : ""}>
                   {isCollapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {button}
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="flex flex-col gap-1">
-                        <div className="font-medium">{room.name}</div>
-                        {room.description && (
-                          <div className="text-xs text-muted-foreground max-w-[200px]">
-                            {room.description}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1 text-xs">
-                          {getAccessBadge(room.access_type)}
-                          {!canAccess && (
-                            <Badge variant="outline" className="text-xs">
-                              {room.has_pending_request ? 'In attesa' : 'Non accessibile'}
-                            </Badge>
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SidebarMenuButton
+                            onClick={() => canAccess && onRoomSelect(room.id)}
+                            isActive={selectedRoomId === room.id}
+                            disabled={!canAccess}
+                          >
+                            <AccessIcon className="h-4 w-4 shrink-0" />
+                          </SidebarMenuButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="flex flex-col gap-1">
+                          <div className="font-medium">{room.name}</div>
+                          {room.description && (
+                            <div className="text-xs text-muted-foreground max-w-[200px]">
+                              {room.description}
+                            </div>
                           )}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
+                          <div className="flex items-center gap-1 text-xs">
+                            {getAccessBadge(room.access_type)}
+                            {!canAccess && (
+                              <Badge variant="outline" className="text-xs">
+                                {room.has_pending_request ? 'In attesa' : 'Non accessibile'}
+                              </Badge>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                      {unreadCount > 0 && (
+                        <Badge variant="destructive" className="h-5 min-w-5 px-1 text-[10px] shrink-0">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Badge>
+                      )}
+                    </>
                   ) : (
                     button
                   )}

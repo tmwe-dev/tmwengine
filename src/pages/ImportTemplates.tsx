@@ -477,14 +477,29 @@ export default function ImportTemplates() {
     
     try {
       const selectedCompanies = Array.from(selectedRecords).map(index => {
-        const record = allRecords[index];
+        // Gli indici in selectedRecords sono relativi alla pagina corrente (viewingRecords)
+        // quindi usiamo viewingRecords invece di allRecords
+        const record = viewingRecords[index];
+        
+        if (!record) {
+          console.error('❌ Record non trovato per indice:', index);
+          return null;
+        }
+        
+        console.log('✅ Processing selected record:', {
+          index,
+          id: record.id,
+          company_name: record.company_name,
+          name: record.name
+        });
+        
         return {
           id: record.id,
           name: record.company_name || record.name || 'Azienda non specificata',
           source: 'import',
           record: record
         };
-      });
+      }).filter(Boolean); // Rimuovi eventuali null
 
       // Se l'utente ha scelto di salvare in rubrica, trasferisci prima i contatti
       if (activityData.salva_in_rubrica) {

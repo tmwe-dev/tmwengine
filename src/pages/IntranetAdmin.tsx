@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Shield, Users, DoorOpen, Brain, BarChart3 } from 'lucide-react';
+import { Loader2, Shield, Users, DoorOpen, Brain, BarChart3, Mail } from 'lucide-react';
 import { AdminRoomManager } from '@/components/intranet/admin/AdminRoomManager';
 import { AdminUserManager } from '@/components/intranet/admin/AdminUserManager';
 import { AdminGlobalPrompt } from '@/components/intranet/admin/AdminGlobalPrompt';
 import { AdminStats } from '@/components/intranet/admin/AdminStats';
+import { AdminAccessRequests } from '@/components/intranet/admin/AdminAccessRequests';
 
 const IntranetAdmin = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -84,6 +85,10 @@ const IntranetAdmin = () => {
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Utenti</span>
           </TabsTrigger>
+          <TabsTrigger value="requests" className="gap-1 sm:gap-2">
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">Richieste</span>
+          </TabsTrigger>
           <TabsTrigger value="ai" className="gap-1 sm:gap-2">
             <Brain className="h-4 w-4" />
             <span className="hidden sm:inline">Prompt AI</span>
@@ -129,6 +134,25 @@ const IntranetAdmin = () => {
               </CardHeader>
               <CardContent className="px-3 sm:px-6 py-6 overflow-x-auto">
                 <AdminUserManager />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-6">
+          <div className="space-y-4">
+            <Card className="shadow-lg">
+              <CardHeader className="border-b">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Richieste di Accesso
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Gestisci le richieste di accesso alle stanze
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6 py-6">
+                <AdminAccessRequests />
               </CardContent>
             </Card>
           </div>

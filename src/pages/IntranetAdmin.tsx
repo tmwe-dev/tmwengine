@@ -59,34 +59,34 @@ const IntranetAdmin = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Shield className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Dashboard Amministratore</h1>
+    <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard Amministratore</h1>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-muted-foreground">
           Gestisci stanze, utenti e configurazioni AI dell'intranet
         </p>
       </div>
 
-      <Tabs defaultValue="stats" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="stats" className="gap-2">
+      <Tabs defaultValue="stats" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2">
+          <TabsTrigger value="stats" className="gap-1 sm:gap-2">
             <BarChart3 className="h-4 w-4" />
-            Statistiche
+            <span className="hidden sm:inline">Statistiche</span>
           </TabsTrigger>
-          <TabsTrigger value="rooms" className="gap-2">
+          <TabsTrigger value="rooms" className="gap-1 sm:gap-2">
             <DoorOpen className="h-4 w-4" />
-            Stanze
+            <span className="hidden sm:inline">Stanze</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
+          <TabsTrigger value="users" className="gap-1 sm:gap-2">
             <Users className="h-4 w-4" />
-            Utenti
+            <span className="hidden sm:inline">Utenti</span>
           </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-2">
+          <TabsTrigger value="ai" className="gap-1 sm:gap-2">
             <Brain className="h-4 w-4" />
-            Prompt AI
+            <span className="hidden sm:inline">Prompt AI</span>
           </TabsTrigger>
         </TabsList>
 
@@ -97,12 +97,12 @@ const IntranetAdmin = () => {
         <TabsContent value="rooms">
           <Card>
             <CardHeader>
-              <CardTitle>Gestione Stanze</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Gestione Stanze</CardTitle>
+              <CardDescription className="text-sm">
                 Visualizza e gestisci tutte le stanze dell'intranet
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <AdminRoomManager />
             </CardContent>
           </Card>
@@ -111,12 +111,12 @@ const IntranetAdmin = () => {
         <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>Gestione Utenti e Ruoli</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Gestione Utenti e Ruoli</CardTitle>
+              <CardDescription className="text-sm">
                 Assegna ruoli amministrativi agli utenti
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <AdminUserManager />
             </CardContent>
           </Card>
@@ -125,12 +125,12 @@ const IntranetAdmin = () => {
         <TabsContent value="ai">
           <Card>
             <CardHeader>
-              <CardTitle>Prompt AI Globale</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Prompt AI Globale</CardTitle>
+              <CardDescription className="text-sm">
                 Configura il prompt AI utilizzato in tutte le stanze che usano le impostazioni standard
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <AdminGlobalPrompt />
             </CardContent>
           </Card>

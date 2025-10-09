@@ -168,15 +168,12 @@ const Intranet = () => {
                         {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <div />
+                    <div className="flex items-center justify-end pr-2">
+                      <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+                    </div>
                   </div>
                 )}
               </Card>
-
-              <SettingsButton 
-                roomId={selectedRoomId}
-                isCreatorOrAdmin={isCreatorOrAdmin}
-              />
             </>
           ) : (
             <Card className="h-full flex flex-col overflow-hidden">

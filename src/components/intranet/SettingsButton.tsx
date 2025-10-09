@@ -11,29 +11,27 @@ interface SettingsButtonProps {
 
 export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsButtonProps) => {
   return (
-    <div className="fixed bottom-4 right-4 z-[100]">
-      <Popover>
-        <PopoverTrigger asChild>
-          <div 
-            className="cursor-pointer hover:scale-110 transition-transform"
-            title="Impostazioni"
-          >
-            <Settings className="h-6 w-6 text-foreground" />
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto mb-2">
-          <div className="flex gap-2">
-            <AIGuideDialog />
-            {isCreatorOrAdmin && (
-              <RoomAIPromptManager 
-                roomId={roomId} 
-                isCreatorOrAdmin={isCreatorOrAdmin}
-              />
-            )}
-            <UserLanguageSettings />
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <div 
+          className="cursor-pointer hover:scale-110 transition-transform"
+          title="Impostazioni"
+        >
+          <Settings className="h-6 w-6 text-foreground" />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto mb-2" side="top" align="end">
+        <div className="flex gap-2">
+          <AIGuideDialog />
+          {isCreatorOrAdmin && (
+            <RoomAIPromptManager 
+              roomId={roomId} 
+              isCreatorOrAdmin={isCreatorOrAdmin}
+            />
+          )}
+          <UserLanguageSettings />
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };

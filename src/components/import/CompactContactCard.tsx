@@ -14,7 +14,7 @@ interface CompactContactCardProps {
   contact: ImportedContact;
   index: number;
   isSelected: boolean;
-  onSelect: (index: number, selected: boolean) => void;
+  onSelect: (recordId: string, selected: boolean) => void;
   onView: () => void;
   onGenerateAliases?: () => void;
   onCreateActivity: (activityType?: 'chiamata' | 'email') => void;
@@ -47,7 +47,7 @@ export function CompactContactCard({
           <div className="flex flex-col items-center gap-1 flex-shrink-0">
             <Checkbox
               checked={isSelected}
-              onCheckedChange={(checked) => onSelect(index, !!checked)}
+              onCheckedChange={(checked) => onSelect(contact.id, !!checked)}
               className="h-4 w-4"
             />
             <span className="text-xs font-medium text-white">#{index + 1}</span>

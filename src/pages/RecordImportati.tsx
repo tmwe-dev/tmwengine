@@ -139,7 +139,7 @@ const RecordImportati = () => {
   const [hideContactsWithTodayActivities, setHideContactsWithTodayActivities] = useState(true);
   const [recordsPerPage, setRecordsPerPage] = useState(50);
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
+  const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [showFiltersArea, setShowFiltersArea] = useState(true);
   const [visibleColumns, setVisibleColumns] = useState({
     details: false,
@@ -215,7 +215,7 @@ const RecordImportati = () => {
       setAllRecords(prev => prev.filter(r => r.id !== contactId));
       setSelectedRecords(prev => {
         const newSet = new Set(prev);
-        newSet.delete(index);
+        newSet.delete(contactId);
         return newSet;
       });
       
@@ -334,32 +334,29 @@ const RecordImportati = () => {
     return sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
   };
 
-  const toggleRecordSelection = (index: number) => {
+  const toggleRecordSelection = (recordId: string) => {
     setSelectedRecords(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
+      if (newSet.has(recordId)) {
+        newSet.delete(recordId);
       } else {
-        newSet.add(index);
+        newSet.add(recordId);
       }
       return newSet;
     });
   };
 
   const toggleSelectAll = () => {
-    const currentPageIndexes = [];
-    for (let i = 0; i < viewingRecords.length; i++) {
-      currentPageIndexes.push(currentPage * recordsPerPage + i);
-    }
+    const currentPageIds = viewingRecords.map(r => r.id);
     
-    const allSelected = currentPageIndexes.every(index => selectedRecords.has(index));
+    const allSelected = currentPageIds.every(id => selectedRecords.has(id));
     
     setSelectedRecords(prev => {
       const newSet = new Set(prev);
       if (allSelected) {
-        currentPageIndexes.forEach(index => newSet.delete(index));
+        currentPageIds.forEach(id => newSet.delete(id));
       } else {
-        currentPageIndexes.forEach(index => newSet.add(index));
+        currentPageIds.forEach(id => newSet.add(id));
       }
       return newSet;
     });
@@ -415,7 +412,7 @@ const RecordImportati = () => {
                     size="sm"
                     variant="default"
                     onClick={() => {
-                      const selectedIds = Array.from(selectedRecords).map(idx => sortedRecords[idx % sortedRecords.length]?.id).filter(Boolean);
+                      const selectedIds = Array.from(selectedRecords);
                       generateAliases(selectedIds);
                     }}
                     className="h-8 px-3 gap-2 bg-purple-600 hover:bg-purple-700"
@@ -675,14 +672,14 @@ const RecordImportati = () => {
                     key={record.id}
                     contact={record}
                     index={globalIndex}
-                    isSelected={selectedRecords.has(globalIndex)}
-                    onSelect={(idx, selected) => {
+                    isSelected={selectedRecords.has(record.id)}
+                    onSelect={(recordId, selected) => {
                       if (selected) {
-                        setSelectedRecords(prev => new Set(prev).add(idx));
+                        setSelectedRecords(prev => new Set(prev).add(recordId));
                       } else {
                         setSelectedRecords(prev => {
                           const newSet = new Set(prev);
-                          newSet.delete(idx);
+                          newSet.delete(recordId);
                           return newSet;
                         });
                       }

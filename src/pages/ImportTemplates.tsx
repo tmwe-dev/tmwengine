@@ -254,7 +254,7 @@ export default function ImportTemplates() {
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [showRecordsDialog, setShowRecordsDialog] = useState(false);
   const [currentRecordIndex, setCurrentRecordIndex] = useState(0);
-  const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
+  const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [importingSelected, setImportingSelected] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
@@ -476,17 +476,16 @@ export default function ImportTemplates() {
     setCreatingMultipleActivities(true);
     
     try {
-      const selectedCompanies = Array.from(selectedRecords).map(index => {
-        // Gli indici in selectedRecords sono relativi a filteredRecords
-        const record = filteredRecords[index];
+      const selectedCompanies = Array.from(selectedRecords).map(recordId => {
+        // Cerca il record nell'array completo usando l'ID
+        const record = allRecords.find(r => r.id === recordId);
         
         if (!record) {
-          console.error('❌ Record non trovato per indice:', index);
+          console.error('❌ Record non trovato per ID:', recordId);
           return null;
         }
         
         console.log('✅ Processing selected record:', {
-          index,
           id: record.id,
           company_name: record.company_name,
           name: record.name,
@@ -1544,15 +1543,9 @@ export default function ImportTemplates() {
       const newAllRecords = allRecords.filter(record => record.id !== contactId);
       setAllRecords(newAllRecords);
       
-      // Update selected records if necessary
-      const newSelectedRecords = new Set<number>();
-      selectedRecords.forEach(selectedIndex => {
-        if (selectedIndex < index) {
-          newSelectedRecords.add(selectedIndex);
-        } else if (selectedIndex > index) {
-          newSelectedRecords.add(selectedIndex - 1);
-        }
-      });
+      // Update selected records - rimuovi l'ID del record eliminato
+      const newSelectedRecords = new Set(selectedRecords);
+      newSelectedRecords.delete(contactId);
       setSelectedRecords(newSelectedRecords);
       
       toast.success('Record eliminato con successo');
@@ -1570,13 +1563,8 @@ export default function ImportTemplates() {
     }
     
     try {
-      // Get the IDs of selected records using allRecords (not viewingRecords)
-      const recordsToDelete = Array.from(selectedRecords).map(index => {
-        if (index >= 0 && index < allRecords.length) {
-          return allRecords[index]?.id;
-        }
-        return null;
-      }).filter(Boolean);
+      // Get the IDs of selected records - selectedRecords già contiene gli ID
+      const recordsToDelete = Array.from(selectedRecords);
       
       if (recordsToDelete.length === 0) {
         toast.error('Nessun record valido selezionato');
@@ -1807,36 +1795,34 @@ export default function ImportTemplates() {
   };
 
   // Funzioni per gestire la selezione dei record
-  const toggleRecordSelection = (index: number) => {
+  const toggleRecordSelection = (recordId: string) => {
     const newSelected = new Set(selectedRecords);
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
+    if (newSelected.has(recordId)) {
+      newSelected.delete(recordId);
     } else {
-      newSelected.add(index);
+      newSelected.add(recordId);
     }
     setSelectedRecords(newSelected);
   };
 
   const toggleSelectAll = () => {
-    // Controlla quanti record della pagina corrente sono già selezionati
-    const currentPageIndexes = new Set<number>();
-    for (let i = 0; i < viewingRecords.length; i++) {
-      const actualIndex = currentPage * recordsPerPage + i;
-      currentPageIndexes.add(actualIndex);
-    }
+    // Ottieni gli ID dei record della pagina corrente
+    const currentPageIds = new Set<string>(
+      viewingRecords.map(record => record.id)
+    );
     
-    const currentPageSelectedCount = Array.from(currentPageIndexes).filter(index => 
-      selectedRecords.has(index)
+    const currentPageSelectedCount = Array.from(currentPageIds).filter(id => 
+      selectedRecords.has(id)
     ).length;
     
     const newSelected = new Set(selectedRecords);
     
     if (currentPageSelectedCount === viewingRecords.length) {
-      // Se tutti i record della pagina corrente sono selezionati, deselezionali
-      currentPageIndexes.forEach(index => newSelected.delete(index));
+      // Deseleziona tutti i record della pagina corrente
+      currentPageIds.forEach(id => newSelected.delete(id));
     } else {
-      // Altrimenti seleziona tutti i record della pagina corrente (mantieni le altre selezioni)
-      currentPageIndexes.forEach(index => newSelected.add(index));
+      // Seleziona tutti i record della pagina corrente (mantieni le altre selezioni)
+      currentPageIds.forEach(id => newSelected.add(id));
     }
     
     setSelectedRecords(newSelected);
@@ -2022,13 +2008,10 @@ export default function ImportTemplates() {
     const totalRecords = selectedRecords.size;
 
     try {
-      // Ottieni i record selezionati usando gli indici corretti da allRecords (non viewingRecords)
-      const selectedData = [];
-      for (const selectedIndex of selectedRecords) {
-        if (selectedIndex >= 0 && selectedIndex < allRecords.length) {
-          selectedData.push(allRecords[selectedIndex]);
-        }
-      }
+      // Ottieni i record selezionati usando gli ID
+      const selectedData = Array.from(selectedRecords)
+        .map(recordId => allRecords.find(r => r.id === recordId))
+        .filter(Boolean);
       
       // Show progress toast
       toast.info(`Importazione di ${totalRecords} record in corso...`);
@@ -3705,8 +3688,8 @@ export default function ImportTemplates() {
                           key={viewIndex}
                           contact={record}
                           index={actualIndex}
-                          isSelected={selectedRecords.has(actualIndex)}
-                          onSelect={() => toggleRecordSelection(actualIndex)}
+                          isSelected={selectedRecords.has(record.id)}
+                          onSelect={() => toggleRecordSelection(record.id)}
                           onView={() => openRecordDetail(record, actualIndex)}
                           onCreateActivity={(activityType) => {
                             setSelectedContactIdForActivities(record.id);
@@ -3728,18 +3711,14 @@ export default function ImportTemplates() {
                         <TableRow>
                            <TableHead className="w-12 bg-background border-b px-4 py-[10px]">
                                <Checkbox
-                                 checked={(() => {
-                                   // Controlla se tutti i record della pagina corrente sono selezionati
-                                   const currentPageIndexes = [];
-                                   for (let i = 0; i < viewingRecords.length; i++) {
-                                     const actualIndex = currentPage * recordsPerPage + i;
-                                     currentPageIndexes.push(actualIndex);
-                                   }
-                                   return currentPageIndexes.length > 0 && currentPageIndexes.every(index => selectedRecords.has(index));
-                                 })()}
-                                 onCheckedChange={toggleSelectAll}
-                                 aria-label="Seleziona tutti della pagina corrente"
-                               />
+                                  checked={(() => {
+                                    // Controlla se tutti i record della pagina corrente sono selezionati
+                                    const currentPageIds = viewingRecords.map(r => r.id);
+                                    return currentPageIds.length > 0 && currentPageIds.every(id => selectedRecords.has(id));
+                                  })()}
+                                  onCheckedChange={toggleSelectAll}
+                                  aria-label="Seleziona tutti della pagina corrente"
+                                />
                             </TableHead>
                             <TableHead className="w-16 text-center bg-background border-b px-4 py-[10px]"># 
                               <TooltipProvider>
@@ -3821,8 +3800,8 @@ export default function ImportTemplates() {
                            <TableRow key={viewIndex}>
                                <TableCell className="w-12 px-4 py-[10px]">
                                  <Checkbox
-                                  checked={selectedRecords.has(actualIndex)}
-                                  onCheckedChange={() => toggleRecordSelection(actualIndex)}
+                                  checked={selectedRecords.has(record.id)}
+                                  onCheckedChange={() => toggleRecordSelection(record.id)}
                                   aria-label={`Seleziona record ${actualIndex + 1}`}
                                 />
                               </TableCell>

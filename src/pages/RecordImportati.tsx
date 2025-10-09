@@ -347,7 +347,7 @@ const RecordImportati = () => {
   };
 
   const toggleSelectAll = () => {
-    const currentPageIds = viewingRecords.map(r => r.id);
+    const currentPageIds = viewingRecords.filter(r => r?.id).map(r => r.id);
     
     const allSelected = currentPageIds.every(id => selectedRecords.has(id));
     

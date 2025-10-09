@@ -1806,9 +1806,9 @@ export default function ImportTemplates() {
   };
 
   const toggleSelectAll = () => {
-    // Ottieni gli ID dei record della pagina corrente
+    // Ottieni gli ID dei record della pagina corrente (filtra eventuali undefined)
     const currentPageIds = new Set<string>(
-      viewingRecords.map(record => record.id)
+      viewingRecords.filter(r => r?.id).map(record => record.id)
     );
     
     const currentPageSelectedCount = Array.from(currentPageIds).filter(id => 
@@ -1817,7 +1817,7 @@ export default function ImportTemplates() {
     
     const newSelected = new Set(selectedRecords);
     
-    if (currentPageSelectedCount === viewingRecords.length) {
+    if (currentPageSelectedCount === currentPageIds.size) {
       // Deseleziona tutti i record della pagina corrente
       currentPageIds.forEach(id => newSelected.delete(id));
     } else {
@@ -3713,7 +3713,7 @@ export default function ImportTemplates() {
                                <Checkbox
                                   checked={(() => {
                                     // Controlla se tutti i record della pagina corrente sono selezionati
-                                    const currentPageIds = viewingRecords.map(r => r.id);
+                                    const currentPageIds = viewingRecords.filter(r => r?.id).map(r => r.id);
                                     return currentPageIds.length > 0 && currentPageIds.every(id => selectedRecords.has(id));
                                   })()}
                                   onCheckedChange={toggleSelectAll}

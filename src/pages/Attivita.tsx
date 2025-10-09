@@ -35,6 +35,9 @@ interface Activity {
   rubrica_origine?: string;
   rubrica_paese?: string;
   rubrica_citta?: string;
+  rubrica_alias?: string;
+  rubrica_company_alias?: string;
+  rubrica_state?: string;
   tipo: 'chiamata' | 'meeting' | 'email' | 'task';
   descrizione: string;
   stato: 'aperta' | 'in_corso' | 'completata' | 'annullata';
@@ -164,7 +167,7 @@ export default function Attivita() {
         // Carica da rubrica
         const { data: rubricaData } = await supabase
           .from('rubrica')
-          .select('id, nome, azienda, origine, paese, citta, telefono, cellulare')
+          .select('id, nome, azienda, origine, paese, citta, telefono, cellulare, alias, company_alias, state')
           .in('id', rubricaIds);
         
         rubricaData?.forEach(contact => {
@@ -177,7 +180,7 @@ export default function Attivita() {
         if (notFoundInRubrica.length > 0) {
           const { data: importedData } = await supabase
             .from('imported_contacts')
-            .select('id, name, company_name, origin, country, city, phone, cell')
+            .select('id, name, company_name, origin, country, city, phone, cell, alias, company_alias, state')
             .in('id', notFoundInRubrica);
           
           importedData?.forEach(contact => {
@@ -190,7 +193,10 @@ export default function Attivita() {
                 paese: contact.country,
                 citta: contact.city,
                 telefono: contact.phone,
-                cellulare: contact.cell
+                cellulare: contact.cell,
+                alias: contact.alias,
+                company_alias: contact.company_alias,
+                state: contact.state
               },
               source: 'imported_contacts'
             });
@@ -211,6 +217,9 @@ export default function Attivita() {
           rubrica_origine: contact?.origine,
           rubrica_paese: contact?.paese,
           rubrica_citta: contact?.citta,
+          rubrica_alias: contact?.alias,
+          rubrica_company_alias: contact?.company_alias,
+          rubrica_state: contact?.state,
           telefono: contact?.telefono,
           cellulare: contact?.cellulare,
           contact_source: source,
@@ -324,6 +333,9 @@ export default function Attivita() {
       activity.rubrica_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_alias?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_company_alias?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_id?.toLowerCase().includes(searchTerm.toLowerCase());
 

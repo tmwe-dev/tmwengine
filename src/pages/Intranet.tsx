@@ -127,7 +127,7 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} overflow-hidden min-h-0` : 'flex flex-col overflow-hidden space-y-6'}`}>
+        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full` : 'flex flex-col overflow-hidden space-y-6'}`}>
           {/* Numero sezione */}
           <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
             3
@@ -135,21 +135,19 @@ const Intranet = () => {
           
           {selectedRoomId ? (
             <>
-              {/* Messaggi */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
-                <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
-                  <div className={shouldHideHeader ? 'space-y-3' : ''}>
-                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Messaggi - Area scrollabile indipendente */}
+              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 overflow-hidden min-h-0' : ''}`}>
+                <div className={`h-full ${shouldHideHeader ? 'overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}`}>
+                  <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
+                </div>
+              </div>
 
-              {/* Input */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0' : ''}`}>
-                <CardContent className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
+              {/* Input - Area fissa */}
+              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-shrink-0' : ''}`}>
+                <div className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Barra mobile FISSA IN BASSO */}
               {isMobile && (

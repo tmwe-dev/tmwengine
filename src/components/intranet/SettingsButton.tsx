@@ -13,12 +13,12 @@ export const SettingsButton = ({ roomId, isCreatorOrAdmin = false }: SettingsBut
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div 
-          className="cursor-pointer hover:scale-110 transition-transform"
+        <button 
+          className="hover:opacity-70 transition-opacity"
           title="Impostazioni"
         >
-          <Settings className="h-5 w-5 text-foreground" />
-        </div>
+          <Settings className="h-4 w-4" />
+        </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto mb-2" side="top" align="end">
         <div className="flex gap-2">

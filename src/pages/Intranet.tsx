@@ -349,8 +349,8 @@ const Intranet = () => {
     <SidebarProvider defaultOpen={true}>
       <div className="flex w-full min-h-screen">
         {/* Sidebar collapsible */}
-        <Sidebar collapsible="icon" className="bg-background border-r">
-          <SidebarContent className="bg-background">
+        <Sidebar collapsible="icon" className="[&_[data-sidebar=sidebar]]:!bg-background border-r">
+          <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Stanze</SidebarGroupLabel>
               <SidebarGroupContent>

@@ -71,7 +71,7 @@ const IntranetAdmin = () => {
       </div>
 
       <Tabs defaultValue="stats" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 sticky top-0 z-50 bg-background">
+        <TabsList className="inline-flex w-auto gap-1 sticky top-0 z-50 mb-1.5">
           <TabsTrigger value="stats" className="gap-1 sm:gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Statistiche</span>

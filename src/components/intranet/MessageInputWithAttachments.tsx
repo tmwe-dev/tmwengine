@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AISuggestions } from './AISuggestions';
 import { AutoSpeakerToggle } from './AutoSpeakerToggle';
+import { AIChatInvoker } from './AIChatInvoker';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 
 interface FileAttachment {
@@ -29,7 +30,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
-  const { isSpeaking } = useAutoSpeaker({ messages: [], currentUserId: '', roomId });
+  const { isSpeaking } = useAutoSpeaker({ messages: [], currentUserId: '' });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -350,6 +351,9 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 </PopoverContent>
               </Popover>
 
+              {/* Invoker AI Albert */}
+              <AIChatInvoker roomId={roomId} />
+
               <Button
                 size="icon"
                 variant={isRecording ? "destructive" : "ghost"}
@@ -360,7 +364,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
                 <Mic className="h-4 w-4" />
               </Button>
 
-              <AutoSpeakerToggle isSpeaking={isSpeaking} roomId={roomId} />
+              <AutoSpeakerToggle isSpeaking={isSpeaking} />
             </div>
 
             {/* Pulsante invio a destra */}

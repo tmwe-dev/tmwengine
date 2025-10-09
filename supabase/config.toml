@@ -224,6 +224,9 @@ verify_jwt = true
 [functions.intranet-ai-processor]
 verify_jwt = true
 
+[functions.intranet-ai-chat-assistant]
+verify_jwt = true
+
 [functions.tmwe-oauth-callback]
 verify_jwt = false
 

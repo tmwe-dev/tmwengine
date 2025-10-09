@@ -25,6 +25,9 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
   const [enableTranslation, setEnableTranslation] = useState(true);
   const [enableAutoSpeaker, setEnableAutoSpeaker] = useState(false);
   const [enableSuggestions, setEnableSuggestions] = useState(false);
+  const [aiContextMessages, setAiContextMessages] = useState(20);
+  const [aiMaxInvocations, setAiMaxInvocations] = useState(30);
+  const [aiInvocationsCount, setAiInvocationsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -64,6 +67,9 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
         setEnableTranslation(roomData.enable_translation);
         setEnableAutoSpeaker(roomData.enable_auto_speaker);
         setEnableSuggestions(roomData.enable_suggestions);
+        setAiContextMessages(roomData.ai_context_messages || 20);
+        setAiMaxInvocations(roomData.ai_max_invocations || 30);
+        setAiInvocationsCount(roomData.ai_invocations_count || 0);
       } else {
         // Se non esiste, crea record di default
         await createDefaultSettings();
@@ -128,6 +134,8 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
           enable_translation: enableTranslation,
           enable_auto_speaker: enableAutoSpeaker,
           enable_suggestions: enableSuggestions,
+          ai_context_messages: aiContextMessages,
+          ai_max_invocations: aiMaxInvocations,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'room_id'
@@ -234,9 +242,9 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="enable-suggestions">Suggerimenti AI</Label>
+                    <Label htmlFor="enable-suggestions">Suggerimenti AI (Albert)</Label>
                     <p className="text-xs text-muted-foreground">
-                      Fornisce suggerimenti contestuali
+                      Attiva Albert, l'assistente AI che partecipa alla chat
                     </p>
                   </div>
                   <Switch
@@ -246,6 +254,58 @@ export function RoomAIPromptManager({ roomId, isCreatorOrAdmin }: RoomAIPromptMa
                     disabled={isLoading || !enableAI}
                   />
                 </div>
+
+                {/* Configurazione Albert */}
+                {enableSuggestions && (
+                  <div className="pl-4 space-y-4 border-l-2 border-primary/20">
+                    <div className="space-y-2">
+                      <Label htmlFor="context-messages">
+                        Messaggi di contesto ({aiContextMessages})
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Quanti messaggi precedenti Albert deve leggere quando viene invocato
+                      </p>
+                      <input
+                        id="context-messages"
+                        type="range"
+                        min="5"
+                        max="50"
+                        step="5"
+                        value={aiContextMessages}
+                        onChange={(e) => setAiContextMessages(Number(e.target.value))}
+                        disabled={isLoading || !enableAI}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="max-invocations">
+                        Limite invocazioni ({aiMaxInvocations})
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Massimo numero di volte che Albert può essere invocato in questa conversazione
+                      </p>
+                      <input
+                        id="max-invocations"
+                        type="range"
+                        min="10"
+                        max="100"
+                        step="10"
+                        value={aiMaxInvocations}
+                        onChange={(e) => setAiMaxInvocations(Number(e.target.value))}
+                        disabled={isLoading || !enableAI}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 bg-muted rounded-md">
+                      <span className="text-sm">Invocazioni utilizzate:</span>
+                      <span className="text-sm font-medium">
+                        {aiInvocationsCount} / {aiMaxInvocations}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />

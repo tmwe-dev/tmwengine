@@ -1316,6 +1316,9 @@ export type Database = {
       }
       intranet_room_ai_prompts: {
         Row: {
+          ai_context_messages: number
+          ai_invocations_count: number
+          ai_max_invocations: number
           created_at: string
           custom_prompt: string | null
           enable_ai: boolean
@@ -1330,6 +1333,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_context_messages?: number
+          ai_invocations_count?: number
+          ai_max_invocations?: number
           created_at?: string
           custom_prompt?: string | null
           enable_ai?: boolean
@@ -1344,6 +1350,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_context_messages?: number
+          ai_invocations_count?: number
+          ai_max_invocations?: number
           created_at?: string
           custom_prompt?: string | null
           enable_ai?: boolean
@@ -1958,6 +1967,10 @@ export type Database = {
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
+      }
+      reset_ai_invocations: {
+        Args: { p_room_id: string }
+        Returns: undefined
       }
       transfer_company_to_rubrica: {
         Args: { imported_contact_id: string }

@@ -183,34 +183,35 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate magic link and extract session tokens
-    console.log('🔐 Generating session link...');
-    
+    // 6. Generate Supabase session for the authenticated user
+    console.log('🔐 Generating Supabase session...');
+
+    // Use generateLink with type 'recovery' to get proper session tokens
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
-      }
     });
 
     if (linkError || !linkData?.properties) {
-      console.error('Error generating link:', linkError);
-      throw new Error('Failed to generate session link');
+      console.error('Error generating recovery link:', linkError);
+      throw new Error('Failed to generate session');
     }
 
-    console.log('✅ Session link generated');
-    
-    // Parse the action link to extract tokens
-    const actionLink = linkData.properties.action_link;
-    const url = new URL(actionLink);
-    const accessToken = url.searchParams.get('access_token');
-    const refreshToken = url.searchParams.get('refresh_token');
+    // Extract hashed_token from the recovery link
+    const hashedToken = linkData.properties.hashed_token;
 
-    if (!accessToken || !refreshToken) {
-      throw new Error('Failed to extract tokens from link');
+    // Verify the recovery token to get actual session tokens
+    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
+      token_hash: hashedToken,
+      type: 'recovery',
+    });
+
+    if (verifyError || !sessionData?.session) {
+      console.error('Error verifying recovery token:', verifyError);
+      throw new Error('Failed to create session');
     }
 
+    console.log('✅ Supabase session created successfully');
     console.log('✅ OAuth2 flow completed successfully');
 
     return new Response(
@@ -224,8 +225,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: accessToken,
-        refresh_token: refreshToken,
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
       }),
       {
         status: 200,

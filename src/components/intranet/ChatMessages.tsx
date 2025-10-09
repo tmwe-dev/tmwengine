@@ -12,10 +12,11 @@ import { it } from 'date-fns/locale';
 interface Message {
   id: string;
   content: string;
-  user_id: string;
+  user_id: string | null;
   created_at: string;
   message_type: string;
   attachment_url?: string;
+  is_system_message?: boolean;
 }
 
 interface UserProfile {
@@ -93,22 +94,24 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
     if (data && !error) {
       setMessages(data);
       
-      // Carica i profili utente
-      const userIds = [...new Set(data.map(m => m.user_id))];
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('user_id, display_name, preferred_language')
-        .in('user_id', userIds);
-      
-      if (profiles) {
-        const profileMap: Record<string, UserProfile> = {};
-        profiles.forEach(p => {
-          profileMap[p.user_id] = {
-            display_name: p.display_name || 'User',
-            preferred_language: p.preferred_language || 'it'
-          };
-        });
-        setUserProfiles(profileMap);
+      // Carica i profili utente (escludi messaggi di sistema)
+      const userIds = [...new Set(data.filter(m => m.user_id).map(m => m.user_id))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name, preferred_language')
+          .in('user_id', userIds);
+        
+        if (profiles) {
+          const profileMap: Record<string, UserProfile> = {};
+          profiles.forEach(p => {
+            profileMap[p.user_id] = {
+              display_name: p.display_name || 'User',
+              preferred_language: p.preferred_language || 'it'
+            };
+          });
+          setUserProfiles(profileMap);
+        }
       }
     }
   };
@@ -129,7 +132,21 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
     return flags[languageCode] || '🌐';
   };
 
-  const getUserDisplayInfo = (userId: string) => {
+  const getUserDisplayInfo = (userId: string | null, isSystemMessage?: boolean) => {
+    if (isSystemMessage) {
+      return {
+        name: '🤖 Albert AI',
+        flag: ''
+      };
+    }
+    
+    if (!userId) {
+      return {
+        name: 'User',
+        flag: ''
+      };
+    }
+    
     const profile = userProfiles[userId];
     return {
       name: profile?.display_name || 'User',
@@ -190,10 +207,11 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                   <>
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     <div className="flex gap-1 flex-wrap mt-1">
-                      <TranslateButton 
-                        messageContent={message.content}
-                        messageId={message.id}
-                      />
+                  <TranslateButton 
+                    messageContent={message.content}
+                    messageId={message.id}
+                    sourceLanguage={message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined}
+                  />
                       {!isOwnMessage && profile && (
                         <SpeakButton 
                           text={message.content}
@@ -207,8 +225,8 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
               <span className="text-xs text-muted-foreground mt-1 flex gap-2 items-center justify-end">
                 <span>{format(new Date(message.created_at), 'dd/MM HH:mm', { locale: it })}</span>
                 <span>•</span>
-                <span>{getUserDisplayInfo(message.user_id).name}</span>
-                <span>{getUserDisplayInfo(message.user_id).flag}</span>
+                <span>{getUserDisplayInfo(message.user_id, message.is_system_message).name}</span>
+                <span>{getUserDisplayInfo(message.user_id, message.is_system_message).flag}</span>
               </span>
             </div>
           </div>

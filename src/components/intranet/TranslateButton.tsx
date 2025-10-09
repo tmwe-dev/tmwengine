@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Languages, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,20 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
   const [showTranslation, setShowTranslation] = useState(false);
   const { profile } = useUserProfile();
   const { toast } = useToast();
+
+  // Auto-traduzione se abilitata e lingua diversa
+  useEffect(() => {
+    if (!profile || !sourceLanguage) return;
+    
+    const shouldAutoTranslate = 
+      profile.translationMode !== 'none' && 
+      sourceLanguage !== profile.readingLanguage &&
+      !translatedText;
+    
+    if (shouldAutoTranslate) {
+      handleTranslate();
+    }
+  }, [profile, sourceLanguage]);
 
   const handleTranslate = async () => {
     if (!profile) {
@@ -54,8 +68,8 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
 
       if (error) throw error;
 
-      if (data?.translatedText) {
-        setTranslatedText(data.translatedText);
+      if (data?.result?.text) {
+        setTranslatedText(data.result.text);
         setShowTranslation(true);
       } else {
         throw new Error('Nessuna traduzione ricevuta');

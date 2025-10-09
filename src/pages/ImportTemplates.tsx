@@ -563,6 +563,82 @@ export default function ImportTemplates() {
       console.log('🔍 DEBUG - selectedCompanies:', selectedCompanies);
       console.log('🔍 DEBUG - activityData:', activityData);
       
+      // Se tipo è email e ci sono più di 1 contatti, usa il sistema di coda
+      if (activityData.tipo === 'email' && selectedCompanies.length > 1) {
+        // Genera nome campagna unico
+        const campaignName = `${activityData.oggetto_email || 'Template'} - ${new Date().toLocaleDateString('it-IT')}`;
+        
+        // Ottieni user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Prepara le email per la coda
+        const emailsToQueue = selectedCompanies
+          .filter(company => company.record.email) // Solo quelli con email
+          .map(company => ({
+            destinatario_email: company.record.email,
+            destinatario_nome: company.record.name,
+            destinatario_azienda: company.record.company_name,
+            destinatario_rubrica_id: company.id,
+            oggetto: activityData.oggetto_email,
+            corpo_testo: activityData.testo_email,
+            corpo_html: activityData.testo_email.replace(/\n/g, '<br>'),
+            stato: 'programmata',
+            campagna_nome: campaignName,
+            intervallo_minuti: 2, // Default 2 minuti
+            creato_da: user?.id
+          }));
+
+        if (emailsToQueue.length === 0) {
+          toast.error("Nessun contatto ha un'email valida");
+          return;
+        }
+
+        // Inserisci in coda
+        const { error: queueError } = await supabase
+          .from('email_campagne_queue')
+          .insert(emailsToQueue);
+
+        if (queueError) {
+          console.error('Errore inserimento in coda:', queueError);
+          toast.error("Impossibile creare la campagna email");
+          return;
+        }
+
+        // Crea attività per tracciamento
+        for (const company of selectedCompanies.filter(c => c.record.email)) {
+          activities.push({
+            rubrica_id: company.id,
+            tipo: 'email',
+            descrizione: `📧 Email programmata in campagna\n\nCampagna: ${campaignName}\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nStato: In coda automatica\n\nTesto:\n${activityData.testo_email}`,
+            stato: 'aperta',
+            scadenza: null,
+            priorita: activityData.priorita || 'media',
+            assegnato_a: activityData.assegnato_a || null,
+            creato_da: activityData.creato_da || null
+          });
+        }
+
+        // Inserisci tutte le attività
+        if (activities.length > 0) {
+          const { error: activityError } = await supabase
+            .from('attivita')
+            .insert(activities);
+
+          if (activityError) {
+            console.error('Errore creazione attività:', activityError);
+          }
+        }
+
+        toast.success(`Campagna Email Creata: ${emailsToQueue.length} email aggiunte alla campagna "${campaignName}"`);
+        
+        setTimeout(() => {
+          toast.info("💡 Vai su 'Email Campagne' per gestire la pianificazione e monitorare l'invio");
+        }, 1000);
+
+        return;
+      }
+
+      // INVIO SINGOLO O CHIAMATA - logica esistente
       for (const company of selectedCompanies) {
         console.log('🔍 DEBUG - Processing company:', {
           id: company.id,
@@ -571,17 +647,15 @@ export default function ImportTemplates() {
           company_name: company.record.company_name
         });
         
-        // ATTIVITÀ IMMEDIATA (quello che ho fatto ora)
         let descrizione = '';
         let emailSendResult = null;
         
         if (activityData.tipo === 'email') {
           if (!activityData.oggetto_email || !activityData.testo_email) {
             console.error('❌ Missing email subject or body');
-            continue; // Skip this company if email data is missing
+            continue;
           }
           
-          // Mostra progresso
           currentEmailIndex++;
           if (progressToastId) {
             toast.dismiss(progressToastId);
@@ -590,7 +664,6 @@ export default function ImportTemplates() {
             duration: Infinity
           });
 
-          // Se è email, invia tramite TMWE
           if (company.record.email) {
             try {
               console.log(`📧 Invio email a ${company.record.email}...`);
@@ -638,7 +711,6 @@ export default function ImportTemplates() {
               descrizione = `❌ Email NON INVIATA - Errore tecnico\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
             }
           } else {
-            // Nessuna email disponibile
             emailResults.failed.push({
               email: 'N/A',
               company: company.record.company_name || company.record.name || 'Sconosciuto',

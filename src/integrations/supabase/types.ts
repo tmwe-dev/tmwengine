@@ -428,6 +428,78 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campagne_queue: {
+        Row: {
+          campagna_nome: string
+          corpo_html: string | null
+          corpo_testo: string
+          created_at: string | null
+          creato_da: string | null
+          data_ora_invio: string | null
+          data_ora_programmata: string | null
+          destinatario_azienda: string | null
+          destinatario_email: string
+          destinatario_nome: string | null
+          destinatario_rubrica_id: string | null
+          errore_dettaglio: string | null
+          id: string
+          intervallo_minuti: number | null
+          max_tentativi: number | null
+          message_id: string | null
+          oggetto: string
+          priorita: number | null
+          stato: string | null
+          tentativi_invio: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          campagna_nome: string
+          corpo_html?: string | null
+          corpo_testo: string
+          created_at?: string | null
+          creato_da?: string | null
+          data_ora_invio?: string | null
+          data_ora_programmata?: string | null
+          destinatario_azienda?: string | null
+          destinatario_email: string
+          destinatario_nome?: string | null
+          destinatario_rubrica_id?: string | null
+          errore_dettaglio?: string | null
+          id?: string
+          intervallo_minuti?: number | null
+          max_tentativi?: number | null
+          message_id?: string | null
+          oggetto: string
+          priorita?: number | null
+          stato?: string | null
+          tentativi_invio?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          campagna_nome?: string
+          corpo_html?: string | null
+          corpo_testo?: string
+          created_at?: string | null
+          creato_da?: string | null
+          data_ora_invio?: string | null
+          data_ora_programmata?: string | null
+          destinatario_azienda?: string | null
+          destinatario_email?: string
+          destinatario_nome?: string | null
+          destinatario_rubrica_id?: string | null
+          errore_dettaglio?: string | null
+          id?: string
+          intervallo_minuti?: number | null
+          max_tentativi?: number | null
+          message_id?: string | null
+          oggetto?: string
+          priorita?: number | null
+          stato?: string | null
+          tentativi_invio?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           attachments: Json | null

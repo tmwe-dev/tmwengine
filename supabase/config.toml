@@ -230,3 +230,6 @@ verify_jwt = true
 [functions.tmwe-oauth-callback]
 verify_jwt = false
 
+[functions.email-campagne-scheduler]
+verify_jwt = false
+

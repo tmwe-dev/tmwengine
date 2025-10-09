@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -183,23 +183,36 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Create Supabase session directly (OAuth2-compliant)
-    console.log('🔐 Creating Supabase session...');
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: supabaseUser.id
+    // 6. Generate authenticated session tokens using admin API
+    console.log('🔐 Generating session tokens...');
+    
+    // Use generateLink to get a recovery link, then extract tokens
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
     });
 
-    if (sessionError) {
-      console.error('Error creating session:', sessionError);
-      throw sessionError;
+    if (linkError || !linkData?.properties) {
+      console.error('Error generating recovery link:', linkError);
+      throw new Error('Failed to generate session tokens');
     }
 
-    if (!sessionData || !sessionData.access_token || !sessionData.refresh_token) {
-      throw new Error('Failed to create session: missing tokens');
-    }
-
-    console.log('✅ Supabase session created');
+    console.log('✅ Session tokens generated');
     console.log('✅ OAuth2 flow completed successfully');
+
+    // Extract the hashed token and use it to create a proper session
+    const hashedToken = linkData.properties.hashed_token;
+    
+    // Verify the token to get the actual access/refresh tokens
+    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
+      token_hash: hashedToken,
+      type: 'recovery',
+    });
+
+    if (verifyError || !sessionData?.session) {
+      console.error('Error verifying token:', verifyError);
+      throw new Error('Failed to create session');
+    }
 
     return new Response(
       JSON.stringify({
@@ -212,8 +225,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: sessionData.access_token,
-        refresh_token: sessionData.refresh_token,
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
       }),
       {
         status: 200,

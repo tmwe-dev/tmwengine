@@ -141,7 +141,7 @@ const Intranet = () => {
               </div>
 
               {/* SEZIONE 3 RAGGRUPPATA: Input + Barra Mobile - Area fissa con flex-shrink-0 */}
-              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-shrink-0' : ''}`}>
+              <div className={`bg-card-transparent ${shouldHideHeader ? `flex-shrink-0 flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'}` : ''}`}>
                 {/* Input */}
                 <div className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />

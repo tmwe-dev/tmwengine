@@ -387,7 +387,7 @@ const Intranet = () => {
         {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
         <main className="flex-1 flex flex-col h-screen">
           {/* Header con titolo e pulsante Utenti Organizzazione */}
-          <div className="flex-shrink-0 border-b bg-background">
+          <div className="flex-shrink-0 border-b">
             <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -422,10 +422,9 @@ const Intranet = () => {
               {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
               <div className="flex-1 overflow-hidden">
                 <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
-                  {/* Header stanza con settings */}
-                  <div className="flex-shrink-0 flex items-center justify-between pb-2 border-b mb-4">
+                  {/* Header stanza */}
+                  <div className="flex-shrink-0 pb-2 border-b mb-4">
                     <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
-                    <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
                   </div>
 
                   {/* Messaggi scrollabili */}
@@ -438,11 +437,14 @@ const Intranet = () => {
               </div>
 
               {/* Input fisso in basso */}
-              <div className="flex-shrink-0 border-t bg-background">
+              <div className="flex-shrink-0 border-t">
                 <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
                   <Card className="bg-card-transparent">
                     <CardContent className="p-4">
-                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                      <MessageInputWithAttachments 
+                        roomId={selectedRoomId} 
+                        settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
+                      />
                     </CardContent>
                   </Card>
                 </div>

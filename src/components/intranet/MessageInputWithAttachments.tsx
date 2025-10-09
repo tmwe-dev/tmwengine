@@ -16,11 +16,12 @@ interface FileAttachment {
 
 interface MessageInputWithAttachmentsProps {
   roomId: string;
+  settingsButton?: React.ReactNode;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -365,6 +366,9 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
               </Button>
 
               <AutoSpeakerToggle isSpeaking={isSpeaking} />
+              
+              {/* Settings button accanto allo speaker */}
+              {settingsButton}
             </div>
 
             {/* Pulsante invio a destra */}

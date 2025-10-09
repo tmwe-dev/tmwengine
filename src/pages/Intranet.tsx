@@ -384,77 +384,87 @@ const Intranet = () => {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main content - mantiene layout originale */}
-        <main className="flex-1 flex flex-col">
-          <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-            {/* Header originale con pulsante Utenti Organizzazione */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="lg:hidden" />
-                <h1 className="text-2xl font-bold">Intranet</h1>
-              </div>
-              <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Users className="h-4 w-4 mr-2" />
-                    Utenti Organizzazione
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-[400px] sm:w-[540px]">
-                  <SheetHeader>
-                    <SheetTitle>Utenti Organizzazione</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    <OrganizationUsers
-                      currentUserId={currentUserId}
-                      onOpenPrivateChat={handleOpenPrivateChat}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-
-            {/* Area chat principale */}
-            {selectedRoomId ? (
-              <div className="space-y-4">
-                {/* Header stanza con settings */}
-                <div className="flex items-center justify-between pb-2 border-b">
-                  <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
-                  <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+        {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
+        <main className="flex-1 flex flex-col h-screen">
+          {/* Header con titolo e pulsante Utenti Organizzazione */}
+          <div className="flex-shrink-0 border-b bg-background">
+            <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger className="lg:hidden" />
+                  <h1 className="text-2xl font-bold">Intranet</h1>
                 </div>
-
-                {/* Messaggi */}
-                <Card className="bg-card-transparent">
-                  <CardContent className="p-6 max-h-[600px] overflow-y-auto">
-                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
-                  </CardContent>
-                </Card>
-
-                {/* Input */}
-                <Card className="bg-card-transparent">
-                  <CardContent className="p-4">
-                    <MessageInputWithAttachments roomId={selectedRoomId} />
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <Card className="h-[600px] flex flex-col overflow-hidden">
-                <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="text-center space-y-4">
-                    <Users className="h-16 w-16 mx-auto text-muted-foreground" />
-                    <div>
-                      <h2 className="text-xl font-semibold mb-2">
-                        Seleziona una stanza
-                      </h2>
-                      <p className="text-base text-muted-foreground">
-                        Scegli una stanza dalla sidebar per iniziare a chattare
-                      </p>
+                <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Users className="h-4 w-4 mr-2" />
+                      Utenti Organizzazione
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Utenti Organizzazione</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <OrganizationUsers
+                        currentUserId={currentUserId}
+                        onOpenPrivateChat={handleOpenPrivateChat}
+                      />
                     </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+          </div>
+
+          {selectedRoomId ? (
+            <>
+              {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
+              <div className="flex-1 overflow-hidden">
+                <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
+                  {/* Header stanza con settings */}
+                  <div className="flex-shrink-0 flex items-center justify-between pb-2 border-b mb-4">
+                    <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
+                    <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+                  </div>
+
+                  {/* Messaggi scrollabili */}
+                  <Card className="bg-card-transparent flex-1 overflow-hidden">
+                    <CardContent className="p-6 h-full overflow-y-auto">
+                      <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Input fisso in basso */}
+              <div className="flex-shrink-0 border-t bg-background">
+                <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+                  <Card className="bg-card-transparent">
+                    <CardContent className="p-4">
+                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-3 sm:p-6">
+              <Card className="max-w-2xl w-full">
+                <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                  <Users className="h-16 w-16 mx-auto text-muted-foreground" />
+                  <div className="text-center">
+                    <h2 className="text-xl font-semibold mb-2">
+                      Seleziona una stanza
+                    </h2>
+                    <p className="text-base text-muted-foreground">
+                      Scegli una stanza dalla sidebar per iniziare a chattare
+                    </p>
                   </div>
                 </div>
               </Card>
-            )}
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </SidebarProvider>

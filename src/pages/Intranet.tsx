@@ -4,6 +4,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetPortal, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarProvider, 
+  SidebarTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  useSidebar
+} from '@/components/ui/sidebar';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -190,36 +200,37 @@ const Intranet = () => {
 
   const shouldHideHeader = isMobile && !!selectedRoomId;
 
-  return (
-    <div className={`${shouldHideHeader ? 'h-[calc(100vh-9rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
-      {/* Header con pulsante Utenti Organizzazione */}
-      {!shouldHideHeader && (
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Intranet</h1>
-          <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Users className="h-4 w-4 mr-2" />
-                Utenti Organizzazione
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader>
-                <SheetTitle>Utenti Organizzazione</SheetTitle>
-              </SheetHeader>
-              <div className="mt-6">
-                <OrganizationUsers
-                  currentUserId={currentUserId}
-                  onOpenPrivateChat={handleOpenPrivateChat}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      )}
-      <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
-        {/* Mobile: Sheet con lista stanze */}
-        {isMobile && (
+  // Mobile: usa Sheet (comportamento esistente)
+  if (isMobile) {
+    return (
+      <div className={`${shouldHideHeader ? 'h-[calc(100vh-9rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
+        {/* Header con pulsante Utenti Organizzazione */}
+        {!shouldHideHeader && (
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">Intranet</h1>
+            <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Users className="h-4 w-4 mr-2" />
+                  Utenti Organizzazione
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[540px]">
+                <SheetHeader>
+                  <SheetTitle>Utenti Organizzazione</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <OrganizationUsers
+                    currentUserId={currentUserId}
+                    onOpenPrivateChat={handleOpenPrivateChat}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
+        <div className={`grid grid-cols-1 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
+          {/* Mobile: Sheet con lista stanze */}
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
               {/* Numero sezione */}
@@ -238,108 +249,79 @@ const Intranet = () => {
               </div>
             </SheetContent>
           </Sheet>
-        )}
-        {!isMobile && (
-          /* Desktop/Tablet: Sidebar fissa */
-          <div className="w-full md:w-80 flex-shrink-0 relative">
+
+          {/* Area chat principale */}
+          <div className={`flex-1 ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full overflow-hidden min-h-0 transition-all duration-300` : 'relative flex flex-col overflow-hidden space-y-6'}`}>
             {/* Numero sezione */}
             <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-              2
+              3
             </div>
-            <div className="h-full space-y-4 overflow-y-auto">
-              <Card>
-                <div className="p-2">
-                  <RoomSelector
-                    onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                    selectedRoomId={selectedRoomId}
-                    getUnreadCount={getUnreadCount}
-                  />
-                </div>
-              </Card>
-              
-              <OnlineUsers users={onlineUsers} />
-              
-              {isCreatorOrAdmin && <AccessRequestsPanel />}
-            </div>
-          </div>
-        )}
+            
+            {selectedRoomId ? (
+              <>
+                {/* Messaggi - Area scrollabile indipendente con flex-1 */}
+                <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
+                  <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
+                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
+                  </CardContent>
+                </Card>
 
-        {/* Area chat principale */}
-        <div className={`flex-1 ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full overflow-hidden min-h-0 transition-all duration-300` : 'relative flex flex-col overflow-hidden space-y-6'}`}>
-          {/* Numero sezione */}
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-            3
-          </div>
-          
-          {selectedRoomId ? (
-            <>
-              {/* Messaggi - Area scrollabile indipendente con flex-1 */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
-                <CardContent className={`overflow-y-auto ${shouldHideHeader ? 'flex-1 px-3 py-3 min-h-0' : 'space-y-3 px-2 sm:px-6 max-h-[600px]'}`}>
-                  <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
-                </CardContent>
-              </Card>
+                {/* Input - Area fissa con flex-shrink-0 e max-height */}
+                <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden' : ''}`}>
+                  <CardContent className={shouldHideHeader ? 'p-0' : 'p-3 sm:p-6'}>
+                    <MessageInputWithAttachments roomId={selectedRoomId} />
+                  </CardContent>
+                </Card>
 
-              {/* Input - Area fissa con flex-shrink-0 e max-height */}
-              <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden' : ''}`}>
-                <CardContent className={shouldHideHeader ? 'p-0' : 'p-3 sm:p-6'}>
-                  <MessageInputWithAttachments roomId={selectedRoomId} />
-                </CardContent>
-              </Card>
-
-              {/* Barra mobile - FUORI dal Card, sempre in alto quando invertita */}
-              {isMobile && shouldHideHeader && (
-                <div className={`h-14 grid grid-cols-3 items-center border-t flex-shrink-0 z-50 ${isLayoutInverted ? 'order-first' : ''}`}>
-                  <div className="flex items-center gap-2 pl-2 relative">
-                    <div className="relative">
-                      <Menu 
-                        className="h-5 w-5 cursor-pointer text-foreground"
-                        onClick={() => setMobileSheetOpen(true)}
-                      />
-                      {totalUnread > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
-                        >
-                          {totalUnread}
-                        </Badge>
-                      )}
+                {/* Barra mobile - FUORI dal Card, sempre in alto quando invertita */}
+                {shouldHideHeader && (
+                  <div className={`h-14 grid grid-cols-3 items-center border-t flex-shrink-0 z-50 ${isLayoutInverted ? 'order-first' : ''}`}>
+                    <div className="flex items-center gap-2 pl-2 relative">
+                      <div className="relative">
+                        <Menu 
+                          className="h-5 w-5 cursor-pointer text-foreground"
+                          onClick={() => setMobileSheetOpen(true)}
+                        />
+                        {totalUnread > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
+                          >
+                            {totalUnread}
+                          </Badge>
+                        )}
+                      </div>
+                      <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
                     </div>
-                    <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
+                    <div className="flex justify-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setIsLayoutInverted(!isLayoutInverted)}
+                        title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+                      >
+                        {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-end pr-2">
+                      <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+                    </div>
                   </div>
-                  <div className="flex justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setIsLayoutInverted(!isLayoutInverted)}
-                      title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-                    >
-                      {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-end pr-2">
-                    <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <Card className="h-full flex flex-col overflow-hidden">
-              <div className="flex-1 flex items-center justify-center p-4">
-                <div className="text-center space-y-4">
-                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
-                  <div>
-                    <h2 className="text-lg md:text-xl font-semibold mb-2">
-                      Seleziona una stanza
-                    </h2>
-                    <p className="text-sm md:text-base text-muted-foreground mb-4">
-                      {isMobile 
-                        ? 'Tocca il pulsante del menu per scegliere una stanza'
-                        : 'Scegli una stanza dalla lista per iniziare a chattare'
-                      }
-                    </p>
-                  </div>
-                  {isMobile && (
+                )}
+              </>
+            ) : (
+              <Card className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center space-y-4">
+                    <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto text-muted-foreground" />
+                    <div>
+                      <h2 className="text-lg md:text-xl font-semibold mb-2">
+                        Seleziona una stanza
+                      </h2>
+                      <p className="text-sm md:text-base text-muted-foreground mb-4">
+                        Tocca il pulsante del menu per scegliere una stanza
+                      </p>
+                    </div>
                     <Button 
                       onClick={() => {
                         console.log('🔵 Bottone cliccato! Stato attuale:', mobileSheetOpen);
@@ -352,14 +334,121 @@ const Intranet = () => {
                       <MessageSquare className="h-5 w-5" />
                       Apri Selettore Stanze
                     </Button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          )}
+              </Card>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  // Tablet/Desktop: usa Sidebar
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full">
+        {/* Header fisso con trigger */}
+        <header className="fixed top-0 left-0 right-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 flex items-center px-4 gap-3">
+          <SidebarTrigger />
+          <h1 className="text-lg font-semibold">Intranet</h1>
+          <div className="ml-auto">
+            <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Users className="h-4 w-4 mr-2" />
+                  Utenti Organizzazione
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[540px]">
+                <SheetHeader>
+                  <SheetTitle>Utenti Organizzazione</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <OrganizationUsers
+                    currentUserId={currentUserId}
+                    onOpenPrivateChat={handleOpenPrivateChat}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </header>
+
+        {/* Sidebar collapsible */}
+        <Sidebar className="pt-14">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Stanze</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <RoomSelector
+                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                  selectedRoomId={selectedRoomId}
+                  getUnreadCount={getUnreadCount}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Utenti Online</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <OnlineUsers users={onlineUsers} />
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {isCreatorOrAdmin && (
+              <SidebarGroup>
+                <SidebarGroupLabel>Richieste Accesso</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <AccessRequestsPanel />
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </SidebarContent>
+        </Sidebar>
+
+        {/* Main content area */}
+        <main className="flex-1 pt-14 flex flex-col overflow-hidden">
+          {selectedRoomId ? (
+            <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4">
+              {/* Header stanza con settings */}
+              <div className="flex items-center justify-between pb-2 border-b">
+                <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
+                <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+              </div>
+
+              {/* Messaggi */}
+              <Card className="flex-1 flex flex-col overflow-hidden">
+                <CardContent className="flex-1 overflow-y-auto p-6">
+                  <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
+                </CardContent>
+              </Card>
+
+              {/* Input */}
+              <Card className="flex-shrink-0">
+                <CardContent className="p-4">
+                  <MessageInputWithAttachments roomId={selectedRoomId} />
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center space-y-4">
+                <Users className="h-16 w-16 mx-auto text-muted-foreground" />
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">
+                    Seleziona una stanza
+                  </h2>
+                  <p className="text-base text-muted-foreground">
+                    Scegli una stanza dalla sidebar per iniziare a chattare
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 

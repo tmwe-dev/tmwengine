@@ -320,28 +320,9 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
                   >
                     <AccessIcon className="h-4 w-4 shrink-0" />
                     {!isCollapsed && (
-                      <>
-                        <span className="truncate flex-1">{room.name}</span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {room.member_count > 0 && (
-                            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-                              {room.member_count}
-                            </Badge>
-                          )}
-                          {unreadCount > 0 && (
-                            <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
-                              {unreadCount}
-                            </Badge>
-                          )}
-                        </div>
-                      </>
+                      <span className="truncate flex-1">{room.name}</span>
                     )}
                   </SidebarMenuButton>
-                  {isCollapsed && unreadCount > 0 && (
-                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs shrink-0">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </Badge>
-                  )}
                 </div>
               );
 
@@ -377,11 +358,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
                           </div>
                         </TooltipContent>
                       </Tooltip>
-                      {unreadCount > 0 && (
-                        <Badge variant="destructive" className="h-4 min-w-4 px-1 text-[9px]">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </Badge>
-                      )}
                     </div>
                   ) : (
                     button

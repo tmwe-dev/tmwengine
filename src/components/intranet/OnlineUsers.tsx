@@ -119,11 +119,6 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
       <SidebarGroup>
         <SidebarGroupLabel className="px-2">
           {!isCollapsed && "Utenti Online"}
-          {isCollapsed && (
-            <Badge variant="secondary" className="ml-auto">
-              {users.length}
-            </Badge>
-          )}
         </SidebarGroupLabel>
 
         <SidebarGroupContent>
@@ -139,7 +134,6 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
                       currentMessage={currentUser.status_message || undefined}
                     />
                   )}
-                  <Badge variant="secondary">{users.length}</Badge>
                 </div>
 
                 <ScrollArea className="h-[250px]">
@@ -200,7 +194,7 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
                 <TooltipContent side="right" className="max-w-[300px]">
                   <div className="space-y-2">
                     <div className="font-semibold text-sm mb-2">
-                      Utenti Online ({users.length})
+                      Utenti Online
                     </div>
                     {users.slice(0, 5).map((user) => {
                       const profile = userProfiles.get(user.user_id);

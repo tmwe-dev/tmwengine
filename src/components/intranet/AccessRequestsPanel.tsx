@@ -59,30 +59,7 @@ export const AccessRequestsPanel = () => {
     <TooltipProvider>
       <SidebarGroup>
         <SidebarGroupLabel className="px-2">
-          {!isCollapsed ? (
-            <>
-              Richieste
-              <Badge variant="secondary" className="ml-auto">
-                {pendingRequests.length}
-              </Badge>
-            </>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {pendingRequests.length > 0 && (
-                    <Badge variant="destructive" className="h-4 min-w-4 px-1 text-[10px]">
-                      {pendingRequests.length}
-                    </Badge>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {pendingRequests.length} richieste in attesa
-              </TooltipContent>
-            </Tooltip>
-          )}
+          Richieste
         </SidebarGroupLabel>
 
         <SidebarGroupContent>
@@ -105,9 +82,6 @@ export const AccessRequestsPanel = () => {
                             <span className="text-xs truncate">{request.room_name}</span>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {format(new Date(request.requested_at), "dd MMM", { locale: it })}
-                        </Badge>
                       </div>
 
                       {request.message && (

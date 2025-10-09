@@ -6,12 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserAvailabilityBadge } from './UserAvailabilityBadge';
 
 interface UserProfile {
   user_id: string;
   display_name: string | null;
   tmwe_email: string | null;
   preferred_language: string;
+  availability_status: 'online' | 'busy' | 'dnd' | 'offline';
+  status_emoji?: string | null;
+  status_color?: string | null;
 }
 
 interface OrganizationUsersProps {
@@ -63,7 +67,7 @@ export const OrganizationUsers = ({ currentUserId, onOpenPrivateChat }: Organiza
       setIsLoading(true);
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('user_id, display_name, tmwe_email, preferred_language')
+        .select('user_id, display_name, tmwe_email, preferred_language, availability_status, status_emoji, status_color')
         .neq('user_id', currentUserId || '');
 
       if (error) throw error;
@@ -131,11 +135,16 @@ export const OrganizationUsers = ({ currentUserId, onOpenPrivateChat }: Organiza
                         {getUserInitials(user.display_name, user.tmwe_email)}
                       </AvatarFallback>
                     </Avatar>
-                    <div
-                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${
-                        isOnline ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
-                    />
+                    {isOnline && (
+                      <div className="absolute -bottom-0.5 -right-0.5">
+                        <UserAvailabilityBadge 
+                          status={user.availability_status || 'online'}
+                          emoji={user.status_emoji || undefined}
+                          color={user.status_color || undefined}
+                          size="sm"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{displayName}</p>
@@ -144,10 +153,19 @@ export const OrganizationUsers = ({ currentUserId, onOpenPrivateChat }: Organiza
                         {user.tmwe_email}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge variant={isOnline ? 'default' : 'secondary'} className="text-xs">
                         {isOnline ? 'Online' : 'Offline'}
                       </Badge>
+                      {isOnline && (
+                        <UserAvailabilityBadge 
+                          status={user.availability_status || 'online'}
+                          emoji={user.status_emoji || undefined}
+                          color={user.status_color || undefined}
+                          showLabel
+                          size="sm"
+                        />
+                      )}
                       {user.preferred_language && (
                         <Badge variant="outline" className="text-xs">
                           {user.preferred_language.toUpperCase()}

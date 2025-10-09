@@ -2271,7 +2271,7 @@ export default function ImportTemplates() {
                 <div className="space-y-2">
                   <Label>Placeholder Disponibili</Label>
                   <div className="flex flex-wrap gap-2">
-                    {['responsabile', 'nome_azienda', 'email', 'telefono', 'indirizzo'].map((placeholder) => (
+                    {['nome_azienda', 'company_alias', 'nome', 'alias', 'paese', 'email', 'telefono', 'cellulare', 'indirizzo', 'responsabile'].map((placeholder) => (
                       <Button
                         key={placeholder}
                         variant="outline"

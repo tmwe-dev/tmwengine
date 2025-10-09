@@ -321,9 +321,11 @@ export default function Attivita() {
   // Filtri base (escludendo statusFilter dalle card) per calcolare le statistiche
   const baseFilteredActivities = activities.filter(activity => {
     const matchesSearch = activity.descrizione.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_azienda?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.rubrica_citta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase());
+      activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.rubrica_id?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Filtro per contatto specifico
     const matchesContact = !filterByContactId || activity.rubrica_id === filterByContactId;

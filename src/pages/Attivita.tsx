@@ -1061,44 +1061,51 @@ export default function Attivita() {
                 </span>
               </div>
               <div className="flex items-center justify-center gap-4">
-                <Button
-                  variant="default"
-                  size={isMobile ? "sm" : "default"}
-                  onClick={() => {
-                    const selectedContacts = activities
-                      .filter(a => selectedActivities.includes(a.id))
-                      .filter(a => a.rubrica_id)
-                      .map(a => ({
-                        id: a.rubrica_id!,
-                        name: a.rubrica_nome || '',
-                        company_name: a.rubrica_azienda || '',
-                        source: a.contact_source || 'rubrica'
-                      }));
-                    
-                    // Rimuovi duplicati per ID
-                    const uniqueContacts = Array.from(
-                      new Map(selectedContacts.map(c => [c.id, c])).values()
-                    );
-                    
-                    if (uniqueContacts.length === 0) {
-                      toast({
-                        title: "Nessun contatto",
-                        description: "Le attività selezionate non hanno contatti associati",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-                    
-                    // Apri il form multiplo con i contatti
-                    setMultipleContacts(uniqueContacts);
-                    setSelectedActivity(null);
-                    setIsFormOpen(true);
-                  }}
-                  className="gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {isMobile ? "Crea Multiple" : "Crea Attività Multiple"}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="default"
+                        size="icon"
+                        onClick={() => {
+                          const selectedContacts = activities
+                            .filter(a => selectedActivities.includes(a.id))
+                            .filter(a => a.rubrica_id)
+                            .map(a => ({
+                              id: a.rubrica_id!,
+                              name: a.rubrica_nome || '',
+                              company_name: a.rubrica_azienda || '',
+                              source: a.contact_source || 'rubrica'
+                            }));
+                          
+                          // Rimuovi duplicati per ID
+                          const uniqueContacts = Array.from(
+                            new Map(selectedContacts.map(c => [c.id, c])).values()
+                          );
+                          
+                          if (uniqueContacts.length === 0) {
+                            toast({
+                              title: "Nessun contatto",
+                              description: "Le attività selezionate non hanno contatti associati",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          // Apri il form multiplo con i contatti
+                          setMultipleContacts(uniqueContacts);
+                          setSelectedActivity(null);
+                          setIsFormOpen(true);
+                        }}
+                      >
+                        <Circle className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Crea Attività Multiple</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button 
                   variant="ghost"
                   size="icon"

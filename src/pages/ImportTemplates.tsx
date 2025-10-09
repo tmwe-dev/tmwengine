@@ -4244,8 +4244,6 @@ export default function ImportTemplates() {
               contacts={[selectedContactForActivity]}
               defaultActivityType={defaultActivityType}
               onSubmit={async (data) => {
-                // Refresh attività per aggiornare i contatori
-                refreshActivities();
                 setIsAttivitaDialogOpen(false);
                 setSelectedContactIdForActivities(null);
                 setSelectedContactForActivity(null);

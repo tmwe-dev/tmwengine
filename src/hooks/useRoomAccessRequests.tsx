@@ -27,20 +27,34 @@ export const useRoomAccessRequests = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Carica richieste create dall'utente o per stanze che ha creato
-      const { data, error } = await supabase
+      // Prima carica le richieste dell'utente
+      const { data: userRequests } = await supabase
         .from('intranet_room_access_requests')
         .select(`
           *,
           intranet_rooms!inner(name, created_by)
         `)
-        .or(`user_id.eq.${user.id},intranet_rooms.created_by.eq.${user.id}`)
+        .eq('user_id', user.id)
         .order('requested_at', { ascending: false });
 
-      if (error) throw error;
+      // Poi carica le richieste per le stanze create dall'utente
+      const { data: creatorRequests } = await supabase
+        .from('intranet_room_access_requests')
+        .select(`
+          *,
+          intranet_rooms!inner(name, created_by)
+        `)
+        .eq('intranet_rooms.created_by', user.id)
+        .order('requested_at', { ascending: false });
 
-      // Carica i profili utente separatamente
-      const userIds = data?.map(r => r.user_id) || [];
+      // Combina e rimuovi duplicati
+      const allRequests = [...(userRequests || []), ...(creatorRequests || [])];
+      const uniqueRequests = allRequests.filter((req, index, self) =>
+        index === self.findIndex(r => r.id === req.id)
+      );
+
+      // Carica i profili utente
+      const userIds = uniqueRequests.map(r => r.user_id);
       const { data: profiles } = await supabase
         .from('user_profiles')
         .select('user_id, display_name')
@@ -48,11 +62,11 @@ export const useRoomAccessRequests = () => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]));
 
-      const formatted = data?.map(req => ({
+      const formatted = uniqueRequests.map(req => ({
         ...req,
         room_name: req.intranet_rooms?.name,
         user_display_name: profileMap.get(req.user_id) || 'Utente'
-      })) || [];
+      }));
 
       setRequests(formatted);
     } catch (error) {

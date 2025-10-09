@@ -50,8 +50,42 @@ const Intranet = () => {
     if (selectedRoomId) {
       checkCreatorOrAdmin();
       loadRoomName();
+      ensureRoomMembership();
     }
   }, [selectedRoomId]);
+
+  const ensureRoomMembership = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !selectedRoomId) return;
+
+      // Verifica se l'utente è già membro
+      const { data: existingMember } = await supabase
+        .from('intranet_room_members')
+        .select('id')
+        .eq('room_id', selectedRoomId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Se non è membro, aggiungilo
+      if (!existingMember) {
+        const { error } = await supabase
+          .from('intranet_room_members')
+          .insert({
+            room_id: selectedRoomId,
+            user_id: user.id
+          });
+
+        if (error) {
+          console.error('Error adding user to room:', error);
+        } else {
+          console.log('✅ User automatically added to room');
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring room membership:', error);
+    }
+  };
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();

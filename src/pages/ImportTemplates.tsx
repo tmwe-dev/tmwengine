@@ -538,6 +538,12 @@ export default function ImportTemplates() {
 
       // Crea le attività per ogni azienda selezionata
       const activities = [];
+      const emailResults = {
+        success: [] as Array<{ email: string; company: string }>,
+        failed: [] as Array<{ email: string; company: string; error: string }>
+      };
+      let currentEmailIndex = 0;
+      let progressToastId: string | undefined;
       
       console.log('🔍 DEBUG - selectedCompanies:', selectedCompanies);
       console.log('🔍 DEBUG - activityData:', activityData);
@@ -549,6 +555,15 @@ export default function ImportTemplates() {
         let emailSendResult = null;
         
         if (activityData.tipo === 'email' && activityData.oggetto_email && activityData.testo_email) {
+          // Mostra progresso
+          currentEmailIndex++;
+          if (progressToastId) {
+            toast.dismiss(progressToastId);
+          }
+          toast.loading(`Invio email ${currentEmailIndex} di ${selectedCompanies.length}...`, {
+            duration: Infinity
+          });
+
           // Se è email, invia tramite TMWE
           if (company.record.email) {
             try {
@@ -564,21 +579,45 @@ export default function ImportTemplates() {
               
               if (sendError) {
                 console.error('❌ Errore invio email:', sendError);
+                emailResults.failed.push({
+                  email: company.record.email,
+                  company: company.record.company_name || company.record.name || 'Sconosciuto',
+                  error: sendError.message
+                });
                 descrizione = `❌ Email NON INVIATA - Errore: ${sendError.message}\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
               } else if (sendResult?.success) {
                 console.log('✅ Email inviata con successo:', sendResult.message_id);
                 emailSendResult = 'success';
+                emailResults.success.push({
+                  email: company.record.email,
+                  company: company.record.company_name || company.record.name || 'Sconosciuto'
+                });
                 descrizione = `✅ Email INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\nMessage ID: ${sendResult.message_id || 'N/A'}\n\nTesto inviato:\n${activityData.testo_email}`;
               } else {
                 console.error('❌ Errore invio email - risposta:', sendResult);
+                emailResults.failed.push({
+                  email: company.record.email,
+                  company: company.record.company_name || company.record.name || 'Sconosciuto',
+                  error: 'Risposta non valida dal server'
+                });
                 descrizione = `❌ Email NON INVIATA\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
               }
             } catch (error) {
               console.error('❌ Errore durante invio email:', error);
+              emailResults.failed.push({
+                email: company.record.email,
+                company: company.record.company_name || company.record.name || 'Sconosciuto',
+                error: error instanceof Error ? error.message : 'Errore tecnico'
+              });
               descrizione = `❌ Email NON INVIATA - Errore tecnico\n\nOggetto: ${activityData.oggetto_email}\nDestinatario: ${company.record.email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
             }
           } else {
             // Nessuna email disponibile
+            emailResults.failed.push({
+              email: 'N/A',
+              company: company.record.company_name || company.record.name || 'Sconosciuto',
+              error: 'Email mancante'
+            });
             descrizione = `❌ Email NON INVIATA - Email mancante\n\nOggetto: ${activityData.oggetto_email}\nAzienda: ${company.record.company_name || ''}\nContatto: ${company.record.name || ''}\n\nTesto:\n${activityData.testo_email}`;
           }
         } else if (activityData.tipo === 'chiamata' && activityData.note_generali) {
@@ -673,27 +712,61 @@ export default function ImportTemplates() {
 
       if (error) throw error;
 
-      const activityType = activityData.tipo === 'email' ? 'Email' : 'Chiamata';
-      const totalActivities = activities.length;
-      const immediateCount = selectedCompanies.length;
-      const futureCount = totalActivities - immediateCount;
-      
-      let successMessage;
-      if (futureCount > 0) {
-        if (activityData.tipo === 'email' && activityData.programma_email) {
-          successMessage = `${immediateCount} ${activityType} completate e ${futureCount} email future programmate`;
+      // Rimuovi toast di progresso
+      if (progressToastId) {
+        toast.dismiss(progressToastId);
+      }
+
+      // Messaggio finale con riepilogo dettagliato
+      if (activityData.tipo === 'email') {
+        if (emailResults.failed.length > 0) {
+          const failedList = emailResults.failed
+            .map(f => `• ${f.company} (${f.email}): ${f.error}`)
+            .join('\n');
+          
+          toast.error(
+            `${emailResults.success.length} email inviate con successo, ${emailResults.failed.length} fallite:\n\n${failedList}`,
+            { duration: 15000 }
+          );
         } else {
-          successMessage = `${immediateCount} ${activityType} completate e ${futureCount} chiamate future programmate`;
+          const activityType = 'Email';
+          const totalActivities = activities.length;
+          const immediateCount = selectedCompanies.length;
+          const futureCount = totalActivities - immediateCount;
+          
+          let successMessage;
+          if (futureCount > 0) {
+            successMessage = `${emailResults.success.length} ${activityType} inviate con successo e ${futureCount} email future programmate`;
+          } else {
+            successMessage = `Tutte le ${emailResults.success.length} email inviate con successo!`;
+          }
+          
+          if (activityData.salva_in_rubrica) {
+            successMessage += ' e contatti trasferiti in rubrica';
+          }
+          
+          toast.success(successMessage);
         }
       } else {
-        successMessage = `${immediateCount} ${activityType} completate con successo`;
+        // Gestione chiamate (codice originale)
+        const activityType = activityData.tipo === 'email' ? 'Email' : 'Chiamata';
+        const totalActivities = activities.length;
+        const immediateCount = selectedCompanies.length;
+        const futureCount = totalActivities - immediateCount;
+        
+        let successMessage;
+        if (futureCount > 0) {
+          successMessage = `${immediateCount} ${activityType} completate e ${futureCount} chiamate future programmate`;
+        } else {
+          successMessage = `${immediateCount} ${activityType} completate con successo`;
+        }
+        
+        if (activityData.salva_in_rubrica) {
+          successMessage += ' e contatti trasferiti in rubrica';
+        }
+        
+        toast.success(successMessage);
       }
-      
-      if (activityData.salva_in_rubrica) {
-        successMessage += ' e contatti trasferiti in rubrica';
-      }
-      
-      toast.success(successMessage);
       setShowMultipleActivityDialog(false);
       setSelectedRecords(new Set());
       

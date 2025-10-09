@@ -44,7 +44,15 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
   const [requestMessage, setRequestMessage] = useState('');
   const { toast } = useToast();
   const { requests, requestAccess } = useRoomAccessRequests();
-  const { state } = useSidebar();
+  
+  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
+  let sidebarState = 'expanded';
+  try {
+    const sidebar = useSidebar();
+    sidebarState = sidebar.state;
+  } catch (error) {
+    // Non siamo in un contesto Sidebar (es: mobile sheet), usa stato di default
+  }
 
   useEffect(() => {
     loadRooms();
@@ -294,7 +302,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     return <div className="p-4 text-center text-muted-foreground">Caricamento...</div>;
   }
 
-  const isCollapsed = state === 'collapsed';
+  const isCollapsed = sidebarState === 'collapsed';
 
   return (
     <TooltipProvider>

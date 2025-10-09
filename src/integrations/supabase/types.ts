@@ -1373,6 +1373,41 @@ export type Database = {
         }
         Relationships: []
       }
+      intranet_user_room_status: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_read_at: string | null
+          room_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          room_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          room_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_user_room_status_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "intranet_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_system_prompts: {
         Row: {
           attivo: boolean
@@ -1817,6 +1852,10 @@ export type Database = {
           | { page_limit?: number; page_offset?: number; table_name: string }
           | { table_name: string }
         Returns: Json
+      }
+      get_unread_messages_count: {
+        Args: { p_room_id: string; p_user_id: string }
+        Returns: number
       }
       get_user_role: {
         Args: { _user_id: string }

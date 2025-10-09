@@ -86,7 +86,7 @@ const Intranet = () => {
   const shouldHideHeader = isMobile && !!selectedRoomId;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className={`${shouldHideHeader ? 'h-[calc(100vh-6rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
       <div className={`grid grid-cols-1 xl:grid-cols-4 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
         {/* Mobile: Sheet con lista stanze */}
         {isMobile && (

@@ -193,7 +193,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
   return (
     <>
-      <div className="border-t-2 border-border bg-background/95 backdrop-blur-sm">
+      <div className="border-t-2 border-border bg-transparent">
         {/* AI Suggestions */}
         <div className="mb-2">
           <AISuggestions 

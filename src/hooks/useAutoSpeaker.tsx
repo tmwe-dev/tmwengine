@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface Message {
@@ -18,6 +18,7 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -65,9 +66,18 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Errori
+    // Eventi
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
     utterance.onerror = (event) => {
       console.error('Speech synthesis error:', event);
+      setIsSpeaking(false);
     };
 
     // Pronuncia
@@ -77,8 +87,9 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
   const stopSpeaking = () => {
     if (synthRef.current) {
       synthRef.current.cancel();
+      setIsSpeaking(false);
     }
   };
 
-  return { stopSpeaking };
+  return { stopSpeaking, isSpeaking };
 };

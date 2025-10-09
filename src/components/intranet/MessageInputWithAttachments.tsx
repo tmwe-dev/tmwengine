@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AISuggestions } from './AISuggestions';
+import { AutoSpeakerToggle } from './AutoSpeakerToggle';
+import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 
 interface FileAttachment {
   file: File;
@@ -27,6 +29,7 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
+  const { isSpeaking } = useAutoSpeaker({ messages: [], currentUserId: '' });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -89,10 +92,22 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      return new Promise<void>((resolve) => {
+        const recorder = mediaRecorderRef.current;
+        if (!recorder) return resolve();
+        
+        const handleStop = async () => {
+          setIsRecording(false);
+          // Aspetta che l'attachment sia aggiunto
+          await new Promise(r => setTimeout(r, 100));
+          resolve();
+        };
+        
+        recorder.addEventListener('stop', handleStop, { once: true });
+        recorder.stop();
+      });
     }
   };
 
@@ -129,6 +144,13 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
 
   const sendMessage = async () => {
     if (!message.trim() && attachments.length === 0) return;
+
+    // Se stiamo registrando, ferma prima la registrazione
+    if (isRecording) {
+      await stopRecording();
+      // Aspetta che l'attachment sia aggiunto
+      await new Promise(r => setTimeout(r, 200));
+    }
 
     setIsSending(true);
     try {
@@ -337,6 +359,8 @@ export const MessageInputWithAttachments = ({ roomId }: MessageInputWithAttachme
               >
                 <Mic className="h-4 w-4" />
               </Button>
+
+              <AutoSpeakerToggle isSpeaking={isSpeaking} />
             </div>
 
             {/* Pulsante invio a destra */}

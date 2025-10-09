@@ -37,7 +37,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const { profile } = useUserProfile();
   
   // Auto-speaker per lettura automatica messaggi
-  const { stopSpeaking } = useAutoSpeaker({ messages, currentUserId });
+  const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId });
 
   useEffect(() => {
     // Salva l'ID della stanza corrente nel sessionStorage per il TranslateButton

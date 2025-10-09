@@ -357,6 +357,14 @@ export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageI
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              onPaste={(e) => {
+                // Permetti l'incollaggio di testo
+                const pastedText = e.clipboardData.getData('text');
+                if (pastedText) {
+                  const newValue = message + pastedText;
+                  setMessage(newValue);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

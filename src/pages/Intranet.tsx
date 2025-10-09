@@ -127,23 +127,23 @@ const Intranet = () => {
         )}
 
         {/* Area chat principale */}
-        <div className={`flex-1 relative ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-full` : 'flex flex-col overflow-hidden space-y-6'}`}>
-          {/* Numero sezione */}
-          <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
-            3
-          </div>
+        <div className={`flex-1 relative ${shouldHideHeader ? 'flex flex-col h-full' : 'flex flex-col overflow-hidden space-y-6'}`}>
           
           {selectedRoomId ? (
             <>
-              {/* Messaggi - Area scrollabile indipendente */}
-              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 overflow-hidden min-h-0' : ''}`}>
+              {/* Messaggi - Area scrollabile indipendente con padding bottom per l'input */}
+              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 overflow-hidden min-h-0 pb-32' : ''}`}>
                 <div className={`h-full ${shouldHideHeader ? 'overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}`}>
                   <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
                 </div>
               </div>
 
-              {/* Input - Area fissa */}
-              <div className={`bg-card-transparent ${shouldHideHeader ? 'flex-shrink-0' : ''}`}>
+              {/* Input - Area fissa posizionata in modo assoluto */}
+              <div className={`${shouldHideHeader ? 'fixed bottom-0 left-0 right-0 z-30' : 'bg-card-transparent'}`}>
+                {/* Numero sezione */}
+                <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-50">
+                  3
+                </div>
                 <div className={shouldHideHeader ? 'p-3' : 'p-3 sm:p-6'}>
                   <MessageInputWithAttachments roomId={selectedRoomId} />
                 </div>

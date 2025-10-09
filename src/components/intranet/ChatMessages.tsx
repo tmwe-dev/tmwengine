@@ -207,11 +207,12 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
                   <>
                     <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     <div className="flex gap-1 flex-wrap mt-1">
-                  <TranslateButton 
-                    messageContent={message.content}
-                    messageId={message.id}
-                    sourceLanguage={message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined}
-                  />
+                      <TranslateButton
+                        messageContent={message.content}
+                        messageId={message.id}
+                        sourceLanguage={message.user_id ? userProfiles[message.user_id]?.preferred_language : undefined}
+                        roomId={roomId}
+                      />
                       {!isOwnMessage && profile && (
                         <SpeakButton 
                           text={message.content}

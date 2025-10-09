@@ -4,39 +4,54 @@ import { Languages, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useRoomAISettings } from '@/hooks/useRoomAISettings';
 
 interface TranslateButtonProps {
   messageContent: string;
   messageId: string;
   sourceLanguage?: string;
+  roomId: string;
 }
 
-export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'auto' }: TranslateButtonProps) => {
+export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'auto', roomId }: TranslateButtonProps) => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
   const { profile } = useUserProfile();
+  const { settings } = useRoomAISettings(roomId);
   const { toast } = useToast();
 
   // Auto-traduzione se abilitata e lingua diversa
   useEffect(() => {
-    if (!profile || !sourceLanguage) return;
+    if (!profile || !sourceLanguage || !settings?.enableTranslation) return;
+    
+    // Modalità che richiedono traduzione automatica
+    const autoTranslateModes = ['read_only', 'both', 'dual_view'];
     
     const shouldAutoTranslate = 
-      profile.translationMode !== 'none' && 
+      autoTranslateModes.includes(profile.translationMode) &&
       sourceLanguage !== profile.readingLanguage &&
       !translatedText;
     
     if (shouldAutoTranslate) {
-      handleTranslate();
+      handleTranslate(true); // auto-show quando tradotto automaticamente
     }
-  }, [profile, sourceLanguage]);
+  }, [profile, sourceLanguage, settings?.enableTranslation]);
 
-  const handleTranslate = async () => {
+  const handleTranslate = async (autoShow = false) => {
     if (!profile) {
       toast({
         title: 'Errore',
         description: 'Profilo utente non trovato',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!settings?.enableTranslation) {
+      toast({
+        title: 'Traduzione disabilitata',
+        description: 'La traduzione è disabilitata in questa stanza',
         variant: 'destructive'
       });
       return;
@@ -51,9 +66,6 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non autenticato');
-
-      // Ottieni l'ID della stanza dal contesto (se disponibile)
-      const roomId = sessionStorage.getItem('current_room_id') || '';
 
       const { data, error } = await supabase.functions.invoke('intranet-ai-processor', {
         body: {
@@ -70,7 +82,11 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
 
       if (data?.result?.text) {
         setTranslatedText(data.result.text);
-        setShowTranslation(true);
+        if (autoShow) {
+          setShowTranslation(true);
+        } else {
+          setShowTranslation(true);
+        }
       } else {
         throw new Error('Nessuna traduzione ricevuta');
       }
@@ -87,7 +103,7 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
     }
   };
 
-  if (!profile || profile.translationMode === 'none') {
+  if (!profile || profile.translationMode === 'none' || !settings?.enableTranslation) {
     return null;
   }
 
@@ -97,7 +113,7 @@ export const TranslateButton = ({ messageContent, messageId, sourceLanguage = 'a
         variant="ghost"
         size="sm"
         className="h-6 w-auto px-2 text-xs gap-1"
-        onClick={handleTranslate}
+        onClick={() => handleTranslate(false)}
         disabled={isTranslating}
       >
         {isTranslating ? (

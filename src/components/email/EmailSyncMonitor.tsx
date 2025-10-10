@@ -56,8 +56,13 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const { 
     isSyncing,
     isPaused,
-    syncedCount, 
-    syncError, 
+    syncedCount,
+    syncError,
+    currentPhase,
+    processedCount,
+    currentBatch,
+    totalBatches,
+    failedCount,
     startSync,
     pause,
     resume,
@@ -67,6 +72,16 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     folder: syncConfig.folder, 
     totalEmails: totalEmailsInFolder 
   });
+
+  const getPhaseLabel = (phase: string) => {
+    switch (phase) {
+      case 'checking': return '🔍 Controllo email esistenti...';
+      case 'filtering': return '📥 Download UIDs e filtro...';
+      case 'downloading': return '⬇️ Download contenuto completo...';
+      case 'completed': return '✅ Completato';
+      default: return 'In attesa...';
+    }
+  };
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -248,27 +263,47 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5 animate-pulse text-primary" />
               Smart Sync a 2 Fasi in Corso
+              {isPaused && (
+                <Badge variant="secondary" className="ml-2">⏸️ IN PAUSA</Badge>
+              )}
             </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              {getPhaseLabel(currentPhase)}
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{syncedCount}</div>
-                <div className="text-sm text-muted-foreground">Nuove Email Scaricate</div>
+                <div className="text-sm text-muted-foreground">Nuove Scaricate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{totalEmailsInFolder}</div>
-                <div className="text-sm text-muted-foreground">Totale in Cartella</div>
+                <div className="text-2xl font-bold text-blue-600">{processedCount}</div>
+                <div className="text-sm text-muted-foreground">UID Controllati</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{failedCount}</div>
+                <div className="text-sm text-muted-foreground">Errori</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {totalEmailsInFolder > 0 ? Math.round((syncedCount / totalEmailsInFolder) * 100) : 0}%
+                  {currentBatch}/{totalBatches}
                 </div>
-                <div className="text-sm text-muted-foreground">Progresso</div>
+                <div className="text-sm text-muted-foreground">Batch</div>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Progresso Download</span>
+                <span>{totalEmailsInFolder > 0 ? Math.round((syncedCount / totalEmailsInFolder) * 100) : 0}%</span>
+              </div>
               <Progress value={totalEmailsInFolder > 0 ? (syncedCount / totalEmailsInFolder) * 100 : 0} className="h-2" />
+              
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Batch Processati</span>
+                <span>{totalBatches > 0 ? Math.round((currentBatch / totalBatches) * 100) : 0}%</span>
+              </div>
+              <Progress value={totalBatches > 0 ? (currentBatch / totalBatches) * 100 : 0} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -365,7 +400,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             <div className="space-y-3 bg-muted p-4 rounded-lg mt-4">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium flex items-center gap-2">
-                  Smart Sync a 2 Fasi
+                  {getPhaseLabel(currentPhase)}
                   {isPaused && (
                     <Badge variant="secondary" className="animate-pulse">
                       ⏸️ IN PAUSA
@@ -373,7 +408,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                   )}
                 </span>
                 <span className="text-xs">
-                  {syncedCount} / {totalEmailsInFolder} email
+                  Batch {currentBatch}/{totalBatches}
                 </span>
               </div>
               
@@ -386,11 +421,13 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                   <div>
                     <div>📁 Cartella: {syncConfig.folder}</div>
-                    <div>📊 Email totali: {totalEmailsInFolder}</div>
+                    <div>📊 UID controllati: {processedCount}</div>
+                    <div>✅ Nuove scaricate: {syncedCount}</div>
                   </div>
                   <div>
-                    <div>✅ Nuove scaricate: {syncedCount}</div>
-                    <div>⏰ In corso...</div>
+                    <div>📦 Batch: {currentBatch}/{totalBatches}</div>
+                    <div>❌ Errori: {failedCount}</div>
+                    <div>⏰ {isPaused ? 'In pausa' : 'In corso...'}</div>
                   </div>
                 </div>
               </div>

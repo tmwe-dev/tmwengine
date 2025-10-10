@@ -14,6 +14,13 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
   const [syncedCount, setSyncedCount] = useState(0);
   const [syncError, setSyncError] = useState<string | null>(null);
   
+  // Stati per feedback visivo dettagliato
+  const [currentPhase, setCurrentPhase] = useState<'idle' | 'checking' | 'filtering' | 'downloading' | 'completed'>('idle');
+  const [processedCount, setProcessedCount] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  
   // useRef per controllare pausa in tempo reale nel loop
   const pausedRef = useRef(false);
   const shouldStopRef = useRef(false);
@@ -46,6 +53,9 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     setIsPaused(false);
     setSyncedCount(0);
     setSyncError(null);
+    setProcessedCount(0);
+    setCurrentBatch(0);
+    setFailedCount(0);
     pausedRef.current = false;
     shouldStopRef.current = false;
 
@@ -54,11 +64,17 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     if (!userEmail) {
       toast.error('Utente non autenticato');
       setIsSyncing(false);
+      setCurrentPhase('idle');
       return;
     }
 
     try {
+      // ========================================
       // FASE 1: Recupera tutti gli ID delle email già presenti
+      // ========================================
+      setCurrentPhase('checking');
+      console.log('🔍 FASE 1: Controllo email esistenti nel database...');
+      
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
@@ -68,18 +84,27 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       const alreadyInDb = existingIds.size;
       
-      console.log(`📊 Smart Sync - Database: ${alreadyInDb} email già presenti in ${folder}`);
+      console.log(`✅ FASE 1 COMPLETATA: ${alreadyInDb} email già presenti in ${folder}`);
 
       const batchSize = 50;
       const totalPages = Math.ceil(totalEmails / batchSize);
+      setTotalBatches(totalPages);
       let newEmailsCount = 0;
       let emptyBatches = 0;
       const maxEmptyBatches = 3;
 
       toast.info(`Sincronizzazione smart in corso...`);
 
+      // ========================================
       // FASE 2: Scarica UIDs dalla API batch per batch
+      // ========================================
+      setCurrentPhase('filtering');
+      console.log('📥 FASE 2: Download UIDs e filtro email nuove...');
+      
       for (let page = 1; page <= totalPages; page++) {
+        setCurrentBatch(page);
+        console.log(`📦 Batch ${page}/${totalPages}`);
+        
         // ⏸️ CHECK: Interruzione forzata
         if (shouldStopRef.current) {
           console.log('🛑 Interruzione rilevata - uscita dal loop');
@@ -106,14 +131,17 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
           });
 
           const pageEmails = response?.messages || [];
+          setProcessedCount(prev => prev + pageEmails.length);
           
+          // ========================================
           // FASE 3: Filtra solo email NON presenti usando UID
+          // ========================================
           const missingEmails = pageEmails.filter((email: any) => {
             const emailId = String(email.uid);
             return !existingIds.has(emailId);
           });
 
-          console.log(`📄 Smart Sync - Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
+          console.log(`📊 Batch ${page}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da scaricare`);
 
           if (missingEmails.length === 0) {
             emptyBatches++;
@@ -126,7 +154,11 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
           } else {
             emptyBatches = 0;
             
+            // ========================================
             // FASE 4: Per ogni email mancante, scarica contenuto COMPLETO
+            // ========================================
+            setCurrentPhase('downloading');
+            
             for (const email of missingEmails) {
               // ⏸️ CHECK: Interruzione forzata
               if (shouldStopRef.current) {
@@ -145,11 +177,12 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
                 const messageId = String(email.uid);
                 
                 // ⭐ CHIAMATA COMPLETA per ottenere body_html e body_text
-                console.log(`📥 Smart Sync - Downloading full content for UID ${messageId}...`);
+                console.log(`📥 Downloading UID ${messageId}...`);
                 const fullEmail = await emailMessageApi.getMessage(messageId, false, folder);
                 
                 if (!fullEmail) {
                   console.error(`❌ Failed to get full content for UID ${messageId}`);
+                  setFailedCount(prev => prev + 1);
                   continue;
                 }
 
@@ -187,14 +220,16 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
                 if (insertError) {
                   console.error(`❌ Error saving email ${messageId}:`, insertError);
+                  setFailedCount(prev => prev + 1);
                 } else {
                   newEmailsCount++;
                   existingIds.add(messageId);
                   setSyncedCount(newEmailsCount);
-                  console.log(`✅ Saved email ${messageId} (totale: ${newEmailsCount})`);
+                  console.log(`✅ Saved ${messageId} (${newEmailsCount}/${missingEmails.length} in batch)`);
                 }
               } catch (emailError) {
                 console.error(`❌ Error processing email ${email.uid}:`, emailError);
+                setFailedCount(prev => prev + 1);
               }
             }
 
@@ -215,6 +250,15 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
       setIsSyncing(false);
       setIsPaused(false);
+      setCurrentPhase('completed');
+      
+      console.log('========================================');
+      console.log('📊 RIEPILOGO SINCRONIZZAZIONE');
+      console.log(`✅ Email nuove scaricate: ${newEmailsCount}`);
+      console.log(`📦 Batch processati: ${currentBatch}/${totalBatches}`);
+      console.log(`📊 UID controllati: ${processedCount}`);
+      console.log(`❌ Errori: ${failedCount}`);
+      console.log('========================================');
       
       if (shouldStopRef.current) {
         toast.warning(`⏹️ Sincronizzazione interrotta. ${newEmailsCount} email scaricate prima dell'interruzione.`);
@@ -223,9 +267,13 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       } else {
         toast.success(`Database già sincronizzato. Nessuna nuova email.`);
       }
+      
+      // Reset phase dopo 2 secondi
+      setTimeout(() => setCurrentPhase('idle'), 2000);
     } catch (error: any) {
       console.error('Sync error:', error);
       setSyncError(error.message || 'Errore durante la sincronizzazione');
+      setCurrentPhase('idle');
       setIsSyncing(false);
       toast.error('Errore durante la sincronizzazione');
     }
@@ -236,6 +284,11 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     setIsPaused(false);
     setSyncedCount(0);
     setSyncError(null);
+    setCurrentPhase('idle');
+    setProcessedCount(0);
+    setCurrentBatch(0);
+    setTotalBatches(0);
+    setFailedCount(0);
     pausedRef.current = false;
     shouldStopRef.current = false;
   }, []);
@@ -245,6 +298,11 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     isPaused,
     syncedCount,
     syncError,
+    currentPhase,
+    processedCount,
+    currentBatch,
+    totalBatches,
+    failedCount,
     startSync,
     pause,
     resume,

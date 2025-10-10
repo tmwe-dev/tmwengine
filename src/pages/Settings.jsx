@@ -922,10 +922,15 @@ const Settings = () => {
                         <SelectValue placeholder="Seleziona provider AI" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="lovable">
+                          <div className="flex items-center gap-2">
+                            Lovable AI Gateway
+                            <Badge variant="secondary" className="text-xs">CONSIGLIATO</Badge>
+                          </div>
+                        </SelectItem>
                         <SelectItem value="openai">OpenAI</SelectItem>
                         <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
                         <SelectItem value="google">Google AI</SelectItem>
-                        <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                         <SelectItem value="mistral">Mistral AI</SelectItem>
                         <SelectItem value="perplexity">Perplexity</SelectItem>
                         <SelectItem value="cohere">Cohere</SelectItem>

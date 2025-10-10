@@ -41,12 +41,13 @@ export const AI_PROVIDERS: Record<string, AIProvider> = {
   lovable: {
     label: 'Lovable AI Gateway',
     models: [
-      { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash', free: true },
+      { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (CONSIGLIATO)', free: true },
       { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true },
       { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', free: true },
       { value: 'openai/gpt-5', label: 'GPT-5', free: false },
       { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', free: false },
       { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano', free: false },
+      { value: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5', free: false },
     ],
   },
   mistral: {

@@ -101,14 +101,13 @@ REGOLE CRITICHE:
         continue;
       }
 
-      // Costruisci history SOLO con messaggi dell'utente e del partecipante stesso
+      // Costruisci history completa: tutte le AI vedono tutti i messaggi
       const visibleHistory = (messages || [])
-        .filter((msg: any) => 
-          msg.sender_type === 'human' || 
-          msg.sender_type === participant.type
-        )
         .map((msg: any) => `${msg.sender_name}: ${msg.content}`)
         .join('\n');
+      
+      console.log(`📜 Storia completa mostrata a ${participant.name}:`, visibleHistory.substring(0, 300) + '...');
+      console.log(`🧠 ${participant.name} elabora con modello:`, model);
 
       const fullPrompt = `${basePrompt}
 
@@ -190,7 +189,7 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
                      response.content?.[0]?.text || 
                      'Errore nella risposta';
 
-      // Salva messaggio AI come NON visibile alle altre AI
+      // Salva messaggio AI come VISIBILE a tutte le altre AI
       await supabaseClient
         .from('chat_laboratory_messages')
         .insert({
@@ -198,7 +197,7 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
           sender_type: participant.type,
           sender_name: participant.name,
           content: content,
-          is_visible_to_ai: false,
+          is_visible_to_ai: true, // ✅ Ora visibile a tutti
           token_input: tokensUsed.input,
           token_output: tokensUsed.output,
           tempo_risposta_ms: responseTime

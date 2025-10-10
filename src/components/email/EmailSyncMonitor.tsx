@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Folder, 
   FolderOpen,
@@ -44,11 +45,14 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const [sourceFolders, setSourceFolders] = useState<FolderInfo[]>([]);
   const [destinationStats, setDestinationStats] = useState<FolderInfo[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [showFolderDialog, setShowFolderDialog] = useState(false);
+  const [availableFolders, setAvailableFolders] = useState<string[]>([]);
   const [syncConfig, setSyncConfig] = useState({
-    folder: 'INBOX',
+    folder: '',
     batchSize: 100,
     maxEmails: 10000,
-    targetEmails: 50000  // Target per importazione completa
+    targetEmails: 50000
   });
 
   const addLog = (message: string) => {
@@ -67,13 +71,28 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
   const fetchFolderStats = async () => {
     try {
-      // Simula cartelle sorgente TMWE (dati statici per demo)
-      setSourceFolders([
-        { name: 'INBOX', totalEmails: 3769, unreadEmails: 250, iconColor: 'text-blue-600' },
-        { name: 'Sent', totalEmails: 1250, unreadEmails: 0, iconColor: 'text-green-600' },
-        { name: 'Draft', totalEmails: 45, unreadEmails: 45, iconColor: 'text-orange-600' },
-        { name: 'Archive', totalEmails: 8900, unreadEmails: 0, iconColor: 'text-gray-600' }
-      ]);
+      // Recupera le cartelle disponibili tramite API TMWE
+      const folderInfoResponse = await fetch(
+        `https://dlldkrzoxvjxpgkkttxu.supabase.co/functions/v1/tmwe-test-folder-info`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (folderInfoResponse.ok) {
+        const folderData = await folderInfoResponse.json();
+        if (folderData.folders) {
+          const folders = folderData.folders.map((f: any) => ({
+            name: f.name || f.folder,
+            totalEmails: f.total || 0,
+            unreadEmails: f.unread || 0,
+            iconColor: 'text-blue-600'
+          }));
+          setSourceFolders(folders);
+          setAvailableFolders(folders.map((f: any) => f.name));
+        }
+      }
 
       // Recupera statistiche destinazione dal database
       const { data: emailData, error } = await supabase
@@ -109,15 +128,24 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   };
 
   const downloadEmails = async () => {
+    if (!selectedFolder) {
+      toast({
+        title: "Cartella non selezionata",
+        description: "Seleziona una cartella prima di avviare il download",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsRunning(true);
       addLog('📥 Avvio download email...');
-      addLog(`📁 Cartella: ${syncConfig.folder}`);
+      addLog(`📁 Cartella: ${selectedFolder}`);
       addLog(`🎯 Limite: ${syncConfig.maxEmails || 'nessun limite'}`);
       
       const requestBody = { 
         mode: 'initial',
-        folder_name: syncConfig.folder,
+        folder_name: selectedFolder,
         max_emails: syncConfig.maxEmails || 5000,
         force_full: false
       };
@@ -285,17 +313,16 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm font-medium">Cartella</label>
-              <select 
-                className="w-full p-2 border rounded bg-transparent"
-                value={syncConfig.folder}
-                onChange={(e) => setSyncConfig(prev => ({ ...prev, folder: e.target.value }))}
+              <label className="text-sm font-medium">Cartella Selezionata</label>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => setShowFolderDialog(true)}
                 disabled={isRunning}
               >
-                <option value="INBOX">INBOX</option>
-                <option value="Sent">Sent</option>
-                <option value="Draft">Draft</option>
-              </select>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                {selectedFolder || 'Seleziona Cartella'}
+              </Button>
             </div>
             <div>
               <label className="text-sm font-medium">Max Email</label>
@@ -313,13 +340,13 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button onClick={discoverFolders} variant="outline" disabled={isRunning}>
-              <FolderOpen className="h-4 w-4 mr-2" />
-              Scopri Cartelle
+            <Button onClick={fetchFolderStats} variant="outline" disabled={isRunning}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Aggiorna Stats
             </Button>
             
             {!isRunning ? (
-              <Button onClick={downloadEmails} className="bg-gradient-to-r from-primary to-blue-600">
+              <Button onClick={downloadEmails} className="bg-gradient-to-r from-primary to-blue-600" disabled={!selectedFolder}>
                 <Download className="h-4 w-4 mr-2" />
                 Scarica Email
               </Button>
@@ -495,6 +522,49 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Dialog Selezione Cartella */}
+      <Dialog open={showFolderDialog} onOpenChange={setShowFolderDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Seleziona Cartella Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Scegli la cartella da cui scaricare le email
+            </p>
+            
+            {availableFolders.length > 0 ? (
+              <div className="grid gap-2">
+                {availableFolders.map((folder) => (
+                  <Button
+                    key={folder}
+                    variant={selectedFolder === folder ? "default" : "outline"}
+                    onClick={() => {
+                      setSelectedFolder(folder);
+                      setShowFolderDialog(false);
+                      toast({
+                        title: "Cartella selezionata",
+                        description: `Hai selezionato: ${folder}`
+                      });
+                    }}
+                    className="justify-start"
+                  >
+                    <FolderOpen className="mr-2 h-4 w-4" />
+                    {folder}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">
+                  Nessuna cartella disponibile. Clicca su "Aggiorna Stats" per caricare le cartelle.
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
@@ -748,6 +749,13 @@ const EmailDashboard = () => {
         senderEmail={selectedAIChatSender}
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
+      />
+
+      <EmailSyncMonitor 
+        onSyncComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ['messages'] });
+          toast.success('Sincronizzazione completata');
+        }}
       />
     </div>
   );

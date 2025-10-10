@@ -19,41 +19,37 @@ export const useFolderList = () => {
     setError(null);
     
     try {
-      // Get all folders
+      console.log('🔍 Caricamento cartelle...');
       const foldersResponse = await emailFolderApi.getFolders();
       
-      if (!foldersResponse?.folders || !Array.isArray(foldersResponse.folders)) {
+      console.log('📦 Risposta API getFolders:', foldersResponse);
+      console.log('📊 Cartelle trovate:', foldersResponse?.data?.length);
+      
+      // ✅ CORREZIONE: Accesso a .data come nella sidebar
+      if (!foldersResponse?.data || !Array.isArray(foldersResponse.data)) {
+        console.error('❌ Formato risposta non valido:', foldersResponse);
         throw new Error('Formato risposta cartelle non valido');
       }
 
-      // Get detailed info for each folder
-      const foldersWithInfo: FolderInfo[] = await Promise.all(
-        foldersResponse.folders.map(async (folder: any) => {
-          try {
-            const folderName = typeof folder === 'string' ? folder : folder.name;
-            const info = await emailFolderApi.getFolderInfo(folderName);
-            
-            return {
-              name: folderName,
-              path: folderName,
-              messageCount: info?.total_messages || 0,
-              unreadCount: info?.unseen_messages || 0,
-            };
-          } catch (err) {
-            console.error(`Errore recupero info cartella ${folder}:`, err);
-            return {
-              name: typeof folder === 'string' ? folder : folder.name,
-              path: typeof folder === 'string' ? folder : folder.name,
-              messageCount: 0,
-              unreadCount: 0,
-            };
-          }
-        })
-      );
+      console.log(`✅ Trovate ${foldersResponse.data.length} cartelle`);
+      
+      // ✅ Mapping diretto senza chiamate extra (come sidebar)
+      const foldersWithInfo: FolderInfo[] = foldersResponse.data.map((folder: any) => {
+        console.log('📁 Processando:', folder.name, '- Email:', folder.messages || folder.total_messages);
+        
+        return {
+          name: folder.name,
+          path: folder.name,
+          messageCount: folder.messages || folder.total_messages || 0,
+          unreadCount: folder.unseen || folder.unread_messages || 0,
+        };
+      });
 
+      console.log('✅ Cartelle processate:', foldersWithInfo.length);
       setFolders(foldersWithInfo);
+      
     } catch (err: any) {
-      console.error('Errore caricamento cartelle:', err);
+      console.error('❌ Errore caricamento cartelle:', err);
       setError(err.message || 'Errore durante il caricamento delle cartelle');
       toast.error('Errore caricamento cartelle');
     } finally {

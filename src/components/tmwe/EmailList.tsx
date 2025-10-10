@@ -228,15 +228,14 @@ export const EmailList = ({
                 <div className="min-w-0 flex-1 sm:flex-initial">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
-                    !email.read && 'font-semibold text-email-unread'
+                    !email.read && 'text-email-unread'
                   )}>
                     {email.from}
                   </p>
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <h3 className={cn(
-                    'truncate text-xs sm:text-sm',
-                    !email.read && 'font-semibold'
+                    'truncate text-xs sm:text-sm'
                   )}>
                     {email.subject || '(No Subject)'}
                   </h3>
@@ -315,11 +314,11 @@ export const EmailList = ({
                 {email.hasGroup && (
                   <div className="flex items-center gap-1 text-xs text-blue-400">
                     <Users className="h-3 w-3" />
-                    <span className="font-medium">{email.groupName || 'Gruppo'}</span>
+                    <span>{email.groupName || 'Gruppo'}</span>
                   </div>
                 )}
                 {email.hasRule && (
-                  <div className="text-xs font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                  <div className="text-xs text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
                     R
                   </div>
                 )}
@@ -385,7 +384,7 @@ export const EmailList = ({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',
-                      !email.read && 'font-semibold text-email-unread'
+                      !email.read && 'text-email-unread'
                     )}>
                       {email.from}
                     </p>
@@ -396,8 +395,7 @@ export const EmailList = ({
                     )}
                   </div>
                   <h3 className={cn(
-                    'text-sm sm:text-base mt-0.5 sm:mt-1 min-w-0 break-words sm:truncate',
-                    !email.read && 'font-semibold'
+                    'text-sm sm:text-base mt-0.5 sm:mt-1 min-w-0 break-words sm:truncate'
                   )}>
                     {email.subject || '(No Subject)'}
                   </h3>
@@ -406,7 +404,7 @@ export const EmailList = ({
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <div className="flex items-center gap-2">
-                        <span className="whitespace-nowrap text-xs sm:text-base font-bold">
+                        <span className="whitespace-nowrap text-xs sm:text-base">
                           {format(new Date(email.date), 'HH:mm')}
                         </span>
                         {email.starred && (
@@ -465,14 +463,14 @@ export const EmailList = ({
               </div>
               {/* Indicatori gruppo/regola in basso a sinistra */}
               <div className="absolute bottom-2 left-4 flex items-center gap-2">
-                {email.hasGroup && (
+              {email.hasGroup && (
                   <div className="flex items-center gap-1 text-xs text-blue-400">
                     <Users className="h-3 w-3" />
-                    <span className="font-medium">{email.groupName || 'Gruppo'}</span>
+                    <span>{email.groupName || 'Gruppo'}</span>
                   </div>
                 )}
                 {email.hasRule && (
-                  <div className="text-xs font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
+                  <div className="text-xs text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">
                     R
                   </div>
                 )}

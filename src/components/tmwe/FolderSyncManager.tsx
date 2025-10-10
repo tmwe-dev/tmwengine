@@ -47,6 +47,9 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
   const [testLoading, setTestLoading] = useState(false);
   const [forceReDownload, setForceReDownload] = useState(false);
   const [testAreaOpen, setTestAreaOpen] = useState(false);
+  const [testFolderName, setTestFolderName] = useState("Drafts");
+  const [emailList, setEmailList] = useState<any[]>([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
 
   // Verifica autenticazione Supabase
   useEffect(() => {
@@ -340,6 +343,41 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
     }
   };
 
+  // Carica lista email per testing
+  const handleLoadEmailList = async () => {
+    setLoadingEmails(true);
+    setEmailList([]);
+    
+    try {
+      console.log(`📥 Caricamento email da cartella: ${testFolderName}`);
+      
+      const response = await emailMessageApi.getMessages({
+        folder: testFolderName,
+        limit: 50,
+        page: 1,
+      });
+
+      const emails = response?.messages || [];
+      setEmailList(emails);
+      
+      console.log(`✓ Caricate ${emails.length} email da ${testFolderName}`);
+      toast.success(`${emails.length} email caricate da ${testFolderName}`);
+      
+    } catch (error: any) {
+      console.error('Errore caricamento email:', error);
+      toast.error(`Errore: ${error.message}`);
+    } finally {
+      setLoadingEmails(false);
+    }
+  };
+
+  // Seleziona email dalla tabella
+  const handleSelectEmail = (email: any) => {
+    const emailId = email.message_id || String(email.uid);
+    setTestMessageId(emailId);
+    toast.success(`Selezionata email: ${emailId}`);
+  };
+
   // Test singola email
   const handleTestSingleEmail = async () => {
     if (!testMessageId.trim()) {
@@ -547,9 +585,85 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 p-4 border rounded-lg bg-muted/50 mt-2">
+              {/* Seleziona Cartella e Carica Email */}
+              <div className="space-y-2">
+                <Label htmlFor="test-folder">Seleziona Cartella per Test</Label>
+                <div className="flex gap-2">
+                  <select
+                    id="test-folder"
+                    value={testFolderName}
+                    onChange={(e) => setTestFolderName(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    disabled={loadingEmails}
+                  >
+                    {folders.map((folder) => (
+                      <option key={folder.name} value={folder.name}>
+                        {folder.name} ({folder.messageCount} email)
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={handleLoadEmailList}
+                    disabled={loadingEmails}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    {loadingEmails ? "Caricamento..." : "Carica Email"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tabella Email Selezionabili */}
+              {emailList.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Seleziona Email da Testare ({emailList.length})</Label>
+                  <ScrollArea className="h-[200px] w-full rounded-md border">
+                    <div className="p-2">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 bg-muted">
+                          <tr className="border-b">
+                            <th className="p-2 text-left font-medium">ID</th>
+                            <th className="p-2 text-left font-medium">Subject</th>
+                            <th className="p-2 text-left font-medium">From</th>
+                            <th className="p-2 text-left font-medium">Data</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {emailList.map((email, index) => {
+                            const emailId = email.message_id || String(email.uid);
+                            const isSelected = testMessageId === emailId;
+                            
+                            return (
+                              <tr
+                                key={index}
+                                onClick={() => handleSelectEmail(email)}
+                                className={`cursor-pointer border-b transition-colors hover:bg-accent ${
+                                  isSelected ? 'bg-primary/20 font-semibold' : ''
+                                }`}
+                              >
+                                <td className="p-2 font-mono text-xs">{emailId}</td>
+                                <td className="p-2 truncate max-w-[200px]">
+                                  {email.subject || '(no subject)'}
+                                </td>
+                                <td className="p-2 truncate max-w-[150px]">
+                                  {email.from || ''}
+                                </td>
+                                <td className="p-2 text-xs text-muted-foreground">
+                                  {email.date ? new Date(email.date).toLocaleDateString('it-IT') : ''}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
               {/* Test Singola Email */}
               <div className="space-y-2">
-                <Label htmlFor="test-message-id">Test Download Singola Email</Label>
+                <Label htmlFor="test-message-id">Message ID Selezionato</Label>
                 <div className="flex gap-2">
                   <Input
                     id="test-message-id"

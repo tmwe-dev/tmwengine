@@ -174,41 +174,46 @@ const AIConfig = () => {
 
   const handleToggleAiConfig = async (configId, currentStatus) => {
     try {
-      // Ottieni il provider della config che stiamo attivando
-      const configToToggle = aiConfigs.find(c => c.id === configId);
+      // Ottieni la configurazione dal database per essere sicuri dei dati aggiornati
+      const { data: configToToggle, error: fetchError } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('id', configId)
+        .single();
       
-      if (!configToToggle) return;
-
-      // Debug log
-      console.log('🔍 Toggle config:', {
-        configId,
-        provider: configToToggle.provider,
-        currentStatus,
-        allConfigs: aiConfigs.map(c => ({
-          id: c.id,
-          provider: c.provider,
-          normalized: normalizeProvider(c.provider),
-          attivo: c.attivo
-        }))
-      });
+      if (fetchError || !configToToggle) {
+        toast({
+          title: "Errore",
+          description: "Configurazione non trovata",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // Se stiamo attivando, verifica che non ci sia già un'altra config attiva per lo stesso provider normalizzato
       if (!currentStatus) {
         const normalizedProvider = normalizeProvider(configToToggle.provider);
         
-        const existingActiveConfig = aiConfigs.find(
-          c => normalizeProvider(c.provider) === normalizedProvider 
-            && c.attivo 
-            && c.id !== configId
-        );
+        // Verifica nel database, non nell'array locale
+        const { data: existingActiveConfigs } = await supabase
+          .from('config_ai')
+          .select('*')
+          .eq('attivo', true)
+          .neq('id', configId);
         
-        if (existingActiveConfig) {
-          toast({
-            title: "Errore",
-            description: `Esiste già una configurazione attiva per ${normalizedProvider}. Disattivala prima di attivarne un'altra.`,
-            variant: "destructive",
-          });
-          return;
+        if (existingActiveConfigs && existingActiveConfigs.length > 0) {
+          const conflictConfig = existingActiveConfigs.find(
+            c => normalizeProvider(c.provider) === normalizedProvider
+          );
+          
+          if (conflictConfig) {
+            toast({
+              title: "Errore",
+              description: `Esiste già una configurazione ${conflictConfig.modello} attiva per ${normalizedProvider}. Disattivala prima di attivarne un'altra.`,
+              variant: "destructive",
+            });
+            return;
+          }
         }
       }
 

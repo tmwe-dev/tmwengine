@@ -60,7 +60,7 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
   const startTime = useRef<number>(0);
 
   // Sync single folder function (replicates useEmailSync logic)
-  const syncSingleFolder = async (folderName: string, totalEmailCount: number): Promise<number> => {
+  const syncSingleFolder = useCallback(async (folderName: string, totalEmailCount: number): Promise<number> => {
     console.log(`📂 Starting sync for folder: ${folderName} (${totalEmailCount} emails)`);
     
     const userEmail = sessionStorage.getItem('tmwe_user_email');
@@ -168,7 +168,7 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
     }
 
     return downloadedCount;
-  };
+  }, []);
 
   const updateProgress = useCallback((
     currentFolderName: string,
@@ -351,7 +351,7 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
       setIsSyncing(false);
       setCurrentFolder(null);
     }
-  }, [isSyncing, excludedFolders, onProgress, onFolderComplete, updateProgress, syncSingleFolder]);
+  }, [isSyncing, excludedFolders, onProgress, onFolderComplete, updateProgress]);
 
   const stopMultiFolderSync = useCallback(() => {
     console.log('🛑 Stopping multi-folder sync...');

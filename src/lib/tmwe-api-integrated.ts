@@ -284,14 +284,31 @@ export const emailSyncApi = {
 
 // Email Message APIs
 export const emailMessageApi = {
-  // Get REAL total email count by iterating through all pages
+  // Get REAL total email count - FIXED VERSION
   getTotalEmailCount: async (params: { folder?: string }) => {
     const folder = params.folder || 'INBOX';
-    let totalCount = 0;
-    let page = 1;
     const batchSize = 50;
     
-    console.log('🔢 [getTotalEmailCount] Inizio conteggio reale per:', folder);
+    console.log('🔢 [getTotalEmailCount] Inizio conteggio per:', folder);
+    
+    // FIRST: Try to get total from API response
+    const firstResponse = await fetchApi('/email_message', { 
+      handler: 'get_messages', 
+      folder, 
+      limit: batchSize, 
+      page: 1 
+    });
+    
+    // If API provides 'total', use it directly (GROUND TRUTH)
+    if (firstResponse?.total && typeof firstResponse.total === 'number') {
+      console.log(`✅ [getTotalEmailCount] API fornisce total: ${firstResponse.total} email`);
+      return firstResponse.total;
+    }
+    
+    // FALLBACK: Count manually by fetching all pages until empty batch
+    console.log('📊 [getTotalEmailCount] API non fornisce total, conto manualmente...');
+    let totalCount = 0;
+    let page = 1;
     
     while (true) {
       const response = await fetchApi('/email_message', { 
@@ -302,30 +319,29 @@ export const emailMessageApi = {
       });
       
       const messages = response?.messages || [];
+      
+      // STOP ONLY on completely empty batch (0 emails)
       if (messages.length === 0) {
-        console.log(`🛑 [getTotalEmailCount] Batch ${page} vuoto, stop`);
+        console.log(`🛑 [getTotalEmailCount] Batch ${page} completamente vuoto (0 email), STOP`);
         break;
       }
       
       totalCount += messages.length;
       console.log(`📊 [getTotalEmailCount] Batch ${page}: +${messages.length} email (totale: ${totalCount})`);
       
-      // Se il batch non è completo, abbiamo finito
-      if (messages.length < batchSize) {
-        console.log(`✅ [getTotalEmailCount] Ultimo batch parziale (${messages.length}/${batchSize}), stop`);
-        break;
-      }
-      
       page++;
       
-      // Safety: max 200 pagine (10000 email)
-      if (page > 200) {
-        console.warn('⚠️ [getTotalEmailCount] Limite safety raggiunto (200 pagine)');
+      // Safety: max 1000 pagine (50000 email)
+      if (page > 1000) {
+        console.warn('⚠️ [getTotalEmailCount] Limite safety raggiunto (1000 pagine = 50k email)');
         break;
       }
+      
+      // Small pause to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    console.log(`🎯 [getTotalEmailCount] Totale REALE: ${totalCount} email`);
+    console.log(`🎯 [getTotalEmailCount] Totale contato: ${totalCount} email`);
     return totalCount;
   },
 

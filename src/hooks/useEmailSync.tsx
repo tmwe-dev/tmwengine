@@ -49,12 +49,14 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
   }, []);
 
   const startSync = useCallback(async () => {
+    console.log('🚀 [Sync] startSync called, resetting shouldStop flag');
+    setShouldStop(false); // Reset flag BEFORE starting
+    
     try {
       setIsSyncing(true);
       setSyncError(null);
       setSyncedCount(0);
       setAllEmails([]);
-      setShouldStop(false);
 
       const userEmail = sessionStorage.getItem('tmwe_user_email');
       if (!userEmail) {
@@ -86,7 +88,6 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
       const totalBatches = Math.ceil(totalEmailCount / MICRO_BATCH_SIZE);
       let currentBatch = 0;
       let downloadedCount = 0;
-      let emptyBatchCount = 0;
 
       console.log(`📦 [Sync] Inizio download: ${totalBatches} micro-batch da ${MICRO_BATCH_SIZE} email`);
 
@@ -133,22 +134,19 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
 
         const messages = response?.messages || [];
         
+        // Check manual stop flag again after fetching
+        if (shouldStop) {
+          console.log('🛑 [Sync] Interruzione manuale dopo fetch batch');
+          setSyncError('Sincronizzazione interrotta');
+          break;
+        }
+        
+        // If batch is empty, log and continue (don't stop!)
         if (messages.length === 0) {
-          emptyBatchCount++;
-          console.log(`⚠️ [Sync] Batch ${currentBatch} vuoto (${emptyBatchCount} consecutivi)`);
-          
-          // Stop dopo 2 batch vuoti consecutivi
-          if (emptyBatchCount >= 2) {
-            console.log('🛑 [Sync] 2 batch vuoti consecutivi, interruzione download');
-            break;
-          }
-          
-          // Pause before next batch
+          console.log(`⚠️ [Sync] Batch ${currentBatch} vuoto, continuo comunque...`);
           await new Promise(resolve => setTimeout(resolve, PAUSE_MS));
           continue;
         }
-
-        emptyBatchCount = 0; // Reset se troviamo email
 
         // Filter only new emails
         const newMessages = messages.filter((msg: any) => {

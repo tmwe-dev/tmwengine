@@ -585,7 +585,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <ScrollArea className="max-h-[500px] mt-2">
+              <div className="mt-2 max-h-[70vh] overflow-auto">
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
               {/* Seleziona Cartella e Carica Email */}
               <div className="space-y-2">
@@ -719,7 +719,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                 </div>
               )}
                 </div>
-              </ScrollArea>
+              </div>
             </CollapsibleContent>
           </Collapsible>
 

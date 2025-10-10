@@ -96,6 +96,18 @@ const AIConfig = () => {
     }
   };
 
+  const normalizeProvider = (provider: string): string => {
+    const providerMap: Record<string, string> = {
+      'lovable': 'google',
+      'gemini': 'google',
+      'chatgpt': 'openai',
+      'gpt': 'openai',
+      'claude': 'anthropic'
+    };
+    
+    return providerMap[provider.toLowerCase()] || provider.toLowerCase();
+  };
+
   const toggleShowSecret = (field) => {
     setShowSecrets(prev => ({ ...prev, [field]: !prev[field] }));
   };
@@ -167,16 +179,33 @@ const AIConfig = () => {
       
       if (!configToToggle) return;
 
-      // Se stiamo attivando, verifica che non ci sia già un'altra config attiva per lo stesso provider
+      // Debug log
+      console.log('🔍 Toggle config:', {
+        configId,
+        provider: configToToggle.provider,
+        currentStatus,
+        allConfigs: aiConfigs.map(c => ({
+          id: c.id,
+          provider: c.provider,
+          normalized: normalizeProvider(c.provider),
+          attivo: c.attivo
+        }))
+      });
+
+      // Se stiamo attivando, verifica che non ci sia già un'altra config attiva per lo stesso provider normalizzato
       if (!currentStatus) {
+        const normalizedProvider = normalizeProvider(configToToggle.provider);
+        
         const existingActiveConfig = aiConfigs.find(
-          c => c.provider === configToToggle.provider && c.attivo && c.id !== configId
+          c => normalizeProvider(c.provider) === normalizedProvider 
+            && c.attivo 
+            && c.id !== configId
         );
         
         if (existingActiveConfig) {
           toast({
             title: "Errore",
-            description: `Esiste già una configurazione attiva per ${configToToggle.provider}. Disattivala prima di attivarne un'altra.`,
+            description: `Esiste già una configurazione attiva per ${normalizedProvider}. Disattivala prima di attivarne un'altra.`,
             variant: "destructive",
           });
           return;

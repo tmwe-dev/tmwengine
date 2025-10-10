@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -47,6 +48,8 @@ const ChatLaboratory = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [aiConfigs, setAiConfigs] = useState<any[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -58,6 +61,7 @@ const ChatLaboratory = () => {
 
   useEffect(() => {
     initializeParticipants();
+    loadAIConfigurations();
   }, []);
 
   useEffect(() => {
@@ -75,6 +79,28 @@ const ChatLaboratory = () => {
       };
     }
   }, [currentConversationId]);
+
+  const loadAIConfigurations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('config_ai')
+        .select('*')
+        .eq('attivo', true)
+        .order('provider', { ascending: true });
+
+      if (error) throw error;
+      
+      setAiConfigs(data || []);
+      
+      // Set active config as default selection
+      const activeConfig = data?.find(c => c.attivo);
+      if (activeConfig) {
+        setSelectedConfigId(activeConfig.id);
+      }
+    } catch (error) {
+      console.error('Error loading AI configurations:', error);
+    }
+  };
 
   const initializeParticipants = async () => {
     const defaultParticipants: Participant[] = [
@@ -188,7 +214,8 @@ const ChatLaboratory = () => {
         body: { 
           conversationId,
           userMessage: currentPrompt,
-          participants: activeAIParticipants
+          participants: activeAIParticipants,
+          selectedConfigId: selectedConfigId
         }
       });
 
@@ -249,6 +276,27 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {selectedConfigId && aiConfigs.length > 0 && (
+                <Select value={selectedConfigId || ''} onValueChange={setSelectedConfigId}>
+                  <SelectTrigger className="w-[200px] h-9">
+                    <Cpu className="h-4 w-4 mr-2" />
+                    <span className="text-sm capitalize">
+                      {aiConfigs.find(c => c.id === selectedConfigId)?.provider || 'Seleziona AI'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aiConfigs.map((config) => (
+                      <SelectItem key={config.id} value={config.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="capitalize">{config.provider}</span>
+                          <span className="text-muted-foreground text-xs">-</span>
+                          <span className="text-xs text-muted-foreground">{config.modello}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <LaboratoryPromptManager />
               <ParticipantSelector
                 participants={participants}

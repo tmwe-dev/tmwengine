@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -14,6 +14,7 @@ import { ImageGenerator } from '@/components/chat/ImageGenerator';
 import { VoiceRecorder } from '@/components/chat/VoiceRecorder';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 
 interface Message {
   id: string;
@@ -48,6 +49,7 @@ const ChatLaboratory = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'classic' | 'tabs'>('classic');
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -304,6 +306,15 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              <Button
+                onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+                variant="outline"
+                size={isMobile ? "icon" : "sm"}
+                className={isMobile ? "" : "gap-2"}
+              >
+                {viewMode === 'classic' ? <Layers className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
+                {!isMobile && (viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica')}
+              </Button>
               <LaboratoryPromptManager />
               <ParticipantSelector
                 participants={participants}
@@ -315,39 +326,45 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Messaggi */}
-      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4">
-        <div className="container mx-auto max-w-4xl px-2 md:px-0">
-          {messages.length === 0 && (
-            <Card className="border-dashed">
-              <CardContent className="p-12 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
-                    <MessageSquare className="h-12 w-12 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Inizia una Discussione</h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Gli agenti AI selezionati risponderanno in sequenza, ognuno con la propria prospettiva
-                    </p>
-                  </div>
+      <div className="flex-1 overflow-hidden">
+        {viewMode === 'classic' ? (
+          <div className="h-full overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4">
+            <div className="container mx-auto max-w-4xl px-2 md:px-0">
+              {messages.length === 0 && (
+                <Card className="border-dashed">
+                  <CardContent className="p-12 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
+                        <MessageSquare className="h-12 w-12 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Inizia una Discussione</h3>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          Gli agenti AI selezionati risponderanno in sequenza, ognuno con la propria prospettiva
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {messages.map((message) => (
+                <MultiAgentMessage key={message.id} message={message} />
+              ))}
+
+              {isLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                  <span className="text-sm">Gli agenti stanno elaborando...</span>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {messages.map((message) => (
-            <MultiAgentMessage key={message.id} message={message} />
-          ))}
-
-          {isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-              <span className="text-sm">Gli agenti stanno elaborando...</span>
+              <div ref={messagesEndRef} />
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
+          </div>
+        ) : (
+          <MessageTabsView messages={messages} />
+        )}
       </div>
 
       {/* Input Area */}

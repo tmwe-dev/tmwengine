@@ -28,7 +28,10 @@ import {
   Settings as SettingsIcon,
   User,
   Phone,
-  Info
+  Info,
+  CheckCircle,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 const Settings = () => {
@@ -41,6 +44,7 @@ const Settings = () => {
 
 
   const [aiConfigs, setAiConfigs] = useState([]);
+  const [testingConfigs, setTestingConfigs] = useState({});
   const [newAiConfig, setNewAiConfig] = useState({
     provider: '',
     modello: '',
@@ -117,7 +121,10 @@ const Settings = () => {
           provider: config.provider,
           modello: config.modello,
           apiKey: config.api_key,
-          attivo: config.attivo
+          attivo: config.attivo,
+          lastTestAt: config.last_test_at,
+          lastTestStatus: config.last_test_status,
+          lastTestError: config.last_test_error
         })));
       }
 
@@ -286,6 +293,42 @@ const Settings = () => {
         description: "Impossibile eliminare la configurazione",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleTestConnection = async (configId) => {
+    setTestingConfigs(prev => ({ ...prev, [configId]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ai-connection', {
+        body: { configId }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "✅ Connessione OK",
+          description: `Latenza: ${data.latency}ms`,
+        });
+      } else {
+        toast({
+          title: "❌ Test Fallito",
+          description: data.error || 'Errore sconosciuto',
+          variant: "destructive",
+        });
+      }
+
+      await loadConfigurations();
+    } catch (error) {
+      console.error('Errore test connessione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eseguire il test",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConfigs(prev => ({ ...prev, [configId]: false }));
     }
   };
 
@@ -810,14 +853,44 @@ const Settings = () => {
                               {config.attivo && (
                                 <Badge variant="default" className="text-xs">Attivo</Badge>
                               )}
+                              {config.lastTestStatus === 'success' && (
+                                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Testato
+                                </Badge>
+                              )}
+                              {config.lastTestStatus === 'failed' && (
+                                <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20 text-xs">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Fallito
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground">{config.modello}</p>
+                            {config.lastTestAt && (
+                              <p className="text-xs text-muted-foreground">
+                                Ultimo test: {new Date(config.lastTestAt).toLocaleString('it-IT')}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={config.attivo}
                               onCheckedChange={() => handleToggleAiConfig(config.id, config.attivo)}
                             />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleTestConnection(config.id)}
+                              disabled={testingConfigs[config.id]}
+                              title="Testa connessione"
+                            >
+                              {testingConfigs[config.id] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

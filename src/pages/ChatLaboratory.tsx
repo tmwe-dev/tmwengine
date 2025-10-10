@@ -276,31 +276,34 @@ const ChatLaboratory = () => {
     <div className="flex h-screen flex-col bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
       {/* Header */}
       <div className="border-b border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-3 md:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
               <Button
                 onClick={() => navigate('/chat')}
                 variant="ghost"
                 size="icon"
+                className="shrink-0"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500">
-                  <Brain className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
+                  <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
                     Chat Laboratory
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Discussione Multi-Agente AI
-                  </p>
+                  {!isMobile && (
+                    <p className="text-sm text-muted-foreground">
+                      Discussione Multi-Agente AI
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <LaboratoryPromptManager />
               <ParticipantSelector
                 participants={participants}
@@ -312,8 +315,8 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Messaggi */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="container mx-auto max-w-4xl">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4">
+        <div className="container mx-auto max-w-4xl px-2 md:px-0">
           {messages.length === 0 && (
             <Card className="border-dashed">
               <CardContent className="p-12 text-center">
@@ -348,11 +351,11 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-4">
+      <div className="border-t border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-2 md:p-4">
         <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-2 md:space-y-3">
             {/* File Uploads & Image Generator */}
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2 justify-center md:justify-start">
               <FileUploader
                 onFilesUploaded={setUploadedFiles}
               />
@@ -369,8 +372,8 @@ const ChatLaboratory = () => {
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"
-                className="min-h-[100px] resize-none"
+                placeholder={isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"}
+                className="min-h-[80px] md:min-h-[100px] resize-none text-sm md:text-base"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -382,9 +385,9 @@ const ChatLaboratory = () => {
                 type="submit" 
                 size="icon"
                 disabled={isLoading || !prompt.trim()}
-                className="h-auto px-4"
+                className="h-auto px-3 md:px-4 shrink-0"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </div>
           </form>

@@ -189,7 +189,10 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
                     {onOpenSyncMonitor && (
                       <Button 
-                        onClick={onOpenSyncMonitor}
+                        onClick={() => {
+                          console.log('🔥 DOWNLOAD BUTTON CLICKED!');
+                          onOpenSyncMonitor();
+                        }}
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"

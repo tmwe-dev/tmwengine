@@ -545,6 +545,8 @@ const EmailDashboard = () => {
     setReplyTo(undefined);
   };
 
+  console.log('🔍 Current syncMonitorOpen state:', syncMonitorOpen);
+
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
       <EmailHeader
@@ -565,7 +567,10 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
-        onOpenSyncMonitor={() => setSyncMonitorOpen(true)}
+        onOpenSyncMonitor={() => {
+          console.log('🚀 Opening sync monitor!');
+          setSyncMonitorOpen(true);
+        }}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}

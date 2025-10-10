@@ -934,14 +934,17 @@ const Settings = () => {
                               <Button 
                                 onClick={() => setShowApiKeyDialog(false)} 
                                 className="w-full"
-                            >
-                              Salva
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                              >
+                                Salva
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
+                  </div>
 
-                      <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                         <Switch
                           id="newAiAttivo"
                           checked={newAiConfig.attivo}

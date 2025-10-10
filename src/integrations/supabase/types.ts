@@ -908,24 +908,33 @@ export type Database = {
       email_sync_preferences: {
         Row: {
           created_at: string | null
+          date_filter_months: number | null
+          default_sync_mode: string | null
           excluded_folders: Json | null
           id: string
+          included_folders: Json | null
           last_sync_at: string | null
           updated_at: string | null
           user_email: string
         }
         Insert: {
           created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
           excluded_folders?: Json | null
           id?: string
+          included_folders?: Json | null
           last_sync_at?: string | null
           updated_at?: string | null
           user_email: string
         }
         Update: {
           created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
           excluded_folders?: Json | null
           id?: string
+          included_folders?: Json | null
           last_sync_at?: string | null
           updated_at?: string | null
           user_email?: string

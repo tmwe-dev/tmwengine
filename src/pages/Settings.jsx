@@ -938,6 +938,15 @@ const Settings = () => {
                     </Select>
                   </div>
 
+                  {newAiConfig.provider === 'lovable' && (
+                    <Alert className="mb-3">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Lovable AI Gateway supporta solo modelli OpenAI e Google. Per Claude, usa il provider Anthropic diretto.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="space-y-1">
                     <Label htmlFor="newAiModello" className="text-sm">Modello</Label>
                     <div className="flex items-center gap-2">

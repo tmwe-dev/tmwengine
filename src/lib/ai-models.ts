@@ -47,7 +47,6 @@ export const AI_PROVIDERS: Record<string, AIProvider> = {
       { value: 'openai/gpt-5', label: 'GPT-5', free: false },
       { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', free: false },
       { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano', free: false },
-      { value: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5', free: false },
     ],
   },
   mistral: {

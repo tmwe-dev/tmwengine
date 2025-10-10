@@ -944,16 +944,17 @@ const Settings = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                        <Switch
-                          id="newAiAttivo"
-                          checked={newAiConfig.attivo}
-                          onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
-                        />
-                        {newAiConfig.attivo && (
-                          <span className="text-xs text-success">Servizio attivo</span>
-                        )}
-                      </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="newAiAttivo" className="text-sm">Attiva Servizio</Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="newAiAttivo"
+                        checked={newAiConfig.attivo}
+                        onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
+                      />
+                      {newAiConfig.attivo && (
+                        <span className="text-xs text-success">Servizio attivo</span>
+                      )}
                     </div>
                   </div>
                 </div>

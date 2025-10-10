@@ -18,12 +18,21 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     setSyncedCount(0);
     setSyncError(null);
 
+    // Recupera user_email da sessionStorage
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) {
+      toast.error('Utente non autenticato. Effettua login TMWE.');
+      setIsSyncing(false);
+      return;
+    }
+
     try {
       // 1. Recupera tutti gli ID delle email già presenti nel database
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
-        .eq('cartella', folder);
+        .eq('cartella', folder)
+        .eq('user_email', userEmail);
 
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       const alreadyInDb = existingIds.size;
@@ -105,6 +114,7 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
                   flags: email.flags || [],
                   attachments: email.attachments || [],
                   provider_id: '00000000-0000-0000-0000-000000000000',
+                  user_email: userEmail,
                 };
               });
 

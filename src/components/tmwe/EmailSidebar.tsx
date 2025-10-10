@@ -134,9 +134,14 @@ export const EmailSidebar = ({
   const systemFolders = folders.filter((f: any) => 
     systemFolderNames.includes(f.name)
   );
-  const customFolders = folders.filter((f: any) => 
-    !systemFolderNames.includes(f.name)
-  );
+  const customFolders = folders
+    .filter((f: any) => !systemFolderNames.includes(f.name))
+    .sort((a: any, b: any) => {
+      // Sort subfolders alphabetically (case insensitive)
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
   const renderFolder = (folder: any) => {
     const Icon = getFolderIcon(folder.name);
@@ -192,9 +197,7 @@ export const EmailSidebar = ({
         {!isCollapsed && unseenCount > 0 && (
           <Badge variant="secondary" className={cn(
             "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-            selectedFolder === folder.name 
-              ? "text-purple-300 border-purple-300" 
-              : "text-white border-white"
+            "text-muted-foreground border-muted-foreground"
           )}>
             {unseenCount}
           </Badge>
@@ -236,7 +239,7 @@ export const EmailSidebar = ({
               {unseenCount > 0 && (
                 <Badge 
                   variant="secondary" 
-                  className="ml-auto bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs px-1.5 py-0"
+                  className="ml-auto bg-purple-500/20 text-muted-foreground border-muted-foreground text-xs px-1.5 py-0"
                 >
                   {unseenCount}
                 </Badge>

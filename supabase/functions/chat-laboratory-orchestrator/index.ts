@@ -227,7 +227,7 @@ REGOLE CRITICHE:
               content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}\n\nRispondi brevemente (max 60 parole):` 
             }
           ],
-          max_completion_tokens: 500,
+          max_completion_tokens: 150, // ✅ Ridotto da 500 a 150 token (≈ 112 parole)
         }),
       });
 
@@ -255,7 +255,7 @@ ${visibleHistory}
 Nuovo messaggio dell'utente:
 ${userMessage}
 
-Rispondi con un messaggio breve e naturale (max 150 parole):`;
+Rispondi brevemente (max 60 parole):`;
 
       const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -266,7 +266,7 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: fullPrompt }],
-          max_tokens: 500,
+          max_tokens: 150, // ✅ Ridotto da 500 a 150 token
         }),
       });
 

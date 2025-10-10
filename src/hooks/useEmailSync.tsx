@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface UseEmailSyncProps {
   folder: string;
+  totalEmailCount: number;
 }
 
 export interface DownloadStatus {
@@ -25,7 +26,7 @@ export interface EmailSyncResult {
   stopSync: () => void;
 }
 
-export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => {
+export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): EmailSyncResult => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncedCount, setSyncedCount] = useState(0);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -61,12 +62,9 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
       }
 
       console.log('🚀 [Sync] Inizio sincronizzazione MICRO-BATCH (5 email + 2s pausa)');
+      console.log(`📊 [Sync] Totale email sul server: ${totalEmailCount}`);
 
-      // STEP 1: Get real total count from server
-      const realTotal = await emailMessageApi.getTotalEmailCount({ folder });
-      console.log(`📊 [Sync] Totale email sul server: ${realTotal}`);
-
-      if (realTotal === 0) {
+      if (totalEmailCount === 0) {
         console.log('✅ [Sync] Nessuna email sul server');
         setIsSyncing(false);
         return;
@@ -85,7 +83,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
       // STEP 3: Download emails in MICRO-BATCHES (5 email)
       const MICRO_BATCH_SIZE = 5;
       const PAUSE_MS = 2000;
-      const totalBatches = Math.ceil(realTotal / MICRO_BATCH_SIZE);
+      const totalBatches = Math.ceil(totalEmailCount / MICRO_BATCH_SIZE);
       let currentBatch = 0;
       let downloadedCount = 0;
       let emptyBatchCount = 0;
@@ -107,7 +105,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
           currentBatch,
           totalBatches,
           downloadedCount,
-          totalOnServer: realTotal,
+          totalOnServer: totalEmailCount,
           isComplete: false,
         });
 
@@ -198,7 +196,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
           currentBatch,
           totalBatches,
           downloadedCount,
-          totalOnServer: realTotal,
+          totalOnServer: totalEmailCount,
           isComplete: currentBatch === totalBatches,
         });
 
@@ -213,7 +211,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
         currentBatch: Math.min(currentBatch, totalBatches),
         totalBatches,
         downloadedCount,
-        totalOnServer: realTotal,
+        totalOnServer: totalEmailCount,
         isComplete: true,
       });
 
@@ -230,7 +228,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
       setIsSyncing(false);
       setShouldStop(false);
     }
-  }, [folder, shouldStop]);
+  }, [folder, totalEmailCount, shouldStop]);
 
   return {
     isSyncing,

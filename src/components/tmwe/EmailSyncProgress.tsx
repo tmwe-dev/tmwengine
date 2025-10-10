@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Database, Download, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Database, Download, CheckCircle2, XCircle, Clock, Minus } from 'lucide-react';
 import { DownloadStatus } from '@/hooks/useEmailSync';
 import { useState, useEffect } from 'react';
 
@@ -11,9 +11,10 @@ interface EmailSyncProgressProps {
   status: DownloadStatus | null;
   isSyncing: boolean;
   onStop?: () => void;
+  onMinimize?: () => void;
 }
 
-export const EmailSyncProgress = ({ open, onOpenChange, status, isSyncing, onStop }: EmailSyncProgressProps) => {
+export const EmailSyncProgress = ({ open, onOpenChange, status, isSyncing, onStop, onMinimize }: EmailSyncProgressProps) => {
   const [countdown, setCountdown] = useState(2);
   const [emailsPerSecond, setEmailsPerSecond] = useState(0);
   const [startTime] = useState(Date.now());
@@ -130,18 +131,31 @@ export const EmailSyncProgress = ({ open, onOpenChange, status, isSyncing, onSto
             </div>
           ) : null}
 
-          {/* Stop Button */}
-          {isSyncing && onStop && (
-            <Button 
-              onClick={onStop}
-              variant="destructive"
-              className="w-full"
-              size="sm"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Interrompi sincronizzazione
-            </Button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {onMinimize && (
+              <Button 
+                onClick={onMinimize}
+                variant="outline"
+                className="flex-1"
+                size="sm"
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Riduci a icona
+              </Button>
+            )}
+            {isSyncing && onStop && (
+              <Button 
+                onClick={onStop}
+                variant="destructive"
+                className="flex-1"
+                size="sm"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Interrompi
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

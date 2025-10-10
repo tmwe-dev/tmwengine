@@ -44,6 +44,7 @@ const EmailDashboard = () => {
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [showSyncProgress, setShowSyncProgress] = useState(false);
+  const [isSyncMinimized, setIsSyncMinimized] = useState(false);
   const queryClient = useQueryClient();
 
   // Query per email condivise
@@ -181,6 +182,7 @@ const EmailDashboard = () => {
     stopSync,
   } = useEmailSync({
     folder: selectedFolder,
+    totalEmailCount,
   });
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
@@ -217,6 +219,7 @@ const EmailDashboard = () => {
   useEffect(() => {
     if (isSyncing) {
       setShowSyncProgress(true);
+      setIsSyncMinimized(false);
     }
   }, [isSyncing]);
 
@@ -377,7 +380,18 @@ const EmailDashboard = () => {
   const handleSync = async () => {
     toast.info('Avvio sincronizzazione...');
     setShowSyncProgress(true);
+    setIsSyncMinimized(false);
     await startSync();
+  };
+
+  const handleMinimizeSync = () => {
+    setIsSyncMinimized(true);
+    setShowSyncProgress(false);
+  };
+
+  const handleRestoreSync = () => {
+    setIsSyncMinimized(false);
+    setShowSyncProgress(true);
   };
 
   const handleDelete = () => {
@@ -478,25 +492,43 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
-      <EmailHeader
-        onSearch={setSearchQuery} 
-        onCompose={() => setComposeOpen(true)} 
-        onSync={handleSync}
-        onSyncSmart={startSync}
-        isSyncingSmart={isSyncing}
-        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
-        missingEmailCount={missingEmailCount}
-        onMenuClick={() => setSidebarOpen(true)}
-        isMobile={isMobile}
-        dbEmailCount={isMobile ? emailCount : undefined}
-        isHeaderCollapsed={isHeaderCollapsed}
-        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-        onCloseEmail={handleBackToList}
-        onPreviousEmail={handlePreviousEmail}
-        onNextEmail={handleNextEmail}
-        hasPrevious={hasPreviousEmail()}
-        hasNext={hasNextEmail()}
-      />
+      <div className="relative">
+        <EmailHeader
+          onSearch={setSearchQuery} 
+          onCompose={() => setComposeOpen(true)} 
+          onSync={handleSync}
+          onSyncSmart={startSync}
+          isSyncingSmart={isSyncing}
+          syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
+          missingEmailCount={missingEmailCount}
+          onMenuClick={() => setSidebarOpen(true)}
+          isMobile={isMobile}
+          dbEmailCount={isMobile ? emailCount : undefined}
+          isHeaderCollapsed={isHeaderCollapsed}
+          onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+          onCloseEmail={handleBackToList}
+          onPreviousEmail={handlePreviousEmail}
+          onNextEmail={handleNextEmail}
+          hasPrevious={hasPreviousEmail()}
+          hasNext={hasNextEmail()}
+        />
+        
+        {/* Minimized Sync Badge */}
+        {isSyncMinimized && isSyncing && (
+          <Button
+            onClick={handleRestoreSync}
+            variant="default"
+            size="sm"
+            className="absolute top-2 right-4 z-50 animate-pulse shadow-lg"
+          >
+            <Database className="h-4 w-4 mr-2 animate-spin" />
+            Sync in corso: {downloadStatus?.currentBatch}/{downloadStatus?.totalBatches}
+            <Badge variant="secondary" className="ml-2">
+              {downloadStatus?.downloadedCount}
+            </Badge>
+          </Button>
+        )}
+      </div>
 
       {/* Tab personali/aziendali */}
       {!isMobile && (
@@ -725,11 +757,12 @@ const EmailDashboard = () => {
       />
 
       <EmailSyncProgress 
-        open={showSyncProgress && isSyncing} 
+        open={showSyncProgress && !isSyncMinimized} 
         onOpenChange={setShowSyncProgress}
         status={downloadStatus}
         isSyncing={isSyncing}
         onStop={stopSync}
+        onMinimize={handleMinimizeSync}
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>

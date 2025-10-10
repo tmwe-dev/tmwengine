@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface SenderStats {
   sender: string;
@@ -34,6 +35,7 @@ interface SenderStats {
 
 export default function EmailSenders() {
   const navigate = useNavigate();
+  const { userId, userEmail } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSenders, setSelectedSenders] = useState<string[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
@@ -60,12 +62,15 @@ export default function EmailSenders() {
 
   // Fetch sender statistics
   const { data: senderStats, isLoading: loadingStats } = useQuery({
-    queryKey: ['sender-stats', searchQuery, sortBy, sortOrder],
+    queryKey: ['sender-stats', searchQuery, sortBy, sortOrder, userEmail],
     queryFn: async () => {
-      // Leggi tutte le email dal backup in Supabase
+      if (!userEmail) return [];
+      
+      // Leggi SOLO le email dell'utente loggato
       const { data: emails, error } = await supabase
         .from('email_messages')
-        .select('from_email');
+        .select('from_email')
+        .eq('user_email', userEmail);
 
       if (error) throw error;
 
@@ -76,12 +81,12 @@ export default function EmailSenders() {
         counts[sender] = (counts[sender] || 0) + 1;
       });
 
-      // Get groups for each sender
+      // Get groups for each sender (RLS filtra automaticamente per user_id)
       const { data: rules } = await supabase
         .from('email_sender_rules')
         .select('sender_email, group_id, email_sender_groups(id, nome_gruppo, colore)');
 
-      // Get actions for each sender
+      // Get actions for each sender (RLS filtra automaticamente per user_id)
       const { data: actions } = await supabase
         .from('email_sender_actions')
         .select('sender_email, action_type, action_params');
@@ -184,6 +189,9 @@ export default function EmailSenders() {
   // Assign senders to group mutation
   const assignToGroupMutation = useMutation({
     mutationFn: async ({ groupId, senders }: { groupId: string; senders: string[] }) => {
+      if (!userId) throw new Error('User non autenticato');
+      
+      // Elimina solo le regole dell'utente corrente
       await supabase
         .from('email_sender_rules')
         .delete()
@@ -192,6 +200,7 @@ export default function EmailSenders() {
       const rules = senders.map(sender => ({
         group_id: groupId,
         sender_email: sender,
+        user_id: userId, // Aggiunto user_id
       }));
 
       const { error } = await supabase
@@ -213,6 +222,9 @@ export default function EmailSenders() {
   // Assign action to senders mutation
   const assignActionMutation = useMutation({
     mutationFn: async ({ actionType, senders }: { actionType: 'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward'; senders: string[] }) => {
+      if (!userId) throw new Error('User non autenticato');
+      
+      // Elimina solo le azioni dell'utente corrente
       await supabase
         .from('email_sender_actions')
         .delete()
@@ -222,6 +234,7 @@ export default function EmailSenders() {
         sender_email: sender,
         action_type: actionType,
         action_params: {},
+        user_id: userId, // Aggiunto user_id
       }));
 
       const { error } = await supabase
@@ -285,14 +298,15 @@ export default function EmailSenders() {
 
   // Fetch email timeline for current chart sender
   const { data: emailTimelineAll, isLoading: loadingTimeline } = useQuery({
-    queryKey: ['email-timeline', currentChartSender],
+    queryKey: ['email-timeline', currentChartSender, userEmail],
     queryFn: async () => {
-      if (!currentChartSender) return [];
+      if (!currentChartSender || !userEmail) return [];
 
       const { data, error } = await supabase
         .from('email_messages')
         .select('data_ricezione')
         .eq('from_email', currentChartSender)
+        .eq('user_email', userEmail)
         .order('data_ricezione', { ascending: true });
 
       if (error) throw error;
@@ -346,10 +360,11 @@ export default function EmailSenders() {
   };
 
   const handleAssignGroup = async () => {
-    if (!selectedGroupId || !currentChartSender) return;
+    if (!selectedGroupId || !currentChartSender || !userId) return;
     
     setConfirmChartGroupAssignment(false);
     
+    // Elimina solo le regole dell'utente corrente
     await supabase
       .from('email_sender_rules')
       .delete()
@@ -360,6 +375,7 @@ export default function EmailSenders() {
       .insert({
         group_id: selectedGroupId,
         sender_email: currentChartSender,
+        user_id: userId, // Aggiunto user_id
       });
 
     if (!error) {
@@ -377,10 +393,11 @@ export default function EmailSenders() {
   };
 
   const handleAssignAction = async () => {
-    if (!selectedActionType || !currentChartSender) return;
+    if (!selectedActionType || !currentChartSender || !userId) return;
     
     setConfirmChartActionAssignment(false);
     
+    // Elimina solo le azioni dell'utente corrente
     await supabase
       .from('email_sender_actions')
       .delete()
@@ -392,6 +409,7 @@ export default function EmailSenders() {
         sender_email: currentChartSender,
         action_type: selectedActionType,
         action_params: {},
+        user_id: userId, // Aggiunto user_id
       });
 
     if (!error) {

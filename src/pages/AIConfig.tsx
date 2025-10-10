@@ -174,59 +174,6 @@ const AIConfig = () => {
 
   const handleToggleAiConfig = async (configId, currentStatus) => {
     try {
-      // Ottieni la configurazione dal database per essere sicuri dei dati aggiornati
-      const { data: configToToggle, error: fetchError } = await supabase
-        .from('config_ai')
-        .select('*')
-        .eq('id', configId)
-        .single();
-      
-      if (fetchError || !configToToggle) {
-        toast({
-          title: "Errore",
-          description: "Configurazione non trovata",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Se stiamo attivando, DISATTIVA automaticamente le altre config dello stesso provider normalizzato
-      if (!currentStatus) {
-        const normalizedProvider = normalizeProvider(configToToggle.provider);
-        
-        // Ottieni tutte le altre config attive
-        const { data: otherActiveConfigs } = await supabase
-          .from('config_ai')
-          .select('*')
-          .eq('attivo', true)
-          .neq('id', configId);
-        
-        // Disattiva quelle dello stesso provider normalizzato
-        if (otherActiveConfigs && otherActiveConfigs.length > 0) {
-          let deactivatedModels: string[] = [];
-          
-          for (const otherConfig of otherActiveConfigs) {
-            if (normalizeProvider(otherConfig.provider) === normalizedProvider) {
-              await supabase
-                .from('config_ai')
-                .update({ attivo: false })
-                .eq('id', otherConfig.id);
-              
-              deactivatedModels.push(otherConfig.modello);
-            }
-          }
-          
-          // Informa l'utente se abbiamo disattivato altre config
-          if (deactivatedModels.length > 0) {
-            toast({
-              title: "Info",
-              description: `Disattivata automaticamente: ${deactivatedModels.join(', ')}`,
-            });
-          }
-        }
-      }
-
-      // Ora attiva/disattiva la config corrente
       const { error } = await supabase
         .from('config_ai')
         .update({ attivo: !currentStatus })

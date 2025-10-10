@@ -416,11 +416,11 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                               {folder.name}
                             </Label>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400 text-xs">
+                              <Badge variant="outline" className="bg-green-500/10 text-white dark:bg-green-500/20 text-xs">
                                 {folderStats[folder.name] || 0} / {folder.messageCount}
                               </Badge>
                               {(folder.messageCount - (folderStats[folder.name] || 0)) > 0 && (
-                                <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
+                                <Badge variant="secondary" className="bg-yellow-500/10 text-white dark:bg-yellow-500/20 text-xs">
                                   {folder.messageCount - (folderStats[folder.name] || 0)} da scaricare
                                 </Badge>
                               )}

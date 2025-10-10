@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Bot, Users } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Participant {
   id: string;
@@ -25,13 +26,14 @@ const PARTICIPANT_ICONS = {
 
 export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelectorProps) => {
   const activeCount = participants.filter(p => p.is_active).length;
+  const isMobile = useIsMobile();
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "" : "gap-2"}>
           <Users className="h-4 w-4" />
-          Partecipanti ({activeCount}/{participants.length})
+          {!isMobile && `Partecipanti (${activeCount}/${participants.length})`}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">

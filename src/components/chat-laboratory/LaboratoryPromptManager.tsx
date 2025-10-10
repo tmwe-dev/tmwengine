@@ -6,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Brain, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const LaboratoryPromptManager = () => {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -119,9 +121,9 @@ ESEMPI:
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "" : "gap-2"}>
           <Brain className="h-4 w-4" />
-          System Prompt
+          {!isMobile && "System Prompt"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">

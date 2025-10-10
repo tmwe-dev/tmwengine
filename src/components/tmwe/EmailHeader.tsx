@@ -28,10 +28,11 @@ interface EmailHeaderProps {
   onPreviousEmail?: () => void;
   onNextEmail?: () => void;
   hasPrevious?: boolean;
+  onOpenSyncManager?: () => void;
   hasNext?: boolean;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncManager }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -130,60 +131,16 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                   </Button>
                 ) : (
                   <>
-                    <Button 
-                      onClick={onSync} 
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Sync all emails"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    
-                    {onSyncSmart && (
+                    {onOpenSyncManager && (
                       <Button 
-                        onClick={onSyncSmart}
+                        onClick={onOpenSyncManager}
                         variant="outline"
                         size="icon"
-                        className="h-8 w-8 relative"
-                        disabled={isSyncingSmart}
-                        title="Smart sync - only missing emails"
+                        className="h-8 w-8"
+                        title="Gestisci Sincronizzazione"
                       >
-                        <Database className={`h-4 w-4 ${isSyncingSmart ? 'animate-pulse' : ''}`} />
-                        
-                        {missingEmailCount !== undefined && missingEmailCount > 0 && !isSyncingSmart && (
-                          <Badge 
-                            variant="destructive" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold"
-                          >
-                            {missingEmailCount > 999 ? '999+' : missingEmailCount}
-                          </Badge>
-                        )}
-                        
-                        {isSyncingSmart && syncSmartProgress && (
-                          <Badge 
-                            variant="default" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold bg-blue-500"
-                          >
-                            {syncSmartProgress.current}/{syncSmartProgress.missing}
-                          </Badge>
-                        )}
-                        
-                        {missingEmailCount === 0 && !isSyncingSmart && (
-                          <Badge 
-                            variant="secondary" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] bg-green-500 text-white"
-                          >
-                            ✓
-                          </Badge>
-                        )}
+                        <Database className="h-4 w-4" />
                       </Button>
-                    )}
-
-                    {downloadProgressComponent && (
-                      <div className="ml-1">
-                        {downloadProgressComponent}
-                      </div>
                     )}
                   </>
                 )}

@@ -11,7 +11,7 @@ import { useMultiFolderSync } from '@/hooks/useMultiFolderSync';
 import { SyncProgressMulti } from './SyncProgressMulti';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Folder, Database, AlertTriangle, Save } from 'lucide-react';
+import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, AlertTriangle, Save, ArrowUpDown } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FolderSyncManagerProps {
@@ -30,6 +30,7 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
   const [excludedFolders, setExcludedFolders] = useState<string[]>([
     'Trash', 'Archives', 'Junk', 'Drafts', 'Spam'
   ]);
+  const [sortBy, setSortBy] = useState<'name' | 'emails'>('name');
 
   // Load user preferences
   useEffect(() => {
@@ -119,7 +120,35 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
     });
   };
 
+  const folderIcons: Record<string, any> = {
+    'INBOX': Inbox,
+    'Sent': Send,
+    'Drafts': FileText,
+    'Trash': Trash2,
+    'Junk': Trash2,
+    'Archives': Archive,
+  };
+
+  const getFolderIcon = (folderName: string) => {
+    if (folderIcons[folderName]) return folderIcons[folderName];
+    
+    for (const [key, icon] of Object.entries(folderIcons)) {
+      if (folderName.startsWith(key)) return icon;
+    }
+    
+    return Folder;
+  };
+
   const availableFolders = folders.filter(f => !excludedFolders.includes(f.name));
+  
+  const sortedFolders = [...availableFolders].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    } else {
+      return (b.messageCount || 0) - (a.messageCount || 0);
+    }
+  });
+
   const totalSelectedEmails = folders
     .filter(f => selectedFolders.includes(f.name))
     .reduce((sum, f) => sum + f.messageCount, 0);
@@ -146,6 +175,15 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
                 Cartelle Disponibili
               </h3>
               <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSortBy(sortBy === 'name' ? 'emails' : 'name')}
+                  className="h-8 px-2"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+                  {sortBy === 'name' ? 'Nome' : 'Email'}
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   Tutte
                 </Button>
@@ -160,32 +198,36 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
                 <p className="text-sm text-muted-foreground">Caricamento cartelle...</p>
               ) : (
                 <div className="space-y-2">
-                  {availableFolders.map((folder) => (
-                    <div
-                      key={folder.name}
-                      className="flex items-center justify-between p-2 hover:bg-accent rounded-md"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedFolders.includes(folder.name)}
-                          onCheckedChange={() => handleFolderToggle(folder.name)}
-                        />
-                        <Label className="cursor-pointer">
-                          {folder.name}
-                        </Label>
+                  {sortedFolders.map((folder) => {
+                    const Icon = getFolderIcon(folder.name);
+                    return (
+                      <div
+                        key={folder.name}
+                        className="flex items-center justify-between p-2 hover:bg-accent rounded-md"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedFolders.includes(folder.name)}
+                            onCheckedChange={() => handleFolderToggle(folder.name)}
+                          />
+                          <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                          <Label className="cursor-pointer">
+                            {folder.name}
+                          </Label>
+                        </div>
+                        <div className="flex gap-2">
+                          {folder.unreadCount > 0 && (
+                            <Badge variant="secondary" className="bg-transparent border border-primary text-primary">
+                              {folder.unreadCount}
+                            </Badge>
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {folder.messageCount}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Badge variant="secondary">
-                          {folder.messageCount}
-                        </Badge>
-                        {folder.unreadCount > 0 && (
-                          <Badge variant="default">
-                            {folder.unreadCount} non lette
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>

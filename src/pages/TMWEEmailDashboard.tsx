@@ -13,8 +13,7 @@ import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
-import { useSyncSmart } from '@/hooks/useSyncSmart';
+import { useEmailSync } from '@/hooks/useEmailSync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -136,24 +135,14 @@ const EmailDashboard = () => {
 
   const totalEmailCount = folderInfo?.total || 0;
 
-  // Email download hook - declare first
+  // Hook unificato per sincronizzazione intelligente
   const {
-    isDownloading,
-    downloadedCount,
-    downloadError,
-    allEmails: downloadedEmails,
-    startDownload,
-  } = useEmailDownload({
-    folder: selectedFolder,
-    totalEmails: totalEmailCount,
-  });
-
-  // Sync Smart hook
-  const {
-    isSyncing: isSyncingSmart,
+    isSyncing,
     syncedCount,
-    startSync: startSyncSmart,
-  } = useSyncSmart({
+    syncError,
+    allEmails: downloadedEmails,
+    startSync,
+  } = useEmailSync({
     folder: selectedFolder,
     totalEmails: totalEmailCount,
   });
@@ -263,119 +252,7 @@ const EmailDashboard = () => {
     };
   })() : null;
 
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      const userEmail = sessionStorage.getItem('tmwe_user_email');
-      if (!userEmail) {
-        throw new Error('Utente non autenticato');
-      }
-      
-      // 1. Ottieni il totale delle email dalla cartella
-      const folderInfoResponse = await emailMessageApi.getMessages({ 
-        folder: selectedFolder, 
-        limit: 1, 
-        page: 1 
-      });
-      const totalEmails = folderInfoResponse.total || 0;
-      
-      // 2. Recupera gli ID esistenti nel database per questo utente
-      const { data: existingEmails } = await supabase
-        .from('email_messages')
-        .select('message_id')
-        .eq('cartella', selectedFolder)
-        .eq('user_email', userEmail);
-      
-      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
-      
-      // 3. Download batch di email dalla API
-      const batchSize = 50;
-      const totalPages = Math.ceil(totalEmails / batchSize);
-      let syncedCount = 0;
-      
-      console.log(`📊 Sync: ${totalEmails} totali, ${existingIds.size} già nel DB`);
-      
-      for (let page = 1; page <= totalPages; page++) {
-        const response = await emailMessageApi.getMessages({
-          folder: selectedFolder,
-          limit: batchSize,
-          page,
-        });
-        
-        const pageEmails = response?.messages || [];
-        
-        // Filtra solo email mancanti
-        const missingEmails = pageEmails.filter((email: any) => 
-          !existingIds.has(email.message_id || email.uid?.toString())
-        );
-        
-        // Inserisci le email mancanti
-        if (missingEmails.length > 0) {
-          const emailsToInsert = missingEmails.map((email: any) => {
-            let isoDate = new Date().toISOString();
-            if (email.date) {
-              try {
-                isoDate = new Date(email.date).toISOString();
-              } catch (e) {
-                console.error('Error parsing date:', email.date);
-              }
-            }
-            
-            return {
-              message_id: String(email.uid || email.message_id),
-              provider_id: '00000000-0000-0000-0000-000000000000',
-              from_email: typeof email.from === 'object' ? email.from.email : email.from,
-              to_email: typeof email.to === 'object' ? email.to.email : email.to,
-              cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
-              bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
-              subject: email.subject || '(No Subject)',
-              body_text: email.body_plain || email.body_text || null,
-              body_html: email.body_html || null,
-              data_ricezione: isoDate,
-              cartella: selectedFolder,
-              direzione: 'ricevuta',
-              stato: email.is_read || email.seen ? 'letto' : 'nuovo',
-              flags: email.flags || [],
-              attachments: email.attachments || [],
-              user_email: userEmail, // Associa email all'utente
-            };
-          });
-          
-          const { error } = await supabase
-            .from('email_messages')
-            .upsert(emailsToInsert, { 
-              onConflict: 'message_id',
-              ignoreDuplicates: false 
-            });
-          
-          if (error) {
-            console.error('❌ Errore inserimento batch:', error);
-          } else {
-            syncedCount += missingEmails.length;
-            console.log(`✅ Batch ${page}/${totalPages}: +${missingEmails.length} email`);
-          }
-        }
-        
-        // Piccolo delay per non sovraccaricare il server
-        if (page < totalPages) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
-      return { synced: syncedCount, total: totalEmails };
-    },
-    onSuccess: (data) => {
-      if (data.synced > 0) {
-        toast.success(`Sincronizzate ${data.synced} nuove email su ${data.total} totali`);
-      } else {
-        toast.success('Database già sincronizzato');
-      }
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-    },
-    onError: (error) => {
-      console.error('❌ Sync error:', error);
-      toast.error('Sync fallita');
-    },
-  });
+  // Rimosso syncMutation - ora usa hook unificato useEmailSync
 
   const deleteMutation = useMutation({
     mutationFn: (messageIds: string[]) => emailMessageApi.deleteMessages(messageIds),
@@ -443,8 +320,8 @@ const EmailDashboard = () => {
     : emailsToUse;
 
   const handleSync = () => {
-    toast.info('Starting sync...');
-    syncMutation.mutate();
+    toast.info('Avvio sincronizzazione...');
+    startSync();
   };
 
   const handleDelete = () => {
@@ -549,8 +426,8 @@ const EmailDashboard = () => {
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
         onSync={handleSync}
-        onSyncSmart={startSyncSmart}
-        isSyncingSmart={isSyncingSmart}
+        onSyncSmart={startSync}
+        isSyncingSmart={isSyncing}
         syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
         missingEmailCount={missingEmailCount}
         onMenuClick={() => setSidebarOpen(true)}
@@ -567,10 +444,10 @@ const EmailDashboard = () => {
           <EmailDownloadProgress
             totalEmails={totalEmailCount}
             onDownloadComplete={() => {}}
-            onStartDownload={startDownload}
-            isDownloading={isDownloading}
-            downloadedCount={downloadedCount}
-            downloadError={downloadError}
+            onStartDownload={startSync}
+            isDownloading={isSyncing}
+            downloadedCount={syncedCount}
+            downloadError={syncError}
           />
         }
       />
@@ -677,7 +554,7 @@ const EmailDashboard = () => {
             onBulkForward={handleBulkForward}
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
-            isDownloading={isDownloading}
+            isDownloading={isSyncing}
           />
         </div>
 

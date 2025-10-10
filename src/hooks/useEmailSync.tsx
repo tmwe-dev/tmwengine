@@ -3,49 +3,86 @@ import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface UseSyncSmartProps {
+interface UseEmailSyncProps {
   folder: string;
   totalEmails: number;
 }
 
-export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
+interface EmailSyncResult {
+  isSyncing: boolean;
+  syncedCount: number;
+  syncError: string | null;
+  allEmails: any[];
+  startSync: () => Promise<void>;
+  reset: () => void;
+}
+
+/**
+ * Hook unificato per la sincronizzazione intelligente delle email.
+ * Combina le funzionalità di:
+ * - useEmailDownload: scarica email in memoria
+ * - useSyncSmart: sincronizzazione ottimizzata batch
+ * - syncMutation: sincronizzazione completa
+ * 
+ * CORREZIONE BUG: Filtra sempre per user_email per evitare conteggi errati
+ */
+export const useEmailSync = ({ folder, totalEmails }: UseEmailSyncProps): EmailSyncResult => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncedCount, setSyncedCount] = useState(0);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [allEmails, setAllEmails] = useState<any[]>([]);
 
   const startSync = useCallback(async (): Promise<void> => {
     setIsSyncing(true);
     setSyncedCount(0);
     setSyncError(null);
+    setAllEmails([]);
+
+    // 🔐 CRITICAL: Get user email from session
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) {
+      toast.error('Utente non autenticato');
+      setIsSyncing(false);
+      return;
+    }
 
     try {
-      // 1. Recupera tutti gli ID delle email già presenti nel database
+      console.log(`🚀 Sync Intelligente avviato per ${folder}`);
+      console.log(`📊 Email totali sul server: ${totalEmails.toLocaleString()}`);
+
+      // 🐛 FIX: Filtra sempre per user_email (bug precedente in useSyncSmart)
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
-        .eq('cartella', folder);
+        .eq('cartella', folder)
+        .eq('user_email', userEmail); // ✅ CRITICAL FIX
 
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       const alreadyInDb = existingIds.size;
       
-      console.log(`📊 Sync Smart avviato: ${totalEmails} totali, ${alreadyInDb} già presenti nel DB`);
+      console.log(`💾 Email già nel DB (utente ${userEmail}): ${alreadyInDb.toLocaleString()}`);
 
+      // ⚡ Ottimizzazione: Se già tutto sincronizzato
       if (alreadyInDb >= totalEmails) {
         toast.success(`✅ Database già sincronizzato (${alreadyInDb.toLocaleString()} email)`);
         setIsSyncing(false);
         return;
       }
 
-      const batchSize = 10; // ⚡ Batch ridotto per migliori performance
+      const missingCount = totalEmails - alreadyInDb;
+      console.log(`📥 Email mancanti da scaricare: ${missingCount.toLocaleString()}`);
+
+      // ⚡ Configurazione intelligente del batch
+      const batchSize = 50; // Dimensione ottimale batch
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
-      let errorCount = 0;
       let consecutiveEmptyBatches = 0;
-      const maxEmptyBatches = 3; // Ferma dopo 3 batch vuoti consecutivi
+      const maxEmptyBatches = 3; // Stop dopo 3 batch vuoti consecutivi
+      const allDownloadedEmails: any[] = [];
 
-      console.log(`🚀 Inizio sincronizzazione smart...`);
+      toast.info(`🔄 Sincronizzazione ${missingCount.toLocaleString()} email...`);
 
-      // 2. Scarica email batch per batch
+      // 🔄 Download intelligente batch per batch
       for (let page = 1; page <= totalPages; page++) {
         try {
           const response = await emailMessageApi.getMessages({
@@ -56,27 +93,27 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
           const pageEmails = response?.messages || [];
           
-          // 3. Filtra solo le email NON presenti nel database
+          // 🔍 Filtra solo email NON presenti nel database
           const missingEmails = pageEmails.filter((email: any) => {
             const emailId = String(email.uid || email.message_id);
             return !existingIds.has(emailId);
           });
 
-          // ⚡ OTTIMIZZAZIONE: Ferma se non ci sono email mancanti per 3 batch consecutivi
+          // ⚡ OTTIMIZZAZIONE: Stop intelligente se nessuna email mancante
           if (missingEmails.length === 0) {
             consecutiveEmptyBatches++;
-            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, 0 nuove (vuoti consecutivi: ${consecutiveEmptyBatches})`);
+            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, 0 nuove (vuoti: ${consecutiveEmptyBatches})`);
             
             if (consecutiveEmptyBatches >= maxEmptyBatches) {
-              console.log(`⏹️ Sync smart fermato: ${maxEmptyBatches} batch vuoti consecutivi. Database già sincronizzato.`);
+              console.log(`⏹️ Stop anticipato: ${maxEmptyBatches} batch vuoti consecutivi`);
               break;
             }
           } else {
-            consecutiveEmptyBatches = 0; // Reset se troviamo email
-            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove da salvare`);
+            consecutiveEmptyBatches = 0; // Reset
+            console.log(`📄 Batch ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
           }
 
-          // 4. Salva solo le email mancanti
+          // 💾 Salva le email mancanti in Supabase
           if (missingEmails.length > 0) {
             try {
               const emailsToInsert = missingEmails.map((email: any) => {
@@ -105,6 +142,7 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
                   flags: email.flags || [],
                   attachments: email.attachments || [],
                   provider_id: '00000000-0000-0000-0000-000000000000',
+                  user_email: userEmail, // ✅ Associa sempre all'utente
                 };
               });
 
@@ -113,52 +151,53 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
                 .insert(emailsToInsert);
 
               if (insertError) {
-                console.error('❌ Error saving emails to database:', insertError);
-                errorCount++;
+                console.error('❌ Error saving emails:', insertError);
               } else {
                 newEmailsCount += missingEmails.length;
+                allDownloadedEmails.push(...missingEmails);
                 
-                // Aggiungi i nuovi ID al Set per evitare duplicati nei batch successivi
+                // ✅ Aggiorna il Set per evitare duplicati
                 missingEmails.forEach((email: any) => {
                   existingIds.add(String(email.uid || email.message_id));
                 });
                 
                 setSyncedCount(newEmailsCount);
-                console.log(`✅ Batch ${page}/${totalPages} completato: salvate ${missingEmails.length} email (totale: ${newEmailsCount})`);
+                setAllEmails([...allDownloadedEmails]);
+                console.log(`✅ Salvate ${missingEmails.length} email (totale: ${newEmailsCount})`);
               }
             } catch (dbError) {
               console.error('❌ Database save error:', dbError);
-              errorCount++;
             }
           }
 
-          // Small delay to avoid overwhelming the server
+          // ⏱️ Piccolo delay per non sovraccaricare il server
           if (page < totalPages) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         } catch (error) {
-          console.error(`❌ Error downloading batch ${page}:`, error);
-          errorCount++;
-          // Continue with next batch even if one fails
+          console.error(`❌ Error downloading page ${page}:`, error);
+          // Continua con il prossimo batch anche se uno fallisce
         }
       }
 
       setIsSyncing(false);
       
+      // 🎉 Messaggio finale
       if (newEmailsCount > 0) {
         toast.success(
-          `🎉 Sincronizzate ${newEmailsCount.toLocaleString()} nuove email${errorCount > 0 ? ` (${errorCount} errori)` : ''}`,
+          `🎉 Sincronizzate ${newEmailsCount.toLocaleString()} nuove email!`,
           { duration: 5000 }
         );
-        console.log(`🎉 Sync Smart completato: ${newEmailsCount} nuove email salvate`);
+        console.log(`✅ Sync completato: ${newEmailsCount} nuove email salvate`);
       } else {
-        toast.success(`✅ Database già aggiornato (${alreadyInDb.toLocaleString()} email presenti)`);
+        toast.success(`✅ Database già aggiornato (${alreadyInDb.toLocaleString()} email)`);
+        console.log(`✅ Nessuna nuova email da sincronizzare`);
       }
     } catch (error: any) {
-      console.error('❌ Sync Smart error:', error);
+      console.error('❌ Sync error:', error);
       setSyncError(error.message || 'Errore durante la sincronizzazione');
       setIsSyncing(false);
-      toast.error('Errore durante la sincronizzazione smart delle email');
+      toast.error('Errore durante la sincronizzazione delle email');
     }
   }, [folder, totalEmails]);
 
@@ -166,12 +205,14 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
     setIsSyncing(false);
     setSyncedCount(0);
     setSyncError(null);
+    setAllEmails([]);
   }, []);
 
   return {
     isSyncing,
     syncedCount,
     syncError,
+    allEmails,
     startSync,
     reset,
   };

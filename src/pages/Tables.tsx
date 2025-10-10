@@ -40,33 +40,6 @@ export default function Tables() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteCategory, setDeleteCategory] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [emailViewMode, setEmailViewMode] = useState<'user' | 'all'>('user');
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      const { data: role } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setCurrentUser({ ...user, tmwe_email: profile?.tmwe_email });
-      setIsAdmin(role?.role === 'admin');
-    };
-    
-    checkAuth();
-  }, []);
 
   const categorizeTable = (tableName: string): string => {
     if (tableName === 'rubrica' || tableName === 'attivita') {
@@ -137,27 +110,10 @@ export default function Tables() {
     try {
       setRefreshing(true);
       
-      let query = supabase.from(tableName as any).select('*');
-      
-      // Filtra email_messages per user_email
-      if (tableName === 'email_messages') {
-        const userEmail = sessionStorage.getItem('tmwe_user_email');
-        
-        if (!isAdmin) {
-          // Utenti normali vedono solo le proprie email
-          if (userEmail) {
-            query = query.eq('user_email', userEmail);
-          }
-        } else if (emailViewMode === 'user') {
-          // Admin in modalità "Le Mie Email"
-          if (userEmail) {
-            query = query.eq('user_email', userEmail);
-          }
-        }
-        // Admin in modalità "Tutte le Email" vede tutto (nessun filtro)
-      }
-      
-      const { data, error } = await query.limit(1000);
+      const { data, error } = await supabase
+        .from(tableName as any)
+        .select('*')
+        .limit(1000);
       
       if (error) throw error;
       
@@ -318,30 +274,6 @@ export default function Tables() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-
-        {/* Toggle per Admin solo su email_messages */}
-        {selectedTable === 'email_messages' && isAdmin && (
-          <div className="flex gap-2">
-            <Button
-              variant={emailViewMode === 'user' ? 'default' : 'outline'}
-              onClick={() => {
-                setEmailViewMode('user');
-                loadTableData(selectedTable);
-              }}
-            >
-              Le Mie Email
-            </Button>
-            <Button
-              variant={emailViewMode === 'all' ? 'default' : 'outline'}
-              onClick={() => {
-                setEmailViewMode('all');
-                loadTableData(selectedTable);
-              }}
-            >
-              Tutte le Email
-            </Button>
-          </div>
-        )}
 
         <Card>
           <CardHeader className="pb-3">

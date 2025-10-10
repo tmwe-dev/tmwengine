@@ -12,7 +12,6 @@ import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
-import { FolderSyncManager } from '@/components/tmwe/FolderSyncManager';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useSyncSmart } from '@/hooks/useSyncSmart';
@@ -40,7 +39,6 @@ const EmailDashboard = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-  const [folderSyncOpen, setFolderSyncOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -222,7 +220,7 @@ const EmailDashboard = () => {
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
       console.log('🔍 Fetching email with UID:', selectedEmailId);
-      const result = await emailMessageApi.getMessage(selectedEmailId!, true, selectedFolder); // markAsRead = true
+      const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
       console.log('✅ Email detail received:', result);
       // Invalidate messages query to update the read status in the list
       queryClient.invalidateQueries({ queryKey: ['messages'] });
@@ -334,7 +332,7 @@ const EmailDashboard = () => {
               body_html: email.body_html || null,
               data_ricezione: isoDate,
               cartella: selectedFolder,
-              direzione: 'inbound',
+              direzione: 'ricevuta',
               stato: email.is_read || email.seen ? 'letto' : 'nuovo',
               flags: email.flags || [],
               attachments: email.attachments || [],
@@ -565,7 +563,6 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
-        onOpenSyncManager={() => setFolderSyncOpen(true)}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}
@@ -751,12 +748,6 @@ const EmailDashboard = () => {
         senderEmail={selectedAIChatSender}
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
-      />
-
-      <FolderSyncManager
-        open={folderSyncOpen}
-        onOpenChange={setFolderSyncOpen}
-        currentFolder={selectedFolder}
       />
     </div>
   );

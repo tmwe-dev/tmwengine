@@ -3681,11 +3681,11 @@ export default function ImportTemplates() {
                 {isMobile ? (
                   /* Mobile View - Ultra-Compact Cards */
                   <div className="space-y-2 flex-1 overflow-auto touch-pan-y touch-pan-x pt-[20px] pb-[10px]" style={{ WebkitOverflowScrolling: 'touch' }}>
-                    {viewingRecords.map((record, viewIndex) => {
+                    {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
                       const actualIndex = currentPage * recordsPerPage + viewIndex;
                       return (
                         <CompactContactCard
-                          key={viewIndex}
+                          key={record.id}
                           contact={record}
                           index={actualIndex}
                           isSelected={selectedRecords.has(record.id)}
@@ -3794,10 +3794,10 @@ export default function ImportTemplates() {
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {viewingRecords.map((record, viewIndex) => {
+                         {viewingRecords.filter(r => r?.id).map((record, viewIndex) => {
                            const actualIndex = currentPage * recordsPerPage + viewIndex;
                            return (
-                           <TableRow key={viewIndex}>
+                           <TableRow key={record.id}>
                                <TableCell className="w-12 px-4 py-[10px]">
                                  <Checkbox
                                   checked={selectedRecords.has(record.id)}
@@ -4293,28 +4293,27 @@ export default function ImportTemplates() {
             </DialogDescription>
           </DialogHeader>
           
-          {showMultipleActivityDialog && (
-            <AdvancedMultipleActivityForm
-              contacts={Array.from(selectedRecords).map(index => {
-                const record = allRecords[index];
-                return {
-                  id: record.id,
-                  company_name: record.company_name,
-                  company_alias: record.company_alias,
-                  name: record.name,
-                  alias: record.alias,
-                  email: record.email,
-                  phone: record.phone,
-                  cell: record.cell,
-                  ...record
-                };
-              })}
-              onSubmit={handleCreateMultipleActivities}
-              onCancel={() => setShowMultipleActivityDialog(false)}
-              isSubmitting={creatingMultipleActivities}
-              showSaveToRubrica={true}
-            />
-          )}
+          <AdvancedMultipleActivityForm
+            contacts={Array.from(selectedRecords)
+              .map(recordId => allRecords.find(r => r.id === recordId))
+              .filter(record => record !== undefined)
+              .map(record => ({
+                id: record.id,
+                company_name: record.company_name,
+                company_alias: record.company_alias,
+                name: record.name,
+                alias: record.alias,
+                email: record.email,
+                phone: record.phone,
+                cell: record.cell,
+                ...record
+              }))
+            }
+            onSubmit={handleCreateMultipleActivities}
+            onCancel={() => setShowMultipleActivityDialog(false)}
+            isSubmitting={creatingMultipleActivities}
+            showSaveToRubrica={true}
+          />
         </DialogContent>
       </Dialog>
 

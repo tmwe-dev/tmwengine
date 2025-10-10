@@ -1,0 +1,163 @@
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Bot, User, Clock, Zap } from 'lucide-react';
+import { UploadedFile } from '@/components/chat/FileUploader';
+
+interface Message {
+  id: string;
+  sender_type: 'human' | 'chatgpt' | 'gemini' | 'claude';
+  sender_name: string;
+  content: string;
+  attachments?: UploadedFile[];
+  images?: string[];
+  generated_images?: string[];
+  token_input?: number;
+  token_output?: number;
+  tempo_risposta_ms?: number;
+  created_at: string;
+}
+
+interface MultiAgentMessageProps {
+  message: Message;
+}
+
+const SENDER_CONFIG = {
+  human: {
+    icon: User,
+    iconBg: 'bg-blue-500',
+    bg: 'from-blue-500/10 to-blue-600/5',
+    border: 'border-blue-500/20',
+    textColor: 'text-blue-900 dark:text-blue-100',
+    badgeColor: 'bg-blue-600 text-white'
+  },
+  chatgpt: {
+    icon: Bot,
+    iconBg: 'bg-green-500',
+    bg: 'from-green-500/10 to-green-600/5',
+    border: 'border-green-500/20',
+    textColor: 'text-green-900 dark:text-green-100',
+    badgeColor: 'bg-green-600 text-white'
+  },
+  gemini: {
+    icon: Bot,
+    iconBg: 'bg-cyan-500',
+    bg: 'from-cyan-500/10 to-cyan-600/5',
+    border: 'border-cyan-500/20',
+    textColor: 'text-cyan-900 dark:text-cyan-100',
+    badgeColor: 'bg-cyan-600 text-white'
+  },
+  claude: {
+    icon: Bot,
+    iconBg: 'bg-purple-500',
+    bg: 'from-purple-500/10 to-purple-600/5',
+    border: 'border-purple-500/20',
+    textColor: 'text-purple-900 dark:text-purple-100',
+    badgeColor: 'bg-purple-600 text-white'
+  }
+};
+
+export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
+  const config = SENDER_CONFIG[message.sender_type];
+  const Icon = config.icon;
+
+  const formatTime = (ms?: number) => {
+    if (!ms) return null;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  return (
+    <Card className={`bg-gradient-to-br ${config.bg} border ${config.border}`}>
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`${config.iconBg} p-2 rounded-lg`}>
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h4 className={`font-semibold ${config.textColor}`}>
+                {message.sender_name}
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                {new Date(message.created_at).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+          
+          <Badge className={config.badgeColor} variant="secondary">
+            {message.sender_type.toUpperCase()}
+          </Badge>
+        </div>
+
+        {/* Content */}
+        <div className="prose dark:prose-invert max-w-none">
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        </div>
+
+        {/* Images */}
+        {message.images && message.images.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {message.images.map((url, idx) => (
+              <img 
+                key={idx}
+                src={url} 
+                alt="Uploaded" 
+                className="rounded-lg max-h-48 object-cover"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Generated Images */}
+        {message.generated_images && message.generated_images.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {message.generated_images.map((url, idx) => (
+              <img 
+                key={idx}
+                src={url} 
+                alt="Generated" 
+                className="rounded-lg max-h-48 object-cover"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Attachments */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {message.attachments.map((file, idx) => (
+              <Badge key={idx} variant="outline">
+                {file.name}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Stats */}
+        {(message.token_input || message.token_output || message.tempo_risposta_ms) && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            {message.token_input && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                {message.token_input} token in
+              </Badge>
+            )}
+            {message.token_output && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                {message.token_output} token out
+              </Badge>
+            )}
+            {message.tempo_risposta_ms && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formatTime(message.tempo_risposta_ms)}
+              </Badge>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+};

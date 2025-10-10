@@ -181,6 +181,160 @@ export type Database = {
           },
         ]
       }
+      chat_laboratory_conversations: {
+        Row: {
+          active_participants: Json | null
+          created_at: string | null
+          id: string
+          memoria_completa: boolean | null
+          riassunto_contesto: string | null
+          titolo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_participants?: Json | null
+          created_at?: string | null
+          id?: string
+          memoria_completa?: boolean | null
+          riassunto_contesto?: string | null
+          titolo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_participants?: Json | null
+          created_at?: string | null
+          id?: string
+          memoria_completa?: boolean | null
+          riassunto_contesto?: string | null
+          titolo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      chat_laboratory_messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          conversation_id: string
+          created_at: string | null
+          generated_images: Json | null
+          id: string
+          images: Json | null
+          is_visible_to_ai: boolean | null
+          sender_name: string
+          sender_type: string
+          tempo_risposta_ms: number | null
+          token_input: number | null
+          token_output: number | null
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          generated_images?: Json | null
+          id?: string
+          images?: Json | null
+          is_visible_to_ai?: boolean | null
+          sender_name: string
+          sender_type: string
+          tempo_risposta_ms?: number | null
+          token_input?: number | null
+          token_output?: number | null
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          generated_images?: Json | null
+          id?: string
+          images?: Json | null
+          is_visible_to_ai?: boolean | null
+          sender_name?: string
+          sender_type?: string
+          tempo_risposta_ms?: number | null
+          token_input?: number | null
+          token_output?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_laboratory_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          system_prompt: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          system_prompt?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          system_prompt?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_laboratory_system_prompts: {
+        Row: {
+          attivo: boolean | null
+          contenuto: string
+          created_at: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          attivo?: boolean | null
+          contenuto: string
+          created_at?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          attivo?: boolean | null
+          contenuto?: string
+          created_at?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           attachments: Json | null
@@ -517,17 +671,19 @@ export type Database = {
           from_email: string
           id: string
           in_reply_to: string | null
+          is_shared_email: boolean | null
           message_hash: string | null
           message_id: string
           provider_id: string
           raw_headers: Json | null
+          shared_email_id: string | null
           stato: string
           subject: string | null
           sync_status: string | null
           thread_id: string | null
           to_email: string
           updated_at: string
-          user_email: string | null
+          user_email: string
         }
         Insert: {
           attachments?: Json | null
@@ -545,17 +701,19 @@ export type Database = {
           from_email: string
           id?: string
           in_reply_to?: string | null
+          is_shared_email?: boolean | null
           message_hash?: string | null
           message_id: string
           provider_id: string
           raw_headers?: Json | null
+          shared_email_id?: string | null
           stato?: string
           subject?: string | null
           sync_status?: string | null
           thread_id?: string | null
           to_email: string
           updated_at?: string
-          user_email?: string | null
+          user_email: string
         }
         Update: {
           attachments?: Json | null
@@ -573,17 +731,19 @@ export type Database = {
           from_email?: string
           id?: string
           in_reply_to?: string | null
+          is_shared_email?: boolean | null
           message_hash?: string | null
           message_id?: string
           provider_id?: string
           raw_headers?: Json | null
+          shared_email_id?: string | null
           stato?: string
           subject?: string | null
           sync_status?: string | null
           thread_id?: string | null
           to_email?: string
           updated_at?: string
-          user_email?: string | null
+          user_email?: string
         }
         Relationships: [
           {
@@ -591,6 +751,13 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_shared_email_id_fkey"
+            columns: ["shared_email_id"]
+            isOneToOne: false
+            referencedRelation: "shared_email_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -716,6 +883,7 @@ export type Database = {
           id: string
           sender_email: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           action_params?: Json | null
@@ -724,6 +892,7 @@ export type Database = {
           id?: string
           sender_email: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           action_params?: Json | null
@@ -732,6 +901,7 @@ export type Database = {
           id?: string
           sender_email?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -769,6 +939,7 @@ export type Database = {
           id: string
           sender_email: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -776,6 +947,7 @@ export type Database = {
           id?: string
           sender_email: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -783,6 +955,7 @@ export type Database = {
           id?: string
           sender_email?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -885,6 +1058,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_sync_preferences: {
+        Row: {
+          created_at: string | null
+          date_filter_months: number | null
+          default_sync_mode: string | null
+          excluded_folders: Json | null
+          id: string
+          included_folders: Json | null
+          last_sync_at: string | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
+          excluded_folders?: Json | null
+          id?: string
+          included_folders?: Json | null
+          last_sync_at?: string | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
+          excluded_folders?: Json | null
+          id?: string
+          included_folders?: Json | null
+          last_sync_at?: string | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
       }
       email_sync_progress: {
         Row: {
@@ -2106,6 +2315,71 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_email_accounts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          email: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          email: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shared_email_members: {
+        Row: {
+          can_read: boolean | null
+          can_send: boolean | null
+          id: string
+          joined_at: string | null
+          shared_email_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          can_read?: boolean | null
+          can_send?: boolean | null
+          id?: string
+          joined_at?: string | null
+          shared_email_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          can_read?: boolean | null
+          can_send?: boolean | null
+          id?: string
+          joined_at?: string | null
+          shared_email_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_email_members_shared_email_id_fkey"
+            columns: ["shared_email_id"]
+            isOneToOne: false
+            referencedRelation: "shared_email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       temp_ai_import: {
         Row: {
           created_at: string
@@ -2326,6 +2600,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sync_preferences: {
+        Row: {
+          created_at: string | null
+          date_filter_months: number | null
+          default_sync_mode: string | null
+          excluded_folders: Json | null
+          id: string
+          included_folders: Json | null
+          updated_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
+          excluded_folders?: Json | null
+          id?: string
+          included_folders?: Json | null
+          updated_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string | null
+          date_filter_months?: number | null
+          default_sync_mode?: string | null
+          excluded_folders?: Json | null
+          id?: string
+          included_folders?: Json | null
+          updated_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       user_tmwe_credentials: {
         Row: {
           access_token: string
@@ -2407,6 +2714,13 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_users_email_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          count: number
+          email: string
+        }[]
       }
       has_role: {
         Args: {

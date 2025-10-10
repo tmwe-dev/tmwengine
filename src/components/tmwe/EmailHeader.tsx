@@ -312,6 +312,21 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               </div>
             )}
 
+            {/* Download Email TMWE */}
+            {onOpenSyncMonitor && (
+              <Button 
+                onClick={() => {
+                  onOpenSyncMonitor();
+                  setSyncPopupOpen(false);
+                }}
+                variant="outline"
+                className="w-full justify-start gap-2"
+              >
+                <Download className="h-5 w-5" />
+                <span>Download Email TMWE</span>
+              </Button>
+            )}
+
             {/* Sync All */}
             <Button 
               onClick={() => {

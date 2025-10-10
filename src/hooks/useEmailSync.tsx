@@ -82,136 +82,124 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
       const existingUids = new Set(existingEmails?.map(e => e.message_id) || []);
       console.log(`💾 [Sync] Email già nel DB: ${existingUids.size}`);
 
-      // STEP 3: Download emails in MICRO-BATCHES (5 email)
-      const MICRO_BATCH_SIZE = 5;
-      const PAUSE_MS = 2000;
-      const totalBatches = Math.ceil(totalEmailCount / MICRO_BATCH_SIZE);
-      let currentBatch = 0;
+      // STEP 3: Download emails ONE BY ONE with full body
       let downloadedCount = 0;
+      const uidBatchSize = 50; // Get 50 UIDs at a time
+      const totalUidBatches = Math.ceil(totalEmailCount / uidBatchSize);
+      
+      console.log(`📋 [Sync] Scarico ${totalEmailCount} email (1 per volta con body completo)`);
+      console.log(`📦 [Sync] Ottengo UIDs in ${totalUidBatches} batch da ${uidBatchSize}`);
 
-      console.log(`📦 [Sync] Inizio download: ${totalBatches} micro-batch da ${MICRO_BATCH_SIZE} email`);
-
-      for (let page = 1; page <= totalBatches; page++) {
-        // Check stop flag IMMEDIATELY
+      // STEP 1: Get UIDs in batches
+      for (let uidBatch = 1; uidBatch <= totalUidBatches; uidBatch++) {
         if (shouldStop.current) {
-          console.log('🛑 [Sync] Interruzione manuale rilevata all\'inizio del loop');
+          console.log('🛑 [Sync] Interruzione manuale durante fetch UIDs');
           setSyncError('Sincronizzazione interrotta dall\'utente');
           break;
         }
 
-        currentBatch = page;
-        
-        // Update download status
-        setDownloadStatus({
-          currentBatch,
-          totalBatches,
-          downloadedCount,
-          totalOnServer: totalEmailCount,
-          isComplete: false,
-        });
+        console.log(`\n📋 [UID Batch ${uidBatch}/${totalUidBatches}] Fetching UIDs...`);
 
-        console.log(`⬇️ [Sync] Download micro-batch ${currentBatch}/${totalBatches}...`);
+        try {
+          const response = await emailMessageApi.getMessages({
+            folder,
+            page: uidBatch,
+            limit: uidBatchSize,
+          });
 
-        let retryCount = 0;
-        let response;
-        
-        // Retry logic (max 3 tentativi)
-        while (retryCount < 3) {
-          try {
-            response = await emailMessageApi.getMessages({
-              folder,
-              page,
-              limit: MICRO_BATCH_SIZE,
-            });
-            break; // Success
-          } catch (error: any) {
-            retryCount++;
-            console.warn(`⚠️ [Sync] Errore batch ${currentBatch}, tentativo ${retryCount}/3:`, error.message);
-            if (retryCount >= 3) throw error;
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+          const messages = response?.messages || [];
+          
+          if (messages.length === 0) {
+            console.warn(`⚠️ [UID Batch ${uidBatch}] Nessun UID ricevuto, continuo...`);
+            continue;
           }
-        }
 
-        const messages = response?.messages || [];
-        
-        // Check manual stop flag again after fetching
-        if (shouldStop.current) {
-          console.log('🛑 [Sync] Interruzione manuale dopo fetch batch');
-          setSyncError('Sincronizzazione interrotta dall\'utente');
-          break;
-        }
-        
-        // If batch is empty, log and continue (don't stop!)
-        if (messages.length === 0) {
-          console.log(`⚠️ [Sync] Batch ${currentBatch} vuoto, continuo comunque...`);
-          await new Promise(resolve => setTimeout(resolve, PAUSE_MS));
-          continue;
-        }
+          // Filter new UIDs
+          const newUids = messages
+            .filter((msg: any) => !existingUids.has(String(msg.message_id || msg.uid)))
+            .map((msg: any) => String(msg.message_id || msg.uid));
 
-        // Filter only new emails
-        const newMessages = messages.filter((msg: any) => {
-          const msgId = String(msg.message_id || msg.uid || msg.id);
-          return !existingUids.has(msgId);
-        });
+          console.log(`✨ [UID Batch ${uidBatch}] ${newUids.length} nuovi UID da scaricare (su ${messages.length} totali)`);
 
-        console.log(`✅ [Sync] Batch ${currentBatch}: ${messages.length} email ricevute, ${newMessages.length} nuove da inserire`);
-        
-        if (newMessages.length > 0) {
-          console.log(`📝 [Sync] Email nuove da inserire:`, newMessages.map(m => m.message_id || m.uid));
-        }
+          // STEP 2: Download each email body (1 by 1)
+          for (let i = 0; i < newUids.length; i++) {
+            if (shouldStop.current) {
+              console.log('🛑 [Sync] Interruzione manuale durante download email');
+              setSyncError('Sincronizzazione interrotta dall\'utente');
+              break;
+            }
 
-        // STEP 4: Insert immediately into DB (progressive insert)
-        if (newMessages.length > 0) {
-          const emailRecords = newMessages.map((msg: any) => ({
-            message_id: String(msg.message_id || msg.uid || msg.id),
-            user_email: userEmail,
-            subject: msg.subject || '(No Subject)',
-            from_email: typeof msg.from === 'object' ? msg.from.email : msg.from,
-            to_email: msg.to || '',
-            cartella: folder,
-            data_ricezione: msg.date || new Date().toISOString(),
-            stato: msg.is_read || msg.seen ? 'letto' : 'nuovo',
-            direzione: folder === 'Sent' ? 'uscita' : 'entrata',
-            provider_id: '00000000-0000-0000-0000-000000000000',
-          }));
+            const uid = newUids[i];
+            
+            try {
+              console.log(`📥 [${downloadedCount + 1}/${totalEmailCount}] Downloading email UID: ${uid}`);
+              
+              // Download full email with body
+              const fullEmail = await emailMessageApi.getMessage(uid, false);
+              
+              // Insert into DB with body
+              const { error } = await supabase
+                .from('email_messages')
+                .insert({
+                  message_id: uid,
+                  user_email: userEmail,
+                  subject: fullEmail.subject || '(No Subject)',
+                  from_email: fullEmail.from?.email || fullEmail.from || '',
+                  to_email: fullEmail.to || '',
+                  cc_email: fullEmail.cc || null,
+                  bcc_email: fullEmail.bcc || null,
+                  body_html: fullEmail.body_html || '',
+                  body_text: fullEmail.body_text || fullEmail.body || '',
+                  attachments: fullEmail.attachments || [],
+                  cartella: folder,
+                  data_ricezione: fullEmail.date || new Date().toISOString(),
+                  stato: fullEmail.is_read ? 'letto' : 'nuovo',
+                  direzione: folder === 'Sent' ? 'uscita' : 'entrata',
+                  provider_id: '00000000-0000-0000-0000-000000000000',
+                  flags: fullEmail.flags || [],
+                });
+              
+              if (!error) {
+                downloadedCount++;
+                setSyncedCount(downloadedCount);
+                existingUids.add(uid);
+                console.log(`✅ [${downloadedCount}/${totalEmailCount}] Email scaricata con body completo`);
+              } else {
+                console.error(`❌ Errore inserimento email ${uid}:`, error);
+              }
+              
+              // Update progress
+              setDownloadStatus({
+                currentBatch: Math.floor(downloadedCount / 5) + 1,
+                totalBatches: Math.ceil(totalEmailCount / 5),
+                downloadedCount,
+                totalOnServer: totalEmailCount,
+                isComplete: false,
+              });
 
-          const { error: insertError } = await supabase
-            .from('email_messages')
-            .insert(emailRecords);
-
-          if (insertError) {
-            console.error('❌ [Sync] Errore inserimento batch:', insertError);
-            // Non interrompo il processo, continuo con il prossimo batch
-          } else {
-            downloadedCount += newMessages.length;
-            setSyncedCount(downloadedCount);
-            // Add new UIDs to set
-            newMessages.forEach((msg: any) => {
-              existingUids.add(String(msg.message_id || msg.uid || msg.id));
-            });
-            console.log(`💾 [Sync] Inserite ${newMessages.length} email (totale: ${downloadedCount})`);
+              // Pause every 5 emails
+              if ((i + 1) % 5 === 0 && i < newUids.length - 1) {
+                console.log(`⏸️ Pausa 2 secondi dopo 5 email...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+              
+            } catch (error: any) {
+              console.error(`❌ Errore download email ${uid}:`, error.message);
+              // Continue with next email
+            }
           }
-        }
 
-        // Update progress
-        setDownloadStatus({
-          currentBatch,
-          totalBatches,
-          downloadedCount,
-          totalOnServer: totalEmailCount,
-          isComplete: currentBatch === totalBatches,
-        });
+          if (shouldStop.current) break;
 
-        // Pause 2 secondi prima del prossimo batch (tranne ultimo)
-        if (currentBatch < totalBatches) {
-          console.log(`⏸️ [Sync] Pausa 2 secondi prima del prossimo batch...`);
-          await new Promise(resolve => setTimeout(resolve, PAUSE_MS));
+        } catch (error: any) {
+          console.error(`❌ Errore fetch UID batch ${uidBatch}:`, error.message);
+          // Continue with next UID batch
         }
       }
 
       setDownloadStatus({
-        currentBatch: Math.min(currentBatch, totalBatches),
-        totalBatches,
+        currentBatch: Math.ceil(downloadedCount / 5),
+        totalBatches: Math.ceil(totalEmailCount / 5),
         downloadedCount,
         totalOnServer: totalEmailCount,
         isComplete: true,
@@ -219,7 +207,7 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
 
       console.log('🎉 [Sync] Sincronizzazione completata:', {
         downloadedCount,
-        totalBatches: currentBatch,
+        totalEmailCount,
         stopped: shouldStop.current,
       });
 

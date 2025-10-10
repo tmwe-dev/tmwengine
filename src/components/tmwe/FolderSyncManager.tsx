@@ -11,7 +11,7 @@ import { useMultiFolderSync } from '@/hooks/useMultiFolderSync';
 import { SyncProgressMulti } from './SyncProgressMulti';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, AlertTriangle, Save, ArrowUpDown } from 'lucide-react';
+import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, AlertTriangle, Save, ArrowUpDown, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FolderSyncManagerProps {
@@ -22,7 +22,7 @@ interface FolderSyncManagerProps {
 
 export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderSyncManagerProps) => {
   const { folders, loading: loadingFolders, reload: reloadFolders } = useFolderList();
-  const { isSyncing, progress, results, startMultiSync, reset } = useMultiFolderSync();
+  const { isSyncing, progress, results, startMultiSync, stopSync, reset } = useMultiFolderSync();
   
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
   const [dateFilterMonths, setDateFilterMonths] = useState<number>(24);
@@ -305,22 +305,34 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
 
             {/* Actions */}
             <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleStartSync}
-                disabled={isSyncing || selectedFolders.length === 0}
-                className="flex-1"
-              >
-                <Database className="h-4 w-4 mr-2" />
-                Avvia Sincronizzazione
-              </Button>
-              <Button
-                onClick={savePreferences}
-                disabled={isSyncing}
-                variant="outline"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Salva
-              </Button>
+              {!isSyncing ? (
+                <>
+                  <Button
+                    onClick={handleStartSync}
+                    disabled={selectedFolders.length === 0}
+                    className="flex-1"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Avvia Sincronizzazione
+                  </Button>
+                  <Button
+                    onClick={savePreferences}
+                    variant="outline"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Salva
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={stopSync}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Interrompi Sincronizzazione
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -1,7 +1,8 @@
 import { FolderResult } from '@/hooks/useMultiFolderSync';
-import { CheckCircle2, XCircle, Loader2, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Clock, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SyncProgressMultiProps {
   currentFolder: string;
@@ -36,10 +37,12 @@ export const SyncProgressMulti = ({
         <Card className="p-4 bg-primary/5 border-primary/20">
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="font-medium">In corso: {currentFolder}</span>
-            <span className="text-sm text-muted-foreground ml-auto">
-              {processedEmails} email elaborate
-            </span>
+            <div className="flex-1">
+              <span className="font-medium">In corso: {currentFolder}</span>
+              <div className="text-sm text-muted-foreground mt-1">
+                Cartella {currentFolderIndex} di {totalFolders} • {processedEmails} email elaborate
+              </div>
+            </div>
           </div>
         </Card>
       )}
@@ -77,6 +80,15 @@ export const SyncProgressMulti = ({
             </Card>
           ))}
         </div>
+      )}
+
+      {results.length > 0 && results.every(r => r.downloaded === 0) && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Nessuna email scaricata. Verifica che le cartelle selezionate contengano email non ancora sincronizzate.
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );

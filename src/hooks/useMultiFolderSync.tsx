@@ -26,6 +26,7 @@ export interface MultiSyncOptions {
 
 export const useMultiFolderSync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [shouldStop, setShouldStop] = useState(false);
   const [progress, setProgress] = useState<SyncProgress>({
     currentFolder: '',
     currentFolderIndex: 0,
@@ -36,8 +37,14 @@ export const useMultiFolderSync = () => {
   const [results, setResults] = useState<FolderResult[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const stopSync = () => {
+    console.log('🛑 Richiesta interruzione sincronizzazione...');
+    setShouldStop(true);
+  };
+
   const startMultiSync = async (options: MultiSyncOptions) => {
     setIsSyncing(true);
+    setShouldStop(false);
     setError(null);
     setResults([]);
 
@@ -51,9 +58,19 @@ export const useMultiFolderSync = () => {
     const { folders, dateFilterMonths, mode } = options;
     const folderResults: FolderResult[] = [];
 
+    console.log(`🚀 Multi-sync avviato: ${folders.length} cartelle selezionate`);
+    console.log(`📊 Modalità: ${mode}, Filtro mesi: ${dateFilterMonths || 'tutti'}`);
+
     try {
       for (let i = 0; i < folders.length; i++) {
+        if (shouldStop) {
+          console.log('🛑 Sync interrotto dall\'utente');
+          toast.info('Sincronizzazione interrotta');
+          break;
+        }
+
         const folder = folders[i];
+        console.log(`\n📁 [${i+1}/${folders.length}] Processando: ${folder}`);
         
         setProgress({
           currentFolder: folder,
@@ -79,22 +96,25 @@ export const useMultiFolderSync = () => {
 
           // 2. Fetch emails from API
           let page = 1;
-          const limit = 50;
+          const limit = 10; // ⚡ Batch ridotto per migliori performance
           let hasMore = true;
+          let consecutiveEmptyBatches = 0;
+          const maxEmptyBatches = 3;
 
-          while (hasMore) {
+          while (hasMore && !shouldStop) {
             const response = await emailMessageApi.getMessages({
               folder,
-              page,
               limit,
-              sort: 'date',
-              order: 'DESC',
+              page,
             });
 
             if (!response?.messages || response.messages.length === 0) {
+              console.log(`📄 Nessun messaggio ricevuto dall'API per ${folder}`);
               hasMore = false;
               break;
             }
+
+            console.log(`📁 [${folder}] Batch ${page}: API=${response.messages.length}, Filtro date attivo=${!!dateFilterMonths}`);
 
             // Filter by date if specified
             let emails = response.messages;
@@ -115,6 +135,22 @@ export const useMultiFolderSync = () => {
               }
               return true; // full mode downloads all
             });
+
+            console.log(`  📄 Batch ${page}: API=${response.messages.length}, Nuove=${emailsToInsert.length}, Skip=${emails.length - emailsToInsert.length}`);
+
+            // Protezione contro loop infiniti
+            if (emailsToInsert.length === 0) {
+              consecutiveEmptyBatches++;
+              console.log(`📄 Batch vuoto ${consecutiveEmptyBatches}/${maxEmptyBatches} per ${folder}`);
+              
+              if (consecutiveEmptyBatches >= maxEmptyBatches) {
+                console.log(`⏹️ Stop sync ${folder}: ${maxEmptyBatches} batch vuoti consecutivi`);
+                hasMore = false;
+                break;
+              }
+            } else {
+              consecutiveEmptyBatches = 0;
+            }
 
             if (emailsToInsert.length > 0) {
               const emailRecords = emailsToInsert.map((email: any) => {
@@ -163,8 +199,20 @@ export const useMultiFolderSync = () => {
               hasMore = false;
             }
 
+            // Check per interruzione
+            if (shouldStop) {
+              console.log('🛑 Sync interrotto durante batch');
+              hasMore = false;
+              break;
+            }
+
             page++;
+            
+            // Small delay per non sovraccaricare il server
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
+
+          console.log(`✅ ${folder}: Downloaded=${downloaded}, Skipped=${skipped}, Errors=${errors}`);
 
           folderResults.push({
             folder,
@@ -189,6 +237,10 @@ export const useMultiFolderSync = () => {
       const totalDownloaded = folderResults.reduce((sum, r) => sum + r.downloaded, 0);
       const totalErrors = folderResults.reduce((sum, r) => sum + r.errors, 0);
       
+      console.log(`\n🎉 Multi-sync completato!`);
+      console.log(`  Totale scaricate: ${totalDownloaded}`);
+      console.log(`  Totale errori: ${totalErrors}`);
+      
       if (totalErrors === 0) {
         toast.success(`Sincronizzazione completata! ${totalDownloaded} email scaricate`);
       } else {
@@ -201,6 +253,7 @@ export const useMultiFolderSync = () => {
       toast.error('Errore durante la sincronizzazione');
     } finally {
       setIsSyncing(false);
+      setShouldStop(false);
     }
   };
 
@@ -222,6 +275,7 @@ export const useMultiFolderSync = () => {
     results,
     error,
     startMultiSync,
+    stopSync,
     reset,
   };
 };

@@ -11,6 +11,7 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
+import { EmailSyncProgress } from '@/components/tmwe/EmailSyncProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { useEmailSync } from '@/hooks/useEmailSync';
@@ -42,6 +43,7 @@ const EmailDashboard = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [showSyncProgress, setShowSyncProgress] = useState(false);
   const queryClient = useQueryClient();
 
   // Query per email condivise
@@ -143,27 +145,14 @@ const EmailDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
   
-  const { data: folderInfo } = useQuery({
-    queryKey: ['folder-info', selectedFolder],
-    queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, page: 1 });
-      return result;
-    },
+  // Get real total count from server
+  const { data: realTotalCount, isLoading: isLoadingTotal } = useQuery({
+    queryKey: ['real-total-count', selectedFolder],
+    queryFn: () => emailMessageApi.getTotalEmailCount({ folder: selectedFolder }),
+    refetchInterval: 30000, // Refresh every 30s
   });
 
-  const totalEmailCount = folderInfo?.total || 0;
-
-  // Hook unificato per sincronizzazione intelligente
-  const {
-    isSyncing,
-    syncedCount,
-    syncError,
-    allEmails: downloadedEmails,
-    startSync,
-  } = useEmailSync({
-    folder: selectedFolder,
-    totalEmails: totalEmailCount,
-  });
+  const totalEmailCount = realTotalCount || 0;
 
   // Conta le email nel DB per la cartella corrente e utente
   const { data: dbEmailCount } = useQuery({
@@ -181,7 +170,34 @@ const EmailDashboard = () => {
     },
   });
 
+  // Hook unificato per sincronizzazione intelligente
+  const {
+    isSyncing,
+    syncedCount,
+    syncError,
+    allEmails: downloadedEmails,
+    downloadStatus,
+    startSync,
+  } = useEmailSync({
+    folder: selectedFolder,
+  });
+
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
+
+  // Auto-sync on mount if emails are missing
+  useEffect(() => {
+    const autoSync = async () => {
+      if (!isLoadingTotal && totalEmailCount > 0 && dbEmailCount !== null) {
+        const missing = totalEmailCount - dbEmailCount;
+        if (missing > 0 && !isSyncing) {
+          console.log(`🔄 [Auto-Sync] Rilevate ${missing} email mancanti, avvio sincronizzazione...`);
+          setShowSyncProgress(true);
+          await startSync();
+        }
+      }
+    };
+    autoSync();
+  }, [isLoadingTotal, totalEmailCount, dbEmailCount, isSyncing, startSync]);
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
@@ -337,9 +353,10 @@ const EmailDashboard = () => {
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
 
-  const handleSync = () => {
+  const handleSync = async () => {
     toast.info('Avvio sincronizzazione...');
-    startSync();
+    setShowSyncProgress(true);
+    await startSync();
   };
 
   const handleDelete = () => {
@@ -684,6 +701,13 @@ const EmailDashboard = () => {
         onClose={handleComposeClose}
         onSent={() => queryClient.invalidateQueries({ queryKey: ['messages'] })}
         replyTo={replyTo}
+      />
+
+      <EmailSyncProgress 
+        open={showSyncProgress && isSyncing} 
+        onOpenChange={setShowSyncProgress}
+        status={downloadStatus}
+        isSyncing={isSyncing}
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>

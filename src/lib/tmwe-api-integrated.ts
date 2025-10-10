@@ -284,6 +284,11 @@ export const emailSyncApi = {
 
 // Email Message APIs
 export const emailMessageApi = {
+  // Get total email count on server (all pages)
+  getTotalEmailCount: (params: { folder?: string }) => 
+    fetchApi('/email_message', { handler: 'get_messages', folder: params.folder || 'INBOX', limit: 1, page: 1 })
+      .then(res => res?.total || 0),
+
   getMessages: (params: {
     folder?: string;
     page?: number;

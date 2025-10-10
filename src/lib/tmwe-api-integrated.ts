@@ -284,10 +284,50 @@ export const emailSyncApi = {
 
 // Email Message APIs
 export const emailMessageApi = {
-  // Get total email count on server (all pages)
-  getTotalEmailCount: (params: { folder?: string }) => 
-    fetchApi('/email_message', { handler: 'get_messages', folder: params.folder || 'INBOX', limit: 1, page: 1 })
-      .then(res => res?.total || 0),
+  // Get REAL total email count by iterating through all pages
+  getTotalEmailCount: async (params: { folder?: string }) => {
+    const folder = params.folder || 'INBOX';
+    let totalCount = 0;
+    let page = 1;
+    const batchSize = 50;
+    
+    console.log('🔢 [getTotalEmailCount] Inizio conteggio reale per:', folder);
+    
+    while (true) {
+      const response = await fetchApi('/email_message', { 
+        handler: 'get_messages', 
+        folder, 
+        limit: batchSize, 
+        page 
+      });
+      
+      const messages = response?.messages || [];
+      if (messages.length === 0) {
+        console.log(`🛑 [getTotalEmailCount] Batch ${page} vuoto, stop`);
+        break;
+      }
+      
+      totalCount += messages.length;
+      console.log(`📊 [getTotalEmailCount] Batch ${page}: +${messages.length} email (totale: ${totalCount})`);
+      
+      // Se il batch non è completo, abbiamo finito
+      if (messages.length < batchSize) {
+        console.log(`✅ [getTotalEmailCount] Ultimo batch parziale (${messages.length}/${batchSize}), stop`);
+        break;
+      }
+      
+      page++;
+      
+      // Safety: max 200 pagine (10000 email)
+      if (page > 200) {
+        console.warn('⚠️ [getTotalEmailCount] Limite safety raggiunto (200 pagine)');
+        break;
+      }
+    }
+    
+    console.log(`🎯 [getTotalEmailCount] Totale REALE: ${totalCount} email`);
+    return totalCount;
+  },
 
   getMessages: (params: {
     folder?: string;

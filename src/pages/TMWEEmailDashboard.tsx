@@ -178,26 +178,47 @@ const EmailDashboard = () => {
     allEmails: downloadedEmails,
     downloadStatus,
     startSync,
+    stopSync,
   } = useEmailSync({
     folder: selectedFolder,
   });
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
+  const [hasAutoSynced, setHasAutoSynced] = useState(false);
 
-  // Auto-sync on mount if emails are missing
+  // Reset auto-sync flag when folder changes
+  useEffect(() => {
+    setHasAutoSynced(false);
+  }, [selectedFolder]);
+
+  // Auto-sync on mount if emails are missing (ONE TIME ONLY)
   useEffect(() => {
     const autoSync = async () => {
-      if (!isLoadingTotal && totalEmailCount > 0 && dbEmailCount !== null) {
+      if (
+        !isLoadingTotal && 
+        totalEmailCount > 0 && 
+        dbEmailCount !== null &&
+        !isSyncing &&
+        !hasAutoSynced
+      ) {
         const missing = totalEmailCount - dbEmailCount;
-        if (missing > 0 && !isSyncing) {
-          console.log(`🔄 [Auto-Sync] Rilevate ${missing} email mancanti, avvio sincronizzazione...`);
+        if (missing > 0) {
+          console.log(`🔄 [Auto-Sync] ${missing} email mancanti, avvio MICRO-BATCH sync...`);
+          setHasAutoSynced(true);
           setShowSyncProgress(true);
           await startSync();
         }
       }
     };
     autoSync();
-  }, [isLoadingTotal, totalEmailCount, dbEmailCount, isSyncing, startSync]);
+  }, [isLoadingTotal, totalEmailCount, dbEmailCount, isSyncing, hasAutoSynced]);
+
+  // ALWAYS show progress when syncing
+  useEffect(() => {
+    if (isSyncing) {
+      setShowSyncProgress(true);
+    }
+  }, [isSyncing]);
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
@@ -708,6 +729,7 @@ const EmailDashboard = () => {
         onOpenChange={setShowSyncProgress}
         status={downloadStatus}
         isSyncing={isSyncing}
+        onStop={stopSync}
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>

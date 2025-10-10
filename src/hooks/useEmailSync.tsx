@@ -22,6 +22,7 @@ export interface EmailSyncResult {
   downloadStatus: DownloadStatus | null;
   startSync: () => Promise<void>;
   reset: () => void;
+  stopSync: () => void;
 }
 
 export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => {
@@ -30,6 +31,7 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
   const [syncError, setSyncError] = useState<string | null>(null);
   const [allEmails, setAllEmails] = useState<any[]>([]);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
+  const [shouldStop, setShouldStop] = useState(false);
 
   const reset = useCallback(() => {
     setIsSyncing(false);
@@ -37,6 +39,12 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
     setSyncError(null);
     setAllEmails([]);
     setDownloadStatus(null);
+    setShouldStop(false);
+  }, []);
+
+  const stopSync = useCallback(() => {
+    console.log('🛑 [Sync] Interruzione richiesta dall\'utente');
+    setShouldStop(true);
   }, []);
 
   const startSync = useCallback(async () => {
@@ -45,13 +53,14 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
       setSyncError(null);
       setSyncedCount(0);
       setAllEmails([]);
+      setShouldStop(false);
 
       const userEmail = sessionStorage.getItem('tmwe_user_email');
       if (!userEmail) {
         throw new Error('User email not found');
       }
 
-      console.log('🚀 [Sync] Inizio sincronizzazione per cartella:', folder);
+      console.log('🚀 [Sync] Inizio sincronizzazione MICRO-BATCH (5 email + 2s pausa)');
 
       // STEP 1: Get real total count from server
       const realTotal = await emailMessageApi.getTotalEmailCount({ folder });
@@ -73,16 +82,24 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
       const existingUids = new Set(existingEmails?.map(e => e.message_id) || []);
       console.log(`💾 [Sync] Email già nel DB: ${existingUids.size}`);
 
-      // STEP 3: Download all emails in batches
-      const batchSize = 50;
-      const totalBatches = Math.ceil(realTotal / batchSize);
+      // STEP 3: Download emails in MICRO-BATCHES (5 email)
+      const MICRO_BATCH_SIZE = 5;
+      const PAUSE_MS = 2000;
+      const totalBatches = Math.ceil(realTotal / MICRO_BATCH_SIZE);
       let currentBatch = 0;
       let downloadedCount = 0;
-      const emailsToInsert: any[] = [];
+      let emptyBatchCount = 0;
 
-      console.log(`📦 [Sync] Inizio download: ${totalBatches} batch da ${batchSize} email`);
+      console.log(`📦 [Sync] Inizio download: ${totalBatches} micro-batch da ${MICRO_BATCH_SIZE} email`);
 
       for (let page = 1; page <= totalBatches; page++) {
+        // Check stop flag
+        if (shouldStop) {
+          console.log('🛑 [Sync] Sincronizzazione interrotta dall\'utente');
+          setSyncError('Sincronizzazione interrotta');
+          break;
+        }
+
         currentBatch = page;
         
         // Update download status
@@ -94,19 +111,46 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
           isComplete: false,
         });
 
-        console.log(`⬇️ [Sync] Download batch ${currentBatch}/${totalBatches}...`);
+        console.log(`⬇️ [Sync] Download micro-batch ${currentBatch}/${totalBatches}...`);
 
-        const response = await emailMessageApi.getMessages({
-          folder,
-          page,
-          limit: batchSize,
-        });
+        let retryCount = 0;
+        let response;
+        
+        // Retry logic (max 3 tentativi)
+        while (retryCount < 3) {
+          try {
+            response = await emailMessageApi.getMessages({
+              folder,
+              page,
+              limit: MICRO_BATCH_SIZE,
+            });
+            break; // Success
+          } catch (error: any) {
+            retryCount++;
+            console.warn(`⚠️ [Sync] Errore batch ${currentBatch}, tentativo ${retryCount}/3:`, error.message);
+            if (retryCount >= 3) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+          }
+        }
 
         const messages = response?.messages || [];
+        
         if (messages.length === 0) {
-          console.log(`⚠️ [Sync] Batch ${currentBatch} vuoto, ma continuo...`);
+          emptyBatchCount++;
+          console.log(`⚠️ [Sync] Batch ${currentBatch} vuoto (${emptyBatchCount} consecutivi)`);
+          
+          // Stop dopo 2 batch vuoti consecutivi
+          if (emptyBatchCount >= 2) {
+            console.log('🛑 [Sync] 2 batch vuoti consecutivi, interruzione download');
+            break;
+          }
+          
+          // Pause before next batch
+          await new Promise(resolve => setTimeout(resolve, PAUSE_MS));
           continue;
         }
+
+        emptyBatchCount = 0; // Reset se troviamo email
 
         // Filter only new emails
         const newMessages = messages.filter((msg: any) => {
@@ -116,10 +160,37 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
 
         console.log(`✅ [Sync] Batch ${currentBatch}: ${messages.length} email, ${newMessages.length} nuove`);
 
+        // STEP 4: Insert immediately into DB (progressive insert)
         if (newMessages.length > 0) {
-          emailsToInsert.push(...newMessages);
-          downloadedCount += newMessages.length;
-          setSyncedCount(downloadedCount);
+          const emailRecords = newMessages.map((msg: any) => ({
+            message_id: String(msg.message_id || msg.uid || msg.id),
+            user_email: userEmail,
+            subject: msg.subject || '(No Subject)',
+            from_email: typeof msg.from === 'object' ? msg.from.email : msg.from,
+            to_email: msg.to || '',
+            cartella: folder,
+            data_ricezione: msg.date || new Date().toISOString(),
+            stato: msg.is_read || msg.seen ? 'letto' : 'nuovo',
+            direzione: folder === 'Sent' ? 'uscita' : 'entrata',
+            provider_id: '00000000-0000-0000-0000-000000000000',
+          }));
+
+          const { error: insertError } = await supabase
+            .from('email_messages')
+            .insert(emailRecords);
+
+          if (insertError) {
+            console.error('❌ [Sync] Errore inserimento batch:', insertError);
+            // Non interrompo il processo, continuo con il prossimo batch
+          } else {
+            downloadedCount += newMessages.length;
+            setSyncedCount(downloadedCount);
+            // Add new UIDs to set
+            newMessages.forEach((msg: any) => {
+              existingUids.add(String(msg.message_id || msg.uid || msg.id));
+            });
+            console.log(`💾 [Sync] Inserite ${newMessages.length} email (totale: ${downloadedCount})`);
+          }
         }
 
         // Update progress
@@ -130,57 +201,36 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
           totalOnServer: realTotal,
           isComplete: currentBatch === totalBatches,
         });
-      }
 
-      console.log(`📥 [Sync] Download completato: ${downloadedCount} nuove email da inserire`);
-
-      // STEP 4: Insert new emails in DB
-      if (emailsToInsert.length > 0) {
-        console.log(`💾 [Sync] Inserimento ${emailsToInsert.length} email nel DB...`);
-
-        const emailRecords = emailsToInsert.map((msg: any) => ({
-          message_id: String(msg.message_id || msg.uid || msg.id),
-          user_email: userEmail,
-          subject: msg.subject || '(No Subject)',
-          from_email: typeof msg.from === 'object' ? msg.from.email : msg.from,
-          to_email: msg.to || '',
-          cartella: folder,
-          data_ricezione: msg.date || new Date().toISOString(),
-          stato: msg.is_read || msg.seen ? 'letto' : 'nuovo',
-          direzione: folder === 'Sent' ? 'uscita' : 'entrata',
-          provider_id: '00000000-0000-0000-0000-000000000000', // placeholder
-        }));
-
-        const { error: insertError } = await supabase
-          .from('email_messages')
-          .insert(emailRecords);
-
-        if (insertError) {
-          console.error('❌ [Sync] Errore inserimento:', insertError);
-          throw insertError;
+        // Pause 2 secondi prima del prossimo batch (tranne ultimo)
+        if (currentBatch < totalBatches) {
+          console.log(`⏸️ [Sync] Pausa 2 secondi prima del prossimo batch...`);
+          await new Promise(resolve => setTimeout(resolve, PAUSE_MS));
         }
-
-        console.log(`✅ [Sync] ${emailsToInsert.length} email inserite con successo`);
       }
 
-      setAllEmails(emailsToInsert);
       setDownloadStatus({
-        currentBatch: totalBatches,
+        currentBatch: Math.min(currentBatch, totalBatches),
         totalBatches,
         downloadedCount,
         totalOnServer: realTotal,
         isComplete: true,
       });
 
-      console.log('🎉 [Sync] Sincronizzazione completata con successo');
+      console.log('🎉 [Sync] Sincronizzazione completata:', {
+        downloadedCount,
+        totalBatches: currentBatch,
+        stopped: shouldStop,
+      });
 
     } catch (error: any) {
       console.error('❌ [Sync] Errore sincronizzazione:', error);
       setSyncError(error.message || 'Sync failed');
     } finally {
       setIsSyncing(false);
+      setShouldStop(false);
     }
-  }, [folder]);
+  }, [folder, shouldStop]);
 
   return {
     isSyncing,
@@ -190,5 +240,6 @@ export const useEmailSync = ({ folder }: UseEmailSyncProps): EmailSyncResult => 
     downloadStatus,
     startSync,
     reset,
+    stopSync,
   };
 };

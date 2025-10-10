@@ -292,10 +292,21 @@ export const emailMessageApi = {
     order?: 'ASC' | 'DESC';
   }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
 
-  getMessage: (uid: string, markAsRead: boolean = true) => {
+  getMessage: (uid: string, markAsRead: boolean = true, folder?: string) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
+    
+    const params: any = { 
+      handler: 'get_message', 
+      uid: uidInt, 
+      mark_as_read: markAsRead 
+    };
+    
+    if (folder) {
+      params.folder = folder;
+    }
+    
+    return fetchApi('/email_message', params);
   },
 
   searchMessages: (params: {

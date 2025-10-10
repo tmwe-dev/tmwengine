@@ -234,7 +234,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
               timestamp: new Date().toISOString()
             });
             
-            const fullEmail = await emailMessageApi.getMessage(messageId, false);
+            const fullEmail = await emailMessageApi.getMessage(messageId, false, folderName);
             
             // Log dettagliato risposta API
             console.log(`📥 API RESPONSE [${i + 1}/${missingEmails.length}]:`, {
@@ -392,7 +392,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
       console.log(`🧪 TEST: Scaricamento email ${testMessageId}...`);
 
       // Test API TMWE
-      const fullEmail = await emailMessageApi.getMessage(testMessageId, false);
+      const fullEmail = await emailMessageApi.getMessage(testMessageId, false, testFolderName);
 
       const validation = {
         has_subject: !!fullEmail?.subject,

@@ -16,6 +16,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { 
   Inbox, 
   Send, 
@@ -145,7 +151,7 @@ export const EmailSidebar = ({
       ? folder.name.split('/').pop() // Prendi solo l'ultima parte dopo /
       : folder.name;
     
-    return (
+    const folderButton = (
       <Button
         key={folder.name}
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
@@ -196,14 +202,62 @@ export const EmailSidebar = ({
         )}
       </Button>
     );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip key={folder.id || folder.name}>
+          <TooltipTrigger asChild>
+            {folderButton}
+          </TooltipTrigger>
+          <TooltipContent 
+            side="right" 
+            className={cn(
+              "relative overflow-hidden border-none shadow-lg transition-all duration-300",
+              "before:absolute before:left-0 before:top-0 before:h-full before:w-1",
+              "before:bg-gradient-to-b before:from-purple-500 before:via-pink-500 before:to-purple-500",
+              "before:animate-[slide-in-right_0.3s_ease-out]",
+              selectedFolder === folder.name 
+                ? "bg-purple-500/20 before:opacity-100" 
+                : "bg-card before:opacity-0 hover:before:opacity-100"
+            )}
+          >
+            <div className="flex items-center gap-3 pl-2">
+              <Icon className={cn(
+                "h-4 w-4 flex-shrink-0 transition-all duration-200",
+                isSubfolder 
+                  ? selectedFolder === folder.name ? "text-white" : "text-purple-400"
+                  : selectedFolder === folder.name ? "text-purple-400" : ""
+              )} />
+              <span className={cn(
+                "text-sm transition-all duration-200",
+                selectedFolder === folder.name ? "text-purple-300 font-semibold" : ""
+              )}>
+                {displayName}
+              </span>
+              {unseenCount > 0 && (
+                <Badge 
+                  variant="secondary" 
+                  className="ml-auto bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs px-1.5 py-0"
+                >
+                  {unseenCount}
+                </Badge>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return folderButton;
   };
 
   return (
-    <div className={cn(
-      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
-      isCollapsed ? "w-16" : "w-64"
-    )}>
-      <div className="p-2 flex justify-end">
+    <TooltipProvider delayDuration={300}>
+      <div className={cn(
+        "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
+        isCollapsed ? "w-16" : "w-64"
+      )}>
+        <div className="p-2 flex justify-end">
         <Button
           variant="ghost"
           size="icon"
@@ -368,6 +422,7 @@ export const EmailSidebar = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };

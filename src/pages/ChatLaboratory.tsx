@@ -151,17 +151,41 @@ const ChatLaboratory = () => {
     e.preventDefault();
     if (!prompt.trim()) return;
 
-    let conversationId = currentConversationId;
-    if (!conversationId) {
-      await createNewConversation();
-      return;
-    }
-
     setIsLoading(true);
     const currentPrompt = prompt;
     setPrompt('');
 
     try {
+      // Crea conversazione inline se non esiste
+      let conversationId = currentConversationId;
+      if (!conversationId) {
+        const { data: newConv, error: convError } = await supabase
+          .from('chat_laboratory_conversations')
+          .insert({
+            titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
+            active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
+          })
+          .select()
+          .single();
+
+        if (convError) throw convError;
+        conversationId = newConv.id;
+        setCurrentConversationId(conversationId);
+
+        // Salva partecipanti
+        for (const participant of participants.filter(p => p.is_active)) {
+          await supabase
+            .from('chat_laboratory_participants')
+            .insert({
+              conversation_id: conversationId,
+              type: participant.type,
+              name: participant.name,
+              system_prompt: participant.system_prompt,
+              is_active: true
+            });
+        }
+      }
+
       // Salva messaggio umano
       const { error: insertError } = await supabase
         .from('chat_laboratory_messages')
@@ -181,10 +205,9 @@ const ChatLaboratory = () => {
       setUploadedFiles([]);
       setGeneratedImage(null);
 
-      // Chiama orchestratore - gestisce automaticamente i turni
+      // Chiama orchestratore
       const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
       
-      // L'orchestrator gestisce TUTTE le AI in sequenza con un'unica chiamata
       const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
         body: { 
           conversationId,
@@ -212,12 +235,6 @@ const ChatLaboratory = () => {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (currentConversationId && prompt.trim()) {
-      handleSubmit(new Event('submit') as any);
-    }
-  }, [currentConversationId]);
 
   const toggleParticipant = (participantId: string) => {
     setParticipants(prev => prev.map(p => 

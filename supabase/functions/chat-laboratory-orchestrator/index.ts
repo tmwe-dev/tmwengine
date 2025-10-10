@@ -211,16 +211,7 @@ REGOLE CRITICHE:
         throw new Error('OpenAI API key non configurata in config_ai');
       }
 
-      const fullPrompt = `${basePrompt}
-
-Conversazione finora:
-${visibleHistory}
-
-Nuovo messaggio dell'utente:
-${userMessage}
-
-Rispondi con un messaggio breve e naturale (max 150 parole):`;
-
+      // ✅ CORREZIONE: Separa system prompt dal messaggio user per ChatGPT
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -229,7 +220,13 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
         },
         body: JSON.stringify({
           model: openaiConfig.modello || 'gpt-5-2025-08-07',
-          messages: [{ role: 'user', content: fullPrompt }],
+          messages: [
+            { role: 'system', content: basePrompt }, // Prompt globale
+            { 
+              role: 'user', 
+              content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}\n\nRispondi brevemente (max 60 parole):` 
+            }
+          ],
           max_completion_tokens: 500,
         }),
       });

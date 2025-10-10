@@ -138,6 +138,12 @@ export const EmailSidebar = ({
     const unseenCount = folder.unread_messages || folder.unseen || 0;
     const totalMessages = folder.total_messages || folder.messages || 0;
     const indent = folder.name.split('/').length - 1;
+    const isSubfolder = indent > 0;
+    
+    // Rimuovi il nome della cartella principale dalle sottocartelle
+    const displayName = isSubfolder 
+      ? folder.name.split('/').pop() // Prendi solo l'ultima parte dopo /
+      : folder.name;
     
     return (
       <Button
@@ -156,13 +162,16 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+        title={isCollapsed ? `${displayName} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
-            selectedFolder === folder.name ? "text-purple-400 scale-110" : "scale-100",
+            // Sottocartelle: inverti i colori (purple -> white, default -> purple)
+            isSubfolder 
+              ? selectedFolder === folder.name ? "text-white scale-110" : "text-purple-400 scale-100"
+              : selectedFolder === folder.name ? "text-purple-400 scale-110" : "scale-100",
             isCollapsed ? "" : "mr-3"
           )} />
           {!isCollapsed && (
@@ -171,7 +180,7 @@ export const EmailSidebar = ({
               "group-hover:scale-110",
               selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {folder.name}
+              {displayName}
             </span>
           )}
         </div>

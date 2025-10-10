@@ -201,6 +201,7 @@ export const FolderSelectionDialog = ({
     console.log('🚀 [FolderDialog] handleStartSync called');
     console.log('📁 [FolderDialog] Selected folders:', selected);
     console.log('📊 [FolderDialog] Total selected:', selected.length);
+    console.log('📋 [FolderDialog] All folders:', folders);
     
     if (selected.length === 0) {
       toast.error('Seleziona almeno una cartella');
@@ -212,6 +213,7 @@ export const FolderSelectionDialog = ({
     
     // Avvia la sincronizzazione dopo un breve delay per permettere la chiusura completa del dialog
     setTimeout(() => {
+      console.log('⏰ [FolderDialog] Calling onStartSync with:', selected);
       onStartSync(selected);
     }, 100);
   };

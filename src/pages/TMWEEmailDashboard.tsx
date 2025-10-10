@@ -194,6 +194,12 @@ const EmailDashboard = () => {
     excludedFolders: [], // No automatic exclusion
     onProgress: (progress) => {
       console.log('📊 Multi-folder progress:', progress);
+      
+      // Apri il dialog solo quando la sync inizia davvero (primo aggiornamento)
+      if (progress.foldersProcessed === 0 && progress.totalFolders > 0) {
+        setShowSyncProgress(true);
+        setIsSyncMinimized(false);
+      }
     }
   });
 
@@ -395,10 +401,21 @@ const EmailDashboard = () => {
   };
 
   const handleStartMultiFolderSync = async (selectedFolders: string[]) => {
+    console.log('🎯 [Dashboard] handleStartMultiFolderSync called with:', selectedFolders);
+    console.log('📊 [Dashboard] Number of folders:', selectedFolders.length);
+    
     setIsMultiFolderMode(true);
-    setShowSyncProgress(true);
-    setIsSyncMinimized(false);
-    await multiFolderSync.startMultiFolderSync(selectedFolders);
+    
+    // NON aprire subito il dialog, aspetta che la sync inizi davvero
+    // Il dialog verrà aperto dal callback onProgress quando riceve il primo aggiornamento
+    
+    try {
+      await multiFolderSync.startMultiFolderSync(selectedFolders);
+    } catch (error) {
+      console.error('❌ [Dashboard] Error starting multi-folder sync:', error);
+      toast.error('Errore durante l\'avvio della sincronizzazione');
+      setIsMultiFolderMode(false);
+    }
   };
 
   const handleMinimizeSync = () => {

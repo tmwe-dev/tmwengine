@@ -217,25 +217,40 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
     console.log('📁 [Multi-Folder Sync] Received folders:', selectedFolders);
     console.log('🚫 [Multi-Folder Sync] Excluded folders:', excludedFolders);
 
+    // Filter out excluded folders PRIMA di iniziare
+    const foldersToSync = selectedFolders.filter(f => !excludedFolders.includes(f));
+    
+    console.log('✅ [Multi-Folder Sync] Folders to sync:', foldersToSync);
+    console.log('❌ [Multi-Folder Sync] Folders filtered out:', 
+      selectedFolders.filter(f => excludedFolders.includes(f)));
+    
+    if (foldersToSync.length === 0) {
+      console.error('❌ [Multi-Folder Sync] NO FOLDERS TO SYNC after filtering!');
+      toast.error('Nessuna cartella selezionata per la sincronizzazione');
+      return; // Non iniziare la sync
+    }
+
+    // ORA possiamo iniziare la sincronizzazione
     setIsSyncing(true);
     setError(null);
     shouldStop.current = false;
     startTime.current = Date.now();
 
+    // Notifica al parent che la sync è iniziata (questo apre il dialog)
+    if (onProgress) {
+      onProgress({
+        foldersProcessed: 0,
+        totalFolders: foldersToSync.length,
+        currentFolder: foldersToSync[0],
+        currentFolderProgress: 0,
+        totalEmailsDownloaded: 0,
+        totalEmailsToSync: 0,
+        overallProgress: 0,
+        estimatedTimeRemaining: 0
+      });
+    }
+
     try {
-      // Filter out excluded folders
-      const foldersToSync = selectedFolders.filter(f => !excludedFolders.includes(f));
-      
-      console.log('✅ [Multi-Folder Sync] Folders to sync:', foldersToSync);
-      console.log('❌ [Multi-Folder Sync] Folders filtered out:', 
-        selectedFolders.filter(f => excludedFolders.includes(f)));
-      
-      if (foldersToSync.length === 0) {
-        console.error('❌ [Multi-Folder Sync] NO FOLDERS TO SYNC after filtering!');
-        toast.error('Nessuna cartella selezionata per la sincronizzazione');
-        setIsSyncing(false);
-        return;
-      }
 
       console.log(`📊 [Multi-Folder Sync] Starting sync for ${foldersToSync.length} folders`);
 

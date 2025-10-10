@@ -584,7 +584,9 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                 {testAreaOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 p-4 border rounded-lg bg-muted/50 mt-2">
+            <CollapsibleContent>
+              <ScrollArea className="max-h-[500px] mt-2">
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
               {/* Seleziona Cartella e Carica Email */}
               <div className="space-y-2">
                 <Label htmlFor="test-folder">Seleziona Cartella per Test</Label>
@@ -716,6 +718,8 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                   </ScrollArea>
                 </div>
               )}
+                </div>
+              </ScrollArea>
             </CollapsibleContent>
           </Collapsible>
 

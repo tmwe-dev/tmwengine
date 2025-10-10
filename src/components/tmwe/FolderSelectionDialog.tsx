@@ -206,8 +206,14 @@ export const FolderSelectionDialog = ({
       toast.error('Seleziona almeno una cartella');
       return;
     }
-    onStartSync(selected);
+    
+    // Chiudi il dialog PRIMA di avviare la sincronizzazione
     onOpenChange(false);
+    
+    // Avvia la sincronizzazione dopo un breve delay per permettere la chiusura completa del dialog
+    setTimeout(() => {
+      onStartSync(selected);
+    }, 100);
   };
 
   return (

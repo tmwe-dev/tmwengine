@@ -119,9 +119,10 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
       <Button
         onClick={downloadSingleEmail}
         disabled={isDownloading}
-        size="sm"
+        size="icon"
         variant="outline"
-        className="flex items-center gap-2"
+        className="h-8 w-8"
+        title={isDownloading ? 'Downloading...' : 'Download 1 Email'}
       >
         {isDownloading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,7 +133,6 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
         ) : (
           <Download className="h-4 w-4" />
         )}
-        <span>{isDownloading ? 'Downloading...' : 'Download 1 Email'}</span>
       </Button>
 
       {lastDownloadedCount > 0 && (

@@ -470,7 +470,7 @@ const EmailDashboard = () => {
         />
         
         {/* Single Email Download Button */}
-        <div className="absolute top-2 right-4 z-50">
+        <div className="absolute top-2 left-4 z-50">
           <SingleEmailDownload folder={selectedFolder} />
         </div>
       </div>

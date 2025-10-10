@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { useFolderList } from '@/hooks/useFolderList';
-import { useMultiFolderSync } from '@/hooks/useMultiFolderSync';
-import { SyncProgressMulti } from './SyncProgressMulti';
-import { supabase } from '@/integrations/supabase/client';
+import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { toast } from 'sonner';
-import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, AlertTriangle, Save, ArrowUpDown, XCircle } from 'lucide-react';
+import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, ArrowUpDown, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FolderSyncManagerProps {
@@ -20,73 +18,22 @@ interface FolderSyncManagerProps {
   currentFolder?: string;
 }
 
-export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderSyncManagerProps) => {
-  const { folders, loading: loadingFolders, reload: reloadFolders } = useFolderList();
-  const { isSyncing, progress, results, startMultiSync, stopSync, reset } = useMultiFolderSync();
+export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps) => {
+  const { folders, loading: loadingFolders } = useFolderList();
   
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
-  const [dateFilterMonths, setDateFilterMonths] = useState<number>(24);
-  const [syncMode, setSyncMode] = useState<'smart' | 'full'>('smart');
-  const [excludedFolders, setExcludedFolders] = useState<string[]>([
-    'Trash', 'Archives', 'Junk', 'Drafts', 'Spam'
-  ]);
   const [sortBy, setSortBy] = useState<'name' | 'emails'>('name');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [currentFolder, setCurrentFolder] = useState<string>('');
+  const [currentFolderIndex, setCurrentFolderIndex] = useState(0);
+  const [completedFolders, setCompletedFolders] = useState<string[]>([]);
+  const [shouldStop, setShouldStop] = useState(false);
 
-  // Load user preferences
-  useEffect(() => {
-    if (open) {
-      loadPreferences();
-    }
-  }, [open]);
-
-  const loadPreferences = async () => {
-    const userEmail = sessionStorage.getItem('tmwe_user_email');
-    if (!userEmail) return;
-
-    const { data } = await supabase
-      .from('user_sync_preferences')
-      .select('*')
-      .eq('user_email', userEmail)
-      .maybeSingle();
-
-    if (data) {
-      setExcludedFolders(Array.isArray(data.excluded_folders) ? data.excluded_folders as string[] : []);
-      setDateFilterMonths(data.date_filter_months || 24);
-      setSyncMode(data.default_sync_mode as 'smart' | 'full' || 'smart');
-      
-      // Auto-select included folders
-      if (data.included_folders && Array.isArray(data.included_folders)) {
-        setSelectedFolders(data.included_folders as string[]);
-      }
-    }
-  };
-
-  const savePreferences = async () => {
-    const userEmail = sessionStorage.getItem('tmwe_user_email');
-    if (!userEmail) {
-      toast.error('Utente non autenticato');
-      return;
-    }
-
-    const { error } = await supabase
-      .from('user_sync_preferences')
-      .upsert({
-        user_email: userEmail,
-        excluded_folders: excludedFolders,
-        included_folders: selectedFolders,
-        date_filter_months: dateFilterMonths,
-        default_sync_mode: syncMode,
-      }, {
-        onConflict: 'user_email'
-      });
-
-    if (error) {
-      toast.error('Errore salvataggio preferenze');
-      console.error(error);
-    } else {
-      toast.success('Preferenze salvate');
-    }
-  };
+  // Dummy hook instance (not used during multi-folder sync)
+  const { startDownload } = useEmailDownload({ 
+    folder: currentFolder || 'INBOX', 
+    totalEmails: 0 
+  });
 
   const handleFolderToggle = (folderName: string) => {
     setSelectedFolders(prev => 
@@ -97,10 +44,7 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
   };
 
   const handleSelectAll = () => {
-    const availableFolders = folders
-      .filter(f => !excludedFolders.includes(f.name))
-      .map(f => f.name);
-    setSelectedFolders(availableFolders);
+    setSelectedFolders(folders.map(f => f.name));
   };
 
   const handleDeselectAll = () => {
@@ -113,11 +57,55 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
       return;
     }
 
-    await startMultiSync({
-      folders: selectedFolders,
-      dateFilterMonths: dateFilterMonths,
-      mode: syncMode,
-    });
+    setIsSyncing(true);
+    setShouldStop(false);
+    setCompletedFolders([]);
+    setCurrentFolderIndex(0);
+
+    for (let i = 0; i < selectedFolders.length; i++) {
+      if (shouldStop) {
+        toast.info('Sincronizzazione interrotta');
+        break;
+      }
+
+      const folderName = selectedFolders[i];
+      const folderData = folders.find(f => f.name === folderName);
+      
+      if (!folderData) continue;
+
+      setCurrentFolder(folderName);
+      setCurrentFolderIndex(i + 1);
+
+      console.log(`🔄 Sincronizzazione ${i + 1}/${selectedFolders.length}: ${folderName} (${folderData.messageCount} email)`);
+
+      try {
+        // Usa useEmailDownload per ogni cartella
+        const { startDownload: download } = useEmailDownload({ 
+          folder: folderName, 
+          totalEmails: folderData.messageCount 
+        });
+        
+        await download();
+        setCompletedFolders(prev => [...prev, folderName]);
+        
+      } catch (error) {
+        console.error(`❌ Errore sincronizzazione ${folderName}:`, error);
+        toast.error(`Errore durante la sincronizzazione di ${folderName}`);
+      }
+
+      // Pausa tra le cartelle
+      if (i < selectedFolders.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    setIsSyncing(false);
+    toast.success(`Sincronizzazione completata! ${completedFolders.length}/${selectedFolders.length} cartelle`);
+  };
+
+  const handleStopSync = () => {
+    setShouldStop(true);
+    toast.info('Interruzione in corso...');
   };
 
   const folderIcons: Record<string, any> = {
@@ -139,7 +127,7 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
     return Folder;
   };
 
-  const availableFolders = folders.filter(f => !excludedFolders.includes(f.name));
+  const availableFolders = folders;
   
   const sortedFolders = [...availableFolders].sort((a, b) => {
     if (sortBy === 'name') {
@@ -166,13 +154,13 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left: Folder Selection */}
+        <div className="space-y-6">
+          {/* Folder Selection */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold flex items-center gap-2">
                 <Folder className="h-4 w-4" />
-                Cartelle Disponibili
+                Seleziona Cartelle
               </h3>
               <div className="flex gap-2">
                 <Button
@@ -200,20 +188,28 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
                 <div className="space-y-2">
                   {sortedFolders.map((folder) => {
                     const Icon = getFolderIcon(folder.name);
+                    const isCompleted = completedFolders.includes(folder.name);
+                    const isCurrent = currentFolder === folder.name;
+                    
                     return (
                       <div
                         key={folder.name}
-                        className="flex items-center justify-between p-2 hover:bg-accent rounded-md"
+                        className={`flex items-center justify-between p-2 rounded-md ${
+                          isCurrent ? 'bg-primary/10 border border-primary' : 'hover:bg-accent'
+                        }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox
                             checked={selectedFolders.includes(folder.name)}
                             onCheckedChange={() => handleFolderToggle(folder.name)}
+                            disabled={isSyncing}
                           />
                           <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          <Label className="cursor-pointer">
+                          <Label className={`cursor-pointer ${isCurrent ? 'font-semibold' : ''}`}>
                             {folder.name}
                           </Label>
+                          {isCurrent && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                          {isCompleted && <CheckCircle2 className="h-3 w-3 text-green-500" />}
                         </div>
                         <div className="flex gap-2">
                           {folder.unreadCount > 0 && (
@@ -222,7 +218,7 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
                             </Badge>
                           )}
                           <span className="text-sm text-muted-foreground">
-                            {folder.messageCount}
+                            {folder.messageCount.toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -236,104 +232,48 @@ export const FolderSyncManager = ({ open, onOpenChange, currentFolder }: FolderS
               <Alert>
                 <AlertDescription>
                   <strong>{selectedFolders.length}</strong> cartelle selezionate
-                  con circa <strong>{totalSelectedEmails}</strong> email totali
+                  con circa <strong>{totalSelectedEmails.toLocaleString()}</strong> email totali
                 </AlertDescription>
               </Alert>
             )}
           </div>
 
-          {/* Right: Options & Progress */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-3">Filtro Temporale</h3>
-              <RadioGroup
-                value={dateFilterMonths.toString()}
-                onValueChange={(v) => setDateFilterMonths(parseInt(v))}
+          {/* Progress */}
+          {isSyncing && (
+            <div className="space-y-3 p-4 border rounded-lg bg-accent/50">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">
+                  Cartella {currentFolderIndex}/{selectedFolders.length}: {currentFolder}
+                </span>
+                <span className="text-muted-foreground">
+                  {completedFolders.length} completate
+                </span>
+              </div>
+              <Progress value={(currentFolderIndex / selectedFolders.length) * 100} className="h-2" />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            {!isSyncing ? (
+              <Button
+                onClick={handleStartSync}
+                disabled={selectedFolders.length === 0}
+                className="flex-1"
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="6" id="6months" />
-                  <Label htmlFor="6months">Ultimi 6 mesi</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="12" id="1year" />
-                  <Label htmlFor="1year">Ultimo anno</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="24" id="2years" />
-                  <Label htmlFor="2years">Ultimi 2 anni</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="999" id="all" />
-                  <Label htmlFor="all">Tutte le email</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-3">Modalità Sincronizzazione</h3>
-              <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as 'smart' | 'full')}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="smart" id="smart" />
-                  <Label htmlFor="smart">Smart Sync (solo nuove email)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="full" id="full" />
-                  <Label htmlFor="full">Download Completo</Label>
-                </div>
-              </RadioGroup>
-
-              {syncMode === 'full' && (
-                <Alert variant="destructive" className="mt-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Il download completo scaricherà TUTTE le email, anche quelle già presenti
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            {/* Progress */}
-            {isSyncing && (
-              <SyncProgressMulti
-                currentFolder={progress.currentFolder}
-                currentFolderIndex={progress.currentFolderIndex}
-                totalFolders={progress.totalFolders}
-                results={results}
-                processedEmails={progress.processedEmails}
-              />
+                <Database className="h-4 w-4 mr-2" />
+                Scarica Email ({selectedFolders.length} {selectedFolders.length === 1 ? 'cartella' : 'cartelle'})
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStopSync}
+                variant="destructive"
+                className="flex-1"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Interrompi
+              </Button>
             )}
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-4">
-              {!isSyncing ? (
-                <>
-                  <Button
-                    onClick={handleStartSync}
-                    disabled={selectedFolders.length === 0}
-                    className="flex-1"
-                  >
-                    <Database className="h-4 w-4 mr-2" />
-                    Avvia Sincronizzazione
-                  </Button>
-                  <Button
-                    onClick={savePreferences}
-                    variant="outline"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Salva
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={stopSync}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Interrompi Sincronizzazione
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </DialogContent>

@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useFolderList } from '@/hooks/useFolderList';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, ArrowUpDown, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,12 +29,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
   const [currentFolderIndex, setCurrentFolderIndex] = useState(0);
   const [completedFolders, setCompletedFolders] = useState<string[]>([]);
   const [shouldStop, setShouldStop] = useState(false);
-
-  // Dummy hook instance (not used during multi-folder sync)
-  const { startDownload } = useEmailDownload({ 
-    folder: currentFolder || 'INBOX', 
-    totalEmails: 0 
-  });
+  const [totalDownloaded, setTotalDownloaded] = useState(0);
 
   const handleFolderToggle = (folderName: string) => {
     setSelectedFolders(prev => 
@@ -51,6 +47,110 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
     setSelectedFolders([]);
   };
 
+  const downloadFolderEmails = async (folderName: string, totalEmails: number): Promise<number> => {
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) {
+      toast.error('Utente non autenticato');
+      return 0;
+    }
+
+    try {
+      // 1. Recupera email già presenti
+      const { data: existingEmails } = await supabase
+        .from('email_messages')
+        .select('message_id')
+        .eq('cartella', folderName)
+        .eq('user_email', userEmail);
+
+      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
+      
+      console.log(`📊 ${folderName}: ${existingIds.size} già presenti, ${totalEmails} totali`);
+
+      if (existingIds.size >= totalEmails) {
+        console.log(`✅ ${folderName}: Tutte le email già scaricate`);
+        return 0;
+      }
+
+      const batchSize = 50;
+      const totalPages = Math.ceil(totalEmails / batchSize);
+      let newEmailsCount = 0;
+
+      // 2. Scarica batch per batch
+      for (let page = 1; page <= totalPages; page++) {
+        if (shouldStop) break;
+
+        const response = await emailMessageApi.getMessages({
+          folder: folderName,
+          limit: batchSize,
+          page,
+        });
+
+        const pageEmails = response?.messages || [];
+        const missingEmails = pageEmails.filter((email: any) => {
+          const emailId = String(email.uid || email.message_id);
+          return !existingIds.has(emailId);
+        });
+
+        console.log(`📄 ${folderName} Pag ${page}/${totalPages}: ${missingEmails.length} nuove`);
+
+        if (missingEmails.length > 0) {
+          const emailsToInsert = missingEmails.map((email: any) => {
+            let isoDate = new Date().toISOString();
+            if (email.date) {
+              try {
+                isoDate = new Date(email.date).toISOString();
+              } catch (e) {
+                console.error('Error parsing date:', email.date);
+              }
+            }
+
+            return {
+              message_id: String(email.uid || email.message_id || `msg-${Date.now()}-${Math.random()}`),
+              from_email: email.from || email.from_email || '',
+              to_email: email.to || email.to_email || '',
+              cc_email: email.cc || email.cc_email || null,
+              bcc_email: email.bcc || email.bcc_email || null,
+              subject: email.subject || '',
+              body_text: email.body_text || email.text || '',
+              body_html: email.body_html || email.html || '',
+              data_ricezione: isoDate,
+              cartella: folderName,
+              direzione: 'inbound',
+              stato: 'nuovo',
+              flags: email.flags || [],
+              attachments: email.attachments || [],
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              user_email: userEmail,
+            };
+          });
+
+          const { error: insertError } = await supabase
+            .from('email_messages')
+            .insert(emailsToInsert);
+
+          if (!insertError) {
+            newEmailsCount += missingEmails.length;
+            missingEmails.forEach((email: any) => {
+              existingIds.add(String(email.uid || email.message_id));
+            });
+            console.log(`✅ ${folderName}: Salvate ${missingEmails.length} email (totale: ${newEmailsCount})`);
+          } else {
+            console.error(`❌ ${folderName}: Errore salvataggio`, insertError);
+          }
+        }
+
+        if (page < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      return newEmailsCount;
+    } catch (error: any) {
+      console.error(`❌ ${folderName}: Errore download`, error);
+      throw error;
+    }
+  };
+
   const handleStartSync = async () => {
     if (selectedFolders.length === 0) {
       toast.error('Seleziona almeno una cartella');
@@ -61,6 +161,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
     setShouldStop(false);
     setCompletedFolders([]);
     setCurrentFolderIndex(0);
+    setTotalDownloaded(0);
 
     for (let i = 0; i < selectedFolders.length; i++) {
       if (shouldStop) {
@@ -79,28 +180,25 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
       console.log(`🔄 Sincronizzazione ${i + 1}/${selectedFolders.length}: ${folderName} (${folderData.messageCount} email)`);
 
       try {
-        // Usa useEmailDownload per ogni cartella
-        const { startDownload: download } = useEmailDownload({ 
-          folder: folderName, 
-          totalEmails: folderData.messageCount 
-        });
-        
-        await download();
+        const downloaded = await downloadFolderEmails(folderName, folderData.messageCount);
+        setTotalDownloaded(prev => prev + downloaded);
         setCompletedFolders(prev => [...prev, folderName]);
         
+        if (downloaded > 0) {
+          toast.success(`${folderName}: ${downloaded} nuove email scaricate`);
+        }
       } catch (error) {
         console.error(`❌ Errore sincronizzazione ${folderName}:`, error);
         toast.error(`Errore durante la sincronizzazione di ${folderName}`);
       }
 
-      // Pausa tra le cartelle
       if (i < selectedFolders.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
     setIsSyncing(false);
-    toast.success(`Sincronizzazione completata! ${completedFolders.length}/${selectedFolders.length} cartelle`);
+    toast.success(`Completato! ${totalDownloaded} email scaricate da ${completedFolders.length} cartelle`);
   };
 
   const handleStopSync = () => {

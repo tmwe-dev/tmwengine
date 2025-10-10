@@ -15,6 +15,8 @@ import { EmailSyncProgress } from '@/components/tmwe/EmailSyncProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { useEmailSync } from '@/hooks/useEmailSync';
+import { useMultiFolderSync } from '@/hooks/useMultiFolderSync';
+import { FolderSelectionDialog } from '@/components/tmwe/FolderSelectionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -45,6 +47,8 @@ const EmailDashboard = () => {
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [showSyncProgress, setShowSyncProgress] = useState(false);
   const [isSyncMinimized, setIsSyncMinimized] = useState(false);
+  const [folderSelectionOpen, setFolderSelectionOpen] = useState(false);
+  const [isMultiFolderMode, setIsMultiFolderMode] = useState(false);
   const queryClient = useQueryClient();
 
   // Query per email condivise
@@ -183,6 +187,13 @@ const EmailDashboard = () => {
   } = useEmailSync({
     folder: selectedFolder,
     totalEmailCount,
+  });
+
+  // Hook per sincronizzazione multi-cartella
+  const multiFolderSync = useMultiFolderSync({
+    onProgress: (progress) => {
+      console.log('📊 Multi-folder progress:', progress);
+    }
   });
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
@@ -378,10 +389,15 @@ const EmailDashboard = () => {
     : emailsToUse;
 
   const handleSync = async () => {
-    toast.info('Avvio sincronizzazione...');
+    // Apri il dialog di selezione cartelle per multi-folder sync
+    setFolderSelectionOpen(true);
+  };
+
+  const handleStartMultiFolderSync = async (selectedFolders: string[]) => {
+    setIsMultiFolderMode(true);
     setShowSyncProgress(true);
     setIsSyncMinimized(false);
-    await startSync();
+    await multiFolderSync.startMultiFolderSync(selectedFolders);
   };
 
   const handleMinimizeSync = () => {
@@ -760,9 +776,23 @@ const EmailDashboard = () => {
         open={showSyncProgress && !isSyncMinimized} 
         onOpenChange={setShowSyncProgress}
         status={downloadStatus}
-        isSyncing={isSyncing}
-        onStop={stopSync}
+        isSyncing={isMultiFolderMode ? multiFolderSync.isSyncing : isSyncing}
+        onStop={isMultiFolderMode ? multiFolderSync.stopMultiFolderSync : stopSync}
         onMinimize={handleMinimizeSync}
+        isMultiFolder={isMultiFolderMode}
+        currentFolder={multiFolderSync.currentFolder || selectedFolder}
+        foldersProcessed={multiFolderSync.progress.foldersProcessed}
+        totalFolders={multiFolderSync.progress.totalFolders}
+        overallProgress={multiFolderSync.progress.overallProgress}
+        totalEmailsDownloaded={multiFolderSync.progress.totalEmailsDownloaded}
+        totalEmailsToSync={multiFolderSync.progress.totalEmailsToSync}
+        estimatedTimeRemaining={multiFolderSync.progress.estimatedTimeRemaining}
+      />
+
+      <FolderSelectionDialog 
+        open={folderSelectionOpen}
+        onOpenChange={setFolderSelectionOpen}
+        onStartSync={handleStartMultiFolderSync}
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>

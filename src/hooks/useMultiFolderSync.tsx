@@ -102,11 +102,38 @@ export const useMultiFolderSync = () => {
           const maxEmptyBatches = 3;
 
           while (hasMore && !shouldStop) {
+            // 📤 Log parametri chiamata API
+            console.log(`📤 Chiamata API per ${folder}:`, {
+              folder,
+              limit,
+              page,
+            });
+
             const response = await emailMessageApi.getMessages({
               folder,
               limit,
               page,
             });
+
+            // 📥 Log risposta API
+            console.log(`📥 Risposta API:`, {
+              messagesCount: response?.messages?.length || 0,
+              hasMessages: !!response?.messages,
+              total: response?.total || 0,
+            });
+
+            // 🔍 Debug prima email se presente
+            if (response?.messages?.length > 0) {
+              const firstEmail = response.messages[0];
+              console.log(`📧 Prima email della risposta:`, {
+                message_id: firstEmail.message_id,
+                uid: firstEmail.uid,
+                subject: firstEmail.subject,
+                from: firstEmail.from,
+                date: firstEmail.date,
+                allFields: Object.keys(firstEmail),
+              });
+            }
 
             if (!response?.messages || response.messages.length === 0) {
               console.log(`📄 Nessun messaggio ricevuto dall'API per ${folder}`);
@@ -153,7 +180,30 @@ export const useMultiFolderSync = () => {
             }
 
             if (emailsToInsert.length > 0) {
-              const emailRecords = emailsToInsert.map((email: any) => {
+              // ✅ FILTRA email senza message_id
+              const validEmails = emailsToInsert.filter((email: any) => {
+                if (!email.message_id) {
+                  console.warn(`⚠️ Email senza message_id saltata:`, {
+                    subject: email.subject || '(no subject)',
+                    uid: email.uid,
+                    from: email.from,
+                  });
+                  return false;
+                }
+                return true;
+              });
+              
+              console.log(`✅ Email valide: ${validEmails.length}/${emailsToInsert.length}`);
+              
+              if (validEmails.length === 0) {
+                console.warn(`⚠️ Nessuna email valida nel batch ${page} per ${folder}`);
+                skipped += emailsToInsert.length;
+                page++;
+                await new Promise(resolve => setTimeout(resolve, 100));
+                continue;
+              }
+
+              const emailRecords = validEmails.map((email: any) => {
                 const isoDate = email.date ? new Date(email.date).toISOString() : new Date().toISOString();
                 
                 return {

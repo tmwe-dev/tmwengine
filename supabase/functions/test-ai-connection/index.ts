@@ -221,10 +221,15 @@ async function testOpenAI(apiKey: string, model: string) {
     }
 
     const data = await response.json();
-    if (data.choices?.[0]?.message?.content) {
+    console.log('OpenAI Response:', JSON.stringify(data, null, 2));
+    
+    if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
+      console.log('OpenAI test successful, response:', data.choices[0]);
       return { success: true };
     }
-    return { success: false, error: 'Risposta non valida' };
+    
+    console.error('OpenAI parsing failed. Full response:', data);
+    return { success: false, error: 'Risposta non valida: ' + JSON.stringify(data) };
 
   } catch (error: any) {
     clearTimeout(timeoutId);
@@ -274,10 +279,15 @@ async function testAnthropic(apiKey: string, model: string) {
     }
 
     const data = await response.json();
-    if (data.content?.[0]?.text) {
+    console.log('Anthropic Response:', JSON.stringify(data, null, 2));
+    
+    if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+      console.log('Anthropic test successful, response:', data.content[0]);
       return { success: true };
     }
-    return { success: false, error: 'Risposta non valida' };
+    
+    console.error('Anthropic parsing failed. Full response:', data);
+    return { success: false, error: 'Risposta non valida: ' + JSON.stringify(data) };
 
   } catch (error: any) {
     clearTimeout(timeoutId);

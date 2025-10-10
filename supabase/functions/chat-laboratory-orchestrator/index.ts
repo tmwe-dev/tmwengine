@@ -175,11 +175,11 @@ REGOLE CRITICHE:
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 500,
+          max_tokens: 4096, // Massimo consentito da Anthropic
           messages: [
             {
               role: 'user',
-              content: `${basePrompt}\n\nConversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}\n\nRispondi brevemente (max 150 parole):`
+              content: `${basePrompt}\n\nConversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}`
             }
           ],
         }),
@@ -221,13 +221,13 @@ REGOLE CRITICHE:
         body: JSON.stringify({
           model: openaiConfig.modello || 'gpt-5-2025-08-07',
           messages: [
-            { role: 'system', content: basePrompt }, // Prompt globale
+            { role: 'system', content: basePrompt },
             { 
               role: 'user', 
-              content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}\n\nRispondi brevemente (max 60 parole):` 
+              content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}` 
             }
           ],
-          max_completion_tokens: 150, // ✅ Ridotto da 500 a 150 token (≈ 112 parole)
+          // Nessuna limitazione di token - risponde come crede
         }),
       });
 
@@ -253,9 +253,7 @@ Conversazione finora:
 ${visibleHistory}
 
 Nuovo messaggio dell'utente:
-${userMessage}
-
-Rispondi brevemente (max 60 parole):`;
+${userMessage}`;
 
       const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -266,7 +264,7 @@ Rispondi brevemente (max 60 parole):`;
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: fullPrompt }],
-          max_tokens: 150, // ✅ Ridotto da 500 a 150 token
+          // Nessuna limitazione di token - risponde come crede
         }),
       });
 

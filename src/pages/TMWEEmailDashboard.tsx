@@ -222,7 +222,7 @@ const EmailDashboard = () => {
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
       console.log('🔍 Fetching email with UID:', selectedEmailId);
-      const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
+      const result = await emailMessageApi.getMessage(selectedEmailId!, true, selectedFolder); // markAsRead = true
       console.log('✅ Email detail received:', result);
       // Invalidate messages query to update the read status in the list
       queryClient.invalidateQueries({ queryKey: ['messages'] });

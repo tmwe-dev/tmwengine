@@ -189,6 +189,7 @@ export type Database = {
           current_turn_index: number | null
           final_summary: string | null
           id: string
+          last_speaker_index: number | null
           memoria_completa: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
@@ -204,6 +205,7 @@ export type Database = {
           current_turn_index?: number | null
           final_summary?: string | null
           id?: string
+          last_speaker_index?: number | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
@@ -219,6 +221,7 @@ export type Database = {
           current_turn_index?: number | null
           final_summary?: string | null
           id?: string
+          last_speaker_index?: number | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null

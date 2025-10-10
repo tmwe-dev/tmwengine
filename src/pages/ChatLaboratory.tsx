@@ -181,20 +181,31 @@ const ChatLaboratory = () => {
       setUploadedFiles([]);
       setGeneratedImage(null);
 
-      // Chiama orchestratore per risposte AI
+      // Chiama orchestratore - gestisce automaticamente i turni
       const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
       
-      const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
-        body: { 
-          conversationId,
-          userMessage: currentPrompt,
-          participants: activeAIParticipants
+      // Fai parlare tutte le AI a turno
+      for (let i = 0; i < activeAIParticipants.length; i++) {
+        const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+          body: { 
+            conversationId,
+            userMessage: i === 0 ? currentPrompt : null, // Solo il primo turno riceve il messaggio utente
+            participants: activeAIParticipants
+          }
+        });
+
+        if (error) {
+          console.error('Errore turno AI:', error);
+          throw error;
         }
-      });
 
-      if (error) throw error;
-
-      await loadMessages(conversationId);
+        await loadMessages(conversationId);
+        
+        // Piccola pausa tra un turno e l'altro per naturalezza
+        if (i < activeAIParticipants.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+      }
 
     } catch (error) {
       console.error('Errore invio messaggio:', error);

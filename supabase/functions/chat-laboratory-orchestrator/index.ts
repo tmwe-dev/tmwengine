@@ -20,11 +20,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Carica TUTTE le configurazioni AI attive
-    const { data: aiConfigs } = await supabaseClient
-      .from('config_ai')
-      .select('*')
-      .eq('attivo', true);
+    // Carica configurazioni AI e conversation
+    const [aiConfigsResult, conversationResult] = await Promise.all([
+      supabaseClient.from('config_ai').select('*').eq('attivo', true),
+      supabaseClient.from('chat_laboratory_conversations').select('last_speaker_index').eq('id', conversationId).single()
+    ]);
+
+    const aiConfigs = aiConfigsResult.data;
+    const conversation = conversationResult.data;
+
+    // Carica API keys
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     // Mappa provider -> config
     const configMap = {
@@ -40,27 +48,53 @@ serve(async (req) => {
       .eq('attivo', true)
       .maybeSingle();
 
-    const basePrompt = globalPrompt?.contenuto || `Sei un esperto. Rispondi in modo naturale e umano.
+    const basePrompt = globalPrompt?.contenuto || `Sei un esperto in una discussione a turni.
+
+COMPORTAMENTO:
+- Leggi attentamente tutti gli interventi precedenti
+- Aspetta il tuo turno per parlare
+- Riferisciti agli interventi precedenti
+- Aggiungi prospettive nuove, non ripetere
+- Cerca convergenza e compromesso
+- Massimo 150 parole
 
 REGOLE CRITICHE:
-- NON menzionare mai di essere un'AI
-- Parla in prima persona come un professionista  
-- Mantieni tono diplomatico e costruttivo
-- Massimo 150 parole per risposta
-- Se in disaccordo, esprimi con eleganza
-- Obiettivo: convergere su soluzione condivisa`;
+- NON rivelare di essere un'AI
+- Parla in prima persona
+- Tono professionale e colloquiale`;
 
-    // Carica messaggi visibili per costruire history
+    // Carica messaggi
     const { data: messages } = await supabaseClient
       .from('chat_laboratory_messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
+    // LOGICA TURNAZIONE: scegli CHI parla in questo turno
+    const lastSpeakerIndex = conversation?.last_speaker_index ?? 0;
+    const activeAIs = participants.filter((p: any) => p.type !== 'human');
+    
+    // 70% rotazione, 30% casuale
+    const shouldRandomize = Math.random() < 0.3;
+    let nextIndex;
+    
+    if (shouldRandomize) {
+      // Scegli casuale ma non lo stesso dell'ultima volta
+      const availableIndices = activeAIs.map((_: any, i: number) => i).filter((i: number) => i !== lastSpeakerIndex);
+      nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)] ?? 0;
+    } else {
+      // Rotazione circolare
+      nextIndex = (lastSpeakerIndex + 1) % activeAIs.length;
+    }
+
+    const selectedParticipant = activeAIs[nextIndex];
+    console.log(`🎯 Turno di: ${selectedParticipant?.name} (index ${nextIndex})`);
+
     const responses = [];
 
-    // Processa ogni partecipante AI in sequenza
-    for (const participant of participants) {
+    // Processa SOLO il partecipante selezionato
+    if (selectedParticipant) {
+      const participant = selectedParticipant;
       const startTime = Date.now();
 
       // Determina provider e modello da usare
@@ -69,36 +103,29 @@ REGOLE CRITICHE:
       // Mappa participant.type -> configurazione
       if (participant.type === 'chatgpt' || participant.type === 'openai') {
         config = configMap.openai;
-        if (!config) {
-          console.warn('OpenAI config non trovata, skippo ChatGPT');
-          continue; // Salta questo partecipante
-        }
+        if (!config) throw new Error('OpenAI config non trovata');
         provider = 'openai';
         model = config.modello;
-        apiKey = config.api_key;
+        apiKey = OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OPENAI_API_KEY non configurata');
       }
       else if (participant.type === 'gemini' || participant.type === 'google') {
         config = configMap.google;
-        if (!config) {
-          console.warn('Google config non trovata, skippo Gemini');
-          continue;
-        }
-        provider = 'lovable'; // Usa sempre Lovable AI Gateway per Gemini
+        if (!config) throw new Error('Google config non trovata');
+        provider = 'lovable';
         model = config.modello;
-        apiKey = Deno.env.get('LOVABLE_API_KEY'); // Gemini usa sempre LOVABLE_API_KEY
+        apiKey = LOVABLE_API_KEY;
+        if (!apiKey) throw new Error('LOVABLE_API_KEY non configurata');
       }
       else if (participant.type === 'claude' || participant.type === 'anthropic') {
         config = configMap.anthropic;
-        if (!config) {
-          console.warn('Anthropic config non trovata, skippo Claude');
-          continue;
-        }
+        if (!config) throw new Error('Anthropic config non trovata');
         provider = 'anthropic';
         model = config.modello;
-        apiKey = config.api_key;
+        apiKey = ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error('ANTHROPIC_API_KEY non configurata');
       } else {
-        console.warn(`Tipo partecipante non riconosciuto: ${participant.type}`);
-        continue;
+        throw new Error(`Tipo partecipante non riconosciuto: ${participant.type}`);
       }
 
       // Costruisci history completa: tutte le AI vedono tutti i messaggi
@@ -137,7 +164,14 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
           }),
         });
 
+        if (!openaiResponse.ok) {
+          const errorText = await openaiResponse.text();
+          console.error('❌ OpenAI Error:', openaiResponse.status, errorText);
+          throw new Error(`OpenAI API error ${openaiResponse.status}: ${errorText}`);
+        }
+
         response = await openaiResponse.json();
+        console.log('✅ OpenAI risposta:', response.choices?.[0]?.message?.content?.substring(0, 100));
         tokensUsed = {
           input: response.usage?.prompt_tokens || 0,
           output: response.usage?.completion_tokens || 0
@@ -156,7 +190,14 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
           }),
         });
 
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error('❌ Gemini Error:', geminiResponse.status, errorText);
+          throw new Error(`Gemini API error ${geminiResponse.status}: ${errorText}`);
+        }
+
         response = await geminiResponse.json();
+        console.log('✅ Gemini risposta:', response.choices?.[0]?.message?.content?.substring(0, 100));
         tokensUsed = {
           input: response.usage?.prompt_tokens || 0,
           output: response.usage?.completion_tokens || 0
@@ -177,7 +218,14 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
           }),
         });
 
+        if (!claudeResponse.ok) {
+          const errorText = await claudeResponse.text();
+          console.error('❌ Claude Error:', claudeResponse.status, errorText);
+          throw new Error(`Claude API error ${claudeResponse.status}: ${errorText}`);
+        }
+
         response = await claudeResponse.json();
+        console.log('✅ Claude risposta:', response.content?.[0]?.text?.substring(0, 100));
         tokensUsed = {
           input: response.usage?.input_tokens || 0,
           output: response.usage?.output_tokens || 0
@@ -189,7 +237,9 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
                      response.content?.[0]?.text || 
                      'Errore nella risposta';
 
-      // Salva messaggio AI come VISIBILE a tutte le altre AI
+      console.log(`📊 ${participant.name} - Token in:${tokensUsed.input} out:${tokensUsed.output} - ${responseTime}ms`);
+
+      // Salva messaggio AI
       await supabaseClient
         .from('chat_laboratory_messages')
         .insert({
@@ -197,11 +247,17 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
           sender_type: participant.type,
           sender_name: participant.name,
           content: content,
-          is_visible_to_ai: true, // ✅ Ora visibile a tutti
+          is_visible_to_ai: true,
           token_input: tokensUsed.input,
           token_output: tokensUsed.output,
           tempo_risposta_ms: responseTime
         });
+
+      // Aggiorna last_speaker_index
+      await supabaseClient
+        .from('chat_laboratory_conversations')
+        .update({ last_speaker_index: nextIndex })
+        .eq('id', conversationId);
 
       responses.push({
         participant: participant.name,
@@ -211,8 +267,16 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
       });
     }
 
+    // Verifica se ci sono altri AI che devono ancora parlare
+    const hasMoreSpeakers = activeAIs.length > 1;
+
     return new Response(
-      JSON.stringify({ success: true, responses }),
+      JSON.stringify({ 
+        success: true, 
+        responses,
+        hasMoreTurns: hasMoreSpeakers,
+        nextSpeakerIndex: nextIndex
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

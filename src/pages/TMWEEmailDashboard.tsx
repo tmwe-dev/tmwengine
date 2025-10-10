@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, MessageSquare, Brain, Building2 } from 'lucide-react';
+import { Database, MessageSquare, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,16 +11,14 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
-import { SingleEmailDownload } from '@/components/tmwe/SingleEmailDownload';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
-import { useEmailSync } from '@/hooks/useEmailSync';
+import { useEmailDownload } from '@/hooks/useEmailDownload';
+import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Search, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -29,7 +27,6 @@ import { cn } from '@/lib/utils';
 const EmailDashboard = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -39,25 +36,10 @@ const EmailDashboard = () => {
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
-  const [selectedSharedAccount, setSelectedSharedAccount] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const queryClient = useQueryClient();
-
-  // Query per email condivise
-  const { data: sharedAccounts } = useQuery({
-    queryKey: ['shared-email-accounts'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shared_email_accounts')
-        .select('*')
-        .eq('is_active', true);
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
 
   const openAIChat = () => {
     navigate('/chat?page=/email-manager');
@@ -144,14 +126,37 @@ const EmailDashboard = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
   
-  // Get real total count from server
-  const { data: realTotalCount, isLoading: isLoadingTotal } = useQuery({
-    queryKey: ['real-total-count', selectedFolder],
-    queryFn: () => emailMessageApi.getTotalEmailCount({ folder: selectedFolder }),
-    refetchInterval: 30000, // Refresh every 30s
+  const { data: folderInfo } = useQuery({
+    queryKey: ['folder-info', selectedFolder],
+    queryFn: async () => {
+      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, page: 1 });
+      return result;
+    },
   });
 
-  const totalEmailCount = realTotalCount || 0;
+  const totalEmailCount = folderInfo?.total || 0;
+
+  // Email download hook - declare first
+  const {
+    isDownloading,
+    downloadedCount,
+    downloadError,
+    allEmails: downloadedEmails,
+    startDownload,
+  } = useEmailDownload({
+    folder: selectedFolder,
+    totalEmails: totalEmailCount,
+  });
+
+  // Sync Smart hook
+  const {
+    isSyncing: isSyncingSmart,
+    syncedCount,
+    startSync: startSyncSmart,
+  } = useSyncSmart({
+    folder: selectedFolder,
+    totalEmails: totalEmailCount,
+  });
 
   // Conta le email nel DB per la cartella corrente e utente
   const { data: dbEmailCount } = useQuery({
@@ -169,29 +174,7 @@ const EmailDashboard = () => {
     },
   });
 
-  // Hook unificato per sincronizzazione intelligente
-  const {
-    isSyncing,
-    syncedCount,
-    syncError,
-    allEmails: downloadedEmails,
-    downloadStatus,
-    startSync,
-    stopSync,
-  } = useEmailSync({
-    folder: selectedFolder,
-    totalEmailCount,
-  });
-
-
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
-  const [hasAutoSynced, setHasAutoSynced] = useState(false);
-
-  // Reset auto-sync flag when folder changes
-  useEffect(() => {
-    setHasAutoSynced(false);
-  }, [selectedFolder]);
-
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
@@ -280,7 +263,119 @@ const EmailDashboard = () => {
     };
   })() : null;
 
-  // Rimosso syncMutation - ora usa hook unificato useEmailSync
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const userEmail = sessionStorage.getItem('tmwe_user_email');
+      if (!userEmail) {
+        throw new Error('Utente non autenticato');
+      }
+      
+      // 1. Ottieni il totale delle email dalla cartella
+      const folderInfoResponse = await emailMessageApi.getMessages({ 
+        folder: selectedFolder, 
+        limit: 1, 
+        page: 1 
+      });
+      const totalEmails = folderInfoResponse.total || 0;
+      
+      // 2. Recupera gli ID esistenti nel database per questo utente
+      const { data: existingEmails } = await supabase
+        .from('email_messages')
+        .select('message_id')
+        .eq('cartella', selectedFolder)
+        .eq('user_email', userEmail);
+      
+      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
+      
+      // 3. Download batch di email dalla API
+      const batchSize = 50;
+      const totalPages = Math.ceil(totalEmails / batchSize);
+      let syncedCount = 0;
+      
+      console.log(`📊 Sync: ${totalEmails} totali, ${existingIds.size} già nel DB`);
+      
+      for (let page = 1; page <= totalPages; page++) {
+        const response = await emailMessageApi.getMessages({
+          folder: selectedFolder,
+          limit: batchSize,
+          page,
+        });
+        
+        const pageEmails = response?.messages || [];
+        
+        // Filtra solo email mancanti
+        const missingEmails = pageEmails.filter((email: any) => 
+          !existingIds.has(email.message_id || email.uid?.toString())
+        );
+        
+        // Inserisci le email mancanti
+        if (missingEmails.length > 0) {
+          const emailsToInsert = missingEmails.map((email: any) => {
+            let isoDate = new Date().toISOString();
+            if (email.date) {
+              try {
+                isoDate = new Date(email.date).toISOString();
+              } catch (e) {
+                console.error('Error parsing date:', email.date);
+              }
+            }
+            
+            return {
+              message_id: String(email.uid || email.message_id),
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              from_email: typeof email.from === 'object' ? email.from.email : email.from,
+              to_email: typeof email.to === 'object' ? email.to.email : email.to,
+              cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
+              bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
+              subject: email.subject || '(No Subject)',
+              body_text: email.body_plain || email.body_text || null,
+              body_html: email.body_html || null,
+              data_ricezione: isoDate,
+              cartella: selectedFolder,
+              direzione: 'ricevuta',
+              stato: email.is_read || email.seen ? 'letto' : 'nuovo',
+              flags: email.flags || [],
+              attachments: email.attachments || [],
+              user_email: userEmail, // Associa email all'utente
+            };
+          });
+          
+          const { error } = await supabase
+            .from('email_messages')
+            .upsert(emailsToInsert, { 
+              onConflict: 'message_id',
+              ignoreDuplicates: false 
+            });
+          
+          if (error) {
+            console.error('❌ Errore inserimento batch:', error);
+          } else {
+            syncedCount += missingEmails.length;
+            console.log(`✅ Batch ${page}/${totalPages}: +${missingEmails.length} email`);
+          }
+        }
+        
+        // Piccolo delay per non sovraccaricare il server
+        if (page < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      return { synced: syncedCount, total: totalEmails };
+    },
+    onSuccess: (data) => {
+      if (data.synced > 0) {
+        toast.success(`Sincronizzate ${data.synced} nuove email su ${data.total} totali`);
+      } else {
+        toast.success('Database già sincronizzato');
+      }
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (error) => {
+      console.error('❌ Sync error:', error);
+      toast.error('Sync fallita');
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: (messageIds: string[]) => emailMessageApi.deleteMessages(messageIds),
@@ -347,8 +442,9 @@ const EmailDashboard = () => {
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
 
-  const handleSync = async () => {
-    toast.info('Usa il pulsante "Download 1 Email" per scaricare email una alla volta');
+  const handleSync = () => {
+    toast.info('Starting sync...');
+    syncMutation.mutate();
   };
 
   const handleDelete = () => {
@@ -449,54 +545,35 @@ const EmailDashboard = () => {
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
-      <div className="relative">
-        <EmailHeader
-          onSearch={setSearchQuery} 
-          onCompose={() => setComposeOpen(true)} 
-          onSync={handleSync}
-          onSyncSmart={startSync}
-          isSyncingSmart={isSyncing}
-          syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
-          missingEmailCount={missingEmailCount}
-          onMenuClick={() => setSidebarOpen(true)}
-          isMobile={isMobile}
-          isHeaderCollapsed={isHeaderCollapsed}
-          onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-          onCloseEmail={handleBackToList}
-          onPreviousEmail={handlePreviousEmail}
-          onNextEmail={handleNextEmail}
-          hasPrevious={hasPreviousEmail()}
-          hasNext={hasNextEmail()}
-        />
-        
-        {/* Single Email Download Button */}
-        <div className="absolute top-2 left-4 z-50">
-          <SingleEmailDownload folder={selectedFolder} />
-        </div>
-      </div>
-
-      {/* Tab personali/aziendali */}
-      {!isMobile && (
-        <div className="border-b bg-card-transparent px-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="bg-transparent">
-              <TabsTrigger value="personal" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Email Personali
-              </TabsTrigger>
-              <TabsTrigger value="shared" className="gap-2">
-                <Building2 className="h-4 w-4" />
-                Email Aziendali
-                {sharedAccounts && sharedAccounts.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {sharedAccounts.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
+      <EmailHeader
+        onSearch={setSearchQuery} 
+        onCompose={() => setComposeOpen(true)} 
+        onSync={handleSync}
+        onSyncSmart={startSyncSmart}
+        isSyncingSmart={isSyncingSmart}
+        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
+        missingEmailCount={missingEmailCount}
+        onMenuClick={() => setSidebarOpen(true)}
+        isMobile={isMobile}
+        dbEmailCount={isMobile ? emailCount : undefined}
+        isHeaderCollapsed={isHeaderCollapsed}
+        onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+        onCloseEmail={handleBackToList}
+        onPreviousEmail={handlePreviousEmail}
+        onNextEmail={handleNextEmail}
+        hasPrevious={hasPreviousEmail()}
+        hasNext={hasNextEmail()}
+        downloadProgressComponent={
+          <EmailDownloadProgress
+            totalEmails={totalEmailCount}
+            onDownloadComplete={() => {}}
+            onStartDownload={startDownload}
+            isDownloading={isDownloading}
+            downloadedCount={downloadedCount}
+            downloadError={downloadError}
+          />
+        }
+      />
       
       <div className="flex flex-1 w-full">
         {/* Desktop Sidebar */}
@@ -530,29 +607,26 @@ const EmailDashboard = () => {
           </Sheet>
         )}
 
-        {/* Content area con tab */}
-        {activeTab === 'personal' && (
-          <>
-            {/* Email List - Hidden on mobile when email is selected */}
-            <div className={cn(
-              "flex-1 flex flex-col",
-              isMobile && !showEmailList && "hidden"
-            )}>
-              {/* Mobile Search Bar - Above cards on mobile */}
-              {isMobile && (
-                <div className="border-b bg-card-transparent px-2 py-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search emails..."
-                      className="pl-10 text-sm h-9 w-full"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
+        {/* Email List - Hidden on mobile when email is selected */}
+        <div className={cn(
+          "flex-1 flex flex-col",
+          isMobile && !showEmailList && "hidden"
+        )}>
+          {/* Mobile Search Bar - Above cards on mobile */}
+          {isMobile && (
+            <div className="border-b bg-card-transparent px-2 py-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search emails..."
+                  className="pl-10 text-sm h-9 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
           
           {/* Sender Filter */}
           <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
@@ -603,7 +677,7 @@ const EmailDashboard = () => {
             onBulkForward={handleBulkForward}
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
-            isDownloading={isSyncing}
+            isDownloading={isDownloading}
           />
         </div>
 
@@ -627,71 +701,6 @@ const EmailDashboard = () => {
             />
           </div>
         )}
-          </>
-        )}
-
-        {/* Email Condivise Tab */}
-        {activeTab === 'shared' && (
-          <div className="flex-1 p-6 overflow-auto">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold">Email Aziendali Condivise</h2>
-                  <p className="text-muted-foreground">
-                    Accedi alle caselle email condivise con il team
-                  </p>
-                </div>
-                <Button onClick={() => navigate('/shared-emails')} variant="outline">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  Gestisci
-                </Button>
-              </div>
-
-              {sharedAccounts && sharedAccounts.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {sharedAccounts.map((account: any) => (
-                    <div
-                      key={account.id}
-                      className="p-6 border rounded-lg bg-card hover:bg-accent cursor-pointer transition-colors"
-                     onClick={() => {
-                        setSelectedSharedAccount(account.email);
-                        setActiveTab('personal');
-                        setSelectedFolder('INBOX');
-                        toast.success(`Visualizzazione email: ${account.email}`);
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Building2 className="h-5 w-5 text-primary mt-1" />
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{account.display_name}</h3>
-                          <p className="text-sm text-muted-foreground font-mono">
-                            {account.email}
-                          </p>
-                          {account.description && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {account.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 border rounded-lg bg-card">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">Nessuna Email Aziendale</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Non hai accesso a email aziendali condivise
-                  </p>
-                  <Button onClick={() => navigate('/shared-emails')} variant="outline">
-                    Scopri di più
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <ComposeDialog
@@ -700,7 +709,6 @@ const EmailDashboard = () => {
         onSent={() => queryClient.invalidateQueries({ queryKey: ['messages'] })}
         replyTo={replyTo}
       />
-
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>

@@ -85,12 +85,7 @@ export function PagePromptManager({ pageRoute }: PagePromptManagerProps) {
         size="icon"
         variant="ghost"
         className="h-8 w-8 hover:bg-primary/10"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('PagePromptManager button clicked, opening dialog');
-          setOpen(true);
-        }}
+        onClick={() => setOpen(true)}
         title="Gestisci Prompt AI"
       >
         <FileText className="h-4 w-4 text-primary" />

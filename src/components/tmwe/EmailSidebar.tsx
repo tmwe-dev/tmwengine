@@ -16,12 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { 
   Inbox, 
   Send, 
@@ -134,14 +128,9 @@ export const EmailSidebar = ({
   const systemFolders = folders.filter((f: any) => 
     systemFolderNames.includes(f.name)
   );
-  const customFolders = folders
-    .filter((f: any) => !systemFolderNames.includes(f.name))
-    .sort((a: any, b: any) => {
-      // Sort subfolders alphabetically (case insensitive)
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
+  const customFolders = folders.filter((f: any) => 
+    !systemFolderNames.includes(f.name)
+  );
 
   const renderFolder = (folder: any) => {
     const Icon = getFolderIcon(folder.name);
@@ -149,14 +138,8 @@ export const EmailSidebar = ({
     const unseenCount = folder.unread_messages || folder.unseen || 0;
     const totalMessages = folder.total_messages || folder.messages || 0;
     const indent = folder.name.split('/').length - 1;
-    const isSubfolder = indent > 0;
     
-    // Rimuovi il nome della cartella principale dalle sottocartelle
-    const displayName = isSubfolder 
-      ? folder.name.split('/').pop() // Prendi solo l'ultima parte dopo /
-      : folder.name;
-    
-    const folderButton = (
+    return (
       <Button
         key={folder.name}
         variant={selectedFolder === folder.name ? 'secondary' : 'ghost'}
@@ -173,15 +156,13 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
+        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
-            // Sottocartelle: inverti i colori (purple -> white, default -> purple)
-            isSubfolder 
-              ? selectedFolder === folder.name ? "text-white scale-110" : "text-purple-400 scale-100"
-              : selectedFolder === folder.name ? "text-purple-400 scale-110" : "scale-100",
+            selectedFolder === folder.name ? "text-purple-400 scale-110" : "scale-100",
             isCollapsed ? "" : "mr-3"
           )} />
           {!isCollapsed && (
@@ -190,76 +171,30 @@ export const EmailSidebar = ({
               "group-hover:scale-110",
               selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {displayName}
+              {folder.name}
             </span>
           )}
         </div>
         {!isCollapsed && unseenCount > 0 && (
           <Badge variant="secondary" className={cn(
             "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-            "text-muted-foreground border-muted-foreground"
+            selectedFolder === folder.name 
+              ? "text-purple-300 border-purple-300" 
+              : "text-white border-white"
           )}>
             {unseenCount}
           </Badge>
         )}
       </Button>
     );
-
-    if (isCollapsed) {
-      return (
-        <Tooltip key={folder.id || folder.name}>
-          <TooltipTrigger asChild>
-            {folderButton}
-          </TooltipTrigger>
-          <TooltipContent 
-            side="right" 
-            className={cn(
-              "relative overflow-hidden border-none shadow-lg transition-all duration-300",
-              "before:absolute before:left-0 before:top-0 before:h-full before:w-1",
-              "before:bg-gradient-to-b before:from-purple-500 before:via-pink-500 before:to-purple-500",
-              "before:animate-[slide-in-right_0.3s_ease-out]",
-              selectedFolder === folder.name 
-                ? "bg-purple-500/20 before:opacity-100" 
-                : "bg-card before:opacity-0 hover:before:opacity-100"
-            )}
-          >
-            <div className="flex items-center gap-3 pl-2">
-              <Icon className={cn(
-                "h-4 w-4 flex-shrink-0 transition-all duration-200",
-                isSubfolder 
-                  ? selectedFolder === folder.name ? "text-white" : "text-purple-400"
-                  : selectedFolder === folder.name ? "text-purple-400" : ""
-              )} />
-              <span className={cn(
-                "text-sm transition-all duration-200",
-                selectedFolder === folder.name ? "text-purple-300 font-semibold" : ""
-              )}>
-                {displayName}
-              </span>
-              {unseenCount > 0 && (
-                <Badge 
-                  variant="secondary" 
-                  className="ml-auto bg-purple-500/20 text-muted-foreground border-muted-foreground text-xs px-1.5 py-0"
-                >
-                  {unseenCount}
-                </Badge>
-              )}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      );
-    }
-
-    return folderButton;
   };
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className={cn(
-        "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64"
-      )}>
-        <div className="p-2 flex justify-end">
+    <div className={cn(
+      "flex h-full flex-col border-r bg-card-transparent transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="p-2 flex justify-end">
         <Button
           variant="ghost"
           size="icon"
@@ -424,7 +359,6 @@ export const EmailSidebar = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 };

@@ -23,7 +23,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface EmailFolder {
   name: string;
@@ -60,7 +59,6 @@ interface FolderStats {
 
 export const EmailFolderDashboard: React.FC = () => {
   const { toast } = useToast();
-  const { userEmail } = useCurrentUser();
   const [folders, setFolders] = useState<EmailFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>('INBOX');
   const [emails, setEmails] = useState<EmailMessage[]>([]);
@@ -100,13 +98,10 @@ export const EmailFolderDashboard: React.FC = () => {
   };
 
   const fetchFolders = useCallback(async () => {
-    if (!userEmail) return;
-    
     try {
       const { data: folderData, error } = await supabase
         .from('email_messages')
         .select('cartella, stato, data_ricezione, direzione')
-        .eq('user_email', userEmail)
         .order('cartella');
 
       if (error) {
@@ -166,18 +161,15 @@ export const EmailFolderDashboard: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [toast, userEmail]);
+  }, [toast]);
 
   const fetchEmailsForFolder = useCallback(async (folderName: string) => {
-    if (!userEmail) return;
-    
     try {
       setLoading(true);
       const { data: emailData, error } = await supabase
         .from('email_messages')
         .select('*')
         .eq('cartella', folderName)
-        .eq('user_email', userEmail)
         .order('data_ricezione', { ascending: false })
         .limit(50);
 
@@ -202,16 +194,13 @@ export const EmailFolderDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast, userEmail]);
+  }, [toast]);
 
   const calculateStats = useCallback(async () => {
-    if (!userEmail) return;
-    
     try {
       const { data: allEmails, error } = await supabase
         .from('email_messages')
-        .select('data_ricezione, stato, direzione')
-        .eq('user_email', userEmail);
+        .select('data_ricezione, stato, direzione');
 
       if (error) {
         console.error('Errore nel calcolo statistiche:', error);
@@ -236,7 +225,7 @@ export const EmailFolderDashboard: React.FC = () => {
     } catch (error) {
       console.error('Errore nel calcolo statistiche:', error);
     }
-  }, [userEmail]);
+  }, []);
 
   useEffect(() => {
     fetchFolders();

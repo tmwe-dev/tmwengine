@@ -110,27 +110,10 @@ export default function Tables() {
     try {
       setRefreshing(true);
       
-      // 🔒 PRIVACY: Filtra email_messages per utente corrente
-      let query = supabase.from(tableName as any).select('*');
-      
-      if (tableName === 'email_messages') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          // Recupera tmwe_email da user_profiles
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('tmwe_email')
-            .eq('user_id', user.id)
-            .single();
-          
-          const userEmail = profile?.tmwe_email || user.email;
-          query = query.eq('user_email', userEmail);
-          
-          console.log('🔒 Filtro email per privacy:', userEmail);
-        }
-      }
-      
-      const { data, error } = await query.limit(1000);
+      const { data, error } = await supabase
+        .from(tableName as any)
+        .select('*')
+        .limit(1000);
       
       if (error) throw error;
       

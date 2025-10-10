@@ -148,21 +148,14 @@ export const EmailSidebar = ({
         <div className="flex items-center min-w-0">
           <Icon className="mr-3 h-4 w-4 flex-shrink-0" />
           <span className="truncate">
-            {folder.name}
+            {folder.name} {totalMessages > 0 && `(${totalMessages.toLocaleString()})`}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
-          {totalMessages > 0 && (
-            <Badge variant="outline" className="h-5 px-1.5 text-xs">
-              {totalMessages.toLocaleString()}
-            </Badge>
-          )}
-          {unseenCount > 0 && (
-            <Badge variant="secondary" className="h-5 min-w-5 px-1.5 flex-shrink-0">
-              {unseenCount}
-            </Badge>
-          )}
-        </div>
+        {unseenCount > 0 && (
+          <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 flex-shrink-0">
+            {unseenCount}
+          </Badge>
+        )}
       </Button>
     );
   };

@@ -547,6 +547,9 @@ export type Database = {
           attivo: boolean
           created_at: string
           id: string
+          last_test_at: string | null
+          last_test_error: string | null
+          last_test_status: string | null
           modello: string
           provider: string
           updated_at: string
@@ -556,6 +559,9 @@ export type Database = {
           attivo?: boolean
           created_at?: string
           id?: string
+          last_test_at?: string | null
+          last_test_error?: string | null
+          last_test_status?: string | null
           modello: string
           provider: string
           updated_at?: string
@@ -565,6 +571,9 @@ export type Database = {
           attivo?: boolean
           created_at?: string
           id?: string
+          last_test_at?: string | null
+          last_test_error?: string | null
+          last_test_status?: string | null
           modello?: string
           provider?: string
           updated_at?: string

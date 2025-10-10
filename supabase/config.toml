@@ -233,3 +233,9 @@ verify_jwt = false
 [functions.email-campagne-scheduler]
 verify_jwt = false
 
+[functions.test-ai-connection]
+verify_jwt = true
+
+[functions.chat-laboratory-orchestrator]
+verify_jwt = true
+

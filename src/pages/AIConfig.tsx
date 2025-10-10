@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Bot, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
+import { Bot, Eye, EyeOff, Plus, Trash2, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 
 const AIConfig = () => {
   const { toast } = useToast();
@@ -17,6 +17,7 @@ const AIConfig = () => {
   const [loading, setLoading] = useState(true);
 
   const [aiConfigs, setAiConfigs] = useState([]);
+  const [testingConfigs, setTestingConfigs] = useState<Record<string, boolean>>({});
   const [newAiConfig, setNewAiConfig] = useState({
     provider: '',
     modello: '',
@@ -81,7 +82,10 @@ const AIConfig = () => {
           provider: config.provider,
           modello: config.modello,
           apiKey: config.api_key,
-          attivo: config.attivo
+          attivo: config.attivo,
+          lastTestAt: config.last_test_at,
+          lastTestStatus: config.last_test_status,
+          lastTestError: config.last_test_error
         })));
       }
     } catch (error) {
@@ -225,6 +229,42 @@ const AIConfig = () => {
         description: "Impossibile eliminare la configurazione",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleTestConnection = async (configId: string) => {
+    setTestingConfigs(prev => ({ ...prev, [configId]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ai-connection', {
+        body: { configId }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "✅ Connessione OK",
+          description: `Latenza: ${data.latency}ms`,
+        });
+      } else {
+        toast({
+          title: "❌ Test Fallito",
+          description: data.error || 'Errore sconosciuto',
+          variant: "destructive",
+        });
+      }
+
+      await loadAIConfigurations();
+    } catch (error) {
+      console.error('Errore test connessione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eseguire il test",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingConfigs(prev => ({ ...prev, [configId]: false }));
     }
   };
 
@@ -402,10 +442,35 @@ const AIConfig = () => {
                     <div>
                       <div className="font-medium">{config.provider}</div>
                       <div className="text-sm text-muted-foreground">{config.modello}</div>
+                      {config.lastTestAt && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Ultimo test: {new Date(config.lastTestAt).toLocaleString('it-IT')}
+                        </div>
+                      )}
                     </div>
-                    {config.attivo && (
-                      <Badge variant="default">Attivo</Badge>
-                    )}
+                    <div className="flex gap-2">
+                      {config.attivo && (
+                        <Badge variant="default">Attivo</Badge>
+                      )}
+                      {config.lastTestStatus === 'success' && (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Testato
+                        </Badge>
+                      )}
+                      {config.lastTestStatus === 'failed' && (
+                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Fallito
+                        </Badge>
+                      )}
+                      {config.lastTestStatus === 'pending' && (
+                        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Test in corso
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -416,6 +481,19 @@ const AIConfig = () => {
                       />
                       <span className="text-sm text-muted-foreground">Disponibile</span>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestConnection(config.id)}
+                      disabled={testingConfigs[config.id]}
+                      title="Testa connessione"
+                    >
+                      {testingConfigs[config.id] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { emailFolderApi, emailMessageApi } from '@/lib/tmwe-api-integrated';
-import { useEmailSync } from './useEmailSync';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface FolderSyncStatus {
@@ -58,11 +58,117 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
 
   const shouldStop = useRef(false);
   const startTime = useRef<number>(0);
-  
-  const emailSync = useEmailSync({
-    folder: currentFolder || 'INBOX',
-    totalEmailCount: 0
-  });
+
+  // Sync single folder function (replicates useEmailSync logic)
+  const syncSingleFolder = async (folderName: string, totalEmailCount: number): Promise<number> => {
+    console.log(`📂 Starting sync for folder: ${folderName} (${totalEmailCount} emails)`);
+    
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) {
+      throw new Error('User email not found in session');
+    }
+
+    let downloadedCount = 0;
+    let currentOffset = 0;
+    const batchSize = 50;
+
+    while (currentOffset < totalEmailCount && !shouldStop.current) {
+      console.log(`📥 Fetching UIDs batch: offset ${currentOffset}, limit ${batchSize}`);
+      
+      // Get UIDs for this batch
+      const response = await emailMessageApi.getMessages({
+        folder: folderName,
+        limit: batchSize,
+        page: Math.floor(currentOffset / batchSize) + 1
+      });
+
+      const uids = (response.messages || []).map((msg: any) => String(msg.uid));
+      
+      if (uids.length === 0) {
+        console.log('No more UIDs to process');
+        break;
+      }
+
+      console.log(`📧 Got ${uids.length} UIDs, checking which are new...`);
+
+      // Check existing emails in DB
+      const { data: existingEmails } = await supabase
+        .from('email_messages')
+        .select('message_id')
+        .eq('user_email', userEmail)
+        .eq('cartella', folderName)
+        .in('message_id', uids);
+
+      const existingUIDs = new Set((existingEmails || []).map((e: any) => e.message_id));
+      const newUIDs = uids.filter((uid: string) => !existingUIDs.has(uid));
+
+      console.log(`✨ ${newUIDs.length} new emails to download (${existingUIDs.size} already in DB)`);
+
+      // Download each new email individually with full body
+      for (let i = 0; i < newUIDs.length && !shouldStop.current; i++) {
+        const uid = newUIDs[i];
+        
+        try {
+          console.log(`⬇️ Downloading email ${i + 1}/${newUIDs.length}: UID ${uid}`);
+          
+          const emailDetail = await emailMessageApi.getMessage(uid, false);
+          
+          if (!emailDetail || !emailDetail.message) {
+            console.warn(`⚠️ No data for UID ${uid}`);
+            continue;
+          }
+
+          const msg = emailDetail.message;
+          const header = msg.header || msg;
+
+          // Insert into Supabase
+          const { error: insertError } = await supabase
+            .from('email_messages')
+            .insert({
+              user_email: userEmail,
+              message_id: String(uid),
+              from_email: header.from || '',
+              to_email: header.to || '',
+              cc_email: header.cc || null,
+              bcc_email: header.bcc || null,
+              subject: header.subject || '(No Subject)',
+              body_html: msg.body_html || null,
+              body_text: msg.body_plain || msg.body_text || null,
+              data_ricezione: header.date || new Date().toISOString(),
+              cartella: folderName,
+              provider_id: '00000000-0000-0000-0000-000000000000',
+              direzione: 'ricevuta',
+              attachments: msg.attachments || [],
+              raw_headers: header.raw_headers || null,
+              in_reply_to: header.in_reply_to || null,
+              email_references: header.references || null,
+              thread_id: header.thread_id || null,
+              flags: msg.flags || []
+            });
+
+          if (insertError) {
+            console.error(`❌ Error inserting email ${uid}:`, insertError);
+          } else {
+            downloadedCount++;
+            console.log(`✅ Email ${uid} saved to DB (${downloadedCount} total)`);
+          }
+
+          // Pause every 5 emails (throttle)
+          if ((i + 1) % 5 === 0) {
+            console.log('⏸️ Pausing 2 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+        } catch (err) {
+          console.error(`Error downloading email ${uid}:`, err);
+        }
+      }
+
+      currentOffset += batchSize;
+    }
+
+    return downloadedCount;
+  };
 
   const updateProgress = useCallback((
     currentFolderName: string,
@@ -180,39 +286,9 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
         console.log(`📁 [${i + 1}/${initialStatuses.length}] Syncing folder: ${folderStatus.name} (${folderStatus.totalEmails} emails)`);
 
         try {
-          // Use useEmailSync for this folder
-          await emailSync.startSync();
+          // Sync this folder using our internal sync function
+          const syncedCount = await syncSingleFolder(folderStatus.name, folderStatus.totalEmails);
 
-          // Track progress during sync
-          const checkProgress = setInterval(() => {
-            const currentSynced = emailSync.syncedCount;
-            
-            updateProgress(
-              folderStatus.name,
-              currentSynced,
-              folderStatus.totalEmails,
-              totalEmailsDownloaded + currentSynced,
-              totalEmailsToSync,
-              foldersProcessed,
-              initialStatuses.length
-            );
-          }, 500);
-
-          // Wait for sync to complete
-          while (emailSync.isSyncing) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (shouldStop.current) {
-              emailSync.stopSync();
-              clearInterval(checkProgress);
-              break;
-            }
-          }
-
-          clearInterval(checkProgress);
-
-          if (shouldStop.current) break;
-
-          const syncedCount = emailSync.syncedCount;
           totalEmailsDownloaded += syncedCount;
 
           // Update status to completed
@@ -275,13 +351,12 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
       setIsSyncing(false);
       setCurrentFolder(null);
     }
-  }, [isSyncing, excludedFolders, emailSync, onProgress, onFolderComplete, updateProgress]);
+  }, [isSyncing, excludedFolders, onProgress, onFolderComplete, updateProgress, syncSingleFolder]);
 
   const stopMultiFolderSync = useCallback(() => {
     console.log('🛑 Stopping multi-folder sync...');
     shouldStop.current = true;
-    emailSync.stopSync();
-  }, [emailSync]);
+  }, []);
 
   return {
     isSyncing,

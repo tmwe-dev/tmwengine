@@ -185,7 +185,7 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: model,
+            model: 'google/' + model,
             messages: [{ role: 'user', content: fullPrompt }],
           }),
         });

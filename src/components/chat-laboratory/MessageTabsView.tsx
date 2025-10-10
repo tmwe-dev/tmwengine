@@ -68,14 +68,14 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
         </TabsList>
       </ScrollArea>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 relative">
         {messages.map((message) => (
           <TabsContent
             key={message.id}
             value={message.id}
-            className="h-full m-0 p-4 overflow-y-auto focus-visible:outline-none focus-visible:ring-0"
+            className="absolute inset-0 m-0 overflow-y-auto data-[state=inactive]:hidden focus-visible:outline-none focus-visible:ring-0"
           >
-            <div className="container mx-auto max-w-4xl">
+            <div className="container mx-auto max-w-4xl p-4">
               <MultiAgentMessage message={message} />
             </div>
           </TabsContent>

@@ -156,7 +156,11 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
           return !existingUids.has(msgId);
         });
 
-        console.log(`✅ [Sync] Batch ${currentBatch}: ${messages.length} email, ${newMessages.length} nuove`);
+        console.log(`✅ [Sync] Batch ${currentBatch}: ${messages.length} email ricevute, ${newMessages.length} nuove da inserire`);
+        
+        if (newMessages.length > 0) {
+          console.log(`📝 [Sync] Email nuove da inserire:`, newMessages.map(m => m.message_id || m.uid));
+        }
 
         // STEP 4: Insert immediately into DB (progressive insert)
         if (newMessages.length > 0) {

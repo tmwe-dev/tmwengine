@@ -213,22 +213,31 @@ export const useMultiFolderSync = (options: UseMultiFolderSyncOptions = {}): Mul
   const startMultiFolderSync = useCallback(async (selectedFolders: string[]) => {
     if (isSyncing) return;
 
+    console.log('🚀 [Multi-Folder Sync] Starting...');
+    console.log('📁 [Multi-Folder Sync] Received folders:', selectedFolders);
+    console.log('🚫 [Multi-Folder Sync] Excluded folders:', excludedFolders);
+
     setIsSyncing(true);
     setError(null);
     shouldStop.current = false;
     startTime.current = Date.now();
 
     try {
-      console.log('🚀 Starting multi-folder sync for:', selectedFolders);
-
       // Filter out excluded folders
       const foldersToSync = selectedFolders.filter(f => !excludedFolders.includes(f));
       
+      console.log('✅ [Multi-Folder Sync] Folders to sync:', foldersToSync);
+      console.log('❌ [Multi-Folder Sync] Folders filtered out:', 
+        selectedFolders.filter(f => excludedFolders.includes(f)));
+      
       if (foldersToSync.length === 0) {
+        console.error('❌ [Multi-Folder Sync] NO FOLDERS TO SYNC after filtering!');
         toast.error('Nessuna cartella selezionata per la sincronizzazione');
         setIsSyncing(false);
         return;
       }
+
+      console.log(`📊 [Multi-Folder Sync] Starting sync for ${foldersToSync.length} folders`);
 
       // Initialize folder statuses
       const initialStatuses: FolderSyncStatus[] = [];

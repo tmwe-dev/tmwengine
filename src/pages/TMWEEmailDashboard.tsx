@@ -191,6 +191,7 @@ const EmailDashboard = () => {
 
   // Hook per sincronizzazione multi-cartella
   const multiFolderSync = useMultiFolderSync({
+    excludedFolders: [], // No automatic exclusion
     onProgress: (progress) => {
       console.log('📊 Multi-folder progress:', progress);
     }

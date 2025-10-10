@@ -50,32 +50,68 @@ export const FolderSelectionDialog = ({
   }, [open]);
 
   const loadFolders = async () => {
+    console.log('🔄 [FolderDialog] Starting loadFolders...');
     setLoading(true);
     try {
+      console.log('📡 [FolderDialog] Calling emailFolderApi.getFolders()...');
       const foldersResponse = await emailFolderApi.getFolders();
-      const folderList = foldersResponse.data || [];
+      
+      console.log('📥 [FolderDialog] API Response:', foldersResponse);
+      console.log('📁 [FolderDialog] Response.data:', foldersResponse.data);
+      console.log('📊 [FolderDialog] Type of data:', typeof foldersResponse.data);
+      
+      // Handle both array and object responses
+      let folderList = [];
+      
+      if (Array.isArray(foldersResponse.data)) {
+        folderList = foldersResponse.data;
+        console.log('✅ [FolderDialog] Data is array, length:', folderList.length);
+      } else if (foldersResponse.folders && Array.isArray(foldersResponse.folders)) {
+        folderList = foldersResponse.folders;
+        console.log('✅ [FolderDialog] Using response.folders, length:', folderList.length);
+      } else if (foldersResponse.data?.folders && Array.isArray(foldersResponse.data.folders)) {
+        folderList = foldersResponse.data.folders;
+        console.log('✅ [FolderDialog] Using data.folders, length:', folderList.length);
+      } else {
+        console.error('❌ [FolderDialog] Unexpected response format:', foldersResponse);
+      }
+
+      console.log(`📂 [FolderDialog] Processing ${folderList.length} folders...`);
+
+      if (folderList.length === 0) {
+        console.warn('⚠️ [FolderDialog] NO FOLDERS FOUND!');
+        toast.error('Nessuna cartella trovata');
+        setFolders([]);
+        return;
+      }
 
       const foldersWithCounts = await Promise.all(
-        folderList.map(async (folder) => {
+        folderList.map(async (folder, index) => {
           try {
+            const folderName = folder.name || folder;
+            console.log(`📧 [FolderDialog] [${index + 1}/${folderList.length}] Getting count for: ${folderName}`);
+            
             const count = await emailMessageApi.getTotalEmailCount({ 
-              folder: folder.name 
+              folder: folderName 
             });
+            
+            console.log(`✅ [FolderDialog] ${folderName}: ${count} emails`);
             
             // Check if folder should be excluded by default
             const shouldExclude = defaultExcluded.some(excluded => 
-              folder.name.toLowerCase().includes(excluded.toLowerCase())
+              folderName.toLowerCase().includes(excluded.toLowerCase())
             );
 
             return {
-              name: folder.name,
+              name: folderName,
               emailCount: count,
               selected: !shouldExclude
             };
           } catch (err) {
-            console.error(`Error getting count for ${folder.name}:`, err);
+            const folderName = folder.name || folder;
+            console.error(`❌ [FolderDialog] Error getting count for ${folderName}:`, err);
             return {
-              name: folder.name,
+              name: folderName,
               emailCount: 0,
               selected: false
             };
@@ -83,12 +119,14 @@ export const FolderSelectionDialog = ({
         })
       );
 
+      console.log('🎯 [FolderDialog] Final folders with counts:', foldersWithCounts);
       setFolders(foldersWithCounts);
     } catch (error) {
-      console.error('Error loading folders:', error);
+      console.error('❌ [FolderDialog] Error loading folders:', error);
       toast.error('Errore nel caricamento delle cartelle');
     } finally {
       setLoading(false);
+      console.log('✅ [FolderDialog] loadFolders completed');
     }
   };
 
@@ -159,6 +197,11 @@ export const FolderSelectionDialog = ({
 
   const handleStartSync = () => {
     const selected = folders.filter(f => f.selected).map(f => f.name);
+    
+    console.log('🚀 [FolderDialog] handleStartSync called');
+    console.log('📁 [FolderDialog] Selected folders:', selected);
+    console.log('📊 [FolderDialog] Total selected:', selected.length);
+    
     if (selected.length === 0) {
       toast.error('Seleziona almeno una cartella');
       return;

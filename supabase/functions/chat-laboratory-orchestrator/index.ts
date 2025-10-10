@@ -84,26 +84,78 @@ REGOLE CRITICHE:
 
     const startTime = Date.now();
 
-    // Mappa participant.type -> modello Lovable AI Gateway
-    let model: string;
-    if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
-      model = 'openai/gpt-5-mini';
-    } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
-      model = 'google/gemini-2.5-flash';
-    } else if (selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') {
-      model = 'anthropic/claude-sonnet-4-5';
-    } else {
-      throw new Error(`Tipo partecipante non riconosciuto: ${selectedParticipant.type}`);
-    }
-
     // Costruisci history completa
     const visibleHistory = (messages || [])
       .map((msg: any) => `${msg.sender_name}: ${msg.content}`)
       .join('\n');
-    
-    console.log(`🧠 ${selectedParticipant.name} elabora con modello: ${model}`);
 
-    const fullPrompt = `${basePrompt}
+    let aiResponseText = '';
+    let tokensIn = 0;
+    let tokensOut = 0;
+
+    // ═══════════════════════════════════════════════════════════
+    // GESTIONE PROVIDER DIVERSI
+    // ═══════════════════════════════════════════════════════════
+
+    if (selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') {
+      // ──────── ANTHROPIC DIRETTO ────────
+      console.log(`🧠 ${selectedParticipant.name} elabora con Anthropic Claude`);
+      
+      const { data: anthropicConfig } = await supabaseClient
+        .from('config_ai')
+        .select('api_key')
+        .eq('provider', 'anthropic')
+        .eq('attivo', true)
+        .single();
+
+      if (!anthropicConfig?.api_key) {
+        throw new Error('Anthropic API key non configurata in config_ai');
+      }
+
+      const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicConfig.api_key,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 500,
+          messages: [
+            {
+              role: 'user',
+              content: `${basePrompt}\n\nConversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}\n\nRispondi brevemente (max 150 parole):`
+            }
+          ],
+        }),
+      });
+
+      if (!anthropicResponse.ok) {
+        const errorText = await anthropicResponse.text();
+        console.error(`❌ Anthropic Error:`, anthropicResponse.status, errorText);
+        throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
+      }
+
+      const anthropicData = await anthropicResponse.json();
+      aiResponseText = anthropicData.content[0].text;
+      tokensIn = anthropicData.usage?.input_tokens || 0;
+      tokensOut = anthropicData.usage?.output_tokens || 0;
+
+    } else {
+      // ──────── LOVABLE AI GATEWAY (ChatGPT + Gemini) ────────
+      let model: string;
+      if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
+        model = 'openai/gpt-5-mini';
+      } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
+        model = 'google/gemini-2.5-flash';
+      } else {
+        throw new Error(`Tipo partecipante non supportato: ${selectedParticipant.type}`);
+      }
+      
+      console.log(`🧠 ${selectedParticipant.name} elabora con modello: ${model}`);
+
+      const fullPrompt = `${basePrompt}
 
 Conversazione finora:
 ${visibleHistory}
@@ -113,45 +165,45 @@ ${userMessage}
 
 Rispondi con un messaggio breve e naturale (max 150 parole):`;
 
-    // Chiama Lovable AI Gateway
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: fullPrompt }],
-        max_tokens: 500,
-      }),
-    });
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', content: fullPrompt }],
+          max_tokens: 500,
+        }),
+      });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error(`❌ AI Gateway Error (${model}):`, aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        throw new Error('Rate limit superato. Riprova tra qualche istante.');
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error(`❌ AI Gateway Error (${model}):`, aiResponse.status, errorText);
+        
+        if (aiResponse.status === 429) {
+          throw new Error('Rate limit superato. Riprova tra qualche istante.');
+        }
+        if (aiResponse.status === 402) {
+          throw new Error('Crediti AI esauriti. Aggiungi crediti al tuo workspace.');
+        }
+        throw new Error(`AI Gateway error ${aiResponse.status}: ${errorText}`);
       }
-      if (aiResponse.status === 402) {
-        throw new Error('Crediti AI esauriti. Aggiungi crediti al tuo workspace.');
-      }
-      
-      throw new Error(`AI Gateway error ${aiResponse.status}: ${errorText}`);
+
+      const aiData = await aiResponse.json();
+      aiResponseText = aiData.choices[0].message.content;
+      tokensIn = aiData.usage?.prompt_tokens || 0;
+      tokensOut = aiData.usage?.completion_tokens || 0;
     }
 
-    const response = await aiResponse.json();
-    const content = response.choices?.[0]?.message?.content || 'Errore nella risposta';
-    
-    const tokensUsed = {
-      input: response.usage?.prompt_tokens || 0,
-      output: response.usage?.completion_tokens || 0
-    };
+    // ═══════════════════════════════════════════════════════════
+    // SALVATAGGIO RISULTATO
+    // ═══════════════════════════════════════════════════════════
 
-    const responseTime = Date.now() - startTime;
-    console.log(`📊 ${selectedParticipant.name} - Token in:${tokensUsed.input} out:${tokensUsed.output} - ${responseTime}ms`);
-    console.log(`✅ ${selectedParticipant.name} risposta:`, content.substring(0, 100));
+    const duration = Date.now() - startTime;
+    console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
+    console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
 
     // Salva messaggio AI
     await supabaseClient
@@ -160,11 +212,11 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
         conversation_id: conversationId,
         sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
-        content: content,
+        content: aiResponseText,
         is_visible_to_ai: true,
-        token_input: tokensUsed.input,
-        token_output: tokensUsed.output,
-        tempo_risposta_ms: responseTime
+        token_input: tokensIn,
+        token_output: tokensOut,
+        tempo_risposta_ms: duration
       });
 
     // Aggiorna last_speaker_index
@@ -177,9 +229,9 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
       JSON.stringify({ 
         success: true,
         participant: selectedParticipant.name,
-        content: content,
-        tokens: tokensUsed,
-        responseTime
+        content: aiResponseText,
+        tokens: { input: tokensIn, output: tokensOut },
+        responseTime: duration
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

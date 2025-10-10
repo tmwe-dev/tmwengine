@@ -205,24 +205,53 @@ const ChatLaboratory = () => {
       setUploadedFiles([]);
       setGeneratedImage(null);
 
-      // Chiama orchestratore
+      // Chiama orchestratore per tutti gli agenti in sequenza
       const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
       
-      const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
-        body: { 
-          conversationId,
-          userMessage: currentPrompt,
-          participants: activeAIParticipants
-        }
-      });
+      for (let i = 0; i < activeAIParticipants.length; i++) {
+        try {
+          console.log(`🤖 Invocando agente ${i + 1}/${activeAIParticipants.length}...`);
+          
+          const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+            body: { 
+              conversationId,
+              userMessage: currentPrompt,
+              participants: activeAIParticipants
+            }
+          });
 
-      if (error) {
-        console.error('❌ Errore orchestrator:', error);
-        throw error;
+          if (error) {
+            console.error(`❌ Errore agente ${i + 1}:`, error);
+            toast({
+              title: `Errore Agente ${i + 1}`,
+              description: error.message || 'Impossibile ottenere risposta',
+              variant: "destructive",
+            });
+            break;
+          }
+
+          console.log(`✅ Agente ${i + 1} completato:`, data);
+          
+          // Ricarica messaggi dopo ogni risposta per mostrare aggiornamenti in tempo reale
+          await loadMessages(conversationId);
+          
+          // Piccolo delay per evitare rate limiting
+          if (i < activeAIParticipants.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
+        } catch (loopError) {
+          console.error(`❌ Errore nel loop agente ${i + 1}:`, loopError);
+          toast({
+            title: "Errore di Comunicazione",
+            description: "Si è verificato un problema nella catena di risposte",
+            variant: "destructive",
+          });
+          break;
+        }
       }
 
-      console.log('✅ Orchestrator completato:', data);
-      await loadMessages(conversationId);
+      console.log('🎉 Tutti gli agenti hanno risposto!');
 
     } catch (error) {
       console.error('Errore invio messaggio:', error);

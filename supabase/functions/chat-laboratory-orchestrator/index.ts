@@ -29,7 +29,7 @@ serve(async (req) => {
     const aiConfigs = aiConfigsResult.data;
     const conversation = conversationResult.data;
 
-    // Carica API keys
+    // Carica API keys dalle variabili d'ambiente
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

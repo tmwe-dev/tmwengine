@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
 import { supabase } from '@/integrations/supabase/client';
 import { TMWEProfileSync } from '@/components/settings/TMWEProfileSync';
+import { AI_PROVIDERS } from '@/lib/ai-models';
 import { 
   Key, 
   Mail, 
@@ -161,10 +162,22 @@ const Settings = () => {
   const handleAddAiConfig = async () => {
     setSaving(true);
     try {
-      if (!newAiConfig.provider || !newAiConfig.modello || !newAiConfig.apiKey) {
+      // Lovable provider uses auto API key
+      const apiKey = newAiConfig.provider === 'lovable' ? 'auto' : newAiConfig.apiKey;
+      
+      if (!newAiConfig.provider || !newAiConfig.modello) {
         toast({
           title: "Errore",
-          description: "Provider, modello e API Key sono obbligatori",
+          description: "Provider e modello sono obbligatori",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (newAiConfig.provider !== 'lovable' && !apiKey) {
+        toast({
+          title: "Errore",
+          description: "API Key è obbligatoria per questo provider",
           variant: "destructive",
         });
         return;
@@ -184,7 +197,7 @@ const Settings = () => {
         .insert({
           provider: newAiConfig.provider,
           modello: newAiConfig.modello,
-          api_key: newAiConfig.apiKey,
+          api_key: apiKey,
           attivo: newAiConfig.attivo
         });
 
@@ -841,6 +854,7 @@ const Settings = () => {
                         <SelectItem value="openai">OpenAI</SelectItem>
                         <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
                         <SelectItem value="google">Google AI</SelectItem>
+                        <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                         <SelectItem value="mistral">Mistral AI</SelectItem>
                         <SelectItem value="perplexity">Perplexity</SelectItem>
                         <SelectItem value="cohere">Cohere</SelectItem>
@@ -859,95 +873,67 @@ const Settings = () => {
                           <SelectValue placeholder="Seleziona modello" />
                         </SelectTrigger>
                         <SelectContent>
-                          {newAiConfig.provider === 'openai' && (
-                            <>
-                              <SelectItem value="gpt-5-2025-08-07">GPT-5 (Latest)</SelectItem>
-                              <SelectItem value="gpt-5-mini-2025-08-07">GPT-5 Mini</SelectItem>
-                              <SelectItem value="gpt-5-nano-2025-08-07">GPT-5 Nano</SelectItem>
-                              <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1</SelectItem>
-                              <SelectItem value="o3-2025-04-16">O3 (Reasoning)</SelectItem>
-                              <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                              <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                            </>
-                          )}
-                          {newAiConfig.provider === 'claude' && (
-                            <>
-                              <SelectItem value="claude-opus-4-1-20250805">Claude Opus 4.1</SelectItem>
-                              <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
-                              <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
-                            </>
-                          )}
-                          {newAiConfig.provider === 'gemini' && (
-                            <>
-                              <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash</SelectItem>
-                              <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-                              <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-                            </>
-                          )}
-                          {newAiConfig.provider === 'mistral' && (
-                            <>
-                              <SelectItem value="mistral-large-2411">Mistral Large</SelectItem>
-                              <SelectItem value="mistral-small-2409">Mistral Small</SelectItem>
-                            </>
-                          )}
-                          {newAiConfig.provider === 'perplexity' && (
-                            <>
-                              <SelectItem value="llama-3.1-sonar-large-128k-online">Llama 3.1 Sonar Large</SelectItem>
-                              <SelectItem value="llama-3.1-sonar-small-128k-online">Llama 3.1 Sonar Small</SelectItem>
-                            </>
-                          )}
-                          {newAiConfig.provider === 'cohere' && (
-                            <>
-                              <SelectItem value="command-r-plus">Command R+</SelectItem>
-                              <SelectItem value="command-r">Command R</SelectItem>
-                            </>
-                          )}
+                          {newAiConfig.provider && AI_PROVIDERS[newAiConfig.provider]?.models.map(model => (
+                            <SelectItem key={model.value} value={model.value}>
+                              <div className="flex items-center gap-2">
+                                {model.label}
+                                {model.free && (
+                                  <Badge variant="secondary" className="text-xs">GRATUITO</Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       
-                      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-12 w-12 p-0 ml-4"
-                          >
-                            <Key className="h-7 w-7 text-yellow-500" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Aggiungi API Key</DialogTitle>
-                            <DialogDescription>
-                              Inserisci la tua API key per {newAiConfig.provider}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="apiKeyInput">API Key</Label>
-                              <div className="relative">
-                                <Input
-                                  id="apiKeyInput"
-                                  type={showSecrets['dialogApiKey'] ? "text" : "password"}
-                                  value={newAiConfig.apiKey}
-                                  onChange={(e) => setNewAiConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                                  placeholder="Inserisci la tua API key"
-                                  className="pr-10"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="absolute right-0 top-0 h-full px-3"
-                                  onClick={() => setShowSecrets(prev => ({ ...prev, dialogApiKey: !prev.dialogApiKey }))}
-                                >
-                                  {showSecrets['dialogApiKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </Button>
-                              </div>
-                            </div>
+                      {newAiConfig.provider === 'lovable' ? (
+                        <div className="flex items-center gap-2 ml-4">
+                          <Badge variant="secondary" className="text-xs">API Key Auto-Configurata</Badge>
+                        </div>
+                      ) : (
+                        <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+                          <DialogTrigger asChild>
                             <Button 
-                              onClick={() => setShowApiKeyDialog(false)} 
-                              className="w-full"
+                              variant="ghost" 
+                              size="sm"
+                              className="h-12 w-12 p-0 ml-4"
+                            >
+                              <Key className="h-7 w-7 text-yellow-500" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Aggiungi API Key</DialogTitle>
+                              <DialogDescription>
+                                Inserisci la tua API key per {newAiConfig.provider}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="apiKeyInput">API Key</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="apiKeyInput"
+                                    type={showSecrets['dialogApiKey'] ? "text" : "password"}
+                                    value={newAiConfig.apiKey}
+                                    onChange={(e) => setNewAiConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                                    placeholder="Inserisci la tua API key"
+                                    className="pr-10"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3"
+                                    onClick={() => setShowSecrets(prev => ({ ...prev, dialogApiKey: !prev.dialogApiKey }))}
+                                  >
+                                    {showSecrets['dialogApiKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </Button>
+                                </div>
+                              </div>
+                              <Button 
+                                onClick={() => setShowApiKeyDialog(false)} 
+                                className="w-full"
                             >
                               Salva
                             </Button>

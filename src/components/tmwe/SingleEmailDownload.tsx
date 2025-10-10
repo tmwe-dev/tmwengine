@@ -80,52 +80,31 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
 
       // 3. Scarica i dettagli completi
       console.log(`⬇️ Downloading email details for UID ${uid}...`);
-      const emailDetail = await emailMessageApi.getMessage(uid, false);
-      console.log('📧 [SingleEmailDownload] Full API response:', JSON.stringify(emailDetail, null, 2));
+      const fullEmail = await emailMessageApi.getMessage(uid, false);
+      console.log('📧 [SingleEmailDownload] Full email received:', fullEmail);
 
-      // La risposta potrebbe essere direttamente il messaggio o avere una proprietà message
-      const msg = emailDetail.message || emailDetail;
-      console.log('📨 [SingleEmailDownload] Message object:', msg);
-
-      if (!msg || (!msg.header && !msg.from)) {
-        console.error('❌ [SingleEmailDownload] Invalid email structure:', msg);
-        throw new Error('Email details not found - invalid structure');
-      }
-
-      // Header può essere una proprietà separata o il messaggio stesso
-      const header = msg.header || msg;
-      
-      console.log('💌 [SingleEmailDownload] Preparing insert data...');
-      console.log('  - Subject:', header.subject);
-      console.log('  - From:', header.from);
-      console.log('  - To:', header.to);
-      console.log('  - UID:', uid);
-
-      // 4. Inserisci nel database
+      // 4. Inserisci nel database (STESSO FORMATO di useEmailSync)
       console.log('💾 [SingleEmailDownload] Inserting into database...');
       const { error: insertError } = await supabase
         .from('email_messages')
         .insert({
-          user_email: userEmail,
           message_id: uid,
-          from_email: header.from || '',
-          to_email: header.to || '',
-          cc_email: header.cc || null,
-          bcc_email: header.bcc || null,
-          subject: header.subject || '(No Subject)',
-          body_html: msg.body_html || null,
-          body_text: msg.body_plain || msg.body_text || null,
-          data_ricezione: header.date || new Date().toISOString(),
+          user_email: userEmail,
+          subject: fullEmail.subject || '(No Subject)',
+          from_email: fullEmail.from?.email || fullEmail.from || '',
+          to_email: fullEmail.to || '',
+          cc_email: fullEmail.cc || null,
+          bcc_email: fullEmail.bcc || null,
+          body_html: fullEmail.body_html || '',
+          body_text: fullEmail.body_text || fullEmail.body || '',
+          attachments: fullEmail.attachments || [],
           cartella: folder,
+          data_ricezione: fullEmail.date || new Date().toISOString(),
+          stato: fullEmail.is_read ? 'letto' : 'nuovo',
+          direzione: folder === 'Sent' ? 'uscita' : 'entrata',
           provider_id: '00000000-0000-0000-0000-000000000000',
-          direzione: 'ricevuta',
-          attachments: msg.attachments || [],
-          raw_headers: header.raw_headers || null,
-          in_reply_to: header.in_reply_to || null,
-          email_references: header.references || null,
-          thread_id: header.thread_id || null,
-          flags: msg.flags || []
-         });
+          flags: fullEmail.flags || [],
+        });
 
       if (insertError) {
         console.error('❌ [SingleEmailDownload] Database insert error:', insertError);
@@ -135,7 +114,7 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
       console.log(`✅ Email ${uid} saved successfully to database`);
       setLastDownloadedCount(prev => prev + 1);
       setDownloadStatus('success');
-      toast.success(`Email scaricata: ${header.subject || 'No Subject'}`);
+      toast.success(`Email scaricata: ${fullEmail.subject || 'No Subject'}`);
 
     } catch (error) {
       console.error('❌ [SingleEmailDownload] Download error:', error);

@@ -22,8 +22,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSyncProgress } from '@/hooks/useSyncProgress';
+import { useSyncSmart } from '@/hooks/useSyncSmart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 
 interface EmailSyncMonitorProps {
   onSyncComplete?: () => void;
@@ -40,7 +42,6 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const { toast } = useToast();
   const { progress, percentage, estimatedTimeRemaining, startRealTimeTracking, stopRealTimeTracking } = useSyncProgress();
   
-  const [isRunning, setIsRunning] = useState(false);
   const [sourceFolders, setSourceFolders] = useState<FolderInfo[]>([]);
   const [destinationStats, setDestinationStats] = useState<FolderInfo[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -49,6 +50,18 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     batchSize: 100,
     maxEmails: 10000,
     targetEmails: 50000  // Target per importazione completa
+  });
+  const [totalEmailsInFolder, setTotalEmailsInFolder] = useState(0);
+
+  const { 
+    isSyncing, 
+    syncedCount, 
+    syncError, 
+    startSync, 
+    reset 
+  } = useSyncSmart({ 
+    folder: syncConfig.folder, 
+    totalEmails: totalEmailsInFolder 
   });
 
   const addLog = (message: string) => {
@@ -67,13 +80,29 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
 
   const fetchFolderStats = async () => {
     try {
-      // Simula cartelle sorgente TMWE (dati statici per demo)
-      setSourceFolders([
-        { name: 'INBOX', totalEmails: 3769, unreadEmails: 250, iconColor: 'text-blue-600' },
-        { name: 'Sent', totalEmails: 1250, unreadEmails: 0, iconColor: 'text-green-600' },
-        { name: 'Draft', totalEmails: 45, unreadEmails: 45, iconColor: 'text-orange-600' },
-        { name: 'Archive', totalEmails: 8900, unreadEmails: 0, iconColor: 'text-gray-600' }
-      ]);
+      addLog('📊 Caricamento statistiche cartelle...');
+      
+      // Recupera dati reali dalle API TMWE
+      const foldersResponse = await emailFolderApi.getFolders();
+      const folders = foldersResponse?.folders || [];
+      
+      const sourceFoldersData: FolderInfo[] = folders.map((f: any) => ({
+        name: f.name,
+        totalEmails: f.total || 0,
+        unreadEmails: f.unseen || 0,
+        iconColor: f.name === 'INBOX' ? 'text-blue-600' : 
+                  f.name === 'Sent' ? 'text-green-600' : 
+                  f.name === 'Draft' || f.name === 'Drafts' ? 'text-orange-600' : 'text-gray-600'
+      }));
+      
+      setSourceFolders(sourceFoldersData);
+      
+      // Imposta il totale per la cartella corrente
+      const currentFolderInfo = sourceFoldersData.find(f => f.name === syncConfig.folder);
+      if (currentFolderInfo) {
+        setTotalEmailsInFolder(currentFolderInfo.totalEmails);
+        addLog(`📁 ${syncConfig.folder}: ${currentFolderInfo.totalEmails} email totali`);
+      }
 
       // Recupera statistiche destinazione dal database
       const { data: emailData, error } = await supabase
@@ -102,77 +131,34 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         }));
 
         setDestinationStats(destFolders);
+        addLog(`✅ Statistiche caricate: ${destFolders.length} cartelle nel database`);
       }
     } catch (error) {
       console.error('Error fetching folder stats:', error);
+      addLog(`❌ Errore caricamento statistiche: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
     }
   };
 
   const downloadEmails = async () => {
     try {
-      setIsRunning(true);
-      addLog('📥 Avvio download email...');
+      addLog('🚀 Avvio Smart Sync a 2 fasi...');
       addLog(`📁 Cartella: ${syncConfig.folder}`);
-      addLog(`🎯 Limite: ${syncConfig.maxEmails || 'nessun limite'}`);
+      addLog(`📊 Email totali nella cartella: ${totalEmailsInFolder}`);
+      addLog('');
+      addLog('⭐ FASE 1: Controllo email esistenti nel database...');
+      addLog('⭐ FASE 2: Download contenuto completo solo nuove email...');
+      addLog('');
       
-      const requestBody = { 
-        mode: 'initial',
-        folder_name: syncConfig.folder,
-        max_emails: syncConfig.maxEmails || 5000,
-        force_full: false
-      };
+      await startSync();
       
       addLog('');
-      addLog('========== PARAMETRI RICHIESTA ==========');
-      addLog(`URL Edge Function: tmwe-email-sync-master`);
-      addLog(`Body:`);
-      addLog(JSON.stringify(requestBody, null, 2));
-      addLog('==========================================');
-      addLog('');
-      addLog('⏳ Invio richiesta...');
+      addLog('✅ Smart Sync completato!');
       
-      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-        body: requestBody
-      });
-
-      addLog('');
-      addLog('========== RISPOSTA RICEVUTA ==========');
-      if (error) {
-        addLog(`❌ ERRORE:`);
-        addLog(JSON.stringify(error, null, 2));
-        throw error;
-      }
-      addLog(`✅ Success: true`);
-      addLog(`Dati:`);
-      addLog(JSON.stringify(data, null, 2));
-      addLog('=======================================');
-      addLog('');
-
-      addLog(`✅ Download completato!`);
-      addLog(`📥 Email scaricate: ${data.emails_downloaded}`);
-      addLog(`📚 Totale in database: ${data.total_emails_in_db}`);
-
       if (onSyncComplete) {
         onSyncComplete();
       }
 
       await fetchFolderStats();
-
-      toast({
-        title: data.emails_downloaded > 0 ? "Nuove email scaricate!" : "Nessuna nuova email",
-        description: data.emails_downloaded > 0 
-          ? `${data.emails_downloaded} nuove email importate` 
-          : `Nessuna nuova email trovata. Database: ${data.total_emails_in_db} email`,
-        action: data.emails_downloaded > 0 ? (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => window.location.href = '/gestisci-import'}
-          >
-            Vai a Gestisci Import
-          </Button>
-        ) : undefined
-      });
 
     } catch (error) {
       addLog('');
@@ -188,13 +174,11 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         description: error instanceof Error ? error.message : 'Errore sconosciuto',
         variant: "destructive"
       });
-    } finally {
-      setIsRunning(false);
     }
   };
 
   const stopSync = () => {
-    setIsRunning(false);
+    reset();
     stopRealTimeTracking();
     addLog('⏹️ Sincronizzazione interrotta dall\'utente');
   };
@@ -219,47 +203,58 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
       
       if (progress.status === 'completed') {
         addLog('🎉 Sincronizzazione completata con successo!');
-        setIsRunning(false);
         fetchFolderStats();
       }
       
       if (progress.status === 'error') {
         addLog('❌ Errore durante la sincronizzazione');
-        setIsRunning(false);
       }
     }
   }, [progress]);
+
+  useEffect(() => {
+    if (syncedCount > 0) {
+      addLog(`✅ Email scaricate: ${syncedCount}`);
+    }
+  }, [syncedCount]);
+
+  useEffect(() => {
+    if (syncError) {
+      addLog(`❌ Errore: ${syncError}`);
+    }
+  }, [syncError]);
 
   return (
     <div className="space-y-6">
       
       {/* Statistiche Real-Time */}
-      {progress && isRunning && (
+      {isSyncing && (
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5 animate-pulse text-primary" />
-              Importazione in Corso - Dati in Tempo Reale
+              Smart Sync a 2 Fasi in Corso
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{progress.processed_messages}</div>
-                <div className="text-sm text-muted-foreground">Email Processate</div>
+                <div className="text-2xl font-bold text-primary">{syncedCount}</div>
+                <div className="text-sm text-muted-foreground">Nuove Email Scaricate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">#{progress.current_batch}</div>
-                <div className="text-sm text-muted-foreground">Batch Corrente</div>
+                <div className="text-2xl font-bold text-blue-600">{totalEmailsInFolder}</div>
+                <div className="text-sm text-muted-foreground">Totale in Cartella</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{progress.last_offset}</div>
-                <div className="text-sm text-muted-foreground">Offset Attuale</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {totalEmailsInFolder > 0 ? Math.round((syncedCount / totalEmailsInFolder) * 100) : 0}%
+                </div>
+                <div className="text-sm text-muted-foreground">Progresso</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{progress.batch_size}</div>
-                <div className="text-sm text-muted-foreground">Batch Size</div>
-              </div>
+            </div>
+            <div className="mt-4">
+              <Progress value={totalEmailsInFolder > 0 ? (syncedCount / totalEmailsInFolder) * 100 : 0} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -270,8 +265,8 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Download Email TMWE
-            {isRunning && (
+            Smart Sync Email (2 Fasi)
+            {isSyncing && (
               <Badge variant="secondary" className="animate-pulse">
                 <Zap className="h-3 w-3 mr-1" />
                 In Corso
@@ -279,7 +274,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             )}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Scarica email dalla cartella selezionata
+            Sistema intelligente: scarica solo email nuove con contenuto completo
           </p>
         </CardHeader>
         <CardContent>
@@ -289,8 +284,15 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
               <select 
                 className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.folder}
-                onChange={(e) => setSyncConfig(prev => ({ ...prev, folder: e.target.value }))}
-                disabled={isRunning}
+                onChange={(e) => {
+                  setSyncConfig(prev => ({ ...prev, folder: e.target.value }));
+                  // Aggiorna il totale quando cambia la cartella
+                  const folderInfo = sourceFolders.find(f => f.name === e.target.value);
+                  if (folderInfo) {
+                    setTotalEmailsInFolder(folderInfo.totalEmails);
+                  }
+                }}
+                disabled={isSyncing}
               >
                 <option value="INBOX">INBOX</option>
                 <option value="Sent">Sent</option>
@@ -304,7 +306,7 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 className="w-full p-2 border rounded bg-transparent"
                 value={syncConfig.maxEmails}
                 onChange={(e) => setSyncConfig(prev => ({ ...prev, maxEmails: parseInt(e.target.value) }))}
-                disabled={isRunning}
+                disabled={isSyncing}
                 min="0"
                 max="10000"
                 placeholder="0 = tutte"
@@ -313,15 +315,15 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button onClick={discoverFolders} variant="outline" disabled={isRunning}>
+            <Button onClick={fetchFolderStats} variant="outline" disabled={isSyncing}>
               <FolderOpen className="h-4 w-4 mr-2" />
-              Scopri Cartelle
+              Aggiorna Statistiche
             </Button>
             
-            {!isRunning ? (
+            {!isSyncing ? (
               <Button onClick={downloadEmails} className="bg-gradient-to-r from-primary to-blue-600">
                 <Download className="h-4 w-4 mr-2" />
-                Scarica Email
+                Scarica Email (Smart Sync)
               </Button>
             ) : (
               <Button onClick={stopSync} variant="destructive">
@@ -331,42 +333,33 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
             )}
           </div>
 
-          {/* Progress Bar con dettagli reali */}
-          {progress && (
-            <div className="space-y-3 bg-muted p-4 rounded-lg">
+          {/* Progress Bar Smart Sync */}
+          {isSyncing && (
+            <div className="space-y-3 bg-muted p-4 rounded-lg mt-4">
               <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Sincronizzazione in corso</span>
-                <div className="flex gap-4 text-xs">
-                  <span>Batch: {progress.current_batch}</span>
-                  <span>Offset: {progress.last_offset}</span>
-                </div>
+                <span className="font-medium">Smart Sync a 2 Fasi</span>
+                <span className="text-xs">
+                  {syncedCount} / {totalEmailsInFolder} email
+                </span>
               </div>
               
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progresso: {progress.processed_messages} email processate</span>
-                  <span className="font-mono">{percentage}%</span>
-                </div>
-                <Progress value={percentage} className="h-3" />
+                <Progress 
+                  value={totalEmailsInFolder > 0 ? (syncedCount / totalEmailsInFolder) * 100 : 0} 
+                  className="h-3" 
+                />
                 
                 <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                   <div>
-                    <div>📦 Batch Size: {progress.batch_size}</div>
-                    <div>📁 Cartella: {progress.folder_name}</div>
+                    <div>📁 Cartella: {syncConfig.folder}</div>
+                    <div>📊 Email totali: {totalEmailsInFolder}</div>
                   </div>
                   <div>
-                    <div>⏰ Avviato: {new Date(progress.started_at).toLocaleTimeString()}</div>
-                    <div>🔄 Ultimo aggiornamento: {new Date(progress.updated_at).toLocaleTimeString()}</div>
+                    <div>✅ Nuove scaricate: {syncedCount}</div>
+                    <div>⏰ In corso...</div>
                   </div>
                 </div>
               </div>
-              
-              {estimatedTimeRemaining > 0 && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Tempo rimanente stimato: {formatTime(estimatedTimeRemaining)}</span>
-                </div>
-              )}
             </div>
           )}
         </CardContent>

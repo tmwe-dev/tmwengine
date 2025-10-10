@@ -81,20 +81,25 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
       // 3. Scarica i dettagli completi
       console.log(`⬇️ Downloading email details for UID ${uid}...`);
       const emailDetail = await emailMessageApi.getMessage(uid, false);
-      console.log('📧 [SingleEmailDownload] Email detail received:', emailDetail);
+      console.log('📧 [SingleEmailDownload] Full API response:', JSON.stringify(emailDetail, null, 2));
 
-      if (!emailDetail || !emailDetail.message) {
-        console.error('❌ [SingleEmailDownload] Invalid email detail response');
-        throw new Error('Email details not found');
+      // La risposta potrebbe essere direttamente il messaggio o avere una proprietà message
+      const msg = emailDetail.message || emailDetail;
+      console.log('📨 [SingleEmailDownload] Message object:', msg);
+
+      if (!msg || (!msg.header && !msg.from)) {
+        console.error('❌ [SingleEmailDownload] Invalid email structure:', msg);
+        throw new Error('Email details not found - invalid structure');
       }
 
-      const msg = emailDetail.message;
+      // Header può essere una proprietà separata o il messaggio stesso
       const header = msg.header || msg;
       
       console.log('💌 [SingleEmailDownload] Preparing insert data...');
       console.log('  - Subject:', header.subject);
       console.log('  - From:', header.from);
       console.log('  - To:', header.to);
+      console.log('  - UID:', uid);
 
       // 4. Inserisci nel database
       console.log('💾 [SingleEmailDownload] Inserting into database...');

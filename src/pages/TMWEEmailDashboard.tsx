@@ -11,12 +11,10 @@ import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
 import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
-import { EmailSyncProgress } from '@/components/tmwe/EmailSyncProgress';
+import { SingleEmailDownload } from '@/components/tmwe/SingleEmailDownload';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { useEmailSync } from '@/hooks/useEmailSync';
-import { useMultiFolderSync } from '@/hooks/useMultiFolderSync';
-import { FolderSelectionDialog } from '@/components/tmwe/FolderSelectionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -45,10 +43,6 @@ const EmailDashboard = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-  const [showSyncProgress, setShowSyncProgress] = useState(false);
-  const [isSyncMinimized, setIsSyncMinimized] = useState(false);
-  const [folderSelectionOpen, setFolderSelectionOpen] = useState(false);
-  const [isMultiFolderMode, setIsMultiFolderMode] = useState(false);
   const queryClient = useQueryClient();
 
   // Query per email condivise
@@ -189,19 +183,6 @@ const EmailDashboard = () => {
     totalEmailCount,
   });
 
-  // Hook per sincronizzazione multi-cartella
-  const multiFolderSync = useMultiFolderSync({
-    excludedFolders: [], // No automatic exclusion
-    onProgress: (progress) => {
-      console.log('📊 Multi-folder progress:', progress);
-      
-      // Apri il dialog solo quando la sync inizia davvero (primo aggiornamento)
-      if (progress.foldersProcessed === 0 && progress.totalFolders > 0) {
-        setShowSyncProgress(true);
-        setIsSyncMinimized(false);
-      }
-    }
-  });
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
   const [hasAutoSynced, setHasAutoSynced] = useState(false);
@@ -211,35 +192,6 @@ const EmailDashboard = () => {
     setHasAutoSynced(false);
   }, [selectedFolder]);
 
-  // Auto-sync on mount if emails are missing (ONE TIME ONLY)
-  useEffect(() => {
-    const autoSync = async () => {
-      if (
-        !isLoadingTotal && 
-        totalEmailCount > 0 && 
-        dbEmailCount !== null &&
-        !isSyncing &&
-        !hasAutoSynced
-      ) {
-        const missing = totalEmailCount - dbEmailCount;
-        if (missing > 0) {
-          console.log(`🔄 [Auto-Sync] ${missing} email mancanti, avvio MICRO-BATCH sync...`);
-          setHasAutoSynced(true);
-          setShowSyncProgress(true);
-          await startSync();
-        }
-      }
-    };
-    autoSync();
-  }, [isLoadingTotal, totalEmailCount, dbEmailCount, isSyncing, hasAutoSynced]);
-
-  // ALWAYS show progress when syncing
-  useEffect(() => {
-    if (isSyncing) {
-      setShowSyncProgress(true);
-      setIsSyncMinimized(false);
-    }
-  }, [isSyncing]);
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
@@ -396,36 +348,7 @@ const EmailDashboard = () => {
     : emailsToUse;
 
   const handleSync = async () => {
-    // Apri il dialog di selezione cartelle per multi-folder sync
-    setFolderSelectionOpen(true);
-  };
-
-  const handleStartMultiFolderSync = async (selectedFolders: string[]) => {
-    console.log('🎯 [Dashboard] handleStartMultiFolderSync called with:', selectedFolders);
-    console.log('📊 [Dashboard] Number of folders:', selectedFolders.length);
-    
-    setIsMultiFolderMode(true);
-    
-    // NON aprire subito il dialog, aspetta che la sync inizi davvero
-    // Il dialog verrà aperto dal callback onProgress quando riceve il primo aggiornamento
-    
-    try {
-      await multiFolderSync.startMultiFolderSync(selectedFolders);
-    } catch (error) {
-      console.error('❌ [Dashboard] Error starting multi-folder sync:', error);
-      toast.error('Errore durante l\'avvio della sincronizzazione');
-      setIsMultiFolderMode(false);
-    }
-  };
-
-  const handleMinimizeSync = () => {
-    setIsSyncMinimized(true);
-    setShowSyncProgress(false);
-  };
-
-  const handleRestoreSync = () => {
-    setIsSyncMinimized(false);
-    setShowSyncProgress(true);
+    toast.info('Usa il pulsante "Download 1 Email" per scaricare email una alla volta');
   };
 
   const handleDelete = () => {
@@ -537,7 +460,6 @@ const EmailDashboard = () => {
           missingEmailCount={missingEmailCount}
           onMenuClick={() => setSidebarOpen(true)}
           isMobile={isMobile}
-          dbEmailCount={isMobile ? emailCount : undefined}
           isHeaderCollapsed={isHeaderCollapsed}
           onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
           onCloseEmail={handleBackToList}
@@ -547,21 +469,10 @@ const EmailDashboard = () => {
           hasNext={hasNextEmail()}
         />
         
-        {/* Minimized Sync Badge */}
-        {isSyncMinimized && isSyncing && (
-          <Button
-            onClick={handleRestoreSync}
-            variant="default"
-            size="sm"
-            className="absolute top-2 right-4 z-50 animate-pulse shadow-lg"
-          >
-            <Database className="h-4 w-4 mr-2 animate-spin" />
-            Sync in corso: {downloadStatus?.currentBatch}/{downloadStatus?.totalBatches}
-            <Badge variant="secondary" className="ml-2">
-              {downloadStatus?.downloadedCount}
-            </Badge>
-          </Button>
-        )}
+        {/* Single Email Download Button */}
+        <div className="absolute top-2 right-4 z-50">
+          <SingleEmailDownload folder={selectedFolder} />
+        </div>
       </div>
 
       {/* Tab personali/aziendali */}
@@ -790,28 +701,6 @@ const EmailDashboard = () => {
         replyTo={replyTo}
       />
 
-      <EmailSyncProgress 
-        open={showSyncProgress && !isSyncMinimized} 
-        onOpenChange={setShowSyncProgress}
-        status={downloadStatus}
-        isSyncing={isMultiFolderMode ? multiFolderSync.isSyncing : isSyncing}
-        onStop={isMultiFolderMode ? multiFolderSync.stopMultiFolderSync : stopSync}
-        onMinimize={handleMinimizeSync}
-        isMultiFolder={isMultiFolderMode}
-        currentFolder={multiFolderSync.currentFolder || selectedFolder}
-        foldersProcessed={multiFolderSync.progress.foldersProcessed}
-        totalFolders={multiFolderSync.progress.totalFolders}
-        overallProgress={multiFolderSync.progress.overallProgress}
-        totalEmailsDownloaded={multiFolderSync.progress.totalEmailsDownloaded}
-        totalEmailsToSync={multiFolderSync.progress.totalEmailsToSync}
-        estimatedTimeRemaining={multiFolderSync.progress.estimatedTimeRemaining}
-      />
-
-      <FolderSelectionDialog 
-        open={folderSelectionOpen}
-        onOpenChange={setFolderSelectionOpen}
-        onStartSync={handleStartMultiFolderSync}
-      />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>

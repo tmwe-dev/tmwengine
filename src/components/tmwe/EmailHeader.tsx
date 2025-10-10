@@ -21,7 +21,6 @@ interface EmailHeaderProps {
   onMenuClick?: () => void;
   isMobile?: boolean;
   downloadProgressComponent?: React.ReactNode;
-  dbEmailCount?: number;
   isHeaderCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onCloseEmail?: () => void;
@@ -31,49 +30,9 @@ interface EmailHeaderProps {
   hasNext?: boolean;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
-
-  // Fetch initial count and subscribe to realtime updates
-  useEffect(() => {
-    const fetchCount = async () => {
-      const userEmail = sessionStorage.getItem('tmwe_user_email');
-      if (!userEmail) return;
-      
-      const { count, error } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', userEmail);
-      
-      if (!error && count !== null) {
-        setEmailCount(count);
-      }
-    };
-
-    fetchCount();
-
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('email-count-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'email_messages'
-        },
-        () => {
-          fetchCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,11 +185,6 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
             {!isHeaderCollapsed && (
               <div className="hidden md:flex items-center gap-1 sm:gap-2">
-                <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
-                  <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
-                </Badge>
-
                 <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
                   <div className="relative min-w-0">
                     <Search className="absolute left-2 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
@@ -258,18 +212,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-4">
-            {/* DB Email Count */}
-            {dbEmailCount !== undefined && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Email nel Database</div>
-                  <div className="text-xs text-muted-foreground">
-                    {dbEmailCount.toLocaleString()} record
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Placeholder per future opzioni */}
           </div>
         </DialogContent>
       </Dialog>

@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useFolderList } from '@/hooks/useFolderList';
-import { emailMessageApi } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi, getApiConfigFromDB } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, ArrowUpDown, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Inbox, Send, FileText, Trash2, Archive, Folder, Database, ArrowUpDown, XCircle, CheckCircle2, Loader2, TestTube, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FolderSyncManagerProps {
@@ -38,6 +40,13 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
   });
   const [isSupabaseAuthenticated, setIsSupabaseAuthenticated] = useState(false);
   const [authCheckLoading, setAuthCheckLoading] = useState(true);
+  
+  // Test area states
+  const [testMessageId, setTestMessageId] = useState("");
+  const [testResponse, setTestResponse] = useState<any>(null);
+  const [testLoading, setTestLoading] = useState(false);
+  const [forceReDownload, setForceReDownload] = useState(false);
+  const [testAreaOpen, setTestAreaOpen] = useState(false);
 
   // Verifica autenticazione Supabase
   useEffect(() => {
@@ -141,11 +150,12 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
       const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
       
       console.log(`📊 ${folderName}: ${existingIds.size} già presenti`);
-
-      if (existingIds.size >= totalEmails) {
-        console.log(`✅ ${folderName}: Tutte le email già scaricate`);
-        return 0;
-      }
+      
+      // ❌ RIMOSSO: Check troppo generico che bloccava il download
+      // if (existingIds.size >= totalEmails) {
+      //   console.log(`✅ ${folderName}: Tutte le email già scaricate`);
+      //   return 0;
+      // }
 
       const batchSize = 50;
       const totalPages = Math.ceil(totalEmails / batchSize);
@@ -170,8 +180,17 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
         if (pageEmails.length === 0) break;
 
         const missingEmails = pageEmails.filter((email: any) => {
-          const emailId = String(email.uid || email.message_id);
-          return !existingIds.has(emailId);
+          const emailId = email.message_id || String(email.uid);
+          const isExisting = existingIds.has(emailId);
+          
+          // ✅ Se force attivo, considera tutte "da scaricare"
+          if (forceReDownload) {
+            console.log(`🔄 FORCE: Email ${emailId} verrà ri-scaricata`);
+            return true;
+          }
+          
+          console.log(`🔍 Email ${emailId}: ${isExisting ? '✓ Già presente' : '📥 Da scaricare'}`);
+          return !isExisting;
         });
 
         console.log(`📧 Da scaricare: ${missingEmails.length} email nuove`);
@@ -204,15 +223,24 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
           const messageId = emailMeta.message_id || String(emailMeta.uid);
 
           try {
-            console.log(`📧 FASE 2 [${i + 1}/${missingEmails.length}]: Scaricamento message_id ${messageId}...`);
+            // Log dettagliato richiesta API
+            console.log(`📤 API REQUEST [${i + 1}/${missingEmails.length}]:`, {
+              endpoint: 'getMessage',
+              message_id: messageId,
+              folder: folderName,
+              timestamp: new Date().toISOString()
+            });
             
             const fullEmail = await emailMessageApi.getMessage(messageId, false);
             
-            console.log(`🔍 API get_message response:`, {
+            // Log dettagliato risposta API
+            console.log(`📥 API RESPONSE [${i + 1}/${missingEmails.length}]:`, {
               success: !!fullEmail,
-              has_subject: !!fullEmail?.subject,
-              has_body: !!(fullEmail?.body_text || fullEmail?.text || fullEmail?.body_html || fullEmail?.html),
-              subject_preview: fullEmail?.subject?.substring(0, 50)
+              data_keys: Object.keys(fullEmail || {}),
+              subject_length: fullEmail?.subject?.length || 0,
+              body_text_length: fullEmail?.body_text?.length || 0,
+              body_html_length: fullEmail?.body_html?.length || 0,
+              has_attachments: fullEmail?.attachments?.length > 0
             });
             
             if (!fullEmail || fullEmail.success === false) {
@@ -309,6 +337,94 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
       throw error;
     } finally {
       setSyncProgress({ currentEmailIndex: 0, totalEmails: 0, phase: 'idle' });
+    }
+  };
+
+  // Test singola email
+  const handleTestSingleEmail = async () => {
+    if (!testMessageId.trim()) {
+      toast.error("Inserisci un message_id");
+      return;
+    }
+
+    setTestLoading(true);
+    setTestResponse(null);
+
+    try {
+      console.log(`🧪 TEST: Scaricamento email ${testMessageId}...`);
+
+      // Test API TMWE
+      const fullEmail = await emailMessageApi.getMessage(testMessageId, false);
+
+      const validation = {
+        has_subject: !!fullEmail?.subject,
+        has_body_text: !!fullEmail?.body_text,
+        has_body_html: !!fullEmail?.body_html,
+        has_attachments: fullEmail?.attachments?.length > 0,
+        subject_length: fullEmail?.subject?.length || 0,
+        body_text_length: fullEmail?.body_text?.length || 0,
+        body_html_length: fullEmail?.body_html?.length || 0,
+      };
+
+      setTestResponse({
+        success: true,
+        api_response: fullEmail,
+        validation
+      });
+
+      console.log(`✓ Email test completata:`, validation);
+      toast.success(`✓ Test completato: ${validation.has_subject ? '✓' : '✗'} Subject, ${validation.has_body_text || validation.has_body_html ? '✓' : '✗'} Body`);
+
+    } catch (error: any) {
+      setTestResponse({
+        success: false,
+        error: error.message,
+        stack: error.stack,
+      });
+      toast.error(`Test fallito: ${error.message}`);
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  // Test autenticazione TMWE
+  const handleTestAuth = async () => {
+    setTestLoading(true);
+    setTestResponse(null);
+
+    try {
+      const config = await getApiConfigFromDB();
+
+      if (!config) {
+        toast.error('Credenziali TMWE non trovate');
+        setTestResponse({
+          auth_status: 'missing_credentials',
+          error: 'Nessuna configurazione TMWE trovata nel database'
+        });
+        return;
+      }
+
+      // Test chiamata API base - usa getMessages invece di getFolders
+      const result = await emailMessageApi.getMessages({ folder: 'INBOX', limit: 1 });
+
+      setTestResponse({
+        auth_status: 'valid',
+        access_token_present: !!config.accessToken,
+        token_expires_at: config.expiresAt,
+        api_test: 'getMessages INBOX',
+        result_success: !!result
+      });
+
+      toast.success(`✓ Autenticazione TMWE valida`);
+
+    } catch (error: any) {
+      setTestResponse({
+        auth_status: 'invalid',
+        error: error.message,
+      });
+      toast.error('Autenticazione fallita');
+    } finally {
+      setTestLoading(false);
     }
   };
 
@@ -421,6 +537,74 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* 🧪 DEBUG & TESTING AREA */}
+          <Collapsible open={testAreaOpen} onOpenChange={setTestAreaOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full">
+                <TestTube className="h-4 w-4 mr-2" />
+                {testAreaOpen ? 'Nascondi' : 'Mostra'} Debug & Testing
+                {testAreaOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 p-4 border rounded-lg bg-muted/50 mt-2">
+              {/* Test Singola Email */}
+              <div className="space-y-2">
+                <Label htmlFor="test-message-id">Test Download Singola Email</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="test-message-id"
+                    placeholder="Inserisci message_id (es: 1415)"
+                    value={testMessageId}
+                    onChange={(e) => setTestMessageId(e.target.value)}
+                    disabled={testLoading}
+                  />
+                  <Button
+                    onClick={handleTestSingleEmail}
+                    disabled={testLoading || !testMessageId.trim()}
+                    size="sm"
+                  >
+                    {testLoading ? "Testing..." : "Test Download"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Test Autenticazione */}
+              <Button
+                variant="secondary"
+                onClick={handleTestAuth}
+                disabled={testLoading}
+                className="w-full"
+                size="sm"
+              >
+                Test Autenticazione TMWE
+              </Button>
+
+              {/* Force Re-Download Option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="force-redownload"
+                  checked={forceReDownload}
+                  onCheckedChange={(checked) => setForceReDownload(checked as boolean)}
+                />
+                <Label htmlFor="force-redownload" className="text-sm cursor-pointer">
+                  Force re-download email esistenti (ignora controllo duplicati)
+                </Label>
+              </div>
+
+              {/* Response Viewer */}
+              {testResponse && (
+                <div className="space-y-2">
+                  <Label>Risultato Test</Label>
+                  <ScrollArea className="h-[200px] w-full rounded-md border bg-black">
+                    <pre className="text-green-400 p-4 text-xs font-mono">
+                      {JSON.stringify(testResponse, null, 2)}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Warning autenticazione */}
           {!authCheckLoading && !isSupabaseAuthenticated && (
             <Alert variant="destructive">

@@ -11,6 +11,8 @@ interface SingleEmailDownloadProps {
 }
 
 export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
+  console.log('🔧 [SingleEmailDownload] Component rendered, folder:', folder);
+  
   const [isDownloading, setIsDownloading] = useState(false);
   const [lastDownloadedCount, setLastDownloadedCount] = useState<number>(0);
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -144,19 +146,22 @@ export const SingleEmailDownload = ({ folder }: SingleEmailDownloadProps) => {
   return (
     <div className="flex items-center gap-2">
       <Button
-        onClick={downloadSingleEmail}
+        onClick={(e) => {
+          console.log('🖱️ [SingleEmailDownload] CLICK EVENT TRIGGERED!', e);
+          downloadSingleEmail();
+        }}
         disabled={isDownloading}
         size="icon"
         variant="outline"
-        className="h-8 w-8"
+        className="h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90"
         title={isDownloading ? 'Downloading...' : 'Download 1 Email'}
       >
         {isDownloading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : downloadStatus === 'success' ? (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CheckCircle2 className="h-4 w-4" />
         ) : downloadStatus === 'error' ? (
-          <AlertCircle className="h-4 w-4 text-red-500" />
+          <AlertCircle className="h-4 w-4" />
         ) : (
           <Download className="h-4 w-4" />
         )}

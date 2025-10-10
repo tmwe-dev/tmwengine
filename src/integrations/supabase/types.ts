@@ -184,28 +184,43 @@ export type Database = {
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null
+          conversation_phase: string | null
           created_at: string | null
+          current_turn_index: number | null
+          final_summary: string | null
           id: string
           memoria_completa: boolean | null
+          response_mode: string | null
           riassunto_contesto: string | null
+          target_participant_type: string | null
           titolo: string | null
           updated_at: string | null
         }
         Insert: {
           active_participants?: Json | null
+          conversation_phase?: string | null
           created_at?: string | null
+          current_turn_index?: number | null
+          final_summary?: string | null
           id?: string
           memoria_completa?: boolean | null
+          response_mode?: string | null
           riassunto_contesto?: string | null
+          target_participant_type?: string | null
           titolo?: string | null
           updated_at?: string | null
         }
         Update: {
           active_participants?: Json | null
+          conversation_phase?: string | null
           created_at?: string | null
+          current_turn_index?: number | null
+          final_summary?: string | null
           id?: string
           memoria_completa?: boolean | null
+          response_mode?: string | null
           riassunto_contesto?: string | null
+          target_participant_type?: string | null
           titolo?: string | null
           updated_at?: string | null
         }
@@ -271,9 +286,13 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string | null
+          has_responded_current_turn: boolean | null
           id: string
           is_active: boolean | null
           name: string
+          response_count: number | null
+          role_description: string | null
+          role_name: string | null
           system_prompt: string | null
           type: string
           updated_at: string | null
@@ -281,9 +300,13 @@ export type Database = {
         Insert: {
           conversation_id: string
           created_at?: string | null
+          has_responded_current_turn?: boolean | null
           id?: string
           is_active?: boolean | null
           name: string
+          response_count?: number | null
+          role_description?: string | null
+          role_name?: string | null
           system_prompt?: string | null
           type: string
           updated_at?: string | null
@@ -291,9 +314,13 @@ export type Database = {
         Update: {
           conversation_id?: string
           created_at?: string | null
+          has_responded_current_turn?: boolean | null
           id?: string
           is_active?: boolean | null
           name?: string
+          response_count?: number | null
+          role_description?: string | null
+          role_name?: string | null
           system_prompt?: string | null
           type?: string
           updated_at?: string | null

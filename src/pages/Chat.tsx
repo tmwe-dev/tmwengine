@@ -180,21 +180,37 @@ const Chat = () => {
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
+        .eq('attivo', true)
         .order('provider', { ascending: true });
 
       if (error) throw error;
       
       setAiConfigs(data || []);
       
-      // Set active config as default selection
-      const activeConfig = data?.find(c => c.attivo);
-      if (activeConfig) {
-        setSelectedConfigId(activeConfig.id);
+      // Auto-select if only one active config
+      if (data && data.length === 1) {
+        setSelectedConfigId(data[0].id);
+      } else if (data && data.length > 1) {
+        // Try to restore from localStorage
+        const savedConfigId = localStorage.getItem('chat_selected_ai_config');
+        if (savedConfigId && data.find(c => c.id === savedConfigId)) {
+          setSelectedConfigId(savedConfigId);
+        } else {
+          // Default to first one
+          setSelectedConfigId(data[0].id);
+        }
       }
     } catch (error) {
       console.error('Error loading AI configurations:', error);
     }
   };
+
+  // Save selected config to localStorage
+  useEffect(() => {
+    if (selectedConfigId) {
+      localStorage.setItem('chat_selected_ai_config', selectedConfigId);
+    }
+  }, [selectedConfigId]);
 
   const loadSystemPrompts = async () => {
     try {

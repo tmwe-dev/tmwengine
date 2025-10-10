@@ -13,24 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    const { conversationId, userMessage, participants, selectedConfigId } = await req.json();
+    const { conversationId, userMessage, participants } = await req.json();
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Carica configurazione AI selezionata
-    let aiConfig: any = null;
-    if (selectedConfigId) {
-      const { data } = await supabaseClient
-        .from('config_ai')
-        .select('*')
-        .eq('id', selectedConfigId)
-        .eq('attivo', true)
-        .maybeSingle();
-      aiConfig = data;
-    }
+    // Carica TUTTE le configurazioni AI attive
+    const { data: aiConfigs } = await supabaseClient
+      .from('config_ai')
+      .select('*')
+      .eq('attivo', true);
+
+    // Mappa provider -> config
+    const configMap = {
+      openai: aiConfigs?.find(c => c.provider === 'openai'),
+      google: aiConfigs?.find(c => c.provider === 'google' || c.provider === 'lovable'),
+      anthropic: aiConfigs?.find(c => c.provider === 'anthropic')
+    };
 
     // Carica il prompt globale
     const { data: globalPrompt } = await supabaseClient
@@ -62,6 +63,44 @@ REGOLE CRITICHE:
     for (const participant of participants) {
       const startTime = Date.now();
 
+      // Determina provider e modello da usare
+      let config, provider, model, apiKey;
+
+      // Mappa participant.type -> configurazione
+      if (participant.type === 'chatgpt' || participant.type === 'openai') {
+        config = configMap.openai;
+        if (!config) {
+          console.warn('OpenAI config non trovata, skippo ChatGPT');
+          continue; // Salta questo partecipante
+        }
+        provider = 'openai';
+        model = config.modello;
+        apiKey = config.api_key;
+      }
+      else if (participant.type === 'gemini' || participant.type === 'google') {
+        config = configMap.google;
+        if (!config) {
+          console.warn('Google config non trovata, skippo Gemini');
+          continue;
+        }
+        provider = 'lovable'; // Usa sempre Lovable AI Gateway per Gemini
+        model = config.modello;
+        apiKey = Deno.env.get('LOVABLE_API_KEY'); // Gemini usa sempre LOVABLE_API_KEY
+      }
+      else if (participant.type === 'claude' || participant.type === 'anthropic') {
+        config = configMap.anthropic;
+        if (!config) {
+          console.warn('Anthropic config non trovata, skippo Claude');
+          continue;
+        }
+        provider = 'anthropic';
+        model = config.modello;
+        apiKey = config.api_key;
+      } else {
+        console.warn(`Tipo partecipante non riconosciuto: ${participant.type}`);
+        continue;
+      }
+
       // Costruisci history SOLO con messaggi dell'utente e del partecipante stesso
       const visibleHistory = (messages || [])
         .filter((msg: any) => 
@@ -83,32 +122,6 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
 
       let response: any;
       let tokensUsed = { input: 0, output: 0 };
-
-      // Determina provider e modello da usare
-      let provider = participant.type;
-      let model = 'gpt-4o-mini'; // default
-      let apiKey = '';
-
-      // Se c'è una config AI selezionata, usala
-      if (aiConfig) {
-        provider = aiConfig.provider;
-        model = aiConfig.modello;
-        apiKey = aiConfig.api_key === 'auto' ? Deno.env.get('LOVABLE_API_KEY') || '' : aiConfig.api_key;
-      } else {
-        // Fallback ai vecchi tipi
-        if (participant.type === 'chatgpt' || participant.type === 'openai') {
-          provider = 'openai';
-          apiKey = Deno.env.get('OPENAI_API_KEY') || '';
-        } else if (participant.type === 'gemini' || participant.type === 'google') {
-          provider = 'lovable';
-          model = 'google/gemini-2.5-flash';
-          apiKey = Deno.env.get('LOVABLE_API_KEY') || '';
-        } else if (participant.type === 'claude' || participant.type === 'anthropic') {
-          provider = 'anthropic';
-          model = 'claude-3-5-haiku-20241022';
-          apiKey = Deno.env.get('ANTHROPIC_API_KEY') || '';
-        }
-      }
 
       // Chiama l'AI appropriata
       if (provider === 'openai') {
@@ -132,11 +145,10 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
         };
 
       } else if (provider === 'lovable' || provider === 'google') {
-        const lovableKey = provider === 'lovable' ? Deno.env.get('LOVABLE_API_KEY') : apiKey;
         const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${lovableKey}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

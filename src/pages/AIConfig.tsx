@@ -162,6 +162,27 @@ const AIConfig = () => {
 
   const handleToggleAiConfig = async (configId, currentStatus) => {
     try {
+      // Ottieni il provider della config che stiamo attivando
+      const configToToggle = aiConfigs.find(c => c.id === configId);
+      
+      if (!configToToggle) return;
+
+      // Se stiamo attivando, verifica che non ci sia già un'altra config attiva per lo stesso provider
+      if (!currentStatus) {
+        const existingActiveConfig = aiConfigs.find(
+          c => c.provider === configToToggle.provider && c.attivo && c.id !== configId
+        );
+        
+        if (existingActiveConfig) {
+          toast({
+            title: "Errore",
+            description: `Esiste già una configurazione attiva per ${configToToggle.provider}. Disattivala prima di attivarne un'altra.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('config_ai')
         .update({ attivo: !currentStatus })
@@ -351,7 +372,7 @@ const AIConfig = () => {
                 checked={newAiConfig.attivo}
                 onCheckedChange={(checked) => setNewAiConfig(prev => ({ ...prev, attivo: checked }))}
               />
-              <Label htmlFor="newAiAttivo" className="text-sm">Attiva immediatamente</Label>
+              <Label htmlFor="newAiAttivo" className="text-sm">Disponibile</Label>
             </div>
           </div>
 
@@ -368,7 +389,7 @@ const AIConfig = () => {
         <CardHeader>
           <CardTitle>Configurazioni AI Esistenti</CardTitle>
           <CardDescription>
-            Gestisci le configurazioni AI salvate
+            Puoi attivare una configurazione per ogni provider (OpenAI, Google, Anthropic, etc.)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -391,10 +412,13 @@ const AIConfig = () => {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Switch
-                      checked={config.attivo}
-                      onCheckedChange={() => handleToggleAiConfig(config.id, config.attivo)}
-                    />
+                    <div className="flex items-center gap-2 mr-2">
+                      <Switch
+                        checked={config.attivo}
+                        onCheckedChange={() => handleToggleAiConfig(config.id, config.attivo)}
+                      />
+                      <span className="text-sm text-muted-foreground">Disponibile</span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"

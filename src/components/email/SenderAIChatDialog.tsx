@@ -81,7 +81,7 @@ Il mittente con cui stai parlando è: ${senderEmail}
 Aiuta l'utente a capire meglio le email di questo mittente, suggerisci azioni, analizza pattern, etc.
 Rispondi sempre in italiano.`);
 
-      const { data, error } = await supabase.functions.invoke('chat-with-openai', {
+      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
         body: { 
           prompt: currentPrompt, 
           systemPrompt: systemPrompt,

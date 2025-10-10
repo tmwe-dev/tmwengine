@@ -440,16 +440,6 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
-        downloadProgressComponent={
-          <EmailDownloadProgress
-            totalEmails={totalEmailCount}
-            onDownloadComplete={() => {}}
-            onStartDownload={startSync}
-            isDownloading={isSyncing}
-            downloadedCount={syncedCount}
-            downloadError={syncError}
-          />
-        }
       />
       
       <div className="flex flex-1 w-full">

@@ -231,20 +231,17 @@ const Settings = () => {
   };
 
   const handleToggleAiConfig = async (configId, currentStatus) => {
+    console.log('🔄 Toggle chiamato:', { configId, currentStatus, nuovoStato: !currentStatus });
+    
     try {
-      // Se stiamo attivando questo config, disattiviamo gli altri
-      if (!currentStatus) {
-        await supabase
-          .from('config_ai')
-          .update({ attivo: false })
-          .neq('id', configId);
-      }
-
-      // Toggle dello stato attuale
-      const { error } = await supabase
+      // Toggle dello stato attuale (rimossa logica di disattivazione multipla)
+      const { error, data } = await supabase
         .from('config_ai')
         .update({ attivo: !currentStatus })
-        .eq('id', configId);
+        .eq('id', configId)
+        .select();
+
+      console.log('📊 Risposta database:', { error, data });
 
       if (error) throw error;
 
@@ -255,8 +252,9 @@ const Settings = () => {
 
       // Ricarica configurazioni
       await loadConfigurations();
+      console.log('✅ Configurazioni ricaricate');
     } catch (error) {
-      console.error('Errore toggle AI config:', error);
+      console.error('❌ Errore toggle AI config:', error);
       toast({
         title: "Errore",
         description: "Impossibile aggiornare la configurazione",

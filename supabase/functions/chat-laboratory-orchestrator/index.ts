@@ -7,6 +7,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ═══════════════════════════════════════════════════════════
+// HELPER: Controlla se l'AI dovrebbe saltare il turno
+// ═══════════════════════════════════════════════════════════
+function checkIfShouldSkip(
+  visibleHistory: string,
+  userMessage: string,
+  messagesCount: number
+): boolean {
+  // Se la conversazione è appena iniziata (< 3 messaggi), tutti parlano
+  if (messagesCount < 3) return false;
+
+  // Se l'ultimo messaggio è una domanda diretta, risponde
+  if (userMessage.includes('?')) return false;
+
+  // Conta quanti messaggi recenti contengono parole di consenso
+  const lastMessages = visibleHistory.split('\n').slice(-3);
+  const consensusWords = ['concordo', 'sono d\'accordo', 'esatto', 'perfetto', 'giusto', 'condivido'];
+  
+  const consensusCount = lastMessages.filter(msg => 
+    consensusWords.some(word => msg.toLowerCase().includes(word))
+  ).length;
+  
+  // Se almeno 2 dei 3 ultimi messaggi esprimono consenso, skip
+  return consensusCount >= 2;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ═══════════════════════════════════════════════════════════
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -88,6 +117,31 @@ REGOLE CRITICHE:
     const visibleHistory = (messages || [])
       .map((msg: any) => `${msg.sender_name}: ${msg.content}`)
       .join('\n');
+
+    // ──────── PRE-CHECK: Questo AI ha qualcosa da dire? ────────
+    const shouldSkip = checkIfShouldSkip(visibleHistory, userMessage, messages?.length || 0);
+    
+    if (shouldSkip) {
+      console.log(`🤐 ${selectedParticipant.name} non ha nulla da aggiungere (consenso rilevato)`);
+      
+      // Salva un messaggio "skip" nella conversation (nascosto agli altri AI)
+      await supabaseClient.from('chat_laboratory_messages').insert({
+        conversation_id: conversationId,
+        sender_type: selectedParticipant.type,
+        sender_name: selectedParticipant.name,
+        content: "[Non ho nulla da aggiungere]",
+        is_visible_to_ai: false,
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          skipped: true, 
+          participantName: selectedParticipant.name,
+          reason: 'consensus_detected'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     let aiResponseText = '';
     let tokensIn = 0;

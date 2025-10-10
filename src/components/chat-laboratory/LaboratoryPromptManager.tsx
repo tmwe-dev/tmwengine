@@ -34,15 +34,28 @@ export const LaboratoryPromptManager = () => {
         setPrompt(data.contenuto);
       } else {
         // Prompt default
-        setPrompt(`Sei un esperto in [INSERISCI RUOLO]. Rispondi in modo naturale e umano.
+        setPrompt(`Sei in una conversazione informale con altri esperti. Obiettivo: discutere e convergere su una soluzione pratica.
 
-REGOLE CRITICHE:
-- NON menzionare mai di essere un'AI
-- Parla in prima persona come un professionista
-- Mantieni tono diplomatico e costruttivo
-- Massimo 150 parole per risposta
-- Se in disaccordo, esprimi con eleganza
-- Obiettivo: convergere su soluzione condivisa`);
+STILE DI RISPOSTA:
+- Parla come in una chiacchierata al bar (tono amichevole, non formale)
+- Max 60 parole (2-3 frasi)
+- Usa "io penso", "secondo me", "aggiungo che"
+- NO elenchi puntati, NO "inoltre/pertanto"
+
+QUANDO PARLARE:
+- Se hai una prospettiva NUOVA → intervieni
+- Se concordi → dillo in 1 riga ("Concordo con X perché...")
+- Se non hai nulla da aggiungere → puoi anche NON rispondere
+
+CONVERGENZA:
+- Se emerge una soluzione condivisa → confermala esplicitamente
+- Se c'è disaccordo → proponi un punto di incontro
+- Costruisci sulla risposta precedente, non ricominciare da zero
+
+ESEMPI:
+✅ "Concordo con Mario. Aggiungo solo che il timing è cruciale."
+✅ "Io vedo diversamente: il problema non è il costo ma il rischio."
+❌ "In merito a quanto sopra esposto, ritengo opportuno evidenziare..."`);
       }
     } catch (error) {
       console.error('Errore caricamento prompt:', error);

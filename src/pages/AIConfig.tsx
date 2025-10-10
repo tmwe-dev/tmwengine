@@ -190,33 +190,43 @@ const AIConfig = () => {
         return;
       }
 
-      // Se stiamo attivando, verifica che non ci sia già un'altra config attiva per lo stesso provider normalizzato
+      // Se stiamo attivando, DISATTIVA automaticamente le altre config dello stesso provider normalizzato
       if (!currentStatus) {
         const normalizedProvider = normalizeProvider(configToToggle.provider);
         
-        // Verifica nel database, non nell'array locale
-        const { data: existingActiveConfigs } = await supabase
+        // Ottieni tutte le altre config attive
+        const { data: otherActiveConfigs } = await supabase
           .from('config_ai')
           .select('*')
           .eq('attivo', true)
           .neq('id', configId);
         
-        if (existingActiveConfigs && existingActiveConfigs.length > 0) {
-          const conflictConfig = existingActiveConfigs.find(
-            c => normalizeProvider(c.provider) === normalizedProvider
-          );
+        // Disattiva quelle dello stesso provider normalizzato
+        if (otherActiveConfigs && otherActiveConfigs.length > 0) {
+          let deactivatedModels: string[] = [];
           
-          if (conflictConfig) {
+          for (const otherConfig of otherActiveConfigs) {
+            if (normalizeProvider(otherConfig.provider) === normalizedProvider) {
+              await supabase
+                .from('config_ai')
+                .update({ attivo: false })
+                .eq('id', otherConfig.id);
+              
+              deactivatedModels.push(otherConfig.modello);
+            }
+          }
+          
+          // Informa l'utente se abbiamo disattivato altre config
+          if (deactivatedModels.length > 0) {
             toast({
-              title: "Errore",
-              description: `Esiste già una configurazione ${conflictConfig.modello} attiva per ${normalizedProvider}. Disattivala prima di attivarne un'altra.`,
-              variant: "destructive",
+              title: "Info",
+              description: `Disattivata automaticamente: ${deactivatedModels.join(', ')}`,
             });
-            return;
           }
         }
       }
 
+      // Ora attiva/disattiva la config corrente
       const { error } = await supabase
         .from('config_ai')
         .update({ attivo: !currentStatus })

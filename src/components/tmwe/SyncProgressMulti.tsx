@@ -7,6 +7,7 @@ interface SyncProgressMultiProps {
   currentFolderIndex: number;
   totalFolders: number;
   processedEmails: number;
+  currentPhase?: string;
 }
 
 export const SyncProgressMulti = ({
@@ -14,6 +15,7 @@ export const SyncProgressMulti = ({
   currentFolderIndex,
   totalFolders,
   processedEmails,
+  currentPhase = 'Sincronizzazione in corso',
 }: SyncProgressMultiProps) => {
   const progress = totalFolders > 0 ? (currentFolderIndex / totalFolders) * 100 : 0;
 
@@ -37,6 +39,9 @@ export const SyncProgressMulti = ({
               <span className="font-medium">In corso: {currentFolder}</span>
               <div className="text-sm text-muted-foreground mt-1">
                 Cartella {currentFolderIndex} di {totalFolders} • {processedEmails} email elaborate
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5 italic">
+                {currentPhase}
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,9 +30,41 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
   const [completedFolders, setCompletedFolders] = useState<string[]>([]);
   const [shouldStop, setShouldStop] = useState(false);
   const [totalDownloaded, setTotalDownloaded] = useState(0);
+  const [folderStats, setFolderStats] = useState<Record<string, number>>({});
+  const [syncProgress, setSyncProgress] = useState({
+    currentEmailIndex: 0,
+    totalEmails: 0,
+    phase: 'idle' as 'idle' | 'metadata' | 'download' | 'saving'
+  });
+
+  // Carica statistiche email già scaricate
+  useEffect(() => {
+    if (open && folders.length > 0) {
+      loadFolderStats();
+    }
+  }, [open, folders]);
+
+  const loadFolderStats = async () => {
+    const userEmail = sessionStorage.getItem('tmwe_user_email');
+    if (!userEmail) return;
+    
+    const stats: Record<string, number> = {};
+    
+    for (const folder of folders) {
+      const { count } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('cartella', folder.name)
+        .eq('user_email', userEmail);
+      
+      stats[folder.name] = count || 0;
+    }
+    
+    setFolderStats(stats);
+  };
 
   const handleFolderToggle = (folderName: string) => {
-    setSelectedFolders(prev => 
+    setSelectedFolders(prev =>
       prev.includes(folderName)
         ? prev.filter(f => f !== folderName)
         : [...prev, folderName]
@@ -56,6 +88,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
 
     try {
       console.log(`📥 INIZIO download ${folderName} (${totalEmails} email totali)`);
+      setSyncProgress(prev => ({ ...prev, phase: 'metadata' }));
       
       // 1. Recupera email già presenti
       const { data: existingEmails } = await supabase
@@ -73,7 +106,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
         return 0;
       }
 
-      const batchSize = 10; // Ridotto perché facciamo 2 chiamate per email
+      const batchSize = 10;
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
 
@@ -102,10 +135,29 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
 
         console.log(`📧 Da scaricare: ${missingEmails.length} email nuove`);
 
-        // FASE 2: Per ogni email, scarica il contenuto COMPLETO
+        if (missingEmails.length === 0) {
+          console.log('⏭️ Nessuna nuova email in questo batch');
+          continue;
+        }
+
+        // FASE 2: Download contenuto completo con gestione errori individuale
+        setSyncProgress({
+          currentEmailIndex: 0,
+          totalEmails: missingEmails.length,
+          phase: 'download'
+        });
+
         const completeEmails = [];
+        const errors = [];
+
         for (let i = 0; i < missingEmails.length; i++) {
           if (shouldStop) break;
+
+          setSyncProgress({
+            currentEmailIndex: i + 1,
+            totalEmails: missingEmails.length,
+            phase: 'download'
+          });
 
           const emailMeta = missingEmails[i];
           const uid = emailMeta.uid || emailMeta.message_id;
@@ -113,10 +165,13 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
           try {
             console.log(`📧 FASE 2 [${i + 1}/${missingEmails.length}]: Scaricamento UID ${uid}...`);
             
-            // Chiamata per ottenere BODY COMPLETO
             const fullEmail = await emailMessageApi.getMessage(String(uid), false);
             
-            console.log(`✓ Email ${uid}: subject="${fullEmail.subject?.substring(0, 30)}...", body_text=${fullEmail.body_text?.length || 0} chars, body_html=${fullEmail.body_html?.length || 0} chars`);
+            if (!fullEmail || fullEmail.success === false) {
+              throw new Error(`API returned invalid response for UID ${uid}`);
+            }
+            
+            console.log(`✓ Email ${uid}: subject="${fullEmail.subject?.substring(0, 30)}..."`);
 
             let isoDate = new Date().toISOString();
             if (fullEmail.date || emailMeta.date) {
@@ -127,7 +182,6 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
               }
             }
 
-            // Merge metadati + contenuto completo
             const completeEmail = {
               message_id: String(uid),
               from_email: fullEmail.from || emailMeta.from || '',
@@ -148,20 +202,26 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
             };
 
             completeEmails.push(completeEmail);
-            
-            // Delay per non sovraccaricare l'API
-            await new Promise(resolve => setTimeout(resolve, 50));
-
           } catch (emailError: any) {
             console.error(`❌ Errore scaricando UID ${uid}:`, emailError.message);
-            // Continua con le altre email
+            errors.push({ uid, error: emailError.message });
+            // ✅ CONTINUA invece di interrompere
+            continue;
           }
+          
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
 
-        console.log(`✓ FASE 2 completata: ${completeEmails.length} email complete pronte per inserimento`);
+        console.log(`✓ FASE 2 completata: ${completeEmails.length} email OK, ${errors.length} errori`);
+        if (errors.length > 0) {
+          console.warn(`⚠️ Errori dettagliati:`, errors);
+        }
 
-        // 3. Inserimento in database
+        // FASE 3: Inserimento in database
         if (completeEmails.length > 0) {
+          console.log(`💾 FASE 3: Inserimento ${completeEmails.length} email...`);
+          setSyncProgress(prev => ({ ...prev, phase: 'saving' }));
+
           const { error: insertError } = await supabase
             .from('email_messages')
             .insert(completeEmails);
@@ -187,6 +247,8 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
     } catch (error: any) {
       console.error(`❌ ${folderName}: Errore download`, error);
       throw error;
+    } finally {
+      setSyncProgress({ currentEmailIndex: 0, totalEmails: 0, phase: 'idle' });
     }
   };
 
@@ -221,6 +283,13 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
       try {
         const downloaded = await downloadFolderEmails(folderName, folderData.messageCount);
         setTotalDownloaded(prev => prev + downloaded);
+        
+        // ✅ Auto-refresh stats dopo sync cartella
+        setFolderStats(prev => ({
+          ...prev,
+          [folderName]: (prev[folderName] || 0) + downloaded
+        }));
+        
         setCompletedFolders(prev => [...prev, folderName]);
         
         if (downloaded > 0) {
@@ -342,9 +411,21 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                             disabled={isSyncing}
                           />
                           <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          <Label className={`cursor-pointer ${isCurrent ? 'font-semibold' : ''}`}>
-                            {folder.name}
-                          </Label>
+                          <div className="flex-1">
+                            <Label className={`cursor-pointer ${isCurrent ? 'font-semibold' : ''}`}>
+                              {folder.name}
+                            </Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400 text-xs">
+                                {folderStats[folder.name] || 0} / {folder.messageCount}
+                              </Badge>
+                              {(folder.messageCount - (folderStats[folder.name] || 0)) > 0 && (
+                                <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
+                                  {folder.messageCount - (folderStats[folder.name] || 0)} da scaricare
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                           {isCurrent && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
                           {isCompleted && <CheckCircle2 className="h-3 w-3 text-green-500" />}
                         </div>
@@ -354,9 +435,6 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                               {folder.unreadCount}
                             </Badge>
                           )}
-                          <span className="text-sm text-muted-foreground">
-                            {folder.messageCount.toLocaleString()}
-                          </span>
                         </div>
                       </div>
                     );

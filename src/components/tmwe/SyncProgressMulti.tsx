@@ -8,6 +8,9 @@ interface SyncProgressMultiProps {
   totalFolders: number;
   processedEmails: number;
   currentPhase?: string;
+  currentEmailIndex?: number;
+  totalEmailsInFolder?: number;
+  phase?: 'idle' | 'metadata' | 'download' | 'saving';
 }
 
 export const SyncProgressMulti = ({
@@ -16,8 +19,12 @@ export const SyncProgressMulti = ({
   totalFolders,
   processedEmails,
   currentPhase = 'Sincronizzazione in corso',
+  currentEmailIndex = 0,
+  totalEmailsInFolder = 0,
+  phase = 'idle',
 }: SyncProgressMultiProps) => {
   const progress = totalFolders > 0 ? (currentFolderIndex / totalFolders) * 100 : 0;
+  const emailProgress = totalEmailsInFolder > 0 ? (currentEmailIndex / totalEmailsInFolder) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -43,6 +50,17 @@ export const SyncProgressMulti = ({
               <div className="text-xs text-muted-foreground mt-0.5 italic">
                 {currentPhase}
               </div>
+              
+              {/* Progress email dettagliato */}
+              {phase === 'download' && totalEmailsInFolder > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span>Progress email corrente</span>
+                    <span className="text-muted-foreground">{Math.round(emailProgress)}%</span>
+                  </div>
+                  <Progress value={emailProgress} className="h-1" />
+                </div>
+              )}
             </div>
           </div>
         </Card>

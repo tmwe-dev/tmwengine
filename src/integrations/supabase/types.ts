@@ -192,6 +192,7 @@ export type Database = {
           memoria_completa: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
+          system_prompt_id: string | null
           target_participant_type: string | null
           titolo: string | null
           updated_at: string | null
@@ -206,6 +207,7 @@ export type Database = {
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
+          system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
           updated_at?: string | null
@@ -220,11 +222,20 @@ export type Database = {
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
+          system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_conversations_system_prompt_id_fkey"
+            columns: ["system_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_system_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_laboratory_messages: {
         Row: {
@@ -361,6 +372,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      chat_laboratory_usage_stats: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          data_utilizzo: string
+          id: string
+          numero_messaggi: number
+          tempo_totale_ms: number
+          token_totali_input: number
+          token_totali_output: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          data_utilizzo?: string
+          id?: string
+          numero_messaggi?: number
+          tempo_totale_ms?: number
+          token_totali_input?: number
+          token_totali_output?: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          data_utilizzo?: string
+          id?: string
+          numero_messaggi?: number
+          tempo_totale_ms?: number
+          token_totali_input?: number
+          token_totali_output?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_usage_stats_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_messages: {
         Row: {

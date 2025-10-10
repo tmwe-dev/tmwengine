@@ -55,10 +55,12 @@ export const AIProviderSelector = ({
     const providerNames: Record<string, string> = {
       'openai': 'OpenAI',
       'anthropic': 'Anthropic',
-      'google': 'Google',
-      'lovable': 'Lovable AI'
+      'google': 'Google AI',
+      'lovable': 'Lovable AI Gateway',
+      'huggingface': 'HuggingFace',
+      'custom': 'Custom API'
     };
-    const providerName = providerNames[config.provider] || config.provider;
+    const providerName = providerNames[config.provider] || config.provider.charAt(0).toUpperCase() + config.provider.slice(1);
     return `${providerName} - ${config.modello}`;
   };
 

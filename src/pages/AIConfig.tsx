@@ -27,27 +27,40 @@ const AIConfig = () => {
   // Modelli disponibili per provider
   const modelsByProvider = {
     openai: [
-      { value: 'gpt-4', label: 'GPT-4 (più potente)' },
-      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (veloce e potente)' },
-      { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (economico)' }
+      { value: 'gpt-5-2025-08-07', label: 'GPT-5 (flagship - più capace)', free: false },
+      { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini (veloce ed efficiente)', free: false },
+      { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano (economico)', free: false },
+      { value: 'gpt-4.1-2025-04-14', label: 'GPT-4.1 (affidabile)', free: false },
+      { value: 'o3-2025-04-16', label: 'O3 (reasoning avanzato)', free: false },
+      { value: 'o4-mini-2025-04-16', label: 'O4 Mini (reasoning veloce)', free: false }
     ],
     anthropic: [
-      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4 (più intelligente)' },
-      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)' },
-      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)' }
+      { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (consigliato - più intelligente)', free: false },
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1 (massime prestazioni)', free: false },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (bilanciato)', free: false },
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude Haiku 3.5 (veloce)', free: false }
     ],
     google: [
-      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (massime prestazioni)' },
-      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)' },
-      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (economico)' }
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)', free: true },
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', free: true }
+    ],
+    lovable: [
+      { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (consigliato)', free: true },
+      { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true },
+      { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', free: true },
+      { value: 'google/gemini-2.5-flash-image-preview', label: 'Gemini Image Preview (genera immagini)', free: true },
+      { value: 'openai/gpt-5', label: 'GPT-5 (potente)', free: false },
+      { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini', free: false },
+      { value: 'openai/gpt-5-nano', label: 'GPT-5 Nano', free: false }
     ],
     huggingface: [
-      { value: 'mistral-7b', label: 'Mistral 7B' },
-      { value: 'llama-2-7b', label: 'Llama 2 7B' },
-      { value: 'falcon-7b', label: 'Falcon 7B' }
+      { value: 'mistral-7b', label: 'Mistral 7B', free: false },
+      { value: 'llama-2-7b', label: 'Llama 2 7B', free: false },
+      { value: 'falcon-7b', label: 'Falcon 7B', free: false }
     ],
     custom: [
-      { value: 'custom-model', label: 'Modello Custom (specifica manualmente)' }
+      { value: 'custom-model', label: 'Modello Custom (specifica manualmente)', free: false }
     ]
   };
 
@@ -90,10 +103,22 @@ const AIConfig = () => {
   const handleAddAiConfig = async () => {
     setSaving(true);
     try {
-      if (!newAiConfig.provider || !newAiConfig.modello || !newAiConfig.apiKey) {
+      // Per Lovable, l'API Key è auto-configurata
+      const apiKeyToSave = newAiConfig.provider === 'lovable' ? 'auto' : newAiConfig.apiKey;
+      
+      if (!newAiConfig.provider || !newAiConfig.modello) {
         toast({
           title: "Errore",
-          description: "Provider, modello e API Key sono obbligatori",
+          description: "Provider e modello sono obbligatori",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (newAiConfig.provider !== 'lovable' && !newAiConfig.apiKey) {
+        toast({
+          title: "Errore",
+          description: "API Key è obbligatoria per questo provider",
           variant: "destructive",
         });
         return;
@@ -104,7 +129,7 @@ const AIConfig = () => {
         .insert({
           provider: newAiConfig.provider,
           modello: newAiConfig.modello,
-          api_key: newAiConfig.apiKey,
+          api_key: apiKeyToSave,
           attivo: newAiConfig.attivo
         });
 
@@ -258,6 +283,7 @@ const AIConfig = () => {
                   <SelectItem value="openai">OpenAI</SelectItem>
                   <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
                   <SelectItem value="google">Google AI</SelectItem>
+                  <SelectItem value="lovable">Lovable AI Gateway</SelectItem>
                   <SelectItem value="huggingface">HuggingFace</SelectItem>
                   <SelectItem value="custom">Custom API</SelectItem>
                 </SelectContent>
@@ -277,7 +303,12 @@ const AIConfig = () => {
                   <SelectContent>
                     {modelsByProvider[newAiConfig.provider].map((model) => (
                       <SelectItem key={model.value} value={model.value}>
-                        {model.label}
+                        <div className="flex items-center gap-2">
+                          <span>{model.label}</span>
+                          {model.free && (
+                            <Badge variant="secondary" className="text-xs">GRATUITO</Badge>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -296,12 +327,22 @@ const AIConfig = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {renderSecretField(
-              "API Key *",
-              newAiConfig.apiKey,
-              "newAiApiKey",
-              (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
-              "Inserisci la tua API key"
+            {newAiConfig.provider === 'lovable' ? (
+              <div className="space-y-1">
+                <Label className="text-sm">API Key</Label>
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                  <Badge variant="secondary" className="text-xs">Auto-Configurata</Badge>
+                  <span className="text-sm text-muted-foreground">Usa LOVABLE_API_KEY da Supabase</span>
+                </div>
+              </div>
+            ) : (
+              renderSecretField(
+                "API Key *",
+                newAiConfig.apiKey,
+                "newAiApiKey",
+                (value) => setNewAiConfig(prev => ({ ...prev, apiKey: value })),
+                "Inserisci la tua API key"
+              )
             )}
 
             <div className="flex items-center space-x-2 pt-6">

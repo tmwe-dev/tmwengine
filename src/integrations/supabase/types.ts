@@ -2492,6 +2492,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_users_email_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          count: number
+          email: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

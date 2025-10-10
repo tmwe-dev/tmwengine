@@ -27,6 +27,7 @@ import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
 import AdminTables from "./pages/AdminTables";
+import AdminEmails from "./pages/AdminEmails";
 import SharedEmails from "./pages/SharedEmails";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
@@ -134,6 +135,11 @@ const App = () => (
             <Route path="/admin/tables" element={
               <ProtectedRoute>
                 <CRMLayout><AdminTables /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/emails" element={
+              <ProtectedRoute>
+                <CRMLayout><AdminEmails /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/shared-emails" element={

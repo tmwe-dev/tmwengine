@@ -38,6 +38,7 @@ const EmailDashboard = () => {
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSender, setSelectedSender] = useState<string | null>(null);
+  const [selectedSharedAccount, setSelectedSharedAccount] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
@@ -637,9 +638,11 @@ const EmailDashboard = () => {
                     <div
                       key={account.id}
                       className="p-6 border rounded-lg bg-card hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => {
-                        // TODO: Implementare visualizzazione email condivise
-                        toast.info('Funzionalità in arrivo');
+                     onClick={() => {
+                        setSelectedSharedAccount(account.email);
+                        setActiveTab('personal');
+                        setSelectedFolder('INBOX');
+                        toast.success(`Visualizzazione email: ${account.email}`);
                       }}
                     >
                       <div className="flex items-start gap-3">

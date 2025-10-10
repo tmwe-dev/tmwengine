@@ -273,6 +273,19 @@ const CRMLayout = ({ children }) => {
             <div className="pt-2 border-t border-border mt-2">
               <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
             </div>
+            
+            {/* Admin Items */}
+            <div className="pt-2 border-t border-border mt-2">
+              <AnimatedNavButton
+                icon={Shield}
+                label="Admin Emails"
+                isActive={isActive('/admin/emails')}
+                isCollapsed={!sidebarOpen && !isMobile}
+                onClick={() => navigate('/admin/emails')}
+                colorScheme="destructive"
+                className="w-full"
+              />
+            </div>
           </nav>
         </aside>
 

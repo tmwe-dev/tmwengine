@@ -54,10 +54,14 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
   const [totalEmailsInFolder, setTotalEmailsInFolder] = useState(0);
 
   const { 
-    isSyncing, 
+    isSyncing,
+    isPaused,
     syncedCount, 
     syncError, 
-    startSync, 
+    startSync,
+    pause,
+    resume,
+    stop,
     reset 
   } = useSyncSmart({ 
     folder: syncConfig.folder, 
@@ -177,8 +181,18 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
     }
   };
 
-  const stopSync = () => {
-    reset();
+  const handlePause = () => {
+    pause();
+    addLog('⏸️ Sincronizzazione in pausa');
+  };
+
+  const handleResume = () => {
+    resume();
+    addLog('▶️ Sincronizzazione ripresa');
+  };
+
+  const handleStop = () => {
+    stop();
     stopRealTimeTracking();
     addLog('⏹️ Sincronizzazione interrotta dall\'utente');
   };
@@ -326,10 +340,23 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
                 Scarica Email (Smart Sync)
               </Button>
             ) : (
-              <Button onClick={stopSync} variant="destructive">
-                <Pause className="h-4 w-4 mr-2" />
-                Ferma Download
-              </Button>
+              <div className="flex gap-2">
+                {!isPaused ? (
+                  <Button onClick={handlePause} variant="outline" className="flex-1">
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pausa
+                  </Button>
+                ) : (
+                  <Button onClick={handleResume} variant="outline" className="flex-1">
+                    <Play className="h-4 w-4 mr-2" />
+                    Riprendi
+                  </Button>
+                )}
+                <Button onClick={handleStop} variant="destructive" className="flex-1">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Ferma
+                </Button>
+              </div>
             )}
           </div>
 
@@ -337,7 +364,14 @@ export const EmailSyncMonitor: React.FC<EmailSyncMonitorProps> = ({ onSyncComple
           {isSyncing && (
             <div className="space-y-3 bg-muted p-4 rounded-lg mt-4">
               <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Smart Sync a 2 Fasi</span>
+                <span className="font-medium flex items-center gap-2">
+                  Smart Sync a 2 Fasi
+                  {isPaused && (
+                    <Badge variant="secondary" className="animate-pulse">
+                      ⏸️ IN PAUSA
+                    </Badge>
+                  )}
+                </span>
                 <span className="text-xs">
                   {syncedCount} / {totalEmailsInFolder} email
                 </span>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,13 +10,44 @@ interface UseSyncSmartProps {
 
 export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [syncedCount, setSyncedCount] = useState(0);
   const [syncError, setSyncError] = useState<string | null>(null);
+  
+  // useRef per controllare pausa in tempo reale nel loop
+  const pausedRef = useRef(false);
+  const shouldStopRef = useRef(false);
+
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+    setIsPaused(true);
+    toast.info('⏸️ Sincronizzazione in pausa');
+    console.log('⏸️ Pausa attivata');
+  }, []);
+
+  const resume = useCallback(() => {
+    pausedRef.current = false;
+    setIsPaused(false);
+    toast.success('▶️ Sincronizzazione ripresa');
+    console.log('▶️ Ripresa');
+  }, []);
+
+  const stop = useCallback(() => {
+    shouldStopRef.current = true;
+    pausedRef.current = false;
+    setIsPaused(false);
+    setIsSyncing(false);
+    toast.warning('⏹️ Sincronizzazione interrotta');
+    console.log('⏹️ Interruzione forzata');
+  }, []);
 
   const startSync = useCallback(async (): Promise<void> => {
     setIsSyncing(true);
+    setIsPaused(false);
     setSyncedCount(0);
     setSyncError(null);
+    pausedRef.current = false;
+    shouldStopRef.current = false;
 
     // Get user email from session
     const userEmail = sessionStorage.getItem('tmwe_user_email');
@@ -49,6 +80,24 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
       // FASE 2: Scarica UIDs dalla API batch per batch
       for (let page = 1; page <= totalPages; page++) {
+        // ⏸️ CHECK: Interruzione forzata
+        if (shouldStopRef.current) {
+          console.log('🛑 Interruzione rilevata - uscita dal loop');
+          break;
+        }
+
+        // ⏸️ CHECK: Pausa attiva - aspetta resume
+        while (pausedRef.current && !shouldStopRef.current) {
+          console.log('⏸️ In pausa... aspettando resume');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // ⏸️ CHECK: Interruzione durante pausa
+        if (shouldStopRef.current) {
+          console.log('🛑 Interruzione durante pausa - uscita');
+          break;
+        }
+
         try {
           const response = await emailMessageApi.getMessages({
             folder,
@@ -79,6 +128,19 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
             
             // FASE 4: Per ogni email mancante, scarica contenuto COMPLETO
             for (const email of missingEmails) {
+              // ⏸️ CHECK: Interruzione forzata
+              if (shouldStopRef.current) {
+                console.log('🛑 Interruzione nel loop email');
+                break;
+              }
+
+              // ⏸️ CHECK: Pausa attiva
+              while (pausedRef.current && !shouldStopRef.current) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+
+              if (shouldStopRef.current) break;
+
               try {
                 const messageId = String(email.uid);
                 
@@ -135,7 +197,13 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
                 console.error(`❌ Error processing email ${email.uid}:`, emailError);
               }
             }
+
+            // ⏸️ CHECK: Interrotto durante download email
+            if (shouldStopRef.current) break;
           }
+
+          // ⏸️ CHECK: Interrotto tra i batch
+          if (shouldStopRef.current) break;
 
           if (page < totalPages) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -146,8 +214,11 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
       }
 
       setIsSyncing(false);
+      setIsPaused(false);
       
-      if (newEmailsCount > 0) {
+      if (shouldStopRef.current) {
+        toast.warning(`⏹️ Sincronizzazione interrotta. ${newEmailsCount} email scaricate prima dell'interruzione.`);
+      } else if (newEmailsCount > 0) {
         toast.success(`Sincronizzazione completata! ${newEmailsCount.toLocaleString()} nuove email con contenuto completo.`);
       } else {
         toast.success(`Database già sincronizzato. Nessuna nuova email.`);
@@ -162,15 +233,22 @@ export const useSyncSmart = ({ folder, totalEmails }: UseSyncSmartProps) => {
 
   const reset = useCallback(() => {
     setIsSyncing(false);
+    setIsPaused(false);
     setSyncedCount(0);
     setSyncError(null);
+    pausedRef.current = false;
+    shouldStopRef.current = false;
   }, []);
 
   return {
     isSyncing,
+    isPaused,
     syncedCount,
     syncError,
     startSync,
+    pause,
+    resume,
+    stop,
     reset,
   };
 };

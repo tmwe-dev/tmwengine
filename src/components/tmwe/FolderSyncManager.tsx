@@ -183,7 +183,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
         if (pageEmails.length === 0) break;
 
         const missingEmails = pageEmails.filter((email: any) => {
-          const emailId = email.message_id || String(email.uid);
+          const emailId = String(email.uid);
           const isExisting = existingIds.has(emailId);
           
           // ✅ Se force attivo, considera tutte "da scaricare"
@@ -373,7 +373,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
 
   // Seleziona email dalla tabella
   const handleSelectEmail = (email: any) => {
-    const emailId = email.message_id || String(email.uid);
+    const emailId = String(email.uid);
     setTestMessageId(emailId);
     toast.success(`Selezionata email: ${emailId}`);
   };
@@ -632,7 +632,7 @@ export const FolderSyncManager = ({ open, onOpenChange }: FolderSyncManagerProps
                         </thead>
                         <tbody>
                           {emailList.map((email, index) => {
-                            const emailId = email.message_id || String(email.uid);
+                            const emailId = String(email.uid);
                             const isSelected = testMessageId === emailId;
                             
                             return (

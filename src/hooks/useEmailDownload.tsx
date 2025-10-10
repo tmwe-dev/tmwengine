@@ -29,7 +29,7 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     }
 
     try {
-      // 1. Recupera tutti gli ID delle email già presenti nel database per questo utente
+      // FASE 1: Recupera tutti gli ID delle email già presenti nel database
       const { data: existingEmails } = await supabase
         .from('email_messages')
         .select('message_id')
@@ -47,14 +47,14 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
         return;
       }
 
-      const batchSize = 50; // Download 50 emails at a time
+      const batchSize = 50;
       const totalPages = Math.ceil(totalEmails / batchSize);
       let newEmailsCount = 0;
       const allDownloadedEmails: any[] = [];
 
       toast.info(`Controllo ${totalEmails.toLocaleString()} email...`);
 
-      // 2. Scarica tutte le email dalla API batch per batch
+      // FASE 2: Scarica UIDs delle email dalla API (solo metadati leggeri)
       for (let page = 1; page <= totalPages; page++) {
         try {
           const response = await emailMessageApi.getMessages({
@@ -65,68 +65,74 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
 
           const pageEmails = response?.messages || [];
           
-          // 3. Filtra solo le email NON presenti nel database
+          // FASE 3: Filtra solo le email NON presenti nel database usando UID
           const missingEmails = pageEmails.filter((email: any) => {
-            const emailId = String(email.uid || email.message_id);
+            const emailId = String(email.uid);
             return !existingIds.has(emailId);
           });
 
           console.log(`📄 Pagina ${page}/${totalPages}: ${pageEmails.length} dalla API, ${missingEmails.length} nuove`);
 
-          // 4. Salva solo le email mancanti
+          // FASE 4: Per ogni email mancante, scarica il contenuto COMPLETO
           if (missingEmails.length > 0) {
-            try {
-              const emailsToInsert = missingEmails.map((email: any) => {
+            for (const email of missingEmails) {
+              try {
+                const messageId = String(email.uid);
+                
+                // ⭐ CHIAMATA COMPLETA: getMessage() con folder per ottenere body_html e body_text
+                console.log(`📥 Downloading full content for UID ${messageId}...`);
+                const fullEmail = await emailMessageApi.getMessage(messageId, false, folder);
+                
+                if (!fullEmail) {
+                  console.error(`❌ Failed to get full content for UID ${messageId}`);
+                  continue;
+                }
+
                 let isoDate = new Date().toISOString();
-                if (email.date) {
+                if (fullEmail.date) {
                   try {
-                    isoDate = new Date(email.date).toISOString();
+                    isoDate = new Date(fullEmail.date).toISOString();
                   } catch (e) {
-                    console.error('Error parsing date:', email.date);
+                    console.error('Error parsing date:', fullEmail.date);
                   }
                 }
 
-                return {
-                  message_id: String(email.uid || email.message_id || `msg-${Date.now()}-${Math.random()}`),
-                  from_email: email.from || email.from_email || '',
-                  to_email: email.to || email.to_email || '',
-                  cc_email: email.cc || email.cc_email || null,
-                  bcc_email: email.bcc || email.bcc_email || null,
-                  subject: email.subject || '',
-                  body_text: email.body_text || email.text || '',
-                  body_html: email.body_html || email.html || '',
+                const emailToInsert = {
+                  message_id: messageId,
+                  from_email: fullEmail.from || fullEmail.from_email || '',
+                  to_email: fullEmail.to || fullEmail.to_email || '',
+                  cc_email: fullEmail.cc || fullEmail.cc_email || null,
+                  bcc_email: fullEmail.bcc || fullEmail.bcc_email || null,
+                  subject: fullEmail.subject || '',
+                  body_text: fullEmail.body_text || fullEmail.text || '',
+                  body_html: fullEmail.body_html || fullEmail.html || '',
                   data_ricezione: isoDate,
                   cartella: folder,
                   direzione: 'inbound',
                   stato: 'nuovo',
-                  flags: email.flags || [],
-                  attachments: email.attachments || [],
+                  flags: fullEmail.flags || [],
+                  attachments: fullEmail.attachments || [],
                   provider_id: '00000000-0000-0000-0000-000000000000',
-                  user_email: userEmail, // Associa email all'utente
+                  user_email: userEmail,
                 };
-              });
 
-              const { error: insertError } = await supabase
-                .from('email_messages')
-                .insert(emailsToInsert);
+                const { error: insertError } = await supabase
+                  .from('email_messages')
+                  .insert([emailToInsert]);
 
-              if (insertError) {
-                console.error('❌ Error saving emails to database:', insertError);
-              } else {
-                newEmailsCount += missingEmails.length;
-                allDownloadedEmails.push(...missingEmails);
-                
-                // Aggiungi i nuovi ID al Set per evitare duplicati nei batch successivi
-                missingEmails.forEach((email: any) => {
-                  existingIds.add(String(email.uid || email.message_id));
-                });
-                
-                setDownloadedCount(newEmailsCount);
-                setAllEmails([...allDownloadedEmails]);
-                console.log(`✅ Salvate ${missingEmails.length} nuove email (totale: ${newEmailsCount})`);
+                if (insertError) {
+                  console.error(`❌ Error saving email ${messageId}:`, insertError);
+                } else {
+                  newEmailsCount++;
+                  allDownloadedEmails.push(fullEmail);
+                  existingIds.add(messageId);
+                  setDownloadedCount(newEmailsCount);
+                  setAllEmails([...allDownloadedEmails]);
+                  console.log(`✅ Saved email ${messageId} (totale: ${newEmailsCount})`);
+                }
+              } catch (emailError) {
+                console.error(`❌ Error processing email ${email.uid}:`, emailError);
               }
-            } catch (dbError) {
-              console.error('❌ Database save error:', dbError);
             }
           }
 
@@ -136,14 +142,13 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
           }
         } catch (error) {
           console.error(`Error downloading page ${page}:`, error);
-          // Continue with next page even if one fails
         }
       }
 
       setIsDownloading(false);
       
       if (newEmailsCount > 0) {
-        toast.success(`Download completato! ${newEmailsCount.toLocaleString()} nuove email scaricate.`);
+        toast.success(`Download completato! ${newEmailsCount.toLocaleString()} nuove email scaricate con contenuto completo.`);
       } else {
         toast.success(`Database già aggiornato. ${alreadyInDb.toLocaleString()} email già presenti.`);
       }

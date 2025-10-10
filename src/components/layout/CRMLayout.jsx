@@ -30,7 +30,8 @@ import {
   UserCog,
   Palette,
   Check,
-  User
+  User,
+  Sparkles
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -85,6 +86,7 @@ const CRMLayout = ({ children }) => {
     { name: 'Email Campagne', href: '/email-campagne', icon: Mail },
     { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
     { name: 'Chat AI', href: '/chat', icon: MessageSquare },
+    { name: 'Chat Laboratory', href: '/chat-laboratory', icon: Sparkles },
     { name: 'Import Templates', href: '/import-templates', icon: FileUp },
     { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
     { name: 'Impostazioni', href: '/settings', icon: Settings },

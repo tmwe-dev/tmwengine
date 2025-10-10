@@ -92,7 +92,7 @@ const App = () => (
             } />
             <Route path="/chat-laboratory" element={
               <ProtectedRoute>
-                <ChatLaboratory />
+                <CRMLayout><ChatLaboratory /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/intranet" element={

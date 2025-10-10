@@ -36,6 +36,35 @@ serve(async (req) => {
     );
 
     const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
+    
+    // 🆕 STEP 2: Recupera l'utente autenticato e la sua email
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header mancante - utente non autenticato');
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      throw new Error('Utente non autenticato: ' + (authError?.message || 'Unknown'));
+    }
+
+    // Recupera l'email TMWE dell'utente dal profilo
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
+
+    const userEmail = profileData?.tmwe_email || user.email;
+    console.log('👤 Utente autenticato:', user.id);
+    console.log('📧 Email utente per sync:', userEmail);
+    
+    if (!userEmail) {
+      throw new Error('Email utente non trovata nel profilo');
+    }
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
     console.log('🆔 Request ID:', crypto.randomUUID());
@@ -397,11 +426,12 @@ serve(async (req) => {
 
         const msgData = messageData.result || messageData;
 
-        // Inserisci nel database
+        // Inserisci nel database con user_email
         const { error: insertError } = await supabase
           .from('email_messages')
           .insert({
             message_id: uid,
+            user_email: userEmail, // ⭐ CAMPO AGGIUNTO
             subject: msgData.subject || emailInfo.subject || 'Senza oggetto',
             from_email: msgData.from || emailInfo.from || '',
             to_email: msgData.to || '',

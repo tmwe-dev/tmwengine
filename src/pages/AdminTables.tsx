@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Database, ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
+import { Database, ArrowLeft, RefreshCw, Trash2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +33,7 @@ interface TableCategory {
   tables: TableInfo[];
 }
 
-export default function Tables() {
+export default function AdminTables() {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableData, setTableData] = useState<TableData | null>(null);
@@ -40,6 +41,44 @@ export default function Tables() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteCategory, setDeleteCategory] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Accesso negato: utente non autenticato');
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
+
+    const userEmail = profile?.tmwe_email || user.email;
+
+    // Verifica ruolo admin
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const hasAdminRole = roles?.some(r => r.role === 'admin') || userEmail === 'luca@tmwe.it';
+
+    if (!hasAdminRole) {
+      toast.error('Accesso negato: solo gli amministratori possono visualizzare questa pagina');
+      setIsAdmin(false);
+      return;
+    }
+
+    setIsAdmin(true);
+    loadTables();
+  };
 
   const categorizeTable = (tableName: string): string => {
     if (tableName === 'rubrica' || tableName === 'attivita') {
@@ -57,7 +96,7 @@ export default function Tables() {
     if (tableName.startsWith('config_')) {
       return 'Configurazione';
     }
-    if (tableName === 'user_roles' || tableName === 'user_tmwe_credentials') {
+    if (tableName === 'user_roles' || tableName === 'user_tmwe_credentials' || tableName === 'user_profiles') {
       return 'Utenti & Permessi';
     }
     if (tableName.startsWith('ui_style')) {
@@ -65,6 +104,9 @@ export default function Tables() {
     }
     if (tableName.startsWith('temp_')) {
       return 'Temporanee';
+    }
+    if (tableName.startsWith('shared_email')) {
+      return 'Email Condivise';
     }
     return 'Altro';
   };
@@ -83,7 +125,7 @@ export default function Tables() {
     return Object.entries(categories)
       .map(([name, tables]) => ({ name, tables }))
       .sort((a, b) => {
-        const order = ['CRM & Contatti', 'Email', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'UI', 'Temporanee', 'Altro'];
+        const order = ['CRM & Contatti', 'Email', 'Email Condivise', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'UI', 'Temporanee', 'Altro'];
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
   };
@@ -110,27 +152,11 @@ export default function Tables() {
     try {
       setRefreshing(true);
       
-      // 🔒 PRIVACY: Filtra email_messages per utente corrente
-      let query = supabase.from(tableName as any).select('*');
-      
-      if (tableName === 'email_messages') {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          // Recupera tmwe_email da user_profiles
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('tmwe_email')
-            .eq('user_id', user.id)
-            .single();
-          
-          const userEmail = profile?.tmwe_email || user.email;
-          query = query.eq('user_email', userEmail);
-          
-          console.log('🔒 Filtro email per privacy:', userEmail);
-        }
-      }
-      
-      const { data, error } = await query.limit(1000);
+      // ⭐ ADMIN MODE: NON filtra per user_email, mostra TUTTO
+      const { data, error } = await supabase
+        .from(tableName as any)
+        .select('*')
+        .limit(1000);
       
       if (error) throw error;
       
@@ -149,7 +175,7 @@ export default function Tables() {
       
       // Setup realtime subscription
       const channel = supabase
-        .channel(`table-${tableName}`)
+        .channel(`admin-table-${tableName}`)
         .on(
           'postgres_changes',
           {
@@ -158,7 +184,6 @@ export default function Tables() {
             table: tableName
           },
           () => {
-            // Reload data on any change
             loadTableData(tableName);
           }
         )
@@ -174,10 +199,6 @@ export default function Tables() {
       setRefreshing(false);
     }
   };
-
-  useEffect(() => {
-    loadTables();
-  }, []);
 
   useEffect(() => {
     if (selectedTable) {
@@ -212,7 +233,7 @@ export default function Tables() {
         const { error } = await supabase
           .from(table.table_name as any)
           .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+          .neq('id', '00000000-0000-0000-0000-000000000000');
         
         if (error) {
           console.error(`Errore eliminazione da ${table.table_name}:`, error);
@@ -231,7 +252,6 @@ export default function Tables() {
       console.error('Errore eliminazione categoria:', error);
       toast.error('Errore durante l\'eliminazione', { id: toastId });
     } finally {
-      // Refresh data to update counts
       await loadTables();
       setIsDeleting(false);
       setDeleteCategory(null);
@@ -269,6 +289,22 @@ export default function Tables() {
     }
   };
 
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Shield className="h-16 w-16 mx-auto mb-4 text-destructive" />
+            <h2 className="text-2xl font-bold mb-2">Accesso Negato</h2>
+            <p className="text-muted-foreground">
+              Solo gli amministratori possono accedere a questa pagina.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (selectedTable && tableData) {
     return (
       <div className="container mx-auto p-6 space-y-4">
@@ -282,6 +318,10 @@ export default function Tables() {
             Indietro
           </Button>
           <h1 className="text-2xl font-bold">Tabella: {selectedTable}</h1>
+          <Badge variant="destructive" className="gap-1">
+            <Shield className="h-3 w-3" />
+            ADMIN VIEW
+          </Badge>
           <Button
             variant="ghost"
             size="sm"
@@ -341,7 +381,13 @@ export default function Tables() {
 
   return (
     <div className="container mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Tabelle Database</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">Admin - Tutte le Tabelle Database</h1>
+        <Badge variant="destructive" className="gap-1">
+          <Shield className="h-3 w-3" />
+          ADMIN VIEW
+        </Badge>
+      </div>
 
       {loading ? (
         <div className="text-center py-12">

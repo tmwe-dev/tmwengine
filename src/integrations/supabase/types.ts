@@ -517,10 +517,12 @@ export type Database = {
           from_email: string
           id: string
           in_reply_to: string | null
+          is_shared_email: boolean | null
           message_hash: string | null
           message_id: string
           provider_id: string
           raw_headers: Json | null
+          shared_email_id: string | null
           stato: string
           subject: string | null
           sync_status: string | null
@@ -545,10 +547,12 @@ export type Database = {
           from_email: string
           id?: string
           in_reply_to?: string | null
+          is_shared_email?: boolean | null
           message_hash?: string | null
           message_id: string
           provider_id: string
           raw_headers?: Json | null
+          shared_email_id?: string | null
           stato?: string
           subject?: string | null
           sync_status?: string | null
@@ -573,10 +577,12 @@ export type Database = {
           from_email?: string
           id?: string
           in_reply_to?: string | null
+          is_shared_email?: boolean | null
           message_hash?: string | null
           message_id?: string
           provider_id?: string
           raw_headers?: Json | null
+          shared_email_id?: string | null
           stato?: string
           subject?: string | null
           sync_status?: string | null
@@ -591,6 +597,13 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "email_provider"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_shared_email_id_fkey"
+            columns: ["shared_email_id"]
+            isOneToOne: false
+            referencedRelation: "shared_email_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -2111,6 +2124,71 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      shared_email_accounts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          email: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          email: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shared_email_members: {
+        Row: {
+          can_read: boolean | null
+          can_send: boolean | null
+          id: string
+          joined_at: string | null
+          shared_email_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          can_read?: boolean | null
+          can_send?: boolean | null
+          id?: string
+          joined_at?: string | null
+          shared_email_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          can_read?: boolean | null
+          can_send?: boolean | null
+          id?: string
+          joined_at?: string | null
+          shared_email_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_email_members_shared_email_id_fkey"
+            columns: ["shared_email_id"]
+            isOneToOne: false
+            referencedRelation: "shared_email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       temp_ai_import: {
         Row: {

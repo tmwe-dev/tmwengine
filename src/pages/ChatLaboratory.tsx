@@ -41,6 +41,7 @@ interface Participant {
 
 const ChatLaboratory = () => {
   const [prompt, setPrompt] = useState('');
+  const [currentPrompt, setCurrentPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -359,7 +360,7 @@ const ChatLaboratory = () => {
                 onImageGenerated={setGeneratedImage}
               />
               <VoiceRecorder
-                onTranscription={(text) => setPrompt(prev => prev + ' ' + text)}
+                onTranscription={(text) => setPrompt(prompt + ' ' + text)}
               />
             </div>
 

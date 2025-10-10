@@ -178,19 +178,29 @@ async function testOpenAI(apiKey: string, model: string) {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
+    // GPT-5 e modelli nuovi usano max_completion_tokens, non max_tokens
+    const isNewModel = model.startsWith('gpt-5') || model.startsWith('o3') || model.startsWith('o4');
+    
+    const requestBody: any = {
+      model: model,
+      messages: [
+        { role: 'user', content: 'Test di connessione. Rispondi "OK".' }
+      ]
+    };
+
+    if (isNewModel) {
+      requestBody.max_completion_tokens = 10;
+    } else {
+      requestBody.max_tokens = 10;
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'user', content: 'Test di connessione. Rispondi "OK".' }
-        ],
-        max_tokens: 10
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 

@@ -332,7 +332,7 @@ const EmailDashboard = () => {
               body_html: email.body_html || null,
               data_ricezione: isoDate,
               cartella: selectedFolder,
-              direzione: 'ricevuta',
+              direzione: 'inbound',
               stato: email.is_read || email.seen ? 'letto' : 'nuovo',
               flags: email.flags || [],
               attachments: email.attachments || [],

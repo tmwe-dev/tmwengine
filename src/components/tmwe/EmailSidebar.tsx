@@ -168,7 +168,6 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${displayName} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(

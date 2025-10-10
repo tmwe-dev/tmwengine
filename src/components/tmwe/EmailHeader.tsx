@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, RefreshCw, Mail, Menu, Database, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, RefreshCw, Mail, Menu, Database, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,9 +29,10 @@ interface EmailHeaderProps {
   onNextEmail?: () => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
+  onOpenSyncMonitor?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -184,6 +185,18 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                       <div className="ml-1">
                         {downloadProgressComponent}
                       </div>
+                    )}
+
+                    {onOpenSyncMonitor && (
+                      <Button 
+                        onClick={onOpenSyncMonitor}
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="Download Email TMWE"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                     )}
                   </>
                 )}

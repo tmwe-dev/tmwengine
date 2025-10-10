@@ -40,6 +40,7 @@ const EmailDashboard = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -564,6 +565,7 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
+        onOpenSyncMonitor={() => setSyncMonitorOpen(true)}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={totalEmailCount}
@@ -751,12 +753,20 @@ const EmailDashboard = () => {
         onOpenChange={setAiChatOpen}
       />
 
-      <EmailSyncMonitor 
-        onSyncComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ['messages'] });
-          toast.success('Sincronizzazione completata');
-        }}
-      />
+      <Dialog open={syncMonitorOpen} onOpenChange={setSyncMonitorOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Download Email TMWE</DialogTitle>
+          </DialogHeader>
+          <EmailSyncMonitor 
+            onSyncComplete={() => {
+              queryClient.invalidateQueries({ queryKey: ['messages'] });
+              toast.success('Sincronizzazione completata');
+              setSyncMonitorOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

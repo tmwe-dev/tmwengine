@@ -142,17 +142,58 @@ REGOLE CRITICHE:
       tokensIn = anthropicData.usage?.input_tokens || 0;
       tokensOut = anthropicData.usage?.output_tokens || 0;
 
-    } else {
-      // ──────── LOVABLE AI GATEWAY (ChatGPT + Gemini) ────────
-      let model: string;
-      if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
-        model = 'openai/gpt-5-mini';
-      } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
-        model = 'google/gemini-2.5-flash';
-      } else {
-        throw new Error(`Tipo partecipante non supportato: ${selectedParticipant.type}`);
-      }
+    } else if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
+      // ──────── OPENAI DIRETTO ────────
+      console.log(`🧠 ${selectedParticipant.name} elabora con OpenAI GPT`);
       
+      const { data: openaiConfig } = await supabaseClient
+        .from('config_ai')
+        .select('api_key, modello')
+        .eq('provider', 'openai')
+        .eq('attivo', true)
+        .single();
+
+      if (!openaiConfig?.api_key) {
+        throw new Error('OpenAI API key non configurata in config_ai');
+      }
+
+      const fullPrompt = `${basePrompt}
+
+Conversazione finora:
+${visibleHistory}
+
+Nuovo messaggio dell'utente:
+${userMessage}
+
+Rispondi con un messaggio breve e naturale (max 150 parole):`;
+
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiConfig.api_key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: openaiConfig.modello || 'gpt-5-2025-08-07',
+          messages: [{ role: 'user', content: fullPrompt }],
+          max_completion_tokens: 500,
+        }),
+      });
+
+      if (!openaiResponse.ok) {
+        const errorText = await openaiResponse.text();
+        console.error(`❌ OpenAI Error:`, openaiResponse.status, errorText);
+        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+      }
+
+      const openaiData = await openaiResponse.json();
+      aiResponseText = openaiData.choices[0].message.content;
+      tokensIn = openaiData.usage?.prompt_tokens || 0;
+      tokensOut = openaiData.usage?.completion_tokens || 0;
+
+    } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
+      // ──────── LOVABLE AI GATEWAY (solo Gemini) ────────
+      const model = 'google/gemini-2.5-flash';
       console.log(`🧠 ${selectedParticipant.name} elabora con modello: ${model}`);
 
       const fullPrompt = `${basePrompt}
@@ -195,6 +236,9 @@ Rispondi con un messaggio breve e naturale (max 150 parole):`;
       aiResponseText = aiData.choices[0].message.content;
       tokensIn = aiData.usage?.prompt_tokens || 0;
       tokensOut = aiData.usage?.completion_tokens || 0;
+      
+    } else {
+      throw new Error(`Tipo partecipante non supportato: ${selectedParticipant.type}`);
     }
 
     // ═══════════════════════════════════════════════════════════

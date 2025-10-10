@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, MessageSquare, Brain } from 'lucide-react';
+import { Database, MessageSquare, Brain, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Search, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,6 +28,7 @@ import { cn } from '@/lib/utils';
 const EmailDashboard = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'personal' | 'shared'>('personal');
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -39,6 +42,20 @@ const EmailDashboard = () => {
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const queryClient = useQueryClient();
+
+  // Query per email condivise
+  const { data: sharedAccounts } = useQuery({
+    queryKey: ['shared-email-accounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shared_email_accounts')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const openAIChat = () => {
     navigate('/chat?page=/email-manager');
@@ -441,6 +458,29 @@ const EmailDashboard = () => {
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
       />
+
+      {/* Tab personali/aziendali */}
+      {!isMobile && (
+        <div className="border-b bg-card-transparent px-4">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+            <TabsList className="bg-transparent">
+              <TabsTrigger value="personal" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Email Personali
+              </TabsTrigger>
+              <TabsTrigger value="shared" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Email Aziendali
+                {sharedAccounts && sharedAccounts.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {sharedAccounts.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
       
       <div className="flex flex-1 w-full">
         {/* Desktop Sidebar */}
@@ -474,26 +514,29 @@ const EmailDashboard = () => {
           </Sheet>
         )}
 
-        {/* Email List - Hidden on mobile when email is selected */}
-        <div className={cn(
-          "flex-1 flex flex-col",
-          isMobile && !showEmailList && "hidden"
-        )}>
-          {/* Mobile Search Bar - Above cards on mobile */}
-          {isMobile && (
-            <div className="border-b bg-card-transparent px-2 py-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search emails..."
-                  className="pl-10 text-sm h-9 w-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
+        {/* Content area con tab */}
+        {activeTab === 'personal' && (
+          <>
+            {/* Email List - Hidden on mobile when email is selected */}
+            <div className={cn(
+              "flex-1 flex flex-col",
+              isMobile && !showEmailList && "hidden"
+            )}>
+              {/* Mobile Search Bar - Above cards on mobile */}
+              {isMobile && (
+                <div className="border-b bg-card-transparent px-2 py-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search emails..."
+                      className="pl-10 text-sm h-9 w-full"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
           
           {/* Sender Filter */}
           <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
@@ -566,6 +609,69 @@ const EmailDashboard = () => {
               isHeaderCollapsed={isHeaderCollapsed}
               onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
             />
+          </div>
+        )}
+          </>
+        )}
+
+        {/* Email Condivise Tab */}
+        {activeTab === 'shared' && (
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Email Aziendali Condivise</h2>
+                  <p className="text-muted-foreground">
+                    Accedi alle caselle email condivise con il team
+                  </p>
+                </div>
+                <Button onClick={() => navigate('/shared-emails')} variant="outline">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Gestisci
+                </Button>
+              </div>
+
+              {sharedAccounts && sharedAccounts.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {sharedAccounts.map((account: any) => (
+                    <div
+                      key={account.id}
+                      className="p-6 border rounded-lg bg-card hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => {
+                        // TODO: Implementare visualizzazione email condivise
+                        toast.info('Funzionalità in arrivo');
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Building2 className="h-5 w-5 text-primary mt-1" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{account.display_name}</h3>
+                          <p className="text-sm text-muted-foreground font-mono">
+                            {account.email}
+                          </p>
+                          {account.description && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {account.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 border rounded-lg bg-card">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">Nessuna Email Aziendale</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Non hai accesso a email aziendali condivise
+                  </p>
+                  <Button onClick={() => navigate('/shared-emails')} variant="outline">
+                    Scopri di più
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

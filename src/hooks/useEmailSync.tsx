@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,7 +32,7 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
   const [syncError, setSyncError] = useState<string | null>(null);
   const [allEmails, setAllEmails] = useState<any[]>([]);
   const [downloadStatus, setDownloadStatus] = useState<DownloadStatus | null>(null);
-  const [shouldStop, setShouldStop] = useState(false);
+  const shouldStop = useRef(false); // USE REF for immediate updates!
 
   const reset = useCallback(() => {
     setIsSyncing(false);
@@ -40,17 +40,17 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
     setSyncError(null);
     setAllEmails([]);
     setDownloadStatus(null);
-    setShouldStop(false);
+    shouldStop.current = false;
   }, []);
 
   const stopSync = useCallback(() => {
     console.log('🛑 [Sync] Interruzione richiesta dall\'utente');
-    setShouldStop(true);
+    shouldStop.current = true;
   }, []);
 
   const startSync = useCallback(async () => {
     console.log('🚀 [Sync] startSync called, resetting shouldStop flag');
-    setShouldStop(false); // Reset flag BEFORE starting
+    shouldStop.current = false; // Reset flag BEFORE starting
     
     try {
       setIsSyncing(true);
@@ -92,10 +92,10 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
       console.log(`📦 [Sync] Inizio download: ${totalBatches} micro-batch da ${MICRO_BATCH_SIZE} email`);
 
       for (let page = 1; page <= totalBatches; page++) {
-        // Check stop flag
-        if (shouldStop) {
-          console.log('🛑 [Sync] Sincronizzazione interrotta dall\'utente');
-          setSyncError('Sincronizzazione interrotta');
+        // Check stop flag IMMEDIATELY
+        if (shouldStop.current) {
+          console.log('🛑 [Sync] Interruzione manuale rilevata all\'inizio del loop');
+          setSyncError('Sincronizzazione interrotta dall\'utente');
           break;
         }
 
@@ -135,9 +135,9 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
         const messages = response?.messages || [];
         
         // Check manual stop flag again after fetching
-        if (shouldStop) {
+        if (shouldStop.current) {
           console.log('🛑 [Sync] Interruzione manuale dopo fetch batch');
-          setSyncError('Sincronizzazione interrotta');
+          setSyncError('Sincronizzazione interrotta dall\'utente');
           break;
         }
         
@@ -220,7 +220,7 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
       console.log('🎉 [Sync] Sincronizzazione completata:', {
         downloadedCount,
         totalBatches: currentBatch,
-        stopped: shouldStop,
+        stopped: shouldStop.current,
       });
 
     } catch (error: any) {
@@ -228,9 +228,9 @@ export const useEmailSync = ({ folder, totalEmailCount }: UseEmailSyncProps): Em
       setSyncError(error.message || 'Sync failed');
     } finally {
       setIsSyncing(false);
-      setShouldStop(false);
+      shouldStop.current = false;
     }
-  }, [folder, totalEmailCount, shouldStop]);
+  }, [folder, totalEmailCount]);
 
   return {
     isSyncing,

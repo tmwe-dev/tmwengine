@@ -51,15 +51,55 @@ const ChatLaboratory = () => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'classic' | 'tabs'>('classic');
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
+  const [showNewMessages, setShowNewMessages] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const voiceRecorderRef = useRef<VoiceRecorderRef>(null);
+  const previousMessagesLengthRef = useRef(0);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    if (messages.length > previousMessagesLengthRef.current) {
+      const newCount = messages.length - previousMessagesLengthRef.current;
+      
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setShowNewMessages(false);
+        setNewMessagesCount(0);
+      } else {
+        setShowNewMessages(true);
+        setNewMessagesCount(prev => prev + newCount);
+      }
+    }
+    
+    previousMessagesLengthRef.current = messages.length;
   }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowNewMessages(false);
+    setNewMessagesCount(0);
+  };
+
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    if (isNearBottom && showNewMessages) {
+      setShowNewMessages(false);
+      setNewMessagesCount(0);
+    }
+  };
 
   useEffect(() => {
     initializeParticipants();
@@ -328,9 +368,13 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Messaggi */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         {viewMode === 'classic' ? (
-          <div className="h-full overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4">
+          <div 
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            className="h-full overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4"
+          >
             <div className="container mx-auto max-w-4xl px-2 md:px-0">
               {messages.length === 0 && (
                 <Card className="border-dashed">
@@ -366,6 +410,24 @@ const ChatLaboratory = () => {
           </div>
         ) : (
           <MessageTabsView messages={messages} />
+        )}
+
+        {/* New Messages Indicator */}
+        {viewMode === 'classic' && showNewMessages && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
+            <Button
+              onClick={scrollToBottom}
+              variant="secondary"
+              size="sm"
+              className="shadow-lg border border-border/40 gap-2 bg-card/95 backdrop-blur hover:bg-card"
+            >
+              <Badge variant="default" className="rounded-full px-1.5 py-0.5 min-w-[20px] text-xs">
+                {newMessagesCount}
+              </Badge>
+              <span className="text-sm">Nuovi messaggi</span>
+              <span className="text-lg">↓</span>
+            </Button>
+          </div>
         )}
       </div>
 

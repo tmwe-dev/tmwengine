@@ -15,6 +15,10 @@ import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRec
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
+import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
+import { ElevenLabsAgentManager } from '@/components/chat-laboratory/ElevenLabsAgentManager';
+import { KnowledgeBaseSelector } from '@/components/chat-laboratory/KnowledgeBaseSelector';
+import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
 
 interface Message {
   id: string;
@@ -53,6 +57,12 @@ const ChatLaboratory = () => {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  
+  // Bar Mode States
+  const [isBarMode, setIsBarMode] = useState(false);
+  const [selectedElevenLabsAgents, setSelectedElevenLabsAgents] = useState<string[]>([]);
+  const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -107,6 +117,8 @@ const ChatLaboratory = () => {
 
   useEffect(() => {
     if (currentConversationId) {
+      loadBarModeSettings();
+      
       const channel = supabase
         .channel('chat-laboratory-realtime')
         .on('postgres_changes', 
@@ -120,6 +132,24 @@ const ChatLaboratory = () => {
       };
     }
   }, [currentConversationId]);
+
+  const loadBarModeSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('*')
+        .eq('conversation_id', currentConversationId)
+        .single();
+
+      if (data) {
+        setIsBarMode(data.mode === 'bar');
+        setSelectedElevenLabsAgents(data.active_elevenlabs_agents || []);
+        setActiveKnowledgeBase(data.active_kb_id);
+      }
+    } catch (error) {
+      console.error('Errore caricamento impostazioni Bar Mode:', error);
+    }
+  };
 
   const initializeParticipants = async () => {
     const defaultParticipants: Participant[] = [
@@ -348,6 +378,23 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              <BarModeToggle
+                conversationId={currentConversationId}
+                isBarMode={isBarMode}
+                onToggle={setIsBarMode}
+              />
+              {isBarMode && (
+                <>
+                  <ElevenLabsAgentManager
+                    conversationId={currentConversationId}
+                    onAgentsChange={setSelectedElevenLabsAgents}
+                  />
+                  <KnowledgeBaseSelector
+                    conversationId={currentConversationId}
+                    onKBChange={setActiveKnowledgeBase}
+                  />
+                </>
+              )}
               <Button
                 onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
                 variant="outline"
@@ -435,6 +482,13 @@ const ChatLaboratory = () => {
       <div className="border-t border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-2 md:p-4">
         <div className="container mx-auto max-w-4xl">
           <form onSubmit={handleSubmit} className="space-y-2 md:space-y-3">
+            {/* Bar Mode Controls */}
+            {isBarMode && (
+              <BarModeControls
+                conversationId={currentConversationId}
+              />
+            )}
+            
             {/* File Uploads & Image Generator */}
             <div className="flex gap-1 md:gap-2 justify-center md:justify-start">
               <FileUploader

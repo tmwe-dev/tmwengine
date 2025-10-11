@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 
 interface IntranetNavItemsProps {
   isActive: (path: string) => boolean;
@@ -9,6 +10,7 @@ interface IntranetNavItemsProps {
 }
 
 export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavItemsProps) => {
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,38 +51,27 @@ export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavIt
   return (
     <>
       {/* Intranet sempre visibile */}
-      <a
-        href="/intranet"
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-          isActive('/intranet')
-            ? 'bg-primary text-primary-foreground shadow-lg'
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-        }`}
-      >
-        <MessageSquare className="h-5 w-5" />
-        {sidebarOpen && <span>Intranet</span>}
-      </a>
-
-      {/* Theme Switcher sotto Intranet */}
-      {sidebarOpen && (
-        <div className="px-3 py-2">
-          <ThemeSwitcher />
-        </div>
-      )}
+      <AnimatedNavButton
+        icon={MessageSquare}
+        label="Intranet"
+        isActive={isActive('/intranet')}
+        isCollapsed={!sidebarOpen}
+        onClick={() => navigate('/intranet')}
+        colorScheme="primary"
+        className="w-full"
+      />
 
       {/* Dashboard Admin solo per amministratori */}
       {isAdmin && (
-        <a
-          href="/intranet-admin"
-          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-            isActive('/intranet-admin')
-              ? 'bg-primary text-primary-foreground shadow-lg'
-              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-          }`}
-        >
-          <Shield className="h-5 w-5" />
-          {sidebarOpen && <span>Admin Intranet</span>}
-        </a>
+        <AnimatedNavButton
+          icon={Shield}
+          label="Admin Intranet"
+          isActive={isActive('/intranet-admin')}
+          isCollapsed={!sidebarOpen}
+          onClick={() => navigate('/intranet-admin')}
+          colorScheme="primary"
+          className="w-full"
+        />
       )}
     </>
   );

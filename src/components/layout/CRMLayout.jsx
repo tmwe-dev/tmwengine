@@ -5,6 +5,7 @@ import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
+import { AnimatedGroupButton } from '@/components/ui/animated-group-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
@@ -353,29 +354,15 @@ const CRMLayout = ({ children }) => {
                   open={isGroupOpen}
                   onOpenChange={() => toggleGroup(group.name)}
                 >
-                  <CollapsibleTrigger asChild>
-                    <button
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
-                        hasActiveItem
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                      )}
-                    >
-                      <group.icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1 text-left">{group.name}</span>
-                          <ChevronDown
-                            className={cn(
-                              "h-4 w-4 transition-transform",
-                              isGroupOpen && "rotate-180"
-                            )}
-                          />
-                        </>
-                      )}
-                    </button>
-                  </CollapsibleTrigger>
+                  <AnimatedGroupButton
+                    icon={group.icon}
+                    label={group.name}
+                    isActive={hasActiveItem}
+                    isExpanded={isGroupOpen}
+                    isCollapsed={isCollapsed}
+                    colorScheme="primary"
+                    className="w-full"
+                  />
                   
                   <CollapsibleContent className="space-y-1 mt-1">
                     {group.items.map((item) => {
@@ -424,6 +411,13 @@ const CRMLayout = ({ children }) => {
                   />
                 );
               })}
+              
+              {/* Theme Switcher in fondo */}
+              {sidebarOpen && (
+                <div className="pt-4 mt-2">
+                  <ThemeSwitcher />
+                </div>
+              )}
             </div>
           </nav>
         </aside>

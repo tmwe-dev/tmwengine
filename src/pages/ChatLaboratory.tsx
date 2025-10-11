@@ -15,9 +15,7 @@ import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRec
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
-import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
-import { ElevenLabsAgentManager } from '@/components/chat-laboratory/ElevenLabsAgentManager';
-import { KnowledgeBaseSelector } from '@/components/chat-laboratory/KnowledgeBaseSelector';
+import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
 
 interface Message {
@@ -349,8 +347,8 @@ const ChatLaboratory = () => {
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
       {/* Header */}
-      <div className="border-b border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container mx-auto px-4 py-3 md:py-4">
+      <div className="border-b border-border/40">
+        <div className="container mx-auto px-4 py-2 md:py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
               <Button
@@ -395,25 +393,15 @@ const ChatLaboratory = () => {
             </div>
           </div>
           
-          {/* Bar Mode Toggle - Centro Pagina */}
-          <div className="flex justify-center items-center gap-4 mt-3 pb-2">
-            <BarModeToggle
+          {/* Bar Mode Section - Collapsible */}
+          <div className="mt-2 pb-1">
+            <CollapsibleBarSection
               conversationId={currentConversationId}
               isBarMode={isBarMode}
-              onToggle={setIsBarMode}
+              onBarModeToggle={setIsBarMode}
+              onAgentsChange={setSelectedElevenLabsAgents}
+              onKBChange={setActiveKnowledgeBase}
             />
-            {isBarMode && (
-              <>
-                <ElevenLabsAgentManager
-                  conversationId={currentConversationId}
-                  onAgentsChange={setSelectedElevenLabsAgents}
-                />
-                <KnowledgeBaseSelector
-                  conversationId={currentConversationId}
-                  onKBChange={setActiveKnowledgeBase}
-                />
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -424,7 +412,7 @@ const ChatLaboratory = () => {
           <div 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="h-full overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4"
+            className="h-full overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
           >
             <div className="container mx-auto max-w-4xl px-2 md:px-0">
               {messages.length === 0 && (
@@ -483,9 +471,9 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border/40 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-2 md:p-4">
+      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-2 md:p-3">
         <div className="container mx-auto max-w-4xl">
-          <form onSubmit={handleSubmit} className="space-y-2 md:space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-1 md:space-y-2">
             {/* Bar Mode Controls */}
             {isBarMode && (
               <BarModeControls
@@ -494,7 +482,7 @@ const ChatLaboratory = () => {
             )}
             
             {/* File Uploads & Image Generator */}
-            <div className="flex gap-1 md:gap-2 justify-center md:justify-start">
+            <div className="flex gap-1 justify-center md:justify-start">
               <FileUploader
                 onFilesUploaded={setUploadedFiles}
               />
@@ -517,7 +505,7 @@ const ChatLaboratory = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"}
-                className="min-h-[80px] md:min-h-[100px] resize-none text-sm md:text-base"
+                className="min-h-[60px] md:min-h-[80px] resize-none text-sm md:text-base"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();

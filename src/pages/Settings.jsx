@@ -101,7 +101,7 @@ const Settings = () => {
     name: '',
     elevenlabs_agent_id: '',
     voice_id: '',
-    personality_prompt: '',
+    text_generation_prompt: '',
     response_style: 'bar_chat',
     speaking_pace: 'normal',
     interruption_style: 'polite',
@@ -412,7 +412,7 @@ const Settings = () => {
     }
     
     // Validazione lunghezza prompt
-    if (newAgent.personality_prompt.length < 50) {
+    if (newAgent.text_generation_prompt.length < 50) {
       toast({
         title: "Attenzione",
         description: "Il prompt di personalità dovrebbe essere più dettagliato (min. 50 caratteri)",
@@ -503,7 +503,7 @@ const Settings = () => {
         name: '',
         elevenlabs_agent_id: '',
         voice_id: '',
-        personality_prompt: '',
+        text_generation_prompt: '',
         response_style: 'bar_chat',
         speaking_pace: 'normal',
         interruption_style: 'polite',
@@ -535,7 +535,7 @@ const Settings = () => {
         .update({
           name: editingAgent.name,
           voice_id: editingAgent.voice_id,
-          personality_prompt: editingAgent.personality_prompt,
+          text_generation_prompt: editingAgent.text_generation_prompt,
           response_style: editingAgent.response_style,
           speaking_pace: editingAgent.speaking_pace,
           interruption_style: editingAgent.interruption_style,
@@ -678,7 +678,7 @@ const Settings = () => {
   };
 
   const handlePreviewPersonality = async () => {
-    if (newAgent.personality_prompt.length < 50) {
+    if (newAgent.text_generation_prompt.length < 50) {
       toast({
         title: "Errore",
         description: "Il prompt deve essere almeno 50 caratteri",
@@ -691,7 +691,7 @@ const Settings = () => {
     try {
       const { data, error } = await supabase.functions.invoke('preview-agent-response', {
         body: {
-          personalityPrompt: newAgent.personality_prompt,
+          personalityPrompt: newAgent.text_generation_prompt,
           testQuestion: "Ciao! Mi parli del tuo caffè preferito?",
           maxWords: newAgent.max_words_per_response
         }

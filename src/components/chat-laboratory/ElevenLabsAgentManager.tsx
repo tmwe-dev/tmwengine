@@ -11,7 +11,7 @@ interface ElevenLabsAgent {
   id: string;
   name: string;
   voice_id: string;
-  personality_prompt: string;
+  text_generation_prompt: string;
   is_active: boolean;
   order_index: number;
 }
@@ -138,7 +138,7 @@ export const ElevenLabsAgentManager = ({ conversationId, onAgentsChange }: Eleve
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {agent.personality_prompt}
+                      {agent.text_generation_prompt}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Mic className="h-3 w-3" />

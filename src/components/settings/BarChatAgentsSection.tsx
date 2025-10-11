@@ -364,15 +364,15 @@ export const BarChatAgentsSection = ({
                 </AlertDescription>
               </Alert>
               <Textarea
-                value={newAgent.personality_prompt}
-                onChange={(e) => setNewAgent(prev => ({ ...prev, personality_prompt: e.target.value }))}
+                value={newAgent.text_generation_prompt}
+                onChange={(e) => setNewAgent(prev => ({ ...prev, text_generation_prompt: e.target.value }))}
                 placeholder="Es: Sei un barista esperto e amichevole in un bar italiano. Sei informale, caloroso e ami fare battute leggere mentre prepari drink."
                 rows={4}
                 disabled={saving}
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>{newAgent.personality_prompt.length} / 500 caratteri</span>
-                {newAgent.personality_prompt.length < 50 && (
+                <span>{newAgent.text_generation_prompt.length} / 500 caratteri</span>
+                {newAgent.text_generation_prompt.length < 50 && (
                   <span className="text-destructive">Minimo 50 caratteri</span>
                 )}
               </div>
@@ -406,7 +406,7 @@ export const BarChatAgentsSection = ({
                   size="sm"
                   className="mt-3"
                   onClick={handlePreviewPersonality}
-                  disabled={newAgent.personality_prompt.length < 50 || saving}
+                  disabled={newAgent.text_generation_prompt.length < 50 || saving}
                 >
                   {saving && !testingConnection ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando...</>
@@ -502,7 +502,7 @@ export const BarChatAgentsSection = ({
                   !newAgent.name ||
                   !newAgent.elevenlabs_agent_id ||
                   !newAgent.voice_id ||
-                  newAgent.personality_prompt.length < 50 ||
+                  newAgent.text_generation_prompt.length < 50 ||
                   saving
                 }
               >
@@ -596,13 +596,13 @@ export const BarChatAgentsSection = ({
               <div>
                 <Label>Prompt Personalità</Label>
                 <Textarea
-                  value={editingAgent.personality_prompt}
-                  onChange={(e) => setEditingAgent(prev => ({ ...prev, personality_prompt: e.target.value }))}
+                  value={editingAgent.text_generation_prompt}
+                  onChange={(e) => setEditingAgent(prev => ({ ...prev, text_generation_prompt: e.target.value }))}
                   rows={4}
                   disabled={saving}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {editingAgent.personality_prompt.length} / 500 caratteri
+                  {editingAgent.text_generation_prompt.length} / 500 caratteri
                 </p>
               </div>
 
@@ -685,7 +685,7 @@ export const BarChatAgentsSection = ({
                   disabled={
                     !editingAgent.name ||
                     !editingAgent.voice_id ||
-                    editingAgent.personality_prompt.length < 50 ||
+                    editingAgent.text_generation_prompt.length < 50 ||
                     saving
                   }
                 >

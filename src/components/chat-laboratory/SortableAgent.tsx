@@ -10,7 +10,7 @@ interface SortableAgentProps {
     id: string;
     name: string;
     voice_id: string;
-    personality_prompt: string;
+    text_generation_prompt: string;
     response_style: string;
     speaking_pace: string;
     max_words_per_response: number;
@@ -74,7 +74,7 @@ export const SortableAgent = ({ agent, onEdit, onToggle, onDelete }: SortableAge
           <div className="mt-2">
             <p className="text-sm"><strong>Personalità:</strong></p>
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {agent.personality_prompt}
+              {agent.text_generation_prompt}
             </p>
           </div>
         </div>

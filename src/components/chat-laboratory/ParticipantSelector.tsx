@@ -2,8 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Bot, Users } from 'lucide-react';
+import { Bot, Users, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Participant {
   id: string;
@@ -27,6 +30,34 @@ const PARTICIPANT_ICONS = {
 export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelectorProps) => {
   const activeCount = participants.filter(p => p.is_active).length;
   const isMobile = useIsMobile();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [aiStatus, setAiStatus] = useState<{
+    anthropic: boolean;
+    openai: boolean;
+    lovable: boolean;
+  } | null>(null);
+
+  const checkAIStatus = async () => {
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ai-connection');
+      
+      if (error) throw error;
+      
+      setAiStatus({
+        anthropic: data?.anthropic || false,
+        openai: data?.openai || false,
+        lovable: data?.lovable || false
+      });
+      
+      toast.success('Stato servizi AI aggiornato');
+    } catch (error) {
+      console.error('Error checking AI status:', error);
+      toast.error('Errore nel verificare lo stato AI');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <Popover>
@@ -38,12 +69,55 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          <div>
-            <h4 className="font-medium mb-2">Seleziona Partecipanti</h4>
-            <p className="text-xs text-muted-foreground">
-              Attiva/disattiva gli agenti AI per la discussione
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium mb-2">Seleziona Partecipanti</h4>
+              <p className="text-xs text-muted-foreground">
+                Attiva/disattiva gli agenti AI per la discussione
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={checkAIStatus}
+              disabled={isRefreshing}
+              className="h-8 w-8"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
+
+          {aiStatus && (
+            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+              <p className="text-xs font-medium mb-2">Stato Servizi AI:</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  {aiStatus.anthropic ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <XCircle className="h-3 w-3 text-red-600" />
+                  )}
+                  <span>Anthropic (Claude)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {aiStatus.openai ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <XCircle className="h-3 w-3 text-red-600" />
+                  )}
+                  <span>OpenAI (GPT)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {aiStatus.lovable ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <XCircle className="h-3 w-3 text-red-600" />
+                  )}
+                  <span>Lovable AI (Gemini)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3">
             {participants.map((participant) => {

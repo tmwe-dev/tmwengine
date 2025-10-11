@@ -87,29 +87,26 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
   };
 
   return (
-    <div className="flex flex-col items-center gap-2 px-4 py-3 rounded-lg border border-border/40 bg-card/40">
-      <div className="relative">
-        {/* Birra con schiuma */}
-        <div className="relative">
-          <Beer className={`h-8 w-8 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
-          {/* Schiuma bianca sopra */}
-          <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 rounded-full ${
-            isBarMode ? 'bg-white' : 'bg-muted-foreground/30'
-          }`} />
-        </div>
+    <div className="flex items-center gap-3 px-4 py-2 rounded-lg border border-border/40 bg-card/40">
+      {/* Birra con schiuma */}
+      <div className="relative shrink-0">
+        <Beer className={`h-5 w-5 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
+        {/* Schiuma bianca sopra */}
+        <div className={`absolute -top-0.5 left-1/2 -translate-x-1/2 w-4 h-1.5 rounded-full ${
+          isBarMode ? 'bg-white' : 'bg-muted-foreground/30'
+        }`} />
       </div>
       
-      <div className="flex flex-col items-center gap-1">
-        <Label htmlFor="bar-mode" className="text-xs font-semibold cursor-pointer text-center">
-          Bar Chat
-        </Label>
-        <Switch
-          id="bar-mode"
-          checked={isBarMode}
-          onCheckedChange={handleToggle}
-          disabled={isLoading}
-        />
-      </div>
+      <Label htmlFor="bar-mode" className="text-sm font-semibold cursor-pointer">
+        Bar Chat
+      </Label>
+      
+      <Switch
+        id="bar-mode"
+        checked={isBarMode}
+        onCheckedChange={handleToggle}
+        disabled={isLoading}
+      />
     </div>
   );
 };

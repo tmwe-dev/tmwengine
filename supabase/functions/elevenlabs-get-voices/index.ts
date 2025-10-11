@@ -1,3 +1,8 @@
+/**
+ * ElevenLabs Get Voices Function - v2.0
+ * Fetches available voices from ElevenLabs API
+ * API Key is provided by the frontend from localStorage
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -11,6 +16,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 ElevenLabs Get Voices v2.0 - Starting...');
+    
     const { apiKey } = await req.json();
     
     if (!apiKey) {
@@ -55,7 +62,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        hint: 'Assicurati di aver aggiunto la configurazione ElevenLabs in Impostazioni > Configurazione AI con provider "elevenlabs" o modello contenente "elevenlabs"'
+        hint: 'Assicurati di aver configurato l\'API Key ElevenLabs in Impostazioni > Voice Agent (ElevenLabs) e di aver salvato la configurazione.'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -61,27 +61,101 @@ serve(async (req) => {
       .eq('id', conversationId)
       .single();
 
-    // Carica il prompt globale
-    const { data: globalPrompt } = await supabaseClient
-      .from('chat_laboratory_system_prompts')
-      .select('contenuto')
-      .eq('attivo', true)
-      .maybeSingle();
+    // ═══════════════════════════════════════════════════════════
+    // COMPOSIZIONE DINAMICA PROMPT (Sistema Modulare)
+    // ═══════════════════════════════════════════════════════════
 
-    const basePrompt = globalPrompt?.contenuto || `Sei un esperto in una discussione a turni.
+    // 1. Carica topic selezionato
+    let selectedTopic: string | null = null;
+    try {
+      const { data: barModeData } = await supabaseClient
+        .from('chat_laboratory_bar_mode')
+        .select('selected_topic')
+        .eq('conversation_id', conversationId)
+        .maybeSingle();
+      
+      selectedTopic = barModeData?.selected_topic || null;
+      console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
+    } catch (error) {
+      console.log('⚠️ Nessun topic selezionato');
+    }
 
-COMPORTAMENTO:
-- Leggi attentamente tutti gli interventi precedenti
-- Aspetta il tuo turno per parlare
-- Riferisciti agli interventi precedenti
-- Aggiungi prospettive nuove, non ripetere
-- Cerca convergenza e compromesso
-- Massimo 150 parole
+    // 2. Carica sezioni prompt attive
+    let promptSections: any[] = [];
+    try {
+      let query = supabaseClient
+        .from('chat_laboratory_prompt_sections')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_priority', { ascending: true });
 
-REGOLE CRITICHE:
-- NON rivelare di essere un'AI
-- Parla in prima persona
-- Tono professionale e colloquiale`;
+      if (selectedTopic) {
+        query = query.or(`section_type.eq.base,and(section_type.eq.topic_objective,topic_tags.cs.{${selectedTopic}})`);
+      } else {
+        query = query.eq('section_type', 'base');
+      }
+
+      const { data } = await query;
+      promptSections = data || [];
+      console.log(`📦 Caricati ${promptSections.length} sezioni prompt`);
+    } catch (error) {
+      console.error('❌ Errore caricamento prompt sections:', error);
+    }
+
+    // 3. Carica prompt personalità agente
+    let agentPrompt = '';
+    if (selectedParticipant) {
+      try {
+        const { data: agentData } = await supabaseClient
+          .from('elevenlabs_agents')
+          .select('personality_prompt')
+          .eq('name', selectedParticipant.name)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (agentData?.personality_prompt) {
+          agentPrompt = `\n\n═══ RUOLO SPECIFICO ═══\n${agentData.personality_prompt}`;
+          console.log(`🎭 Prompt personalità: ${selectedParticipant.name}`);
+        }
+      } catch (error) {
+        console.log(`ℹ️ Nessun prompt personalità per ${selectedParticipant.name}`);
+      }
+    }
+
+    // 4. Carica contesto Knowledge Base
+    let kbContext = '';
+    if (selectedTopic) {
+      try {
+        const { data: kbDocs } = await supabaseClient
+          .from('knowledge_base_documents')
+          .select('title, content_type')
+          .contains('topic_tags', [selectedTopic])
+          .limit(10);
+        
+        if (kbDocs && kbDocs.length > 0) {
+          kbContext = `\n\n═══ DOCUMENTI DISPONIBILI ═══\n${kbDocs.map(d => `- ${d.title} (${d.content_type})`).join('\n')}`;
+          console.log(`📚 KB: ${kbDocs.length} doc per "${selectedTopic}"`);
+        }
+      } catch (error) {
+        console.log('ℹ️ Nessun KB');
+      }
+    }
+
+    // 5. Componi prompt finale
+    const basePrompt = [
+      ...promptSections.map(s => s.content),
+      agentPrompt,
+      kbContext
+    ].filter(Boolean).join('\n\n---\n\n');
+
+    console.log('🎯 Prompt:', {
+      topic: selectedTopic,
+      agent: selectedParticipant?.name,
+      sections: promptSections.length,
+      hasAgent: !!agentPrompt,
+      hasKB: !!kbContext,
+      length: basePrompt.length
+    });
 
     // Carica messaggi
     const { data: messages } = await supabaseClient

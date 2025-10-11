@@ -78,52 +78,123 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   };
 
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+
+  useEffect(() => {
+    if (conversationId) {
+      loadTopic();
+    } else {
+      const pending = localStorage.getItem('bar-mode-topic-pending');
+      if (pending) {
+        setSelectedTopic(pending);
+      }
+    }
+  }, [conversationId]);
+
+  const loadTopic = async () => {
+    try {
+      const { data } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('selected_topic')
+        .eq('conversation_id', conversationId)
+        .single();
+
+      if (data?.selected_topic) {
+        setSelectedTopic(data.selected_topic);
+      }
+    } catch (error) {
+      console.error('Errore caricamento topic:', error);
+    }
+  };
+
+  const updateTopic = async (topic: string) => {
+    setSelectedTopic(topic);
+
+    if (conversationId) {
+      try {
+        await supabase
+          .from('chat_laboratory_bar_mode')
+          .update({ selected_topic: topic })
+          .eq('conversation_id', conversationId);
+      } catch (error) {
+        console.error('Errore salvataggio topic:', error);
+      }
+    } else {
+      localStorage.setItem('bar-mode-topic-pending', topic);
+    }
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
-      {/* Ritmo Conversazione */}
-      <div className="flex items-center gap-2">
-        <Timer className="h-4 w-4 text-muted-foreground" />
-        <Label htmlFor="pace" className="text-sm">Ritmo:</Label>
-        <Select
-          value={settings.conversation_pace}
-          onValueChange={(value: 'slow' | 'normal' | 'fast') => 
-            updateSetting('conversation_pace', value)
-          }
-        >
-          <SelectTrigger id="pace" className="w-32 h-8">
-            <SelectValue />
+    <div className="space-y-3">
+      {/* Topic Selector */}
+      <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
+        <Label htmlFor="topic" className="text-sm">Argomento:</Label>
+        <Select value={selectedTopic} onValueChange={updateTopic}>
+          <SelectTrigger id="topic" className="w-48 h-8">
+            <SelectValue placeholder="Seleziona argomento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="slow">🐌 Lento</SelectItem>
-            <SelectItem value="normal">⚡ Normale</SelectItem>
-            <SelectItem value="fast">🚀 Veloce</SelectItem>
+            <SelectItem value="">Nessuno</SelectItem>
+            <SelectItem value="logistica">📦 Logistica</SelectItem>
+            <SelectItem value="medico">🏥 Medicina</SelectItem>
+            <SelectItem value="fiscale">💼 Fiscalità</SelectItem>
+            <SelectItem value="ingegneria">⚙️ Ingegneria</SelectItem>
+            <SelectItem value="informatica">💻 Informatica</SelectItem>
+            <SelectItem value="consulenza">🎯 Consulenza</SelectItem>
+            <SelectItem value="ristorazione">🍽️ Ristorazione</SelectItem>
+            <SelectItem value="strategia">📊 Strategia</SelectItem>
+            <SelectItem value="filosofia">🧠 Filosofia</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Interruzioni */}
-      <div className="flex items-center gap-2">
-        <Zap className="h-4 w-4 text-muted-foreground" />
-        <Label htmlFor="interruptions" className="text-sm cursor-pointer">
-          Interruzioni
-        </Label>
-        <Switch
-          id="interruptions"
-          checked={settings.enable_interruptions}
-          onCheckedChange={(checked) => updateSetting('enable_interruptions', checked)}
-        />
-      </div>
+      {/* Controlli originali */}
+      <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
+        {/* Ritmo Conversazione */}
+        <div className="flex items-center gap-2">
+          <Timer className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="pace" className="text-sm">Ritmo:</Label>
+          <Select
+            value={settings.conversation_pace}
+            onValueChange={(value: 'slow' | 'normal' | 'fast') => 
+              updateSetting('conversation_pace', value)
+            }
+          >
+            <SelectTrigger id="pace" className="w-32 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="slow">🐌 Lento</SelectItem>
+              <SelectItem value="normal">⚡ Normale</SelectItem>
+              <SelectItem value="fast">🚀 Veloce</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Auto-Play Audio */}
-      <div className="flex items-center gap-2">
-        <Label htmlFor="autoplay" className="text-sm cursor-pointer">
-          Auto-Play
-        </Label>
-        <Switch
-          id="autoplay"
-          checked={settings.auto_play_audio}
-          onCheckedChange={(checked) => updateSetting('auto_play_audio', checked)}
-        />
+        {/* Interruzioni */}
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="interruptions" className="text-sm cursor-pointer">
+            Interruzioni
+          </Label>
+          <Switch
+            id="interruptions"
+            checked={settings.enable_interruptions}
+            onCheckedChange={(checked) => updateSetting('enable_interruptions', checked)}
+          />
+        </div>
+
+        {/* Auto-Play Audio */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="autoplay" className="text-sm cursor-pointer">
+            Auto-Play
+          </Label>
+          <Switch
+            id="autoplay"
+            checked={settings.auto_play_audio}
+            onCheckedChange={(checked) => updateSetting('auto_play_audio', checked)}
+          />
+        </div>
       </div>
     </div>
   );

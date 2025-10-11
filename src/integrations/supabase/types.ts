@@ -238,6 +238,7 @@ export type Database = {
           id: string
           kb_navigation_history: Json | null
           mode: string
+          selected_topic: string | null
           updated_at: string
           user_id: string | null
           voice_enabled: boolean
@@ -253,6 +254,7 @@ export type Database = {
           id?: string
           kb_navigation_history?: Json | null
           mode?: string
+          selected_topic?: string | null
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean
@@ -268,6 +270,7 @@ export type Database = {
           id?: string
           kb_navigation_history?: Json | null
           mode?: string
+          selected_topic?: string | null
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean
@@ -456,6 +459,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_laboratory_prompt_sections: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          order_priority: number | null
+          section_name: string
+          section_type: string
+          topic_tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_priority?: number | null
+          section_name: string
+          section_type: string
+          topic_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_priority?: number | null
+          section_name?: string
+          section_type?: string
+          topic_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       chat_laboratory_system_prompts: {
         Row: {
@@ -2316,6 +2355,7 @@ export type Database = {
           metadata: Json | null
           tags: string[] | null
           title: string
+          topic_tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -2332,6 +2372,7 @@ export type Database = {
           metadata?: Json | null
           tags?: string[] | null
           title: string
+          topic_tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -2348,6 +2389,7 @@ export type Database = {
           metadata?: Json | null
           tags?: string[] | null
           title?: string
+          topic_tags?: string[] | null
           updated_at?: string
         }
         Relationships: [

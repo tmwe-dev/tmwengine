@@ -22,6 +22,47 @@ interface ElevenLabsVoice {
   labels?: Record<string, string>;
 }
 
+// Helper function to get language flag from labels
+const getLanguageFlag = (labels?: Record<string, string>): string => {
+  if (!labels?.language) return '';
+  
+  const languageFlags: Record<string, string> = {
+    'en': '🇬🇧',
+    'it': '🇮🇹',
+    'es': '🇪🇸',
+    'fr': '🇫🇷',
+    'de': '🇩🇪',
+    'pt': '🇵🇹',
+    'pl': '🇵🇱',
+    'nl': '🇳🇱',
+    'sv': '🇸🇪',
+    'cs': '🇨🇿',
+    'ar': '🇸🇦',
+    'zh': '🇨🇳',
+    'ja': '🇯🇵',
+    'ko': '🇰🇷',
+    'hi': '🇮🇳',
+    'ru': '🇷🇺',
+    'uk': '🇺🇦',
+    'tr': '🇹🇷',
+    'id': '🇮🇩',
+    'ms': '🇲🇾',
+    'th': '🇹🇭',
+    'vi': '🇻🇳',
+    'fi': '🇫🇮',
+    'da': '🇩🇰',
+    'no': '🇳🇴',
+    'ro': '🇷🇴',
+    'bg': '🇧🇬',
+    'el': '🇬🇷',
+    'hu': '🇭🇺',
+    'sk': '🇸🇰',
+    'hr': '🇭🇷',
+  };
+  
+  return languageFlags[labels.language.toLowerCase()] || '';
+};
+
 interface BarChatAgentsSectionProps {
   barChatAgents: any[];
   loadingAgents: boolean;
@@ -101,8 +142,12 @@ export const BarChatAgentsSection = ({
       if (error) throw error;
       
       if (data?.voices) {
-        setVoices(data.voices);
-        toast.success(`${data.voices.length} voci caricate dal tuo account`);
+        // Ordina le voci per nome in modo crescente
+        const sortedVoices = data.voices.sort((a: ElevenLabsVoice, b: ElevenLabsVoice) => 
+          a.name.localeCompare(b.name)
+        );
+        setVoices(sortedVoices);
+        toast.success(`${sortedVoices.length} voci caricate dal tuo account`);
       }
     } catch (error) {
       console.error('Errore caricamento voci:', error);
@@ -268,11 +313,15 @@ export const BarChatAgentsSection = ({
                 </SelectTrigger>
                 <SelectContent>
                   {voices.length > 0 ? (
-                    voices.map((voice) => (
-                      <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                        {voice.name} {voice.category ? `(${voice.category})` : ''}
-                      </SelectItem>
-                    ))
+                    voices.map((voice) => {
+                      const flag = getLanguageFlag(voice.labels);
+                      return (
+                        <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                          {flag && <span className="mr-2">{flag}</span>}
+                          {voice.name} {voice.category ? `(${voice.category})` : ''}
+                        </SelectItem>
+                      );
+                    })
                   ) : (
                     <SelectItem value="none" disabled>
                       Nessuna voce disponibile - Clicca Sincronizza
@@ -499,11 +548,15 @@ export const BarChatAgentsSection = ({
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {voices.length > 0 ? (
-                      voices.map((voice) => (
-                        <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                          {voice.name} {voice.category ? `(${voice.category})` : ''}
-                        </SelectItem>
-                      ))
+                      voices.map((voice) => {
+                        const flag = getLanguageFlag(voice.labels);
+                        return (
+                          <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                            {flag && <span className="mr-2">{flag}</span>}
+                            {voice.name} {voice.category ? `(${voice.category})` : ''}
+                          </SelectItem>
+                        );
+                      })
                     ) : (
                       <SelectItem value="none" disabled>
                         Nessuna voce disponibile - Clicca Sincronizza

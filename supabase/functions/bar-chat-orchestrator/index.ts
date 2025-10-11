@@ -6,28 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to check if AI should skip responding based on conversation context
-function checkIfShouldSkip(visibleHistory: string, userMessage: string, messagesCount: number): boolean {
-  const recentMessages = visibleHistory.toLowerCase();
-  
-  // Skip if conversation is very short
-  if (messagesCount < 3) return false;
-  
-  // Skip if user asked a question
-  if (userMessage.includes('?')) return false;
-  
-  // Skip if recent messages show consensus/agreement
-  const consensusKeywords = ['d\'accordo', 'concordo', 'esatto', 'proprio così', 'infatti', 'confermo'];
-  const hasConsensus = consensusKeywords.some(keyword => recentMessages.includes(keyword));
-  
-  if (hasConsensus && Math.random() < 0.6) {
-    console.log('⏭️ Saltando turno per consenso rilevato');
-    return true;
-  }
-  
-  return false;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,7 +13,7 @@ serve(async (req) => {
 
   try {
     const { conversationId, userMessage, participants } = await req.json();
-    console.log('📥 Chat Laboratory Orchestrator riceve:', { conversationId, userMessage, participants });
+    console.log('🍹 Bar Chat Orchestrator riceve:', { conversationId, userMessage, participants });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -50,6 +28,22 @@ serve(async (req) => {
       throw new Error('Nessuna chiave API configurata');
     }
 
+    // Fetch Bar Mode settings
+    const { data: barModeSettings } = await supabase
+      .from('chat_laboratory_bar_mode')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .single();
+
+    if (barModeSettings?.mode !== 'bar') {
+      throw new Error('Questa funzione è dedicata alla modalità Bar Chat');
+    }
+
+    const selectedTopic = barModeSettings.selected_topic;
+    const activeKbId = barModeSettings.active_kb_id;
+    console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
+    console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
+
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
       .from('chat_laboratory_conversations')
@@ -59,7 +53,7 @@ serve(async (req) => {
 
     if (convError) throw convError;
 
-    // Fetch active system prompt
+    // Fetch global system prompt
     const { data: systemPrompts } = await supabase
       .from('chat_laboratory_system_prompts')
       .select('contenuto')
@@ -68,7 +62,32 @@ serve(async (req) => {
       .limit(1);
 
     const globalSystemPrompt = systemPrompts?.[0]?.contenuto || 
-      "Sei un assistente AI intelligente che partecipa a discussioni costruttive.";
+      "Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.";
+
+    // Fetch BASE sections (sempre attive)
+    const { data: baseSections } = await supabase
+      .from('chat_laboratory_prompt_sections')
+      .select('content')
+      .eq('section_type', 'BASE')
+      .eq('is_active', true)
+      .order('order_priority', { ascending: true });
+
+    console.log(`📦 Sezioni BASE: ${baseSections?.length || 0}`);
+
+    // Fetch TOPIC sections (solo se topic selezionato)
+    let topicSections: any[] = [];
+    if (selectedTopic) {
+      const { data } = await supabase
+        .from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('section_type', 'TOPIC')
+        .eq('is_active', true)
+        .contains('topic_tags', [selectedTopic])
+        .order('order_priority', { ascending: true });
+      
+      topicSections = data || [];
+      console.log(`📦 Sezioni TOPIC (${selectedTopic}): ${topicSections.length}`);
+    }
 
     // Fetch conversation messages
     const { data: messages } = await supabase
@@ -82,11 +101,7 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    const visibleHistory = historyMessages
-      .map((m: any) => m.content)
-      .join('\n');
-
-    // Turn-taking logic
+    // Turn-taking logic (1 agente per volta)
     let currentTurnIndex = conversation.current_turn_index || 0;
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
     
@@ -100,43 +115,75 @@ serve(async (req) => {
     }
 
     const selectedParticipant = participants[currentTurnIndex];
-    console.log('🎯 Partecipante selezionato:', selectedParticipant.name);
+    console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
-    // Check if should skip
-    const shouldSkip = checkIfShouldSkip(visibleHistory, userMessage, messages?.length || 0);
-    
-    if (shouldSkip) {
-      await supabase
-        .from('chat_laboratory_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_type: 'ai',
-          sender_name: selectedParticipant.name,
-          content: '...',
-          is_visible_to_ai: false
-        });
+    // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
+    const { data: agentPersonalitySections } = await supabase
+      .from('chat_laboratory_prompt_sections')
+      .select('content')
+      .eq('section_type', 'AGENT_PERSONALITY')
+      .eq('is_active', true)
+      .ilike('section_name', `%${selectedParticipant.name}%`)
+      .order('order_priority', { ascending: true });
 
-      await supabase
-        .from('chat_laboratory_conversations')
-        .update({ 
-          last_speaker_index: currentTurnIndex,
-          current_turn_index: (currentTurnIndex + 1) % participants.length
-        })
-        .eq('id', conversationId);
+    console.log(`👤 Sezioni AGENT_PERSONALITY per ${selectedParticipant.name}: ${agentPersonalitySections?.length || 0}`);
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          skipped: true,
-          message: `${selectedParticipant.name} ha scelto di non rispondere` 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Fallback su elevenlabs_agents.text_generation_prompt
+    let agentTextPrompt = '';
+    if (barModeSettings.active_elevenlabs_agents?.length > 0) {
+      const matchingAgentId = barModeSettings.active_elevenlabs_agents.find((id: string) => {
+        // Cerca agente con nome corrispondente
+        return true; // Semplificato, puoi migliorare il matching
+      });
+
+      if (matchingAgentId) {
+        const { data: agentData } = await supabase
+          .from('elevenlabs_agents')
+          .select('text_generation_prompt, name')
+          .eq('id', matchingAgentId)
+          .single();
+
+        if (agentData?.text_generation_prompt) {
+          agentTextPrompt = agentData.text_generation_prompt;
+          console.log(`🎤 Fallback prompt da ElevenLabs agent "${agentData.name}"`);
+        }
+      }
     }
 
-    // Prepare conversation history for AI
+    // Compose final system prompt
+    let composedPrompt = globalSystemPrompt + '\n\n';
+    
+    // Add BASE sections
+    if (baseSections && baseSections.length > 0) {
+      composedPrompt += '=== CONTESTO BASE ===\n';
+      composedPrompt += baseSections.map(s => s.content).join('\n\n') + '\n\n';
+    }
+
+    // Add AGENT_PERSONALITY sections
+    if (agentPersonalitySections && agentPersonalitySections.length > 0) {
+      composedPrompt += '=== TUA PERSONALITÀ ===\n';
+      composedPrompt += agentPersonalitySections.map(s => s.content).join('\n\n') + '\n\n';
+    } else if (agentTextPrompt) {
+      composedPrompt += '=== TUA PERSONALITÀ (da ElevenLabs) ===\n';
+      composedPrompt += agentTextPrompt + '\n\n';
+    }
+
+    // Add TOPIC sections
+    if (topicSections.length > 0) {
+      composedPrompt += `=== FOCUS TOPIC: ${selectedTopic} ===\n`;
+      composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
+    }
+
+    // TODO: Add Knowledge Base context (futuro)
+    if (activeKbId) {
+      console.log(`📚 Knowledge Base ${activeKbId} (integrazione futura)`);
+    }
+
+    console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
+
+    // Prepare conversation history
     const conversationHistory = [
-      { role: 'system', content: globalSystemPrompt },
+      { role: 'system', content: composedPrompt },
       ...historyMessages,
       { role: 'user', content: userMessage }
     ];
@@ -160,7 +207,7 @@ serve(async (req) => {
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 8096,
           messages: conversationHistory.filter(m => m.role !== 'system'),
-          system: globalSystemPrompt
+          system: composedPrompt
         })
       });
 
@@ -225,7 +272,7 @@ serve(async (req) => {
     }
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ Risposta ricevuta in ${responseTime}ms`);
+    console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
 
     // Save AI response to database
     await supabase
@@ -249,6 +296,9 @@ serve(async (req) => {
       })
       .eq('id', conversationId);
 
+    // TODO: Invoke ElevenLabs TTS (futuro)
+    console.log('🎤 TTS ElevenLabs (integrazione futura)');
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -261,7 +311,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Orchestrator error:', error);
+    console.error('❌ Bar Chat Orchestrator error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

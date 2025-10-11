@@ -345,7 +345,14 @@ const ChatLaboratory = () => {
         try {
           console.log(`🤖 Invocando agente ${i + 1}/${activeAIParticipants.length}...`);
           
-          const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+          // Determina quale orchestratore usare in base alla modalità
+          const orchestratorName = isBarMode
+            ? 'bar-chat-orchestrator'        // Modalità Bar Chat vocale (1 agente per turno)
+            : 'chat-laboratory-orchestrator'; // Modalità testuale normale (tutti gli agenti)
+
+          console.log(`🎯 Usando orchestratore: ${orchestratorName}`);
+          
+          const { data, error } = await supabase.functions.invoke(orchestratorName, {
             body: { 
               conversationId,
               userMessage: currentPrompt,

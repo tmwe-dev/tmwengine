@@ -181,6 +181,114 @@ export type Database = {
           },
         ]
       }
+      chat_laboratory_audio_responses: {
+        Row: {
+          agent_id: string
+          audio_url: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          message_id: string
+          text_length: number | null
+        }
+        Insert: {
+          agent_id: string
+          audio_url: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          message_id: string
+          text_length?: number | null
+        }
+        Update: {
+          agent_id?: string
+          audio_url?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          message_id?: string
+          text_length?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_audio_responses_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "elevenlabs_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_laboratory_audio_responses_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_laboratory_bar_mode: {
+        Row: {
+          active_elevenlabs_agents: string[] | null
+          active_kb_id: string | null
+          auto_play_audio: boolean
+          conversation_id: string
+          conversation_pace: string
+          created_at: string
+          enable_interruptions: boolean
+          id: string
+          kb_navigation_history: Json | null
+          mode: string
+          updated_at: string
+          user_id: string | null
+          voice_enabled: boolean
+        }
+        Insert: {
+          active_elevenlabs_agents?: string[] | null
+          active_kb_id?: string | null
+          auto_play_audio?: boolean
+          conversation_id: string
+          conversation_pace?: string
+          created_at?: string
+          enable_interruptions?: boolean
+          id?: string
+          kb_navigation_history?: Json | null
+          mode?: string
+          updated_at?: string
+          user_id?: string | null
+          voice_enabled?: boolean
+        }
+        Update: {
+          active_elevenlabs_agents?: string[] | null
+          active_kb_id?: string | null
+          auto_play_audio?: boolean
+          conversation_id?: string
+          conversation_pace?: string
+          created_at?: string
+          enable_interruptions?: boolean
+          id?: string
+          kb_navigation_history?: Json | null
+          mode?: string
+          updated_at?: string
+          user_id?: string | null
+          voice_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_bar_mode_active_kb_id_fkey"
+            columns: ["active_kb_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_laboratory_bar_mode_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null
@@ -637,6 +745,117 @@ export type Database = {
           timezone_fuso?: string
           updated_at?: string
           usa_riassunto?: boolean | null
+        }
+        Relationships: []
+      }
+      elevenlabs_agents: {
+        Row: {
+          created_at: string
+          elevenlabs_agent_id: string
+          id: string
+          interruption_style: string
+          is_active: boolean
+          max_words_per_response: number
+          name: string
+          order_index: number
+          personality_prompt: string
+          response_style: string
+          speaking_pace: string
+          updated_at: string
+          user_id: string | null
+          voice_id: string
+        }
+        Insert: {
+          created_at?: string
+          elevenlabs_agent_id: string
+          id?: string
+          interruption_style?: string
+          is_active?: boolean
+          max_words_per_response?: number
+          name: string
+          order_index?: number
+          personality_prompt: string
+          response_style?: string
+          speaking_pace?: string
+          updated_at?: string
+          user_id?: string | null
+          voice_id: string
+        }
+        Update: {
+          created_at?: string
+          elevenlabs_agent_id?: string
+          id?: string
+          interruption_style?: string
+          is_active?: boolean
+          max_words_per_response?: number
+          name?: string
+          order_index?: number
+          personality_prompt?: string
+          response_style?: string
+          speaking_pace?: string
+          updated_at?: string
+          user_id?: string | null
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      elevenlabs_usage_limits: {
+        Row: {
+          cost_per_1000_chars: number
+          created_at: string
+          daily_character_limit: number
+          daily_request_limit: number
+          id: string
+          tier: string
+        }
+        Insert: {
+          cost_per_1000_chars: number
+          created_at?: string
+          daily_character_limit: number
+          daily_request_limit: number
+          id?: string
+          tier: string
+        }
+        Update: {
+          cost_per_1000_chars?: number
+          created_at?: string
+          daily_character_limit?: number
+          daily_request_limit?: number
+          id?: string
+          tier?: string
+        }
+        Relationships: []
+      }
+      elevenlabs_usage_tracking: {
+        Row: {
+          characters_used: number
+          cost_usd: number
+          created_at: string
+          date: string
+          id: string
+          requests_count: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          characters_used?: number
+          cost_usd?: number
+          created_at?: string
+          date?: string
+          id?: string
+          requests_count?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          characters_used?: number
+          cost_usd?: number
+          created_at?: string
+          date?: string
+          id?: string
+          requests_count?: number
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2082,6 +2301,127 @@ export type Database = {
           },
         ]
       }
+      knowledge_base_documents: {
+        Row: {
+          access_count: number | null
+          chunk_index: number | null
+          content: string
+          content_hash: string
+          content_type: string
+          created_at: string
+          embedding: string | null
+          file_path: string | null
+          id: string
+          kb_id: string
+          metadata: Json | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number | null
+          chunk_index?: number | null
+          content: string
+          content_hash: string
+          content_type?: string
+          created_at?: string
+          embedding?: string | null
+          file_path?: string | null
+          id?: string
+          kb_id: string
+          metadata?: Json | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number | null
+          chunk_index?: number | null
+          content?: string
+          content_hash?: string
+          content_type?: string
+          created_at?: string
+          embedding?: string | null
+          file_path?: string | null
+          id?: string
+          kb_id?: string
+          metadata?: Json | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_documents_kb_id_fkey"
+            columns: ["kb_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_bases: {
+        Row: {
+          access_count: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          level: number
+          name: string
+          parent_id: string | null
+          prompt_template: string
+          slug: string
+          tags: string[] | null
+          transition_triggers: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          name: string
+          parent_id?: string | null
+          prompt_template: string
+          slug: string
+          tags?: string[] | null
+          transition_triggers?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          name?: string
+          parent_id?: string | null
+          prompt_template?: string
+          slug?: string
+          tags?: string[] | null
+          transition_triggers?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_bases_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_system_prompts: {
         Row: {
           attivo: boolean
@@ -2762,9 +3102,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      kb_hot_documents: {
+        Row: {
+          access_count: number | null
+          chunk_index: number | null
+          content: string | null
+          content_hash: string | null
+          content_type: string | null
+          created_at: string | null
+          embedding: string | null
+          file_path: string | null
+          id: string | null
+          kb_id: string | null
+          metadata: Json | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_documents_kb_id_fkey"
+            columns: ["kb_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
+      check_elevenlabs_quota: {
+        Args: { p_characters: number; p_user_id: string }
+        Returns: Json
+      }
       check_temp_table_exists: {
         Args: { table_name: string }
         Returns: boolean
@@ -2813,6 +3187,22 @@ export type Database = {
           email: string
         }[]
       }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2827,6 +3217,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      increment_elevenlabs_usage: {
+        Args: { p_characters: number; p_cost: number; p_user_id: string }
+        Returns: undefined
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
@@ -2835,9 +3245,70 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
       reset_ai_invocations: {
         Args: { p_room_id: string }
         Returns: undefined
+      }
+      search_hot_documents: {
+        Args: {
+          p_match_count: number
+          p_match_threshold: number
+          p_query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          kb_id: string
+          similarity: number
+          title: string
+        }[]
+      }
+      search_kb_documents: {
+        Args: {
+          p_kb_id: string
+          p_match_count: number
+          p_match_threshold: number
+          p_query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          kb_id: string
+          similarity: number
+          title: string
+        }[]
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
       transfer_company_to_rubrica: {
         Args: { imported_contact_id: string }
@@ -2846,6 +3317,30 @@ export type Database = {
       transfer_multiple_companies_to_rubrica: {
         Args: { imported_contact_ids: string[] }
         Returns: Json
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

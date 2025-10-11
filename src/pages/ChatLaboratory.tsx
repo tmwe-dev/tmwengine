@@ -378,23 +378,6 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <BarModeToggle
-                conversationId={currentConversationId}
-                isBarMode={isBarMode}
-                onToggle={setIsBarMode}
-              />
-              {isBarMode && (
-                <>
-                  <ElevenLabsAgentManager
-                    conversationId={currentConversationId}
-                    onAgentsChange={setSelectedElevenLabsAgents}
-                  />
-                  <KnowledgeBaseSelector
-                    conversationId={currentConversationId}
-                    onKBChange={setActiveKnowledgeBase}
-                  />
-                </>
-              )}
               <Button
                 onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
                 variant="outline"
@@ -410,6 +393,27 @@ const ChatLaboratory = () => {
                 onToggle={toggleParticipant}
               />
             </div>
+          </div>
+          
+          {/* Bar Mode Toggle - Centro Pagina */}
+          <div className="flex justify-center items-center gap-4 mt-3 pb-2">
+            <BarModeToggle
+              conversationId={currentConversationId}
+              isBarMode={isBarMode}
+              onToggle={setIsBarMode}
+            />
+            {isBarMode && (
+              <>
+                <ElevenLabsAgentManager
+                  conversationId={currentConversationId}
+                  onAgentsChange={setSelectedElevenLabsAgents}
+                />
+                <KnowledgeBaseSelector
+                  conversationId={currentConversationId}
+                  onKBChange={setActiveKnowledgeBase}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

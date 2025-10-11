@@ -87,17 +87,29 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/40 bg-card/40">
-      <Beer className={`h-4 w-4 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
-      <Label htmlFor="bar-mode" className="text-sm cursor-pointer">
-        Bar Mode
-      </Label>
-      <Switch
-        id="bar-mode"
-        checked={isBarMode}
-        onCheckedChange={handleToggle}
-        disabled={isLoading}
-      />
+    <div className="flex flex-col items-center gap-2 px-4 py-3 rounded-lg border border-border/40 bg-card/40">
+      <div className="relative">
+        {/* Birra con schiuma */}
+        <div className="relative">
+          <Beer className={`h-8 w-8 ${isBarMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
+          {/* Schiuma bianca sopra */}
+          <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 rounded-full ${
+            isBarMode ? 'bg-white' : 'bg-muted-foreground/30'
+          }`} />
+        </div>
+      </div>
+      
+      <div className="flex flex-col items-center gap-1">
+        <Label htmlFor="bar-mode" className="text-xs font-semibold cursor-pointer text-center">
+          Bar Chat
+        </Label>
+        <Switch
+          id="bar-mode"
+          checked={isBarMode}
+          onCheckedChange={handleToggle}
+          disabled={isLoading}
+        />
+      </div>
     </div>
   );
 };

@@ -40,7 +40,7 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
   const checkAIStatus = async () => {
     setIsRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('test-ai-connection');
+      const { data, error } = await supabase.functions.invoke('check-ai-services-status');
       
       if (error) throw error;
       

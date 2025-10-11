@@ -239,6 +239,9 @@ verify_jwt = true
 [functions.chat-laboratory-orchestrator]
 verify_jwt = true
 
+[functions.check-ai-services-status]
+verify_jwt = false
+
 [functions.bar-chat-orchestrator]
 verify_jwt = true
 

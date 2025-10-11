@@ -52,6 +52,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible';
 
 const CRMLayout = ({ children }) => {
   const isMobile = useIsMobile();
@@ -61,6 +66,29 @@ const CRMLayout = ({ children }) => {
   const navigate = useNavigate();
   const { userEmail, logout, userProfile } = useTMWEAuth();
   const { theme, setTheme, themes } = useTheme();
+
+  // Stato gruppi menu
+  const [groupStates, setGroupStates] = useState(() => {
+    const saved = localStorage.getItem('nav-group-states');
+    return saved ? JSON.parse(saved) : {
+      'Commerciale': false,
+      'Email': false,
+      'Chat & AI': false,
+      'Import': false
+    };
+  });
+
+  // Salva stato gruppi
+  useEffect(() => {
+    localStorage.setItem('nav-group-states', JSON.stringify(groupStates));
+  }, [groupStates]);
+
+  const toggleGroup = (groupName) => {
+    setGroupStates(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
 
   const themeColors = {
     lilla: 'from-blue-500 to-purple-600',
@@ -77,22 +105,86 @@ const CRMLayout = ({ children }) => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const navigation = [
-    { name: 'Clienti', href: '/rubrica', icon: Users },
-    { name: 'Commerciale', href: '/rubrica-avanzata', icon: Database },
-    { name: 'Attività', href: '/attivita', icon: Calendar },
-    { name: 'Campagne', href: '/campagne', icon: BarChart3 },
-    { name: 'Email Manager', href: '/email-manager', icon: Mail },
-    { name: 'Email Campagne', href: '/email-campagne', icon: Mail },
-    { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
-    { name: 'Chat AI', href: '/chat', icon: MessageSquare },
-    { name: 'Chat Laboratory', href: '/chat-laboratory', icon: Sparkles },
-    { name: 'Import Templates', href: '/import-templates', icon: FileUp },
-    { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
+  const navigationGroups = [
+    {
+      name: 'Commerciale',
+      icon: BarChart3,
+      items: [
+        { name: 'Clienti', href: '/rubrica', icon: Users },
+        { name: 'Commerciale', href: '/rubrica-avanzata', icon: Database },
+        { name: 'Attività', href: '/attivita', icon: Calendar },
+        { name: 'Campagne', href: '/campagne', icon: BarChart3 },
+      ]
+    },
+    {
+      name: 'Email',
+      icon: Mail,
+      items: [
+        { name: 'Email Manager', href: '/email-manager', icon: Mail },
+        { name: 'Email Campagne', href: '/email-campagne', icon: Mail },
+        { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
+      ]
+    },
+    {
+      name: 'Chat & AI',
+      icon: MessageSquare,
+      items: [
+        { name: 'Chat AI', href: '/chat', icon: MessageSquare },
+        { name: 'Chat Laboratory', href: '/chat-laboratory', icon: Sparkles },
+      ],
+      customContent: <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
+    },
+    {
+      name: 'Import',
+      icon: FileUp,
+      items: [
+        { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
+        { name: 'Import Templates', href: '/import-templates', icon: FileUp },
+      ]
+    }
+  ];
+
+  const standaloneItems = [
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+
+  // Trova il nome della pagina corrente
+  const getCurrentPageTitle = () => {
+    // Cerca in tutti i gruppi
+    for (const group of navigationGroups) {
+      const found = group.items.find(item => isActive(item.href));
+      if (found) return found.name;
+    }
+    // Controlla items standalone
+    const standalone = standaloneItems.find(item => isActive(item.href));
+    if (standalone) return standalone.name;
+    // Controlla Intranet
+    if (isActive('/intranet')) return 'Intranet';
+    if (isActive('/intranet-admin')) return 'Admin Intranet';
+    return 'Dashboard';
+  };
+
+  // Auto-espandi il gruppo che contiene la route attiva
+  useEffect(() => {
+    for (const group of navigationGroups) {
+      const hasActiveItem = group.items.some(item => isActive(item.href));
+      if (hasActiveItem && !groupStates[group.name]) {
+        setGroupStates(prev => ({
+          ...prev,
+          [group.name]: true
+        }));
+      }
+    }
+    // Auto-espandi Chat & AI se siamo in Intranet
+    if ((isActive('/intranet') || isActive('/intranet-admin')) && !groupStates['Chat & AI']) {
+      setGroupStates(prev => ({
+        ...prev,
+        'Chat & AI': true
+      }));
+    }
+  }, [location.pathname]);
 
   return (
     <div 
@@ -134,15 +226,11 @@ const CRMLayout = ({ children }) => {
         >
           {isMobile ? (
             // Mobile: mostra solo l'icona
-            (() => {
-              const currentNav = navigation.find(nav => isActive(nav.href));
-              const Icon = currentNav?.icon || Home;
-              return <Icon className="h-6 w-6 text-foreground" />;
-            })()
+            <Home className="h-6 w-6 text-foreground" />
           ) : (
             // Desktop: mostra il nome
             <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-              {navigation.find(nav => isActive(nav.href))?.name || 'Dashboard'}
+              {getCurrentPageTitle()}
             </h1>
           )}
         </div>
@@ -253,27 +341,89 @@ const CRMLayout = ({ children }) => {
           sidebarOpen ? 'w-64' : 'w-0 lg:w-16'
         } overflow-hidden`}>
           <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
-              const active = isActive(item.href);
-              const isCollapsed = !sidebarOpen;
+            {/* Gruppi collassabili */}
+            {navigationGroups.map((group) => {
+              const isCollapsed = !sidebarOpen && !isMobile;
+              const isGroupOpen = groupStates[group.name];
+              const hasActiveItem = group.items.some(item => isActive(item.href));
               
               return (
-                <AnimatedNavButton
-                  key={item.name}
-                  icon={item.icon}
-                  label={item.name}
-                  isActive={active}
-                  isCollapsed={isCollapsed && !isMobile}
-                  onClick={() => navigate(item.href)}
-                  colorScheme="primary"
-                  className="w-full"
-                />
+                <Collapsible
+                  key={group.name}
+                  open={isGroupOpen}
+                  onOpenChange={() => toggleGroup(group.name)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        hasActiveItem
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <group.icon className="h-5 w-5 shrink-0" />
+                      {!isCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{group.name}</span>
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 transition-transform",
+                              isGroupOpen && "rotate-180"
+                            )}
+                          />
+                        </>
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="space-y-1 mt-1">
+                    {group.items.map((item) => {
+                      const active = isActive(item.href);
+                      return (
+                        <AnimatedNavButton
+                          key={item.name}
+                          icon={item.icon}
+                          label={item.name}
+                          isActive={active}
+                          isCollapsed={isCollapsed}
+                          onClick={() => navigate(item.href)}
+                          colorScheme="primary"
+                          className={cn("w-full", !isCollapsed && "ml-6")}
+                        />
+                      );
+                    })}
+                    
+                    {/* Custom content per Chat & AI (Intranet items) */}
+                    {group.customContent && (
+                      <div className={cn(!isCollapsed && "ml-6")}>
+                        {group.customContent}
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
               );
             })}
             
-            {/* Intranet Navigation Items with Admin check */}
+            {/* Items standalone */}
             <div className="pt-2 border-t border-border mt-2">
-              <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
+              {standaloneItems.map((item) => {
+                const active = isActive(item.href);
+                const isCollapsed = !sidebarOpen && !isMobile;
+                
+                return (
+                  <AnimatedNavButton
+                    key={item.name}
+                    icon={item.icon}
+                    label={item.name}
+                    isActive={active}
+                    isCollapsed={isCollapsed}
+                    onClick={() => navigate(item.href)}
+                    colorScheme="primary"
+                    className="w-full"
+                  />
+                );
+              })}
             </div>
           </nav>
         </aside>

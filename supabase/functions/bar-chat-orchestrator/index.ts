@@ -253,7 +253,7 @@ serve(async (req) => {
           'Authorization': `Bearer ${lovableAIKey}`
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.0-flash-exp',
+          model: 'google/gemini-2.5-flash',
           messages: conversationHistory
         })
       });

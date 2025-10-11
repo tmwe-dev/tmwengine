@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { BarModeToggle } from './BarModeToggle';
+import { BarModeControls } from './BarModeControls';
 import { ElevenLabsAgentManager } from './ElevenLabsAgentManager';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
 
@@ -54,15 +55,23 @@ export const CollapsibleBarSection = ({
 
       <CollapsibleContent>
         {isBarMode && (
-          <div className="flex justify-center gap-3 mt-2">
-            <ElevenLabsAgentManager
-              conversationId={conversationId}
-              onAgentsChange={onAgentsChange}
-            />
-            <KnowledgeBaseSelector
-              conversationId={conversationId}
-              onKBChange={onKBChange}
-            />
+          <div className="space-y-3 mt-2">
+            {/* Controlli conversazione: Argomento, Ritmo, Interruzioni, Autoplay */}
+            <div className="flex justify-center">
+              <BarModeControls conversationId={conversationId} />
+            </div>
+            
+            {/* Agenti e Knowledge Base */}
+            <div className="flex justify-center gap-3">
+              <ElevenLabsAgentManager
+                conversationId={conversationId}
+                onAgentsChange={onAgentsChange}
+              />
+              <KnowledgeBaseSelector
+                conversationId={conversationId}
+                onKBChange={onKBChange}
+              />
+            </div>
           </div>
         )}
       </CollapsibleContent>

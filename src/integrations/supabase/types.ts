@@ -797,9 +797,9 @@ export type Database = {
           max_words_per_response: number
           name: string
           order_index: number
-          personality_prompt: string
           response_style: string
           speaking_pace: string
+          text_generation_prompt: string
           updated_at: string
           user_id: string | null
           voice_id: string
@@ -813,9 +813,9 @@ export type Database = {
           max_words_per_response?: number
           name: string
           order_index?: number
-          personality_prompt: string
           response_style?: string
           speaking_pace?: string
+          text_generation_prompt: string
           updated_at?: string
           user_id?: string | null
           voice_id: string
@@ -829,9 +829,9 @@ export type Database = {
           max_words_per_response?: number
           name?: string
           order_index?: number
-          personality_prompt?: string
           response_style?: string
           speaking_pace?: string
+          text_generation_prompt?: string
           updated_at?: string
           user_id?: string | null
           voice_id?: string

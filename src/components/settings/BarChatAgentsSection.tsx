@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableAgent } from '@/components/chat-laboratory/SortableAgent';
-import { Info, Bot, Save, Loader2, CheckCircle } from 'lucide-react';
+import { Info, Bot, Save, Loader2, CheckCircle, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface ElevenLabsVoice {
+  voice_id: string;
+  name: string;
+  category?: string;
+  labels?: Record<string, string>;
+}
 
 interface BarChatAgentsSectionProps {
   barChatAgents: any[];
@@ -59,6 +69,32 @@ export const BarChatAgentsSection = ({
   handleDragEnd,
   sensors
 }: BarChatAgentsSectionProps) => {
+  const [voices, setVoices] = useState<ElevenLabsVoice[]>([]);
+  const [loadingVoices, setLoadingVoices] = useState(false);
+
+  const loadVoices = async () => {
+    try {
+      setLoadingVoices(true);
+      const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices');
+      
+      if (error) throw error;
+      
+      if (data?.voices) {
+        setVoices(data.voices);
+        toast.success(`${data.voices.length} voci caricate dal tuo account`);
+      }
+    } catch (error) {
+      console.error('Errore caricamento voci:', error);
+      toast.error("Impossibile caricare le voci ElevenLabs");
+    } finally {
+      setLoadingVoices(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVoices();
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Alert Quote & Limiti */}
@@ -188,36 +224,43 @@ export const BarChatAgentsSection = ({
 
             {/* Voice ID */}
             <div>
-              <Label>Voice ID *</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Voce ElevenLabs *</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={loadVoices}
+                  disabled={loadingVoices || saving}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loadingVoices ? 'animate-spin' : ''}`} />
+                  Sincronizza
+                </Button>
+              </div>
               <Select
                 value={newAgent.voice_id}
                 onValueChange={(val) => setNewAgent(prev => ({ ...prev, voice_id: val }))}
-                disabled={saving}
+                disabled={saving || loadingVoices}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleziona una voce" />
+                  <SelectValue placeholder={loadingVoices ? "Caricamento voci..." : "Seleziona una voce"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="9BWtsMINqrJLrRacOk9x">Aria (Femminile, Chiara)</SelectItem>
-                  <SelectItem value="EXAVITQu4vr4xnSDxMaL">Sarah (Femminile, Calda)</SelectItem>
-                  <SelectItem value="IKne3meq5aSn9XLyUdCD">Charlie (Maschile, Professionale)</SelectItem>
-                  <SelectItem value="pFZP5JQG7iQjIQuC4Bku">Lily (Femminile, Giovane)</SelectItem>
-                  <SelectItem value="onwK4e9ZLuTAKqWW03F9">Daniel (Maschile, Profondo)</SelectItem>
-                  <SelectItem value="CwhRBWXzGAHq8TQ4Fs17">Roger (Maschile, Maturo)</SelectItem>
-                  <SelectItem value="JBFqnCBsd6RMkjVDRZzb">George (Maschile, Britannico)</SelectItem>
-                  <SelectItem value="N2lVS1w4EtoT3dr4eOWO">Callum (Maschile, Americano)</SelectItem>
+                  {voices.length > 0 ? (
+                    voices.map((voice) => (
+                      <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                        {voice.name} {voice.category ? `(${voice.category})` : ''}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      Nessuna voce disponibile - Clicca Sincronizza
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                Vedi lista completa voci nella{' '}
-                <a
-                  href="https://elevenlabs.io/docs/voices/voice-library/overview"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-primary"
-                >
-                  documentazione
-                </a>
+                Le voci vengono sincronizzate dal tuo account ElevenLabs
               </p>
             </div>
 
@@ -414,19 +457,37 @@ export const BarChatAgentsSection = ({
 
               {/* Voice ID */}
               <div>
-                <Label>Voice ID</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Voce ElevenLabs</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadVoices}
+                    disabled={loadingVoices || saving}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingVoices ? 'animate-spin' : ''}`} />
+                    Sincronizza
+                  </Button>
+                </div>
                 <Select
                   value={editingAgent.voice_id}
                   onValueChange={(val) => setEditingAgent(prev => ({ ...prev, voice_id: val }))}
-                  disabled={saving}
+                  disabled={saving || loadingVoices}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="9BWtsMINqrJLrRacOk9x">Aria (Femminile, Chiara)</SelectItem>
-                    <SelectItem value="EXAVITQu4vr4xnSDxMaL">Sarah (Femminile, Calda)</SelectItem>
-                    <SelectItem value="IKne3meq5aSn9XLyUdCD">Charlie (Maschile, Professionale)</SelectItem>
-                    <SelectItem value="pFZP5JQG7iQjIQuC4Bku">Lily (Femminile, Giovane)</SelectItem>
-                    <SelectItem value="onwK4e9ZLuTAKqWW03F9">Daniel (Maschile, Profondo)</SelectItem>
+                    {voices.length > 0 ? (
+                      voices.map((voice) => (
+                        <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                          {voice.name} {voice.category ? `(${voice.category})` : ''}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>
+                        Nessuna voce disponibile - Clicca Sincronizza
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -440,10 +501,13 @@ export const BarChatAgentsSection = ({
                   rows={4}
                   disabled={saving}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {editingAgent.personality_prompt.length} / 500 caratteri
+                </p>
               </div>
 
-              {/* Grid Options */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Grid Opzioni */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Stile Risposta</Label>
                   <Select
@@ -477,7 +541,7 @@ export const BarChatAgentsSection = ({
                 </div>
 
                 <div>
-                  <Label>Interruzione</Label>
+                  <Label>Interruzioni</Label>
                   <Select
                     value={editingAgent.interruption_style}
                     onValueChange={(val) => setEditingAgent(prev => ({ ...prev, interruption_style: val }))}
@@ -493,10 +557,10 @@ export const BarChatAgentsSection = ({
                 </div>
               </div>
 
-              {/* Max Words Slider */}
+              {/* Max Parole */}
               <div>
                 <Label className="flex justify-between">
-                  <span>Max Parole</span>
+                  <span>Max Parole per Risposta</span>
                   <span className="font-mono text-sm">{editingAgent.max_words_per_response}</span>
                 </Label>
                 <Input
@@ -514,21 +578,19 @@ export const BarChatAgentsSection = ({
                 />
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingAgent(null)}
-                  disabled={saving}
-                >
-                  Annulla
-                </Button>
+              {/* Pulsante Salva */}
+              <div className="flex justify-end pt-4 border-t">
                 <Button
                   onClick={() => handleUpdateAgent(editingAgent.id)}
-                  disabled={saving}
+                  disabled={
+                    !editingAgent.name ||
+                    !editingAgent.voice_id ||
+                    editingAgent.personality_prompt.length < 50 ||
+                    saving
+                  }
                 >
                   {saving ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvataggio...</>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
                   ) : (
                     <><Save className="h-4 w-4 mr-2" /> Salva Modifiche</>
                   )}

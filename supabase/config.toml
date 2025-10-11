@@ -239,3 +239,6 @@ verify_jwt = true
 [functions.chat-laboratory-orchestrator]
 verify_jwt = true
 
+[functions.elevenlabs-get-voices]
+verify_jwt = true
+

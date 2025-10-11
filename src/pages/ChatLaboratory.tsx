@@ -534,13 +534,6 @@ const ChatLaboratory = () => {
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-2 md:p-3">
         <div className="container mx-auto max-w-4xl">
           <form onSubmit={handleSubmit} className="space-y-1 md:space-y-2">
-            {/* Bar Mode Controls */}
-            {isBarMode && (
-              <BarModeControls
-                conversationId={currentConversationId}
-              />
-            )}
-            
             {/* File Uploads & Image Generator */}
             <div className="flex gap-1 justify-center md:justify-start">
               <FileUploader

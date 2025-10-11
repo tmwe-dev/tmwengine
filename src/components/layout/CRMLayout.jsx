@@ -105,6 +105,8 @@ const CRMLayout = ({ children }) => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+
   const navigationGroups = [
     {
       name: 'Commerciale',
@@ -147,8 +149,6 @@ const CRMLayout = ({ children }) => {
   const standaloneItems = [
     { name: 'Impostazioni', href: '/settings', icon: Settings },
   ];
-
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   // Trova il nome della pagina corrente
   const getCurrentPageTitle = () => {

@@ -128,6 +128,13 @@ const ChatLaboratory = () => {
       return () => {
         supabase.removeChannel(channel);
       };
+    } else {
+      // Carica impostazioni pending da localStorage
+      const pending = localStorage.getItem('bar-mode-pending');
+      if (pending) {
+        const { mode } = JSON.parse(pending);
+        setIsBarMode(mode === 'bar');
+      }
     }
   }, [currentConversationId]);
 
@@ -210,6 +217,56 @@ const ChatLaboratory = () => {
             is_active: true
           });
       }
+
+      // Trasferisci impostazioni pending da localStorage al DB
+      await transferPendingSettings(data.id);
+    } catch (error) {
+      console.error('Errore creazione conversazione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare la conversazione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const transferPendingSettings = async (conversationId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Recupera tutte le impostazioni pending
+      const pendingMode = localStorage.getItem('bar-mode-pending');
+      const pendingAgents = localStorage.getItem('bar-mode-agents-pending');
+      const pendingKB = localStorage.getItem('bar-mode-kb-pending');
+      const pendingControls = localStorage.getItem('bar-mode-controls-pending');
+
+      if (pendingMode) {
+        const { mode } = JSON.parse(pendingMode);
+        const agents = pendingAgents ? JSON.parse(pendingAgents) : [];
+        const kb = pendingKB ? JSON.parse(pendingKB) : null;
+        const controls = pendingControls ? JSON.parse(pendingControls) : {
+          conversation_pace: 'normal',
+          enable_interruptions: true,
+          auto_play_audio: true,
+        };
+
+        await supabase.from('chat_laboratory_bar_mode').insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          mode: mode,
+          voice_enabled: false,
+          active_elevenlabs_agents: agents,
+          active_kb_id: kb,
+          ...controls,
+        });
+
+        // Pulisci localStorage
+        localStorage.removeItem('bar-mode-pending');
+        localStorage.removeItem('bar-mode-agents-pending');
+        localStorage.removeItem('bar-mode-kb-pending');
+        localStorage.removeItem('bar-mode-controls-pending');
+      }
     } catch (error) {
       console.error('Errore creazione conversazione:', error);
       toast({
@@ -257,6 +314,9 @@ const ChatLaboratory = () => {
               is_active: true
             });
         }
+
+        // Trasferisci impostazioni pending
+        await transferPendingSettings(conversationId);
       }
 
       // Salva messaggio umano

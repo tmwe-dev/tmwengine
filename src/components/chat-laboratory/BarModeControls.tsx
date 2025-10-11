@@ -26,6 +26,14 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
   useEffect(() => {
     if (conversationId) {
       loadSettings();
+    } else {
+      // Carica da localStorage se non c'è conversationId
+      const pending = localStorage.getItem('bar-mode-controls-pending');
+      if (pending) {
+        const saved = JSON.parse(pending);
+        setSettings(saved);
+        onSettingsChange?.(saved);
+      }
     }
   }, [conversationId]);
 
@@ -55,6 +63,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     onSettingsChange?.(newSettings);
 
     if (conversationId) {
+      // Salva nel database
       try {
         await supabase
           .from('chat_laboratory_bar_mode')
@@ -63,6 +72,9 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
       } catch (error) {
         console.error('Errore salvataggio impostazione:', error);
       }
+    } else {
+      // Salva in localStorage
+      localStorage.setItem('bar-mode-controls-pending', JSON.stringify(newSettings));
     }
   };
 

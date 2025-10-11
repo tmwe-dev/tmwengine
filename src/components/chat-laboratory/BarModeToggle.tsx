@@ -16,21 +16,32 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
   const [isLoading, setIsLoading] = useState(false);
 
   const handleToggle = async (enabled: boolean) => {
-    if (!conversationId) {
-      toast({
-        title: "Attenzione",
-        description: "Crea prima una conversazione per attivare Bar Mode",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
+      // MODALITÀ PRE-CONVERSAZIONE: salva in localStorage
+      if (!conversationId) {
+        localStorage.setItem('bar-mode-pending', JSON.stringify({
+          mode: enabled ? 'bar' : 'laboratory',
+          timestamp: new Date().toISOString()
+        }));
+        
+        onToggle(enabled);
+        
+        toast({
+          title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
+          description: enabled 
+            ? "Configura gli agenti prima di iniziare la chat"
+            : "Modalità standard selezionata",
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+
+      // MODALITÀ POST-CONVERSAZIONE: salva nel database
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utente non autenticato");
 
-      // Controlla se esiste già una configurazione
       const { data: existing } = await supabase
         .from('chat_laboratory_bar_mode')
         .select('*')
@@ -38,7 +49,6 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
         .single();
 
       if (existing) {
-        // Aggiorna
         const { error } = await supabase
           .from('chat_laboratory_bar_mode')
           .update({ 
@@ -49,7 +59,6 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
 
         if (error) throw error;
       } else {
-        // Crea nuovo
         const { error } = await supabase
           .from('chat_laboratory_bar_mode')
           .insert({

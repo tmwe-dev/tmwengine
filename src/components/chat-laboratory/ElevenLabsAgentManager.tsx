@@ -30,6 +30,14 @@ export const ElevenLabsAgentManager = ({ conversationId, onAgentsChange }: Eleve
     loadAgents();
     if (conversationId) {
       loadSelectedAgents();
+    } else {
+      // Carica da localStorage
+      const pending = localStorage.getItem('bar-mode-agents-pending');
+      if (pending) {
+        const saved = JSON.parse(pending);
+        setSelectedAgents(saved);
+        onAgentsChange(saved);
+      }
     }
   }, [conversationId]);
 
@@ -74,6 +82,7 @@ export const ElevenLabsAgentManager = ({ conversationId, onAgentsChange }: Eleve
     onAgentsChange(newSelection);
 
     if (conversationId) {
+      // Salva nel database
       try {
         await supabase
           .from('chat_laboratory_bar_mode')
@@ -82,6 +91,9 @@ export const ElevenLabsAgentManager = ({ conversationId, onAgentsChange }: Eleve
       } catch (error) {
         console.error('Errore salvataggio selezione:', error);
       }
+    } else {
+      // Salva in localStorage
+      localStorage.setItem('bar-mode-agents-pending', JSON.stringify(newSelection));
     }
   };
 

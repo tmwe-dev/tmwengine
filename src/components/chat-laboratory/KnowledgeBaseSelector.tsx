@@ -28,6 +28,14 @@ export const KnowledgeBaseSelector = ({ conversationId, onKBChange }: KnowledgeB
     loadKnowledgeBases();
     if (conversationId) {
       loadActiveKB();
+    } else {
+      // Carica da localStorage
+      const pending = localStorage.getItem('bar-mode-kb-pending');
+      if (pending) {
+        const saved = JSON.parse(pending);
+        setActiveKB(saved);
+        onKBChange(saved);
+      }
     }
   }, [conversationId]);
 
@@ -81,6 +89,7 @@ export const KnowledgeBaseSelector = ({ conversationId, onKBChange }: KnowledgeB
     setOpen(false);
 
     if (conversationId) {
+      // Salva nel database
       try {
         await supabase
           .from('chat_laboratory_bar_mode')
@@ -96,6 +105,9 @@ export const KnowledgeBaseSelector = ({ conversationId, onKBChange }: KnowledgeB
       } catch (error) {
         console.error('Errore salvataggio KB:', error);
       }
+    } else {
+      // Salva in localStorage
+      localStorage.setItem('bar-mode-kb-pending', JSON.stringify(kbId));
     }
   };
 

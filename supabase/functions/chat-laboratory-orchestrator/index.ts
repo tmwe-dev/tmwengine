@@ -80,31 +80,64 @@ serve(async (req) => {
       console.log('⚠️ Nessun topic selezionato');
     }
 
-    // 2. Carica sezioni prompt attive
-    let promptSections: any[] = [];
+    // 2. Carica sezioni prompt attive (SEPARATE PER TIPO)
+    let baseSections: any[] = [];
+    let topicSections: any[] = [];
+    let agentPersonalitySections: any[] = [];
+    
     try {
-      let query = supabaseClient
+      // 2a. Sezioni BASE (sempre attive)
+      const { data: baseData } = await supabaseClient
         .from('chat_laboratory_prompt_sections')
         .select('*')
         .eq('is_active', true)
+        .eq('section_type', 'base')
         .order('order_priority', { ascending: true });
-
+      baseSections = baseData || [];
+      
+      // 2b. Sezioni TOPIC (se topic selezionato)
       if (selectedTopic) {
-        query = query.or(`section_type.eq.base,and(section_type.eq.topic_objective,topic_tags.cs.{${selectedTopic}})`);
-      } else {
-        query = query.eq('section_type', 'base');
+        const { data: topicData } = await supabaseClient
+          .from('chat_laboratory_prompt_sections')
+          .select('*')
+          .eq('is_active', true)
+          .eq('section_type', 'topic_objective')
+          .contains('topic_tags', [selectedTopic])
+          .order('order_priority', { ascending: true });
+        topicSections = topicData || [];
       }
-
-      const { data } = await query;
-      promptSections = data || [];
-      console.log(`📦 Caricati ${promptSections.length} sezioni prompt`);
+      
+      console.log(`📦 Sezioni: ${baseSections.length} base, ${topicSections.length} topic`);
     } catch (error) {
       console.error('❌ Errore caricamento prompt sections:', error);
     }
 
-    // 3. Carica prompt personalità agente
-    let agentPrompt = '';
+    // 3. Carica AGENT PERSONALITY da tabella modulare (FILTRATO PER NOME)
+    let agentPromptFromDB = '';
     if (selectedParticipant) {
+      try {
+        const { data: agentSections } = await supabaseClient
+          .from('chat_laboratory_prompt_sections')
+          .select('*')
+          .eq('is_active', true)
+          .eq('section_type', 'agent_personality')
+          .ilike('section_name', `%${selectedParticipant.name}%`)
+          .order('order_priority', { ascending: true });
+        
+        agentPersonalitySections = agentSections || [];
+        
+        if (agentPersonalitySections.length > 0) {
+          agentPromptFromDB = agentPersonalitySections.map(s => s.content).join('\n\n');
+          console.log(`🎭 Prompt modulare per ${selectedParticipant.name}: ${agentPersonalitySections.length} sezioni`);
+        }
+      } catch (error) {
+        console.log(`ℹ️ Nessuna sezione modulare per ${selectedParticipant.name}`);
+      }
+    }
+    
+    // 3b. Fallback: carica da elevenlabs_agents.personality_prompt (SOLO SE NON C'È MODULARE)
+    let agentPromptFromTable = '';
+    if (selectedParticipant && agentPersonalitySections.length === 0) {
       try {
         const { data: agentData } = await supabaseClient
           .from('elevenlabs_agents')
@@ -114,13 +147,17 @@ serve(async (req) => {
           .maybeSingle();
         
         if (agentData?.personality_prompt) {
-          agentPrompt = `\n\n═══ RUOLO SPECIFICO ═══\n${agentData.personality_prompt}`;
-          console.log(`🎭 Prompt personalità: ${selectedParticipant.name}`);
+          agentPromptFromTable = agentData.personality_prompt;
+          console.log(`🎭 Prompt da DB table per ${selectedParticipant.name}`);
         }
       } catch (error) {
-        console.log(`ℹ️ Nessun prompt personalità per ${selectedParticipant.name}`);
+        console.log(`ℹ️ Nessun prompt DB per ${selectedParticipant.name}`);
       }
     }
+    
+    // Priorità: modulare > table
+    const finalAgentPrompt = agentPromptFromDB || agentPromptFromTable;
+    const agentPrompt = finalAgentPrompt ? `\n\n═══ RUOLO SPECIFICO ═══\n${finalAgentPrompt}` : '';
 
     // 4. Carica contesto Knowledge Base
     let kbContext = '';
@@ -141,20 +178,42 @@ serve(async (req) => {
       }
     }
 
-    // 5. Componi prompt finale
+    // 5. Carica System Prompt Globale (se esiste)
+    let globalSystemPrompt = '';
+    try {
+      const { data: globalPromptData } = await supabaseClient
+        .from('chat_laboratory_system_prompts')
+        .select('contenuto')
+        .eq('attivo', true)
+        .maybeSingle();
+      
+      if (globalPromptData?.contenuto) {
+        globalSystemPrompt = globalPromptData.contenuto;
+        console.log('🌐 System Prompt Globale caricato');
+      }
+    } catch (error) {
+      console.log('ℹ️ Nessun System Prompt Globale');
+    }
+
+    // 6. Componi prompt finale (ORDINE CORRETTO)
     const basePrompt = [
-      ...promptSections.map(s => s.content),
-      agentPrompt,
-      kbContext
+      globalSystemPrompt,                           // 1. GLOBALE (regole base)
+      ...baseSections.map(s => s.content),          // 2. BASE (contesto sala)
+      agentPrompt,                                  // 3. PERSONALITÀ (chi sei)
+      ...topicSections.map(s => s.content),         // 4. TOPIC (di cosa parli)
+      kbContext                                     // 5. KB (dettagli specifici)
     ].filter(Boolean).join('\n\n---\n\n');
 
-    console.log('🎯 Prompt:', {
+    console.log('🎯 Prompt composizione:', {
       topic: selectedTopic,
       agent: selectedParticipant?.name,
-      sections: promptSections.length,
-      hasAgent: !!agentPrompt,
+      hasGlobal: !!globalSystemPrompt,
+      baseSections: baseSections.length,
+      topicSections: topicSections.length,
+      agentSections: agentPersonalitySections.length,
+      hasAgentPrompt: !!agentPrompt,
       hasKB: !!kbContext,
-      length: basePrompt.length
+      totalLength: basePrompt.length
     });
 
     // Carica messaggi

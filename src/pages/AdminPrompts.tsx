@@ -112,6 +112,16 @@ export default function AdminPrompts() {
 
   const handleSave = async () => {
     try {
+      // Validazione lunghezza minima per agent_personality
+      if (formData.section_type === 'agent_personality' && formData.content.length < 50) {
+        toast({
+          title: "Errore Validazione",
+          description: "Il prompt di personalità deve essere almeno 50 caratteri",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       if (editingPrompt) {
         // Update
         const { error } = await supabase

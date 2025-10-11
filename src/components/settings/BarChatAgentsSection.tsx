@@ -344,6 +344,25 @@ export const BarChatAgentsSection = ({
             {/* Personality Prompt */}
             <div>
               <Label>Prompt Personalità * (min. 50 caratteri)</Label>
+              <Alert className="mb-2">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>⚠️ IMPORTANTE:</strong> Questo prompt controlla SOLO il testo generato 
+                  dall'AI (ChatGPT, Gemini, Claude). La personalità vocale ElevenLabs è 
+                  configurata separatamente su{' '}
+                  <a 
+                    href="https://elevenlabs.io/app/conversational-ai" 
+                    target="_blank"
+                    className="underline"
+                  >
+                    elevenlabs.io
+                  </a>
+                  .<br/>
+                  <span className="text-muted-foreground">
+                    💡 Tip: Se crei sezioni modulari in Admin Prompts, quelle avranno priorità.
+                  </span>
+                </AlertDescription>
+              </Alert>
               <Textarea
                 value={newAgent.personality_prompt}
                 onChange={(e) => setNewAgent(prev => ({ ...prev, personality_prompt: e.target.value }))}

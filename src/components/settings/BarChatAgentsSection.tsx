@@ -142,12 +142,19 @@ export const BarChatAgentsSection = ({
       if (error) throw error;
       
       if (data?.voices) {
-        // Ordina le voci per nome in modo crescente
-        const sortedVoices = data.voices.sort((a: ElevenLabsVoice, b: ElevenLabsVoice) => 
-          a.name.localeCompare(b.name)
-        );
+        // Separa voci personali (cloned, generated) da quelle ElevenLabs (premade, professional)
+        const personalVoices = data.voices.filter((v: ElevenLabsVoice) => 
+          v.category === 'cloned' || v.category === 'generated'
+        ).sort((a: ElevenLabsVoice, b: ElevenLabsVoice) => a.name.localeCompare(b.name));
+        
+        const elevenlabsVoices = data.voices.filter((v: ElevenLabsVoice) => 
+          v.category !== 'cloned' && v.category !== 'generated'
+        ).sort((a: ElevenLabsVoice, b: ElevenLabsVoice) => a.name.localeCompare(b.name));
+        
+        // Unisce: prima personali, poi ElevenLabs
+        const sortedVoices = [...personalVoices, ...elevenlabsVoices];
         setVoices(sortedVoices);
-        toast.success(`${sortedVoices.length} voci caricate dal tuo account`);
+        toast.success(`${sortedVoices.length} voci caricate (${personalVoices.length} personali, ${elevenlabsVoices.length} ElevenLabs)`);
       }
     } catch (error) {
       console.error('Errore caricamento voci:', error);

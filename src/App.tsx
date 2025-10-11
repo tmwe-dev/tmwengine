@@ -47,7 +47,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <VoiceAgentWidget />
+        {/* <VoiceAgentWidget /> */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={

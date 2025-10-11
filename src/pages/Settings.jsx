@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { crmEvents, crmUtils } from '@/lib/crm/events';
 import { supabase } from '@/integrations/supabase/client';
 import { TMWEProfileSync } from '@/components/settings/TMWEProfileSync';
+import { BarChatAgentsSection } from '@/components/settings/BarChatAgentsSection';
 import { AI_PROVIDERS } from '@/lib/ai-models';
 import { 
   Key, 
@@ -31,8 +32,13 @@ import {
   Info,
   CheckCircle,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  GripVertical,
+  TestTube
 } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -79,6 +85,41 @@ const Settings = () => {
     enabled: false
   });
 
+  // Stati per gestione agenti vocali Bar Chat
+  const [barChatAgents, setBarChatAgents] = useState([]);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [loadingAgents, setLoadingAgents] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [previewResponse, setPreviewResponse] = useState('');
+  const [usageStats, setUsageStats] = useState({
+    charactersToday: 0,
+    dailyLimit: 50000,
+    requestsToday: 0
+  });
+  const [loadingUsage, setLoadingUsage] = useState(false);
+  const [newAgent, setNewAgent] = useState({
+    name: '',
+    elevenlabs_agent_id: '',
+    voice_id: '',
+    personality_prompt: '',
+    response_style: 'bar_chat',
+    speaking_pace: 'normal',
+    interruption_style: 'polite',
+    max_words_per_response: 50,
+    is_active: true
+  });
+
+  // Pattern validazione Voice ID
+  const VOICE_ID_PATTERN = /^[A-Za-z0-9]{20}$/;
+
+  // DND Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Sincronizza con il hook usePhoneActions
   useEffect(() => {
     const savedConfig = localStorage.getItem('phone_config');
@@ -105,6 +146,8 @@ const Settings = () => {
   // Carica le configurazioni esistenti
   useEffect(() => {
     loadConfigurations();
+    loadBarChatAgents();
+    loadUsageStats();
   }, []);
 
   const loadConfigurations = async () => {
@@ -295,6 +338,432 @@ const Settings = () => {
       });
     }
   };
+
+  // ========== FUNZIONI BAR CHAT AGENTS ==========
+  
+  const loadBarChatAgents = async () => {
+    setLoadingAgents(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('elevenlabs_agents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('order_index', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading agents:', error);
+        toast({ 
+          title: "Errore", 
+          description: "Impossibile caricare gli agenti", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      setBarChatAgents(data || []);
+    } catch (error) {
+      console.error('Error in loadBarChatAgents:', error);
+    } finally {
+      setLoadingAgents(false);
+    }
+  };
+
+  const loadUsageStats = async () => {
+    setLoadingUsage(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('elevenlabs_usage_tracking')
+        .select('characters_used, requests_count')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+        
+      if (!error && data) {
+        setUsageStats({
+          charactersToday: data.characters_used,
+          dailyLimit: 50000,
+          requestsToday: data.requests_count
+        });
+      }
+    } catch (error) {
+      console.error('Error loading usage stats:', error);
+    } finally {
+      setLoadingUsage(false);
+    }
+  };
+
+  const handleCreateAgent = async () => {
+    // Validazione campi obbligatori
+    if (!newAgent.name || !newAgent.elevenlabs_agent_id || !newAgent.voice_id) {
+      toast({
+        title: "Errore",
+        description: "Compila tutti i campi obbligatori",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validazione lunghezza prompt
+    if (newAgent.personality_prompt.length < 50) {
+      toast({
+        title: "Attenzione",
+        description: "Il prompt di personalità dovrebbe essere più dettagliato (min. 50 caratteri)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validazione formato Voice ID
+    if (!VOICE_ID_PATTERN.test(newAgent.voice_id)) {
+      toast({
+        title: "Formato Errato",
+        description: "Voice ID deve essere 20 caratteri alfanumerici",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check limite 10 agenti
+    if (barChatAgents.length >= 10) {
+      toast({
+        title: "Limite Raggiunto",
+        description: "Puoi creare massimo 10 agenti vocali. Elimina un agente esistente per continuare.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Errore",
+          description: "Devi essere autenticato",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Controllo duplicati
+      const { data: existing } = await supabase
+        .from('elevenlabs_agents')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('elevenlabs_agent_id', newAgent.elevenlabs_agent_id)
+        .maybeSingle();
+        
+      if (existing) {
+        toast({
+          title: "Errore",
+          description: "Esiste già un agente con questo Agent ID",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Calcola order_index
+      const maxOrderIndex = barChatAgents.length > 0 
+        ? Math.max(...barChatAgents.map(a => a.order_index))
+        : -1;
+      
+      const { error } = await supabase
+        .from('elevenlabs_agents')
+        .insert({
+          ...newAgent,
+          user_id: user.id,
+          order_index: maxOrderIndex + 1
+        });
+      
+      if (error) {
+        console.error('Error creating agent:', error);
+        toast({ 
+          title: "Errore", 
+          description: "Impossibile creare l'agente", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      toast({ 
+        title: "Successo", 
+        description: "Agente creato con successo" 
+      });
+      
+      // Reset form
+      setNewAgent({
+        name: '',
+        elevenlabs_agent_id: '',
+        voice_id: '',
+        personality_prompt: '',
+        response_style: 'bar_chat',
+        speaking_pace: 'normal',
+        interruption_style: 'polite',
+        max_words_per_response: 50,
+        is_active: true
+      });
+      setPreviewResponse('');
+      
+      await loadBarChatAgents();
+    } catch (error) {
+      console.error('Error in handleCreateAgent:', error);
+      toast({
+        title: "Errore",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateAgent = async (agentId) => {
+    if (!editingAgent) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('elevenlabs_agents')
+        .update({
+          name: editingAgent.name,
+          voice_id: editingAgent.voice_id,
+          personality_prompt: editingAgent.personality_prompt,
+          response_style: editingAgent.response_style,
+          speaking_pace: editingAgent.speaking_pace,
+          interruption_style: editingAgent.interruption_style,
+          max_words_per_response: editingAgent.max_words_per_response,
+          is_active: editingAgent.is_active
+        })
+        .eq('id', agentId);
+      
+      if (error) {
+        console.error('Error updating agent:', error);
+        toast({ 
+          title: "Errore", 
+          description: "Impossibile aggiornare l'agente", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      toast({ 
+        title: "Successo", 
+        description: "Agente aggiornato con successo" 
+      });
+      setEditingAgent(null);
+      await loadBarChatAgents();
+    } catch (error) {
+      console.error('Error in handleUpdateAgent:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAgent = async (agentId) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo agente? Questa azione è irreversibile.')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('elevenlabs_agents')
+        .delete()
+        .eq('id', agentId);
+      
+      if (error) {
+        console.error('Error deleting agent:', error);
+        toast({ 
+          title: "Errore", 
+          description: "Impossibile eliminare l'agente", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      toast({ 
+        title: "Successo", 
+        description: "Agente eliminato con successo" 
+      });
+      await loadBarChatAgents();
+    } catch (error) {
+      console.error('Error in handleDeleteAgent:', error);
+    }
+  };
+
+  const handleToggleAgent = async (agentId, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from('elevenlabs_agents')
+        .update({ is_active: !currentStatus })
+        .eq('id', agentId);
+      
+      if (error) {
+        console.error('Error toggling agent:', error);
+        toast({ 
+          title: "Errore", 
+          description: "Impossibile aggiornare lo stato", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      toast({ 
+        title: "Successo", 
+        description: `Agente ${!currentStatus ? 'attivato' : 'disattivato'}` 
+      });
+      await loadBarChatAgents();
+    } catch (error) {
+      console.error('Error in handleToggleAgent:', error);
+    }
+  };
+
+  const handleTestAgent = async () => {
+    if (!newAgent.elevenlabs_agent_id || !newAgent.voice_id) {
+      toast({
+        title: "Errore",
+        description: "Compila Agent ID e Voice ID prima di testare",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setTestingConnection(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-elevenlabs-agent', {
+        body: {
+          agentId: newAgent.elevenlabs_agent_id,
+          voiceId: newAgent.voice_id
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Errore di Rete",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (data.valid) {
+        toast({
+          title: "✅ Connessione Riuscita",
+          description: `Voce: ${data.voiceName}`
+        });
+      } else {
+        toast({
+          title: "❌ Errore",
+          description: data.error || "Agent ID o Voice ID non validi",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error testing agent:', error);
+      toast({
+        title: "Errore",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const handlePreviewPersonality = async () => {
+    if (newAgent.personality_prompt.length < 50) {
+      toast({
+        title: "Errore",
+        description: "Il prompt deve essere almeno 50 caratteri",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('preview-agent-response', {
+        body: {
+          personalityPrompt: newAgent.personality_prompt,
+          testQuestion: "Ciao! Mi parli del tuo caffè preferito?",
+          maxWords: newAgent.max_words_per_response
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Errore",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (data.preview) {
+        setPreviewResponse(data.preview);
+        toast({
+          title: "Preview Generata",
+          description: "Vedi sotto il risultato"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast({
+        title: "Errore",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    const oldIndex = barChatAgents.findIndex(a => a.id === active.id);
+    const newIndex = barChatAgents.findIndex(a => a.id === over.id);
+    
+    const reordered = arrayMove(barChatAgents, oldIndex, newIndex);
+    
+    // Aggiorna UI immediatamente
+    setBarChatAgents(reordered);
+    
+    // Aggiorna DB in background
+    try {
+      for (let i = 0; i < reordered.length; i++) {
+        await supabase
+          .from('elevenlabs_agents')
+          .update({ order_index: i })
+          .eq('id', reordered[i].id);
+      }
+      
+      toast({
+        title: "Successo",
+        description: "Ordine agenti aggiornato"
+      });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare l'ordine",
+        variant: "destructive"
+      });
+      // Ricarica per ripristinare ordine corretto
+      await loadBarChatAgents();
+    }
+  };
+
+  // ========== FINE FUNZIONI BAR CHAT AGENTS ==========
 
   const handleTestConnection = async (configId) => {
     setTestingConfigs(prev => ({ ...prev, [configId]: true }));
@@ -505,6 +974,12 @@ const Settings = () => {
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4" />
                   Voice Agent (ElevenLabs)
+                </div>
+              </SelectItem>
+              <SelectItem value="barchatagents">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4" />
+                  Agenti Vocali Bar Chat
                 </div>
               </SelectItem>
               <SelectItem value="security">
@@ -1147,6 +1622,31 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Agenti Vocali Bar Chat */}
+        {activeSection === 'barchatagents' && (
+          <BarChatAgentsSection
+            barChatAgents={barChatAgents}
+            loadingAgents={loadingAgents}
+            usageStats={usageStats}
+            loadingUsage={loadingUsage}
+            newAgent={newAgent}
+            setNewAgent={setNewAgent}
+            previewResponse={previewResponse}
+            testingConnection={testingConnection}
+            saving={saving}
+            editingAgent={editingAgent}
+            setEditingAgent={setEditingAgent}
+            handleCreateAgent={handleCreateAgent}
+            handleUpdateAgent={handleUpdateAgent}
+            handleDeleteAgent={handleDeleteAgent}
+            handleToggleAgent={handleToggleAgent}
+            handleTestAgent={handleTestAgent}
+            handlePreviewPersonality={handlePreviewPersonality}
+            handleDragEnd={handleDragEnd}
+            sensors={sensors}
+          />
         )}
 
         {/* Sicurezza */}

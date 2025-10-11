@@ -1,7 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bot, User, Clock, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Bot, User, Clock, Zap, Copy, Download, Link } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
+import { toast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -66,6 +68,34 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
     return `${(ms / 1000).toFixed(1)}s`;
   };
 
+  const copyMessageText = () => {
+    navigator.clipboard.writeText(message.content);
+    toast({ title: "✓ Messaggio copiato negli appunti!" });
+  };
+
+  const copyImageUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({ title: "✓ URL copiato negli appunti!" });
+  };
+
+  const downloadImage = async (url: string, index: number) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `image-${message.id}-${index}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      toast({ title: "✓ Immagine scaricata!" });
+    } catch (error) {
+      toast({ title: "Errore durante il download", variant: "destructive" });
+    }
+  };
+
   return (
     <Card className={`bg-gradient-to-br ${config.bg} border ${config.border}`}>
       <div className="p-4 space-y-3">
@@ -85,9 +115,20 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
             </div>
           </div>
           
-          <Badge className={config.badgeColor} variant="secondary">
-            {message.sender_type.toUpperCase()}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className={config.badgeColor} variant="secondary">
+              {message.sender_type.toUpperCase()}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={copyMessageText}
+              title="Copia messaggio"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
@@ -99,12 +140,33 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
         {message.images && message.images.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
             {message.images.map((url, idx) => (
-              <img 
-                key={idx}
-                src={url} 
-                alt="Uploaded" 
-                className="rounded-lg max-h-48 object-cover"
-              />
+              <div key={idx} className="relative group">
+                <img 
+                  src={url} 
+                  alt="Uploaded" 
+                  className="rounded-lg max-h-48 object-cover w-full"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => copyImageUrl(url)}
+                    title="Copia URL"
+                  >
+                    <Link className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => downloadImage(url, idx)}
+                    title="Scarica immagine"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -113,12 +175,33 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
         {message.generated_images && message.generated_images.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
             {message.generated_images.map((url, idx) => (
-              <img 
-                key={idx}
-                src={url} 
-                alt="Generated" 
-                className="rounded-lg max-h-48 object-cover"
-              />
+              <div key={idx} className="relative group">
+                <img 
+                  src={url} 
+                  alt="Generated" 
+                  className="rounded-lg max-h-48 object-cover w-full"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => copyImageUrl(url)}
+                    title="Copia URL"
+                  >
+                    <Link className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => downloadImage(url, idx)}
+                    title="Scarica immagine"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}

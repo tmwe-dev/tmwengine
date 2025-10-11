@@ -39,6 +39,25 @@ const SECTION_TYPE_LABELS = {
   kb_context: '📚 Contesto KB'
 };
 
+const CONTEXT_LABELS = {
+  base: '🎯 Tavola Rotonda (Base)',
+  agent_personality: '🎭 Tavola Rotonda (Agente)',
+  topic_objective: '📋 Tavola Rotonda (Topic)',
+  kb_context: '📚 Tavola Rotonda (KB)'
+};
+
+const getCharacterBadgeVariant = (length: number) => {
+  if (length < 500) return 'default'; // Green
+  if (length <= 1500) return 'secondary'; // Yellow
+  return 'destructive'; // Red
+};
+
+const getCharacterBadgeColor = (length: number) => {
+  if (length < 500) return 'text-green-600 dark:text-green-400';
+  if (length <= 1500) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+};
+
 export default function AdminPrompts() {
   const [prompts, setPrompts] = useState<PromptSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -251,7 +270,17 @@ export default function AdminPrompts() {
 
                 {/* Contenuto */}
                 <div>
-                  <Label>Contenuto Prompt</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Contenuto Prompt</Label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getCharacterBadgeVariant(formData.content.length)}>
+                        {formData.content.length} caratteri
+                      </Badge>
+                      {formData.content.length > 1500 && (
+                        <span className="text-xs text-destructive">⚠️ Troppo lungo</span>
+                      )}
+                    </div>
+                  </div>
                   <Textarea
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
@@ -259,6 +288,11 @@ export default function AdminPrompts() {
                     placeholder="Inserisci il contenuto del prompt..."
                     className="font-mono text-sm"
                   />
+                  {formData.content.length > 1500 && (
+                    <p className="text-xs text-destructive mt-1">
+                      💡 Suggerimento: Riduci il prompt a max 1000-1500 caratteri per ottimizzare i token
+                    </p>
+                  )}
                 </div>
 
                 {/* Topic Tags */}
@@ -370,6 +404,9 @@ export default function AdminPrompts() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
+                    <TableHead>Caratteri</TableHead>
+                    <TableHead>Contesto</TableHead>
+                    <TableHead>Associato a</TableHead>
                     <TableHead>Topic Tags</TableHead>
                     <TableHead className="text-center">Priorità</TableHead>
                     <TableHead className="text-center">Stato</TableHead>
@@ -377,53 +414,85 @@ export default function AdminPrompts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPrompts.map(prompt => (
-                    <TableRow key={prompt.id}>
-                      <TableCell className="font-medium">{prompt.section_name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {SECTION_TYPE_LABELS[prompt.section_type]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {prompt.topic_tags.length === 0 ? (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          ) : (
-                            prompt.topic_tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
+                  {filteredPrompts.map(prompt => {
+                    const charLength = prompt.content.length;
+                    const associatedTo = prompt.section_type === 'agent_personality' 
+                      ? prompt.section_name 
+                      : prompt.topic_tags.length > 0 
+                        ? prompt.topic_tags.join(', ')
+                        : 'Generico';
+                    
+                    return (
+                      <TableRow key={prompt.id}>
+                        <TableCell className="font-medium">{prompt.section_name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {SECTION_TYPE_LABELS[prompt.section_type]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={getCharacterBadgeVariant(charLength)}
+                            className={getCharacterBadgeColor(charLength)}
+                          >
+                            {charLength}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">
+                            {CONTEXT_LABELS[prompt.section_type]}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {associatedTo}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {prompt.topic_tags.length === 0 ? (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            ) : (
+                              prompt.topic_tags.slice(0, 2).map(tag => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))
+                            )}
+                            {prompt.topic_tags.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{prompt.topic_tags.length - 2}
                               </Badge>
-                            ))
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{prompt.order_priority}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={prompt.is_active ? 'default' : 'secondary'}>
-                          {prompt.is_active ? '✓ Attivo' : '✗ Inattivo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            onClick={() => handleEdit(prompt)}
-                            variant="outline"
-                            size="icon"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(prompt.id)}
-                            variant="outline"
-                            size="icon"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">{prompt.order_priority}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={prompt.is_active ? 'default' : 'secondary'}>
+                            {prompt.is_active ? '✓ Attivo' : '✗ Inattivo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              onClick={() => handleEdit(prompt)}
+                              variant="outline"
+                              size="icon"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete(prompt.id)}
+                              variant="outline"
+                              size="icon"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

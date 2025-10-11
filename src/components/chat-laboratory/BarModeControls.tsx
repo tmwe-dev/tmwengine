@@ -146,10 +146,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             <SelectItem value="filosofia">🧠 Filosofia</SelectItem>
           </SelectContent>
         </Select>
-      </div>
 
-      {/* Controlli originali */}
-      <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
+        {/* Controlli originali - inline nella stessa riga */}
         {/* Ritmo Conversazione */}
         <div className="flex items-center gap-2">
           <Timer className="h-4 w-4 text-muted-foreground" />

@@ -134,7 +134,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             <SelectValue placeholder="Seleziona argomento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Nessuno</SelectItem>
+            <SelectItem value="none">Nessuno</SelectItem>
             <SelectItem value="logistica">📦 Logistica</SelectItem>
             <SelectItem value="medico">🏥 Medicina</SelectItem>
             <SelectItem value="fiscale">💼 Fiscalità</SelectItem>

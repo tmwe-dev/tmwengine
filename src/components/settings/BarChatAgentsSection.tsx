@@ -75,7 +75,28 @@ export const BarChatAgentsSection = ({
   const loadVoices = async () => {
     try {
       setLoadingVoices(true);
-      const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices');
+      
+      // Carica l'API key da localStorage
+      const voiceAgentConfig = localStorage.getItem('voice_agent_config');
+      let apiKey = '';
+      
+      if (voiceAgentConfig) {
+        try {
+          const parsed = JSON.parse(voiceAgentConfig);
+          apiKey = parsed.elevenLabsApiKey || '';
+        } catch (e) {
+          console.error('Error parsing voice agent config:', e);
+        }
+      }
+      
+      if (!apiKey) {
+        toast.error("Configura l'API Key in Impostazioni > Voice Agent (ElevenLabs)");
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices', {
+        body: { apiKey }
+      });
       
       if (error) throw error;
       

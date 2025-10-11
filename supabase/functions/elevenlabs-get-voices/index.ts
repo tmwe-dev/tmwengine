@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,39 +11,13 @@ serve(async (req) => {
   }
 
   try {
-    // Inizializza Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    console.log('📋 Caricamento configurazione ElevenLabs da database...');
-
-    // Cerca la configurazione ElevenLabs nel database
-    const { data: configs, error: configError } = await supabaseClient
-      .from('config_ai')
-      .select('api_key, attivo')
-      .or('provider.ilike.%elevenlabs%,modello.ilike.%elevenlabs%')
-      .eq('attivo', true)
-      .limit(1)
-      .single();
-
-    if (configError) {
-      console.error('❌ Errore nel recupero configurazione:', configError);
-      throw new Error('Configurazione ElevenLabs non trovata. Aggiungila nelle Impostazioni AI.');
+    const { apiKey } = await req.json();
+    
+    if (!apiKey) {
+      throw new Error('API Key ElevenLabs non fornita. Configurala in Impostazioni > Voice Agent (ElevenLabs).');
     }
 
-    if (!configs || !configs.api_key) {
-      throw new Error('API Key ElevenLabs non configurata. Vai in Impostazioni > Configurazione AI per aggiungerla.');
-    }
-
-    const apiKey = configs.api_key;
-    console.log('✅ Configurazione ElevenLabs caricata');
+    console.log('✅ API Key ricevuta dal frontend');
     console.log('📞 Fetching voices from ElevenLabs API...');
 
     const response = await fetch('https://api.elevenlabs.io/v1/voices', {

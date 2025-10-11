@@ -48,10 +48,26 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    // Recupera la chiave OpenAI dalla tabella config_ai
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: configData, error: configError } = await supabaseClient
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'openai')
+      .eq('attivo', true)
+      .single();
+
+    if (configError || !configData?.api_key) {
+      console.error('Errore recupero chiave OpenAI:', configError);
+      throw new Error('OPENAI_API_KEY non configurata nella tabella config_ai');
     }
+
+    const OPENAI_API_KEY = configData.api_key;
 
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);

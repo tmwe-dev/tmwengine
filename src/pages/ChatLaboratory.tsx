@@ -11,7 +11,7 @@ import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessag
 import { LaboratoryPromptManager } from '@/components/chat-laboratory/LaboratoryPromptManager';
 import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
 import { ImageGenerator } from '@/components/chat/ImageGenerator';
-import { VoiceRecorder } from '@/components/chat/VoiceRecorder';
+import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRecorder';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
@@ -50,10 +50,12 @@ const ChatLaboratory = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'classic' | 'tabs'>('classic');
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const voiceRecorderRef = useRef<VoiceRecorderRef>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -334,9 +336,9 @@ const ChatLaboratory = () => {
                 <Card className="border-dashed">
                   <CardContent className="p-12 text-center">
                     <div className="flex flex-col items-center gap-4">
-                      <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
-                        <MessageSquare className="h-12 w-12 text-indigo-600" />
-                      </div>
+              <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 mt-5">
+                <MessageSquare className="h-12 w-12 text-indigo-600" />
+              </div>
                       <div>
                         <h3 className="text-lg font-semibold mb-2">Inizia una Discussione</h3>
                         <p className="text-sm text-muted-foreground max-w-md">
@@ -379,9 +381,14 @@ const ChatLaboratory = () => {
               <ImageGenerator
                 onImageGenerated={setGeneratedImage}
               />
-              <VoiceRecorder
-                onTranscription={(text) => setPrompt(prompt + ' ' + text)}
-              />
+                <VoiceRecorder
+                  ref={voiceRecorderRef}
+                  onTranscription={(text) => {
+                    setPrompt(prompt + ' ' + text);
+                    setRecordingState('idle');
+                  }}
+                  onRecordingStateChange={setRecordingState}
+                />
             </div>
 
             {/* Textarea */}
@@ -398,14 +405,20 @@ const ChatLaboratory = () => {
                   }
                 }}
               />
-              <Button 
-                type="submit" 
-                size="icon"
-                disabled={isLoading || !prompt.trim()}
-                className="h-auto px-3 md:px-4 shrink-0"
-              >
-                <Send className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
+                <Button 
+                  type="submit" 
+                  size="icon"
+                  disabled={isLoading || (!prompt.trim() && recordingState === 'idle')}
+                  className="h-auto px-3 md:px-4 shrink-0"
+                  onClick={(e) => {
+                    if (recordingState !== 'idle' && recordingState !== 'processing') {
+                      e.preventDefault();
+                      voiceRecorderRef.current?.stopAndTranscribe();
+                    }
+                  }}
+                >
+                  <Send className="h-4 w-4 md:h-5 md:w-5" />
+                </Button>
             </div>
           </form>
         </div>

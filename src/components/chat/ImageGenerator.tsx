@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 
 interface ImageGeneratorProps {
   onImageGenerated: (imageUrl: string) => void;
+  configId?: string;
 }
 
-export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
+export const ImageGenerator = ({ onImageGenerated, configId }: ImageGeneratorProps) => {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -21,45 +22,34 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
       return;
     }
 
+    if (!configId) {
+      toast.error('Seleziona un provider AI prima di generare l\'immagine');
+      return;
+    }
+
     setGenerating(true);
 
     try {
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_LOVABLE_API_KEY || 'demo'}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          modalities: ['image', 'text']
-        })
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { 
+          prompt: prompt.trim(),
+          configId 
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Errore generazione immagine');
+      if (error) throw error;
+
+      if (!data?.success || !data?.imageUrl) {
+        throw new Error(data?.error || 'Nessuna immagine generata');
       }
 
-      const data = await response.json();
-      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-      if (!imageUrl) {
-        throw new Error('Nessuna immagine generata');
-      }
-
-      onImageGenerated(imageUrl);
+      onImageGenerated(data.imageUrl);
       setOpen(false);
       setPrompt('');
-      toast.success('Immagine generata!');
+      toast.success(`Immagine generata con ${data.provider}!`);
     } catch (error) {
       console.error('Image generation error:', error);
-      toast.error('Errore durante la generazione dell\'immagine');
+      toast.error(error instanceof Error ? error.message : 'Errore durante la generazione dell\'immagine');
     } finally {
       setGenerating(false);
     }

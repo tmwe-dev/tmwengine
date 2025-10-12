@@ -152,8 +152,12 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
         {/* Container Tabs con drag-to-scroll */}
         <div
           ref={tabsContainerRef}
-          className="overflow-x-auto scrollbar-hide px-12"
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          className="overflow-x-auto px-12 pb-2 tabs-scroll-container"
+          style={{ 
+            cursor: isDragging ? 'grabbing' : 'grab',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'transparent transparent'
+          }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

@@ -488,6 +488,17 @@ const ChatLaboratory = () => {
 
           console.log(`✅ Agente ${i + 1} completato:`, data);
           
+          // Se c'è un audio URL, mostra notifica
+          if (data?.audioUrl) {
+            console.log('🎵 Audio disponibile:', data.audioUrl);
+            toast({
+              title: "🎤 Risposta vocale disponibile",
+              description: `${data.speaker || 'Agente'} ha risposto con audio`,
+            });
+          } else if (isBarMode) {
+            console.log('⚠️ Nessun audio generato per modalità Bar');
+          }
+          
           // Ricarica messaggi dopo ogni risposta per mostrare aggiornamenti in tempo reale
           await loadMessages(conversationId);
           

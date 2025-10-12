@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarFullDuplexRecorder } from './BarFullDuplexRecorder';
 import { InterruptButton } from './InterruptButton';
+import { MicrophoneTest } from './MicrophoneTest';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { TestTube2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BarChatAudioControlsProps {
@@ -29,31 +33,45 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Switch PTT / Full-Duplex - compatto */}
-      <div className="flex items-center justify-center gap-3 pb-3 border-b border-border/30">
-        <Label 
-          htmlFor="duplex-mode" 
-          className={cn(
-            "text-sm font-medium cursor-pointer transition-colors",
-            !isDuplexMode ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          Push-To-Talk
-        </Label>
-        <Switch
-          id="duplex-mode"
-          checked={isDuplexMode}
-          onCheckedChange={setIsDuplexMode}
-        />
-        <Label 
-          htmlFor="duplex-mode" 
-          className={cn(
-            "text-sm font-medium cursor-pointer transition-colors",
-            isDuplexMode ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          Full-Duplex
-        </Label>
+      {/* Header con Switch e Test Microfono */}
+      <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/30">
+        <div className="flex items-center gap-3">
+          <Label 
+            htmlFor="duplex-mode" 
+            className={cn(
+              "text-sm font-medium cursor-pointer transition-colors",
+              !isDuplexMode ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Premi per parlare
+          </Label>
+          <Switch
+            id="duplex-mode"
+            checked={isDuplexMode}
+            onCheckedChange={setIsDuplexMode}
+          />
+          <Label 
+            htmlFor="duplex-mode" 
+            className={cn(
+              "text-sm font-medium cursor-pointer transition-colors",
+              isDuplexMode ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            Full-Duplex
+          </Label>
+        </div>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <TestTube2 className="h-4 w-4 mr-2" />
+              Test
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <MicrophoneTest />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Controlli audio centrali */}

@@ -42,17 +42,29 @@ serve(async (req) => {
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
     
     // Leggi ElevenLabs API key dal database invece che dai secrets
+    console.log('🔍 Controllo configurazione ElevenLabs nel database...');
+    
     let elevenLabsKey: string | null = null;
     try {
-      const { data: configData } = await supabase
+      const { data: configData, error: configError } = await supabase
         .from('voice_agent_config')
-        .select('elevenlabs_api_key')
+        .select('*')
         .single();
       
+      if (configError) {
+        console.error('❌ Errore query voice_agent_config:', configError);
+      }
+      
+      console.log('📊 Voice config trovata:', configData ? {
+        enabled: configData.enabled,
+        hasApiKey: !!configData.elevenlabs_api_key,
+        agentId: configData.agent_id
+      } : 'NESSUNA CONFIGURAZIONE TROVATA');
+      
       elevenLabsKey = configData?.elevenlabs_api_key || null;
-      console.log('🎤 ElevenLabs API key loaded from database:', !!elevenLabsKey);
+      console.log('🎤 ElevenLabs API key disponibile:', !!elevenLabsKey);
     } catch (error) {
-      console.log('⚠️ No ElevenLabs config in database, TTS disabled');
+      console.error('⚠️ Eccezione durante recupero config:', error);
     }
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
@@ -342,6 +354,8 @@ serve(async (req) => {
     // Check interrupt prima di generare audio (costoso)
     let audioUrl: string | null = null;
     
+    console.log('🎵 Tentativo generazione audio - Voice enabled:', voiceEnabled, 'API key presente:', !!elevenLabsKey, 'Voice ID:', elevenLabsVoiceId);
+    
     if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
       // Double-check interrupt flag prima di TTS
       const { data: interruptCheck } = await supabase
@@ -365,6 +379,7 @@ serve(async (req) => {
 
       try {
         console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
+        console.log('📝 Testo da convertire (primi 100 char):', aiResponse.substring(0, 100));
         
         // Limita la lunghezza per TTS (max 4096 caratteri)
         const textForTTS = aiResponse.length > 4096 
@@ -393,16 +408,22 @@ serve(async (req) => {
           }
         );
 
+        console.log('📡 ElevenLabs response status:', ttsResponse.status);
+        
         if (ttsResponse.ok) {
           // Converti audio blob in base64 per storage
           const audioBlob = await ttsResponse.blob();
           const audioBuffer = await audioBlob.arrayBuffer();
+          console.log('📦 Audio buffer size:', audioBuffer.byteLength, 'bytes');
+          
           const audioBase64 = btoa(
             String.fromCharCode(...new Uint8Array(audioBuffer))
           );
           
           // Salva in Supabase Storage
           const fileName = `bar-chat/${conversationId}/${Date.now()}.mp3`;
+          console.log('☁️ Uploading to Supabase Storage:', fileName);
+          
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('audio-responses')
             .upload(fileName, audioBlob, {
@@ -411,22 +432,35 @@ serve(async (req) => {
             });
 
           if (uploadError) {
-            console.error('❌ Errore upload audio:', uploadError);
+            console.error('❌ Errore upload Supabase Storage:', uploadError);
+            throw uploadError;
           } else {
+            console.log('✅ Upload completato:', uploadData);
+            
             const { data: urlData } = supabase.storage
               .from('audio-responses')
               .getPublicUrl(fileName);
             
             audioUrl = urlData.publicUrl;
-            console.log('✅ Audio salvato:', audioUrl);
+            console.log('🔗 Audio URL pubblico:', audioUrl);
           }
         } else {
           const errorText = await ttsResponse.text();
-          console.error('❌ ElevenLabs TTS error:', errorText);
+          console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
+          throw new Error(`ElevenLabs API error: ${ttsResponse.status} - ${errorText}`);
         }
       } catch (ttsError) {
-        console.error('❌ Errore TTS:', ttsError);
-        // Continua comunque senza audio
+        console.error('❌ Errore TTS completo:', ttsError);
+        console.error('Stack trace:', ttsError.stack);
+        // Continua comunque senza audio - non bloccare la risposta
+      }
+    } else {
+      if (!voiceEnabled) {
+        console.log('🔇 Voice non abilitato per questa conversazione');
+      } else if (!elevenLabsKey) {
+        console.log('⚠️ ElevenLabs API key mancante - audio non generato');
+      } else {
+        console.log('⚠️ Voice ID mancante - audio non generato');
       }
     }
 

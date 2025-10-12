@@ -98,6 +98,11 @@ serve(async (req) => {
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
     console.log('🎤 Agenti vocali attivi:', activeElevenLabsAgents?.length || 0);
+    console.log('🔍 Debug agenti:', activeElevenLabsAgents?.map(a => ({ 
+      id: a.id, 
+      name: a.name, 
+      voice_id: a.voice_id 
+    })));
     console.log('🎤 Voice enabled:', voiceEnabled);
     console.log('⛔ Interrupt requested:', interruptRequested);
 
@@ -202,21 +207,35 @@ serve(async (req) => {
     let agentTextPrompt = '';
     let elevenLabsVoiceId = '';
     
-    if (activeElevenLabsAgents.length > 0) {
-      for (const agentId of activeElevenLabsAgents) {
-        const { data: agentData } = await supabase
-          .from('elevenlabs_agents')
-          .select('text_generation_prompt, name, voice_id')
-          .eq('id', agentId)
-          .single();
-
-        if (agentData?.name?.toLowerCase().includes(selectedParticipant.name.toLowerCase())) {
-          agentTextPrompt = agentData.text_generation_prompt || '';
-          elevenLabsVoiceId = agentData.voice_id || '';
-          console.log(`🎤 Agent match trovato: "${agentData.name}", voice_id: ${elevenLabsVoiceId}`);
+    if (activeElevenLabsAgents && activeElevenLabsAgents.length > 0) {
+      // activeElevenLabsAgents è già un array di oggetti completi
+      for (const agent of activeElevenLabsAgents) {
+        if (agent.name?.toLowerCase().includes(selectedParticipant.name.toLowerCase())) {
+          agentTextPrompt = agent.text_generation_prompt || '';
+          elevenLabsVoiceId = agent.voice_id || '';
+          console.log(`🎤 Agent match trovato: "${agent.name}", voice_id: ${elevenLabsVoiceId}`);
           break;
         }
       }
+      
+      // Fallback: se non trova match, usa primo agente
+      if (!elevenLabsVoiceId && activeElevenLabsAgents.length > 0) {
+        const firstAgent = activeElevenLabsAgents[0];
+        elevenLabsVoiceId = firstAgent.voice_id || '';
+        agentTextPrompt = firstAgent.text_generation_prompt || '';
+        console.log(`⚠️ Nessun match trovato, uso primo agente: "${firstAgent.name}"`);
+      }
+    }
+
+    // Log di debug CRITICO
+    if (!elevenLabsVoiceId) {
+      console.error('❌ CRITICO: elevenLabsVoiceId vuoto! Nessun audio verrà generato');
+      console.error('Agenti disponibili:', activeElevenLabsAgents?.map(a => ({ 
+        name: a.name, 
+        voice_id: a.voice_id 
+      })));
+    } else {
+      console.log('✅ Voice ID configurato:', elevenLabsVoiceId);
     }
 
     // Compose system prompt

@@ -353,13 +353,11 @@ const ChatLaboratory = () => {
 
       // Recupera tutte le impostazioni pending
       const pendingMode = localStorage.getItem('bar-mode-pending');
-      const pendingAgents = localStorage.getItem('bar-mode-agents-pending');
       const pendingKB = localStorage.getItem('bar-mode-kb-pending');
       const pendingControls = localStorage.getItem('bar-mode-controls-pending');
 
       if (pendingMode) {
         const { mode } = JSON.parse(pendingMode);
-        const agents = pendingAgents ? JSON.parse(pendingAgents) : [];
         const kb = pendingKB ? JSON.parse(pendingKB) : null;
         const controls = pendingControls ? JSON.parse(pendingControls) : {
           conversation_pace: 'normal',
@@ -372,14 +370,12 @@ const ChatLaboratory = () => {
           user_id: user.id,
           mode: mode,
           voice_enabled: false,
-          active_elevenlabs_agents: agents,
           active_kb_id: kb,
           ...controls,
         });
 
         // Pulisci localStorage
         localStorage.removeItem('bar-mode-pending');
-        localStorage.removeItem('bar-mode-agents-pending');
         localStorage.removeItem('bar-mode-kb-pending');
         localStorage.removeItem('bar-mode-controls-pending');
       }

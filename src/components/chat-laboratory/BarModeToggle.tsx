@@ -69,7 +69,6 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
             auto_play_audio: true,
             conversation_pace: 'normal',
             enable_interruptions: true,
-            active_elevenlabs_agents: [],
           });
 
         if (error) throw error;

@@ -72,7 +72,7 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
           <span className="text-xs">{activeCount}/{participants.length}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-80 z-[102]" align="end">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>

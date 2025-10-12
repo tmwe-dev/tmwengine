@@ -26,6 +26,7 @@ import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyMo
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
+import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
@@ -955,6 +956,15 @@ const ChatLaboratory = () => {
                 </div>
               </div>
 
+              {/* Center Controls */}
+              <LabMainControls
+                currentConversationId={currentConversationId}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                participants={participants}
+                toggleParticipant={toggleParticipant}
+              />
+
               {/* Right side - Maximize and Settings */}
               <div className="flex items-center gap-1">
                 {/* Maximize Button - sempre visibile */}
@@ -1010,46 +1020,6 @@ const ChatLaboratory = () => {
               
               {/* Sezioni */}
               <div className="space-y-4">
-                {/* Vista */}
-                <Card className="bg-white/5 border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white text-sm">Vista</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/80 text-sm">Modalità visualizzazione</span>
-                      <Button
-                        onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
-                        variant="outline"
-                        size="sm"
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                      >
-                        {viewMode === 'classic' ? '📑 Tabs' : '💬 Classica'}
-                      </Button>
-                    </div>
-                    {currentConversationId && (
-                      <ExportSummaryButton
-                        labConversationId={currentConversationId}
-                        variant="laboratory"
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-                
-                {/* Partecipanti & Prompts */}
-                <Card className="bg-white/5 border-white/10">
-                  <CardHeader>
-                    <CardTitle className="text-white text-sm">AI & Prompts</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <LaboratoryPromptManager />
-                    <ParticipantSelector
-                      participants={participants}
-                      onToggle={toggleParticipant}
-                    />
-                  </CardContent>
-                </Card>
-                
                 {/* Bar Mode */}
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>

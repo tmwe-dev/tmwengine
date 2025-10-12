@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,9 +14,13 @@ interface Country {
   flag: string;
 }
 
+interface GlobalCountrySelectorProps {
+  variant?: 'header' | 'sidebar';
+}
+
 const countries: Country[] = countriesData;
 
-export const GlobalCountrySelector = () => {
+export const GlobalCountrySelector = ({ variant = 'header' }: GlobalCountrySelectorProps) => {
   const { profile, updateProfile } = useUserProfile();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -45,6 +49,47 @@ export const GlobalCountrySelector = () => {
   };
 
   if (!selectedCountry) return null;
+
+  if (variant === 'sidebar') {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-full justify-start gap-2 h-9">
+            <Globe className="h-4 w-4" />
+            <span>{selectedCountry.flag} {selectedCountry.name}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0" align="start">
+          <div className="p-3 border-b">
+            <Input
+              placeholder="Cerca paese..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <ScrollArea className="h-80">
+            <div className="p-2">
+              {filteredCountries.map((country) => (
+                <Button
+                  key={country.code}
+                  variant="ghost"
+                  className="w-full justify-start gap-3 h-auto py-2 px-3"
+                  onClick={() => handleSelect(country.code)}
+                >
+                  <span className="text-2xl flex-shrink-0">{country.flag}</span>
+                  <span className="flex-1 text-left">{country.name}</span>
+                  {country.code === profile?.preferredCountry && (
+                    <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                  )}
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

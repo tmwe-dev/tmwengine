@@ -266,12 +266,6 @@ const CRMLayout = ({ children }) => {
             </Button>
           )}
           
-          {/* Global Country Selector */}
-          <GlobalCountrySelector />
-          
-          {/* Language Selector */}
-          <LanguageSelector />
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
@@ -424,10 +418,28 @@ const CRMLayout = ({ children }) => {
                 );
               })}
               
-              {/* Theme Switcher in fondo */}
+              {/* Theme Switcher e Regionalizzazione */}
               {sidebarOpen && (
-                <div className="pt-4 mt-2">
-                  <ThemeSwitcher />
+                <div className="space-y-2">
+                  <div className="pt-4 mt-2">
+                    <ThemeSwitcher />
+                  </div>
+                  
+                  {/* Separatore */}
+                  <div className="border-t border-border pt-2 mt-2" />
+                  
+                  {/* Language & Country Selectors */}
+                  <div className="space-y-2">
+                    <div className="px-2">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">
+                        {t('settings.regionalization')}
+                      </p>
+                      <div className="space-y-2">
+                        <LanguageSelector variant="sidebar" />
+                        <GlobalCountrySelector variant="sidebar" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -91,7 +91,8 @@
     "notifications": "Notifiche",
     "security": "Sicurezza",
     "appearance": "Aspetto",
-    "language": "Lingua e Regione"
+    "language": "Lingua e Regione",
+    "regionalization": "Regionalizzazione"
   },
   "auth": {
     "login": "Accedi",

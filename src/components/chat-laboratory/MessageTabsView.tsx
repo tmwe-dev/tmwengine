@@ -2,9 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MultiAgentMessage } from './MultiAgentMessage';
 import { User, Bot, Sparkles, Brain } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 
 interface Message {
   id: string;
@@ -99,21 +105,35 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-      <ScrollArea className="w-full border-b">
-        <TabsList className="inline-flex h-12 w-full justify-start rounded-none bg-muted/50 p-1">
-          {messages.map((message, index) => (
-            <TabsTrigger
-              key={message.id}
-              value={message.id}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-            >
-              {getTabIcon(message.sender_type)}
-              <span className="hidden sm:inline">{getTabLabel(message, index)}</span>
-              <span className="sm:hidden">{index + 1}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </ScrollArea>
+      <div className="relative w-full border-b bg-muted/50">
+        <Carousel
+          opts={{
+            align: "start",
+            loop: false,
+            slidesToScroll: 1,
+          }}
+          className="w-full max-w-full px-12"
+        >
+          <CarouselContent className="-ml-1">
+            {messages.map((message, index) => (
+              <CarouselItem key={message.id} className="pl-1 basis-auto">
+                <TabsList className="h-12 bg-transparent p-1">
+                  <TabsTrigger
+                    value={message.id}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  >
+                    {getTabIcon(message.sender_type)}
+                    <span className="hidden sm:inline">{getTabLabel(message, index)}</span>
+                    <span className="sm:hidden">{index + 1}</span>
+                  </TabsTrigger>
+                </TabsList>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8" />
+          <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" />
+        </Carousel>
+      </div>
 
       <div className="flex-1 relative">
         {messages.map((message) => (

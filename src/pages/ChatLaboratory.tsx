@@ -22,7 +22,7 @@ import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
-import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
+import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 
 interface Message {
   id: string;
@@ -840,21 +840,14 @@ const ChatLaboratory = () => {
       {/* Sezione Stats - Costo e Token */}
       {currentConversationId && (
         <div className="border-b border-border/20 bg-muted/20">
-          <div className="container mx-auto px-4 py-2.5">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-              <div className="flex items-center gap-3">
-                <TokenCounterBadge
-                  labConversationId={currentConversationId}
-                  variant="laboratory"
-                  alertThreshold={15000}
-                />
-                <ConversationCostBadge labConversationId={currentConversationId} />
-              </div>
-              <div className="w-full md:w-auto md:max-w-md">
-                <EconomyModeToggle 
-                  conversationId={currentConversationId}
-                />
-              </div>
+          <div className="container mx-auto px-4 py-1.5">
+            <div className="flex items-center justify-center gap-3">
+              <TokenCounterBadge
+                labConversationId={currentConversationId}
+                variant="laboratory"
+                alertThreshold={15000}
+              />
+              <ConversationCostBadge labConversationId={currentConversationId} />
             </div>
           </div>
         </div>

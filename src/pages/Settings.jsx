@@ -1160,12 +1160,54 @@ const Settings = () => {
               </Alert>
 
               <div className="flex justify-end pt-2">
-                <Button onClick={() => {
-                  localStorage.setItem('voice_agent_config', JSON.stringify(voiceAgentConfig));
-                  toast({
-                    title: "Successo",
-                    description: "Configurazione Voice Agent salvata con successo",
-                  });
+                <Button onClick={async () => {
+                  try {
+                    // Salva in localStorage per compatibilità frontend
+                    localStorage.setItem('voice_agent_config', JSON.stringify(voiceAgentConfig));
+                    
+                    // Sincronizza nel database per l'orchestratore
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      const { data: existing } = await supabase
+                        .from('voice_agent_config')
+                        .select('id')
+                        .maybeSingle();
+                      
+                      if (existing) {
+                        // Update existing record
+                        await supabase
+                          .from('voice_agent_config')
+                          .update({
+                            enabled: voiceAgentConfig.enabled,
+                            elevenlabs_api_key: voiceAgentConfig.elevenLabsApiKey,
+                            agent_id: voiceAgentConfig.agentId,
+                            updated_at: new Date().toISOString()
+                          })
+                          .eq('id', existing.id);
+                      } else {
+                        // Insert new record
+                        await supabase
+                          .from('voice_agent_config')
+                          .insert({
+                            enabled: voiceAgentConfig.enabled,
+                            elevenlabs_api_key: voiceAgentConfig.elevenLabsApiKey,
+                            agent_id: voiceAgentConfig.agentId
+                          });
+                      }
+                    }
+                    
+                    toast({
+                      title: "Successo",
+                      description: "Configurazione Voice Agent salvata con successo",
+                    });
+                  } catch (error) {
+                    console.error('Errore salvataggio Voice Agent:', error);
+                    toast({
+                      title: "Errore",
+                      description: "Impossibile salvare la configurazione",
+                      variant: "destructive",
+                    });
+                  }
                 }} className="h-9">
                   <Save className="h-4 w-4 mr-2" />
                   Salva Configurazione

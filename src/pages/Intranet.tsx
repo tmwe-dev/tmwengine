@@ -198,7 +198,7 @@ const Intranet = () => {
   // Mobile: usa Sheet (comportamento esistente)
   if (isMobile) {
     return (
-      <div className={`${shouldHideHeader ? 'h-[calc(100vh-9rem)] flex flex-col overflow-hidden' : 'max-w-7xl mx-auto p-3 sm:p-6'}`}>
+      <div className={`${shouldHideHeader ? 'h-[calc(100vh-9rem)] flex flex-col overflow-hidden' : 'mx-auto p-3 sm:p-4'}`}>
         {/* Header con pulsante Utenti Organizzazione */}
         {!shouldHideHeader && (
           <div className="flex justify-between items-center mb-4">
@@ -453,7 +453,7 @@ const Intranet = () => {
           <>
             {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
             <div className="flex-1 overflow-hidden">
-              <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
+              <div className="w-full h-full flex flex-col px-2 py-1">
                 {/* Header stanza */}
                 <div className="flex-shrink-0 pb-2 border-b mb-4">
                   <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
@@ -461,7 +461,7 @@ const Intranet = () => {
 
                 {/* Messaggi scrollabili */}
                 <Card className="bg-card-transparent flex-1 overflow-hidden">
-                  <CardContent className="p-6 h-full overflow-y-auto">
+                  <CardContent className="p-3 h-full overflow-y-auto">
                     <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
                   </CardContent>
                 </Card>
@@ -470,9 +470,9 @@ const Intranet = () => {
 
             {/* Input fisso in basso */}
             <div className="flex-shrink-0 border-t">
-              <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+              <div className="px-2 py-2 w-full">
                 <Card className="bg-card-transparent">
-                  <CardContent className="p-4">
+                  <CardContent className="p-2">
                     <MessageInputWithAttachments 
                       roomId={selectedRoomId} 
                       settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}

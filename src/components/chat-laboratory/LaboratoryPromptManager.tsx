@@ -121,9 +121,13 @@ ESEMPI:
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "" : "gap-2"}>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="shrink-0"
+          title="System Prompt"
+        >
           <Brain className="h-4 w-4" />
-          {!isMobile && "System Prompt"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">

@@ -62,9 +62,14 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "" : "gap-2"}>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="shrink-0 min-w-[60px] gap-1"
+          title="Partecipanti"
+        >
           <Users className="h-4 w-4" />
-          {!isMobile && `Partecipanti (${activeCount}/${participants.length})`}
+          <span className="text-xs">{activeCount}/{participants.length}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">

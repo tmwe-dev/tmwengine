@@ -94,8 +94,8 @@ export const ConversationsSidebar = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background border-r">
-      <div className="p-4 border-b">
+    <div className="flex flex-col h-full bg-transparent">
+      <div className="p-4 border-b border-border/40">
         <Button 
           onClick={onNewConversation} 
           className="w-full"
@@ -121,8 +121,8 @@ export const ConversationsSidebar = ({
                 className={`
                   group relative p-3 rounded-lg border transition-all
                   ${currentConversationId === conv.id 
-                    ? 'bg-primary/10 border-primary' 
-                    : 'hover:bg-muted border-transparent'
+                    ? 'bg-primary/10 border-primary/40' 
+                    : 'hover:bg-muted/50 border-border/20 hover:border-border/40'
                   }
                 `}
               >

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -557,48 +557,33 @@ const ChatLaboratory = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
-      {/* Sidebar Conversazioni */}
-      <div 
-        className={`
-          ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'}
-          w-80 bg-background border-r
-          transform transition-transform duration-200
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <ConversationsSidebar
-          conversations={conversations}
-          currentConversationId={currentConversationId}
-          onSelectConversation={handleSelectConversation}
-          onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
-          onUpdateTitle={handleUpdateTitle}
-        />
-      </div>
-
-      {/* Overlay per mobile */}
-      {isMobile && sidebarOpen && (
+    {/* Sidebar Conversazioni - Card Style Overlay */}
+    {sidebarOpen && (
+      <>
         <div 
           className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
-      )}
+        <div className="fixed left-4 top-4 bottom-4 w-80 z-50 bg-card/95 backdrop-blur border border-border/40 rounded-lg shadow-lg">
+          <ConversationsSidebar
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={handleDeleteConversation}
+            onUpdateTitle={handleUpdateTitle}
+          />
+        </div>
+      </>
+    )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
           <div className="container mx-auto px-4 py-2 md:py-3">
-            <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-                <Button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </Button>
                 <Button
                   onClick={() => navigate('/chat')}
                   variant="ghost"
@@ -606,6 +591,15 @@ const ChatLaboratory = () => {
                   className="shrink-0"
                 >
                   <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  title="Conversazioni"
+                >
+                  <Layout className="h-5 w-5" />
                 </Button>
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
@@ -624,14 +618,15 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              {/* Vista Tabs - Solo icona */}
               <Button
                 onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
                 variant="outline"
-                size={isMobile ? "icon" : "sm"}
-                className={isMobile ? "" : "gap-2"}
+                size="icon"
+                className="shrink-0"
+                title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
               >
-                {viewMode === 'classic' ? <Layers className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
-                {!isMobile && (viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica')}
+                {viewMode === 'classic' ? '📑' : '💬'}
               </Button>
               <LaboratoryPromptManager />
               <ParticipantSelector

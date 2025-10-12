@@ -10,9 +10,9 @@ import { AnimatedGroupButton } from '@/components/ui/animated-group-button';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
-import { IntranetNavItems } from '@/components/layout/IntranetNavItems';
 import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { useNavigationGroups } from '@/hooks/useNavigationGroups';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -113,47 +113,7 @@ const CRMLayout = ({ children }) => {
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const navigationGroups = [
-    {
-      name: t('nav.commercial'),
-      icon: BarChart3,
-      items: [
-        { name: t('nav.clients'), href: '/rubrica', icon: Users },
-        { name: t('nav.commercial'), href: '/rubrica-avanzata', icon: Database },
-        { name: t('nav.activities'), href: '/attivita', icon: Calendar },
-        { name: t('nav.campaigns'), href: '/campagne', icon: BarChart3 },
-      ]
-    },
-    {
-      name: 'Email',
-      icon: Mail,
-      items: [
-        { name: t('nav.emailManager'), href: '/email-manager', icon: Mail },
-        { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
-        { name: t('nav.senders'), href: '/email-senders', icon: UserCog },
-      ]
-    },
-    {
-      name: 'Chat & AI',
-      icon: MessageSquare,
-      items: [
-        { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
-        { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
-      ],
-      customContent: () => {
-        const isCollapsed = !sidebarOpen && !isMobile;
-        return <IntranetNavItems isActive={isActive} isCollapsed={isCollapsed} />;
-      }
-    },
-    {
-      name: t('nav.import'),
-      icon: FileUp,
-      items: [
-        { name: t('nav.manageImport'), href: '/gestisci-import', icon: FileCheck },
-        { name: t('nav.importTemplates'), href: '/import-templates', icon: FileUp },
-      ]
-    }
-  ];
+  const navigationGroups = useNavigationGroups();
 
   const standaloneItems = [
     { name: t('nav.settings'), href: '/settings', icon: Settings },
@@ -382,9 +342,6 @@ const CRMLayout = ({ children }) => {
                         />
                       );
                     })}
-                    
-                    {/* Custom content per Chat & AI (Intranet items) */}
-                    {group.customContent && group.customContent()}
                   </CollapsibleContent>
                 </Collapsible>
               );

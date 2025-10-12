@@ -406,7 +406,7 @@ ${userMessage}`;
     }
 
     // Salva messaggio AI con summaries e intent tags
-    await supabaseClient
+    const { data: savedMessage } = await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
@@ -421,13 +421,34 @@ ${userMessage}`;
         token_input: tokensIn,
         token_output: tokensOut,
         tempo_risposta_ms: duration
-      });
+      })
+      .select()
+      .single();
 
     // Aggiorna last_speaker_index
     await supabaseClient
       .from('chat_laboratory_conversations')
       .update({ last_speaker_index: nextIndex })
       .eq('id', conversationId);
+
+    // Extract knowledge graph asynchronously (non-blocking)
+    if (savedMessage?.id) {
+      console.log('🧠 Triggering knowledge graph extraction...');
+      fetch(`${SUPABASE_URL}/functions/v1/extract-knowledge-graph`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messageId: savedMessage.id,
+          conversationId: conversationId,
+          messageContent: aiResponseText
+        })
+      }).catch(error => {
+        console.error('KG extraction failed (non-blocking):', error);
+      });
+    }
 
     return new Response(
       JSON.stringify({ 

@@ -2710,6 +2710,115 @@ export type Database = {
           },
         ]
       }
+      knowledge_edges: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          edge_type: Database["public"]["Enums"]["knowledge_edge_type"]
+          id: string
+          metadata: Json | null
+          source_node_id: string
+          target_node_id: string
+          weight: number | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          edge_type: Database["public"]["Enums"]["knowledge_edge_type"]
+          id?: string
+          metadata?: Json | null
+          source_node_id: string
+          target_node_id: string
+          weight?: number | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          edge_type?: Database["public"]["Enums"]["knowledge_edge_type"]
+          id?: string
+          metadata?: Json | null
+          source_node_id?: string
+          target_node_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_edges_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_nodes: {
+        Row: {
+          confidence: number | null
+          conversation_id: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          node_type: Database["public"]["Enums"]["knowledge_node_type"]
+          source_msg_id: string | null
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          conversation_id: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          node_type: Database["public"]["Enums"]["knowledge_node_type"]
+          source_msg_id?: string | null
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          conversation_id?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          node_type?: Database["public"]["Enums"]["knowledge_node_type"]
+          source_msg_id?: string | null
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_nodes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_nodes_source_msg_id_fkey"
+            columns: ["source_msg_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_system_prompts: {
         Row: {
           attivo: boolean
@@ -3694,6 +3803,18 @@ export type Database = {
         | "archive"
         | "delete"
         | "forward"
+      knowledge_edge_type:
+        | "supports"
+        | "disputes"
+        | "relates_to"
+        | "derives"
+        | "duplicates"
+      knowledge_node_type:
+        | "Topic"
+        | "Claim"
+        | "Evidence"
+        | "Decision"
+        | "Action"
       room_access_type: "public" | "request" | "private"
       user_availability_status: "online" | "busy" | "dnd" | "offline"
     }
@@ -3832,6 +3953,14 @@ export const Constants = {
         "delete",
         "forward",
       ],
+      knowledge_edge_type: [
+        "supports",
+        "disputes",
+        "relates_to",
+        "derives",
+        "duplicates",
+      ],
+      knowledge_node_type: ["Topic", "Claim", "Evidence", "Decision", "Action"],
       room_access_type: ["public", "request", "private"],
       user_availability_status: ["online", "busy", "dnd", "offline"],
     },

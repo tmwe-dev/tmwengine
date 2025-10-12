@@ -444,6 +444,7 @@ export type Database = {
       chat_laboratory_messages: {
         Row: {
           attachments: Json | null
+          audio_url: string | null
           content: string
           content_summary: string | null
           content_user_friendly: string | null
@@ -462,6 +463,7 @@ export type Database = {
         }
         Insert: {
           attachments?: Json | null
+          audio_url?: string | null
           content: string
           content_summary?: string | null
           content_user_friendly?: string | null
@@ -480,6 +482,7 @@ export type Database = {
         }
         Update: {
           attachments?: Json | null
+          audio_url?: string | null
           content?: string
           content_summary?: string | null
           content_user_friendly?: string | null
@@ -946,6 +949,39 @@ export type Database = {
           metadata?: Json | null
           room_id?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      edge_function_versions: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          function_name: string
+          id: string
+          is_active: boolean | null
+          version_number: number
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          function_name: string
+          id?: string
+          is_active?: boolean | null
+          version_number: number
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          function_name?: string
+          id?: string
+          is_active?: boolean | null
+          version_number?: number
         }
         Relationships: []
       }

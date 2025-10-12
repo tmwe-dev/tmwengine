@@ -23,6 +23,7 @@ import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
+import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 
 interface Message {
@@ -942,6 +943,23 @@ const ChatLaboratory = () => {
                         alertThreshold={15000}
                       />
                       <ConversationCostBadge labConversationId={currentConversationId} />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Ottimizzazione Token */}
+                {currentConversationId && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">Ottimizzazione Token</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EconomyModeToggle 
+                        conversationId={currentConversationId}
+                        onSettingsChange={(settings) => {
+                          console.log('Economy settings updated:', settings);
+                        }}
+                      />
                     </CardContent>
                   </Card>
                 )}

@@ -781,16 +781,16 @@ const ChatLaboratory = () => {
                     Discussione Multi-Agente AI
                   </p>
                 )}
+                <div className="mt-2">
+                  <LabHeaderControls
+                    currentConversationId={currentConversationId}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    participants={participants}
+                    toggleParticipant={toggleParticipant}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="flex-1 flex justify-center">
-              <LabHeaderControls
-                currentConversationId={currentConversationId}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                participants={participants}
-                toggleParticipant={toggleParticipant}
-              />
             </div>
           </div>
           

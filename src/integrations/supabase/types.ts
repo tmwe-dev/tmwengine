@@ -998,6 +998,7 @@ export type Database = {
           response_style: string
           speaking_pace: string
           text_generation_prompt: string
+          text_generation_prompt_old_20250112: string | null
           updated_at: string
           user_id: string | null
           voice_id: string
@@ -1014,6 +1015,7 @@ export type Database = {
           response_style?: string
           speaking_pace?: string
           text_generation_prompt: string
+          text_generation_prompt_old_20250112?: string | null
           updated_at?: string
           user_id?: string | null
           voice_id: string
@@ -1030,6 +1032,7 @@ export type Database = {
           response_style?: string
           speaking_pace?: string
           text_generation_prompt?: string
+          text_generation_prompt_old_20250112?: string | null
           updated_at?: string
           user_id?: string | null
           voice_id?: string

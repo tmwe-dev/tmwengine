@@ -45,20 +45,22 @@ export const LabHeaderControls = ({
       )}
       
       {/* Seconda riga: Controlli */}
-      <div className="flex items-center gap-1 justify-center">
-        <Button
-          onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
-          variant="outline"
-          size="icon"
-          title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
-        >
-          {viewMode === 'classic' ? '📑' : '💬'}
-        </Button>
-        <LaboratoryPromptManager />
-        <ParticipantSelector
-          participants={participants}
-          onToggle={toggleParticipant}
-        />
+      <div className="flex items-center justify-center absolute left-1/2 -translate-x-1/2">
+        <div className="flex items-center gap-1">
+          <Button
+            onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+            variant="ghost"
+            size="icon"
+            title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
+          >
+            {viewMode === 'classic' ? '📑' : '💬'}
+          </Button>
+          <LaboratoryPromptManager />
+          <ParticipantSelector
+            participants={participants}
+            onToggle={toggleParticipant}
+          />
+        </div>
       </div>
     </div>
   );

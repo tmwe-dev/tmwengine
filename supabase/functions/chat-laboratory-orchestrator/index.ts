@@ -42,9 +42,15 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch API keys
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-    const openAIKey = Deno.env.get('OPENAI_API_KEY');
-    const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const openAIKey = Deno.env.get('OPENAI_API_KEY');
+  const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
+  
+  console.log('🔑 Chiavi API disponibili:', {
+    anthropic: !!anthropicKey,
+    openai: !!openAIKey,
+    lovable: !!lovableAIKey
+  });
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
       throw new Error('Nessuna chiave API configurata');

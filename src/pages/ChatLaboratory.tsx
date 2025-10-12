@@ -23,6 +23,7 @@ import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
+import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 
 interface Message {
   id: string;
@@ -84,6 +85,10 @@ const ChatLaboratory = () => {
   
   // Settings Drawer State
   const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // Full Screen Mode State
+  const [isFullScreenMode, setIsFullScreenMode] = useState(false);
+  const [audioMode, setAudioMode] = useState<'continuous' | 'full-duplex' | 'push-to-talk'>('push-to-talk');
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -748,10 +753,13 @@ const ChatLaboratory = () => {
     }
   };
 
+  // Calcola se la modalità full screen è abilitabile
+  const canEnableFullScreen = isBarMode && (audioMode === 'continuous' || audioMode === 'full-duplex');
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
     {/* Sidebar Conversazioni - Card Style Overlay */}
-    {sidebarOpen && (
+    {!isFullScreenMode && sidebarOpen && (
       <>
         <div 
           className="fixed inset-0 bg-black/50 z-40"
@@ -824,7 +832,6 @@ const ChatLaboratory = () => {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Settings Drawer */}
       {settingsOpen && (
@@ -927,8 +934,6 @@ const ChatLaboratory = () => {
               </div>
             </div>
           </div>
-        </>
-      )}
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">
@@ -939,6 +944,29 @@ const ChatLaboratory = () => {
             className="h-full overflow-y-auto p-1.5 md:p-2 space-y-1.5 md:space-y-2"
           >
             <div className="container mx-auto max-w-full">
+              {/* Navigation bar per full screen quando in Bar Mode */}
+              {isBarMode && messages.length > 0 && (
+                <MessageNavigationBar
+                  currentIndex={messages.length - 1}
+                  totalMessages={messages.length}
+                  onPrevious={() => {
+                    const container = messagesContainerRef.current;
+                    if (container) {
+                      container.scrollTop = Math.max(0, container.scrollTop - 400);
+                    }
+                  }}
+                  onNext={() => {
+                    const container = messagesContainerRef.current;
+                    if (container) {
+                      container.scrollTop += 400;
+                    }
+                  }}
+                  canEnableFullScreen={canEnableFullScreen}
+                  isFullScreenMode={isFullScreenMode}
+                  onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
+                />
+              )}
+              
               {messages.length === 0 && (
                 <Card className="border-dashed">
                   <CardContent className="p-6 md:p-8 text-center">
@@ -998,7 +1026,8 @@ const ChatLaboratory = () => {
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - nascosta in full screen */}
+      {!isFullScreenMode && (
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1.5 md:p-2">
         <div className="container mx-auto max-w-[95vw] xl:max-w-[1600px] px-3">
           <form onSubmit={handleSubmit} className="space-y-1">
@@ -1075,6 +1104,7 @@ const ChatLaboratory = () => {
           )}
         </div>
       </div>
+      )}
       </div>
     </div>
   );

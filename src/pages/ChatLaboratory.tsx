@@ -318,15 +318,21 @@ const ChatLaboratory = () => {
       
       // ✅ Se Bar Mode attivo, abilita audio automaticamente
       if (isBarMode) {
+        const { data: { user } } = await supabase.auth.getUser();
         await supabase
           .from('chat_laboratory_bar_mode')
           .upsert({
             conversation_id: data.id,
             mode: 'bar',
             voice_enabled: true,
-            user_id: (await supabase.auth.getUser()).data.user?.id,
+            auto_play_audio: true,
+            enable_interruptions: true,
+            conversation_pace: 'normal',
+            user_id: user?.id,
             updated_at: new Date().toISOString()
           }, { onConflict: 'conversation_id' });
+        
+        console.log('✅ Bar Mode settings initialized with voice_enabled: true');
       }
       setMessages([]);
       await loadConversations();
@@ -361,41 +367,34 @@ const ChatLaboratory = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Recupera tutte le impostazioni pending
-      const pendingMode = localStorage.getItem('bar-mode-pending');
-      const pendingKB = localStorage.getItem('bar-mode-kb-pending');
+      // Recupera impostazioni pending
       const pendingControls = localStorage.getItem('bar-mode-controls-pending');
-
-      if (pendingMode) {
-        const { mode } = JSON.parse(pendingMode);
-        const kb = pendingKB ? JSON.parse(pendingKB) : null;
-        const controls = pendingControls ? JSON.parse(pendingControls) : {
-          conversation_pace: 'normal',
-          enable_interruptions: true,
-          auto_play_audio: true,
-        };
-
-        await supabase.from('chat_laboratory_bar_mode').insert({
-          conversation_id: conversationId,
-          user_id: user.id,
-          mode: mode,
-          voice_enabled: false,
-          active_kb_id: kb,
-          ...controls,
-        });
-
-        // Pulisci localStorage
-        localStorage.removeItem('bar-mode-pending');
-        localStorage.removeItem('bar-mode-kb-pending');
-        localStorage.removeItem('bar-mode-controls-pending');
-      }
+      
+      // Defaults sicuri con voice_enabled: true
+      const defaultSettings = {
+        voice_enabled: true,
+        auto_play_audio: true,
+        enable_interruptions: true,
+        conversation_pace: 'normal' as const
+      };
+      
+      // Merge con pending (pending sovrascrive defaults)
+      const finalSettings = pendingControls 
+        ? { ...defaultSettings, ...JSON.parse(pendingControls) }
+        : defaultSettings;
+      
+      // Aggiorna nel DB
+      await supabase
+        .from('chat_laboratory_bar_mode')
+        .update(finalSettings)
+        .eq('conversation_id', conversationId);
+      
+      // Pulisci localStorage
+      localStorage.removeItem('bar-mode-controls-pending');
+      
+      console.log('✅ Settings transferred with voice_enabled:', finalSettings.voice_enabled);
     } catch (error) {
-      console.error('Errore creazione conversazione:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile creare la conversazione.",
-        variant: "destructive",
-      });
+      console.error('Errore transfer settings:', error);
     }
   };
 

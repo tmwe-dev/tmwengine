@@ -1002,29 +1002,18 @@ const ChatLaboratory = () => {
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-2 md:p-3">
         <div className="container mx-auto max-w-4xl">
           <form onSubmit={handleSubmit} className="space-y-1 md:space-y-2">
-            {/* File Uploads & Image Generator */}
-            <div className="flex gap-1 justify-center md:justify-start">
-              <FileUploader
-                onFilesUploaded={setUploadedFiles}
-              />
-              <ImageGenerator
-                onImageGenerated={setGeneratedImage}
-              />
-              {/* VoiceRecorder solo se NON in Bar Mode */}
-              {!isBarMode && (
-                <VoiceRecorder
-                  ref={voiceRecorderRef}
-                  onTranscription={(text) => {
-                    setPrompt(prompt + ' ' + text);
-                    setRecordingState('idle');
-                  }}
-                  onRecordingStateChange={setRecordingState}
-                />
-              )}
-            </div>
-
-            {/* Textarea */}
+            {/* Textarea con icone a sinistra */}
             <div className="flex gap-2">
+              {/* Icone verticali a sinistra */}
+              <div className="flex flex-col gap-1">
+                <FileUploader
+                  onFilesUploaded={setUploadedFiles}
+                />
+                <ImageGenerator
+                  onImageGenerated={setGeneratedImage}
+                />
+              </div>
+              
               <Textarea
                 ref={textareaRef}
                 value={prompt}

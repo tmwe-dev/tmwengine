@@ -190,9 +190,18 @@ const ChatLaboratory = () => {
             table: 'chat_laboratory_messages',
             filter: `conversation_id=eq.${currentConversationId}`
           },
-          (payload) => {
+          async (payload) => {
             console.log('🔔 Real-time update ricevuto:', payload);
-            loadMessages(currentConversationId);
+            await loadMessages(currentConversationId);
+            
+            // ✅ Auto-play audio se presente
+            if (payload.eventType === 'INSERT' && payload.new) {
+              const newMessage = payload.new as any;
+              if (newMessage.audio_url && newMessage.sender_type !== 'human') {
+                console.log('🔊 Auto-play audio:', newMessage.audio_url);
+                playAudio(newMessage.audio_url);
+              }
+            }
           }
         )
         .subscribe();
@@ -399,8 +408,8 @@ const ChatLaboratory = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent, overrideText?: string) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, overrideText?: string) => {
+    e?.preventDefault();
     
     // ✅ Usa overrideText se fornito (da trascrizione), altrimenti usa prompt
     const currentPrompt = overrideText || prompt.trim();
@@ -425,6 +434,20 @@ const ChatLaboratory = () => {
         if (convError) throw convError;
         conversationId = newConv.id;
         setCurrentConversationId(conversationId);
+
+        // ✅ Se Bar Mode attivo, abilita audio automaticamente
+        const { data: { user } } = await supabase.auth.getUser();
+        if (isBarMode && user) {
+          await supabase
+            .from('chat_laboratory_bar_mode')
+            .upsert({
+              conversation_id: conversationId,
+              mode: 'bar',
+              voice_enabled: true,
+              user_id: user.id,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'conversation_id' });
+        }
 
         // Salva partecipanti
         for (const participant of participants.filter(p => p.is_active)) {
@@ -688,6 +711,17 @@ const ChatLaboratory = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const playAudio = (audioUrl: string) => {
+    const audio = new Audio(audioUrl);
+    audio.onplay = () => setIsAISpeaking(true);
+    audio.onended = () => setIsAISpeaking(false);
+    audio.onerror = () => {
+      console.error('❌ Errore riproduzione audio');
+      setIsAISpeaking(false);
+    };
+    audio.play().catch(err => console.error('❌ Play failed:', err));
   };
 
   const handleNewConversation = () => {

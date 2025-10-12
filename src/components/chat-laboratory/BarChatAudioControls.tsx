@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarFullDuplexRecorder } from './BarFullDuplexRecorder';
 import { InterruptButton } from './InterruptButton';
@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Mic, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BarChatAudioControlsProps {
   conversationId: string | null;
@@ -23,6 +24,27 @@ export const BarChatAudioControls = ({
   className
 }: BarChatAudioControlsProps) => {
   const [isDuplexMode, setIsDuplexMode] = useState(false);
+
+  // ✅ Abilita voice_enabled quando full-duplex è attivo
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    const updateVoiceEnabled = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('chat_laboratory_bar_mode')
+        .upsert({
+          conversation_id: conversationId,
+          voice_enabled: isDuplexMode,
+          user_id: user.id,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'conversation_id' });
+    };
+
+    updateVoiceEnabled();
+  }, [isDuplexMode, conversationId]);
 
   return (
     <div className={cn(

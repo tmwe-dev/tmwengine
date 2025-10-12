@@ -785,9 +785,9 @@ const ChatLaboratory = () => {
         {/* Header */}
         <div className="border-b border-border/40">
           <div className="container mx-auto px-3 py-1.5 md:py-2">
-          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 md:gap-4">
+              {/* Left side - Navigation buttons and title */}
+              <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
                 <div className="flex items-center gap-1">
                   <Button
                     onClick={() => navigate('/chat')}
@@ -807,29 +807,44 @@ const ChatLaboratory = () => {
                     <Layout className="h-4 w-4" />
                   </Button>
                 </div>
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
+                    Chat Laboratory
+                  </h1>
+                  {!isMobile && (
+                    <p className="text-sm text-muted-foreground">
+                      Discussione Multi-Agente AI
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="min-w-0">
-                <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                  Chat Laboratory
-                </h1>
-                {!isMobile && (
-                  <p className="text-sm text-muted-foreground">
-                    Discussione Multi-Agente AI
-                  </p>
+
+              {/* Right side - Maximize and Settings */}
+              <div className="flex items-center gap-1">
+                {/* Maximize Button */}
+                {canEnableFullScreen && (
+                  <MessageNavigationBar
+                    currentIndex={0}
+                    totalMessages={0}
+                    onPrevious={() => {}}
+                    onNext={() => {}}
+                    canEnableFullScreen={canEnableFullScreen}
+                    isFullScreenMode={isFullScreenMode}
+                    onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
+                  />
                 )}
+                
+                {/* Settings Icon */}
+                <Button
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 h-8 w-8"
+                  title="Impostazioni"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
               </div>
-            </div>
-            
-            {/* Settings Icon */}
-            <Button
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              variant="ghost"
-              size="icon"
-              className="shrink-0 h-8 w-8"
-              title="Impostazioni"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
             </div>
           </div>
         </div>

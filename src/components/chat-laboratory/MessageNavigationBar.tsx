@@ -21,6 +21,25 @@ export const MessageNavigationBar = ({
   isFullScreenMode,
   onToggleFullScreen
 }: MessageNavigationBarProps) => {
+  // Se viene usato solo per il maximize button, mostra solo quello
+  if (totalMessages === 0) {
+    return (
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onToggleFullScreen}
+        className="h-8 w-8"
+        title={isFullScreenMode ? "Esci da schermo intero" : "Modalità schermo intero"}
+      >
+        {isFullScreenMode ? (
+          <Minimize2 className="h-4 w-4" />
+        ) : (
+          <Maximize2 className="h-4 w-4" />
+        )}
+      </Button>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between gap-2 mb-3">
       <Button

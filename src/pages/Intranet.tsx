@@ -4,16 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetPortal, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarProvider, 
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  useSidebar
-} from '@/components/ui/sidebar';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -25,7 +15,7 @@ import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
+import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Intranet = () => {
@@ -39,6 +29,7 @@ const Intranet = () => {
   const [isLayoutInverted, setIsLayoutInverted] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showOrgUsers, setShowOrgUsers] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   const { toast } = useToast();
   
@@ -232,8 +223,9 @@ const Intranet = () => {
         <div className={`grid grid-cols-1 gap-6 ${shouldHideHeader ? 'flex-1 overflow-hidden' : ''}`}>
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
-              <div className="mt-8">
-                <SidebarProvider>
+              <div className="mt-8 space-y-6">
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 px-2">Stanze</h3>
                   <RoomSelector
                     onRoomSelect={(roomId) => {
                       setSearchParams({ room: roomId });
@@ -242,7 +234,19 @@ const Intranet = () => {
                     selectedRoomId={selectedRoomId}
                     getUnreadCount={getUnreadCount}
                   />
-                </SidebarProvider>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 px-2">Utenti Online</h3>
+                  <OnlineUsers users={onlineUsers} />
+                </div>
+
+                {isCreatorOrAdmin && (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 px-2">Richieste Accesso</h3>
+                    <AccessRequestsPanel />
+                  </div>
+                )}
               </div>
             </SheetContent>
           </Sheet>
@@ -339,131 +343,153 @@ const Intranet = () => {
     );
   }
 
-  // Tablet/Desktop: usa SidebarProvider ma mantiene l'header originale
+  // Tablet/Desktop: layout a 3 colonne senza conflitti con CRMLayout
   return (
-    <SidebarProvider defaultOpen={false} style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "5rem" } as React.CSSProperties}>
-      <div className="flex w-full min-h-screen">
-        {/* Sidebar collapsible */}
-        <Sidebar collapsible="icon" className="!bg-transparent border-r">
-          <div className="p-2 border-b flex items-center justify-between">
-            <SidebarTrigger />
-          </div>
-          <SidebarContent className="!bg-transparent">
-            <SidebarGroup>
-              <SidebarGroupLabel>Stanze</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <RoomSelector
-                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                  selectedRoomId={selectedRoomId}
-                  getUnreadCount={getUnreadCount}
-                />
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Utenti Online</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <OnlineUsers users={onlineUsers} />
-              </SidebarGroupContent>
-            </SidebarGroup>
+    <div className="flex w-full h-full">
+      {/* Sidebar Intranet - collassabile manualmente */}
+      <div className={`border-r bg-card-transparent transition-all duration-300 relative z-10 flex flex-col ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+        <div className="p-2 border-b flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Espandi sidebar" : "Riduci sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </div>
+        
+        {/* Contenuto sidebar - visibile solo se non collapsed */}
+        {!sidebarCollapsed && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Stanze</h3>
+              <RoomSelector
+                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                selectedRoomId={selectedRoomId}
+                getUnreadCount={getUnreadCount}
+              />
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Utenti Online</h3>
+              <OnlineUsers users={onlineUsers} />
+            </div>
 
             {isCreatorOrAdmin && (
-              <SidebarGroup>
-                <SidebarGroupLabel>Richieste Accesso</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <AccessRequestsPanel />
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-          </SidebarContent>
-        </Sidebar>
-
-        {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
-        <main className="flex-1 flex flex-col h-screen">
-          {/* Header con titolo e pulsante Utenti Organizzazione */}
-          <div className="flex-shrink-0 border-b">
-            <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="lg:hidden" />
-                  <h1 className="text-2xl font-bold">Intranet</h1>
-                </div>
-                <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Users className="h-4 w-4 mr-2" />
-                      Utenti Organizzazione
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                      <SheetTitle>Utenti Organizzazione</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6">
-                      <OrganizationUsers
-                        currentUserId={currentUserId}
-                        onOpenPrivateChat={handleOpenPrivateChat}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Richieste Accesso</h3>
+                <AccessRequestsPanel />
               </div>
+            )}
+          </div>
+        )}
+        
+        {/* Icone mini quando collapsed */}
+        {sidebarCollapsed && (
+          <div className="p-2 space-y-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              title="Stanze"
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <MessageSquare className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              title="Utenti"
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <Users className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
+      <main className="flex-1 flex flex-col h-screen">
+        {/* Header con titolo e pulsante Utenti Organizzazione */}
+        <div className="flex-shrink-0 border-b">
+          <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">Intranet</h1>
+              <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Users className="h-4 w-4 mr-2" />
+                    Utenti Organizzazione
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-[400px] sm:w-[540px]">
+                  <SheetHeader>
+                    <SheetTitle>Utenti Organizzazione</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <OrganizationUsers
+                      currentUserId={currentUserId}
+                      onOpenPrivateChat={handleOpenPrivateChat}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
+        </div>
 
-          {selectedRoomId ? (
-            <>
-              {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
-              <div className="flex-1 overflow-hidden">
-                <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
-                  {/* Header stanza */}
-                  <div className="flex-shrink-0 pb-2 border-b mb-4">
-                    <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
-                  </div>
-
-                  {/* Messaggi scrollabili */}
-                  <Card className="bg-card-transparent flex-1 overflow-hidden">
-                    <CardContent className="p-6 h-full overflow-y-auto">
-                      <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
-                    </CardContent>
-                  </Card>
+        {selectedRoomId ? (
+          <>
+            {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
+            <div className="flex-1 overflow-hidden">
+              <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
+                {/* Header stanza */}
+                <div className="flex-shrink-0 pb-2 border-b mb-4">
+                  <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
                 </div>
+
+                {/* Messaggi scrollabili */}
+                <Card className="bg-card-transparent flex-1 overflow-hidden">
+                  <CardContent className="p-6 h-full overflow-y-auto">
+                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
+                  </CardContent>
+                </Card>
               </div>
-
-              {/* Input fisso in basso */}
-              <div className="flex-shrink-0 border-t">
-                <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-                  <Card className="bg-card-transparent">
-                    <CardContent className="p-4">
-                      <MessageInputWithAttachments 
-                        roomId={selectedRoomId} 
-                        settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-3 sm:p-6">
-              <Card className="max-w-2xl w-full">
-                <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                  <Users className="h-16 w-16 mx-auto text-muted-foreground" />
-                  <div className="text-center">
-                    <h2 className="text-xl font-semibold mb-2">
-                      Seleziona una stanza
-                    </h2>
-                    <p className="text-base text-muted-foreground">
-                      Scegli una stanza dalla sidebar per iniziare a chattare
-                    </p>
-                  </div>
-                </div>
-              </Card>
             </div>
-          )}
-        </main>
-      </div>
-    </SidebarProvider>
+
+            {/* Input fisso in basso */}
+            <div className="flex-shrink-0 border-t">
+              <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+                <Card className="bg-card-transparent">
+                  <CardContent className="p-4">
+                    <MessageInputWithAttachments 
+                      roomId={selectedRoomId} 
+                      settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-3 sm:p-6">
+            <Card className="max-w-2xl w-full">
+              <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <Users className="h-16 w-16 mx-auto text-muted-foreground" />
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold mb-2">
+                    Seleziona una stanza
+                  </h2>
+                  <p className="text-base text-muted-foreground">
+                    Scegli una stanza dalla sidebar per iniziare a chattare
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </main>
+    </div>
   );
 };
 

@@ -374,12 +374,15 @@ export type Database = {
           final_summary: string | null
           id: string
           last_compaction_at: string | null
+          last_message_summarized: number | null
           last_speaker_index: number | null
+          last_summarized_at: string | null
           last_token_update: string | null
           memoria_completa: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
           show_summaries_only: boolean | null
+          summary_chunks: Json | null
           system_prompt_id: string | null
           target_participant_type: string | null
           titolo: string | null
@@ -397,12 +400,15 @@ export type Database = {
           final_summary?: string | null
           id?: string
           last_compaction_at?: string | null
+          last_message_summarized?: number | null
           last_speaker_index?: number | null
+          last_summarized_at?: string | null
           last_token_update?: string | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null
+          summary_chunks?: Json | null
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
@@ -420,12 +426,15 @@ export type Database = {
           final_summary?: string | null
           id?: string
           last_compaction_at?: string | null
+          last_message_summarized?: number | null
           last_speaker_index?: number | null
+          last_summarized_at?: string | null
           last_token_update?: string | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null
+          summary_chunks?: Json | null
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null

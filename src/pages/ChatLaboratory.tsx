@@ -25,6 +25,9 @@ import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioC
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
+import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
+import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
+import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 
 interface Message {
   id: string;
@@ -59,6 +62,10 @@ interface Conversation {
   total_tokens?: number;
   riassunto_contesto?: string | null;
   active_participants?: Array<{name: string, type: string}>;
+  summary_chunks?: any;
+  last_summarized_at?: string | null;
+  last_message_summarized?: number;
+  economy_mode?: boolean;
 }
 
 const ChatLaboratory = () => {
@@ -90,6 +97,10 @@ const ChatLaboratory = () => {
   // Full Screen Mode State
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
   const [audioMode, setAudioMode] = useState<'continuous' | 'full-duplex' | 'push-to-talk'>('push-to-talk');
+  
+  // Summary States
+  const [conversationData, setConversationData] = useState<Conversation | null>(null);
+  const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -133,6 +144,20 @@ const ChatLaboratory = () => {
     
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
+
+  // Auto-summary hook
+  useSummaryAutoGenerator({
+    conversationId: currentConversationId,
+    messageCount: messages.length,
+    lastMessageSummarized: conversationData?.last_message_summarized || 0,
+    economyMode: conversationData?.economy_mode || false,
+    onSummaryGenerated: () => {
+      setSummaryRefreshKey(prev => prev + 1);
+      if (currentConversationId) {
+        loadMessages(currentConversationId);
+      }
+    }
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -250,7 +275,7 @@ const ChatLaboratory = () => {
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
-        .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
+        .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants, summary_chunks, last_summarized_at, last_message_summarized, economy_mode')
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -305,6 +330,22 @@ const ChatLaboratory = () => {
       })) as Message[];
       
       setMessages(messages);
+
+      // Load conversation data for summary
+      const { data: convData } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+      
+      if (convData) {
+        setConversationData({
+          ...convData,
+          active_participants: Array.isArray(convData.active_participants) 
+            ? convData.active_participants as Array<{name: string, type: string}>
+            : []
+        } as Conversation);
+      }
     } catch (error) {
       console.error('Errore caricamento messaggi:', error);
     }
@@ -1012,6 +1053,30 @@ const ChatLaboratory = () => {
             className="h-full overflow-y-auto p-1.5 md:p-2 space-y-1.5 md:space-y-2"
           >
             <div className="container mx-auto max-w-full">
+              {/* Summary Panel */}
+              {conversationData && conversationData.riassunto_contesto && (
+                <ConversationSummaryPanel
+                  finalSummary={conversationData.riassunto_contesto}
+                  chunks={Array.isArray(conversationData.summary_chunks) ? conversationData.summary_chunks : []}
+                  lastSummarizedAt={conversationData.last_summarized_at || null}
+                  totalMessages={messages.length}
+                  lastMessageSummarized={conversationData.last_message_summarized || 0}
+                />
+              )}
+
+              {/* Summary Generation Button */}
+              {currentConversationId && messages.length >= 5 && (
+                <div className="mb-4 flex justify-end">
+                  <SummaryGenerationButton
+                    conversationId={currentConversationId}
+                    onSummaryGenerated={() => {
+                      setSummaryRefreshKey(prev => prev + 1);
+                      loadMessages(currentConversationId);
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Navigation bar per full screen quando in Bar Mode */}
               {isBarMode && messages.length > 0 && (
                 <MessageNavigationBar

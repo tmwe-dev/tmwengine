@@ -77,7 +77,7 @@ export const useNavigationGroups = () => {
       name: 'TMWE Email',
       icon: Mail,
       items: [
-        { name: 'Email Dashboard', href: '/tmwe-email-dashboard', icon: Mail },
+        { name: 'Email Dashboard', href: '/email-manager', icon: Mail },
         { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
       ]
     }

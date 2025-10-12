@@ -1163,7 +1163,7 @@ const ChatLaboratory = () => {
                       .from('chat_laboratory_messages')
                       .insert([{
                         conversation_id: conversationId,
-                        sender_type: 'human',
+                        sender_type: 'user',
                         sender_name: 'Tu',
                         content: text,
                         is_visible_to_ai: true

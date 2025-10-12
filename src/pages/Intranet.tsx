@@ -294,10 +294,10 @@ const Intranet = () => {
                           )}
                         </div>
                       </button>
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col min-w-0 py-1">
                         <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
                         {selectedRoomId && (
-                          <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1 mt-1">
                             <TokenCounterBadge 
                               roomId={selectedRoomId}
                               variant="intranet"
@@ -364,7 +364,7 @@ const Intranet = () => {
     <div className="flex w-full h-full">
       {/* Sidebar Intranet - con SidebarProvider locale isolato */}
       <SidebarProvider defaultOpen={!sidebarCollapsed}>
-        <div className={`border-r bg-card-transparent transition-all duration-300 relative z-10 flex flex-col ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+        <div className={`border-r bg-card-transparent transition-all duration-300 relative flex flex-col ${sidebarCollapsed ? 'w-12' : 'w-56'}`}>
           <div className="p-2 border-b flex items-center justify-between">
             <Button
               variant="ghost"
@@ -385,13 +385,16 @@ const Intranet = () => {
             />
             
             {!sidebarCollapsed && (
+              <div className="px-4 pt-6 pb-3">
+                <h3 className="text-sm font-semibold">Economy Mode</h3>
+              </div>
+            )}
+            <div className="px-2">
+              <EconomyModeToggle roomId={selectedRoomId} isCollapsed={sidebarCollapsed} />
+            </div>
+
+            {!sidebarCollapsed && (
               <>
-                <div className="px-4 pt-6 pb-3">
-                  <h3 className="text-sm font-semibold">Economy Mode</h3>
-                </div>
-                <div className="px-2">
-                  <EconomyModeToggle roomId={selectedRoomId} />
-                </div>
 
                 <div className="px-4 pt-6 pb-3">
                   <h3 className="text-sm font-semibold">Utenti Online</h3>
@@ -420,7 +423,7 @@ const Intranet = () => {
       <main className="flex-1 flex flex-col h-screen">
         {/* Header con titolo e pulsante Utenti Organizzazione */}
         <div className="flex-shrink-0 border-b">
-          <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+          <div className="max-w-7xl mx-auto px-4 py-2 w-full">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold">Intranet</h1>
               <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>

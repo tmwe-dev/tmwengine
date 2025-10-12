@@ -187,7 +187,7 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="w-full h-10">
+                  <Button variant="ghost" size="icon" className="w-full h-10 flex items-center justify-center">
                     <Users className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>

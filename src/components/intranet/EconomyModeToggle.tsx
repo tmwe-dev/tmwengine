@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DollarSign, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface EconomyModeToggleProps {
   roomId: string | undefined;
+  isCollapsed?: boolean;
   onSettingsChange?: (settings: { economy_mode: boolean; show_summaries_only: boolean }) => void;
 }
 
-export const EconomyModeToggle = ({ roomId, onSettingsChange }: EconomyModeToggleProps) => {
+export const EconomyModeToggle = ({ roomId, isCollapsed = false, onSettingsChange }: EconomyModeToggleProps) => {
   const [economyMode, setEconomyMode] = useState(true);
   const [showSummaries, setShowSummaries] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +75,69 @@ export const EconomyModeToggle = ({ roomId, onSettingsChange }: EconomyModeToggl
       setIsLoading(false);
     }
   };
+
+  if (!roomId) {
+    return null;
+  }
+
+  // Versione collapsed con icone + tooltip
+  if (isCollapsed) {
+    return (
+      <TooltipProvider>
+        <div className="flex flex-col gap-2 py-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "w-full h-10 flex items-center justify-center",
+                  economyMode && "bg-primary/10"
+                )}
+                onClick={() => updateSetting('economy_mode', !economyMode)}
+                disabled={isLoading}
+              >
+                <DollarSign className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <div className="space-y-1">
+                <div className="font-semibold text-sm">Economy Mode</div>
+                <div className="text-xs text-muted-foreground">
+                  {economyMode ? 'Attivo' : 'Disattivo'}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "w-full h-10 flex items-center justify-center",
+                  showSummaries && "bg-primary/10"
+                )}
+                onClick={() => updateSetting('show_summaries_only', !showSummaries)}
+                disabled={isLoading}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <div className="space-y-1">
+                <div className="font-semibold text-sm">Mostra Riassunti</div>
+                <div className="text-xs text-muted-foreground">
+                  {showSummaries ? 'Attivo' : 'Disattivo'}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 p-4 border rounded-lg bg-card/50">

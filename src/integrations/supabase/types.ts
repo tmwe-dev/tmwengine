@@ -3003,6 +3003,7 @@ export type Database = {
           display_name: string | null
           enable_auto_speaker: boolean
           id: string
+          preferred_country: string | null
           preferred_language: string
           reading_language: string
           status_color: string | null
@@ -3021,6 +3022,7 @@ export type Database = {
           display_name?: string | null
           enable_auto_speaker?: boolean
           id?: string
+          preferred_country?: string | null
           preferred_language?: string
           reading_language?: string
           status_color?: string | null
@@ -3039,6 +3041,7 @@ export type Database = {
           display_name?: string | null
           enable_auto_speaker?: boolean
           id?: string
+          preferred_country?: string | null
           preferred_language?: string
           reading_language?: string
           status_color?: string | null

@@ -11,6 +11,7 @@ interface UserProfile {
   translationMode: 'none' | 'read_only' | 'write_only' | 'both' | 'dual_view';
   autoTranslateWriting: boolean;
   enableAutoSpeaker: boolean;
+  preferredCountry: string;
 }
 
 export const useUserProfile = () => {
@@ -69,6 +70,7 @@ export const useUserProfile = () => {
           translationMode: data.translation_mode as 'none' | 'read_only' | 'write_only' | 'both' | 'dual_view',
           autoTranslateWriting: data.auto_translate_writing,
           enableAutoSpeaker: data.enable_auto_speaker,
+          preferredCountry: data.preferred_country || 'IT',
         });
       } else {
         // Crea profilo di default se non esiste
@@ -92,7 +94,8 @@ export const useUserProfile = () => {
           writing_language: 'it',
           translation_mode: 'none',
           auto_translate_writing: false,
-          enable_auto_speaker: false
+          enable_auto_speaker: false,
+          preferred_country: 'IT'
         })
         .select()
         .single();
@@ -110,6 +113,7 @@ export const useUserProfile = () => {
           translationMode: data.translation_mode as 'none' | 'read_only' | 'write_only' | 'both' | 'dual_view',
           autoTranslateWriting: data.auto_translate_writing,
           enableAutoSpeaker: data.enable_auto_speaker,
+          preferredCountry: data.preferred_country || 'IT',
         });
       }
     } catch (error) {
@@ -132,6 +136,7 @@ export const useUserProfile = () => {
           translation_mode: updates.translationMode,
           auto_translate_writing: updates.autoTranslateWriting,
           enable_auto_speaker: updates.enableAutoSpeaker,
+          preferred_country: updates.preferredCountry,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);

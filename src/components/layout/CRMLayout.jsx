@@ -10,6 +10,7 @@ import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import { IntranetNavItems } from '@/components/layout/IntranetNavItems';
+import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -259,6 +260,9 @@ const CRMLayout = ({ children }) => {
               <User className="h-4 w-4" />
             </Button>
           )}
+          
+          {/* Global Country Selector */}
+          <GlobalCountrySelector />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

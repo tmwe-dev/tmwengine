@@ -30,9 +30,8 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Header con Switch e Controlli Audio */}
-      <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/30">
-        {/* Switch a sinistra */}
+      {/* Switch centrato */}
+      <div className="flex justify-center pb-3 border-b border-border/30">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Mic className="h-4 w-4 sm:hidden text-muted-foreground" />
@@ -64,31 +63,31 @@ export const BarChatAudioControls = ({
             </Label>
           </div>
         </div>
+      </div>
 
-        {/* Controlli audio a destra */}
-        <div className="flex items-center gap-4">
-          {/* Recorder (PTT o Full-Duplex) */}
-          {isDuplexMode ? (
-            <BarFullDuplexRecorder
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={false}
-              isAISpeaking={isAISpeaking}
-            />
-          ) : (
-            <BarVoiceRecorder
-              conversationId={conversationId}
-              onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
-            />
-          )}
-
-          {/* Interrupt Button - visibile solo quando AI parla */}
-          <InterruptButton
+      {/* Controlli audio centrati sotto lo switch */}
+      <div className="flex justify-center items-center gap-4">
+        {/* Recorder (PTT o Full-Duplex) */}
+        {isDuplexMode ? (
+          <BarFullDuplexRecorder
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={false}
             isAISpeaking={isAISpeaking}
-            onInterrupt={onInterrupt}
           />
-        </div>
+        ) : (
+          <BarVoiceRecorder
+            conversationId={conversationId}
+            onTranscriptionComplete={onTranscriptionComplete}
+            isDisabled={isAISpeaking}
+          />
+        )}
+
+        {/* Interrupt Button - visibile solo quando AI parla */}
+        <InterruptButton
+          isAISpeaking={isAISpeaking}
+          onInterrupt={onInterrupt}
+        />
       </div>
 
     </div>

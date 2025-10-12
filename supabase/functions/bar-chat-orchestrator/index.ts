@@ -420,11 +420,23 @@ serve(async (req) => {
     };
     const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
 
+    // Get next sequence number
+    const { data: maxSeq } = await supabase
+      .from('chat_laboratory_messages')
+      .select('message_sequence')
+      .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
     // ✅ Salva messaggio IMMEDIATAMENTE senza summaries (saranno generate in background)
     const { data: savedMessage, error: saveError } = await supabase
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
+        message_sequence: nextSequence,
         sender_type: dbSenderType,
         sender_name: selectedParticipant.name,
         content: aiResponse,                           // ✅ Messaggio completo (per UI)

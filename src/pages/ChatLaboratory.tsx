@@ -325,6 +325,7 @@ const ChatLaboratory = () => {
       .from('chat_laboratory_messages')
       .select('*, intent_tags')
       .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: true })
       .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -515,11 +516,23 @@ const ChatLaboratory = () => {
         await loadMessages(conversationId);
       }
 
+      // Get next sequence number
+      const { data: maxSeq } = await supabase
+        .from('chat_laboratory_messages')
+        .select('message_sequence')
+        .eq('conversation_id', conversationId)
+        .order('message_sequence', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
       // Salva messaggio umano
       const { error: insertError } = await supabase
         .from('chat_laboratory_messages')
         .insert([{
           conversation_id: conversationId,
+          message_sequence: nextSequence,
           intent_tags: [],
           sender_type: 'human',
           sender_name: 'Tu',

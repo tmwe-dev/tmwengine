@@ -358,11 +358,23 @@ ${userMessage}`;
     console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
     console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
 
+    // Get next sequence number
+    const { data: maxSeq } = await supabaseClient
+      .from('chat_laboratory_messages')
+      .select('message_sequence')
+      .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
     // ✅ Salva messaggio IMMEDIATAMENTE senza summaries e intent (saranno generate in background)
     const { data: savedMessage } = await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
+        message_sequence: nextSequence,
         sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
         content: aiResponseText,

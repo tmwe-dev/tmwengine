@@ -471,6 +471,7 @@ export type Database = {
           intent_tags: Json | null
           is_summary_available: boolean | null
           is_visible_to_ai: boolean | null
+          message_sequence: number | null
           sender_name: string
           sender_type: string
           tempo_risposta_ms: number | null
@@ -491,6 +492,7 @@ export type Database = {
           intent_tags?: Json | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
+          message_sequence?: number | null
           sender_name: string
           sender_type: string
           tempo_risposta_ms?: number | null
@@ -511,6 +513,7 @@ export type Database = {
           intent_tags?: Json | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
+          message_sequence?: number | null
           sender_name?: string
           sender_type?: string
           tempo_risposta_ms?: number | null

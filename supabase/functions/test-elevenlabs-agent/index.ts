@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,14 +16,32 @@ serve(async (req) => {
     
     console.log('Testing ElevenLabs connection:', { agentId, voiceId });
     
-    // Testa connessione ElevenLabs API
-    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    // ✅ RECUPERA ELEVENLABS DA voice_agent_config (come bar-chat-orchestrator)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: voiceConfig, error: voiceError } = await supabaseAdmin
+      .from('voice_agent_config')
+      .select('elevenlabs_api_key, enabled')
+      .eq('enabled', true)
+      .maybeSingle();
+
+    const ELEVENLABS_API_KEY = voiceConfig?.elevenlabs_api_key || null;
+
+    console.log('🔑 ElevenLabs config recuperata da voice_agent_config:', {
+      trovato: !!voiceConfig,
+      hasKey: !!ELEVENLABS_API_KEY,
+      enabled: voiceConfig?.enabled,
+      error: voiceError?.message
+    });
     
     if (!ELEVENLABS_API_KEY) {
       return new Response(
         JSON.stringify({ 
           valid: false, 
-          error: 'ElevenLabs API key non configurata' 
+          error: 'ElevenLabs API key non configurata in voice_agent_config' 
         }),
         { 
           status: 500,

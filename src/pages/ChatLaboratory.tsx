@@ -748,8 +748,8 @@ const ChatLaboratory = () => {
         {/* Header */}
         <div className="border-b border-border/40">
           <div className="container mx-auto px-4 py-2 md:py-3">
-          <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex flex-col gap-1">
                   <Button
                     onClick={() => navigate('/chat')}
@@ -780,7 +780,7 @@ const ChatLaboratory = () => {
                 )}
               </div>
             </div>
-            <div className="shrink-0">
+            <div className="flex-1 flex justify-center">
               <LabHeaderControls
                 currentConversationId={currentConversationId}
                 viewMode={viewMode}

@@ -44,8 +44,8 @@ export const LabHeaderControls = ({
         </div>
       )}
       
-      {/* Seconda riga: Controlli */}
-      <div className="flex items-center justify-center absolute left-1/2 -translate-x-1/2">
+      {/* Seconda riga: Controlli - centrati */}
+      <div className="flex items-center justify-center">
         <div className="flex items-center gap-1">
           <Button
             onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}

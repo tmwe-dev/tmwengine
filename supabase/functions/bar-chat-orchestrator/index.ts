@@ -411,18 +411,6 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
-    // Generate summaries for AI response
-    console.log('🔄 Generazione riassunti messaggio...');
-    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
-      generateMessageSummary(aiResponse, 'user_friendly', lovableAIKey),
-      generateMessageSummary(aiResponse, 'ultra_compressed', lovableAIKey)
-    ]);
-
-    console.log('✅ Riassunti generati:', {
-      userFriendly: userFriendlySummary.substring(0, 50) + '...',
-      ultraCompressed: ultraCompressedSummary.substring(0, 30) + '...'
-    });
-
     // Mappa provider type a sender_type compatibile col DB
     const senderTypeMap: Record<string, string> = {
       'anthropic': 'claude',
@@ -432,7 +420,7 @@ serve(async (req) => {
     };
     const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
 
-    // ✅ Salva messaggio con sistema tripartito
+    // ✅ Salva messaggio IMMEDIATAMENTE senza summaries (saranno generate in background)
     const { data: savedMessage, error: saveError } = await supabase
       .from('chat_laboratory_messages')
       .insert({
@@ -440,9 +428,9 @@ serve(async (req) => {
         sender_type: dbSenderType,
         sender_name: selectedParticipant.name,
         content: aiResponse,                           // ✅ Messaggio completo (per UI)
-        content_user_friendly: userFriendlySummary,    // ✅ 60 parole (per utente)
-        content_summary: ultraCompressedSummary,       // ✅ 25 parole (per AI in economy mode)
-        is_summary_available: true,                    // ✅ Flag
+        content_user_friendly: null,                   // ⏳ Sarà popolato in background
+        content_summary: null,                         // ⏳ Sarà popolato in background
+        is_summary_available: false,                   // ⏳ Diventerà true quando pronto
         token_input: tokenInput,
         token_output: tokenOutput,
         tempo_risposta_ms: responseTime,
@@ -458,6 +446,20 @@ serve(async (req) => {
     }
 
     console.log('✅ Messaggio salvato con ID:', savedMessage.id);
+
+    // 🚀 NON-BLOCKING: Genera summaries in background
+    supabase.functions.invoke('generate-message-summaries', {
+      body: { 
+        messageId: savedMessage.id, 
+        content: aiResponse,
+        conversationId,
+        table: 'chat_laboratory_messages'
+      }
+    }).then(() => {
+      console.log('🔄 Background summary generation triggered');
+    }).catch((err) => {
+      console.error('⚠️ Background summary generation failed:', err);
+    });
 
     // ✅ Update conversation turn index
     await supabase

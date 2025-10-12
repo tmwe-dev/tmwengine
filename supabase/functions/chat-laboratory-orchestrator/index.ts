@@ -358,54 +358,7 @@ ${userMessage}`;
     console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
     console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
 
-    // Generate summaries for AI response
-    console.log('Generating message summaries...');
-    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
-      generateMessageSummary(aiResponseText, 'user_friendly', LOVABLE_API_KEY),
-      generateMessageSummary(aiResponseText, 'ultra_compressed', LOVABLE_API_KEY)
-    ]);
-
-    // Classify intent using LLM
-    let intentTags: string[] = [];
-    try {
-      const intentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            {
-              role: 'system',
-              content: 'Classify the intent of the message. Return ONLY a JSON array of intent types from: Proposal, Critique, Question, Evidence, Merge, Vote, Summarize, Meta. Example: ["Proposal","Evidence"]'
-            },
-            {
-              role: 'user',
-              content: `Classify this message:\n\n${aiResponseText}`
-            }
-          ],
-          max_tokens: 50,
-          temperature: 0.3
-        })
-      });
-
-      if (intentResponse.ok) {
-        const intentData = await intentResponse.json();
-        const intentText = intentData.choices?.[0]?.message?.content?.trim() || '[]';
-        try {
-          intentTags = JSON.parse(intentText);
-        } catch {
-          console.error('Failed to parse intent JSON:', intentText);
-          intentTags = [];
-        }
-      }
-    } catch (error) {
-      console.error('Intent classification error:', error);
-    }
-
-    // Salva messaggio AI con summaries e intent tags
+    // ✅ Salva messaggio IMMEDIATAMENTE senza summaries e intent (saranno generate in background)
     const { data: savedMessage } = await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
@@ -413,17 +366,31 @@ ${userMessage}`;
         sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
         content: aiResponseText,
-        content_user_friendly: userFriendlySummary,
-        content_summary: ultraCompressedSummary,
-        is_summary_available: true,
+        content_user_friendly: null,                   // ⏳ Sarà popolato in background
+        content_summary: null,                         // ⏳ Sarà popolato in background
+        is_summary_available: false,                   // ⏳ Diventerà true quando pronto
         is_visible_to_ai: true,
-        intent_tags: intentTags,
+        intent_tags: [],                               // ⏳ Sarà popolato in background
         token_input: tokensIn,
         token_output: tokensOut,
         tempo_risposta_ms: duration
       })
       .select()
       .single();
+
+    // 🚀 NON-BLOCKING: Genera summaries in background
+    supabaseClient.functions.invoke('generate-message-summaries', {
+      body: { 
+        messageId: savedMessage.id, 
+        content: aiResponseText,
+        conversationId,
+        table: 'chat_laboratory_messages'
+      }
+    }).then(() => {
+      console.log('🔄 Background summary generation triggered');
+    }).catch((err) => {
+      console.error('⚠️ Background summary generation failed:', err);
+    });
 
     // Aggiorna last_speaker_index
     await supabaseClient

@@ -1,9 +1,57 @@
 // Bar Chat Orchestrator con integrazione ElevenLabs TTS
-// Versione: 3.0 - Interrupt Support + Bidirectional Audio
+// Versione: 3.1 - Tripartite Message System + Economy Mode
 // Data: 2025-01-12
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Helper: Generate message summaries
+async function generateMessageSummary(
+  content: string,
+  type: 'user_friendly' | 'ultra_compressed',
+  lovableApiKey: string
+): Promise<string> {
+  const prompts = {
+    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
+
+${content}
+
+Riassunto user-friendly:`,
+    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
+
+${content}
+
+Riassunto ultra-compresso:`
+  };
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: prompts[type] }
+        ],
+        temperature: 0.3,
+        max_tokens: type === 'user_friendly' ? 100 : 50
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Summary generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
+  } catch (error) {
+    console.error(`Error generating ${type} summary:`, error);
+    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -110,14 +158,17 @@ serve(async (req) => {
       );
     }
 
-    // Fetch conversation data
+    // Fetch conversation data + economy mode settings
     const { data: conversation, error: convError } = await supabase
       .from('chat_laboratory_conversations')
-      .select('*')
+      .select('economy_mode, show_summaries_only, current_turn_index, last_speaker_index')
       .eq('id', conversationId)
       .single();
 
     if (convError) throw convError;
+
+    const useEconomyMode = conversation?.economy_mode && conversation?.show_summaries_only;
+    console.log(`⚙️ Economy Mode: ${useEconomyMode ? 'ATTIVO' : 'Disattivo'}`);
 
     // Fetch global system prompt
     const { data: systemPrompts } = await supabase
@@ -155,17 +206,27 @@ serve(async (req) => {
       console.log(`📦 Sezioni TOPIC (${selectedTopic}): ${topicSections.length}`);
     }
 
-    // Fetch conversation messages
+    // Fetch conversation messages WITH summaries
     const { data: messages } = await supabase
       .from('chat_laboratory_messages')
-      .select('*')
+      .select('sender_type, sender_name, content, content_summary, is_summary_available')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    const historyMessages = (messages || []).map((msg: any) => ({
-      role: msg.sender_type === 'user' ? 'user' : 'assistant',
-      content: `[${msg.sender_name}]: ${msg.content}`
-    }));
+    const historyMessages = (messages || []).map((msg: any) => {
+      let messageContent = msg.content; // Default: completo
+      
+      // Economy Mode: usa content_summary per AI (SOLO per messaggi AI, non utente)
+      if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_type !== 'user') {
+        messageContent = msg.content_summary;
+        console.log(`📉 [${msg.sender_name}] usa summary: "${messageContent.substring(0, 40)}..."`);
+      }
+      
+      return {
+        role: msg.sender_type === 'user' ? 'user' : 'assistant',
+        content: `[${msg.sender_name}]: ${messageContent}`
+      };
+    });
 
     // Turn-taking logic
     let currentTurnIndex = conversation.current_turn_index || 0;
@@ -350,6 +411,18 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
+    // Generate summaries for AI response
+    console.log('🔄 Generazione riassunti messaggio...');
+    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
+      generateMessageSummary(aiResponse, 'user_friendly', lovableAIKey),
+      generateMessageSummary(aiResponse, 'ultra_compressed', lovableAIKey)
+    ]);
+
+    console.log('✅ Riassunti generati:', {
+      userFriendly: userFriendlySummary.substring(0, 50) + '...',
+      ultraCompressed: ultraCompressedSummary.substring(0, 30) + '...'
+    });
+
     // Mappa provider type a sender_type compatibile col DB
     const senderTypeMap: Record<string, string> = {
       'anthropic': 'claude',
@@ -359,14 +432,17 @@ serve(async (req) => {
     };
     const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
 
-    // ✅ Opzione D: Salva subito il messaggio con audio_url = null
+    // ✅ Salva messaggio con sistema tripartito
     const { data: savedMessage, error: saveError } = await supabase
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
         sender_type: dbSenderType,
         sender_name: selectedParticipant.name,
-        content: aiResponse,
+        content: aiResponse,                           // ✅ Messaggio completo (per UI)
+        content_user_friendly: userFriendlySummary,    // ✅ 60 parole (per utente)
+        content_summary: ultraCompressedSummary,       // ✅ 25 parole (per AI in economy mode)
+        is_summary_available: true,                    // ✅ Flag
         token_input: tokenInput,
         token_output: tokenOutput,
         tempo_risposta_ms: responseTime,

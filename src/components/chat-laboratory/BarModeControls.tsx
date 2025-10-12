@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Timer, Zap } from 'lucide-react';
+import { Timer, Zap, Play } from 'lucide-react';
 
 interface BarModeControlsProps {
   conversationId: string | null;
@@ -184,7 +184,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
 
         {/* Auto-Play Audio */}
         <div className="flex items-center gap-2">
-          <Label htmlFor="autoplay" className="text-sm cursor-pointer">
+          <Label htmlFor="autoplay" className="text-sm cursor-pointer flex items-center gap-1">
+            <Play className="h-3 w-3" />
             Auto-Play
           </Label>
           <Switch

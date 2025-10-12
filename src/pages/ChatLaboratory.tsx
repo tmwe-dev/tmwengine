@@ -30,6 +30,7 @@ import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGen
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
+import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
 
 interface Message {
   id: string;
@@ -1091,6 +1092,16 @@ const ChatLaboratory = () => {
                   <ConvergenceIndicator 
                     conversationId={currentConversationId}
                     refreshTrigger={convergenceRefreshKey}
+                  />
+                </div>
+              )}
+
+              {/* Knowledge Graph Viewer */}
+              {currentConversationId && messages.length >= 15 && (
+                <div className="mb-4">
+                  <KnowledgeGraphViewer 
+                    conversationId={currentConversationId}
+                    height={350}
                   />
                 </div>
               )}

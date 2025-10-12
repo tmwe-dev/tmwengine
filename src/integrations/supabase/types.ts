@@ -3696,6 +3696,22 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      match_knowledge_nodes: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_conversation_id?: string
+          query_embedding: string
+        }
+        Returns: {
+          confidence: number
+          conversation_id: string
+          id: string
+          node_type: Database["public"]["Enums"]["knowledge_node_type"]
+          similarity: number
+          text: string
+        }[]
+      }
       reset_ai_invocations: {
         Args: { p_room_id: string }
         Returns: undefined

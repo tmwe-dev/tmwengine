@@ -2,6 +2,54 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 
+// Helper: Generate message summaries
+async function generateMessageSummary(
+  content: string,
+  type: 'user_friendly' | 'ultra_compressed',
+  lovableApiKey: string
+): Promise<string> {
+  const prompts = {
+    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
+
+${content}
+
+Riassunto user-friendly:`,
+    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
+
+${content}
+
+Riassunto ultra-compresso:`
+  };
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: prompts[type] }
+        ],
+        temperature: 0.3,
+        max_tokens: type === 'user_friendly' ? 100 : 50
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Summary generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
+  } catch (error) {
+    console.error(`Error generating ${type} summary:`, error);
+    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -71,14 +119,17 @@ serve(async (req) => {
 
     // Check if conversation has full memory enabled
     let useFullMemory = false;
+    let useEconomyMode = true; // Default economy mode
+    
     if (conversationId) {
       const { data: convData } = await supabase
         .from('chat_conversations')
-        .select('memoria_completa')
+        .select('memoria_completa, economy_mode')
         .eq('id', conversationId)
         .single();
       
       useFullMemory = convData?.memoria_completa || false;
+      useEconomyMode = convData?.economy_mode ?? true;
     }
 
     // Build message history
@@ -93,22 +144,31 @@ serve(async (req) => {
       if (useFullMemory) {
         const { data: allMessages } = await supabase
           .from('chat_messages')
-          .select('role, content')
+          .select('role, content, content_summary, is_summary_available')
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true });
 
         if (allMessages) {
-          messages.push(...allMessages.map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content
-          })));
+          messages.push(...allMessages.map(msg => {
+            let msgContent = msg.content;
+            
+            // Use ultra-compressed summary for AI messages in economy mode
+            if (msg.role === 'assistant' && useEconomyMode && msg.is_summary_available && msg.content_summary) {
+              msgContent = msg.content_summary;
+            }
+            
+            return {
+              role: msg.role as 'user' | 'assistant',
+              content: msgContent
+            };
+          }));
         }
       } else {
         const timeLimit = new Date(Date.now() - config.memoria_ore * 60 * 60 * 1000);
         
         const { data: recentMessages } = await supabase
           .from('chat_messages')
-          .select('role, content, created_at')
+          .select('role, content, content_summary, is_summary_available, created_at')
           .eq('conversation_id', conversationId)
           .gte('created_at', timeLimit.toISOString())
           .order('created_at', { ascending: false })
@@ -131,10 +191,19 @@ serve(async (req) => {
             }
           }
 
-          messages.push(...chronologicalMessages.map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content
-          })));
+          messages.push(...chronologicalMessages.map(msg => {
+            let msgContent = msg.content;
+            
+            // Use ultra-compressed summary for AI messages in economy mode
+            if (msg.role === 'assistant' && useEconomyMode && msg.is_summary_available && msg.content_summary) {
+              msgContent = msg.content_summary;
+            }
+            
+            return {
+              role: msg.role as 'user' | 'assistant',
+              content: msgContent
+            };
+          }));
         }
       }
     }
@@ -525,6 +594,15 @@ serve(async (req) => {
     const tokensOutput = data.usage?.completion_tokens || 0;
     const responseTime = Date.now() - startTime;
 
+    // Generate summaries for AI response
+    console.log('Generating message summaries...');
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
+      generateMessageSummary(aiResponse, 'user_friendly', lovableKey!),
+      generateMessageSummary(aiResponse, 'ultra_compressed', lovableKey!)
+    ]);
+
     // Save messages to database
     if (conversationId) {
       try {
@@ -541,7 +619,10 @@ serve(async (req) => {
           .insert({
             conversation_id: conversationId,
             role: 'assistant',
-            content: aiResponse || '[Errore: risposta vuota dal modello AI]'
+            content: aiResponse || '[Errore: risposta vuota dal modello AI]',
+            content_user_friendly: userFriendlySummary,
+            content_summary: ultraCompressedSummary,
+            is_summary_available: true
           });
 
         // Update conversation updated_at

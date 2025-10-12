@@ -2,6 +2,54 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
+// Helper: Generate message summaries
+async function generateMessageSummary(
+  content: string,
+  type: 'user_friendly' | 'ultra_compressed',
+  lovableApiKey: string
+): Promise<string> {
+  const prompts = {
+    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
+
+${content}
+
+Riassunto user-friendly:`,
+    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
+
+${content}
+
+Riassunto ultra-compresso:`
+  };
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: prompts[type] }
+        ],
+        temperature: 0.3,
+        max_tokens: type === 'user_friendly' ? 100 : 50
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Summary generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
+  } catch (error) {
+    console.error(`Error generating ${type} summary:`, error);
+    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -54,12 +102,14 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY non configurata');
     }
 
-    // Carica conversation
+    // Carica conversation settings
     const { data: conversation } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('last_speaker_index')
+      .select('last_speaker_index, economy_mode')
       .eq('id', conversationId)
       .single();
+
+    const useEconomyMode = conversation?.economy_mode ?? true;
 
     // Carica il prompt globale
     const { data: globalPrompt } = await supabaseClient
@@ -86,7 +136,7 @@ REGOLE CRITICHE:
     // Carica messaggi
     const { data: messages } = await supabaseClient
       .from('chat_laboratory_messages')
-      .select('*')
+      .select('sender_name, content, content_summary, is_summary_available, is_visible_to_ai, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -113,9 +163,19 @@ REGOLE CRITICHE:
 
     const startTime = Date.now();
 
-    // Costruisci history completa
+    // Costruisci history completa con economy mode
     const visibleHistory = (messages || [])
-      .map((msg: any) => `${msg.sender_name}: ${msg.content}`)
+      .filter((msg: any) => msg.is_visible_to_ai !== false)
+      .map((msg: any) => {
+        let content = msg.content;
+        
+        // Use ultra-compressed summary in economy mode for AI messages
+        if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente') {
+          content = msg.content_summary;
+        }
+        
+        return `${msg.sender_name}: ${content}`;
+      })
       .join('\n');
 
     // ──────── PRE-CHECK: Questo AI ha qualcosa da dire? ────────
@@ -298,7 +358,14 @@ ${userMessage}`;
     console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
     console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
 
-    // Salva messaggio AI
+    // Generate summaries for AI response
+    console.log('Generating message summaries...');
+    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
+      generateMessageSummary(aiResponseText, 'user_friendly', LOVABLE_API_KEY),
+      generateMessageSummary(aiResponseText, 'ultra_compressed', LOVABLE_API_KEY)
+    ]);
+
+    // Salva messaggio AI con summaries
     await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
@@ -306,6 +373,9 @@ ${userMessage}`;
         sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
         content: aiResponseText,
+        content_user_friendly: userFriendlySummary,
+        content_summary: ultraCompressedSummary,
+        is_summary_available: true,
         is_visible_to_ai: true,
         token_input: tokensIn,
         token_output: tokensOut,

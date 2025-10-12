@@ -38,12 +38,30 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
   const [messageTokens, setMessageTokens] = useState<Record<string, { input: number; output: number; total: number }>>({});
+  const [showSummariesOnly, setShowSummariesOnly] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { profile } = useUserProfile();
   const { settings } = useRoomAISettings(roomId);
   
   // Auto-speaker per lettura automatica messaggi
   const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId });
+
+  // Load show_summaries_only setting from room
+  useEffect(() => {
+    const loadShowSummaries = async () => {
+      const { data } = await supabase
+        .from('intranet_rooms')
+        .select('show_summaries_only')
+        .eq('id', roomId)
+        .single();
+      
+      if (data) {
+        setShowSummariesOnly(data.show_summaries_only ?? true);
+      }
+    };
+    
+    loadShowSummaries();
+  }, [roomId]);
 
   useEffect(() => {
     // Salva l'ID della stanza corrente nel sessionStorage per il TranslateButton

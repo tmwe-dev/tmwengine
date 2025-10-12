@@ -12,6 +12,7 @@ import { SettingsButton } from '@/components/intranet/SettingsButton';
 import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
 import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
+import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -371,6 +372,13 @@ const Intranet = () => {
             
             {!sidebarCollapsed && (
               <>
+                <div className="px-4 pt-6 pb-3">
+                  <h3 className="text-sm font-semibold">Economy Mode</h3>
+                </div>
+                <div className="px-2">
+                  <EconomyModeToggle roomId={selectedRoomId} />
+                </div>
+
                 <div className="px-4 pt-6 pb-3">
                   <h3 className="text-sm font-semibold">Utenti Online</h3>
                 </div>

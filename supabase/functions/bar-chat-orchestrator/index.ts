@@ -308,6 +308,15 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
+    // Mappa provider type a sender_type compatibile col DB
+    const senderTypeMap: Record<string, string> = {
+      'anthropic': 'claude',
+      'openai': 'chatgpt', 
+      'lovable': 'gemini',
+      'human': 'human'
+    };
+    const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
+
     // Generate audio with ElevenLabs TTS (se voice enabled)
     // Check interrupt prima di generare audio (costoso)
     let audioUrl: string | null = null;
@@ -405,7 +414,7 @@ serve(async (req) => {
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
-        sender_type: selectedParticipant.type,  // ✅ FIX: usa tipo specifico ('chatgpt', 'gemini', 'claude')
+        sender_type: dbSenderType,  // ✅ FIX DEFINITIVO: usa tipo mappato compatibile col DB
         sender_name: selectedParticipant.name,
         content: aiResponse,
         token_input: tokenInput,

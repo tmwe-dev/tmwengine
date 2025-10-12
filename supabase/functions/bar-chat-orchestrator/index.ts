@@ -41,20 +41,20 @@ serve(async (req) => {
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
     
-    // ✅ RECUPERA ELEVENLABS DA config_ai (come voice-to-text)
-    const { data: elevenLabsConfig, error: elevenLabsError } = await supabase
-      .from('config_ai')
-      .select('api_key')
-      .eq('provider', 'elevenlabs')
-      .eq('attivo', true)
-      .single();
+    // ✅ RECUPERA ELEVENLABS DA voice_agent_config (come fa il frontend)
+    const { data: voiceConfig, error: voiceError } = await supabase
+      .from('voice_agent_config')
+      .select('elevenlabs_api_key, enabled')
+      .eq('enabled', true)
+      .maybeSingle();
     
-    const elevenLabsKey = elevenLabsConfig?.api_key || null;
+    const elevenLabsKey = voiceConfig?.elevenlabs_api_key || null;
     
-    console.log('🔑 ElevenLabs config recuperata da DB:', {
-      trovato: !!elevenLabsConfig,
+    console.log('🔑 ElevenLabs config recuperata da voice_agent_config:', {
+      trovato: !!voiceConfig,
       hasKey: !!elevenLabsKey,
-      error: elevenLabsError?.message
+      enabled: voiceConfig?.enabled,
+      error: voiceError?.message
     });
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {

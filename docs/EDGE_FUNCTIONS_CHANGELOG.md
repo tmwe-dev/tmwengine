@@ -280,12 +280,59 @@ const newCode = 'improved';
 
 ---
 
+## [2025-01-20] - Bar Chat Orchestrator - TTS Fix & System Backup
+
+### File Modificato
+- **Function:** `supabase/functions/bar-chat-orchestrator/index.ts`
+- **Backup Creato:** `index-old-2025-01-20.ts`
+- **Versione Precedente:** Versioni precedenti senza TTS funzionante
+
+### Motivo Backup
+**BACKUP COMPLETO SISTEMA** prima fix risposta simultanea agenti.
+
+### Modifiche Implementate
+1. **Fix Stack Overflow TTS**: Risolto crash conversione base64 audio
+2. **Fix Full-Duplex Text**: Trascrizione passata correttamente alla chat
+3. **Sistema TTS Funzionante**: Agenti parlano con audio ElevenLabs
+
+### Issue Nota
+⚠️ **Agenti rispondono tutti simultaneamente** invece che a turno
+- Da risolvere nel prossimo intervento
+
+### Stato Sistema
+✅ TTS ElevenLabs: Funzionante  
+✅ Full-Duplex Recorder: Funzionante  
+✅ Storage Audio: Funzionante  
+✅ Prompt Sections: Funzionante  
+⚠️ Sequential Response: Da implementare
+
+### Database Backup
+- **File:** `docs/DATABASE_BACKUPS/2025-01-20_pre-bar-mode-simultaneous-fix.md`
+- **Contenuto:** Schema completo tabelle, RLS policies, functions, triggers
+- **Coverage:** 100% sistema Bar Mode
+
+### Test Eseguiti
+- [x] TTS generation con tutti gli agenti
+- [x] Upload audio Supabase Storage
+- [x] Full-Duplex transcription
+- [x] Prompt sections composition
+- [x] Interrupt functionality
+
+### Rollback Plan
+```bash
+cp index-old-2025-01-20.ts index.ts
+# Rideploy automatico
+# Sistema torna a versione stabile TTS funzionante
+```
+
+---
+
 ## 📊 Statistics
 
 **Total Functions:** 25+  
-**Total Modifications:** 6 (documented)  
-**Total Backups:** 10+ files  
-**Last Update:** 2025-01-15
+**Total Modifications:** 7 (documented)  
+**Total Backups:** 12+ files  
+**Last Update:** 2025-01-20
 
 ---
 

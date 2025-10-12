@@ -41,16 +41,25 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch API keys
-  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-  const openAIKey = Deno.env.get('OPENAI_API_KEY');
-  const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
-  
-  console.log('🔑 Chiavi API disponibili:', {
-    anthropic: !!anthropicKey,
-    openai: !!openAIKey,
-    lovable: !!lovableAIKey
-  });
+    // Fetch API keys from config_ai table
+    const { data: aiConfigs, error: configError } = await supabase
+      .from('config_ai')
+      .select('provider, api_key, attivo')
+      .eq('attivo', true);
+
+    if (configError) {
+      console.error('❌ Errore caricamento config_ai:', configError);
+    }
+
+    const anthropicKey = aiConfigs?.find(c => c.provider === 'anthropic')?.api_key;
+    const openAIKey = aiConfigs?.find(c => c.provider === 'openai')?.api_key;
+    const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    console.log('🔑 Chiavi API disponibili:', {
+      anthropic: !!anthropicKey,
+      openai: !!openAIKey,
+      lovable: !!lovableAIKey
+    });
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
       throw new Error('Nessuna chiave API configurata');

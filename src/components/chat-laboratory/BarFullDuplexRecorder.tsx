@@ -33,11 +33,9 @@ export const BarFullDuplexRecorder = ({
   
   const { toast } = useToast();
 
-  // VAD Configuration
-  const SILENCE_THRESHOLD = 0.015; // Soglia per rilevare silenzio
-  const SPEECH_THRESHOLD = 0.03; // Soglia per rilevare parlato
-  const SILENCE_DURATION_MS = 2000; // 2 secondi di silenzio = fine frase
-  const MIN_SPEECH_DURATION_MS = 500; // Minimo 500ms di parlato per inviare
+  // VAD Configuration - stessi valori del microfono funzionante
+  const SILENCE_THRESHOLD = 0.05; // Soglia per rilevare silenzio
+  const SILENCE_DURATION = 3000; // 3 secondi di silenzio = fine frase
 
   useEffect(() => {
     return () => {
@@ -72,9 +70,9 @@ export const BarFullDuplexRecorder = ({
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      // Setup MediaRecorder per chunked recording
+      // Setup MediaRecorder - stessa configurazione del microfono funzionante
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: 'audio/webm'
       });
 
       mediaRecorder.ondataavailable = (event) => {
@@ -84,7 +82,7 @@ export const BarFullDuplexRecorder = ({
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Chunk ogni 100ms
+      mediaRecorder.start(1000); // Chunk ogni secondo come il microfono funzionante
 
       // Start VAD monitoring
       startVADMonitoring();
@@ -101,14 +99,13 @@ export const BarFullDuplexRecorder = ({
     }
   };
 
-  // Voice Activity Detection
+  // Voice Activity Detection - stessa logica del microfono funzionante
   const startVADMonitoring = () => {
     const analyser = analyserRef.current;
     if (!analyser) return;
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
-    let speechStartTime: number | null = null;
 
     const detectVoice = () => {
       if (!isActive) return;
@@ -121,65 +118,49 @@ export const BarFullDuplexRecorder = ({
       
       setAudioLevel(rms);
 
-      // VAD Logic
-      if (rms > SPEECH_THRESHOLD) {
+      // VAD Logic - semplificata come il microfono funzionante
+      if (rms > SILENCE_THRESHOLD) {
         // 🗣️ Parlato rilevato
-        if (!speechStartTime) {
-          speechStartTime = Date.now();
-        }
         setIsSpeaking(true);
         silenceStartRef.current = null;
-        
-        if (vadTimerRef.current) {
-          clearTimeout(vadTimerRef.current);
-          vadTimerRef.current = null;
-        }
-      } else if (rms < SILENCE_THRESHOLD) {
+      } else {
         // 🤫 Silenzio rilevato
-        if (isSpeaking || speechStartTime) {
+        if (isSpeaking) {
           if (!silenceStartRef.current) {
             silenceStartRef.current = Date.now();
           }
 
           const silenceDuration = Date.now() - silenceStartRef.current;
           
-          if (silenceDuration >= SILENCE_DURATION_MS) {
+          if (silenceDuration >= SILENCE_DURATION) {
             // Fine frase → Invia trascrizione
-            const speechDuration = speechStartTime 
-              ? Date.now() - speechStartTime 
-              : 0;
-
-            if (speechDuration >= MIN_SPEECH_DURATION_MS) {
-              console.log('🎤 Fine parlato rilevato, invio trascrizione...');
-              processRecording();
-            }
-
-            // Reset
+            console.log('🎤 Fine parlato rilevato dopo 3s di silenzio, invio trascrizione...');
+            processRecording();
             setIsSpeaking(false);
-            speechStartTime = null;
             silenceStartRef.current = null;
           }
         }
       }
 
-      if (isActive) {
-        vadTimerRef.current = setTimeout(detectVoice, 100);
-      }
+      requestAnimationFrame(detectVoice);
     };
 
     detectVoice();
   };
 
   const processRecording = async () => {
-    if (chunksRef.current.length === 0) return;
+    if (chunksRef.current.length === 0 || isProcessing) return;
 
+    // Crea copia dei chunks prima di inviare
+    const chunksToProcess = [...chunksRef.current];
+    chunksRef.current = []; // Svuota per continuare a registrare
+    
     setIsProcessing(true);
 
     try {
-      const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-      chunksRef.current = []; // Clear chunks
+      const audioBlob = new Blob(chunksToProcess, { type: 'audio/webm' });
 
-      // Converti in base64
+      // Converti in base64 - stesso pattern del microfono funzionante
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       
@@ -188,14 +169,15 @@ export const BarFullDuplexRecorder = ({
           try {
             const base64Audio = (reader.result as string).split(',')[1];
 
+            console.log('📤 Invio audio per trascrizione...');
             const { data, error } = await supabase.functions.invoke('voice-to-text', {
               body: { audio: base64Audio }
             });
 
             if (error) throw error;
 
-            if (data?.text) {
-              console.log('📝 Trascrizione:', data.text);
+            if (data?.text && data.text.trim()) {
+              console.log('📝 Trascrizione ricevuta:', data.text);
               onTranscriptionComplete?.(data.text);
             }
 
@@ -208,7 +190,7 @@ export const BarFullDuplexRecorder = ({
       });
 
     } catch (error) {
-      console.error('Errore trascrizione:', error);
+      console.error('❌ Errore trascrizione:', error);
       toast({
         variant: "destructive",
         title: "Errore Trascrizione",
@@ -239,21 +221,18 @@ export const BarFullDuplexRecorder = ({
     setIsSpeaking(false);
     setAudioLevel(0);
 
-    if (vadTimerRef.current) {
-      clearTimeout(vadTimerRef.current);
-      vadTimerRef.current = null;
-    }
-
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
 
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
     }
 
     if (audioContextRef.current) {
       audioContextRef.current.close();
+      audioContextRef.current = null;
     }
 
     chunksRef.current = [];

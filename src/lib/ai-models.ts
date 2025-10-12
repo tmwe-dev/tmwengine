@@ -15,29 +15,29 @@ export const AI_PROVIDERS: Record<string, AIProvider> = {
   openai: {
     label: 'OpenAI',
     models: [
-      { value: 'gpt-5-2025-08-07', label: 'GPT-5', free: false },
-      { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini', free: false },
-      { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano', free: false },
-      { value: 'gpt-4.1-2025-04-14', label: 'GPT-4.1', free: false },
-      { value: 'o3-2025-04-16', label: 'O3', free: false },
-      { value: 'o4-mini-2025-04-16', label: 'O4 Mini', free: false },
+      { value: 'gpt-5-2025-08-07', label: 'GPT-5', free: false, costPerMillionInputTokens: 2.50, costPerMillionOutputTokens: 10.00 },
+      { value: 'gpt-5-mini-2025-08-07', label: 'GPT-5 Mini', free: false, costPerMillionInputTokens: 0.15, costPerMillionOutputTokens: 0.60 },
+      { value: 'gpt-5-nano-2025-08-07', label: 'GPT-5 Nano', free: false, costPerMillionInputTokens: 0.04, costPerMillionOutputTokens: 0.16 },
+      { value: 'gpt-4.1-2025-04-14', label: 'GPT-4.1', free: false, costPerMillionInputTokens: 2.00, costPerMillionOutputTokens: 8.00 },
+      { value: 'o3-2025-04-16', label: 'O3', free: false, costPerMillionInputTokens: 10.00, costPerMillionOutputTokens: 40.00 },
+      { value: 'o4-mini-2025-04-16', label: 'O4 Mini', free: false, costPerMillionInputTokens: 1.00, costPerMillionOutputTokens: 4.00 },
     ],
   },
   anthropic: {
     label: 'Anthropic (Claude)',
     models: [
-      { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', free: false },
-      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', free: false },
-      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', free: false },
-      { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', free: false },
+      { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', free: false, costPerMillionInputTokens: 3.00, costPerMillionOutputTokens: 15.00 },
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1', free: false, costPerMillionInputTokens: 15.00, costPerMillionOutputTokens: 75.00 },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', free: false, costPerMillionInputTokens: 3.00, costPerMillionOutputTokens: 15.00 },
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', free: false, costPerMillionInputTokens: 0.80, costPerMillionOutputTokens: 4.00 },
     ],
   },
   google: {
     label: 'Google AI',
     models: [
-      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true },
-      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', free: true },
-      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', free: true },
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', free: true, costPerMillionInputTokens: 0, costPerMillionOutputTokens: 0 },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', free: true, costPerMillionInputTokens: 0, costPerMillionOutputTokens: 0 },
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', free: true, costPerMillionInputTokens: 0, costPerMillionOutputTokens: 0 },
     ],
   },
   lovable: {

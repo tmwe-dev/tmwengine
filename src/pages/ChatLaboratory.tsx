@@ -785,20 +785,12 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isBarMode && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => {
-                    const saved = localStorage.getItem('bar-section-open');
-                    const newState = !(saved === null ? true : saved === 'true');
-                    localStorage.setItem('bar-section-open', String(newState));
-                    window.dispatchEvent(new CustomEvent('bar-section-toggle'));
-                  }}
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+              {currentConversationId && (
+                <ExportSummaryButton
+                  labConversationId={currentConversationId}
+                  variant="laboratory"
+                  iconOnly
+                />
               )}
             </div>
             </div>

@@ -807,6 +807,7 @@ const ChatLaboratory = () => {
                     <Layout className="h-4 w-4" />
                   </Button>
                 </div>
+              </div>
               <div className="min-w-0">
                 <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
                   Chat Laboratory
@@ -934,6 +935,8 @@ const ChatLaboratory = () => {
               </div>
             </div>
           </div>
+        </>
+      )}
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">

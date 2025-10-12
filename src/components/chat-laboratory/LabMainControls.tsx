@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { ParticipantSelector } from './ParticipantSelector';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 
@@ -42,8 +41,6 @@ export const LabMainControls = ({
           iconOnly
         />
       )}
-      
-      <LaboratoryPromptManager />
       
       <ParticipantSelector
         participants={participants}

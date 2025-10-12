@@ -1000,7 +1000,7 @@ const ChatLaboratory = () => {
 
       {/* Input Area */}
       <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-2 md:p-3">
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto max-w-7xl px-4">
           <form onSubmit={handleSubmit} className="space-y-1 md:space-y-2">
             {/* Textarea con icone a sinistra */}
             <div className="flex gap-2">

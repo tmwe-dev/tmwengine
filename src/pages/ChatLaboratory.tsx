@@ -80,6 +80,7 @@ const ChatLaboratory = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const voiceRecorderRef = useRef<VoiceRecorderRef>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesLengthRef = useRef(0);
 
   useEffect(() => {
@@ -488,7 +489,12 @@ const ChatLaboratory = () => {
   const handleSelectConversation = (id: string) => {
     setCurrentConversationId(id);
     loadMessages(id);
-    if (isMobile) setSidebarOpen(false);
+    setSidebarOpen(false);
+    
+    // Focus textarea dopo un breve delay
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
   };
 
   const handleNewConversation = () => {
@@ -738,6 +744,7 @@ const ChatLaboratory = () => {
             {/* Textarea */}
             <div className="flex gap-2">
               <Textarea
+                ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"}

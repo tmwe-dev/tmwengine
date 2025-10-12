@@ -1,0 +1,165 @@
+/* =====================================================
+   CHAT LABORATORY - GRADIENTS & SHADOWS
+   Data: 2025-10-12
+   ===================================================== */
+
+/* === BACKGROUND PAGINA CHAT LABORATORY === */
+
+.chat-lab-bg {
+  background: linear-gradient(
+    to bottom right, 
+    hsl(240 100% 25% / 0.2),     /* indigo-900/20 */
+    hsl(var(--background)),
+    hsl(280 100% 25% / 0.2)      /* violet-900/20 */
+  );
+}
+
+/* Tailwind class: bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 */
+
+/* === HEADER ICON GRADIENT === */
+
+.chat-lab-icon {
+  background: linear-gradient(
+    to bottom right,
+    hsl(239 84% 67%),            /* indigo-500 */
+    hsl(271 91% 65%)             /* violet-500 */
+  );
+}
+
+/* Tailwind class: bg-gradient-to-br from-indigo-500 to-violet-500 */
+
+/* === TITLE TEXT GRADIENT === */
+
+.chat-lab-title {
+  background: linear-gradient(
+    to right,
+    hsl(239 84% 67%),            /* indigo-600 */
+    hsl(271 91% 65%)             /* violet-600 */
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tailwind class: bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent */
+
+/* === MESSAGE CARDS - AGENT COLORS === */
+
+/* Human Messages */
+.msg-human {
+  background: linear-gradient(
+    to bottom right,
+    hsl(217 91% 60% / 0.1),      /* blue-500/10 */
+    hsl(217 91% 50% / 0.05)      /* blue-600/5 */
+  );
+  border-color: hsl(217 91% 60% / 0.2);  /* blue-500/20 */
+}
+
+/* Tailwind class: bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 */
+
+/* ChatGPT Messages */
+.msg-chatgpt {
+  background: linear-gradient(
+    to bottom right,
+    hsl(142 76% 36% / 0.1),      /* green-500/10 */
+    hsl(142 76% 36% / 0.05)      /* green-600/5 */
+  );
+  border-color: hsl(142 76% 36% / 0.2);  /* green-500/20 */
+}
+
+/* Tailwind class: bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 */
+
+/* Gemini Messages */
+.msg-gemini {
+  background: linear-gradient(
+    to bottom right,
+    hsl(189 94% 43% / 0.1),      /* cyan-500/10 */
+    hsl(189 94% 43% / 0.05)      /* cyan-600/5 */
+  );
+  border-color: hsl(189 94% 43% / 0.2);  /* cyan-500/20 */
+}
+
+/* Tailwind class: bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20 */
+
+/* Claude Messages */
+.msg-claude {
+  background: linear-gradient(
+    to bottom right,
+    hsl(271 91% 65% / 0.1),      /* purple-500/10 */
+    hsl(271 91% 65% / 0.05)      /* purple-600/5 */
+  );
+  border-color: hsl(271 91% 65% / 0.2);  /* purple-500/20 */
+}
+
+/* Tailwind class: bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 */
+
+/* === SHADOWS SPECIFICHE === */
+
+/* Shadow per Message Cards */
+.chat-card-shadow {
+  box-shadow: 
+    0 1px 2px 0 hsl(240 3.7% 15.9% / 0.05),
+    0 0 20px hsl(220 91% 55% / 0.15);
+}
+
+/* Icon Glow Effect */
+.chat-icon-glow {
+  box-shadow: 0 0 20px hsl(220 91% 55% / 0.3);
+}
+
+/* === ANIMAZIONI CHAT === */
+
+/* Fade in per nuovi messaggi */
+@keyframes chat-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message-enter {
+  animation: chat-fade-in 0.3s ease-out;
+}
+
+/* Pulse per typing indicator */
+@keyframes chat-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.chat-typing-dot {
+  animation: chat-pulse 1.4s ease-in-out infinite;
+}
+
+.chat-typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat-typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* === RESPONSIVE === */
+
+@media (max-width: 768px) {
+  .chat-lab-bg {
+    background: linear-gradient(
+      to bottom, 
+      hsl(240 100% 25% / 0.15),
+      hsl(var(--background)),
+      hsl(280 100% 25% / 0.15)
+    );
+  }
+}
+
+/* =====================================================
+   END CHAT LABORATORY STYLES
+   ===================================================== */

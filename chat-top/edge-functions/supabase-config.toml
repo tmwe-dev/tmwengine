@@ -1,0 +1,45 @@
+# =====================================================
+# SUPABASE CONFIG - Chat System Edge Functions
+# Data: 2025-10-12
+# =====================================================
+
+# IMPORTANTE: Questo file è un estratto. 
+# Aggiungi queste configurazioni al tuo supabase/config.toml principale.
+
+# =====================================================
+# CHAT LABORATORY ORCHESTRATOR
+# =====================================================
+
+[functions.chat-laboratory-orchestrator]
+verify_jwt = true
+
+# =====================================================
+# BAR CHAT ORCHESTRATOR
+# =====================================================
+
+[functions.bar-chat-orchestrator]
+verify_jwt = true
+
+# =====================================================
+# CHAT WITH AI (Chat Normale + CRM Tools)
+# =====================================================
+
+[functions.chat-with-ai]
+verify_jwt = true
+
+# =====================================================
+# SECRETS NECESSARI
+# =====================================================
+
+# Da configurare tramite:
+# supabase secrets set OPENAI_API_KEY=<your-key>
+# supabase secrets set ANTHROPIC_API_KEY=<your-key>
+# LOVABLE_API_KEY è auto-fornito da Lovable
+
+# =====================================================
+# DEPLOY COMMANDS
+# =====================================================
+
+# supabase functions deploy chat-laboratory-orchestrator
+# supabase functions deploy bar-chat-orchestrator
+# supabase functions deploy chat-with-ai

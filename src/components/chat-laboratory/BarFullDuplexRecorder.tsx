@@ -107,7 +107,7 @@ export const BarFullDuplexRecorder = ({
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
-    const detectVoice = () => {
+    const detectVoice = async () => {
       if (!isActive) return;
 
       analyser.getByteFrequencyData(dataArray);
@@ -133,16 +133,32 @@ export const BarFullDuplexRecorder = ({
           const silenceDuration = Date.now() - silenceStartRef.current;
           
           if (silenceDuration >= SILENCE_DURATION) {
-            // Fine frase → Invia trascrizione
-            console.log('🎤 Fine parlato rilevato dopo 3s di silenzio, invio trascrizione...');
-            processRecording();
+            console.log('🎤 Fine parlato rilevato, FERMO recorder prima di trascrivere...');
+            
+            // ✅ FERMA il MediaRecorder PRIMA di processare
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+              mediaRecorderRef.current.pause();
+              console.log('⏸️ MediaRecorder in pausa per trascrizione');
+            }
+            
+            await processRecording();
+            
+            // ✅ RIAVVIA il recorder dopo la trascrizione (se ancora in modalità Full-Duplex)
+            if (isActive && mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+              mediaRecorderRef.current.resume();
+              chunksRef.current = []; // Svuota per il prossimo turno
+              console.log('▶️ MediaRecorder ripreso, pronto per nuovo audio');
+            }
+            
             setIsSpeaking(false);
             silenceStartRef.current = null;
           }
         }
       }
 
-      requestAnimationFrame(detectVoice);
+      if (isActive) {
+        requestAnimationFrame(detectVoice);
+      }
     };
 
     detectVoice();

@@ -751,7 +751,8 @@ const ChatLaboratory = () => {
         {/* Header */}
         <div className="border-b border-border/40">
           <div className="container mx-auto px-4 py-2 md:py-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-1">
                   <Button
@@ -783,13 +784,21 @@ const ChatLaboratory = () => {
                 )}
               </div>
             </div>
-            <div className="shrink-0">
-              <LabHeaderControls
-                currentConversationId={currentConversationId}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+                variant="ghost"
+                size="icon"
+                title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
+              >
+                {viewMode === 'classic' ? '📑' : '💬'}
+              </Button>
+              <LaboratoryPromptManager />
+              <ParticipantSelector
                 participants={participants}
-                toggleParticipant={toggleParticipant}
+                onToggle={toggleParticipant}
               />
             </div>
           </div>

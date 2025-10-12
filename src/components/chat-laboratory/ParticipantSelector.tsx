@@ -63,9 +63,9 @@ export const ParticipantSelector = ({ participants, onToggle }: ParticipantSelec
     <Popover>
       <PopoverTrigger asChild>
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="icon" 
-          className="shrink-0 min-w-[60px] gap-1"
+          className="shrink-0 min-w-[60px] gap-1 bg-transparent hover:bg-transparent"
           title="Partecipanti"
         >
           <Users className="h-4 w-4" />

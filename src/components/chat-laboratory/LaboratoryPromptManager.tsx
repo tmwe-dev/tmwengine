@@ -122,9 +122,9 @@ ESEMPI:
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="icon" 
-          className="shrink-0"
+          className="shrink-0 bg-transparent hover:bg-transparent"
           title="System Prompt"
         >
           <Brain className="h-4 w-4" />

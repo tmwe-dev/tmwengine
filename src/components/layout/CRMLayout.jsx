@@ -205,11 +205,12 @@ const CRMLayout = ({ children }) => {
       {/* Header */}
       <header 
         className={cn(
-          "flex items-center justify-between relative",
+          "flex items-center relative",
           location.pathname !== '/attivita' && "border-b border-border",
           isMobile ? "h-24 px-3 py-3" : "h-28 px-4 lg:px-6 py-3"
         )}
         >
+        {/* Left side: Menu Button + Page Title */}
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -219,31 +220,23 @@ const CRMLayout = ({ children }) => {
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
+
+          {/* Page Title */}
+          <div className="flex items-center gap-2">
+            {isMobile ? (
+              <Home className="h-6 w-6 text-foreground" />
+            ) : (
+              <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
+                {getCurrentPageTitle()}
+              </h1>
+            )}
+          </div>
         </div>
 
-        {/* Titolo allineato al bordo destro della sidebar */}
-        <div 
-          className="absolute left-0 flex items-center gap-2 transition-all duration-300"
-          style={{
-            marginLeft: sidebarOpen 
-              ? isMobile ? '16rem' : '16rem'
-              : isMobile ? '0' : '4rem',
-            paddingLeft: '1rem'
-          }}
-        >
-          {isMobile ? (
-            // Mobile: mostra solo l'icona
-            <Home className="h-6 w-6 text-foreground" />
-          ) : (
-            // Desktop: mostra il nome
-            <h1 className="font-semibold text-foreground px-3 py-1.5 rounded-lg text-xl">
-              {getCurrentPageTitle()}
-            </h1>
-          )}
-        </div>
-
+        {/* Center spacer */}
         <div className="flex-1" />
 
+        {/* Right side elements */}
         <div className="flex items-center gap-3">
           {/* Logo */}
           <button 

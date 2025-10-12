@@ -40,7 +40,20 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
-    const elevenLabsKey = Deno.env.get('ELEVENLABS_API_KEY');
+    
+    // Leggi ElevenLabs API key dal database invece che dai secrets
+    let elevenLabsKey: string | null = null;
+    try {
+      const { data: configData } = await supabase
+        .from('voice_agent_config')
+        .select('elevenlabs_api_key')
+        .single();
+      
+      elevenLabsKey = configData?.elevenlabs_api_key || null;
+      console.log('🎤 ElevenLabs API key loaded from database:', !!elevenLabsKey);
+    } catch (error) {
+      console.log('⚠️ No ElevenLabs config in database, TTS disabled');
+    }
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
       throw new Error('Nessuna chiave API AI configurata');

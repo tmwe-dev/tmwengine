@@ -3379,6 +3379,33 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_agent_config: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          elevenlabs_api_key: string
+          enabled: boolean | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          elevenlabs_api_key: string
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          elevenlabs_api_key?: string
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       kb_hot_documents: {

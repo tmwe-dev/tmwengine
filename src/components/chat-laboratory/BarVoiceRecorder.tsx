@@ -86,23 +86,25 @@ export const BarVoiceRecorder = ({
 
   const startRecording = async () => {
     try {
-      // Request microphone access
+      // Request microphone access - configurazione identica a BarFullDuplexRecorder
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,  // ✅ Normalizza volume
         } 
       });
       streamRef.current = stream;
 
-      // Setup audio analyzer for volume visualization
-      audioContextRef.current = new AudioContext();
+      // Setup audio analyzer for volume visualization - configurazione identica a BarFullDuplexRecorder
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
-      analyserRef.current.fftSize = 256;
+      analyserRef.current.fftSize = 2048;  // ✅ Stesso valore di BarFullDuplexRecorder
+      analyserRef.current.smoothingTimeConstant = 0.8;  // ✅ Aggiunto per coerenza
       
       monitorAudioLevel();
 

@@ -27,7 +27,6 @@ import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggl
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
-import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
@@ -150,19 +149,6 @@ const ChatLaboratory = () => {
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
 
-  // Auto-summary hook
-  useSummaryAutoGenerator({
-    conversationId: currentConversationId,
-    messageCount: messages.length,
-    lastMessageSummarized: conversationData?.last_message_summarized || 0,
-    economyMode: conversationData?.economy_mode || false,
-    onSummaryGenerated: () => {
-      setSummaryRefreshKey(prev => prev + 1);
-      if (currentConversationId) {
-        loadMessages(currentConversationId);
-      }
-    }
-  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

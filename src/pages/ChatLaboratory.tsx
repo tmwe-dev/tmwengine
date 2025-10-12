@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -783,6 +783,23 @@ const ChatLaboratory = () => {
                   </p>
                 )}
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isBarMode && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => {
+                    const saved = localStorage.getItem('bar-section-open');
+                    const newState = !(saved === null ? true : saved === 'true');
+                    localStorage.setItem('bar-section-open', String(newState));
+                    window.dispatchEvent(new CustomEvent('bar-section-toggle'));
+                  }}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             </div>
             

@@ -26,23 +26,39 @@ export const BarChatAudioControls = ({
   return (
     <div className={cn(
       "border-t border-border/40 backdrop-blur-xl bg-background/80",
-      "p-4 rounded-lg shadow-lg",
+      "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Switch PTT / Full-Duplex */}
-      <div className="max-w-3xl mx-auto mb-4 flex items-center justify-center gap-3 pb-3 border-b border-border/30">
-        <Label htmlFor="duplex-mode" className="text-sm font-medium cursor-pointer">
-          {isDuplexMode ? '🎙️ Full-Duplex' : '🍺 Push-To-Talk'}
+      {/* Switch PTT / Full-Duplex - compatto */}
+      <div className="flex items-center justify-center gap-3 pb-3 border-b border-border/30">
+        <Label 
+          htmlFor="duplex-mode" 
+          className={cn(
+            "text-sm font-medium cursor-pointer transition-colors",
+            !isDuplexMode ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          Push-To-Talk
         </Label>
         <Switch
           id="duplex-mode"
           checked={isDuplexMode}
           onCheckedChange={setIsDuplexMode}
         />
+        <Label 
+          htmlFor="duplex-mode" 
+          className={cn(
+            "text-sm font-medium cursor-pointer transition-colors",
+            isDuplexMode ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          Full-Duplex
+        </Label>
       </div>
 
-      <div className="max-w-3xl mx-auto flex items-center justify-center gap-8">
-        {/* Voice Recorder - PTT o Full-Duplex */}
+      {/* Controlli audio centrali */}
+      <div className="flex items-center justify-center gap-4">
+        {/* Recorder (PTT o Full-Duplex) */}
         {isDuplexMode ? (
           <BarFullDuplexRecorder
             conversationId={conversationId}
@@ -58,30 +74,25 @@ export const BarChatAudioControls = ({
           />
         )}
 
-        {/* Interrupt Button */}
+        {/* Interrupt Button - visibile solo quando AI parla */}
         <InterruptButton
           isAISpeaking={isAISpeaking}
           onInterrupt={onInterrupt}
         />
       </div>
 
-      {/* Mode Description */}
-      <div className="max-w-3xl mx-auto mt-3 pt-3 border-t border-border/20 text-xs text-muted-foreground text-center">
+      {/* Descrizione modalità - compatta */}
+      <div className="text-center text-xs text-muted-foreground">
         {isDuplexMode ? (
           <p>
-            ✅ <strong>Microfono sempre attivo</strong> dopo click. Sistema con AEC e VAD. Parla liberamente.
+            ✅ <strong>Microfono sempre attivo</strong> dopo il click. Sistema con AEC e VAD. Parla liberamente.
           </p>
         ) : (
           <p>
-            ✅ <strong>Premi 🍺 per parlare</strong>. Registra fino a 3 sec di silenzio.
+            ✅ <strong>Premi per parlare</strong>. Registra fino a 3 sec di silenzio.
           </p>
         )}
       </div>
-
-      {/* Visual feedback banner */}
-      {isAISpeaking && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 animate-pulse" />
-      )}
     </div>
   );
 };

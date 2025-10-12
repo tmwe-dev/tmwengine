@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface BarFullDuplexRecorderProps {
   conversationId: string | null;
@@ -260,68 +261,67 @@ export const BarFullDuplexRecorder = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Status Indicators */}
-      {isActive && (
-        <div className="flex items-center gap-1">
-          {/* AI Speaking Indicator */}
-          {isAISpeaking && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Volume2 className="h-3 w-3 text-purple-500 animate-pulse" />
-              <span>AI sta parlando...</span>
-            </div>
-          )}
-          
-          {/* Voice Level Indicator */}
-          {!isAISpeaking && (
-            <div className="flex items-center gap-1">
-              <div className="h-2 w-12 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-100 ${
-                    isSpeaking ? 'bg-green-500' : 'bg-blue-400'
-                  }`}
-                  style={{ width: `${Math.min(audioLevel * 200, 100)}%` }}
-                />
-              </div>
-              {isSpeaking && (
-                <span className="text-xs text-green-600 font-medium">
-                  Ascolto...
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Processing Indicator */}
-          {isProcessing && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
-              <span>Elaborazione...</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Toggle Button */}
+    <div className="flex flex-col items-center gap-2">
+      {/* Main Toggle Button */}
       <Button
         type="button"
-        variant={isActive ? "destructive" : "secondary"}
-        size="sm"
+        variant={isActive ? "destructive" : "default"}
+        size="default"
         onClick={toggleFullDuplex}
         disabled={isDisabled}
-        className="gap-2"
+        className={cn(
+          "min-w-[180px] gap-2 transition-all",
+          isActive && "shadow-lg shadow-green-500/20"
+        )}
       >
         {isActive ? (
           <>
             <MicOff className="h-4 w-4" />
-            Stop Full-Duplex
+            <span className="font-medium">Stop Conversazione</span>
           </>
         ) : (
           <>
             <Mic className="h-4 w-4" />
-            Avvia Full-Duplex
+            <span className="font-medium">Avvia Conversazione</span>
           </>
         )}
       </Button>
+
+      {/* Status Indicators - sotto il bottone */}
+      {isActive && (
+        <div className="flex items-center gap-2 w-full max-w-[180px]">
+          {isAISpeaking ? (
+            <>
+              <Volume2 className="h-3 w-3 text-purple-500 animate-pulse flex-shrink-0" />
+              <span className="text-xs text-muted-foreground">AI sta parlando...</span>
+            </>
+          ) : isProcessing ? (
+            <>
+              <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent flex-shrink-0" />
+              <span className="text-xs text-muted-foreground">Elaborazione...</span>
+            </>
+          ) : (
+            <>
+              <div className={cn(
+                "h-2 w-2 rounded-full flex-shrink-0",
+                isSpeaking ? "bg-green-500 animate-pulse" : "bg-blue-400"
+              )} />
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={cn(
+                    "h-full transition-all duration-100",
+                    isSpeaking ? "bg-green-500" : "bg-blue-400"
+                  )}
+                  style={{ width: `${Math.min(audioLevel * 200, 100)}%` }}
+                />
+              </div>
+              {isSpeaking && (
+                <span className="text-xs text-green-600 font-medium">In ascolto</span>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

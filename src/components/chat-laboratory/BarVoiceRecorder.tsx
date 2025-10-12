@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Beer, Volume2 } from 'lucide-react';
+import { Mic, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,56 +227,49 @@ export const BarVoiceRecorder = ({
   };
 
   return (
-    <div className="relative">
-      {/* Beer Button */}
+    <div className="flex flex-col items-center gap-2">
+      {/* Modern PTT Button */}
       <Button
-        variant={isRecording ? "destructive" : "outline"}
-        size="lg"
+        variant={isRecording ? "destructive" : isProcessing ? "secondary" : "outline"}
+        size="default"
         disabled={isDisabled || isProcessing}
         onClick={handleToggle}
         className={cn(
-          "h-16 w-16 rounded-full transition-all relative",
-          isRecording && "animate-pulse scale-110 shadow-lg",
-          isProcessing && "opacity-50 cursor-wait"
+          "min-w-[180px] gap-2 transition-all",
+          isRecording && "shadow-lg shadow-red-500/20",
+          isProcessing && "opacity-70"
         )}
       >
-        <Beer className={cn(
-          "h-8 w-8 transition-colors",
-          !isRecording && !isProcessing && "text-muted-foreground",
-          isRecording && !isProcessing && "text-amber-500",
-          isProcessing && "text-red-500"
+        <Mic className={cn(
+          "h-4 w-4",
+          isRecording && "animate-pulse"
         )} />
-        
-        {/* Foam bubbles animation quando attivo */}
-        {isRecording && !isProcessing && (
-          <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex gap-1 animate-bounce">
-            <div className="w-2 h-2 bg-white rounded-full opacity-80" />
-            <div className="w-2 h-2 bg-white rounded-full opacity-80" style={{ animationDelay: '0.1s' }} />
-            <div className="w-2 h-2 bg-white rounded-full opacity-80" style={{ animationDelay: '0.2s' }} />
-          </div>
-        )}
+        <span className="font-medium">
+          {isProcessing ? "Elaborazione..." : 
+           isRecording ? "Registrando..." : 
+           "Premi per parlare"}
+        </span>
       </Button>
 
-      {/* Volume indicator */}
+      {/* Volume indicator - compatto sotto il bottone */}
       {isRecording && (
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-1">
-          <Volume2 className="h-3 w-3 text-amber-500" />
-          <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+        <div className="flex items-center gap-2 w-full max-w-[180px]">
+          <Volume2 className="h-3 w-3 text-amber-500 flex-shrink-0" />
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
             <div 
-              className="h-full bg-amber-500 transition-all duration-100"
+              className="h-full bg-gradient-to-r from-amber-500 to-red-500 transition-all duration-100"
               style={{ width: `${audioLevel * 100}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Status text con countdown silenzio */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-muted-foreground">
-        {isProcessing ? "Elaborazione..." : 
-         silenceCountdown > 0 ? `Invio automatico tra ${silenceCountdown}s...` :
-         isRecording ? "Registrazione..." : 
-         "Premi per parlare"}
-      </div>
+      {/* Countdown silenzio */}
+      {silenceCountdown > 0 && (
+        <div className="text-xs text-amber-600 font-medium">
+          Invio tra {silenceCountdown}s...
+        </div>
+      )}
     </div>
   );
 };

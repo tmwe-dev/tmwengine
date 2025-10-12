@@ -975,9 +975,15 @@ const ChatLaboratory = () => {
               <BarChatAudioControls
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}
-                onTranscriptionComplete={(text) => {
+                onTranscriptionComplete={async (text) => {
+                  console.log('✅ Trascrizione ricevuta:', text);
                   setPrompt(text);
-                  toast({ title: "✓ Trascrizione completata", description: "Premi Invia per inviare" });
+                  
+                  // ✅ Invio automatico senza premere bottone
+                  const fakeEvent = new Event('submit') as any;
+                  await handleSubmit(fakeEvent);
+                  
+                  toast({ title: "✓ Messaggio inviato alla chat" });
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

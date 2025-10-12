@@ -19,6 +19,7 @@ export const BarVoiceRecorder = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [silenceCountdown, setSilenceCountdown] = useState(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -26,6 +27,10 @@ export const BarVoiceRecorder = ({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const SILENCE_THRESHOLD = 0.05;  // Volume sotto questo = silenzio
+  const SILENCE_DURATION = 3000;    // 3 secondi di silenzio prima di stop
 
   // Cleanup on unmount
   useEffect(() => {
@@ -37,7 +42,7 @@ export const BarVoiceRecorder = ({
     };
   }, []);
 
-  // Monitor audio level for visual feedback
+  // Monitor audio level for visual feedback + VAD
   const monitorAudioLevel = () => {
     if (!analyserRef.current) return;
 
@@ -45,7 +50,36 @@ export const BarVoiceRecorder = ({
     analyserRef.current.getByteFrequencyData(dataArray);
     
     const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-    setAudioLevel(Math.min(average / 128, 1)); // Normalize 0-1
+    const normalizedLevel = Math.min(average / 128, 1); // Normalize 0-1
+    setAudioLevel(normalizedLevel);
+
+    // VAD: Voice Activity Detection
+    if (normalizedLevel < SILENCE_THRESHOLD) {
+      // Silenzio rilevato
+      if (!silenceTimerRef.current && isRecording) {
+        console.log('🔇 Silenzio rilevato, countdown 3s...');
+        let countdown = 3;
+        setSilenceCountdown(countdown);
+        
+        silenceTimerRef.current = setInterval(() => {
+          countdown--;
+          setSilenceCountdown(countdown);
+          
+          if (countdown <= 0) {
+            console.log('⏹️ 3 secondi di silenzio → stop automatico');
+            stopRecording();
+          }
+        }, 1000);
+      }
+    } else {
+      // C'è audio → cancella timer silenzio
+      if (silenceTimerRef.current) {
+        console.log('🎤 Audio rilevato, cancello countdown');
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+        setSilenceCountdown(0);
+      }
+    }
 
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
   };
@@ -120,6 +154,11 @@ export const BarVoiceRecorder = ({
       animationFrameRef.current = null;
     }
 
+    if (silenceTimerRef.current) {
+      clearInterval(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
@@ -127,6 +166,7 @@ export const BarVoiceRecorder = ({
 
     setIsRecording(false);
     setAudioLevel(0);
+    setSilenceCountdown(0);
   };
 
   const transcribeAudio = async () => {
@@ -227,9 +267,12 @@ export const BarVoiceRecorder = ({
         </div>
       )}
 
-      {/* Status text */}
+      {/* Status text con countdown silenzio */}
       <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-muted-foreground">
-        {isProcessing ? "Elaborazione..." : isRecording ? "Registrazione..." : "Premi per parlare"}
+        {isProcessing ? "Elaborazione..." : 
+         silenceCountdown > 0 ? `Invio automatico tra ${silenceCountdown}s...` :
+         isRecording ? "Registrazione..." : 
+         "Premi per parlare"}
       </div>
     </div>
   );

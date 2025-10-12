@@ -405,7 +405,7 @@ serve(async (req) => {
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
-        sender_type: 'ai',
+        sender_type: 'agent',  // ✅ Fix: 'agent' invece di 'ai'
         sender_name: selectedParticipant.name,
         content: aiResponse,
         token_input: tokenInput,

@@ -11,9 +11,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-gradient-to-bl from-purple-400/25 via-purple-400/15 via-35% to-transparent hover:from-purple-400/30 hover:via-purple-400/20 text-white",
         destructive: "bg-gradient-to-bl from-red-400/25 via-red-400/15 via-35% to-transparent hover:from-red-400/30 hover:via-red-400/20 text-white",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        outline: "border border-input bg-background hover:text-accent-foreground group",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        ghost: "hover:text-accent-foreground group transition-colors",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

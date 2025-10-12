@@ -120,10 +120,10 @@ export function ContactMobileCard({
               )}
               <div className="flex items-center gap-2 mt-2">
                 <div 
-                  className="p-1 rounded-full cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors"
+                  className="p-1 rounded-full cursor-pointer bg-primary/10 group transition-all"
                   onClick={onCreateActivity}
                 >
-                  <Pickaxe className="h-4 w-4 text-primary" />
+                  <Pickaxe className="h-4 w-4 text-primary group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                 </div>
                 <ActivityIndicators 
                   companyId={contact.id} 

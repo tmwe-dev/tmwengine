@@ -258,14 +258,14 @@ export const EmailList = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hidden md:flex h-7 w-7 p-0"
+                      className="hidden md:flex h-7 w-7 p-0 group"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEmailSelect(email.id);
                         onOpenDetailPopup();
                       }}
                     >
-                      <Maximize2 className="h-4 w-4" />
+                      <Maximize2 className="h-4 w-4 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                     </Button>
                   )}
                   {!multiSelectMode && selectedEmailId === email.id && (
@@ -274,9 +274,9 @@ export const EmailList = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 p-0 group"
                         >
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="h-4 w-4 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover z-50">

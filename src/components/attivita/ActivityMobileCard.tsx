@@ -148,8 +148,8 @@ export function ActivityMobileCard({
               />
               <div 
                 className={cn(
-                  "flex items-center gap-2 p-2 rounded-md",
-                  activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer hover:bg-muted/50"
+                  "flex items-center gap-2 p-2 rounded-md group transition-all",
+                  activity.tipo === 'chiamata' && activity.rubrica_id && "cursor-pointer"
                 )}
                 onClick={() => {
                   if (activity.tipo === 'chiamata' && activity.rubrica_id) {
@@ -157,7 +157,7 @@ export function ActivityMobileCard({
                   }
                 }}
               >
-                <ActivityIcon className="h-5 w-5 text-primary" />
+                <ActivityIcon className="h-5 w-5 text-primary group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                 <span className="font-medium text-sm">{TIPO_LABELS[activity.tipo]}</span>
               </div>
               {activity.contact_source && (
@@ -183,7 +183,7 @@ export function ActivityMobileCard({
 
         {/* Contatto/Azienda */}
         <div 
-          className="cursor-pointer hover:bg-muted/20 p-2 rounded-md transition-colors"
+          className="cursor-pointer p-2 rounded-md group transition-all hover:scale-[1.01]"
           onClick={onCompanyClick}
         >
           <div className="font-semibold text-foreground text-base leading-tight">

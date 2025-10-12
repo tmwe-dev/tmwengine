@@ -84,51 +84,97 @@ export const BarVoiceRecorder = ({
     animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
   };
 
+  // Helper: mimeType supportato
+  const getSupportedMimeType = () => {
+    const types = ['audio/webm', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'];
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('✅ Usando mimeType:', type);
+        return type;
+      }
+    }
+    console.warn('⚠️ Nessun mimeType supportato, uso default');
+    return undefined;
+  };
+
+  // Helper: controllo permessi
+  const checkMicrophonePermission = async () => {
+    try {
+      const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      console.log('🎤 Permesso microfono:', result.state);
+      
+      if (result.state === 'denied') {
+        toast({
+          variant: "destructive",
+          title: "Microfono bloccato",
+          description: "Abilita il microfono nelle impostazioni del browser"
+        });
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('Impossibile verificare permessi:', e);
+      return true; // Procedi comunque
+    }
+  };
+
   const startRecording = async () => {
     try {
-      // Request microphone access - configurazione identica a BarFullDuplexRecorder
+      // Step 1: Controllo permessi
+      const hasPermission = await checkMicrophonePermission();
+      if (!hasPermission) return;
+
+      // Step 2: Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,  // ✅ Normalizza volume
+          autoGainControl: true,
         } 
       });
       streamRef.current = stream;
 
-      // Setup audio analyzer for volume visualization - configurazione identica a BarFullDuplexRecorder
+      // Step 3: Setup audio analyzer
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
-      analyserRef.current.fftSize = 2048;  // ✅ Stesso valore di BarFullDuplexRecorder
-      analyserRef.current.smoothingTimeConstant = 0.8;  // ✅ Aggiunto per coerenza
+      analyserRef.current.fftSize = 2048;
+      analyserRef.current.smoothingTimeConstant = 0.8;
       
       monitorAudioLevel();
 
-      // Setup media recorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
-      });
+      // Step 4: Setup media recorder con mimeType corretto
+      const mimeType = getSupportedMimeType();
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
+      // Step 5: Logging dettagliato eventi
+      mediaRecorder.onstart = () => {
+        console.log('🎬 MediaRecorder STARTED, state:', mediaRecorder.state);
+      };
+
       mediaRecorder.ondataavailable = (event) => {
-        console.log('📦 Chunk ricevuto, size:', event.data.size);
+        console.log('📦 Chunk ricevuto:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        console.log('⏹️ Recording stopped, chunks totali:', chunksRef.current.length);
+        console.log('⏹️ MediaRecorder STOPPED, chunks:', chunksRef.current.length);
         await transcribeAudio();
       };
 
-      mediaRecorder.start(1000); // Richiede chunks ogni 1s
-      console.log('🎤 MediaRecorder.start() chiamato, stato:', mediaRecorder.state);
+      mediaRecorder.onerror = (e) => {
+        console.error('❌ MediaRecorder ERROR:', e);
+      };
+
+      mediaRecorder.start(1000); // Chunks ogni 1s
+      console.log('🎤 MediaRecorder.start() chiamato');
       setIsRecording(true);
       toast({ title: "🍺 Microfono attivo - Parla pure!" });
     } catch (error) {
@@ -141,43 +187,63 @@ export const BarVoiceRecorder = ({
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+  const stopRecording = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
+        resolve();
+        return;
+      }
+
+      // Aspetta che MediaRecorder sia veramente fermo
+      mediaRecorderRef.current.onstop = () => {
+        console.log('⏹️ MediaRecorder stopped, chunks:', chunksRef.current.length);
+        resolve();
+      };
+
       mediaRecorderRef.current.stop();
-    }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
+      
+      // Cleanup
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
 
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
 
-    if (silenceTimerRef.current) {
-      clearInterval(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
 
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
 
-    setIsRecording(false);
-    setAudioLevel(0);
-    setSilenceCountdown(0);
+      setIsRecording(false);
+      setAudioLevel(0);
+      setSilenceCountdown(0);
+    });
   };
 
   const transcribeAudio = async () => {
+    console.log('🎯 transcribeAudio chiamata, chunks:', chunksRef.current.length);
+    
     if (chunksRef.current.length === 0) {
-      toast({ title: "Nessun audio registrato", variant: "destructive" });
+      console.error('❌ NESSUN CHUNK REGISTRATO!');
+      toast({
+        variant: "destructive",
+        title: "Errore Registrazione",
+        description: "Il microfono non ha registrato nessun audio. Controlla i permessi e riprova."
+      });
       return;
     }
 
     setIsProcessing(true);
+    console.log('📤 Invio audio per trascrizione...');
     
     try {
       const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
@@ -219,12 +285,12 @@ export const BarVoiceRecorder = ({
     }
   };
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
     console.log('🍺 Toggle cliccato, isRecording:', isRecording);
     if (isRecording) {
-      stopRecording();
+      await stopRecording();
     } else {
-      startRecording();
+      await startRecording();
     }
   };
 

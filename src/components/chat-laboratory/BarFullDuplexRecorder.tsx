@@ -43,22 +43,61 @@ export const BarFullDuplexRecorder = ({
     };
   }, []);
 
+  // Helper: mimeType supportato
+  const getSupportedMimeType = () => {
+    const types = ['audio/webm', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'];
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('✅ [DUPLEX] Usando mimeType:', type);
+        return type;
+      }
+    }
+    console.warn('⚠️ [DUPLEX] Nessun mimeType supportato, uso default');
+    return undefined;
+  };
+
+  // Helper: controllo permessi
+  const checkMicrophonePermission = async () => {
+    try {
+      const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      console.log('🎤 [DUPLEX] Permesso microfono:', result.state);
+      
+      if (result.state === 'denied') {
+        toast({
+          variant: "destructive",
+          title: "Microfono bloccato",
+          description: "Abilita il microfono nelle impostazioni del browser"
+        });
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('[DUPLEX] Impossibile verificare permessi:', e);
+      return true;
+    }
+  };
+
   // Echo Cancellation Setup
   const setupAudioContext = async () => {
     try {
+      // Step 1: Controllo permessi
+      const hasPermission = await checkMicrophonePermission();
+      if (!hasPermission) return false;
+
+      // Step 2: Request microphone
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
           channelCount: 1,
-          echoCancellation: true, // ✅ AEC - Cancellazione eco
-          noiseSuppression: true, // ✅ Riduci rumore di fondo
-          autoGainControl: true,  // ✅ Normalizza volume
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         }
       });
 
       audioStreamRef.current = stream;
 
-      // Setup Audio Analysis per VAD
+      // Step 3: Setup Audio Analysis
       const audioContext = new AudioContext({ sampleRate: 24000 });
       audioContextRef.current = audioContext;
 
@@ -70,26 +109,40 @@ export const BarFullDuplexRecorder = ({
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      // Setup MediaRecorder - stessa configurazione del microfono funzionante
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm'
-      });
+      // Step 4: Setup MediaRecorder con mimeType corretto
+      const mimeType = getSupportedMimeType();
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+
+      // Step 5: Logging dettagliato
+      mediaRecorder.onstart = () => {
+        console.log('🎬 [DUPLEX] MediaRecorder STARTED, state:', mediaRecorder.state);
+      };
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('📦 [DUPLEX] Chunk ricevuto:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
+      mediaRecorder.onstop = () => {
+        console.log('⏹️ [DUPLEX] MediaRecorder STOPPED, chunks:', chunksRef.current.length);
+      };
+
+      mediaRecorder.onerror = (e) => {
+        console.error('❌ [DUPLEX] MediaRecorder ERROR:', e);
+      };
+
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000); // Chunk ogni secondo come il microfono funzionante
+      mediaRecorder.start(1000); // Chunks ogni 1s
+      console.log('🎤 [DUPLEX] MediaRecorder.start() chiamato');
 
       // Start VAD monitoring
       startVADMonitoring();
 
       return true;
     } catch (error) {
-      console.error('Errore accesso microfono:', error);
+      console.error('[DUPLEX] Errore accesso microfono:', error);
       toast({
         variant: "destructive",
         title: "Errore Microfono",
@@ -149,13 +202,29 @@ export const BarFullDuplexRecorder = ({
   };
 
   const processRecording = async () => {
-    if (chunksRef.current.length === 0 || isProcessing) return;
+    console.log('🎯 [DUPLEX] processRecording chiamata, chunks:', chunksRef.current.length);
+    
+    if (chunksRef.current.length === 0) {
+      console.error('❌ [DUPLEX] NESSUN CHUNK REGISTRATO!');
+      toast({
+        variant: "destructive",
+        title: "Errore Registrazione",
+        description: "Il microfono non ha registrato nessun audio. Controlla i permessi e riprova."
+      });
+      return;
+    }
+
+    if (isProcessing) {
+      console.log('⚠️ [DUPLEX] Trascrizione già in corso, skip');
+      return;
+    }
 
     // Crea copia dei chunks prima di inviare
     const chunksToProcess = [...chunksRef.current];
     chunksRef.current = []; // Svuota per continuare a registrare
     
     setIsProcessing(true);
+    console.log('📤 [DUPLEX] Invio audio per trascrizione...');
 
     try {
       const audioBlob = new Blob(chunksToProcess, { type: 'audio/webm' });

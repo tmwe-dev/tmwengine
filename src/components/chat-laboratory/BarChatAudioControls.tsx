@@ -30,62 +30,65 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Header con Switch */}
-      <div className="flex items-center justify-center gap-3 pb-3 border-b border-border/30">
-        <div className="flex items-center gap-2">
-          <Mic className="h-4 w-4 sm:hidden text-muted-foreground" />
-          <Label 
-            htmlFor="duplex-mode" 
-            className={cn(
-              "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
-              !isDuplexMode ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            Premi per parlare
-          </Label>
+      {/* Header con Switch e Controlli Audio */}
+      <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/30">
+        {/* Switch a sinistra */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Mic className="h-4 w-4 sm:hidden text-muted-foreground" />
+            <Label 
+              htmlFor="duplex-mode" 
+              className={cn(
+                "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
+                !isDuplexMode ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Premi per parlare
+            </Label>
+          </div>
+          <Switch
+            id="duplex-mode"
+            checked={isDuplexMode}
+            onCheckedChange={setIsDuplexMode}
+          />
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 sm:hidden text-muted-foreground" />
+            <Label 
+              htmlFor="duplex-mode" 
+              className={cn(
+                "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
+                isDuplexMode ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Full-Duplex
+            </Label>
+          </div>
         </div>
-        <Switch
-          id="duplex-mode"
-          checked={isDuplexMode}
-          onCheckedChange={setIsDuplexMode}
-        />
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 sm:hidden text-muted-foreground" />
-          <Label 
-            htmlFor="duplex-mode" 
-            className={cn(
-              "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
-              isDuplexMode ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            Full-Duplex
-          </Label>
-        </div>
-      </div>
 
-      {/* Controlli audio centrali */}
-      <div className="flex items-center justify-center gap-4">
-        {/* Recorder (PTT o Full-Duplex) */}
-        {isDuplexMode ? (
-          <BarFullDuplexRecorder
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={false}
+        {/* Controlli audio a destra */}
+        <div className="flex items-center gap-4">
+          {/* Recorder (PTT o Full-Duplex) */}
+          {isDuplexMode ? (
+            <BarFullDuplexRecorder
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={false}
+              isAISpeaking={isAISpeaking}
+            />
+          ) : (
+            <BarVoiceRecorder
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
+          )}
+
+          {/* Interrupt Button - visibile solo quando AI parla */}
+          <InterruptButton
             isAISpeaking={isAISpeaking}
+            onInterrupt={onInterrupt}
           />
-        ) : (
-          <BarVoiceRecorder
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-
-        {/* Interrupt Button - visibile solo quando AI parla */}
-        <InterruptButton
-          isAISpeaking={isAISpeaking}
-          onInterrupt={onInterrupt}
-        />
+        </div>
       </div>
 
       {/* Descrizione modalità - compatta */}

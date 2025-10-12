@@ -147,7 +147,7 @@ serve(async (req) => {
     const startTime = Date.now();
 
     // Route to appropriate AI provider
-    if (selectedParticipant.type === 'anthropic' && anthropicKey) {
+    if ((selectedParticipant.type === 'anthropic' || selectedParticipant.type === 'claude') && anthropicKey) {
       console.log('🤖 Calling Anthropic (Claude)...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -173,7 +173,7 @@ serve(async (req) => {
       tokenInput = anthropicData.usage?.input_tokens || 0;
       tokenOutput = anthropicData.usage?.output_tokens || 0;
     } 
-    else if (selectedParticipant.type === 'openai' && openAIKey) {
+    else if ((selectedParticipant.type === 'openai' || selectedParticipant.type === 'chatgpt') && openAIKey) {
       console.log('🤖 Calling OpenAI (GPT)...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',

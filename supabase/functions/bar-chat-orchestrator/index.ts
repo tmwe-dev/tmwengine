@@ -359,112 +359,44 @@ serve(async (req) => {
     };
     const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
 
-    // Generate audio with ElevenLabs TTS (se voice enabled)
-    // Check interrupt prima di generare audio (costoso)
-    let audioUrl: string | null = null;
-    
-    console.log('🎵 Tentativo generazione audio - Voice enabled:', voiceEnabled, 'API key presente:', !!elevenLabsKey, 'Voice ID:', elevenLabsVoiceId);
-    
-    if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
-      // Double-check interrupt flag prima di TTS
-      const { data: interruptCheck } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('interrupt_requested')
-        .eq('conversation_id', conversationId)
-        .single();
+    // ✅ Opzione D: Salva subito il messaggio con audio_url = null
+    const { data: savedMessage, error: saveError } = await supabase
+      .from('chat_laboratory_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_type: dbSenderType,
+        sender_name: selectedParticipant.name,
+        content: aiResponse,
+        token_input: tokenInput,
+        token_output: tokenOutput,
+        tempo_risposta_ms: responseTime,
+        is_visible_to_ai: true,
+        audio_url: null // ⚠️ Verrà popolato da generate-audio in background
+      })
+      .select()
+      .single();
 
-      if (interruptCheck?.interrupt_requested) {
-        console.log('⛔ Interrupt rilevato prima di TTS, annullo');
-        await supabase
-          .from('chat_laboratory_bar_mode')
-          .update({ interrupt_requested: false })
-          .eq('conversation_id', conversationId);
-        
-        return new Response(
-          JSON.stringify({ interrupted: true, message: 'Interrupted before TTS generation' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    if (saveError) {
+      console.error('❌ Errore salvataggio messaggio:', saveError);
+      throw saveError;
+    }
 
-      try {
-        console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
-        console.log('📝 Testo da convertire (primi 100 char):', aiResponse.substring(0, 100));
-        
-        // Limita la lunghezza per TTS (max 4096 caratteri)
-        const textForTTS = aiResponse.length > 4096 
-          ? aiResponse.substring(0, 4096) + '...'
-          : aiResponse;
+    console.log('✅ Messaggio salvato con ID:', savedMessage.id);
 
-        const ttsResponse = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`,
-          {
-            method: 'POST',
-            headers: {
-              'Accept': 'audio/mpeg',
-              'xi-api-key': elevenLabsKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text: textForTTS,
-              model_id: 'eleven_turbo_v2_5',
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.5,
-                use_speaker_boost: true
-              }
-            })
-          }
-        );
+    // ✅ Update conversation turn index
+    await supabase
+      .from('chat_laboratory_conversations')
+      .update({ 
+        current_turn_index: currentTurnIndex,
+        last_speaker_index: currentTurnIndex,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', conversationId);
 
-        console.log('📡 ElevenLabs response status:', ttsResponse.status);
-        
-        if (ttsResponse.ok) {
-          // Converti audio blob in base64 per storage
-          const audioBlob = await ttsResponse.blob();
-          const audioBuffer = await audioBlob.arrayBuffer();
-          console.log('📦 Audio buffer size:', audioBuffer.byteLength, 'bytes');
-          
-          const audioBase64 = btoa(
-            Array.from(new Uint8Array(audioBuffer))
-              .reduce((acc, byte) => acc + String.fromCharCode(byte), '')
-          );
-          
-          // Salva in Supabase Storage
-          const fileName = `bar-chat/${conversationId}/${Date.now()}.mp3`;
-          console.log('☁️ Uploading to Supabase Storage:', fileName);
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('audio-responses')
-            .upload(fileName, audioBlob, {
-              contentType: 'audio/mpeg',
-              upsert: false
-            });
+    // ✅ Determina se generare audio (delegato al frontend)
+    const shouldGenerateAudio = voiceEnabled && elevenLabsKey && elevenLabsVoiceId;
 
-          if (uploadError) {
-            console.error('❌ Errore upload Supabase Storage:', uploadError);
-            throw uploadError;
-          } else {
-            console.log('✅ Upload completato:', uploadData);
-            
-            const { data: urlData } = supabase.storage
-              .from('audio-responses')
-              .getPublicUrl(fileName);
-            
-            audioUrl = urlData.publicUrl;
-            console.log('🔗 Audio URL pubblico:', audioUrl);
-          }
-        } else {
-          const errorText = await ttsResponse.text();
-          console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
-          throw new Error(`ElevenLabs API error: ${ttsResponse.status} - ${errorText}`);
-        }
-      } catch (ttsError) {
-        console.error('❌ Errore TTS completo:', ttsError);
-        console.error('Stack trace:', ttsError.stack);
-        // Continua comunque senza audio - non bloccare la risposta
-      }
-    } else {
+    if (!shouldGenerateAudio) {
       if (!voiceEnabled) {
         console.log('🔇 Voice non abilitato per questa conversazione');
       } else if (!elevenLabsKey) {
@@ -474,41 +406,17 @@ serve(async (req) => {
       }
     }
 
-    // Save message con audio_url
-    const { error: insertError } = await supabase
-      .from('chat_laboratory_messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_type: dbSenderType,  // ✅ FIX DEFINITIVO: usa tipo mappato compatibile col DB
-        sender_name: selectedParticipant.name,
-        content: aiResponse,
-        token_input: tokenInput,
-        token_output: tokenOutput,
-        tempo_risposta_ms: responseTime,
-        audio_url: audioUrl
-      });
-
-    if (insertError) {
-      console.error('❌ Errore insert messaggio:', insertError);
-    }
-
-    // Update conversation turn
-    await supabase
-      .from('chat_laboratory_conversations')
-      .update({ 
-        last_speaker_index: currentTurnIndex,
-        current_turn_index: (currentTurnIndex + 1) % participants.length
-      })
-      .eq('id', conversationId);
-
+    // ✅ Restituisci risposta immediata con flag audioGenerating
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: true,
+        participant: selectedParticipant.name,
         content: aiResponse,
-        speaker: selectedParticipant.name,
         tokens: { input: tokenInput, output: tokenOutput },
-        responseTime,
-        audioUrl 
+        responseTime: responseTime,
+        messageId: savedMessage.id, // ⚡ Necessario per generate-audio
+        audioGenerating: shouldGenerateAudio, // ⚡ Flag per frontend
+        audioUrl: null // ⚠️ Sarà popolato da generate-audio
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

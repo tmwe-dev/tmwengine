@@ -558,12 +558,10 @@ const ChatLaboratory = () => {
         } else {
           console.log('✅ Risposta ricevuta:', data);
           
-          if (data?.audioUrl) {
-            console.log('🎵 Audio disponibile:', data.audioUrl);
-            // toast({
-            //   title: "🎤 Risposta vocale disponibile",
-            //   description: `${data.speaker || 'Agente'} ha risposto`,
-            // });
+          // ✅ Opzione D: Trigger async audio generation se necessario
+          if (data?.audioGenerating && data?.messageId) {
+            console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
+            triggerAudioGeneration(data.messageId);
           }
           
           await loadMessages(conversationId);
@@ -634,6 +632,43 @@ const ChatLaboratory = () => {
     setParticipants(prev => prev.map(p => 
       p.id === participantId ? { ...p, is_active: !p.is_active } : p
     ));
+  };
+
+  // ✅ Opzione D: Trigger async audio generation con retry logic
+  const triggerAudioGeneration = async (messageId: string, retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [0, 2000, 4000]; // 0s, 2s, 4s
+
+    try {
+      console.log(`🎵 [Tentativo ${retryCount + 1}/${MAX_RETRIES}] Generazione audio per messageId:`, messageId);
+      
+      const { data, error } = await supabase.functions.invoke('generate-audio', {
+        body: { messageId }
+      });
+
+      if (error) {
+        console.error('❌ Errore generate-audio:', error);
+        
+        // Retry se retryable e non superato max tentativi
+        if (data?.retryable && retryCount < MAX_RETRIES - 1) {
+          const delay = RETRY_DELAYS[retryCount + 1];
+          console.log(`⏳ Retry in ${delay}ms...`);
+          setTimeout(() => {
+            triggerAudioGeneration(messageId, retryCount + 1);
+          }, delay);
+        } else {
+          console.warn('⚠️ Generazione audio fallita definitivamente, continuo senza audio');
+        }
+        return;
+      }
+
+      if (data?.success) {
+        console.log('✅ Audio generato con successo:', data.audioUrl);
+      }
+    } catch (err) {
+      console.error('❌ Errore chiamata generate-audio:', err);
+      // Non blocca l'UI, solo log
+    }
   };
 
   const generateConversationTitle = async (conversationId: string) => {

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
 import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
+import { LaboratoryPromptManager } from '@/components/chat-laboratory/LaboratoryPromptManager';
 import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
 import { ImageGenerator } from '@/components/chat/ImageGenerator';
 import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRecorder';
@@ -16,8 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
-import { LabStatsBar } from '@/components/chat-laboratory/LabStatsBar';
-import { LabControlsBar } from '@/components/chat-laboratory/LabControlsBar';
+import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
 
 interface Message {
   id: string;
@@ -747,11 +747,9 @@ const ChatLaboratory = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
-          {/* RIGA 1: Header Principale */}
-          <div className="px-4 py-2 md:py-3">
-            <div className="flex items-center justify-between gap-4">
-              {/* Sinistra: Navigazione verticale */}
-              <div className="flex flex-col gap-1">
+          <div className="container mx-auto px-4 py-2 md:py-3">
+          <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                 <Button
                   onClick={() => navigate('/chat')}
                   variant="ghost"
@@ -769,40 +767,35 @@ const ChatLaboratory = () => {
                 >
                   <Layout className="h-5 w-5" />
                 </Button>
-              </div>
-
-              {/* Centro: Titolo */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                  Chat Laboratory
-                </h1>
-                {!isMobile && (
-                  <p className="text-sm text-muted-foreground">
-                    Discussione Multi-Agente AI
-                  </p>
-                )}
-              </div>
-
-              {/* Destra: Brain Icon */}
-              <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
-                <Brain className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
+                  <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
+                    Chat Laboratory
+                  </h1>
+                  {!isMobile && (
+                    <p className="text-sm text-muted-foreground">
+                      Discussione Multi-Agente AI
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
+            <div className="shrink-0">
+              <LabHeaderControls
+                currentConversationId={currentConversationId}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                participants={participants}
+                toggleParticipant={toggleParticipant}
+              />
+            </div>
           </div>
-
-          {/* RIGA 2: Statistiche */}
-          <LabStatsBar currentConversationId={currentConversationId} />
-
-          {/* RIGA 3: Controlli */}
-          <LabControlsBar
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            participants={participants}
-            toggleParticipant={toggleParticipant}
-          />
-
-          {/* RIGA 4: Bar Mode Section */}
-          <div className="px-4 py-2">
+          
+          {/* Bar Mode Section - Collapsible */}
+          <div className="mt-2 pb-1">
             <CollapsibleBarSection
               conversationId={currentConversationId}
               isBarMode={isBarMode}
@@ -812,6 +805,7 @@ const ChatLaboratory = () => {
             />
           </div>
         </div>
+      </div>
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">
@@ -932,7 +926,7 @@ const ChatLaboratory = () => {
           </form>
         </div>
       </div>
-    </div>
+      </div>
     </div>
   );
 };

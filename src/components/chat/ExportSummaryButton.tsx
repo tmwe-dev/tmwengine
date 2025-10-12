@@ -8,13 +8,15 @@ interface ExportSummaryButtonProps {
   roomId?: string;
   labConversationId?: string;
   variant: 'chat' | 'intranet' | 'laboratory';
+  iconOnly?: boolean;
 }
 
 export const ExportSummaryButton = ({ 
   conversationId, 
   roomId, 
   labConversationId, 
-  variant 
+  variant,
+  iconOnly = false
 }: ExportSummaryButtonProps) => {
   const { toast } = useToast();
   
@@ -122,10 +124,19 @@ export const ExportSummaryButton = ({
   };
   
   return (
-    <Button variant="outline" size="sm" onClick={handleExport}>
-      <FileText className="h-4 w-4 mr-2" />
-      Esporta Riassunto
-      <Download className="h-3 w-3 ml-2" />
+    <Button 
+      variant="outline" 
+      size={iconOnly ? "icon" : "sm"} 
+      onClick={handleExport}
+      title={iconOnly ? "Esporta Riassunto" : undefined}
+    >
+      <FileText className={iconOnly ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+      {!iconOnly && (
+        <>
+          Esporta Riassunto
+          <Download className="h-3 w-3 ml-2" />
+        </>
+      )}
     </Button>
   );
 };

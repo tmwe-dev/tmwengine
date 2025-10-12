@@ -1116,37 +1116,11 @@ const ChatLaboratory = () => {
                 onTranscriptionComplete={async (text) => {
                   console.log('✅ Trascrizione ricevuta:', text);
                   
-                  if (!text.trim()) {
-                    console.warn('⚠️ Testo vuoto, invio annullato');
-                    return;
-                  }
+                  // ✅ Invio diretto passando il testo (no setPrompt asincrono)
+                  const fakeEvent = new Event('submit') as any;
+                  await handleSubmit(fakeEvent, text);
                   
-                  // ✅ Evento sintetico React completo
-                  const syntheticEvent = {
-                    preventDefault: () => {
-                      console.log('preventDefault chiamato correttamente');
-                    },
-                    stopPropagation: () => {},
-                    target: {} as EventTarget,
-                    currentTarget: {} as EventTarget,
-                    nativeEvent: {} as Event,
-                    type: 'submit',
-                    bubbles: true,
-                    cancelable: true,
-                    defaultPrevented: false,
-                    eventPhase: 0,
-                    isTrusted: true,
-                    timeStamp: Date.now(),
-                    isDefaultPrevented: () => false,
-                    isPropagationStopped: () => false,
-                    persist: () => {}
-                  } as React.FormEvent<HTMLFormElement>;
-                  
-                  // ✅ Chiama handleSubmit con evento completo
-                  await handleSubmit(syntheticEvent, text);
-                  
-                  console.log('✅ Messaggio inviato alla chat');
-                  toast({ title: "✓ Messaggio inviato" });
+                  toast({ title: "✓ Messaggio inviato alla chat" });
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

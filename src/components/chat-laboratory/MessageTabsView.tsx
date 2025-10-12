@@ -1,16 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MultiAgentMessage } from './MultiAgentMessage';
-import { User, Bot, Sparkles, Brain } from 'lucide-react';
+import { User, Bot, Sparkles, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
 
 interface Message {
   id: string;
@@ -58,6 +51,12 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const tabContentRef = useRef<HTMLDivElement>(null);
   const previousMessagesLengthRef = useRef(0);
+  
+  // Drag-to-scroll state
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     const container = tabContentRef.current;
@@ -99,6 +98,40 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
     }
   };
 
+  // Drag-to-scroll handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tabsContainerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tabsContainerRef.current.offsetLeft);
+    setScrollLeft(tabsContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !tabsContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tabsContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Moltiplicatore per velocità scroll
+    tabsContainerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Scroll con frecce
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (!tabsContainerRef.current) return;
+    const scrollAmount = 200;
+    tabsContainerRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
   if (messages.length === 0) {
     return null;
   }
@@ -106,33 +139,50 @@ export const MessageTabsView = ({ messages }: MessageTabsViewProps) => {
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
       <div className="relative w-full border-b bg-muted/50">
-        <Carousel
-          opts={{
-            align: "start",
-            loop: false,
-            slidesToScroll: 1,
-          }}
-          className="w-full max-w-full px-12"
+        {/* Freccia Sinistra */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 z-10 bg-background/80 hover:bg-background"
+          onClick={() => scrollTabs('left')}
         >
-          <CarouselContent className="-ml-1">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {/* Container Tabs con drag-to-scroll */}
+        <div
+          ref={tabsContainerRef}
+          className="overflow-x-auto scrollbar-hide px-12"
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+        >
+          <TabsList className="inline-flex h-12 bg-transparent p-1 w-auto">
             {messages.map((message, index) => (
-              <CarouselItem key={message.id} className="pl-1 basis-auto">
-                <TabsList className="h-12 bg-transparent p-1">
-                  <TabsTrigger
-                    value={message.id}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                  >
-                    {getTabIcon(message.sender_type)}
-                    <span className="hidden sm:inline">{getTabLabel(message, index)}</span>
-                    <span className="sm:hidden">{index + 1}</span>
-                  </TabsTrigger>
-                </TabsList>
-              </CarouselItem>
+              <TabsTrigger
+                key={message.id}
+                value={message.id}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                {getTabIcon(message.sender_type)}
+                <span className="hidden sm:inline">{getTabLabel(message, index)}</span>
+                <span className="sm:hidden">{index + 1}</span>
+              </TabsTrigger>
             ))}
-          </CarouselContent>
-          <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8" />
-          <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" />
-        </Carousel>
+          </TabsList>
+        </div>
+
+        {/* Freccia Destra */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 z-10 bg-background/80 hover:bg-background"
+          onClick={() => scrollTabs('right')}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="flex-1 relative">

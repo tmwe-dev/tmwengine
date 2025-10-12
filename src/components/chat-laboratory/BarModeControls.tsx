@@ -150,8 +150,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           </Select>
         </div>
 
-        {/* Ritmo Conversazione */}
-        <div className="flex items-center gap-2">
+        {/* Ritmo Conversazione - occupa tutta la riga */}
+        <div className="flex items-center gap-2 col-span-2">
           <Timer className="h-4 w-4 text-muted-foreground" />
           <Label htmlFor="pace" className="text-sm w-24">Ritmo:</Label>
           <Select

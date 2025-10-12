@@ -1,0 +1,225 @@
+{
+  "rubrica": {
+    "title": "Rubrica Clienti",
+    "overview": "La Rubrica è il cuore del CRM. Qui gestisci tutti i tuoi contatti aziendali con informazioni complete, filtri avanzati e integrazione diretta con attività ed email.",
+    "sections": [
+      {
+        "title": "Visualizzare Contatti",
+        "content": "**Lista card responsive**: ogni cliente ha una card con le info principali visibili immediatamente.\n\n**Statistiche in tempo reale**: nella parte superiore vedi sempre il conteggio di contatti totali, filtrati e con azienda compilata.\n\n**Badge attività**: ogni card mostra badge colorati per le attività associate:\n- 🟢 Attività aperte/in corso\n- 🔵 Attività completate\n- 🔴 Attività scadute"
+      },
+      {
+        "title": "Aggiungere Clienti",
+        "content": "1. Clicca il pulsante **+ Nuovo Cliente** in alto a sinistra\n2. Compila il form con i dati:\n   - **Nome/Responsabile** *(obbligatorio)*: Nome contatto principale\n   - **Azienda**: Ragione sociale\n   - **Email**: Indirizzo email (verifica formato automatica)\n   - **Telefono/Cellulare**: Numeri di contatto\n   - **Indirizzo completo**: Via, CAP, Città, Paese\n   - **Note**: Annotazioni libere\n   - **Tags**: Etichette per categorizzare\n3. Clicca **Salva** per confermare\n\n💡 **Tip**: Usa i tags per creare categorie personalizzate e filtrare velocemente i clienti!"
+      },
+      {
+        "title": "Modificare ed Eliminare",
+        "content": "**Modificare**: Clicca l'icona Modifica (✏️) sulla card del cliente, aggiorna i campi desiderati e salva.\n\n**Eliminare**: Clicca l'icona Elimina (🗑️) sulla card e conferma l'azione.\n\n⚠️ **Attenzione**: Eliminando un cliente vengono eliminate anche tutte le attività associate!"
+      },
+      {
+        "title": "Filtrare e Cercare",
+        "content": "**Barra di Ricerca**: Cerca istantaneamente per nome, azienda o email mentre scrivi.\n\n**Filtri Avanzati** (icona 🔍):\n- **Tag**: filtra per etichetta specifica\n- **Città**: filtra per località\n- **Nazione**: filtra per paese\n- **Solo con attività**: mostra solo clienti con attività associate\n- **Solo con note**: mostra solo clienti con annotazioni\n- **Miei clienti**: filtra clienti con tue attività assegnate\n\n**EmailQueueBadge**: mostra email in coda per invio da questa rubrica."
+      },
+      {
+        "title": "Integrazioni",
+        "content": "**Email Manager**: Icona Mail su ogni card per invio email rapido con template predefiniti.\n\n**Gestione Attività**: Badge attività cliccabile per vedere tutte le attività del cliente o crearne di nuove.\n\n**AI Assistant**: Brain icon (🧠) in header per chat contestuale che può aiutarti a:\n- Trovare clienti VIP senza attività recenti\n- Suggerire clienti da ricontattare\n- Analizzare distribuzione geografica"
+      }
+    ],
+    "shortcuts": [
+      "Cmd/Ctrl + K: Ricerca globale CRM",
+      "Cmd/Ctrl + N: Nuovo cliente",
+      "Cmd/Ctrl + F: Focus barra ricerca",
+      "↑/↓: Naviga tra card",
+      "Enter: Apri cliente selezionato"
+    ],
+    "faq": [
+      {
+        "q": "Posso importare clienti da file Excel?",
+        "a": "Sì! Vai su Import Templates, carica il file e mappa le colonne. L'AI ti aiuterà con suggerimenti automatici."
+      },
+      {
+        "q": "Come vedo i clienti che non contatto da tempo?",
+        "a": "Usa il filtro 'Miei clienti con attività' e ordina per 'Ultima attività' in modo discendente."
+      }
+    ],
+    "related": ["attivita", "email-campagne", "import-templates"]
+  },
+  "attivita": {
+    "title": "Gestione Attività",
+    "overview": "Gestisci tutte le tue attività commerciali: chiamate, meeting, email e task. Sistema completo con filtri avanzati, azioni batch e integrazione AI.",
+    "sections": [
+      {
+        "title": "Visualizzare Attività",
+        "content": "**Vista principale**: Tutte le attività in formato card o lista con dettagli completi.\n\n**Statistiche real-time**:\n- Attività aperte\n- In corso\n- Completate\n- Scadute\n\n**Tipi di attività supportati**:\n- 📞 Chiamate\n- 📅 Meeting\n- ✉️ Email\n- ✅ Task generici\n\n**Clean_Top**: Header collassabile per massimizzare lo spazio visualizzato."
+      },
+      {
+        "title": "Creare Attività",
+        "content": "**Attività Singola**:\n1. Clicca **+ Nuova Attività**\n2. Seleziona cliente dalla rubrica\n3. Scegli tipo (chiamata, meeting, email, task)\n4. Compila dettagli: descrizione, scadenza, priorità\n5. Assegna a te stesso o altro utente\n6. Salva\n\n**Attività Multiple**:\n- Crea la stessa attività per più clienti contemporaneamente\n- Seleziona clienti da lista\n- Imposta dettagli comuni\n- Genera batch di attività in un click\n\n💡 **Tip**: Usa le attività multiple per campagne di follow-up!"
+      },
+      {
+        "title": "Gestire Stati",
+        "content": "**Flusso stati**:\n1. **Aperta** (appena creata)\n2. **In Corso** (lavoro in corso)\n3. **Completata** / **Annullata** (stati finali)\n\n**Cambiare stato**:\n- Singola: dropdown stato sulla card\n- Batch: seleziona multiple attività e usa azione batch\n\n**Filtri per stato**: Mostra solo attività in un determinato stato per focus mirato."
+      },
+      {
+        "title": "Filtri Avanzati",
+        "content": "**Filtri disponibili**:\n- **Tipo**: chiamate, meeting, email, task\n- **Stato**: aperta, in corso, completata, annullata\n- **Priorità**: alta (🔴), media (🟡), bassa (🟢)\n- **Scadenza**: oggi, questa settimana, scadute\n- **Origine cliente**: rubrica ufficiale o importati\n- **Mie attività**: solo quelle assegnate a te\n\n**Ordinamento**: Ordina per qualsiasi colonna (data, cliente, scadenza, priorità).\n\n**Paginazione**: 25/50/100/250 record per pagina."
+      },
+      {
+        "title": "Azioni Batch",
+        "content": "**Selezione multipla**:\n1. Clicca checkbox su ogni attività\n2. Usa checkbox header per selezionare tutte\n3. Applica azione batch:\n   - Cambia stato massivo\n   - Elimina multiple attività\n   - Assegna a utente\n\n⚠️ **Attenzione**: Le azioni batch sono immediate e irreversibili!"
+      },
+      {
+        "title": "Log Chiamate",
+        "content": "**CallDialog**: Gestione completa chiamate\n- Numero chiamato (auto-formato)\n- Durata chiamata\n- Esito (risposto, non risposto, occupato, voicemail)\n- Note dettagliate\n- Timestamp automatico\n\n**Integrazione telefono**: Se configurato, clicca numero per chiamare direttamente."
+      }
+    ],
+    "shortcuts": [
+      "Cmd/Ctrl + N: Nuova attività",
+      "Cmd/Ctrl + A: Seleziona tutte",
+      "Space: Toggle checkbox attività selezionata"
+    ],
+    "faq": [
+      {
+        "q": "Posso vedere tutte le attività di un cliente?",
+        "a": "Sì! Vai in Rubrica, clicca sul badge attività del cliente per aprire la vista dedicata con tutte le sue attività."
+      },
+      {
+        "q": "Come imposto promemoria per scadenze?",
+        "a": "Il sistema evidenzia automaticamente attività scadute in rosso. Puoi filtrare per 'Scadute' per vederle tutte."
+      }
+    ],
+    "related": ["rubrica", "campagne", "chat"]
+  },
+  "chat-laboratory": {
+    "title": "Chat Laboratory",
+    "overview": "Conversazioni multi-agente con fino a 10 AI simultanei. Sistema avanzato per discussioni complesse, sintesi collaborative e modalità Bar Chat vocale.",
+    "sections": [
+      {
+        "title": "Panoramica",
+        "content": "**Chat Laboratory** permette di creare conversazioni dove più AI discutono tra loro e con te.\n\n**Partecipanti disponibili**:\n- 👤 Human (tu)\n- 🤖 ChatGPT (GPT-5, GPT-4.1)\n- ✨ Gemini (2.5 Pro, Flash)\n- 🧠 Claude (Sonnet 4.5, Opus 4.1)\n\n**Modalità risposta**:\n- **All**: Tutti gli agenti rispondono simultaneamente\n- **Single**: Un agente alla volta\n- **Turn-based**: Turni sequenziali con logica intelligente"
+      },
+      {
+        "title": "Configurare Partecipanti",
+        "content": "**Aggiungere agenti**:\n1. Clicca **+ Aggiungi Partecipante**\n2. Seleziona tipo AI\n3. Scegli modello specifico\n4. Configura system prompt personalizzato\n5. Riordina con drag & drop\n\n**System Prompt dedicato**: Ogni agente può avere istruzioni uniche per assumere ruoli diversi (es: esperto logistica, consulente fiscale, analista dati).\n\n**Attivare/Disattivare**: Toggle su ogni agente per includerlo/escluderlo dalla conversazione senza eliminarlo."
+      },
+      {
+        "title": "Modalità Risposta",
+        "content": "**All Mode**:\n- Tutti gli agenti attivi rispondono a ogni messaggio\n- Risposte mostrate in tabs separate\n- Ideale per raccogliere opinioni diverse\n\n**Single Mode**:\n- Un agente alla volta selezionato manualmente\n- Focus su dialogo specifico\n- Cambio agente on-demand\n\n**Turn-based Mode**:\n- Sistema turni automatico\n- Randomizzazione per varietà\n- Skip intelligente se consenso raggiunto\n- Ottimale per discussioni strutturate"
+      },
+      {
+        "title": "Bar Mode (Vocale)",
+        "content": "**Attivare Bar Mode**:\n1. Toggle **Bar Mode** in header\n2. Seleziona agenti vocali ElevenLabs\n3. Scegli topic conversazione\n4. Configura ritmo (slow/normal/fast)\n5. Start conversation\n\n**Configurazioni**:\n- **Agenti attivi**: Max 10 agenti vocali simultanei\n- **Topic**: Argomento discussione guidata\n- **Pace**: Velocità conversazione\n- **Interruptions**: Abilita/disabilita interruzioni tra agenti\n- **Auto-play**: Riproduzione automatica audio risposte\n\n**ElevenLabs Manager**: Gestisci agenti vocali custom in Settings → Bar Chat Agents."
+      },
+      {
+        "title": "Knowledge Base",
+        "content": "**Integrare documenti RAG**:\n1. Seleziona Knowledge Base dal dropdown\n2. I documenti vengono caricati in memoria\n3. Tutti gli agenti usano il contesto KB nelle risposte\n4. Citazioni automatiche da documenti\n\n**Vantaggi**:\n- Risposte basate su dati aziendali reali\n- Coerenza tra agenti\n- Riduzione allucinazioni AI\n- Tracciabilità fonti\n\n💡 **Tip**: Crea KB dedicate per progetti/clienti specifici per discussioni verticali!"
+      },
+      {
+        "title": "Fasi Conversazione",
+        "content": "**Discussion Phase**:\n- Fase iniziale aperta\n- Agenti discutono liberamente\n- Raccolta idee e prospettive\n\n**Synthesis Phase**:\n- Sintesi intermedia dei punti chiave\n- Convergenza verso soluzioni\n- Identificazione consensi/disaccordi\n\n**Final Phase**:\n- Sintesi finale collaborativa\n- Conclusioni e raccomandazioni\n- Report completo generato\n\n**Cambio fase**: Manuale o automatico dopo N messaggi."
+      },
+      {
+        "title": "Statistiche e Costi",
+        "content": "**Dashboard conversazione**:\n- Token usati per agente\n- Costo totale EUR\n- Numero risposte per agente\n- Tempo medio risposta\n\n**Sidebar conversazioni**:\n- Lista tutte le conversazioni Lab\n- Statistiche aggregate (messaggi, token, costo)\n- Ricerca e filtri\n- Quick switch tra conversazioni\n\n**Token Counter**: Badge real-time in header con alert se supera soglia."
+      }
+    ],
+    "shortcuts": [
+      "Cmd/Ctrl + Enter: Invia messaggio",
+      "Cmd/Ctrl + B: Toggle Bar Mode",
+      "Tab: Cambia tab risposta agente"
+    ],
+    "faq": [
+      {
+        "q": "Quanti agenti posso usare contemporaneamente?",
+        "a": "Fino a 10 agenti, ma considera che più agenti = più costi. Per discussioni standard 3-5 agenti sono ottimali."
+      },
+      {
+        "q": "Come riduco i costi in conversazioni lunghe?",
+        "a": "Usa Economy Mode, limita gli agenti attivi, disattiva 'All Mode' per usare Turn-based che ottimizza le chiamate API."
+      }
+    ],
+    "related": ["chat", "ai-config", "settings"]
+  },
+  "import-templates": {
+    "title": "Import Templates",
+    "overview": "Sistema completo per importare contatti da file CSV/Excel con mappatura AI intelligente, validazione dati e gestione errori avanzata.",
+    "sections": [
+      {
+        "title": "Caricare File",
+        "content": "**Formati supportati**:\n- CSV (delimitatore auto-detect)\n- Excel (.xlsx, .xls)\n- TSV (Tab-separated)\n\n**Processo caricamento**:\n1. Clicca **Carica File** o drag & drop\n2. Sistema analizza struttura automaticamente\n3. AI rileva colonne e suggerisce mappatura\n4. Preview primi 10 record\n5. Conferma o modifica mappatura\n\n**Limiti**: Max 10.000 record per file, dimensione max 50MB."
+      },
+      {
+        "title": "Mappatura Colonne AI",
+        "content": "**AIColumnMapper**:\n- Analisi intelligente header file\n- Match automatico con campi CRM\n- Suggerimenti per colonne ambigue\n- Gestione alias (es: 'Company' → 'azienda')\n\n**Campi CRM mappabili**:\n- nome, azienda, email, telefono, cellulare\n- indirizzo, città, paese, zip_code\n- note, tags, client_code\n- 20+ meta campi custom\n\n**Modifica mappatura**:\n- Clicca colonna file per riassegnare\n- Aggiungi alias per riutilizzo\n- Ignora colonne non necessarie\n\n💡 **Tip**: Salva template mappatura per import ricorrenti!"
+      },
+      {
+        "title": "Validazione Dati",
+        "content": "**AIDataValidator** controlla:\n- **Email**: formato valido, dominio esistente\n- **Telefono**: formato internazionale, lunghezza\n- **Campi obbligatori**: nome o azienda presente\n- **Duplicati**: check email/telefono esistenti in DB\n- **Coerenza**: città/paese, zip_code validi\n\n**Livelli validazione**:\n- 🔴 **Errori critici**: bloccano import\n- 🟡 **Warning**: segnalazioni, import procede\n- 🟢 **OK**: record valido\n\n**Preview validazione**: Vedi errori prima di importare, correggi direttamente nel file o in staging."
+      },
+      {
+        "title": "Template Salvati",
+        "content": "**Creare template**:\n1. Completa mappatura colonne\n2. Configura alias custom\n3. Salva come template con nome\n4. Riutilizza per file simili\n\n**Gestione template**:\n- Lista template salvati\n- Modifica mappatura template\n- Elimina template obsoleti\n- Esporta/Importa configurazione JSON\n\n**Auto-apply**: Se il file corrisponde a template salvato, mappatura automatica."
+      },
+      {
+        "title": "Import Progressivo",
+        "content": "**Batch Processing**:\n- Import in blocchi da 500 record\n- Progress bar real-time\n- Possibilità di pausa/resume\n- Gestione errori per batch\n\n**ImportProgressMonitor**:\n- Contatore batch (es: 3/10)\n- Record processati / totali\n- Tempo stimato completamento\n- Log errori dettagliato\n- Retry automatico su fallimento\n\n**Tabella staging**: Record importati vanno in `imported_contacts` prima di rubrica ufficiale."
+      },
+      {
+        "title": "Gestione Errori AI",
+        "content": "**Correzione intelligente**:\n1. AI analizza errore (formato, missing data, duplicato)\n2. Suggerisce correzione automatica\n3. Mostra preview prima/dopo\n4. Applica correzione o modifica manuale\n\n**Azioni batch errori**:\n- Correggi tutti errori simili in un click\n- Elimina record errati\n- Riprova validazione post-correzione\n\n**Process Single Error AI**: Correzione assistita per record complessi.\n\n**Confirm Corrected**: Sposta record corretti in rubrica ufficiale."
+      }
+    ],
+    "shortcuts": [
+      "Cmd/Ctrl + U: Carica file",
+      "Cmd/Ctrl + S: Salva template"
+    ],
+    "faq": [
+      {
+        "q": "Cosa succede ai record importati?",
+        "a": "Vanno in staging (imported_contacts). Dopo validazione, li sposti manualmente in rubrica ufficiale."
+      },
+      {
+        "q": "Posso importare attività insieme ai contatti?",
+        "a": "Non direttamente, ma puoi creare attività batch per tutti i record importati dopo averli spostati in rubrica."
+      }
+    ],
+    "related": ["gestisci-import", "record-importati", "rubrica"]
+  },
+  "settings": {
+    "title": "Impostazioni Generali",
+    "overview": "Configura profilo utente, telefonia, voice agent ElevenLabs e preferenze generali del sistema.",
+    "sections": [
+      {
+        "title": "Profilo Utente",
+        "content": "**UserProfileSettings**:\n- Nome, cognome\n- Email principale\n- Telefono ufficio\n- Ruolo in azienda\n- Foto profilo\n\n**Sincronizzazione TMWE**:\n- OAuth status\n- Email account TMWE collegato\n- Ultimo sync timestamp\n- Forza re-sync\n\n💡 **Tip**: Mantieni profilo aggiornato per notifiche email corrette!"
+      },
+      {
+        "title": "Configurazioni Telefono",
+        "content": "**Prefisso Paese Predefinito**:\n- Seleziona paese principale (es: IT +39)\n- Auto-detect da browser location\n- Usa per nuovi contatti\n\n**Formato Numero**:\n- Internazionale: +39 123 456 7890\n- Nazionale: 0123 456 7890\n- Compatto: +39123456789\n\n**WhatsApp Integration**:\n- Abilita click-to-chat\n- Template messaggio predefinito\n- Usa numero cellulare preferenziale"
+      },
+      {
+        "title": "Voice Agent (ElevenLabs)",
+        "content": "**Configurazione Base**:\n1. Inserisci ElevenLabs API Key in Settings → Voice Agent\n2. Testa connessione\n3. Abilita widget vocale\n\n**Widget Posizioni**:\n- Bottom-right (default)\n- Bottom-left\n- Floating minimizzato\n\n**Stato connessione**: Badge verde = attivo, rosso = errore API.\n\n⚠️ **Attenzione**: API key è personale, non condividerla!"
+      },
+      {
+        "title": "Bar Chat Agents",
+        "content": "**BarChatAgentsSection**: Gestisci fino a 10 agenti vocali custom.\n\n**Per ogni agente configura**:\n- **Nome**: Identificativo (max 30 caratteri)\n- **Agent ID**: ID ElevenLabs agente\n- **Voice ID**: ID voce (20 caratteri)\n- **Prompt Personalità**: Comportamento agente (min 50 caratteri)\n- **Stile Risposta**: bar_chat, formal, casual\n- **Speaking Pace**: slow, normal, fast\n- **Interruption Style**: polite, assertive, disabled\n- **Max Words**: Lunghezza risposta (20-100 parole)\n\n**Gestione**:\n- Drag & drop per riordinare\n- Elimina agenti non usati\n- Test singolo agente\n- Vedi usage stats (caratteri, richieste, limiti giornalieri)\n\n**Limiti Free Tier ElevenLabs**:\n- 10.000 caratteri/giorno\n- 50 richieste/giorno\n- Reset automatico ogni 24h"
+      },
+      {
+        "title": "Config Generale",
+        "content": "**Email**:\n- Max email inviate/giorno (default 100)\n- Intervallo minimo tra invii (secondi)\n- Template firma email predefinita\n\n**Sistema**:\n- Timezone (auto-detect o manuale)\n- Formato data (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)\n- Formato ora (24h, 12h AM/PM)\n\n**Notifiche**:\n- Email per nuove attività assegnate\n- Push per messaggi intranet\n- Suono notifiche (abilita/disabilita)"
+      }
+    ],
+    "shortcuts": [],
+    "faq": [
+      {
+        "q": "Come ottengo ElevenLabs API Key?",
+        "a": "Vai su elevenlabs.io, crea account, vai in Settings → API Keys e genera nuova chiave."
+      },
+      {
+        "q": "Posso usare agenti ElevenLabs diversi per progetti diversi?",
+        "a": "Sì! Configura più agenti in Bar Chat Agents e selezionali dinamicamente in Chat Laboratory Bar Mode."
+      }
+    ],
+    "related": ["ai-config", "chat-laboratory"]
+  }
+}

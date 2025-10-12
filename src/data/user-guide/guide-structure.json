@@ -1,0 +1,174 @@
+{
+  "sections": [
+    {
+      "id": "commerciale",
+      "title": "Modulo Commerciale",
+      "icon": "Users",
+      "subsections": [
+        {
+          "id": "rubrica",
+          "title": "Rubrica Clienti",
+          "route": "/rubrica",
+          "icon": "ContactRound"
+        },
+        {
+          "id": "rubrica-avanzata",
+          "title": "Rubrica Avanzata",
+          "route": "/rubrica-avanzata",
+          "icon": "Database"
+        },
+        {
+          "id": "attivita",
+          "title": "Gestione Attività",
+          "route": "/attivita",
+          "icon": "CheckSquare"
+        },
+        {
+          "id": "campagne",
+          "title": "Campagne Marketing",
+          "route": "/campagne",
+          "icon": "Megaphone"
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "title": "Modulo Email",
+      "icon": "Mail",
+      "subsections": [
+        {
+          "id": "email-dashboard",
+          "title": "Email Manager",
+          "route": "/email-dashboard",
+          "icon": "Inbox"
+        },
+        {
+          "id": "email-campagne",
+          "title": "Email Campagne",
+          "route": "/email-campagne",
+          "icon": "Send"
+        },
+        {
+          "id": "email-senders",
+          "title": "Gestione Mittenti",
+          "route": "/email-senders",
+          "icon": "Users"
+        }
+      ]
+    },
+    {
+      "id": "chat-ai",
+      "title": "Chat & AI",
+      "icon": "MessageSquare",
+      "subsections": [
+        {
+          "id": "chat",
+          "title": "Chat AI Standard",
+          "route": "/chat",
+          "icon": "Bot"
+        },
+        {
+          "id": "chat-laboratory",
+          "title": "Chat Laboratory",
+          "route": "/chat-laboratory",
+          "icon": "FlaskConical"
+        },
+        {
+          "id": "intranet",
+          "title": "Intranet Team",
+          "route": "/intranet",
+          "icon": "Building2"
+        },
+        {
+          "id": "intranet-admin",
+          "title": "Intranet Admin",
+          "route": "/intranet-admin",
+          "icon": "ShieldCheck"
+        }
+      ]
+    },
+    {
+      "id": "import",
+      "title": "Modulo Import",
+      "icon": "Upload",
+      "subsections": [
+        {
+          "id": "import-templates",
+          "title": "Import Templates",
+          "route": "/",
+          "icon": "FileSpreadsheet"
+        },
+        {
+          "id": "gestisci-import",
+          "title": "Gestisci Import",
+          "route": "/gestisci-import",
+          "icon": "FolderOpen"
+        },
+        {
+          "id": "record-importati",
+          "title": "Record Importati",
+          "route": "/record-importati",
+          "icon": "FileCheck"
+        }
+      ]
+    },
+    {
+      "id": "impostazioni",
+      "title": "Impostazioni",
+      "icon": "Settings",
+      "subsections": [
+        {
+          "id": "settings",
+          "title": "Impostazioni Generali",
+          "route": "/settings",
+          "icon": "Sliders"
+        },
+        {
+          "id": "ai-config",
+          "title": "Configurazione AI",
+          "route": "/ai-config",
+          "icon": "Cpu"
+        },
+        {
+          "id": "admin-prompts",
+          "title": "Admin Prompts",
+          "route": "/admin/prompts",
+          "icon": "FileText"
+        },
+        {
+          "id": "language-manager",
+          "title": "Gestione Lingue",
+          "route": "/language-manager",
+          "icon": "Languages"
+        }
+      ]
+    },
+    {
+      "id": "globali",
+      "title": "Funzionalità Globali",
+      "icon": "Globe",
+      "subsections": [
+        {
+          "id": "theme",
+          "title": "Theme Switcher",
+          "icon": "Palette"
+        },
+        {
+          "id": "country-selector",
+          "title": "Selettore Paese",
+          "icon": "MapPin"
+        },
+        {
+          "id": "language-selector",
+          "title": "Selettore Lingua",
+          "icon": "Flag"
+        },
+        {
+          "id": "ai-guide",
+          "title": "AI Assistant",
+          "icon": "Brain"
+        }
+      ]
+    }
+  ]
+}

@@ -80,6 +80,13 @@ export const useNavigationGroups = () => {
         { name: 'Email Dashboard', href: '/email-manager', icon: Mail },
         { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
       ]
+    },
+    {
+      name: 'Impostazioni',
+      icon: Settings,
+      items: [
+        { name: 'Impostazioni', href: '/settings', icon: Settings },
+      ]
     }
   ], [t, isAdmin]);
 };

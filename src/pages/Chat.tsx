@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3, ChevronDown, ChevronUp, X, ArrowUpDown, Sparkles, Cpu, FileText, ArrowLeft } from 'lucide-react';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
@@ -15,8 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UnifiedMemoryControls } from '@/components/chat/UnifiedMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -703,12 +703,26 @@ const Chat = () => {
                     )}
 
                     {selectedTab === 'controls' && (
-                      <UnifiedMemoryControls
-                        conversationId={currentConversationId}
-                        memoriaCompleta={currentConversation?.memoria_completa || false}
-                        onMemoriaCompletaChange={handleMemoriaCompletaChange}
-                        variant="chat"
-                      />
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Controlli Memoria</CardTitle>
+                          <CardDescription>
+                            I controlli di memoria sono stati spostati nelle Impostazioni Globali
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Ora puoi gestire la memoria AI per tutte le chat (Chat AI, Laboratory, Intranet) 
+                            da un'unica sezione centralizzata.
+                          </p>
+                          <Link to="/settings">
+                            <Button className="w-full">
+                              <Settings className="h-4 w-4 mr-2" />
+                              Vai alle Impostazioni Globali
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
                     )}
 
                     {selectedTab === 'stats' && (
@@ -1007,12 +1021,22 @@ const Chat = () => {
                           </DialogHeader>
                           <div className="space-y-4 sm:space-y-6 pb-3 sm:pb-4">
                             <ConversationStats conversationId={currentConversationId} />
-                            <UnifiedMemoryControls 
-                              conversationId={currentConversationId}
-                              memoriaCompleta={currentConversation?.memoria_completa || false}
-                              onMemoriaCompletaChange={handleMemoriaCompletaChange}
-                              variant="chat"
-                            />
+                            <Card>
+                              <CardHeader>
+                                <CardTitle className="text-base">Impostazioni Memoria Globali</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  I controlli di memoria sono ora centralizzati nelle Impostazioni.
+                                </p>
+                                <Link to="/settings">
+                                  <Button className="w-full" variant="outline">
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Apri Impostazioni
+                                  </Button>
+                                </Link>
+                              </CardContent>
+                            </Card>
                           </div>
                         </DialogContent>
                       </Dialog>

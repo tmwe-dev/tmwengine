@@ -28,6 +28,7 @@ import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNaviga
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
+import { Link } from 'react-router-dom';
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
@@ -1068,6 +1069,24 @@ const ChatLaboratory = () => {
                     </CardContent>
                   </Card>
                 )}
+                
+                {/* Link Impostazioni Globali */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">Impostazioni Memoria Globali</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-white/60 mb-3">
+                      Gestisci i controlli di memoria per tutte le chat dalla sezione Impostazioni.
+                    </p>
+                    <Link to="/settings">
+                      <Button className="w-full" variant="outline">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Apri Impostazioni
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>

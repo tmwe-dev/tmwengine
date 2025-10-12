@@ -1114,25 +1114,101 @@ const ChatLaboratory = () => {
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}
                 onTranscriptionComplete={async (text) => {
-                  console.log('✅ Trascrizione ricevuta:', text);
+                  console.log('🎤 Trascrizione vocale ricevuta:', text);
                   
                   if (!text.trim()) {
                     console.warn('⚠️ Testo vuoto, invio annullato');
                     return;
                   }
                   
-                  // ✅ Evento sintetico React completo con preventDefault()
-                  const syntheticEvent = {
-                    preventDefault: () => {},
-                    stopPropagation: () => {},
-                    target: {} as EventTarget,
-                    currentTarget: {} as EventTarget,
-                  } as React.FormEvent<HTMLFormElement>;
+                  setIsLoading(true);
                   
-                  // ✅ Chiama handleSubmit con l'evento corretto e il testo trascritto
-                  await handleSubmit(syntheticEvent, text);
-                  
-                  console.log('✅ Messaggio inviato alla chat');
+                  try {
+                    let conversationId = currentConversationId;
+                    
+                    // Crea conversazione se non esiste
+                    if (!conversationId) {
+                      const { data: newConv, error: convError } = await supabase
+                        .from('chat_laboratory_conversations')
+                        .insert({
+                          titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
+                          active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
+                        })
+                        .select()
+                        .single();
+
+                      if (convError) throw convError;
+                      conversationId = newConv.id;
+                      setCurrentConversationId(conversationId);
+
+                      // Salva partecipanti
+                      for (const participant of participants.filter(p => p.is_active)) {
+                        await supabase
+                          .from('chat_laboratory_participants')
+                          .insert({
+                            conversation_id: conversationId,
+                            type: participant.type,
+                            name: participant.name,
+                            system_prompt: participant.system_prompt,
+                            is_active: true
+                          });
+                      }
+
+                      await transferPendingSettings(conversationId);
+                      await loadMessages(conversationId);
+                    }
+
+                    // Salva messaggio umano
+                    const { error: insertError } = await supabase
+                      .from('chat_laboratory_messages')
+                      .insert([{
+                        conversation_id: conversationId,
+                        sender_type: 'human',
+                        sender_name: 'Tu',
+                        content: text,
+                        is_visible_to_ai: true
+                      }]);
+
+                    if (insertError) throw insertError;
+                    
+                    console.log('✅ Messaggio vocale salvato nel DB');
+
+                    // Chiama orchestratore
+                    const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
+                    
+                    const orchestratorName = isBarMode
+                      ? 'bar-chat-orchestrator'
+                      : 'chat-laboratory-orchestrator';
+
+                    console.log(`🎯 Invoco ${orchestratorName}...`);
+                    
+                    const { data, error } = await supabase.functions.invoke(orchestratorName, {
+                      body: { 
+                        conversationId,
+                        userMessage: text,
+                        participants: activeAIParticipants
+                      }
+                    });
+
+                    if (error) throw error;
+                    
+                    console.log('✅ Risposta AI ricevuta:', data);
+                    
+                    // Ricarica messaggi
+                    await loadMessages(conversationId);
+                    
+                    toast({ title: "✓ Messaggio vocale inviato" });
+                    
+                  } catch (error) {
+                    console.error('❌ Errore invio messaggio vocale:', error);
+                    toast({
+                      title: "Errore",
+                      description: "Impossibile inviare il messaggio vocale",
+                      variant: "destructive"
+                    });
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

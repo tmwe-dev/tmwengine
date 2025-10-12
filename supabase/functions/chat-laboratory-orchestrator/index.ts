@@ -434,7 +434,7 @@ ${userMessage}`;
     // Extract knowledge graph asynchronously (non-blocking)
     if (savedMessage?.id) {
       console.log('🧠 Triggering knowledge graph extraction...');
-      fetch(`${SUPABASE_URL}/functions/v1/extract-knowledge-graph`, {
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/extract-knowledge-graph`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${LOVABLE_API_KEY}`,

@@ -533,74 +533,90 @@ const ChatLaboratory = () => {
       setUploadedFiles([]);
       setGeneratedImage(null);
 
-      // Chiama orchestratore per tutti gli agenti in sequenza
+      // ✅ FASE 1: Single Invocation per Bar Mode
       const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
       
-      for (let i = 0; i < activeAIParticipants.length; i++) {
-        try {
-          console.log(`🤖 Invocando agente ${i + 1}/${activeAIParticipants.length}...`);
-          
-          // Determina quale orchestratore usare in base alla modalità
-          const orchestratorName = isBarMode
-            ? 'bar-chat-orchestrator'        // Modalità Bar Chat vocale (1 agente per turno)
-            : 'chat-laboratory-orchestrator'; // Modalità testuale normale (tutti gli agenti)
-
-          console.log(`🎯 Usando orchestratore: ${orchestratorName}`);
-          
-          const { data, error } = await supabase.functions.invoke(orchestratorName, {
-            body: { 
-              conversationId,
-              userMessage: currentPrompt,
-              participants: activeAIParticipants
-            }
-          });
-
-          if (error) {
-            console.error(`❌ Errore agente ${i + 1}:`, error);
-            toast({
-              title: `Errore Agente ${i + 1}`,
-              description: error.message || 'Impossibile ottenere risposta',
-              variant: "destructive",
-            });
-            break;
+      if (isBarMode) {
+        // ✅ UNA SOLA CHIAMATA per Bar Mode - l'orchestrator decide chi parla
+        console.log('🍹 Bar Mode: invocazione singola orchestrator');
+        
+        const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+          body: { 
+            conversationId,
+            userMessage: currentPrompt,
+            participants: activeAIParticipants
           }
-
-          console.log(`✅ Agente ${i + 1} completato:`, data);
+        });
+        
+        if (error) {
+          console.error('❌ Errore Bar Mode:', error);
+          toast({
+            title: "Errore",
+            description: error.message || 'Impossibile ottenere risposta',
+            variant: "destructive",
+          });
+        } else {
+          console.log('✅ Risposta ricevuta:', data);
           
-          // Se c'è un audio URL, mostra notifica
           if (data?.audioUrl) {
             console.log('🎵 Audio disponibile:', data.audioUrl);
             toast({
               title: "🎤 Risposta vocale disponibile",
-              description: `${data.speaker || 'Agente'} ha risposto con audio`,
+              description: `${data.speaker || 'Agente'} ha risposto`,
             });
-          } else if (isBarMode) {
-            console.log('⚠️ Nessun audio generato per modalità Bar');
           }
           
-          // Ricarica messaggi dopo ogni risposta per mostrare aggiornamenti in tempo reale
           await loadMessages(conversationId);
-          
-          // Trigger convergence recalculation after each message
           setConvergenceRefreshKey(prev => prev + 1);
-          
-          // Piccolo delay per evitare rate limiting
-          if (i < activeAIParticipants.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } else {
+        // ✅ LOOP PER MODALITÀ TESTUALE (tutti gli agenti rispondono)
+        for (let i = 0; i < activeAIParticipants.length; i++) {
+          try {
+            console.log(`🤖 Invocando agente ${i + 1}/${activeAIParticipants.length}...`);
+            
+            const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+              body: { 
+                conversationId,
+                userMessage: currentPrompt,
+                participants: activeAIParticipants
+              }
+            });
+
+            if (error) {
+              console.error(`❌ Errore agente ${i + 1}:`, error);
+              toast({
+                title: `Errore Agente ${i + 1}`,
+                description: error.message || 'Impossibile ottenere risposta',
+                variant: "destructive",
+              });
+              break;
+            }
+
+            console.log(`✅ Agente ${i + 1} completato:`, data);
+            
+            // Ricarica messaggi dopo ogni risposta
+            await loadMessages(conversationId);
+            setConvergenceRefreshKey(prev => prev + 1);
+            
+            // Piccolo delay per evitare rate limiting
+            if (i < activeAIParticipants.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+          } catch (loopError) {
+            console.error(`❌ Errore nel loop agente ${i + 1}:`, loopError);
+            toast({
+              title: "Errore di Comunicazione",
+              description: "Si è verificato un problema nella catena di risposte",
+              variant: "destructive",
+            });
+            break;
           }
-          
-        } catch (loopError) {
-          console.error(`❌ Errore nel loop agente ${i + 1}:`, loopError);
-          toast({
-            title: "Errore di Comunicazione",
-            description: "Si è verificato un problema nella catena di risposte",
-            variant: "destructive",
-          });
-          break;
         }
       }
 
-      console.log('🎉 Tutti gli agenti hanno risposto!');
+      console.log('🎉 Completato!');
 
     } catch (error) {
       console.error('Errore invio messaggio:', error);

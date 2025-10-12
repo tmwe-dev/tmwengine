@@ -118,10 +118,18 @@ const ChatLaboratory = () => {
       loadBarModeSettings();
       
       const channel = supabase
-        .channel('chat-laboratory-realtime')
+        .channel(`chat-laboratory-${currentConversationId}`)
         .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'chat_laboratory_messages' },
-          () => loadMessages(currentConversationId)
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'chat_laboratory_messages',
+            filter: `conversation_id=eq.${currentConversationId}`
+          },
+          (payload) => {
+            console.log('🔔 Real-time update ricevuto:', payload);
+            loadMessages(currentConversationId);
+          }
         )
         .subscribe();
 
@@ -167,6 +175,7 @@ const ChatLaboratory = () => {
   };
 
   const loadMessages = async (conversationId: string) => {
+    console.log('📥 Caricamento messaggi per conversazione:', conversationId);
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_messages')
@@ -317,6 +326,7 @@ const ChatLaboratory = () => {
 
         // Trasferisci impostazioni pending
         await transferPendingSettings(conversationId);
+        await loadMessages(conversationId);
       }
 
       // Salva messaggio umano

@@ -33,11 +33,11 @@ export const BarFullDuplexRecorder = ({
   
   const { toast } = useToast();
 
-  // VAD Configuration
-  const SILENCE_THRESHOLD = 0.015; // Soglia per rilevare silenzio
-  const SPEECH_THRESHOLD = 0.03; // Soglia per rilevare parlato
-  const SILENCE_DURATION_MS = 2000; // 2 secondi di silenzio = fine frase
-  const MIN_SPEECH_DURATION_MS = 500; // Minimo 500ms di parlato per inviare
+  // VAD Configuration - Abbassate le soglie per migliorare rilevamento
+  const SILENCE_THRESHOLD = 0.005; // Abbassato da 0.015 - più sensibile al silenzio
+  const SPEECH_THRESHOLD = 0.015; // Abbassato da 0.03 - più sensibile alla voce
+  const SILENCE_DURATION_MS = 1500; // Ridotto da 2000ms - invio più rapido
+  const MIN_SPEECH_DURATION_MS = 300; // Ridotto da 500ms - cattura frasi brevi
 
   useEffect(() => {
     return () => {
@@ -66,11 +66,13 @@ export const BarFullDuplexRecorder = ({
 
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 512; // Ridotto da 2048 per risposta più rapida
+      analyser.smoothingTimeConstant = 0.3; // Ridotto da 0.8 per meno smoothing
 
       source.connect(analyser);
       analyserRef.current = analyser;
+
+      console.log('🎤 Full-Duplex: Audio context attivo, VAD configurato');
 
       // Setup MediaRecorder per chunked recording
       const mediaRecorder = new MediaRecorder(stream, {
@@ -115,17 +117,25 @@ export const BarFullDuplexRecorder = ({
 
       analyser.getByteFrequencyData(dataArray);
       
-      // Calcola livello audio (RMS)
+      // Calcola livello audio (RMS) - con boost per visualizzazione
       const sum = dataArray.reduce((acc, val) => acc + val * val, 0);
       const rms = Math.sqrt(sum / dataArray.length) / 255;
       
-      setAudioLevel(rms);
+      // Boost del segnale per visualizzazione (x3)
+      const boostedRms = Math.min(rms * 3, 1);
+      setAudioLevel(boostedRms);
+
+      // Log ogni secondo per debug
+      if (Math.random() < 0.05) { // ~5% delle volte (ogni ~2 secondi a 100ms interval)
+        console.log(`🎙️ VAD - RMS: ${rms.toFixed(4)}, Boosted: ${boostedRms.toFixed(4)}, Speaking: ${isSpeaking}`);
+      }
 
       // VAD Logic
       if (rms > SPEECH_THRESHOLD) {
         // 🗣️ Parlato rilevato
         if (!speechStartTime) {
           speechStartTime = Date.now();
+          console.log('🗣️ VAD: Inizio parlato rilevato');
         }
         setIsSpeaking(true);
         silenceStartRef.current = null;
@@ -150,8 +160,10 @@ export const BarFullDuplexRecorder = ({
               : 0;
 
             if (speechDuration >= MIN_SPEECH_DURATION_MS) {
-              console.log('🎤 Fine parlato rilevato, invio trascrizione...');
+              console.log(`🎤 Fine parlato rilevato! Durata: ${speechDuration}ms, invio trascrizione...`);
               processRecording();
+            } else {
+              console.log(`⏭️ Parlato troppo breve (${speechDuration}ms), ignorato`);
             }
 
             // Reset
@@ -171,12 +183,17 @@ export const BarFullDuplexRecorder = ({
   };
 
   const processRecording = async () => {
-    if (chunksRef.current.length === 0) return;
+    if (chunksRef.current.length === 0) {
+      console.warn('⚠️ Nessun chunk audio da processare');
+      return;
+    }
 
+    console.log(`📦 Processing ${chunksRef.current.length} audio chunks...`);
     setIsProcessing(true);
 
     try {
       const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      console.log(`🎵 Audio blob size: ${audioBlob.size} bytes`);
       chunksRef.current = []; // Clear chunks
 
       // Converti in base64
@@ -188,15 +205,21 @@ export const BarFullDuplexRecorder = ({
           try {
             const base64Audio = (reader.result as string).split(',')[1];
 
+            console.log('🚀 Invio audio a voice-to-text...');
             const { data, error } = await supabase.functions.invoke('voice-to-text', {
               body: { audio: base64Audio }
             });
 
-            if (error) throw error;
+            if (error) {
+              console.error('❌ Errore voice-to-text:', error);
+              throw error;
+            }
 
             if (data?.text) {
-              console.log('📝 Trascrizione:', data.text);
+              console.log('✅ Trascrizione ricevuta:', data.text);
               onTranscriptionComplete?.(data.text);
+            } else {
+              console.warn('⚠️ Nessun testo nella risposta voice-to-text');
             }
 
             resolve(null);

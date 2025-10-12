@@ -37,6 +37,7 @@ import Intranet from "./pages/Intranet";
 import IntranetAdmin from "./pages/IntranetAdmin";
 import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
 import TemplateAlias from "./pages/TemplateAlias";
+import LanguageManager from "./pages/LanguageManager";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
@@ -172,6 +173,11 @@ const App = () => (
             <Route path="/template-alias" element={
               <ProtectedRoute>
                 <CRMLayout><TemplateAlias /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/language-manager" element={
+              <ProtectedRoute>
+                <CRMLayout><LanguageManager /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

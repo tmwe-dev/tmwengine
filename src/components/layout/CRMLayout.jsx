@@ -35,7 +35,8 @@ import {
   Palette,
   Check,
   User,
-  Sparkles
+  Sparkles,
+  Globe
  } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -153,6 +154,7 @@ const CRMLayout = ({ children }) => {
 
   const standaloneItems = [
     { name: t('nav.settings'), href: '/settings', icon: Settings },
+    { name: 'Gestione Lingue', href: '/language-manager', icon: Globe },
   ];
 
   // Trova il nome della pagina corrente

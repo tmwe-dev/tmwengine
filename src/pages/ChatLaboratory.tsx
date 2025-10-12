@@ -46,6 +46,7 @@ interface Participant {
 interface Conversation {
   id: string;
   titolo: string | null;
+  riassunto_contesto: string | null;
   created_at: string;
   updated_at: string;
   message_count?: number;
@@ -67,7 +68,7 @@ const ChatLaboratory = () => {
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(!useIsMobile());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);
@@ -213,7 +214,7 @@ const ChatLaboratory = () => {
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
-        .select('id, titolo, created_at, updated_at')
+        .select('id, titolo, riassunto_contesto, created_at, updated_at')
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -577,7 +578,7 @@ const ChatLaboratory = () => {
             onSelectConversation={handleSelectConversation}
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
-            onUpdateTitle={handleUpdateTitle}
+            onRenameConversation={handleUpdateTitle}
           />
         </div>
       </>

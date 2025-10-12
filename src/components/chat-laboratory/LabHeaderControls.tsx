@@ -45,7 +45,7 @@ export const LabHeaderControls = ({
       )}
       
       {/* Seconda riga: Controlli */}
-      <div className="flex items-center gap-1 justify-end">
+      <div className="flex items-center gap-1 justify-center">
         <Button
           onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
           variant="outline"

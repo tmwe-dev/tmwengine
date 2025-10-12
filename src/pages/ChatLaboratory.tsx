@@ -776,8 +776,8 @@ const ChatLaboratory = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
-          <div className="container mx-auto px-4 py-2 md:py-3">
-          <div className="flex flex-col gap-2">
+          <div className="container mx-auto px-3 py-1.5 md:py-2">
+          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-4">
                 <div className="flex items-center gap-1">
@@ -936,14 +936,14 @@ const ChatLaboratory = () => {
           <div 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="h-full overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3"
+            className="h-full overflow-y-auto p-1.5 md:p-2 space-y-1.5 md:space-y-2"
           >
-            <div className="container mx-auto max-w-4xl px-2 md:px-0">
+            <div className="container mx-auto max-w-full">
               {messages.length === 0 && (
                 <Card className="border-dashed">
-                  <CardContent className="p-12 text-center">
+                  <CardContent className="p-6 md:p-8 text-center">
                     <div className="flex flex-col items-center gap-4">
-              <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 mt-5">
+              <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 mt-2">
                 <MessageSquare className="h-12 w-12 text-indigo-600" />
               </div>
                       <div>
@@ -999,9 +999,9 @@ const ChatLaboratory = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-2 md:p-3">
-        <div className="container mx-auto max-w-7xl px-4">
-          <form onSubmit={handleSubmit} className="space-y-1 md:space-y-2">
+      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1.5 md:p-2">
+        <div className="container mx-auto max-w-[95vw] xl:max-w-[1600px] px-3">
+          <form onSubmit={handleSubmit} className="space-y-1">
             {/* Textarea con icone a sinistra */}
             <div className="flex gap-2">
               {/* Icone verticali a sinistra */}
@@ -1019,7 +1019,7 @@ const ChatLaboratory = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"}
-                className="min-h-[60px] md:min-h-[80px] resize-none text-sm md:text-base"
+                className="min-h-[50px] md:min-h-[70px] resize-none text-sm md:text-base"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -1046,7 +1046,7 @@ const ChatLaboratory = () => {
 
           {/* Bar Chat Audio Controls - Inline quando Bar Mode attivo */}
           {isBarMode && (
-            <div className="mt-4">
+            <div className="mt-2">
               <BarChatAudioControls
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}

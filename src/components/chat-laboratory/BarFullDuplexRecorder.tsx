@@ -266,19 +266,24 @@ export const BarFullDuplexRecorder = ({
       <Button
         type="button"
         variant={isActive ? "destructive" : "default"}
-        size="icon"
+        size="default"
         onClick={toggleFullDuplex}
         disabled={isDisabled}
         className={cn(
-          "h-9 w-9 transition-all",
+          "min-w-[180px] gap-2 transition-all",
           isActive && "shadow-lg shadow-green-500/20"
         )}
-        title={isActive ? "Stop Conversazione" : "Avvia Conversazione"}
       >
         {isActive ? (
-          <MicOff className="h-4 w-4" />
+          <>
+            <MicOff className="h-4 w-4" />
+            <span className="font-medium">Stop Conversazione</span>
+          </>
         ) : (
-          <Mic className="h-4 w-4" />
+          <>
+            <Mic className="h-4 w-4" />
+            <span className="font-medium">Avvia Conversazione</span>
+          </>
         )}
       </Button>
 

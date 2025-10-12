@@ -198,45 +198,43 @@ serve(async (req) => {
       tokenOutput = openaiData.usage?.completion_tokens || 0;
     }
     else if (lovableAIKey) {
+      const model = 'google/gemini-2.5-flash';
       console.log('🤖 Calling Lovable AI (Gemini)...');
-      
-      // Lovable AI non accetta messaggi system nel formato conversationHistory
-      // Dobbiamo separare system prompt e messages
-      const systemMsg = conversationHistory.find(m => m.role === 'system');
-      const userMessages = conversationHistory.filter(m => m.role !== 'system');
-      
-      const lovablePayload: any = {
-        model: 'google/gemini-2.5-flash',
-        messages: userMessages
-      };
-      
-      // Se c'è un system prompt, lo aggiungiamo come primo messaggio user
-      if (systemMsg) {
-        lovablePayload.messages.unshift({
-          role: 'user',
-          content: `[System Instruction]: ${systemMsg.content}`
-        });
-      }
-      
-      console.log('📤 Lovable AI payload:', JSON.stringify(lovablePayload, null, 2));
-      
+
+      const fullPrompt = `${globalSystemPrompt}
+
+Conversazione finora:
+${visibleHistory}
+
+Nuovo messaggio dell'utente:
+${userMessage}`;
+
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${lovableAIKey}`,
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${lovableAIKey}`
         },
-        body: JSON.stringify(lovablePayload)
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', content: fullPrompt }],
+        }),
       });
 
       if (!lovableResponse.ok) {
         const errorText = await lovableResponse.text();
-        console.error('❌ Lovable AI error response:', errorText);
-        throw new Error(`Lovable AI error: ${lovableResponse.status} - ${errorText}`);
+        console.error(`❌ AI Gateway Error (${model}):`, lovableResponse.status, errorText);
+        
+        if (lovableResponse.status === 429) {
+          throw new Error('Rate limit superato. Riprova tra qualche istante.');
+        }
+        if (lovableResponse.status === 402) {
+          throw new Error('Crediti AI esauriti. Aggiungi crediti al tuo workspace.');
+        }
+        throw new Error(`AI Gateway error ${lovableResponse.status}: ${errorText}`);
       }
 
       const lovableData = await lovableResponse.json();
-      console.log('✅ Lovable AI response:', JSON.stringify(lovableData, null, 2));
       aiResponse = lovableData.choices[0].message.content;
       tokenInput = lovableData.usage?.prompt_tokens || 0;
       tokenOutput = lovableData.usage?.completion_tokens || 0;

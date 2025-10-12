@@ -837,11 +837,6 @@ const ChatLaboratory = () => {
                 alertThreshold={15000}
               />
               <ConversationCostBadge labConversationId={currentConversationId} />
-              <ExportSummaryButton
-                labConversationId={currentConversationId}
-                variant="laboratory"
-                iconOnly
-              />
             </div>
           </div>
         </div>

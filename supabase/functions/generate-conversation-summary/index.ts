@@ -36,7 +36,7 @@ Rispondi SOLO in formato JSON puro senza markdown:
 {"title": "...", "summary": "..."}`;
       
       maxTokens = 100;
-      model = 'google/gemini-2.0-flash-lite';
+      model = 'google/gemini-2.5-flash-lite';
       
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -96,7 +96,7 @@ ${conversationTextFromDB}
 
 Riassunto (max 100 caratteri):`;
       maxTokens = 50;
-      model = 'google/gemini-2.0-flash-lite';
+      model = 'google/gemini-2.5-flash-lite';
     } else {
       // full_report
       prompt = `Genera un report dettagliato e ben formattato di questa conversazione multi-agente.

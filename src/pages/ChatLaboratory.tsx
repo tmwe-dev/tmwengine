@@ -49,6 +49,9 @@ interface Conversation {
   created_at: string;
   updated_at: string;
   message_count?: number;
+  total_tokens?: number;
+  riassunto_contesto?: string | null;
+  active_participants?: Array<{name: string, type: string}>;
 }
 
 const ChatLaboratory = () => {
@@ -213,26 +216,37 @@ const ChatLaboratory = () => {
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
-        .select('id, titolo, created_at, updated_at')
+        .select('id, titolo, created_at, updated_at, riassunto_contesto, active_participants')
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
-      const conversationsWithCount = await Promise.all(
+      const conversationsWithStats = await Promise.all(
         (data || []).map(async (conv) => {
           const { count } = await supabase
             .from('chat_laboratory_messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', conv.id);
 
+          const { data: messagesData } = await supabase
+            .from('chat_laboratory_messages')
+            .select('token_input, token_output')
+            .eq('conversation_id', conv.id);
+
+          const totalTokens = (messagesData || []).reduce((sum, msg) => 
+            sum + (msg.token_input || 0) + (msg.token_output || 0), 0
+          );
+
           return {
             ...conv,
-            message_count: count || 0
+            message_count: count || 0,
+            total_tokens: totalTokens,
+            active_participants: (conv.active_participants as any) || []
           };
         })
       );
 
-      setConversations(conversationsWithCount);
+      setConversations(conversationsWithStats);
     } catch (error) {
       console.error('Errore caricamento conversazioni:', error);
     }

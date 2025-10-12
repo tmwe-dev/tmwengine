@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { 
   MessageSquare, 
   Plus, 
@@ -11,6 +12,7 @@ import {
   X,
   Users
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +32,9 @@ interface Conversation {
   created_at: string;
   updated_at: string;
   message_count?: number;
+  total_tokens?: number;
+  riassunto_contesto?: string | null;
+  active_participants?: Array<{name: string, type: string}>;
 }
 
 interface ConversationsSidebarProps {
@@ -93,6 +98,28 @@ export const ConversationsSidebar = ({
     }
   };
 
+  const formatTokens = (tokens?: number): string => {
+    if (!tokens) return '0';
+    if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
+    if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
+    return tokens.toString();
+  };
+
+  const getParticipantNames = (participants?: Array<{name: string, type: string}>): string => {
+    if (!participants || participants.length === 0) return 'Nessun partecipante';
+    
+    const aiParticipants = participants.filter(p => p.type !== 'human');
+    if (aiParticipants.length === 0) return 'Solo tu';
+    
+    const names = aiParticipants.map(p => p.name).slice(0, 2);
+    
+    if (aiParticipants.length > 2) {
+      return `${names.join(', ')} +${aiParticipants.length - 2}`;
+    }
+    
+    return names.join(', ');
+  };
+
   return (
     <div className="flex flex-col h-full bg-transparent">
       <div className="p-4 border-b border-border/40">
@@ -118,13 +145,14 @@ export const ConversationsSidebar = ({
             conversations.map((conv) => (
               <div
                 key={conv.id}
-                className={`
-                  group relative p-3 rounded-lg border transition-all
-                  ${currentConversationId === conv.id 
-                    ? 'bg-primary/10 border-primary/40' 
-                    : 'hover:bg-muted/50 border-border/20 hover:border-border/40'
-                  }
-                `}
+                className={cn(
+                  "group relative p-3 rounded-lg border transition-all duration-200 overflow-hidden cursor-pointer",
+                  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left",
+                  currentConversationId === conv.id 
+                    ? 'bg-email-selected border-primary/40 after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent' 
+                    : 'bg-card/95 backdrop-blur border-border/20 hover:border-border/40 hover:bg-transparent after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce'
+                )}
+                onClick={() => !editingId && onSelectConversation(conv.id)}
               >
                 {editingId === conv.id ? (
                   <div className="flex items-center gap-2">
@@ -157,46 +185,72 @@ export const ConversationsSidebar = ({
                   </div>
                 ) : (
                   <>
-                    <div 
-                      className="cursor-pointer flex-1"
-                      onClick={() => onSelectConversation(conv.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-medium line-clamp-1 flex-1">
-                          {conv.titolo || "Conversazione multi-agente"}
-                        </h4>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartEdit(conv);
-                            }}
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(conv.id);
-                            }}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
+                    {/* Riga 1: Titolo + Token */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className={cn(
+                        "text-sm font-semibold line-clamp-1 flex-1 transition-all duration-200",
+                        "group-hover:scale-105",
+                        currentConversationId === conv.id ? "text-purple-300 scale-105" : ""
+                      )}>
+                        {conv.titolo || "Nuova conversazione"}
+                      </h4>
+                      <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                        {formatTokens(conv.total_tokens)}
+                      </span>
+                    </div>
+
+                    {/* Riga 2: Partecipanti + Numero messaggi + Azioni */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MessageSquare className="w-3 h-3" />
-                        <span>{conv.message_count || 0} messaggi</span>
-                        <span>•</span>
-                        <span>{formatDate(conv.updated_at)}</span>
+                        <Users className={cn(
+                          "w-3 h-3 flex-shrink-0 transition-all duration-200",
+                          "group-hover:scale-105 group-hover:animate-wiggle",
+                          currentConversationId === conv.id ? "text-purple-400 scale-110" : ""
+                        )} />
+                        <span className="truncate">{getParticipantNames(conv.active_participants)}</span>
+                        <Badge variant="secondary" className={cn(
+                          "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border font-medium",
+                          currentConversationId === conv.id 
+                            ? "text-purple-300 border-purple-300" 
+                            : "text-foreground border-border"
+                        )}>
+                          {conv.message_count || 0}
+                        </Badge>
+                      </div>
+                      
+                      {/* Azioni hover */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(conv);
+                          }}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(conv.id);
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
+
+                    {/* Riga 3-4: Anteprima riassunto (se disponibile) */}
+                    {conv.riassunto_contesto && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {conv.riassunto_contesto}
+                      </p>
+                    )}
                   </>
                 )}
               </div>

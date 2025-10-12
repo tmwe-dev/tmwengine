@@ -42,30 +42,91 @@ export default function Tables() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const categorizeTable = (tableName: string): string => {
+    // CRM & Contatti
     if (tableName === 'rubrica' || tableName === 'attivita') {
       return 'CRM & Contatti';
     }
+    
+    // Email
     if (tableName.startsWith('email_')) {
       return 'Email';
     }
-    if (tableName.startsWith('chat_')) {
-      return 'Chat AI';
+    
+    // Chat AI - Standard
+    if (tableName === 'chat_conversations' || 
+        tableName === 'chat_messages' || 
+        tableName === 'chat_system_prompts' ||
+        tableName === 'chat_usage_stats') {
+      return 'Chat AI - Standard';
     }
-    if (tableName.startsWith('import') || tableName === 'file_imports' || tableName === 'imported_contacts' || tableName === 'import_errors') {
+    
+    // Chat AI - Laboratory
+    if (tableName.startsWith('chat_laboratory_')) {
+      return 'Chat AI - Laboratory';
+    }
+    
+    // ElevenLabs Audio
+    if (tableName.startsWith('elevenlabs_')) {
+      return 'ElevenLabs Audio';
+    }
+    
+    // Knowledge Base
+    if (tableName.startsWith('knowledge_')) {
+      return 'Knowledge Base';
+    }
+    
+    // Intranet
+    if (tableName.startsWith('intranet_')) {
+      return 'Intranet';
+    }
+    
+    // Email Condivise
+    if (tableName.startsWith('shared_email_')) {
+      return 'Email Condivise';
+    }
+    
+    // Import
+    if (tableName.startsWith('import') || 
+        tableName === 'file_imports' || 
+        tableName === 'imported_contacts') {
       return 'Import';
     }
+    
+    // Archivio
+    if (tableName.endsWith('_archiviate') || 
+        tableName.endsWith('_archiviata') ||
+        tableName.endsWith('_archiviati')) {
+      return 'Archivio';
+    }
+    
+    // Configurazione
     if (tableName.startsWith('config_')) {
       return 'Configurazione';
     }
-    if (tableName === 'user_roles' || tableName === 'user_tmwe_credentials') {
+    
+    // Utenti & Permessi
+    if (tableName === 'user_roles' || 
+        tableName === 'user_tmwe_credentials' ||
+        tableName === 'user_profiles' ||
+        tableName === 'user_sync_preferences') {
       return 'Utenti & Permessi';
     }
+    
+    // Template & Alias
+    if (tableName === 'template_alias' || tableName === 'email_templates') {
+      return 'Template & Alias';
+    }
+    
+    // UI
     if (tableName.startsWith('ui_style')) {
       return 'UI';
     }
+    
+    // Temporanee
     if (tableName.startsWith('temp_')) {
       return 'Temporanee';
     }
+    
     return 'Altro';
   };
 
@@ -83,7 +144,24 @@ export default function Tables() {
     return Object.entries(categories)
       .map(([name, tables]) => ({ name, tables }))
       .sort((a, b) => {
-        const order = ['CRM & Contatti', 'Email', 'Chat AI', 'Import', 'Configurazione', 'Utenti & Permessi', 'UI', 'Temporanee', 'Altro'];
+        const order = [
+          'CRM & Contatti',
+          'Chat AI - Standard',
+          'Chat AI - Laboratory',
+          'ElevenLabs Audio',
+          'Knowledge Base',
+          'Email',
+          'Email Condivise',
+          'Intranet',
+          'Import',
+          'Archivio',
+          'Configurazione',
+          'Utenti & Permessi',
+          'Template & Alias',
+          'UI',
+          'Temporanee',
+          'Altro'
+        ];
         return order.indexOf(a.name) - order.indexOf(b.name);
       });
   };

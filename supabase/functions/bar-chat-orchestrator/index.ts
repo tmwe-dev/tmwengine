@@ -426,7 +426,8 @@ serve(async (req) => {
           console.log('📦 Audio buffer size:', audioBuffer.byteLength, 'bytes');
           
           const audioBase64 = btoa(
-            String.fromCharCode(...new Uint8Array(audioBuffer))
+            Array.from(new Uint8Array(audioBuffer))
+              .reduce((acc, byte) => acc + String.fromCharCode(byte), '')
           );
           
           // Salva in Supabase Storage

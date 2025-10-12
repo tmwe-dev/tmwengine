@@ -194,7 +194,7 @@ export const BarFullDuplexRecorder = ({
 
             if (data?.text && data.text.trim()) {
               console.log('📝 Trascrizione ricevuta:', data.text);
-              onTranscriptionComplete?.(data.text);
+              onTranscriptionComplete(data.text);
             }
 
             resolve(null);

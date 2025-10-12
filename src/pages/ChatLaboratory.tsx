@@ -767,20 +767,15 @@ const ChatLaboratory = () => {
                 >
                   <Layout className="h-5 w-5" />
                 </Button>
-              <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
-                  <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                    Chat Laboratory
-                  </h1>
-                  {!isMobile && (
-                    <p className="text-sm text-muted-foreground">
-                      Discussione Multi-Agente AI
-                    </p>
-                  )}
-                </div>
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
+                  Chat Laboratory
+                </h1>
+                {!isMobile && (
+                  <p className="text-sm text-muted-foreground">
+                    Discussione Multi-Agente AI
+                  </p>
+                )}
               </div>
             </div>
             <div className="shrink-0">

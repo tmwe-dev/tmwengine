@@ -2,6 +2,8 @@ export interface AIModel {
   value: string;
   label: string;
   free?: boolean;
+  costPerMillionInputTokens?: number; // EUR per 1M input tokens
+  costPerMillionOutputTokens?: number; // EUR per 1M output tokens
 }
 
 export interface AIProvider {

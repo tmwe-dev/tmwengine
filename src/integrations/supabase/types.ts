@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_cost_tracking: {
+        Row: {
+          conversation_id: string | null
+          cost_input_eur: number | null
+          cost_output_eur: number | null
+          cost_total_eur: number | null
+          created_at: string | null
+          id: string
+          input_tokens: number
+          lab_conversation_id: string | null
+          model: string
+          operation_type: string | null
+          output_tokens: number
+          provider: string
+          room_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          cost_input_eur?: number | null
+          cost_output_eur?: number | null
+          cost_total_eur?: number | null
+          created_at?: string | null
+          id?: string
+          input_tokens?: number
+          lab_conversation_id?: string | null
+          model: string
+          operation_type?: string | null
+          output_tokens?: number
+          provider: string
+          room_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          cost_input_eur?: number | null
+          cost_output_eur?: number | null
+          cost_total_eur?: number | null
+          created_at?: string | null
+          id?: string
+          input_tokens?: number
+          lab_conversation_id?: string | null
+          model?: string
+          operation_type?: string | null
+          output_tokens?: number
+          provider?: string
+          room_id?: string | null
+        }
+        Relationships: []
+      }
       attivita: {
         Row: {
           assegnato_a: string | null
@@ -148,34 +196,49 @@ export type Database = {
           created_at: string
           economy_mode: boolean | null
           id: string
+          last_compaction_at: string | null
+          last_token_update: string | null
           memoria_completa: boolean | null
           riassunto_contesto: string | null
           show_summaries_only: boolean | null
           system_prompt_id: string | null
           titolo: string | null
+          token_count_current: number | null
+          token_count_total: number | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           economy_mode?: boolean | null
           id?: string
+          last_compaction_at?: string | null
+          last_token_update?: string | null
           memoria_completa?: boolean | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           titolo?: string | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           economy_mode?: boolean | null
           id?: string
+          last_compaction_at?: string | null
+          last_token_update?: string | null
           memoria_completa?: boolean | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           titolo?: string | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -307,7 +370,9 @@ export type Database = {
           economy_mode: boolean | null
           final_summary: string | null
           id: string
+          last_compaction_at: string | null
           last_speaker_index: number | null
+          last_token_update: string | null
           memoria_completa: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
@@ -315,7 +380,10 @@ export type Database = {
           system_prompt_id: string | null
           target_participant_type: string | null
           titolo: string | null
+          token_count_current: number | null
+          token_count_total: number | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           active_participants?: Json | null
@@ -325,7 +393,9 @@ export type Database = {
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
+          last_compaction_at?: string | null
           last_speaker_index?: number | null
+          last_token_update?: string | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
@@ -333,7 +403,10 @@ export type Database = {
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           active_participants?: Json | null
@@ -343,7 +416,9 @@ export type Database = {
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
+          last_compaction_at?: string | null
           last_speaker_index?: number | null
+          last_token_update?: string | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
@@ -351,7 +426,10 @@ export type Database = {
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -760,6 +838,8 @@ export type Database = {
       config_generale: {
         Row: {
           cognome_utente: string | null
+          compaction_trigger_messages: number | null
+          compaction_trigger_tokens: number | null
           created_at: string
           email_utente: string | null
           formato_data: string
@@ -774,11 +854,14 @@ export type Database = {
           ruolo_utente: string | null
           telefono_utente: string | null
           timezone_fuso: string
+          token_alert_threshold: number | null
           updated_at: string
           usa_riassunto: boolean | null
         }
         Insert: {
           cognome_utente?: string | null
+          compaction_trigger_messages?: number | null
+          compaction_trigger_tokens?: number | null
           created_at?: string
           email_utente?: string | null
           formato_data?: string
@@ -793,11 +876,14 @@ export type Database = {
           ruolo_utente?: string | null
           telefono_utente?: string | null
           timezone_fuso?: string
+          token_alert_threshold?: number | null
           updated_at?: string
           usa_riassunto?: boolean | null
         }
         Update: {
           cognome_utente?: string | null
+          compaction_trigger_messages?: number | null
+          compaction_trigger_tokens?: number | null
           created_at?: string
           email_utente?: string | null
           formato_data?: string
@@ -812,8 +898,54 @@ export type Database = {
           ruolo_utente?: string | null
           telefono_utente?: string | null
           timezone_fuso?: string
+          token_alert_threshold?: number | null
           updated_at?: string
           usa_riassunto?: boolean | null
+        }
+        Relationships: []
+      }
+      document_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_text: string
+          conversation_id: string | null
+          created_at: string | null
+          embedding: string | null
+          file_name: string
+          file_type: string
+          id: string
+          lab_conversation_id: string | null
+          metadata: Json | null
+          room_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          chunk_index: number
+          chunk_text: string
+          conversation_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          file_name: string
+          file_type: string
+          id?: string
+          lab_conversation_id?: string | null
+          metadata?: Json | null
+          room_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          chunk_index?: number
+          chunk_text?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          file_name?: string
+          file_type?: string
+          id?: string
+          lab_conversation_id?: string | null
+          metadata?: Json | null
+          room_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2320,8 +2452,12 @@ export type Database = {
           economy_mode: boolean | null
           id: string
           is_private: boolean | null
+          last_compaction_at: string | null
+          last_token_update: string | null
           name: string
           show_summaries_only: boolean | null
+          token_count_current: number | null
+          token_count_total: number | null
           updated_at: string
         }
         Insert: {
@@ -2332,8 +2468,12 @@ export type Database = {
           economy_mode?: boolean | null
           id?: string
           is_private?: boolean | null
+          last_compaction_at?: string | null
+          last_token_update?: string | null
           name: string
           show_summaries_only?: boolean | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string
         }
         Update: {
@@ -2344,8 +2484,12 @@ export type Database = {
           economy_mode?: boolean | null
           id?: string
           is_private?: boolean | null
+          last_compaction_at?: string | null
+          last_token_update?: string | null
           name?: string
           show_summaries_only?: boolean | null
+          token_count_current?: number | null
+          token_count_total?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -3327,6 +3471,10 @@ export type Database = {
         Args: { p_characters: number; p_cost: number; p_user_id: string }
         Returns: undefined
       }
+      increment_token_count: {
+        Args: { p_id: string; p_table: string; p_tokens_to_add: number }
+        Returns: number
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
@@ -3358,6 +3506,26 @@ export type Database = {
       reset_ai_invocations: {
         Args: { p_room_id: string }
         Returns: undefined
+      }
+      reset_token_count: {
+        Args: { p_id: string; p_table: string }
+        Returns: undefined
+      }
+      search_document_chunks: {
+        Args: {
+          p_conversation_id?: string
+          p_lab_conversation_id?: string
+          p_match_count?: number
+          p_match_threshold?: number
+          p_query_embedding: string
+          p_room_id?: string
+        }
+        Returns: {
+          chunk_text: string
+          file_name: string
+          id: string
+          similarity: number
+        }[]
       }
       search_hot_documents: {
         Args: {

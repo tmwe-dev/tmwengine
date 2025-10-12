@@ -4,16 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetPortal, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarProvider, 
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  useSidebar
-} from '@/components/ui/sidebar';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -233,16 +223,14 @@ const Intranet = () => {
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
               <div className="mt-8">
-                <SidebarProvider>
-                  <RoomSelector
-                    onRoomSelect={(roomId) => {
-                      setSearchParams({ room: roomId });
-                      setMobileSheetOpen(false);
-                    }}
-                    selectedRoomId={selectedRoomId}
-                    getUnreadCount={getUnreadCount}
-                  />
-                </SidebarProvider>
+                <RoomSelector
+                  onRoomSelect={(roomId) => {
+                    setSearchParams({ room: roomId });
+                    setMobileSheetOpen(false);
+                  }}
+                  selectedRoomId={selectedRoomId}
+                  getUnreadCount={getUnreadCount}
+                />
               </div>
             </SheetContent>
           </Sheet>
@@ -339,131 +327,107 @@ const Intranet = () => {
     );
   }
 
-  // Tablet/Desktop: usa SidebarProvider ma mantiene l'header originale
+  // Desktop: layout a 2 colonne senza SidebarProvider (per evitare conflitti con sidebar principale)
   return (
-    <SidebarProvider defaultOpen={false} style={{ "--sidebar-width": "16rem", "--sidebar-width-icon": "5rem" } as React.CSSProperties}>
-      <div className="flex w-full min-h-screen">
-        {/* Sidebar collapsible */}
-        <Sidebar collapsible="icon" className="!bg-transparent border-r">
-          <div className="p-2 border-b flex items-center justify-between">
-            <SidebarTrigger />
-          </div>
-          <SidebarContent className="!bg-transparent">
-            <SidebarGroup>
-              <SidebarGroupLabel>Stanze</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <RoomSelector
-                  onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                  selectedRoomId={selectedRoomId}
-                  getUnreadCount={getUnreadCount}
-                />
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Utenti Online</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <OnlineUsers users={onlineUsers} />
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {isCreatorOrAdmin && (
-              <SidebarGroup>
-                <SidebarGroupLabel>Richieste Accesso</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <AccessRequestsPanel />
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-          </SidebarContent>
-        </Sidebar>
-
-        {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
-        <main className="flex-1 flex flex-col h-screen">
-          {/* Header con titolo e pulsante Utenti Organizzazione */}
-          <div className="flex-shrink-0 border-b">
-            <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="lg:hidden" />
-                  <h1 className="text-2xl font-bold">Intranet</h1>
-                </div>
-                <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Users className="h-4 w-4 mr-2" />
-                      Utenti Organizzazione
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="w-[400px] sm:w-[540px]">
-                    <SheetHeader>
-                      <SheetTitle>Utenti Organizzazione</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6">
-                      <OrganizationUsers
-                        currentUserId={currentUserId}
-                        onOpenPrivateChat={handleOpenPrivateChat}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+    <div className="max-w-7xl mx-auto p-3 sm:p-6">
+      {/* Header con pulsante Utenti Organizzazione */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Intranet</h1>
+        <Sheet open={showOrgUsers} onOpenChange={setShowOrgUsers}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Users className="h-4 w-4 mr-2" />
+              Utenti Organizzazione
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[400px] sm:w-[540px]">
+            <SheetHeader>
+              <SheetTitle>Utenti Organizzazione</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <OrganizationUsers
+                currentUserId={currentUserId}
+                onOpenPrivateChat={handleOpenPrivateChat}
+              />
             </div>
-          </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
+      {/* Layout a 2 colonne */}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        {/* Colonna sinistra - Pannello stanze/utenti */}
+        <div className="space-y-4">
+          <Card className="bg-card-transparent">
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Stanze</h3>
+              <RoomSelector
+                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+                selectedRoomId={selectedRoomId}
+                getUnreadCount={getUnreadCount}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card-transparent">
+            <CardContent className="p-4">
+              <h3 className="font-semibold mb-3">Utenti Online</h3>
+              <OnlineUsers users={onlineUsers} />
+            </CardContent>
+          </Card>
+
+          {isCreatorOrAdmin && (
+            <Card className="bg-card-transparent">
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-3">Richieste Accesso</h3>
+                <AccessRequestsPanel />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Colonna destra - Area chat */}
+        <div className="flex flex-col space-y-4">
           {selectedRoomId ? (
             <>
-              {/* Area messaggi scrollabile - occupa tutto lo spazio rimanente */}
-              <div className="flex-1 overflow-hidden">
-                <div className="max-w-7xl mx-auto w-full h-full flex flex-col p-3 sm:p-6">
-                  {/* Header stanza */}
-                  <div className="flex-shrink-0 pb-2 border-b mb-4">
-                    <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
-                  </div>
-
-                  {/* Messaggi scrollabili */}
-                  <Card className="bg-card-transparent flex-1 overflow-hidden">
-                    <CardContent className="p-6 h-full overflow-y-auto">
-                      <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Header stanza */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">{selectedRoomName}</h2>
+                <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
               </div>
 
-              {/* Input fisso in basso */}
-              <div className="flex-shrink-0 border-t">
-                <div className="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-                  <Card className="bg-card-transparent">
-                    <CardContent className="p-4">
-                      <MessageInputWithAttachments 
-                        roomId={selectedRoomId} 
-                        settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+              {/* Messaggi */}
+              <Card className="bg-card-transparent">
+                <CardContent className="p-6 max-h-[600px] overflow-y-auto">
+                  <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
+                </CardContent>
+              </Card>
+
+              {/* Input */}
+              <Card className="bg-card-transparent">
+                <CardContent className="p-4">
+                  <MessageInputWithAttachments roomId={selectedRoomId} />
+                </CardContent>
+              </Card>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center p-3 sm:p-6">
-              <Card className="max-w-2xl w-full">
-                <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                  <Users className="h-16 w-16 mx-auto text-muted-foreground" />
-                  <div className="text-center">
-                    <h2 className="text-xl font-semibold mb-2">
-                      Seleziona una stanza
-                    </h2>
-                    <p className="text-base text-muted-foreground">
-                      Scegli una stanza dalla sidebar per iniziare a chattare
-                    </p>
-                  </div>
+            <Card className="h-full min-h-[600px] flex items-center justify-center">
+              <div className="text-center space-y-4 p-12">
+                <Users className="h-16 w-16 mx-auto text-muted-foreground" />
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">
+                    Seleziona una stanza
+                  </h2>
+                  <p className="text-base text-muted-foreground">
+                    Scegli una stanza dal pannello a sinistra per iniziare a chattare
+                  </p>
                 </div>
-              </Card>
-            </div>
+              </div>
+            </Card>
           )}
-        </main>
+        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

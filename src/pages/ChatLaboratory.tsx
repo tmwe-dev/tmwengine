@@ -1173,6 +1173,14 @@ const ChatLaboratory = () => {
                     
                     console.log('✅ Messaggio vocale salvato nel DB');
 
+                    // Ricarica messaggi SUBITO per mostrare il messaggio utente
+                    await loadMessages(conversationId);
+                    
+                    toast({
+                      title: "✓ Messaggio inviato",
+                      description: "In attesa della risposta AI..."
+                    });
+
                     // Chiama orchestratore
                     const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
                     
@@ -1194,10 +1202,13 @@ const ChatLaboratory = () => {
                     
                     console.log('✅ Risposta AI ricevuta:', data);
                     
-                    // Ricarica messaggi
+                    // Ricarica messaggi per mostrare la risposta AI
                     await loadMessages(conversationId);
                     
-                    toast({ title: "✓ Messaggio vocale inviato" });
+                    toast({
+                      title: "✓ Risposta AI ricevuta",
+                      description: "La conversazione è aggiornata"
+                    });
                     
                   } catch (error) {
                     console.error('❌ Errore invio messaggio vocale:', error);

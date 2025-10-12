@@ -3,7 +3,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Timer, Zap, Play } from 'lucide-react';
+import { Timer, Zap, Play, Mic } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface BarModeControlsProps {
   conversationId: string | null;
@@ -14,6 +15,15 @@ interface BarModeSettings {
   conversation_pace: 'slow' | 'normal' | 'fast';
   enable_interruptions: boolean;
   auto_play_audio: boolean;
+  voice_enabled: boolean;
+  active_elevenlabs_agents: string[];
+}
+
+interface ElevenLabsAgent {
+  id: string;
+  name: string;
+  voice_id: string;
+  is_active: boolean;
 }
 
 export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
@@ -21,9 +31,14 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     conversation_pace: 'normal',
     enable_interruptions: true,
     auto_play_audio: true,
+    voice_enabled: false,
+    active_elevenlabs_agents: [],
   });
+  
+  const [agents, setAgents] = useState<ElevenLabsAgent[]>([]);
 
   useEffect(() => {
+    loadElevenLabsAgents();
     if (conversationId) {
       loadSettings();
     } else {
@@ -37,11 +52,26 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   }, [conversationId]);
 
+  const loadElevenLabsAgents = async () => {
+    try {
+      const { data } = await supabase
+        .from('elevenlabs_agents')
+        .select('id, name, voice_id, is_active')
+        .order('order_index', { ascending: true });
+      
+      if (data) {
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Errore caricamento agenti:', error);
+    }
+  };
+
   const loadSettings = async () => {
     try {
       const { data } = await supabase
         .from('chat_laboratory_bar_mode')
-        .select('conversation_pace, enable_interruptions, auto_play_audio')
+        .select('conversation_pace, enable_interruptions, auto_play_audio, voice_enabled, active_elevenlabs_agents')
         .eq('conversation_id', conversationId)
         .single();
 
@@ -124,6 +154,14 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   };
 
+  const toggleAgent = (agentId: string) => {
+    const newAgents = settings.active_elevenlabs_agents.includes(agentId)
+      ? settings.active_elevenlabs_agents.filter(id => id !== agentId)
+      : [...settings.active_elevenlabs_agents, agentId];
+    
+    updateSetting('active_elevenlabs_agents', newAgents);
+  };
+
   return (
     <div className="space-y-3">
       {/* Topic Selector */}
@@ -198,6 +236,44 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             className="ml-auto"
           />
         </div>
+
+        {/* Voice Enabled */}
+        <div className="flex items-center gap-2 col-span-2">
+          <Mic className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="voice" className="text-sm cursor-pointer w-24">
+            Voice TTS
+          </Label>
+          <Switch
+            id="voice"
+            checked={settings.voice_enabled}
+            onCheckedChange={(checked) => updateSetting('voice_enabled', checked)}
+            className="ml-auto"
+          />
+        </div>
+
+        {/* ElevenLabs Agents Selection */}
+        {settings.voice_enabled && agents.length > 0 && (
+          <div className="col-span-2 space-y-2 p-2 rounded-md border border-border/30 bg-muted/20">
+            <Label className="text-xs text-muted-foreground">Agenti vocali attivi:</Label>
+            <div className="space-y-1">
+              {agents.filter(a => a.is_active).map((agent) => (
+                <div key={agent.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`agent-${agent.id}`}
+                    checked={settings.active_elevenlabs_agents.includes(agent.id)}
+                    onCheckedChange={() => toggleAgent(agent.id)}
+                  />
+                  <Label 
+                    htmlFor={`agent-${agent.id}`} 
+                    className="text-xs cursor-pointer flex-1"
+                  >
+                    {agent.name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

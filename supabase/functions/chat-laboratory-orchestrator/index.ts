@@ -1,33 +1,41 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to check if AI should skip responding based on conversation context
-function checkIfShouldSkip(visibleHistory: string, userMessage: string, messagesCount: number): boolean {
-  const recentMessages = visibleHistory.toLowerCase();
-  
-  // Skip if conversation is very short
+// ═══════════════════════════════════════════════════════════
+// HELPER: Controlla se l'AI dovrebbe saltare il turno
+// ═══════════════════════════════════════════════════════════
+function checkIfShouldSkip(
+  visibleHistory: string,
+  userMessage: string,
+  messagesCount: number
+): boolean {
+  // Se la conversazione è appena iniziata (< 3 messaggi), tutti parlano
   if (messagesCount < 3) return false;
-  
-  // Skip if user asked a question
+
+  // Se l'ultimo messaggio è una domanda diretta, risponde
   if (userMessage.includes('?')) return false;
+
+  // Conta quanti messaggi recenti contengono parole di consenso
+  const lastMessages = visibleHistory.split('\n').slice(-3);
+  const consensusWords = ['concordo', 'sono d\'accordo', 'esatto', 'perfetto', 'giusto', 'condivido'];
   
-  // Skip if recent messages show consensus/agreement
-  const consensusKeywords = ['d\'accordo', 'concordo', 'esatto', 'proprio così', 'infatti', 'confermo'];
-  const hasConsensus = consensusKeywords.some(keyword => recentMessages.includes(keyword));
+  const consensusCount = lastMessages.filter(msg => 
+    consensusWords.some(word => msg.toLowerCase().includes(word))
+  ).length;
   
-  if (hasConsensus && Math.random() < 0.6) {
-    console.log('⏭️ Saltando turno per consenso rilevato');
-    return true;
-  }
-  
-  return false;
+  // Se almeno 2 dei 3 ultimi messaggi esprimono consenso, skip
+  return consensusCount >= 2;
 }
 
+// ═══════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ═══════════════════════════════════════════════════════════
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,188 +43,211 @@ serve(async (req) => {
 
   try {
     const { conversationId, userMessage, participants } = await req.json();
-    console.log('📥 Chat Laboratory Orchestrator riceve:', { conversationId, userMessage, participants });
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Fetch API keys from config_ai table
-    const { data: aiConfigs, error: configError } = await supabase
-      .from('config_ai')
-      .select('provider, api_key, attivo')
-      .eq('attivo', true);
-
-    if (configError) {
-      console.error('❌ Errore caricamento config_ai:', configError);
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY non configurata');
     }
 
-    const anthropicKey = aiConfigs?.find(c => c.provider === 'anthropic')?.api_key;
-    const openAIKey = aiConfigs?.find(c => c.provider === 'openai')?.api_key;
-    const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
-    
-    console.log('🔑 Chiavi API disponibili:', {
-      anthropic: !!anthropicKey,
-      openai: !!openAIKey,
-      lovable: !!lovableAIKey
-    });
-
-    if (!anthropicKey && !openAIKey && !lovableAIKey) {
-      throw new Error('Nessuna chiave API configurata');
-    }
-
-    // Fetch conversation data
-    const { data: conversation, error: convError } = await supabase
+    // Carica conversation
+    const { data: conversation } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('*')
+      .select('last_speaker_index')
       .eq('id', conversationId)
       .single();
 
-    if (convError) throw convError;
-
-    // Fetch active system prompt
-    const { data: systemPrompts } = await supabase
+    // Carica il prompt globale
+    const { data: globalPrompt } = await supabaseClient
       .from('chat_laboratory_system_prompts')
       .select('contenuto')
       .eq('attivo', true)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .maybeSingle();
 
-    const globalSystemPrompt = systemPrompts?.[0]?.contenuto || 
-      "Sei un assistente AI intelligente che partecipa a discussioni costruttive.";
+    const basePrompt = globalPrompt?.contenuto || `Sei un esperto in una discussione a turni.
 
-    // Fetch conversation messages
-    const { data: messages } = await supabase
+COMPORTAMENTO:
+- Leggi attentamente tutti gli interventi precedenti
+- Aspetta il tuo turno per parlare
+- Riferisciti agli interventi precedenti
+- Aggiungi prospettive nuove, non ripetere
+- Cerca convergenza e compromesso
+- Massimo 150 parole
+
+REGOLE CRITICHE:
+- NON rivelare di essere un'AI
+- Parla in prima persona
+- Tono professionale e colloquiale`;
+
+    // Carica messaggi
+    const { data: messages } = await supabaseClient
       .from('chat_laboratory_messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    const historyMessages = (messages || []).map((msg: any) => ({
-      role: msg.sender_type === 'user' ? 'user' : 'assistant',
-      content: `[${msg.sender_name}]: ${msg.content}`
-    }));
-
-    const visibleHistory = historyMessages
-      .map((m: any) => m.content)
-      .join('\n');
-
-    // Turn-taking logic
-    let currentTurnIndex = conversation.current_turn_index || 0;
-    const lastSpeakerIndex = conversation.last_speaker_index || 0;
+    // LOGICA TURNAZIONE
+    const lastSpeakerIndex = conversation?.last_speaker_index ?? 0;
+    const activeAIs = participants.filter((p: any) => p.type !== 'human');
     
-    // 30% chance of randomization
-    if (Math.random() < 0.3) {
-      currentTurnIndex = Math.floor(Math.random() * participants.length);
-      console.log('🎲 Turno randomizzato:', currentTurnIndex);
+    const shouldRandomize = Math.random() < 0.3;
+    let nextIndex;
+    
+    if (shouldRandomize) {
+      const availableIndices = activeAIs.map((_: any, i: number) => i).filter((i: number) => i !== lastSpeakerIndex);
+      nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)] ?? 0;
     } else {
-      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-      console.log('➡️ Turno sequenziale:', currentTurnIndex);
+      nextIndex = (lastSpeakerIndex + 1) % activeAIs.length;
     }
 
-    const selectedParticipant = participants[currentTurnIndex];
-    console.log('🎯 Partecipante selezionato:', selectedParticipant.name);
+    const selectedParticipant = activeAIs[nextIndex];
+    console.log(`🎯 Turno di: ${selectedParticipant?.name} (index ${nextIndex})`);
 
-    // Check if should skip
+    if (!selectedParticipant) {
+      throw new Error('Nessun partecipante selezionato');
+    }
+
+    const startTime = Date.now();
+
+    // Costruisci history completa
+    const visibleHistory = (messages || [])
+      .map((msg: any) => `${msg.sender_name}: ${msg.content}`)
+      .join('\n');
+
+    // ──────── PRE-CHECK: Questo AI ha qualcosa da dire? ────────
     const shouldSkip = checkIfShouldSkip(visibleHistory, userMessage, messages?.length || 0);
     
     if (shouldSkip) {
-      await supabase
-        .from('chat_laboratory_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_type: 'ai',
-          sender_name: selectedParticipant.name,
-          content: '...',
-          is_visible_to_ai: false
-        });
-
-      await supabase
-        .from('chat_laboratory_conversations')
-        .update({ 
-          last_speaker_index: currentTurnIndex,
-          current_turn_index: (currentTurnIndex + 1) % participants.length
-        })
-        .eq('id', conversationId);
+      console.log(`🤐 ${selectedParticipant.name} non ha nulla da aggiungere (consenso rilevato)`);
+      
+      // Salva un messaggio "skip" nella conversation (nascosto agli altri AI)
+      await supabaseClient.from('chat_laboratory_messages').insert({
+        conversation_id: conversationId,
+        sender_type: selectedParticipant.type,
+        sender_name: selectedParticipant.name,
+        content: "[Non ho nulla da aggiungere]",
+        is_visible_to_ai: false,
+      });
 
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          skipped: true,
-          message: `${selectedParticipant.name} ha scelto di non rispondere` 
+          skipped: true, 
+          participantName: selectedParticipant.name,
+          reason: 'consensus_detected'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Prepare conversation history for AI
-    const conversationHistory = [
-      { role: 'system', content: globalSystemPrompt },
-      ...historyMessages,
-      { role: 'user', content: userMessage }
-    ];
+    let aiResponseText = '';
+    let tokensIn = 0;
+    let tokensOut = 0;
 
-    let aiResponse = '';
-    let tokenInput = 0;
-    let tokenOutput = 0;
-    const startTime = Date.now();
+    // ═══════════════════════════════════════════════════════════
+    // GESTIONE PROVIDER DIVERSI
+    // ═══════════════════════════════════════════════════════════
 
-    // Route to appropriate AI provider
-    if ((selectedParticipant.type === 'anthropic' || selectedParticipant.type === 'claude') && anthropicKey) {
-      console.log('🤖 Calling Anthropic (Claude)...');
+    if (selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') {
+      // ──────── ANTHROPIC DIRETTO ────────
+      console.log(`🧠 ${selectedParticipant.name} elabora con Anthropic Claude`);
+      
+      const { data: anthropicConfig } = await supabaseClient
+        .from('config_ai')
+        .select('api_key')
+        .eq('provider', 'anthropic')
+        .eq('attivo', true)
+        .single();
+
+      if (!anthropicConfig?.api_key) {
+        throw new Error('Anthropic API key non configurata in config_ai');
+      }
+
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
+          'x-api-key': anthropicConfig.api_key,
+          'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 8096,
-          messages: conversationHistory.filter(m => m.role !== 'system'),
-          system: globalSystemPrompt
-        })
+          model: 'claude-sonnet-4-5',
+          max_tokens: 4096, // Massimo consentito da Anthropic
+          messages: [
+            {
+              role: 'user',
+              content: `${basePrompt}\n\nConversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}`
+            }
+          ],
+        }),
       });
 
       if (!anthropicResponse.ok) {
-        throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
+        const errorText = await anthropicResponse.text();
+        console.error(`❌ Anthropic Error:`, anthropicResponse.status, errorText);
+        throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
       }
 
       const anthropicData = await anthropicResponse.json();
-      aiResponse = anthropicData.content[0].text;
-      tokenInput = anthropicData.usage?.input_tokens || 0;
-      tokenOutput = anthropicData.usage?.output_tokens || 0;
-    } 
-    else if ((selectedParticipant.type === 'openai' || selectedParticipant.type === 'chatgpt') && openAIKey) {
-      console.log('🤖 Calling OpenAI (GPT)...');
+      aiResponseText = anthropicData.content[0].text;
+      tokensIn = anthropicData.usage?.input_tokens || 0;
+      tokensOut = anthropicData.usage?.output_tokens || 0;
+
+    } else if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
+      // ──────── OPENAI DIRETTO ────────
+      console.log(`🧠 ${selectedParticipant.name} elabora con OpenAI GPT`);
+      
+      const { data: openaiConfig } = await supabaseClient
+        .from('config_ai')
+        .select('api_key, modello')
+        .eq('provider', 'openai')
+        .eq('attivo', true)
+        .single();
+
+      if (!openaiConfig?.api_key) {
+        throw new Error('OpenAI API key non configurata in config_ai');
+      }
+
+      // ✅ CORREZIONE: Separa system prompt dal messaggio user per ChatGPT
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${openaiConfig.api_key}`,
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAIKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: conversationHistory,
-          max_tokens: 4096
-        })
+          model: openaiConfig.modello || 'gpt-5-2025-08-07',
+          messages: [
+            { role: 'system', content: basePrompt },
+            { 
+              role: 'user', 
+              content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}` 
+            }
+          ],
+          // Nessuna limitazione di token - risponde come crede
+        }),
       });
 
       if (!openaiResponse.ok) {
-        throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+        const errorText = await openaiResponse.text();
+        console.error(`❌ OpenAI Error:`, openaiResponse.status, errorText);
+        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
       }
 
       const openaiData = await openaiResponse.json();
-      aiResponse = openaiData.choices[0].message.content;
-      tokenInput = openaiData.usage?.prompt_tokens || 0;
-      tokenOutput = openaiData.usage?.completion_tokens || 0;
-    }
-    else if (lovableAIKey) {
-      const model = 'google/gemini-2.5-flash';
-      console.log('🤖 Calling Lovable AI (Gemini)...');
+      aiResponseText = openaiData.choices[0].message.content;
+      tokensIn = openaiData.usage?.prompt_tokens || 0;
+      tokensOut = openaiData.usage?.completion_tokens || 0;
 
-      const fullPrompt = `${globalSystemPrompt}
+    } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
+      // ──────── LOVABLE AI GATEWAY (solo Gemini) ────────
+      const model = 'google/gemini-2.5-flash';
+      console.log(`🧠 ${selectedParticipant.name} elabora con modello: ${model}`);
+
+      const fullPrompt = `${basePrompt}
 
 Conversazione finora:
 ${visibleHistory}
@@ -224,72 +255,76 @@ ${visibleHistory}
 Nuovo messaggio dell'utente:
 ${userMessage}`;
 
-      const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${lovableAIKey}`,
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: fullPrompt }],
+          // Nessuna limitazione di token - risponde come crede
         }),
       });
 
-      if (!lovableResponse.ok) {
-        const errorText = await lovableResponse.text();
-        console.error(`❌ AI Gateway Error (${model}):`, lovableResponse.status, errorText);
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error(`❌ AI Gateway Error (${model}):`, aiResponse.status, errorText);
         
-        if (lovableResponse.status === 429) {
+        if (aiResponse.status === 429) {
           throw new Error('Rate limit superato. Riprova tra qualche istante.');
         }
-        if (lovableResponse.status === 402) {
+        if (aiResponse.status === 402) {
           throw new Error('Crediti AI esauriti. Aggiungi crediti al tuo workspace.');
         }
-        throw new Error(`AI Gateway error ${lovableResponse.status}: ${errorText}`);
+        throw new Error(`AI Gateway error ${aiResponse.status}: ${errorText}`);
       }
 
-      const lovableData = await lovableResponse.json();
-      aiResponse = lovableData.choices[0].message.content;
-      tokenInput = lovableData.usage?.prompt_tokens || 0;
-      tokenOutput = lovableData.usage?.completion_tokens || 0;
-    }
-    else {
-      throw new Error(`No API key available for ${selectedParticipant.type}`);
+      const aiData = await aiResponse.json();
+      aiResponseText = aiData.choices[0].message.content;
+      tokensIn = aiData.usage?.prompt_tokens || 0;
+      tokensOut = aiData.usage?.completion_tokens || 0;
+      
+    } else {
+      throw new Error(`Tipo partecipante non supportato: ${selectedParticipant.type}`);
     }
 
-    const responseTime = Date.now() - startTime;
-    console.log(`✅ Risposta ricevuta in ${responseTime}ms`);
+    // ═══════════════════════════════════════════════════════════
+    // SALVATAGGIO RISULTATO
+    // ═══════════════════════════════════════════════════════════
 
-    // Save AI response to database
-    await supabase
+    const duration = Date.now() - startTime;
+    console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
+    console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
+
+    // Salva messaggio AI
+    await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
-        sender_type: 'ai',
+        sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
-        content: aiResponse,
-        token_input: tokenInput,
-        token_output: tokenOutput,
-        tempo_risposta_ms: responseTime
+        content: aiResponseText,
+        is_visible_to_ai: true,
+        token_input: tokensIn,
+        token_output: tokensOut,
+        tempo_risposta_ms: duration
       });
 
-    // Update conversation turn index
-    await supabase
+    // Aggiorna last_speaker_index
+    await supabaseClient
       .from('chat_laboratory_conversations')
-      .update({ 
-        last_speaker_index: currentTurnIndex,
-        current_turn_index: (currentTurnIndex + 1) % participants.length
-      })
+      .update({ last_speaker_index: nextIndex })
       .eq('id', conversationId);
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        content: aiResponse,
-        speaker: selectedParticipant.name,
-        tokens: { input: tokenInput, output: tokenOutput },
-        responseTime 
+        success: true,
+        participant: selectedParticipant.name,
+        content: aiResponseText,
+        tokens: { input: tokensIn, output: tokensOut },
+        responseTime: duration
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -297,10 +332,13 @@ ${userMessage}`;
   } catch (error) {
     console.error('❌ Orchestrator error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
+      JSON.stringify({ 
+        error: error.message || 'Errore sconosciuto',
+        details: error.toString()
+      }),
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }

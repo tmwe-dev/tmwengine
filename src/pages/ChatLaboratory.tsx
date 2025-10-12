@@ -18,6 +18,9 @@ import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
 import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
+import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
+import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
+import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 
 interface Message {
   id: string;
@@ -803,6 +806,27 @@ const ChatLaboratory = () => {
           </div>
         </div>
       </div>
+
+      {/* Sezione Stats - Costo e Token */}
+      {currentConversationId && (
+        <div className="border-b border-border/20 bg-muted/20">
+          <div className="container mx-auto px-4 py-1.5">
+            <div className="flex items-center justify-center gap-3">
+              <TokenCounterBadge
+                labConversationId={currentConversationId}
+                variant="laboratory"
+                alertThreshold={15000}
+              />
+              <ConversationCostBadge labConversationId={currentConversationId} />
+              <ExportSummaryButton
+                labConversationId={currentConversationId}
+                variant="laboratory"
+                iconOnly
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messaggi */}
       <div className="flex-1 overflow-hidden relative">

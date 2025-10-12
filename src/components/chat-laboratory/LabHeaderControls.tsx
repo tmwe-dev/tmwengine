@@ -1,6 +1,3 @@
-import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
-import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
-import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { LaboratoryPromptManager } from './LaboratoryPromptManager';
 import { ParticipantSelector } from './ParticipantSelector';
 import { Button } from '@/components/ui/button';
@@ -26,42 +23,20 @@ export const LabHeaderControls = ({
   toggleParticipant,
 }: LabHeaderControlsProps) => {
   return (
-    <div className="flex flex-col gap-1.5">
-      {/* Prima riga: Statistiche */}
-      {currentConversationId && (
-        <div className="flex items-center gap-1 justify-end">
-          <TokenCounterBadge 
-            labConversationId={currentConversationId}
-            variant="laboratory"
-            alertThreshold={15000}
-          />
-          <ConversationCostBadge labConversationId={currentConversationId} />
-          <ExportSummaryButton 
-            labConversationId={currentConversationId}
-            variant="laboratory"
-            iconOnly
-          />
-        </div>
-      )}
-      
-      {/* Seconda riga: Controlli - centrati */}
-      <div className="flex items-center justify-center">
-        <div className="flex items-center gap-1">
-          <Button
-            onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
-            variant="ghost"
-            size="icon"
-            title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
-          >
-            {viewMode === 'classic' ? '📑' : '💬'}
-          </Button>
-          <LaboratoryPromptManager />
-          <ParticipantSelector
-            participants={participants}
-            onToggle={toggleParticipant}
-          />
-        </div>
-      </div>
+    <div className="flex items-center gap-1">
+      <Button
+        onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+        variant="ghost"
+        size="icon"
+        title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
+      >
+        {viewMode === 'classic' ? '📑' : '💬'}
+      </Button>
+      <LaboratoryPromptManager />
+      <ParticipantSelector
+        participants={participants}
+        onToggle={toggleParticipant}
+      />
     </div>
   );
 };

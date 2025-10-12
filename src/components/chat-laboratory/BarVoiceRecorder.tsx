@@ -196,6 +196,9 @@ export const BarVoiceRecorder = ({
 
         const transcribedText = data.text;
         console.log('📝 Trascrizione:', transcribedText);
+        console.log('🎤 Chunks totali raccolti:', chunksRef.current.length);
+        console.log('🎤 Dimensione totale audio:', 
+          chunksRef.current.reduce((acc, c) => acc + c.size, 0), 'bytes');
         
         onTranscriptionComplete(transcribedText);
         toast({ title: "✓ Audio trascritto" });

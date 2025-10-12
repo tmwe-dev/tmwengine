@@ -307,6 +307,19 @@ const ChatLaboratory = () => {
       if (error) throw error;
       
       setCurrentConversationId(data.id);
+      
+      // ✅ Se Bar Mode attivo, abilita audio automaticamente
+      if (isBarMode) {
+        await supabase
+          .from('chat_laboratory_bar_mode')
+          .upsert({
+            conversation_id: data.id,
+            mode: 'bar',
+            voice_enabled: true,
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'conversation_id' });
+      }
       setMessages([]);
       await loadConversations();
 
@@ -382,13 +395,15 @@ const ChatLaboratory = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, overrideText?: string) => {
     e.preventDefault();
-    if (!prompt.trim()) return;
+    
+    // ✅ Usa overrideText se fornito (da trascrizione), altrimenti usa prompt
+    const currentPrompt = overrideText || prompt.trim();
+    if (!currentPrompt) return;
 
     setIsLoading(true);
-    const currentPrompt = prompt;
-    setPrompt('');
+    setPrompt(''); // ✅ Pulisci sempre textarea
 
     try {
       // Crea conversazione inline se non esiste
@@ -977,11 +992,10 @@ const ChatLaboratory = () => {
                 isAISpeaking={isAISpeaking}
                 onTranscriptionComplete={async (text) => {
                   console.log('✅ Trascrizione ricevuta:', text);
-                  setPrompt(text);
                   
-                  // ✅ Invio automatico senza premere bottone
+                  // ✅ Invio diretto passando il testo (no setPrompt asincrono)
                   const fakeEvent = new Event('submit') as any;
-                  await handleSubmit(fakeEvent);
+                  await handleSubmit(fakeEvent, text);
                   
                   toast({ title: "✓ Messaggio inviato alla chat" });
                 }}

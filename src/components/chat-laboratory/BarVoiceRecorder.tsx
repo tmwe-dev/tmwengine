@@ -80,16 +80,19 @@ export const BarVoiceRecorder = ({
       chunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('📦 Chunk ricevuto, size:', event.data.size);
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
+        console.log('⏹️ Recording stopped, chunks totali:', chunksRef.current.length);
         await transcribeAudio();
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000); // Richiede chunks ogni 1s
+      console.log('🎤 MediaRecorder.start() chiamato, stato:', mediaRecorder.state);
       setIsRecording(true);
       toast({ title: "🍺 Microfono attivo - Parla pure!" });
     } catch (error) {
@@ -172,6 +175,7 @@ export const BarVoiceRecorder = ({
   };
 
   const handleToggle = () => {
+    console.log('🍺 Toggle cliccato, isRecording:', isRecording);
     if (isRecording) {
       stopRecording();
     } else {

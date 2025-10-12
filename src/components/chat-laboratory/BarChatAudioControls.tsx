@@ -19,9 +19,8 @@ export const BarChatAudioControls = ({
 }: BarChatAudioControlsProps) => {
   return (
     <div className={cn(
-      "fixed bottom-0 left-0 right-0 z-50",
       "border-t border-border/40 backdrop-blur-xl bg-background/80",
-      "p-4 shadow-lg",
+      "p-4 rounded-lg shadow-lg",
       className
     )}>
       <div className="max-w-3xl mx-auto flex items-center justify-center gap-8">

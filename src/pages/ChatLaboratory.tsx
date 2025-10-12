@@ -969,27 +969,29 @@ const ChatLaboratory = () => {
             </div>
           </form>
 
-          {/* Bar Chat Audio Controls - Fixed bottom quando Bar Mode attivo */}
+          {/* Bar Chat Audio Controls - Inline quando Bar Mode attivo */}
           {isBarMode && (
-            <BarChatAudioControls
-              conversationId={currentConversationId}
-              isAISpeaking={isAISpeaking}
-              onTranscriptionComplete={(text) => {
-                setPrompt(text);
-                toast({ title: "✓ Trascrizione completata", description: "Premi Invia per inviare" });
-              }}
-              onInterrupt={async () => {
-                if (currentConversationId) {
-                  await supabase
-                    .from('chat_laboratory_bar_mode')
-                    .update({ interrupt_requested: true })
-                    .eq('conversation_id', currentConversationId);
-                  
-                  setIsAISpeaking(false);
-                  toast({ title: "⛔ AI interrotta" });
-                }
-              }}
-            />
+            <div className="mt-4">
+              <BarChatAudioControls
+                conversationId={currentConversationId}
+                isAISpeaking={isAISpeaking}
+                onTranscriptionComplete={(text) => {
+                  setPrompt(text);
+                  toast({ title: "✓ Trascrizione completata", description: "Premi Invia per inviare" });
+                }}
+                onInterrupt={async () => {
+                  if (currentConversationId) {
+                    await supabase
+                      .from('chat_laboratory_bar_mode')
+                      .update({ interrupt_requested: true })
+                      .eq('conversation_id', currentConversationId);
+                    
+                    setIsAISpeaking(false);
+                    toast({ title: "⛔ AI interrotta" });
+                  }
+                }}
+              />
+            </div>
           )}
         </div>
       </div>

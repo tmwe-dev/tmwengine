@@ -1,4 +1,4 @@
-import { useState, useRef, useImperativeHandle, forwardRef } from "react";
+import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from "react";
 import { Mic, MicOff, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +21,19 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
     const [isProcessing, setIsProcessing] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    const cleanupStream = () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
 
     const startRecording = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         chunksRef.current = [];
@@ -38,7 +47,7 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
           await transcribeAudio(audioBlob);
-          stream.getTracks().forEach(track => track.stop());
+          cleanupStream();
         };
 
         mediaRecorder.start();
@@ -88,6 +97,16 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
     useImperativeHandle(ref, () => ({
       stopAndTranscribe
     }));
+
+    // Cleanup al unmount del componente
+    useEffect(() => {
+      return () => {
+        cleanupStream();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      };
+    }, []);
 
     const transcribeAudio = async (audioBlob: Blob) => {
       setIsProcessing(true);

@@ -127,38 +127,40 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
   return (
     <div className="space-y-3">
       {/* Topic Selector */}
-      <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
-        <Label htmlFor="topic" className="text-sm">Argomento:</Label>
-        <Select value={selectedTopic} onValueChange={updateTopic}>
-          <SelectTrigger id="topic" className="w-48 h-8">
-            <SelectValue placeholder="Seleziona argomento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Nessuno</SelectItem>
-            <SelectItem value="logistica">📦 Logistica</SelectItem>
-            <SelectItem value="medico">🏥 Medicina</SelectItem>
-            <SelectItem value="fiscale">💼 Fiscalità</SelectItem>
-            <SelectItem value="ingegneria">⚙️ Ingegneria</SelectItem>
-            <SelectItem value="informatica">💻 Informatica</SelectItem>
-            <SelectItem value="consulenza">🎯 Consulenza</SelectItem>
-            <SelectItem value="ristorazione">🍽️ Ristorazione</SelectItem>
-            <SelectItem value="strategia">📊 Strategia</SelectItem>
-            <SelectItem value="filosofia">🧠 Filosofia</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
+        {/* Topic Selector */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="topic" className="text-sm w-24">Argomento:</Label>
+          <Select value={selectedTopic} onValueChange={updateTopic}>
+            <SelectTrigger id="topic" className="flex-1 h-8">
+              <SelectValue placeholder="Seleziona argomento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nessuno</SelectItem>
+              <SelectItem value="logistica">📦 Logistica</SelectItem>
+              <SelectItem value="medico">🏥 Medicina</SelectItem>
+              <SelectItem value="fiscale">💼 Fiscalità</SelectItem>
+              <SelectItem value="ingegneria">⚙️ Ingegneria</SelectItem>
+              <SelectItem value="informatica">💻 Informatica</SelectItem>
+              <SelectItem value="consulenza">🎯 Consulenza</SelectItem>
+              <SelectItem value="ristorazione">🍽️ Ristorazione</SelectItem>
+              <SelectItem value="strategia">📊 Strategia</SelectItem>
+              <SelectItem value="filosofia">🧠 Filosofia</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* Controlli originali - inline nella stessa riga */}
         {/* Ritmo Conversazione */}
         <div className="flex items-center gap-2">
           <Timer className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="pace" className="text-sm">Ritmo:</Label>
+          <Label htmlFor="pace" className="text-sm w-24">Ritmo:</Label>
           <Select
             value={settings.conversation_pace}
             onValueChange={(value: 'slow' | 'normal' | 'fast') => 
               updateSetting('conversation_pace', value)
             }
           >
-            <SelectTrigger id="pace" className="w-32 h-8">
+            <SelectTrigger id="pace" className="flex-1 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -172,26 +174,28 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         {/* Interruzioni */}
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="interruptions" className="text-sm cursor-pointer">
+          <Label htmlFor="interruptions" className="text-sm cursor-pointer w-24">
             Interruzioni
           </Label>
           <Switch
             id="interruptions"
             checked={settings.enable_interruptions}
             onCheckedChange={(checked) => updateSetting('enable_interruptions', checked)}
+            className="ml-auto"
           />
         </div>
 
         {/* Auto-Play Audio */}
         <div className="flex items-center gap-2">
-          <Label htmlFor="autoplay" className="text-sm cursor-pointer flex items-center gap-1">
-            <Play className="h-3 w-3" />
+          <Play className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="autoplay" className="text-sm cursor-pointer w-24">
             Auto-Play
           </Label>
           <Switch
             id="autoplay"
             checked={settings.auto_play_audio}
             onCheckedChange={(checked) => updateSetting('auto_play_audio', checked)}
+            className="ml-auto"
           />
         </div>
       </div>

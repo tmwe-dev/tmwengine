@@ -1116,11 +1116,23 @@ const ChatLaboratory = () => {
                 onTranscriptionComplete={async (text) => {
                   console.log('✅ Trascrizione ricevuta:', text);
                   
-                  // ✅ Invio diretto passando il testo (no setPrompt asincrono)
-                  const fakeEvent = new Event('submit') as any;
-                  await handleSubmit(fakeEvent, text);
+                  if (!text.trim()) {
+                    console.warn('⚠️ Testo vuoto, invio annullato');
+                    return;
+                  }
                   
-                  toast({ title: "✓ Messaggio inviato alla chat" });
+                  // ✅ Evento sintetico React completo con preventDefault()
+                  const syntheticEvent = {
+                    preventDefault: () => {},
+                    stopPropagation: () => {},
+                    target: {} as EventTarget,
+                    currentTarget: {} as EventTarget,
+                  } as React.FormEvent<HTMLFormElement>;
+                  
+                  // ✅ Chiama handleSubmit con l'evento corretto e il testo trascritto
+                  await handleSubmit(syntheticEvent, text);
+                  
+                  console.log('✅ Messaggio inviato alla chat');
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

@@ -16,6 +16,8 @@ import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
+import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Menu, Maximize2, ChevronUp, ChevronDown, MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -292,7 +294,19 @@ const Intranet = () => {
                           )}
                         </div>
                       </button>
-                      <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
+                      <div className="flex flex-col min-w-0">
+                        <h1 className="text-sm font-semibold text-muted-foreground truncate">{selectedRoomName}</h1>
+                        {selectedRoomId && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <TokenCounterBadge 
+                              roomId={selectedRoomId}
+                              variant="intranet"
+                              alertThreshold={15000}
+                            />
+                            <ConversationCostBadge roomId={selectedRoomId} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex justify-center">
                       <Button

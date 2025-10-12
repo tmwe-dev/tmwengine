@@ -15,6 +15,9 @@ import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRec
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
+import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
+import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
+import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
@@ -784,6 +787,20 @@ const ChatLaboratory = () => {
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              {currentConversationId && (
+                <>
+                  <TokenCounterBadge 
+                    labConversationId={currentConversationId}
+                    variant="laboratory"
+                    alertThreshold={15000}
+                  />
+                  <ConversationCostBadge labConversationId={currentConversationId} />
+                  <ExportSummaryButton 
+                    labConversationId={currentConversationId}
+                    variant="laboratory"
+                  />
+                </>
+              )}
               {/* Vista Tabs - Solo icona */}
               <Button
                 onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}

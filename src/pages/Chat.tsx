@@ -8,6 +8,9 @@ import { Send, MessageSquare, Bot, User, Settings, Save, Plus, Trash2, BarChart3
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { AIGuideDialog } from '@/components/ai/AIGuideDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
+import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
+import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -797,13 +800,29 @@ const Chat = () => {
             <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
               {!shouldHideHeader && (
                 <CardHeader className="py-4">
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                     <span>Conversazione</span>
-                    {currentConversation?.memoria_completa && (
-                      <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
-                        🧠 Memoria Completa
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {currentConversation?.memoria_completa && (
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full">
+                          🧠 Memoria Completa
+                        </span>
+                      )}
+                      {currentConversationId && (
+                        <>
+                          <TokenCounterBadge 
+                            conversationId={currentConversationId}
+                            variant="chat"
+                            alertThreshold={15000}
+                          />
+                          <ConversationCostBadge conversationId={currentConversationId} />
+                          <ExportSummaryButton 
+                            conversationId={currentConversationId}
+                            variant="chat"
+                          />
+                        </>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
               )}

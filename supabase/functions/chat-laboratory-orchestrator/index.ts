@@ -431,25 +431,6 @@ ${userMessage}`;
       .update({ last_speaker_index: nextIndex })
       .eq('id', conversationId);
 
-    // Extract knowledge graph asynchronously (non-blocking)
-    if (savedMessage?.id) {
-      console.log('🧠 Triggering knowledge graph extraction...');
-      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/extract-knowledge-graph`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messageId: savedMessage.id,
-          conversationId: conversationId,
-          messageContent: aiResponseText
-        })
-      }).catch(error => {
-        console.error('KG extraction failed (non-blocking):', error);
-      });
-    }
-
     return new Response(
       JSON.stringify({ 
         success: true,

@@ -40,9 +40,22 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
-    const elevenLabsKey = Deno.env.get('ELEVENLABS_API_KEY');
     
-    console.log('🎤 ElevenLabs API key disponibile:', !!elevenLabsKey);
+    // ✅ RECUPERA ELEVENLABS DA config_ai (come voice-to-text)
+    const { data: elevenLabsConfig, error: elevenLabsError } = await supabase
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'elevenlabs')
+      .eq('attivo', true)
+      .single();
+    
+    const elevenLabsKey = elevenLabsConfig?.api_key || null;
+    
+    console.log('🔑 ElevenLabs config recuperata da DB:', {
+      trovato: !!elevenLabsConfig,
+      hasKey: !!elevenLabsKey,
+      error: elevenLabsError?.message
+    });
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
       throw new Error('Nessuna chiave API AI configurata');

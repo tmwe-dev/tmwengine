@@ -91,18 +91,6 @@ export const BarChatAudioControls = ({
         </div>
       </div>
 
-      {/* Descrizione modalità - compatta */}
-      <div className="text-center text-xs text-muted-foreground">
-        {isDuplexMode ? (
-          <p>
-            ✅ <strong>Microfono sempre attivo</strong> dopo il click. Sistema con AEC e VAD. Parla liberamente.
-          </p>
-        ) : (
-          <p>
-            ✅ <strong>Premi per parlare</strong>. Registra fino a 3 sec di silenzio.
-          </p>
-        )}
-      </div>
     </div>
   );
 };

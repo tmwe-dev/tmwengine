@@ -28,6 +28,8 @@ import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNaviga
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
 import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
+import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
+import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 
 interface Message {
   id: string;
@@ -42,6 +44,7 @@ interface Message {
   token_input?: number;
   token_output?: number;
   tempo_risposta_ms?: number;
+  intent_tags?: string[];
   created_at: string;
 }
 
@@ -101,6 +104,7 @@ const ChatLaboratory = () => {
   // Summary States
   const [conversationData, setConversationData] = useState<Conversation | null>(null);
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
+  const [convergenceRefreshKey, setConvergenceRefreshKey] = useState(0);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -315,10 +319,10 @@ const ChatLaboratory = () => {
     console.log('📥 Caricamento messaggi per conversazione:', conversationId);
     try {
       const { data, error } = await supabase
-        .from('chat_laboratory_messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+      .from('chat_laboratory_messages')
+      .select('*, intent_tags')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
 
       if (error) throw error;
       
@@ -513,6 +517,7 @@ const ChatLaboratory = () => {
         .from('chat_laboratory_messages')
         .insert([{
           conversation_id: conversationId,
+          intent_tags: [],
           sender_type: 'human',
           sender_name: 'Tu',
           content: currentPrompt,
@@ -574,6 +579,9 @@ const ChatLaboratory = () => {
           
           // Ricarica messaggi dopo ogni risposta per mostrare aggiornamenti in tempo reale
           await loadMessages(conversationId);
+          
+          // Trigger convergence recalculation after each message
+          setConvergenceRefreshKey(prev => prev + 1);
           
           // Piccolo delay per evitare rate limiting
           if (i < activeAIParticipants.length - 1) {
@@ -1077,6 +1085,16 @@ const ChatLaboratory = () => {
                 </div>
               )}
 
+              {/* Convergence Indicator */}
+              {currentConversationId && messages.length >= 10 && (
+                <div className="mb-4">
+                  <ConvergenceIndicator 
+                    conversationId={currentConversationId}
+                    refreshTrigger={convergenceRefreshKey}
+                  />
+                </div>
+              )}
+
               {/* Navigation bar per full screen quando in Bar Mode */}
               {isBarMode && messages.length > 0 && (
                 <MessageNavigationBar
@@ -1119,11 +1137,17 @@ const ChatLaboratory = () => {
               )}
 
               {messages.map((message) => (
-                <MultiAgentMessage 
-                  key={message.id} 
-                  message={message}
-                  onAIPlayStateChange={setIsAISpeaking}
-                />
+                <div key={message.id}>
+                  <MultiAgentMessage 
+                    message={message}
+                    onAIPlayStateChange={setIsAISpeaking}
+                  />
+                  {message.intent_tags && message.intent_tags.length > 0 && (
+                    <div className="ml-16 -mt-2 mb-3">
+                      <IntentBadges intents={message.intent_tags} />
+                    </div>
+                  )}
+                </div>
               ))}
 
               {isLoading && (

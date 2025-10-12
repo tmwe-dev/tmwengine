@@ -367,6 +367,7 @@ export type Database = {
       chat_laboratory_conversations: {
         Row: {
           active_participants: Json | null
+          convergence_metrics: Json | null
           conversation_phase: string | null
           created_at: string | null
           current_turn_index: number | null
@@ -393,6 +394,7 @@ export type Database = {
         }
         Insert: {
           active_participants?: Json | null
+          convergence_metrics?: Json | null
           conversation_phase?: string | null
           created_at?: string | null
           current_turn_index?: number | null
@@ -419,6 +421,7 @@ export type Database = {
         }
         Update: {
           active_participants?: Json | null
+          convergence_metrics?: Json | null
           conversation_phase?: string | null
           created_at?: string | null
           current_turn_index?: number | null
@@ -465,6 +468,7 @@ export type Database = {
           generated_images: Json | null
           id: string
           images: Json | null
+          intent_tags: Json | null
           is_summary_available: boolean | null
           is_visible_to_ai: boolean | null
           sender_name: string
@@ -484,6 +488,7 @@ export type Database = {
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          intent_tags?: Json | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           sender_name: string
@@ -503,6 +508,7 @@ export type Database = {
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          intent_tags?: Json | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           sender_name?: string

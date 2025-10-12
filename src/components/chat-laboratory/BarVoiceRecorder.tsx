@@ -230,12 +230,12 @@ export const BarVoiceRecorder = ({
     <div className="flex flex-col items-center gap-2">
       {/* Modern PTT Button */}
       <Button
-        variant={isRecording ? "destructive" : isProcessing ? "secondary" : "outline"}
-        size="default"
+        variant={isRecording ? "destructive" : "default"}
+        size="icon"
         disabled={isDisabled || isProcessing}
         onClick={handleToggle}
         className={cn(
-          "min-w-[180px] gap-2 transition-all",
+          "h-10 w-10 rounded-full transition-all",
           isRecording && "shadow-lg shadow-red-500/20",
           isProcessing && "opacity-70"
         )}
@@ -244,11 +244,6 @@ export const BarVoiceRecorder = ({
           "h-4 w-4",
           isRecording && "animate-pulse"
         )} />
-        <span className="font-medium hidden sm:inline">
-          {isProcessing ? "Elaborazione..." : 
-           isRecording ? "Registrando..." : 
-           "Premi per parlare"}
-        </span>
       </Button>
 
       {/* Volume indicator - compatto sotto il bottone */}

@@ -2,22 +2,19 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ExportSummaryButtonProps {
   conversationId?: string;
   roomId?: string;
   labConversationId?: string;
   variant: 'chat' | 'intranet' | 'laboratory';
-  iconOnly?: boolean;
 }
 
 export const ExportSummaryButton = ({ 
   conversationId, 
   roomId, 
   labConversationId, 
-  variant,
-  iconOnly = false
+  variant 
 }: ExportSummaryButtonProps) => {
   const { toast } = useToast();
   
@@ -123,21 +120,6 @@ export const ExportSummaryButton = ({
       });
     }
   };
-  
-  if (iconOnly) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={handleExport}>
-              <Download className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Esporta Riassunto</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
   
   return (
     <Button variant="outline" size="sm" onClick={handleExport}>

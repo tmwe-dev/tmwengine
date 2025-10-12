@@ -17,9 +17,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
+import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
-import { LabSettingsDrawer } from '@/components/chat-laboratory/LabSettingsDrawer';
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
 
 interface Message {
@@ -750,9 +750,8 @@ const ChatLaboratory = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
-          <div className="px-4 py-2 md:py-3">
-            <div className="flex items-center justify-between gap-2">
-              {/* Left Side */}
+          <div className="container mx-auto px-4 py-2 md:py-3">
+          <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                 <Button
                   onClick={() => navigate('/chat')}
@@ -771,50 +770,64 @@ const ChatLaboratory = () => {
                 >
                   <Layout className="h-5 w-5" />
                 </Button>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
-                    <Brain className="h-5 w-5 text-white" />
-                  </div>
+              <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
+                  <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                </div>
+                <div className="min-w-0">
                   <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                    {isMobile ? 'Lab' : 'Chat Laboratory'}
+                    Chat Laboratory
                   </h1>
+                  {!isMobile && (
+                    <p className="text-sm text-muted-foreground">
+                      Discussione Multi-Agente AI
+                    </p>
+                  )}
                 </div>
               </div>
-
-              {/* Right Side - Desktop Badges */}
-              {!isMobile && currentConversationId && (
-                <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              {currentConversationId && (
+                <>
                   <TokenCounterBadge 
                     labConversationId={currentConversationId}
                     variant="laboratory"
                     alertThreshold={15000}
                   />
                   <ConversationCostBadge labConversationId={currentConversationId} />
-                </div>
+                  <ExportSummaryButton 
+                    labConversationId={currentConversationId}
+                    variant="laboratory"
+                  />
+                </>
               )}
-
-              {/* Settings Drawer */}
-              <LabSettingsDrawer
-                currentConversationId={currentConversationId}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
+              {/* Vista Tabs - Solo icona */}
+              <Button
+                onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
+              >
+                {viewMode === 'classic' ? '📑' : '💬'}
+              </Button>
+              <LaboratoryPromptManager />
+              <ParticipantSelector
                 participants={participants}
-                toggleParticipant={toggleParticipant}
-                isBarMode={isBarMode}
-                setIsBarMode={setIsBarMode}
-                selectedElevenLabsAgents={selectedElevenLabsAgents}
-                setSelectedElevenLabsAgents={setSelectedElevenLabsAgents}
-                activeKnowledgeBase={activeKnowledgeBase}
-                setActiveKnowledgeBase={setActiveKnowledgeBase}
+                onToggle={toggleParticipant}
               />
-
-              {/* Mobile - Participant Count Badge */}
-              {isMobile && (
-                <Badge variant="secondary" className="shrink-0 text-xs">
-                  {participants.filter(p => p.is_active).length} AI
-                </Badge>
-              )}
             </div>
+          </div>
+          
+          {/* Bar Mode Section - Collapsible */}
+          <div className="mt-2 pb-1">
+            <CollapsibleBarSection
+              conversationId={currentConversationId}
+              isBarMode={isBarMode}
+              onBarModeToggle={setIsBarMode}
+              onAgentsChange={setSelectedElevenLabsAgents}
+              onKBChange={setActiveKnowledgeBase}
+            />
           </div>
         </div>
       </div>
@@ -937,6 +950,7 @@ const ChatLaboratory = () => {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

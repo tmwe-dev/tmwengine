@@ -2,12 +2,9 @@ import { useState } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
 import { BarFullDuplexRecorder } from './BarFullDuplexRecorder';
 import { InterruptButton } from './InterruptButton';
-import { MicrophoneTest } from './MicrophoneTest';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { TestTube2 } from 'lucide-react';
+import { Mic, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BarChatAudioControlsProps {
@@ -33,45 +30,37 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Header con Switch e Test Microfono */}
-      <div className="flex items-center justify-between gap-4 pb-3 border-b border-border/30">
-        <div className="flex items-center gap-3">
+      {/* Header con Switch */}
+      <div className="flex items-center justify-center gap-3 pb-3 border-b border-border/30">
+        <div className="flex items-center gap-2">
+          <Mic className="h-4 w-4 sm:hidden text-muted-foreground" />
           <Label 
             htmlFor="duplex-mode" 
             className={cn(
-              "text-sm font-medium cursor-pointer transition-colors",
+              "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
               !isDuplexMode ? "text-foreground" : "text-muted-foreground"
             )}
           >
             Premi per parlare
           </Label>
-          <Switch
-            id="duplex-mode"
-            checked={isDuplexMode}
-            onCheckedChange={setIsDuplexMode}
-          />
+        </div>
+        <Switch
+          id="duplex-mode"
+          checked={isDuplexMode}
+          onCheckedChange={setIsDuplexMode}
+        />
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 sm:hidden text-muted-foreground" />
           <Label 
             htmlFor="duplex-mode" 
             className={cn(
-              "text-sm font-medium cursor-pointer transition-colors",
+              "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
               isDuplexMode ? "text-foreground" : "text-muted-foreground"
             )}
           >
             Full-Duplex
           </Label>
         </div>
-        
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <TestTube2 className="h-4 w-4 mr-2" />
-              Test
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <MicrophoneTest />
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Controlli audio centrali */}

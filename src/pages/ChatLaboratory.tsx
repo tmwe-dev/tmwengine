@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
+import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
 
 interface Message {
   id: string;
@@ -42,6 +43,14 @@ interface Participant {
   is_active: boolean;
 }
 
+interface Conversation {
+  id: string;
+  titolo: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count?: number;
+}
+
 const ChatLaboratory = () => {
   const [prompt, setPrompt] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
@@ -55,6 +64,10 @@ const ChatLaboratory = () => {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  
+  // Sidebar States
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(!useIsMobile());
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);
@@ -111,6 +124,27 @@ const ChatLaboratory = () => {
 
   useEffect(() => {
     initializeParticipants();
+    loadConversations();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('lab-conversations-list')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_laboratory_conversations'
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -174,6 +208,35 @@ const ChatLaboratory = () => {
     setParticipants(defaultParticipants);
   };
 
+  const loadConversations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('id, titolo, created_at, updated_at')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const conversationsWithCount = await Promise.all(
+        (data || []).map(async (conv) => {
+          const { count } = await supabase
+            .from('chat_laboratory_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id);
+
+          return {
+            ...conv,
+            message_count: count || 0
+          };
+        })
+      );
+
+      setConversations(conversationsWithCount);
+    } catch (error) {
+      console.error('Errore caricamento conversazioni:', error);
+    }
+  };
+
   const loadMessages = async (conversationId: string) => {
     console.log('📥 Caricamento messaggi per conversazione:', conversationId);
     try {
@@ -213,6 +276,7 @@ const ChatLaboratory = () => {
       
       setCurrentConversationId(data.id);
       setMessages([]);
+      await loadConversations();
 
       // Salva partecipanti nella tabella participants
       for (const participant of participants.filter(p => p.is_active)) {
@@ -421,21 +485,128 @@ const ChatLaboratory = () => {
     ));
   };
 
+  const handleSelectConversation = (id: string) => {
+    setCurrentConversationId(id);
+    loadMessages(id);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleNewConversation = () => {
+    createNewConversation();
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await supabase.from('chat_laboratory_messages').delete().eq('conversation_id', id);
+      await supabase.from('chat_laboratory_participants').delete().eq('conversation_id', id);
+      await supabase.from('chat_laboratory_bar_mode').delete().eq('conversation_id', id);
+      
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      if (currentConversationId === id) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+
+      loadConversations();
+
+      toast({
+        title: "Conversazione eliminata",
+        description: "La conversazione è stata eliminata con successo.",
+      });
+    } catch (error) {
+      console.error('Errore eliminazione:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare la conversazione.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTitle = async (id: string, title: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .update({ titolo: title })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      loadConversations();
+
+      toast({
+        title: "Titolo aggiornato",
+        description: "Il titolo è stato modificato con successo.",
+      });
+    } catch (error) {
+      console.error('Errore aggiornamento titolo:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare il titolo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
-      {/* Header */}
-      <div className="border-b border-border/40">
-        <div className="container mx-auto px-4 py-2 md:py-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-              <Button
-                onClick={() => navigate('/chat')}
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+    <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
+      {/* Sidebar Conversazioni */}
+      <div 
+        className={`
+          ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'}
+          w-80 bg-background border-r
+          transform transition-transform duration-200
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <ConversationsSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onUpdateTitle={handleUpdateTitle}
+        />
+      </div>
+
+      {/* Overlay per mobile */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="border-b border-border/40">
+          <div className="container mx-auto px-4 py-2 md:py-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                <Button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+                <Button
+                  onClick={() => navigate('/chat')}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className="p-1.5 md:p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
                   <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
@@ -600,6 +771,7 @@ const ChatLaboratory = () => {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </div>
   );

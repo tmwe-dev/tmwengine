@@ -251,6 +251,17 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           />
         </div>
 
+        {/* Continuous Mic (solo visivo per ora, la logica è nei BarChatAudioControls) */}
+        <div className="flex items-center gap-2 col-span-2">
+          <Mic className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm text-muted-foreground w-24">
+            Mic Continuo
+          </Label>
+          <span className="text-xs text-muted-foreground ml-auto">
+            Attiva/Disattiva con tasto 🍺 in basso
+          </span>
+        </div>
+
         {/* ElevenLabs Agents Selection */}
         {settings.voice_enabled && agents.length > 0 && (
           <div className="col-span-2 space-y-2 p-2 rounded-md border border-border/30 bg-muted/20">

@@ -7,12 +7,16 @@ interface AudioMessagePlayerProps {
   audioUrl: string;
   autoPlay?: boolean;
   onPlayingChange?: (isPlaying: boolean) => void;
+  onPlayStart?: () => void;
+  onPlayEnd?: () => void;
 }
 
 export const AudioMessagePlayer = ({ 
   audioUrl, 
   autoPlay = false,
-  onPlayingChange 
+  onPlayingChange,
+  onPlayStart,
+  onPlayEnd
 }: AudioMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -30,6 +34,7 @@ export const AudioMessagePlayer = ({
     const handleEnded = () => {
       setIsPlaying(false);
       onPlayingChange?.(false);
+      onPlayEnd?.();
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -40,6 +45,7 @@ export const AudioMessagePlayer = ({
       audio.play().then(() => {
         setIsPlaying(true);
         onPlayingChange?.(true);
+        onPlayStart?.();
       }).catch(console.error);
     }
 
@@ -64,10 +70,12 @@ export const AudioMessagePlayer = ({
       audio.pause();
       setIsPlaying(false);
       onPlayingChange?.(false);
+      onPlayEnd?.();
     } else {
       audio.play().then(() => {
         setIsPlaying(true);
         onPlayingChange?.(true);
+        onPlayStart?.();
       }).catch(console.error);
     }
   };

@@ -23,6 +23,7 @@ interface Message {
 
 interface MultiAgentMessageProps {
   message: Message;
+  onAIPlayStateChange?: (playing: boolean) => void;
 }
 
 const SENDER_CONFIG = {
@@ -60,7 +61,7 @@ const SENDER_CONFIG = {
   }
 };
 
-export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
+export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMessageProps) => {
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
 
@@ -214,8 +215,13 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
             <AudioMessagePlayer 
               audioUrl={message.audio_url}
               autoPlay={false}
-              onPlayingChange={(playing) => {
-                console.log(`Audio ${message.sender_name}:`, playing ? 'playing' : 'stopped');
+              onPlayStart={() => {
+                console.log(`🔊 Audio ${message.sender_name} started`);
+                onAIPlayStateChange?.(true);
+              }}
+              onPlayEnd={() => {
+                console.log(`⏸️ Audio ${message.sender_name} ended`);
+                onAIPlayStateChange?.(false);
               }}
             />
           </div>

@@ -1,6 +1,7 @@
 // Bar Chat Orchestrator con integrazione ElevenLabs TTS
-// Versione: 3.0 - Interrupt Support + Bidirectional Audio
-// Data: 2025-01-12
+// Versione: 2.0 - Audio Support
+// Data: 2025-01-19
+// BACKUP: Salvato il 2025-01-12 prima di aggiungere funzionalità interrupt + streaming audio
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -16,21 +17,8 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
-    const { conversationId, userMessage, participants, action } = requestBody;
-    
-    console.log('🍹 Bar Chat Orchestrator v3.0 riceve:', { conversationId, action, userMessage, participants });
-
-    // Handle INTERRUPT action
-    if (action === 'interrupt') {
-      console.log('⛔ Interrupt richiesto per conversazione:', conversationId);
-      return new Response(
-        JSON.stringify({ interrupted: true, message: 'Interrupt signal received' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Normal flow continua...
+    const { conversationId, userMessage, participants } = await req.json();
+    console.log('🍹 Bar Chat Orchestrator v2.0 riceve:', { conversationId, userMessage, participants });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -61,26 +49,10 @@ serve(async (req) => {
     const activeKbId = barModeSettings.active_kb_id;
     const voiceEnabled = barModeSettings.voice_enabled || false;
     const activeElevenLabsAgents = barModeSettings.active_elevenlabs_agents || [];
-    const interruptRequested = barModeSettings.interrupt_requested || false;
     
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
     console.log('🎤 Voice enabled:', voiceEnabled);
-    console.log('⛔ Interrupt requested:', interruptRequested);
-
-    // Se interrupt è stato richiesto, ferma e pulisci flag
-    if (interruptRequested) {
-      console.log('🛑 Interrupt attivo, annullo generazione');
-      await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ interrupt_requested: false })
-        .eq('conversation_id', conversationId);
-      
-      return new Response(
-        JSON.stringify({ interrupted: true, message: 'Generation interrupted by user' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
@@ -309,30 +281,9 @@ serve(async (req) => {
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
     // Generate audio with ElevenLabs TTS (se voice enabled)
-    // Check interrupt prima di generare audio (costoso)
     let audioUrl: string | null = null;
     
     if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
-      // Double-check interrupt flag prima di TTS
-      const { data: interruptCheck } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('interrupt_requested')
-        .eq('conversation_id', conversationId)
-        .single();
-
-      if (interruptCheck?.interrupt_requested) {
-        console.log('⛔ Interrupt rilevato prima di TTS, annullo');
-        await supabase
-          .from('chat_laboratory_bar_mode')
-          .update({ interrupt_requested: false })
-          .eq('conversation_id', conversationId);
-        
-        return new Response(
-          JSON.stringify({ interrupted: true, message: 'Interrupted before TTS generation' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
       try {
         console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
         

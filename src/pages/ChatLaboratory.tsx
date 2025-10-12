@@ -21,6 +21,7 @@ import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControl
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
+import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
 
 interface Message {
   id: string;
@@ -79,6 +80,7 @@ const ChatLaboratory = () => {
   const [isBarMode, setIsBarMode] = useState(false);
   const [selectedElevenLabsAgents, setSelectedElevenLabsAgents] = useState<string[]>([]);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -870,7 +872,11 @@ const ChatLaboratory = () => {
               )}
 
               {messages.map((message) => (
-                <MultiAgentMessage key={message.id} message={message} />
+                <MultiAgentMessage 
+                  key={message.id} 
+                  message={message}
+                  onAIPlayStateChange={setIsAISpeaking}
+                />
               ))}
 
               {isLoading && (
@@ -918,6 +924,8 @@ const ChatLaboratory = () => {
               <ImageGenerator
                 onImageGenerated={setGeneratedImage}
               />
+              {/* VoiceRecorder solo se NON in Bar Mode */}
+              {!isBarMode && (
                 <VoiceRecorder
                   ref={voiceRecorderRef}
                   onTranscription={(text) => {
@@ -926,6 +934,7 @@ const ChatLaboratory = () => {
                   }}
                   onRecordingStateChange={setRecordingState}
                 />
+              )}
             </div>
 
             {/* Textarea */}
@@ -959,6 +968,29 @@ const ChatLaboratory = () => {
                 </Button>
             </div>
           </form>
+
+          {/* Bar Chat Audio Controls - Fixed bottom quando Bar Mode attivo */}
+          {isBarMode && (
+            <BarChatAudioControls
+              conversationId={currentConversationId}
+              isAISpeaking={isAISpeaking}
+              onTranscriptionComplete={(text) => {
+                setPrompt(text);
+                toast({ title: "✓ Trascrizione completata", description: "Premi Invia per inviare" });
+              }}
+              onInterrupt={async () => {
+                if (currentConversationId) {
+                  await supabase
+                    .from('chat_laboratory_bar_mode')
+                    .update({ interrupt_requested: true })
+                    .eq('conversation_id', currentConversationId);
+                  
+                  setIsAISpeaking(false);
+                  toast({ title: "⛔ AI interrotta" });
+                }
+              }}
+            />
+          )}
         </div>
       </div>
       </div>

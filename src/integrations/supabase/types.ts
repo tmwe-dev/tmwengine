@@ -300,11 +300,13 @@ export type Database = {
           active_elevenlabs_agents: string[] | null
           active_kb_id: string | null
           auto_play_audio: boolean
+          continuous_mic_enabled: boolean | null
           conversation_id: string
           conversation_pace: string
           created_at: string
           enable_interruptions: boolean
           id: string
+          interrupt_requested: boolean | null
           kb_navigation_history: Json | null
           mode: string
           selected_topic: string | null
@@ -316,11 +318,13 @@ export type Database = {
           active_elevenlabs_agents?: string[] | null
           active_kb_id?: string | null
           auto_play_audio?: boolean
+          continuous_mic_enabled?: boolean | null
           conversation_id: string
           conversation_pace?: string
           created_at?: string
           enable_interruptions?: boolean
           id?: string
+          interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
           selected_topic?: string | null
@@ -332,11 +336,13 @@ export type Database = {
           active_elevenlabs_agents?: string[] | null
           active_kb_id?: string | null
           auto_play_audio?: boolean
+          continuous_mic_enabled?: boolean | null
           conversation_id?: string
           conversation_pace?: string
           created_at?: string
           enable_interruptions?: boolean
           id?: string
+          interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
           selected_topic?: string | null

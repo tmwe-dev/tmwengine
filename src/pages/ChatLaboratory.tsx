@@ -723,12 +723,8 @@ const ChatLaboratory = () => {
     <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
     {/* Sidebar Conversazioni - Card Style Overlay */}
     {sidebarOpen && (
-      <>
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-        <div className="fixed left-4 top-4 bottom-4 w-80 z-50 bg-card/95 backdrop-blur border border-border/40 rounded-lg shadow-lg">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-card backdrop-blur border border-border/40 rounded-lg shadow-lg">
           <ConversationsSidebar
             conversations={conversations}
             currentConversationId={currentConversationId}
@@ -740,7 +736,7 @@ const ChatLaboratory = () => {
             onGenerateFullReport={handleGenerateFullReport}
           />
         </div>
-      </>
+      </div>
     )}
 
       {/* Main Content */}

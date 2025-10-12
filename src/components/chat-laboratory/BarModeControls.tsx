@@ -30,7 +30,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     conversation_pace: 'normal',
     enable_interruptions: true,
     auto_play_audio: true,
-    voice_enabled: true,
+    voice_enabled: false,
   });
   
   const [agents, setAgents] = useState<ElevenLabsAgent[]>([]);
@@ -257,19 +257,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             onCheckedChange={(checked) => updateSetting('voice_enabled', checked)}
             className="ml-auto"
           />
-        </div>
-
-        {/* Voice Status Badge */}
-        <div className="col-span-2 flex items-center gap-2 p-2 rounded-md bg-muted/30">
-          <div className={`h-2 w-2 rounded-full ${settings.voice_enabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-          <span className="text-xs font-medium">
-            {settings.voice_enabled ? '🔊 Audio attivo' : '🔇 Audio disattivato'}
-          </span>
-          {settings.voice_enabled && settings.auto_play_audio && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              ▶️ Auto-play ON
-            </span>
-          )}
         </div>
 
         {/* Continuous Mic (solo visivo per ora, la logica è nei BarChatAudioControls) */}

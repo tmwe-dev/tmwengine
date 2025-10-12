@@ -54,27 +54,6 @@ export default function EdgeFunctionVersions() {
     ? versions.filter(v => v.function_name === selectedFunction)
     : versions;
 
-  const handleBackupAll = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('backup-all-edge-functions');
-      
-      if (error) throw error;
-      
-      toast({
-        title: "✅ Backup completato",
-        description: `${data.backups.length} edge functions salvate`,
-      });
-      
-      await loadVersions();
-    } catch (error: any) {
-      toast({
-        title: "Errore backup",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -84,9 +63,6 @@ export default function EdgeFunctionVersions() {
             Storico e gestione versioni delle Edge Functions
           </p>
         </div>
-        <Button onClick={handleBackupAll}>
-          Backup Tutte le Functions ORA
-        </Button>
       </div>
 
       <Tabs value={selectedFunction} onValueChange={setSelectedFunction}>

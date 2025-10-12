@@ -164,40 +164,39 @@ export const BarFullDuplexRecorder = ({
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       
-      reader.onloadend = async () => {
-        try {
-          const base64Audio = (reader.result as string).split(',')[1];
+      await new Promise((resolve, reject) => {
+        reader.onloadend = async () => {
+          try {
+            const base64Audio = (reader.result as string).split(',')[1];
 
-          console.log('📤 Invio audio per trascrizione...');
-          console.log('🎤 Chunks totali raccolti:', chunksToProcess.length);
-          console.log('🎤 Dimensione totale audio:', 
-            chunksToProcess.reduce((acc, c) => acc + c.size, 0), 'bytes');
+            console.log('📤 Invio audio per trascrizione...');
+            const { data, error } = await supabase.functions.invoke('voice-to-text', {
+              body: { audio: base64Audio }
+            });
 
-          const { data, error } = await supabase.functions.invoke('voice-to-text', {
-            body: { audio: base64Audio }
-          });
+            if (error) throw error;
 
-          if (error) throw error;
+            if (data?.text && data.text.trim()) {
+              console.log('📝 Trascrizione ricevuta:', data.text);
+              onTranscriptionComplete?.(data.text);
+            }
 
-          if (data?.text && data.text.trim()) {
-            console.log('📝 Trascrizione ricevuta:', data.text);
-            onTranscriptionComplete(data.text); // ✅ Rimosso optional chaining
-            toast({ title: "✓ Audio trascritto" }); // ✅ Conferma visiva
+            resolve(null);
+          } catch (err) {
+            reject(err);
           }
-        } catch (error) {
-          console.error('❌ Errore trascrizione:', error);
-          toast({
-            variant: "destructive",
-            title: "Errore Trascrizione",
-            description: "Impossibile trascrivere l'audio. Riprova.",
-          });
-        } finally {
-          setIsProcessing(false); // ✅ Sempre in finally
-        }
-      };
+        };
+        reader.onerror = reject;
+      });
 
     } catch (error) {
-      console.error('❌ Errore generale:', error);
+      console.error('❌ Errore trascrizione:', error);
+      toast({
+        variant: "destructive",
+        title: "Errore Trascrizione",
+        description: "Impossibile trascrivere l'audio. Riprova.",
+      });
+    } finally {
       setIsProcessing(false);
     }
   };

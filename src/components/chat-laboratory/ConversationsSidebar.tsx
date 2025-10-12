@@ -169,81 +169,116 @@ export const ConversationsSidebar = ({
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      <div className="p-4 border-b border-border/40 space-y-2">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Cerca conversazioni..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {searchQuery && (
+      {/* Compact Header - Single Row */}
+      <div className="p-3 border-b border-border/40">
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: Icon Actions */}
+          <div className="flex items-center gap-1">
+            {/* Search Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 hover:animate-wiggle transition-all"
+                  title="Cerca conversazioni"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="start">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca per titolo, argomento..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 pr-10"
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Date Filter Popover */}
+            <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 hover:animate-wiggle transition-all"
+                  title="Filtra per data"
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Seleziona periodo</span>
+                    {(dateRange?.from || dateRange?.to) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDateRange(undefined);
+                          setShowDatePicker(false);
+                        }}
+                        className="h-7 px-2 text-xs"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Rimuovi
+                      </Button>
+                    )}
+                  </div>
+                  <DayPicker
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={(range) => {
+                      setDateRange(range);
+                      if (range?.from && range?.to) {
+                        setShowDatePicker(false);
+                      }
+                    }}
+                    className="pointer-events-auto"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* New Conversation */}
             <Button
+              onClick={onNewConversation}
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-              onClick={() => setSearchQuery("")}
+              className="h-9 w-9 hover:animate-wiggle transition-all"
+              title="Nuova conversazione"
             >
-              <X className="w-3 h-3" />
+              <Plus className="h-4 w-4" />
             </Button>
-          )}
+          </div>
+
+          {/* Right: Conversation Count Badge */}
+          <Badge 
+            variant="secondary" 
+            className="h-9 px-3 text-base font-semibold flex items-center gap-2 bg-muted hover:bg-muted/80 transition-colors"
+          >
+            <MessageSquare className="h-5 w-5" />
+            {filteredConversations.length}
+          </Badge>
         </div>
-
-        {/* Date Range Filter */}
-        <div className="flex items-center gap-2">
-          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full justify-start text-left text-xs">
-                <Calendar className="w-4 h-4 mr-2" />
-                {dateRange?.from && dateRange?.to 
-                  ? `${format(dateRange.from, "dd/MM")} - ${format(dateRange.to, "dd/MM")}`
-                  : "Filtra per data"
-                }
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <DayPicker
-                mode="range"
-                selected={dateRange}
-                onSelect={(range) => {
-                  setDateRange(range);
-                  if (range?.from && range?.to) {
-                    setShowDatePicker(false);
-                  }
-                }}
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-          
-          {(dateRange?.from || dateRange?.to) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 flex-shrink-0"
-              onClick={() => setDateRange(undefined)}
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-
-        {/* Results Count */}
-        <p className="text-xs text-muted-foreground text-center">
-          {filteredConversations.length} conversazioni
-        </p>
-
-        {/* New Conversation Button */}
-        <Button 
-          onClick={onNewConversation} 
-          className="w-full"
-          variant="default"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuova Conversazione
-        </Button>
       </div>
 
       <ScrollArea className="flex-1">

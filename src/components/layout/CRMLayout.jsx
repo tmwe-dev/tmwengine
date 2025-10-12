@@ -140,7 +140,10 @@ const CRMLayout = ({ children }) => {
         { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
         { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
       ],
-      customContent: <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
+      customContent: () => {
+        const isCollapsed = !sidebarOpen && !isMobile;
+        return <IntranetNavItems isActive={isActive} isCollapsed={isCollapsed} />;
+      }
     },
     {
       name: t('nav.import'),
@@ -381,11 +384,7 @@ const CRMLayout = ({ children }) => {
                     })}
                     
                     {/* Custom content per Chat & AI (Intranet items) */}
-                    {group.customContent && (
-                      <div className={cn(!isCollapsed && "ml-6")}>
-                        {group.customContent}
-                      </div>
-                    )}
+                    {group.customContent && group.customContent()}
                   </CollapsibleContent>
                 </Collapsible>
               );

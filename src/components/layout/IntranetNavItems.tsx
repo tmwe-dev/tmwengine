@@ -6,10 +6,10 @@ import { AnimatedNavButton } from '@/components/ui/animated-nav-button';
 
 interface IntranetNavItemsProps {
   isActive: (path: string) => boolean;
-  sidebarOpen?: boolean;
+  isCollapsed?: boolean;
 }
 
-export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavItemsProps) => {
+export const IntranetNavItems = ({ isActive, isCollapsed = false }: IntranetNavItemsProps) => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +55,7 @@ export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavIt
         icon={MessageSquare}
         label="Intranet"
         isActive={isActive('/intranet')}
-        isCollapsed={!sidebarOpen}
+        isCollapsed={isCollapsed}
         onClick={() => navigate('/intranet')}
         colorScheme="primary"
         className="w-full"
@@ -67,7 +67,7 @@ export const IntranetNavItems = ({ isActive, sidebarOpen = true }: IntranetNavIt
           icon={Shield}
           label="Admin Intranet"
           isActive={isActive('/intranet-admin')}
-          isCollapsed={!sidebarOpen}
+          isCollapsed={isCollapsed}
           onClick={() => navigate('/intranet-admin')}
           colorScheme="primary"
           className="w-full"

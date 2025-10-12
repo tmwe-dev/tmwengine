@@ -403,11 +403,11 @@ const ChatLaboratory = () => {
       await transferPendingSettings(data.id);
     } catch (error) {
       console.error('Errore creazione conversazione:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile creare la conversazione.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile creare la conversazione.",
+      //   variant: "destructive",
+      // });
     }
   };
 
@@ -446,11 +446,11 @@ const ChatLaboratory = () => {
       }
     } catch (error) {
       console.error('Errore creazione conversazione:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile creare la conversazione.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile creare la conversazione.",
+      //   variant: "destructive",
+      // });
     }
   };
 
@@ -550,20 +550,20 @@ const ChatLaboratory = () => {
         
         if (error) {
           console.error('❌ Errore Bar Mode:', error);
-          toast({
-            title: "Errore",
-            description: error.message || 'Impossibile ottenere risposta',
-            variant: "destructive",
-          });
+          // toast({
+          //   title: "Errore",
+          //   description: error.message || 'Impossibile ottenere risposta',
+          //   variant: "destructive",
+          // });
         } else {
           console.log('✅ Risposta ricevuta:', data);
           
           if (data?.audioUrl) {
             console.log('🎵 Audio disponibile:', data.audioUrl);
-            toast({
-              title: "🎤 Risposta vocale disponibile",
-              description: `${data.speaker || 'Agente'} ha risposto`,
-            });
+            // toast({
+            //   title: "🎤 Risposta vocale disponibile",
+            //   description: `${data.speaker || 'Agente'} ha risposto`,
+            // });
           }
           
           await loadMessages(conversationId);
@@ -585,11 +585,11 @@ const ChatLaboratory = () => {
 
             if (error) {
               console.error(`❌ Errore agente ${i + 1}:`, error);
-              toast({
-                title: `Errore Agente ${i + 1}`,
-                description: error.message || 'Impossibile ottenere risposta',
-                variant: "destructive",
-              });
+              // toast({
+              //   title: `Errore Agente ${i + 1}`,
+              //   description: error.message || 'Impossibile ottenere risposta',
+              //   variant: "destructive",
+              // });
               break;
             }
 
@@ -606,11 +606,11 @@ const ChatLaboratory = () => {
             
           } catch (loopError) {
             console.error(`❌ Errore nel loop agente ${i + 1}:`, loopError);
-            toast({
-              title: "Errore di Comunicazione",
-              description: "Si è verificato un problema nella catena di risposte",
-              variant: "destructive",
-            });
+            // toast({
+            //   title: "Errore di Comunicazione",
+            //   description: "Si è verificato un problema nella catena di risposte",
+            //   variant: "destructive",
+            // });
             break;
           }
         }
@@ -620,11 +620,11 @@ const ChatLaboratory = () => {
 
     } catch (error) {
       console.error('Errore invio messaggio:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile inviare il messaggio. Riprova.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile inviare il messaggio. Riprova.",
+      //   variant: "destructive",
+      // });
     } finally {
       setIsLoading(false);
     }
@@ -714,10 +714,10 @@ const ChatLaboratory = () => {
 
   const handleGenerateSummary = async (conversationId: string) => {
     try {
-      toast({
-        title: "Generazione riassunto...",
-        description: "Sto analizzando la conversazione"
-      });
+      // toast({
+      //   title: "Generazione riassunto...",
+      //   description: "Sto analizzando la conversazione"
+      // });
       
       const { data, error } = await supabase.functions.invoke(
         'generate-conversation-summary',
@@ -728,26 +728,26 @@ const ChatLaboratory = () => {
       
       await loadConversations();
       
-      toast({
-        title: "✅ Riassunto generato",
-        description: data.summary
-      });
+      // toast({
+      //   title: "✅ Riassunto generato",
+      //   description: data.summary
+      // });
     } catch (error) {
       console.error('Errore:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile generare il riassunto",
-        variant: "destructive"
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile generare il riassunto",
+      //   variant: "destructive"
+      // });
     }
   };
 
   const handleGenerateFullReport = async (conversationId: string) => {
     try {
-      toast({
-        title: "Generazione report...",
-        description: "Sto creando il documento completo"
-      });
+      // toast({
+      //   title: "Generazione report...",
+      //   description: "Sto creando il documento completo"
+      // });
       
       const { data, error } = await supabase.functions.invoke(
         'generate-conversation-summary',
@@ -765,17 +765,17 @@ const ChatLaboratory = () => {
       a.click();
       URL.revokeObjectURL(url);
       
-      toast({
-        title: "✅ Report generato",
-        description: "Il documento è stato scaricato"
-      });
+      // toast({
+      //   title: "✅ Report generato",
+      //   description: "Il documento è stato scaricato"
+      // });
     } catch (error) {
       console.error('Errore:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile generare il report",
-        variant: "destructive"
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile generare il report",
+      //   variant: "destructive"
+      // });
     }
   };
 
@@ -815,17 +815,17 @@ const ChatLaboratory = () => {
 
       loadConversations();
 
-      toast({
-        title: "Conversazione eliminata",
-        description: "La conversazione è stata eliminata con successo.",
-      });
+      // toast({
+      //   title: "Conversazione eliminata",
+      //   description: "La conversazione è stata eliminata con successo.",
+      // });
     } catch (error) {
       console.error('Errore eliminazione:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile eliminare la conversazione.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile eliminare la conversazione.",
+      //   variant: "destructive",
+      // });
     }
   };
 
@@ -840,17 +840,17 @@ const ChatLaboratory = () => {
 
       loadConversations();
 
-      toast({
-        title: "Titolo aggiornato",
-        description: "Il titolo è stato modificato con successo.",
-      });
+      // toast({
+      //   title: "Titolo aggiornato",
+      //   description: "Il titolo è stato modificato con successo.",
+      // });
     } catch (error) {
       console.error('Errore aggiornamento titolo:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare il titolo.",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile aggiornare il titolo.",
+      //   variant: "destructive",
+      // });
     }
   };
 
@@ -1270,7 +1270,7 @@ const ChatLaboratory = () => {
                   const fakeEvent = new Event('submit') as any;
                   await handleSubmit(fakeEvent, text);
                   
-                  toast({ title: "✓ Messaggio inviato alla chat" });
+                  // toast({ title: "✓ Messaggio inviato alla chat" });
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {
@@ -1280,7 +1280,7 @@ const ChatLaboratory = () => {
                       .eq('conversation_id', currentConversationId);
                     
                     setIsAISpeaking(false);
-                    toast({ title: "⛔ AI interrotta" });
+                    // toast({ title: "⛔ AI interrotta" });
                   }
                 }}
               />

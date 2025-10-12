@@ -27,12 +27,12 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
         
         onToggle(enabled);
         
-        toast({
-          title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
-          description: enabled 
-            ? "Configura gli agenti prima di iniziare la chat"
-            : "Modalità standard selezionata",
-        });
+        // toast({
+        //   title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
+        //   description: enabled 
+        //     ? "Configura gli agenti prima di iniziare la chat"
+        //     : "Modalità standard selezionata",
+        // });
         
         setIsLoading(false);
         return;
@@ -76,19 +76,19 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
 
       onToggle(enabled);
       
-      toast({
-        title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
-        description: enabled 
-          ? "Conversazione in stile bar con agenti vocali"
-          : "Modalità standard ripristinata",
-      });
+      // toast({
+      //   title: enabled ? "🍺 Bar Mode Attivo" : "Modalità Laboratory",
+      //   description: enabled 
+      //     ? "Conversazione in stile bar con agenti vocali"
+      //     : "Modalità standard ripristinata",
+      // });
     } catch (error) {
       console.error('Errore toggle Bar Mode:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile cambiare modalità",
-        variant: "destructive",
-      });
+      // toast({
+      //   title: "Errore",
+      //   description: "Impossibile cambiare modalità",
+      //   variant: "destructive",
+      // });
     } finally {
       setIsLoading(false);
     }

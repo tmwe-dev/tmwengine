@@ -51,19 +51,19 @@ export function SummaryGenerationButton({
         URL.revokeObjectURL(url);
       }
 
-      toast({
-        title: "✅ Riassunto generato",
-        description: `${data.messagesSummarized} messaggi analizzati`,
-      });
+      // toast({
+      //   title: "✅ Riassunto generato",
+      //   description: `${data.messagesSummarized} messaggi analizzati`,
+      // });
 
       onSummaryGenerated();
     } catch (error) {
       console.error('Error generating summary:', error);
-      toast({
-        title: "❌ Errore",
-        description: "Impossibile generare il riassunto",
-        variant: "destructive"
-      });
+      // toast({
+      //   title: "❌ Errore",
+      //   description: "Impossibile generare il riassunto",
+      //   variant: "destructive"
+      // });
     } finally {
       setIsGenerating(false);
     }

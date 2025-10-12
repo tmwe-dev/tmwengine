@@ -73,12 +73,12 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
 
   const copyMessageText = () => {
     navigator.clipboard.writeText(message.content);
-    toast({ title: "✓ Messaggio copiato negli appunti!" });
+    // toast({ title: "✓ Messaggio copiato negli appunti!" });
   };
 
   const copyImageUrl = (url: string) => {
     navigator.clipboard.writeText(url);
-    toast({ title: "✓ URL copiato negli appunti!" });
+    // toast({ title: "✓ URL copiato negli appunti!" });
   };
 
   const downloadImage = async (url: string, index: number) => {
@@ -93,9 +93,9 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      toast({ title: "✓ Immagine scaricata!" });
+      // toast({ title: "✓ Immagine scaricata!" });
     } catch (error) {
-      toast({ title: "Errore durante il download", variant: "destructive" });
+      // toast({ title: "Errore durante il download", variant: "destructive" });
     }
   };
 

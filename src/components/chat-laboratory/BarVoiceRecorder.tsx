@@ -130,14 +130,14 @@ export const BarVoiceRecorder = ({
       mediaRecorder.start(1000); // Richiede chunks ogni 1s
       console.log('🎤 MediaRecorder.start() chiamato, stato:', mediaRecorder.state);
       setIsRecording(true);
-      toast({ title: "🍺 Microfono attivo - Parla pure!" });
+      // toast({ title: "🍺 Microfono attivo - Parla pure!" });
     } catch (error) {
       console.error('Errore avvio registrazione:', error);
-      toast({ 
-        title: "Errore microfono", 
-        description: "Impossibile accedere al microfono",
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Errore microfono", 
+      //   description: "Impossibile accedere al microfono",
+      //   variant: "destructive" 
+      // });
     }
   };
 
@@ -173,7 +173,7 @@ export const BarVoiceRecorder = ({
 
   const transcribeAudio = async () => {
     if (chunksRef.current.length === 0) {
-      toast({ title: "Nessun audio registrato", variant: "destructive" });
+      // toast({ title: "Nessun audio registrato", variant: "destructive" });
       return;
     }
 
@@ -203,16 +203,16 @@ export const BarVoiceRecorder = ({
           chunksRef.current.reduce((acc, c) => acc + c.size, 0), 'bytes');
         
         onTranscriptionComplete(transcribedText);
-        toast({ title: "✓ Audio trascritto" });
+        // toast({ title: "✓ Audio trascritto" });
       };
 
     } catch (error) {
       console.error('Errore trascrizione:', error);
-      toast({ 
-        title: "Errore trascrizione", 
-        description: "Impossibile trascrivere l'audio",
-        variant: "destructive" 
-      });
+      // toast({ 
+      //   title: "Errore trascrizione", 
+      //   description: "Impossibile trascrivere l'audio",
+      //   variant: "destructive" 
+      // });
     } finally {
       setIsProcessing(false);
       chunksRef.current = [];

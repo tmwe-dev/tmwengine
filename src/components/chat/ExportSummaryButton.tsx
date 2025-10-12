@@ -20,27 +20,30 @@ export const ExportSummaryButton = ({
   
   const handleExport = async () => {
     try {
-      let tableName = '';
-      let id = '';
+      let data: { riassunto_contesto: string | null; titolo: string | null } | null = null;
       
       if (variant === 'chat' && conversationId) {
-        tableName = 'chat_conversations';
-        id = conversationId;
-      } else if (variant === 'intranet' && roomId) {
-        tableName = 'intranet_rooms';
-        id = roomId;
+        const result = await supabase
+          .from('chat_conversations')
+          .select('riassunto_contesto, titolo')
+          .eq('id', conversationId)
+          .maybeSingle();
+        data = result.data;
       } else if (variant === 'laboratory' && labConversationId) {
-        tableName = 'chat_laboratory_conversations';
-        id = labConversationId;
+        const result = await supabase
+          .from('chat_laboratory_conversations')
+          .select('riassunto_contesto, titolo')
+          .eq('id', labConversationId)
+          .maybeSingle();
+        data = result.data;
+      } else {
+        toast({
+          title: 'Funzione non disponibile',
+          description: 'Export riassunto disponibile solo per Chat e Laboratory',
+          variant: 'destructive'
+        });
+        return;
       }
-      
-      if (!tableName || !id) return;
-      
-      const { data } = await supabase
-        .from(tableName)
-        .select('riassunto_contesto, titolo')
-        .eq('id', id)
-        .single();
       
       if (!data?.riassunto_contesto) {
         toast({

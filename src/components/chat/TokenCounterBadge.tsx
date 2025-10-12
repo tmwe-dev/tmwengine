@@ -23,31 +23,39 @@ export const TokenCounterBadge = ({
   
   useEffect(() => {
     const fetchTokens = async () => {
-      let tableName = '';
-      let id = '';
-      
       if (variant === 'chat' && conversationId) {
-        tableName = 'chat_conversations';
-        id = conversationId;
+        const { data } = await supabase
+          .from('chat_conversations')
+          .select('token_count_current, token_count_total')
+          .eq('id', conversationId)
+          .single();
+        
+        if (data) {
+          setTokenCount(data.token_count_current || 0);
+          setTotalTokens(data.token_count_total || 0);
+        }
       } else if (variant === 'intranet' && roomId) {
-        tableName = 'intranet_rooms';
-        id = roomId;
+        const { data } = await supabase
+          .from('intranet_rooms')
+          .select('token_count_current, token_count_total')
+          .eq('id', roomId)
+          .single();
+        
+        if (data) {
+          setTokenCount(data.token_count_current || 0);
+          setTotalTokens(data.token_count_total || 0);
+        }
       } else if (variant === 'laboratory' && labConversationId) {
-        tableName = 'chat_laboratory_conversations';
-        id = labConversationId;
-      }
-      
-      if (!tableName || !id) return;
-      
-      const { data } = await supabase
-        .from(tableName)
-        .select('token_count_current, token_count_total')
-        .eq('id', id)
-        .single();
-      
-      if (data) {
-        setTokenCount(data.token_count_current || 0);
-        setTotalTokens(data.token_count_total || 0);
+        const { data } = await supabase
+          .from('chat_laboratory_conversations')
+          .select('token_count_current, token_count_total')
+          .eq('id', labConversationId)
+          .single();
+        
+        if (data) {
+          setTokenCount(data.token_count_current || 0);
+          setTotalTokens(data.token_count_total || 0);
+        }
       }
     };
     

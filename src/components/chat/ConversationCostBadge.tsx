@@ -31,7 +31,7 @@ export const ConversationCostBadge = ({
         .or(filter);
       
       if (data) {
-        const sum = data.reduce((acc, row) => acc + (parseFloat(row.cost_total_eur as string) || 0), 0);
+        const sum = data.reduce((acc, row) => acc + (Number(row.cost_total_eur) || 0), 0);
         setTotalCost(sum);
       }
     };

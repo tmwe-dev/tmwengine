@@ -70,6 +70,8 @@ export function SummaryGenerationButton({
   };
 
   const generateMarkdownReport = (data: any) => {
+    console.log('📄 Generazione report Markdown, dati ricevuti:', data);
+    
     let markdown = `# Riassunto Conversazione\n\n`;
     markdown += `**Data:** ${new Date().toLocaleDateString('it-IT', { 
       year: 'numeric', 
@@ -78,19 +80,44 @@ export function SummaryGenerationButton({
       hour: '2-digit',
       minute: '2-digit'
     })}\n\n`;
-    markdown += `**Messaggi analizzati:** ${data.messagesSummarized}\n\n`;
+    markdown += `**Messaggi analizzati:** ${data?.messagesSummarized || 'N/A'}\n\n`;
     markdown += `---\n\n`;
-    markdown += `## Sintesi Generale\n\n${data.finalSummary}\n\n`;
     
-    if (data.chunks && data.chunks.length > 1) {
+    // Try to get summary from different possible locations
+    const summary = data?.summary || data?.finalSummary || data?.riassunto_contesto || 'Nessun riassunto disponibile';
+    markdown += `## Sintesi Generale\n\n${summary}\n\n`;
+    
+    // Add chunks if available
+    if (data?.chunks && Array.isArray(data.chunks) && data.chunks.length > 0) {
       markdown += `## Dettagli per Sezione\n\n`;
       data.chunks.forEach((chunk: any, idx: number) => {
-        markdown += `### Sezione ${idx + 1} (Messaggi ${chunk.messageRange[0] + 1}-${chunk.messageRange[1] + 1})\n\n`;
-        markdown += `**Partecipanti:** ${chunk.participants.join(', ')}\n\n`;
-        markdown += `${chunk.summary}\n\n`;
-        if (chunk.keyPoints.length > 0) {
+        // Try to parse chunk.summary if it's a JSON string
+        let chunkData = chunk;
+        if (typeof chunk.summary === 'string' && chunk.summary.includes('{')) {
+          try {
+            const cleanJson = chunk.summary.replace(/```json\n?|\n?```/g, '').trim();
+            chunkData = JSON.parse(cleanJson);
+          } catch (e) {
+            console.warn('Could not parse chunk summary as JSON:', e);
+          }
+        }
+        
+        markdown += `### Sezione ${idx + 1}`;
+        if (chunkData.messageRange) {
+          markdown += ` (Messaggi ${chunkData.messageRange[0] + 1}-${chunkData.messageRange[1] + 1})`;
+        }
+        markdown += `\n\n`;
+        
+        if (chunkData.participants && Array.isArray(chunkData.participants)) {
+          markdown += `**Partecipanti:** ${chunkData.participants.join(', ')}\n\n`;
+        }
+        
+        const chunkSummary = chunkData.summary || chunk.summary || '';
+        markdown += `${chunkSummary}\n\n`;
+        
+        if (chunkData.keyPoints && Array.isArray(chunkData.keyPoints) && chunkData.keyPoints.length > 0) {
           markdown += `**Punti Chiave:**\n\n`;
-          chunk.keyPoints.forEach((point: string) => {
+          chunkData.keyPoints.forEach((point: string) => {
             markdown += `- ${point}\n`;
           });
           markdown += `\n`;
@@ -98,6 +125,7 @@ export function SummaryGenerationButton({
       });
     }
     
+    console.log('📄 Report markdown generato, lunghezza:', markdown.length);
     return markdown;
   };
 

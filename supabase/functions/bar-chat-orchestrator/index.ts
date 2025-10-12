@@ -1,3 +1,7 @@
+// Bar Chat Orchestrator con integrazione ElevenLabs TTS
+// Versione: 2.0 - Audio Support
+// Data: 2025-01-19
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -13,7 +17,7 @@ serve(async (req) => {
 
   try {
     const { conversationId, userMessage, participants } = await req.json();
-    console.log('🍹 Bar Chat Orchestrator riceve:', { conversationId, userMessage, participants });
+    console.log('🍹 Bar Chat Orchestrator v2.0 riceve:', { conversationId, userMessage, participants });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -23,9 +27,10 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
+    const elevenLabsKey = Deno.env.get('ELEVENLABS_API_KEY');
 
     if (!anthropicKey && !openAIKey && !lovableAIKey) {
-      throw new Error('Nessuna chiave API configurata');
+      throw new Error('Nessuna chiave API AI configurata');
     }
 
     // Fetch Bar Mode settings
@@ -41,8 +46,12 @@ serve(async (req) => {
 
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
+    const voiceEnabled = barModeSettings.voice_enabled || false;
+    const activeElevenLabsAgents = barModeSettings.active_elevenlabs_agents || [];
+    
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
+    console.log('🎤 Voice enabled:', voiceEnabled);
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
@@ -64,7 +73,7 @@ serve(async (req) => {
     const globalSystemPrompt = systemPrompts?.[0]?.contenuto || 
       "Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.";
 
-    // Fetch BASE sections (sempre attive)
+    // Fetch BASE sections
     const { data: baseSections } = await supabase
       .from('chat_laboratory_prompt_sections')
       .select('content')
@@ -74,7 +83,7 @@ serve(async (req) => {
 
     console.log(`📦 Sezioni BASE: ${baseSections?.length || 0}`);
 
-    // Fetch TOPIC sections (solo se topic selezionato)
+    // Fetch TOPIC sections
     let topicSections: any[] = [];
     if (selectedTopic) {
       const { data } = await supabase
@@ -101,11 +110,10 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // Turn-taking logic (1 agente per volta)
+    // Turn-taking logic
     let currentTurnIndex = conversation.current_turn_index || 0;
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
     
-    // 30% chance of randomization
     if (Math.random() < 0.3) {
       currentTurnIndex = Math.floor(Math.random() * participants.length);
       console.log('🎲 Turno randomizzato:', currentTurnIndex);
@@ -115,9 +123,9 @@ serve(async (req) => {
     }
 
     const selectedParticipant = participants[currentTurnIndex];
-    console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
+    console.log('🎯 Agente selezionato:', selectedParticipant.name);
 
-    // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
+    // Fetch AGENT_PERSONALITY sections
     const { data: agentPersonalitySections } = await supabase
       .from('chat_laboratory_prompt_sections')
       .select('content')
@@ -126,60 +134,51 @@ serve(async (req) => {
       .ilike('section_name', `%${selectedParticipant.name}%`)
       .order('order_priority', { ascending: true });
 
-    console.log(`👤 Sezioni AGENT_PERSONALITY per ${selectedParticipant.name}: ${agentPersonalitySections?.length || 0}`);
+    console.log(`👤 Sezioni AGENT_PERSONALITY: ${agentPersonalitySections?.length || 0}`);
 
     // Fallback su elevenlabs_agents.text_generation_prompt
     let agentTextPrompt = '';
-    if (barModeSettings.active_elevenlabs_agents?.length > 0) {
-      const matchingAgentId = barModeSettings.active_elevenlabs_agents.find((id: string) => {
-        // Cerca agente con nome corrispondente
-        return true; // Semplificato, puoi migliorare il matching
-      });
-
-      if (matchingAgentId) {
+    let elevenLabsVoiceId = '';
+    
+    if (activeElevenLabsAgents.length > 0) {
+      for (const agentId of activeElevenLabsAgents) {
         const { data: agentData } = await supabase
           .from('elevenlabs_agents')
-          .select('text_generation_prompt, name')
-          .eq('id', matchingAgentId)
+          .select('text_generation_prompt, name, voice_id')
+          .eq('id', agentId)
           .single();
 
-        if (agentData?.text_generation_prompt) {
-          agentTextPrompt = agentData.text_generation_prompt;
-          console.log(`🎤 Fallback prompt da ElevenLabs agent "${agentData.name}"`);
+        if (agentData?.name?.toLowerCase().includes(selectedParticipant.name.toLowerCase())) {
+          agentTextPrompt = agentData.text_generation_prompt || '';
+          elevenLabsVoiceId = agentData.voice_id || '';
+          console.log(`🎤 Agent match trovato: "${agentData.name}", voice_id: ${elevenLabsVoiceId}`);
+          break;
         }
       }
     }
 
-    // Compose final system prompt
+    // Compose system prompt
     let composedPrompt = globalSystemPrompt + '\n\n';
     
-    // Add BASE sections
     if (baseSections && baseSections.length > 0) {
       composedPrompt += '=== CONTESTO BASE ===\n';
       composedPrompt += baseSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
-    // Add AGENT_PERSONALITY sections
     if (agentPersonalitySections && agentPersonalitySections.length > 0) {
       composedPrompt += '=== TUA PERSONALITÀ ===\n';
       composedPrompt += agentPersonalitySections.map(s => s.content).join('\n\n') + '\n\n';
     } else if (agentTextPrompt) {
-      composedPrompt += '=== TUA PERSONALITÀ (da ElevenLabs) ===\n';
+      composedPrompt += '=== TUA PERSONALITÀ ===\n';
       composedPrompt += agentTextPrompt + '\n\n';
     }
 
-    // Add TOPIC sections
     if (topicSections.length > 0) {
       composedPrompt += `=== FOCUS TOPIC: ${selectedTopic} ===\n`;
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
-    // TODO: Add Knowledge Base context (futuro)
-    if (activeKbId) {
-      console.log(`📚 Knowledge Base ${activeKbId} (integrazione futura)`);
-    }
-
-    console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
+    console.log('📝 Prompt composto (primi 200 char):', composedPrompt.substring(0, 200) + '...');
 
     // Prepare conversation history
     const conversationHistory = [
@@ -193,9 +192,9 @@ serve(async (req) => {
     let tokenOutput = 0;
     const startTime = Date.now();
 
-    // Route to appropriate AI provider
+    // Route to AI provider
     if (selectedParticipant.type === 'anthropic' && anthropicKey) {
-      console.log('🤖 Calling Anthropic (Claude)...');
+      console.log('🤖 Calling Anthropic...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -204,7 +203,7 @@ serve(async (req) => {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5',
           max_tokens: 8096,
           messages: conversationHistory.filter(m => m.role !== 'system'),
           system: composedPrompt
@@ -212,6 +211,8 @@ serve(async (req) => {
       });
 
       if (!anthropicResponse.ok) {
+        const errorText = await anthropicResponse.text();
+        console.error('Anthropic error:', errorText);
         throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
       }
 
@@ -221,7 +222,7 @@ serve(async (req) => {
       tokenOutput = anthropicData.usage?.output_tokens || 0;
     } 
     else if (selectedParticipant.type === 'openai' && openAIKey) {
-      console.log('🤖 Calling OpenAI (GPT)...');
+      console.log('🤖 Calling OpenAI...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -236,6 +237,8 @@ serve(async (req) => {
       });
 
       if (!openaiResponse.ok) {
+        const errorText = await openaiResponse.text();
+        console.error('OpenAI error:', errorText);
         throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
       }
 
@@ -245,7 +248,7 @@ serve(async (req) => {
       tokenOutput = openaiData.usage?.completion_tokens || 0;
     }
     else if (lovableAIKey) {
-      console.log('🤖 Calling Lovable AI (Gemini)...');
+      console.log('🤖 Calling Lovable AI...');
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -259,6 +262,8 @@ serve(async (req) => {
       });
 
       if (!lovableResponse.ok) {
+        const errorText = await lovableResponse.text();
+        console.error('Lovable AI error:', errorText);
         throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
       }
 
@@ -272,10 +277,81 @@ serve(async (req) => {
     }
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
+    console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
-    // Save AI response to database
-    await supabase
+    // Generate audio with ElevenLabs TTS (se voice enabled)
+    let audioUrl: string | null = null;
+    
+    if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
+      try {
+        console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
+        
+        // Limita la lunghezza per TTS (max 4096 caratteri)
+        const textForTTS = aiResponse.length > 4096 
+          ? aiResponse.substring(0, 4096) + '...'
+          : aiResponse;
+
+        const ttsResponse = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`,
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'audio/mpeg',
+              'xi-api-key': elevenLabsKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: textForTTS,
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.5,
+                use_speaker_boost: true
+              }
+            })
+          }
+        );
+
+        if (ttsResponse.ok) {
+          // Converti audio blob in base64 per storage
+          const audioBlob = await ttsResponse.blob();
+          const audioBuffer = await audioBlob.arrayBuffer();
+          const audioBase64 = btoa(
+            String.fromCharCode(...new Uint8Array(audioBuffer))
+          );
+          
+          // Salva in Supabase Storage
+          const fileName = `bar-chat/${conversationId}/${Date.now()}.mp3`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('audio-responses')
+            .upload(fileName, audioBlob, {
+              contentType: 'audio/mpeg',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('❌ Errore upload audio:', uploadError);
+          } else {
+            const { data: urlData } = supabase.storage
+              .from('audio-responses')
+              .getPublicUrl(fileName);
+            
+            audioUrl = urlData.publicUrl;
+            console.log('✅ Audio salvato:', audioUrl);
+          }
+        } else {
+          const errorText = await ttsResponse.text();
+          console.error('❌ ElevenLabs TTS error:', errorText);
+        }
+      } catch (ttsError) {
+        console.error('❌ Errore TTS:', ttsError);
+        // Continua comunque senza audio
+      }
+    }
+
+    // Save message con audio_url
+    const { error: insertError } = await supabase
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
@@ -284,10 +360,15 @@ serve(async (req) => {
         content: aiResponse,
         token_input: tokenInput,
         token_output: tokenOutput,
-        tempo_risposta_ms: responseTime
+        tempo_risposta_ms: responseTime,
+        audio_url: audioUrl
       });
 
-    // Update conversation turn index
+    if (insertError) {
+      console.error('❌ Errore insert messaggio:', insertError);
+    }
+
+    // Update conversation turn
     await supabase
       .from('chat_laboratory_conversations')
       .update({ 
@@ -296,16 +377,14 @@ serve(async (req) => {
       })
       .eq('id', conversationId);
 
-    // TODO: Invoke ElevenLabs TTS (futuro)
-    console.log('🎤 TTS ElevenLabs (integrazione futura)');
-
     return new Response(
       JSON.stringify({ 
         success: true, 
         content: aiResponse,
         speaker: selectedParticipant.name,
         tokens: { input: tokenInput, output: tokenOutput },
-        responseTime 
+        responseTime,
+        audioUrl 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

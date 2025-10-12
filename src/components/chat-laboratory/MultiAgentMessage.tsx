@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Bot, User, Clock, Zap, Copy, Download, Link } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
+import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ interface Message {
   token_output?: number;
   tempo_risposta_ms?: number;
   created_at: string;
+  audio_url?: string | null;
 }
 
 interface MultiAgentMessageProps {
@@ -203,6 +205,19 @@ export const MultiAgentMessage = ({ message }: MultiAgentMessageProps) => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Audio Player (se presente audio_url) */}
+        {message.audio_url && message.sender_type !== 'human' && (
+          <div className="mt-2">
+            <AudioMessagePlayer 
+              audioUrl={message.audio_url}
+              autoPlay={false}
+              onPlayingChange={(playing) => {
+                console.log(`Audio ${message.sender_name}:`, playing ? 'playing' : 'stopped');
+              }}
+            />
           </div>
         )}
 

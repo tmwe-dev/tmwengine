@@ -39,6 +39,7 @@ import ImportErrorsMonitor from "./pages/ImportErrorsMonitor";
 import TemplateAlias from "./pages/TemplateAlias";
 import LanguageManager from "./pages/LanguageManager";
 import UserGuide from "./pages/UserGuide";
+import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 
@@ -184,6 +185,11 @@ const App = () => (
             <Route path="/user-guide" element={
               <ProtectedRoute>
                 <CRMLayout><UserGuide /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/edge-function-versions" element={
+              <ProtectedRoute>
+                <CRMLayout><EdgeFunctionVersions /></CRMLayout>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

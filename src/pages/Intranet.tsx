@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetPortal, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { RoomSelector } from '@/components/intranet/RoomSelector';
 import { ChatMessages } from '@/components/intranet/ChatMessages';
 import { MessageInputWithAttachments } from '@/components/intranet/MessageInputWithAttachments';
@@ -343,70 +344,55 @@ const Intranet = () => {
     );
   }
 
-  // Tablet/Desktop: layout a 3 colonne senza conflitti con CRMLayout
+  // Tablet/Desktop: layout con sidebar locale isolata
   return (
     <div className="flex w-full h-full">
-      {/* Sidebar Intranet - collassabile manualmente */}
-      <div className={`border-r bg-card-transparent transition-all duration-300 relative z-10 flex flex-col ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
-        <div className="p-2 border-b flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title={sidebarCollapsed ? "Espandi sidebar" : "Riduci sidebar"}
-          >
-            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-        </div>
-        
-        {/* Contenuto sidebar - visibile solo se non collapsed */}
-        {!sidebarCollapsed && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            <div>
-              <h3 className="text-sm font-semibold mb-3">Stanze</h3>
-              <RoomSelector
-                onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
-                selectedRoomId={selectedRoomId}
-                getUnreadCount={getUnreadCount}
-              />
-            </div>
+      {/* Sidebar Intranet - con SidebarProvider locale isolato */}
+      <SidebarProvider defaultOpen={!sidebarCollapsed}>
+        <div className={`border-r bg-card-transparent transition-all duration-300 relative z-10 flex flex-col ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+          <div className="p-2 border-b flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? "Espandi sidebar" : "Riduci sidebar"}
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          {/* Contenuto sidebar */}
+          <div className="flex-1 overflow-y-auto">
+            <RoomSelector
+              onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
+              selectedRoomId={selectedRoomId}
+              getUnreadCount={getUnreadCount}
+            />
             
-            <div>
-              <h3 className="text-sm font-semibold mb-3">Utenti Online</h3>
-              <OnlineUsers users={onlineUsers} />
-            </div>
+            {!sidebarCollapsed && (
+              <>
+                <div className="px-4 pt-6 pb-3">
+                  <h3 className="text-sm font-semibold">Utenti Online</h3>
+                </div>
+                <div className="px-2">
+                  <OnlineUsers users={onlineUsers} />
+                </div>
 
-            {isCreatorOrAdmin && (
-              <div>
-                <h3 className="text-sm font-semibold mb-3">Richieste Accesso</h3>
-                <AccessRequestsPanel />
-              </div>
+                {isCreatorOrAdmin && (
+                  <>
+                    <div className="px-4 pt-6 pb-3">
+                      <h3 className="text-sm font-semibold">Richieste Accesso</h3>
+                    </div>
+                    <div className="px-2">
+                      <AccessRequestsPanel />
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </div>
-        )}
-        
-        {/* Icone mini quando collapsed */}
-        {sidebarCollapsed && (
-          <div className="p-2 space-y-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              title="Stanze"
-              onClick={() => setSidebarCollapsed(false)}
-            >
-              <MessageSquare className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              title="Utenti"
-              onClick={() => setSidebarCollapsed(false)}
-            >
-              <Users className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-      </div>
+        </div>
+      </SidebarProvider>
 
       {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
       <main className="flex-1 flex flex-col h-screen">

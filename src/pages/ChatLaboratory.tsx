@@ -82,6 +82,9 @@ const ChatLaboratory = () => {
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   
+  // Settings Drawer State
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -807,61 +810,124 @@ const ChatLaboratory = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {currentConversationId && (
-                <ExportSummaryButton
-                  labConversationId={currentConversationId}
-                  variant="laboratory"
-                  iconOnly
-                />
-              )}
-            </div>
-            </div>
             
-            <div className="flex items-center justify-center gap-1">
-              <Button
-                onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
-                variant="ghost"
-                size="icon"
-                className="bg-transparent hover:bg-transparent"
-                title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
-              >
-                {viewMode === 'classic' ? '📑' : '💬'}
-              </Button>
-              <LaboratoryPromptManager />
-              <ParticipantSelector
-                participants={participants}
-                onToggle={toggleParticipant}
-              />
+            {/* Settings Icon */}
+            <Button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8"
+              title="Impostazioni"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
             </div>
-          </div>
-          
-          {/* Bar Mode Section - Collapsible */}
-          <div className="mt-2 pb-1">
-            <CollapsibleBarSection
-              conversationId={currentConversationId}
-              isBarMode={isBarMode}
-              onBarModeToggle={setIsBarMode}
-              onKBChange={setActiveKnowledgeBase}
-            />
           </div>
         </div>
       </div>
 
-      {/* Sezione Stats - Costo e Token */}
-      {currentConversationId && (
-        <div className="border-b border-border/20 bg-muted/20">
-          <div className="container mx-auto px-4 py-1.5">
-            <div className="flex items-center justify-center gap-3">
-              <TokenCounterBadge
-                labConversationId={currentConversationId}
-                variant="laboratory"
-                alertThreshold={15000}
-              />
-              <ConversationCostBadge labConversationId={currentConversationId} />
+      {/* Settings Drawer */}
+      {settingsOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+            onClick={() => setSettingsOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <div className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-black/90 border-l border-white/10 z-[101] overflow-y-auto animate-slide-in-right">
+            <div className="p-6 space-y-6">
+              {/* Header Drawer */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">⚙️ Impostazioni</h2>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setSettingsOpen(false)}
+                  className="text-white hover:bg-white/10"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              {/* Sezioni */}
+              <div className="space-y-4">
+                {/* Vista */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">Vista</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/80 text-sm">Modalità visualizzazione</span>
+                      <Button
+                        onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        {viewMode === 'classic' ? '📑 Tabs' : '💬 Classica'}
+                      </Button>
+                    </div>
+                    {currentConversationId && (
+                      <ExportSummaryButton
+                        labConversationId={currentConversationId}
+                        variant="laboratory"
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Partecipanti & Prompts */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">AI & Prompts</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <LaboratoryPromptManager />
+                    <ParticipantSelector
+                      participants={participants}
+                      onToggle={toggleParticipant}
+                    />
+                  </CardContent>
+                </Card>
+                
+                {/* Bar Mode */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">Bar Mode</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CollapsibleBarSection
+                      conversationId={currentConversationId}
+                      isBarMode={isBarMode}
+                      onBarModeToggle={setIsBarMode}
+                      onKBChange={setActiveKnowledgeBase}
+                    />
+                  </CardContent>
+                </Card>
+                
+                {/* Stats */}
+                {currentConversationId && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">Statistiche</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <TokenCounterBadge
+                        labConversationId={currentConversationId}
+                        variant="laboratory"
+                        alertThreshold={15000}
+                      />
+                      <ConversationCostBadge labConversationId={currentConversationId} />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Messaggi */}

@@ -297,7 +297,6 @@ export type Database = {
       }
       chat_laboratory_bar_mode: {
         Row: {
-          active_elevenlabs_agents: string[] | null
           active_kb_id: string | null
           auto_play_audio: boolean
           continuous_mic_enabled: boolean | null
@@ -315,7 +314,6 @@ export type Database = {
           voice_enabled: boolean
         }
         Insert: {
-          active_elevenlabs_agents?: string[] | null
           active_kb_id?: string | null
           auto_play_audio?: boolean
           continuous_mic_enabled?: boolean | null
@@ -333,7 +331,6 @@ export type Database = {
           voice_enabled?: boolean
         }
         Update: {
-          active_elevenlabs_agents?: string[] | null
           active_kb_id?: string | null
           auto_play_audio?: boolean
           continuous_mic_enabled?: boolean | null

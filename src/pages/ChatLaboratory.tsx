@@ -78,7 +78,6 @@ const ChatLaboratory = () => {
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);
-  const [selectedElevenLabsAgents, setSelectedElevenLabsAgents] = useState<string[]>([]);
   const [activeKnowledgeBase, setActiveKnowledgeBase] = useState<string | null>(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   
@@ -211,7 +210,6 @@ const ChatLaboratory = () => {
 
       if (data) {
         setIsBarMode(data.mode === 'bar');
-        setSelectedElevenLabsAgents(data.active_elevenlabs_agents || []);
         setActiveKnowledgeBase(data.active_kb_id);
       }
     } catch (error) {
@@ -836,7 +834,6 @@ const ChatLaboratory = () => {
               conversationId={currentConversationId}
               isBarMode={isBarMode}
               onBarModeToggle={setIsBarMode}
-              onAgentsChange={setSelectedElevenLabsAgents}
               onKBChange={setActiveKnowledgeBase}
             />
           </div>

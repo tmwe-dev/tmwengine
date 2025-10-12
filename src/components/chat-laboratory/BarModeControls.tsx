@@ -16,7 +16,6 @@ interface BarModeSettings {
   enable_interruptions: boolean;
   auto_play_audio: boolean;
   voice_enabled: boolean;
-  active_elevenlabs_agents: string[];
 }
 
 interface ElevenLabsAgent {
@@ -32,7 +31,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     enable_interruptions: true,
     auto_play_audio: true,
     voice_enabled: false,
-    active_elevenlabs_agents: [],
   });
   
   const [agents, setAgents] = useState<ElevenLabsAgent[]>([]);
@@ -71,7 +69,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     try {
       const { data } = await supabase
         .from('chat_laboratory_bar_mode')
-        .select('conversation_pace, enable_interruptions, auto_play_audio, voice_enabled, active_elevenlabs_agents')
+        .select('conversation_pace, enable_interruptions, auto_play_audio, voice_enabled')
         .eq('conversation_id', conversationId)
         .single();
 
@@ -154,12 +152,22 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   };
 
-  const toggleAgent = (agentId: string) => {
-    const newAgents = settings.active_elevenlabs_agents.includes(agentId)
-      ? settings.active_elevenlabs_agents.filter(id => id !== agentId)
-      : [...settings.active_elevenlabs_agents, agentId];
-    
-    updateSetting('active_elevenlabs_agents', newAgents);
+  const toggleAgent = async (agentId: string) => {
+    // Aggiorna lo stato is_active dell'agente nel database
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) return;
+
+    try {
+      await supabase
+        .from('elevenlabs_agents')
+        .update({ is_active: !agent.is_active })
+        .eq('id', agentId);
+      
+      // Ricarica la lista degli agenti
+      loadElevenLabsAgents();
+    } catch (error) {
+      console.error('Errore aggiornamento agente:', error);
+    }
   };
 
   return (
@@ -265,20 +273,22 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         {/* ElevenLabs Agents Selection */}
         {settings.voice_enabled && agents.length > 0 && (
           <div className="col-span-2 space-y-2 p-2 rounded-md border border-border/30 bg-muted/20">
-            <Label className="text-xs text-muted-foreground">Agenti vocali attivi:</Label>
+            <Label className="text-xs text-muted-foreground">
+              Agenti vocali (vai in Impostazioni → Voice Agent per configurarli):
+            </Label>
             <div className="space-y-1">
-              {agents.filter(a => a.is_active).map((agent) => (
+              {agents.map((agent) => (
                 <div key={agent.id} className="flex items-center gap-2">
                   <Checkbox
                     id={`agent-${agent.id}`}
-                    checked={settings.active_elevenlabs_agents.includes(agent.id)}
+                    checked={agent.is_active}
                     onCheckedChange={() => toggleAgent(agent.id)}
                   />
                   <Label 
                     htmlFor={`agent-${agent.id}`} 
                     className="text-xs cursor-pointer flex-1"
                   >
-                    {agent.name}
+                    {agent.name} {agent.is_active ? '✓' : ''}
                   </Label>
                 </div>
               ))}

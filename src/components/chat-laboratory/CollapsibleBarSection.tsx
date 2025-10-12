@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { BarModeToggle } from './BarModeToggle';
 import { BarModeControls } from './BarModeControls';
-import { ElevenLabsAgentManager } from './ElevenLabsAgentManager';
 import { KnowledgeBaseSelector } from './KnowledgeBaseSelector';
 
 interface CollapsibleBarSectionProps {
   conversationId: string | null;
   isBarMode: boolean;
   onBarModeToggle: (enabled: boolean) => void;
-  onAgentsChange: (agents: string[]) => void;
   onKBChange: (kb: string | null) => void;
 }
 
@@ -19,7 +17,6 @@ export const CollapsibleBarSection = ({
   conversationId,
   isBarMode,
   onBarModeToggle,
-  onAgentsChange,
   onKBChange
 }: CollapsibleBarSectionProps) => {
   const [isOpen, setIsOpen] = useState(() => {
@@ -61,12 +58,8 @@ export const CollapsibleBarSection = ({
               <BarModeControls conversationId={conversationId} />
             </div>
             
-            {/* Agenti e Knowledge Base */}
-            <div className="flex justify-center gap-3">
-              <ElevenLabsAgentManager
-                conversationId={conversationId}
-                onAgentsChange={onAgentsChange}
-              />
+            {/* Knowledge Base selector */}
+            <div className="flex justify-center">
               <KnowledgeBaseSelector
                 conversationId={conversationId}
                 onKBChange={onKBChange}

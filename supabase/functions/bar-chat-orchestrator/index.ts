@@ -73,11 +73,19 @@ serve(async (req) => {
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
     const voiceEnabled = barModeSettings.voice_enabled || false;
-    const activeElevenLabsAgents = barModeSettings.active_elevenlabs_agents || [];
     const interruptRequested = barModeSettings.interrupt_requested || false;
+    
+    // Carica agenti vocali attivi dalla configurazione globale
+    const { data: activeElevenLabsAgents } = await supabase
+      .from('elevenlabs_agents')
+      .select('*')
+      .eq('user_id', barModeSettings.user_id)
+      .eq('is_active', true)
+      .order('order_index');
     
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
+    console.log('🎤 Agenti vocali attivi:', activeElevenLabsAgents?.length || 0);
     console.log('🎤 Voice enabled:', voiceEnabled);
     console.log('⛔ Interrupt requested:', interruptRequested);
 

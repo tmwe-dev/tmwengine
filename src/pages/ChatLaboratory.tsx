@@ -786,11 +786,12 @@ const ChatLaboratory = () => {
             </div>
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center gap-1">
               <Button
                 onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
                 variant="ghost"
                 size="icon"
+                className="bg-transparent hover:bg-transparent"
                 title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
               >
                 {viewMode === 'classic' ? '📑' : '💬'}

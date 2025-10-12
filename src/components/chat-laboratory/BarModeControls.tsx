@@ -18,12 +18,6 @@ interface BarModeSettings {
   voice_enabled: boolean;
 }
 
-interface ElevenLabsAgent {
-  id: string;
-  name: string;
-  voice_id: string;
-  is_active: boolean;
-}
 
 export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
   const [settings, setSettings] = useState<BarModeSettings>({
@@ -32,11 +26,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     auto_play_audio: true,
     voice_enabled: false,
   });
-  
-  const [agents, setAgents] = useState<ElevenLabsAgent[]>([]);
 
   useEffect(() => {
-    loadElevenLabsAgents();
     if (conversationId) {
       loadSettings();
     } else {
@@ -49,21 +40,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
       }
     }
   }, [conversationId]);
-
-  const loadElevenLabsAgents = async () => {
-    try {
-      const { data } = await supabase
-        .from('elevenlabs_agents')
-        .select('id, name, voice_id, is_active')
-        .order('order_index', { ascending: true });
-      
-      if (data) {
-        setAgents(data);
-      }
-    } catch (error) {
-      console.error('Errore caricamento agenti:', error);
-    }
-  };
 
   const loadSettings = async () => {
     try {
@@ -152,23 +128,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     }
   };
 
-  const toggleAgent = async (agentId: string) => {
-    // Aggiorna lo stato is_active dell'agente nel database
-    const agent = agents.find(a => a.id === agentId);
-    if (!agent) return;
-
-    try {
-      await supabase
-        .from('elevenlabs_agents')
-        .update({ is_active: !agent.is_active })
-        .eq('id', agentId);
-      
-      // Ricarica la lista degli agenti
-      loadElevenLabsAgents();
-    } catch (error) {
-      console.error('Errore aggiornamento agente:', error);
-    }
-  };
 
   return (
     <div className="space-y-3">
@@ -270,31 +229,6 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           </span>
         </div>
 
-        {/* ElevenLabs Agents Selection */}
-        {settings.voice_enabled && agents.length > 0 && (
-          <div className="col-span-2 space-y-2 p-2 rounded-md border border-border/30 bg-muted/20">
-            <Label className="text-xs text-muted-foreground">
-              Agenti vocali (vai in Impostazioni → Voice Agent per configurarli):
-            </Label>
-            <div className="space-y-1">
-              {agents.map((agent) => (
-                <div key={agent.id} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`agent-${agent.id}`}
-                    checked={agent.is_active}
-                    onCheckedChange={() => toggleAgent(agent.id)}
-                  />
-                  <Label 
-                    htmlFor={`agent-${agent.id}`} 
-                    className="text-xs cursor-pointer flex-1"
-                  >
-                    {agent.name} {agent.is_active ? '✓' : ''}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

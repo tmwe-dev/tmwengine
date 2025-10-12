@@ -821,18 +821,16 @@ const ChatLaboratory = () => {
 
               {/* Right side - Maximize and Settings */}
               <div className="flex items-center gap-1">
-                {/* Maximize Button */}
-                {canEnableFullScreen && (
-                  <MessageNavigationBar
-                    currentIndex={0}
-                    totalMessages={0}
-                    onPrevious={() => {}}
-                    onNext={() => {}}
-                    canEnableFullScreen={canEnableFullScreen}
-                    isFullScreenMode={isFullScreenMode}
-                    onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
-                  />
-                )}
+                {/* Maximize Button - sempre visibile */}
+                <MessageNavigationBar
+                  currentIndex={0}
+                  totalMessages={0}
+                  onPrevious={() => {}}
+                  onNext={() => {}}
+                  canEnableFullScreen={true}
+                  isFullScreenMode={isFullScreenMode}
+                  onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
+                />
                 
                 {/* Settings Icon */}
                 <Button

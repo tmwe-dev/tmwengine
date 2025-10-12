@@ -25,27 +25,6 @@ export const BarChatAudioControls = ({
 }: BarChatAudioControlsProps) => {
   const [isDuplexMode, setIsDuplexMode] = useState(false);
 
-  // ✅ Abilita voice_enabled quando full-duplex è attivo
-  useEffect(() => {
-    if (!conversationId) return;
-    
-    const updateVoiceEnabled = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase
-        .from('chat_laboratory_bar_mode')
-        .upsert({
-          conversation_id: conversationId,
-          voice_enabled: isDuplexMode,
-          user_id: user.id,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'conversation_id' });
-    };
-
-    updateVoiceEnabled();
-  }, [isDuplexMode, conversationId]);
-
   return (
     <div className={cn(
       "border-t border-border/40 backdrop-blur-xl bg-background/80",

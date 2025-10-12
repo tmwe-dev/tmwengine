@@ -86,6 +86,18 @@ const ChatLaboratory = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessagesLengthRef = useRef(0);
 
+  // Listener per beforeunload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (currentConversationId && messages.length >= 5) {
+        generateConversationTitle(currentConversationId);
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentConversationId, messages.length]);
+
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -500,7 +512,72 @@ const ChatLaboratory = () => {
     ));
   };
 
+  const generateConversationTitle = async (conversationId: string) => {
+    try {
+      // Prendi primi 5 messaggi
+      const { data: messagesData } = await supabase
+        .from('chat_laboratory_messages')
+        .select('content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(5);
+      
+      if (!messagesData || messagesData.length === 0) return;
+      
+      // Verifica se ha già un titolo personalizzato
+      const { data: conv } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('titolo')
+        .eq('id', conversationId)
+        .single();
+      
+      // Se ha già titolo non auto-generato, non sovrascrivere
+      if (conv?.titolo && !conv.titolo.includes('Discussione Multi-Agente')) {
+        return;
+      }
+      
+      const conversationStart = messagesData.map(m => m.content).join('\n\n');
+      
+      const { data, error } = await supabase.functions.invoke(
+        'generate-conversation-summary',
+        { 
+          body: { 
+            conversationId, 
+            type: 'title_and_summary',
+            conversationText: conversationStart
+          } 
+        }
+      );
+      
+      if (error) {
+        console.error('Errore generazione titolo:', error);
+        return;
+      }
+      
+      if (data?.title && data?.summary) {
+        await supabase
+          .from('chat_laboratory_conversations')
+          .update({
+            titolo: data.title,
+            riassunto_contesto: data.summary,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversationId);
+        
+        loadConversations();
+      }
+      
+    } catch (error) {
+      console.error('Error generating title:', error);
+    }
+  };
+
   const handleSelectConversation = (id: string) => {
+    // Se stavo in una conversazione con >5 messaggi, genera titolo
+    if (currentConversationId && messages.length >= 5) {
+      generateConversationTitle(currentConversationId);
+    }
+    
     setCurrentConversationId(id);
     loadMessages(id);
     setSidebarOpen(false);
@@ -509,6 +586,73 @@ const ChatLaboratory = () => {
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 100);
+  };
+
+  const handleGenerateSummary = async (conversationId: string) => {
+    try {
+      toast({
+        title: "Generazione riassunto...",
+        description: "Sto analizzando la conversazione"
+      });
+      
+      const { data, error } = await supabase.functions.invoke(
+        'generate-conversation-summary',
+        { body: { conversationId, type: 'summary' } }
+      );
+      
+      if (error) throw error;
+      
+      await loadConversations();
+      
+      toast({
+        title: "✅ Riassunto generato",
+        description: data.summary
+      });
+    } catch (error) {
+      console.error('Errore:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile generare il riassunto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleGenerateFullReport = async (conversationId: string) => {
+    try {
+      toast({
+        title: "Generazione report...",
+        description: "Sto creando il documento completo"
+      });
+      
+      const { data, error } = await supabase.functions.invoke(
+        'generate-conversation-summary',
+        { body: { conversationId, type: 'full_report' } }
+      );
+      
+      if (error) throw error;
+      
+      // Download come file
+      const blob = new Blob([data.report], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report-${conversationId.slice(0, 8)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "✅ Report generato",
+        description: "Il documento è stato scaricato"
+      });
+    } catch (error) {
+      console.error('Errore:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile generare il report",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleNewConversation = () => {
@@ -592,6 +736,8 @@ const ChatLaboratory = () => {
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
             onUpdateTitle={handleUpdateTitle}
+            onGenerateSummary={handleGenerateSummary}
+            onGenerateFullReport={handleGenerateFullReport}
           />
         </div>
       </>

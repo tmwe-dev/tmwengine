@@ -10,7 +10,15 @@ import {
   Edit2, 
   Check, 
   X,
-  Users
+  Users,
+  Search,
+  Calendar,
+  Sparkles,
+  FileText,
+  Cpu,
+  Bot,
+  User as UserIcon,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -23,8 +31,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { DayPicker, DateRange } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 
 interface Conversation {
   id: string;
@@ -44,6 +64,8 @@ interface ConversationsSidebarProps {
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
   onUpdateTitle: (id: string, title: string) => void;
+  onGenerateSummary?: (id: string) => void;
+  onGenerateFullReport?: (id: string) => void;
 }
 
 export const ConversationsSidebar = ({
@@ -52,12 +74,18 @@ export const ConversationsSidebar = ({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
-  onUpdateTitle
+  onUpdateTitle,
+  onGenerateSummary,
+  onGenerateFullReport
 }: ConversationsSidebarProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const handleStartEdit = (conv: Conversation) => {
     setEditingId(conv.id);
@@ -105,24 +133,109 @@ export const ConversationsSidebar = ({
     return tokens.toString();
   };
 
-  const getParticipantNames = (participants?: Array<{name: string, type: string}>): string => {
-    if (!participants || participants.length === 0) return 'Nessun partecipante';
+  const getParticipantIcons = (participants?: Array<{name: string, type: string}>) => {
+    const iconMap = {
+      'chatgpt': { icon: Sparkles, color: 'text-green-500' },
+      'gemini': { icon: Cpu, color: 'text-blue-500' },
+      'claude': { icon: Bot, color: 'text-purple-500' },
+      'human': { icon: UserIcon, color: 'text-muted-foreground' }
+    };
     
-    const aiParticipants = participants.filter(p => p.type !== 'human');
-    if (aiParticipants.length === 0) return 'Solo tu';
+    const aiParticipants = participants?.filter(p => p.type !== 'human') || [];
     
-    const names = aiParticipants.map(p => p.name).slice(0, 2);
-    
-    if (aiParticipants.length > 2) {
-      return `${names.join(', ')} +${aiParticipants.length - 2}`;
-    }
-    
-    return names.join(', ');
+    return aiParticipants
+      .slice(0, 3)
+      .map(p => ({
+        ...iconMap[p.type as keyof typeof iconMap] || iconMap.human,
+        name: p.name
+      }));
   };
+
+  const filteredConversations = conversations.filter(conv => {
+    const matchesSearch = searchQuery === "" || 
+      conv.titolo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conv.riassunto_contesto?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conv.active_participants?.some(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    
+    const matchesDate = !dateRange?.from || !dateRange?.to || (
+      new Date(conv.created_at) >= dateRange.from &&
+      new Date(conv.created_at) <= dateRange.to
+    );
+    
+    return matchesSearch && matchesDate;
+  });
 
   return (
     <div className="flex flex-col h-full bg-transparent">
-      <div className="p-4 border-b border-border/40">
+      <div className="p-4 border-b border-border/40 space-y-2">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca conversazioni..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="flex items-center gap-2">
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-start text-left text-xs">
+                <Calendar className="w-4 h-4 mr-2" />
+                {dateRange?.from && dateRange?.to 
+                  ? `${format(dateRange.from, "dd/MM")} - ${format(dateRange.to, "dd/MM")}`
+                  : "Filtra per data"
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <DayPicker
+                mode="range"
+                selected={dateRange}
+                onSelect={(range) => {
+                  setDateRange(range);
+                  if (range?.from && range?.to) {
+                    setShowDatePicker(false);
+                  }
+                }}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+          
+          {(dateRange?.from || dateRange?.to) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex-shrink-0"
+              onClick={() => setDateRange(undefined)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <p className="text-xs text-muted-foreground text-center">
+          {filteredConversations.length} conversazioni
+        </p>
+
+        {/* New Conversation Button */}
         <Button 
           onClick={onNewConversation} 
           className="w-full"
@@ -135,25 +248,33 @@ export const ConversationsSidebar = ({
 
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {conversations.length === 0 ? (
+          {filteredConversations.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Nessuna conversazione</p>
-              <p className="text-xs mt-1">Inizia una nuova discussione multi-agente</p>
+              <p className="text-sm">
+                {searchQuery || dateRange?.from ? "Nessun risultato" : "Nessuna conversazione"}
+              </p>
+              <p className="text-xs mt-1">
+                {searchQuery || dateRange?.from 
+                  ? "Prova a modificare i filtri di ricerca" 
+                  : "Inizia una nuova discussione multi-agente"
+                }
+              </p>
             </div>
           ) : (
-            conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={cn(
-                  "group relative p-3 rounded-lg border transition-all duration-200 overflow-hidden cursor-pointer",
-                  "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left",
-                  currentConversationId === conv.id 
-                    ? 'bg-email-selected border-primary/40 after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent' 
-                    : 'bg-card/95 backdrop-blur border-border/20 hover:border-border/40 hover:bg-transparent after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce'
-                )}
-                onClick={() => !editingId && onSelectConversation(conv.id)}
-              >
+            filteredConversations.map((conv) => (
+              <HoverCard openDelay={300} key={conv.id}>
+                <HoverCardTrigger asChild>
+                <div
+                  className={cn(
+                    "group relative p-3 rounded-lg border transition-all duration-200 overflow-hidden cursor-pointer",
+                    "after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left",
+                    currentConversationId === conv.id 
+                      ? 'bg-email-selected border-primary/40 after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent' 
+                      : 'bg-card/95 backdrop-blur border-border/20 hover:border-border/40 hover:bg-transparent after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce'
+                  )}
+                  onClick={() => !editingId && onSelectConversation(conv.id)}
+                >
                 {editingId === conv.id ? (
                   <div className="flex items-center gap-2">
                     <Input
@@ -188,26 +309,29 @@ export const ConversationsSidebar = ({
                     {/* Riga 1: Titolo + Token */}
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h4 className={cn(
-                        "text-sm font-semibold line-clamp-1 flex-1 transition-all duration-200",
+                        "text-sm font-semibold line-clamp-2 flex-1 max-w-[calc(100%-60px)] transition-all duration-200",
                         "group-hover:scale-105",
                         currentConversationId === conv.id ? "text-purple-300 scale-105" : ""
                       )}>
                         {conv.titolo || "Nuova conversazione"}
                       </h4>
-                      <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                      <span className="text-xs font-mono text-muted-foreground whitespace-nowrap flex-shrink-0 self-start">
                         {formatTokens(conv.total_tokens)}
                       </span>
                     </div>
 
-                    {/* Riga 2: Partecipanti + Numero messaggi + Azioni */}
+                    {/* Riga 2: Partecipanti Icons + Numero messaggi + Azioni */}
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Users className={cn(
-                          "w-3 h-3 flex-shrink-0 transition-all duration-200",
-                          "group-hover:scale-105 group-hover:animate-wiggle",
-                          currentConversationId === conv.id ? "text-purple-400 scale-110" : ""
-                        )} />
-                        <span className="truncate">{getParticipantNames(conv.active_participants)}</span>
+                        <div className="flex items-center gap-1.5">
+                          {getParticipantIcons(conv.active_participants).map((p, i) => {
+                            const Icon = p.icon;
+                            return <Icon key={i} className={cn("w-3.5 h-3.5", p.color)} />;
+                          })}
+                          {conv.active_participants && conv.active_participants.filter(p => p.type !== 'human').length > 3 && (
+                            <span className="text-[10px] text-muted-foreground">+{conv.active_participants.filter(p => p.type !== 'human').length - 3}</span>
+                          )}
+                        </div>
                         <Badge variant="secondary" className={cn(
                           "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border font-medium",
                           currentConversationId === conv.id 
@@ -220,6 +344,34 @@ export const ConversationsSidebar = ({
                       
                       {/* Azioni hover */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onGenerateSummary && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Genera riassunto"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onGenerateSummary(conv.id);
+                            }}
+                          >
+                            <Sparkles className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {onGenerateFullReport && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Genera report completo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onGenerateFullReport(conv.id);
+                            }}
+                          >
+                            <FileText className="w-3 h-3" />
+                          </Button>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
@@ -245,15 +397,53 @@ export const ConversationsSidebar = ({
                       </div>
                     </div>
 
-                    {/* Riga 3-4: Anteprima riassunto (se disponibile) */}
-                    {conv.riassunto_contesto && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    {/* Riga 3: Data/ora in basso */}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(conv.created_at), "dd/MM HH:mm")}
+                      </span>
+                    </div>
+
+                    {/* Riga 4: Anteprima riassunto (se disponibile) - solo per mobile */}
+                    {conv.riassunto_contesto && isMobile && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mt-2">
                         {conv.riassunto_contesto}
                       </p>
                     )}
                   </>
                 )}
-              </div>
+                </div>
+              </HoverCardTrigger>
+              
+              {/* HoverCard per Desktop con Riassunto */}
+              {conv.riassunto_contesto && !isMobile && (
+                <HoverCardContent 
+                  side="right" 
+                  align="start"
+                  className="w-80 bg-card/95 backdrop-blur border-border/40 shadow-xl"
+                >
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Anteprima Conversazione
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {conv.riassunto_contesto}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-3 h-3" />
+                        {conv.message_count} messaggi
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        {formatTokens(conv.total_tokens)}
+                      </span>
+                    </div>
+                  </div>
+                </HoverCardContent>
+              )}
+            </HoverCard>
             ))
           )}
         </div>

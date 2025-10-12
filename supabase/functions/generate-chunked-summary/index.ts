@@ -141,21 +141,12 @@ Rispondi in formato JSON:
         };
       }
 
-      const chunkData = {
+      chunks.push({
         messageRange: [startMsgIdx, endMsgIdx],
         summary: parsedSummary.summary,
         keyPoints: parsedSummary.keyPoints || [],
         participants
-      };
-      
-      console.log(`✅ Chunk ${chunks.length + 1} generato:`, {
-        range: chunkData.messageRange,
-        summaryLength: chunkData.summary?.length || 0,
-        keyPointsCount: chunkData.keyPoints.length,
-        participantsCount: chunkData.participants.length
       });
-      
-      chunks.push(chunkData);
     }
 
     // Generate final summary combining all chunks
@@ -202,21 +193,13 @@ ${combinedSummaries}`;
 
     if (updateError) throw updateError;
 
-    const responseData = {
-      success: true,
-      chunks,
-      finalSummary,
-      messagesSummarized: messagesToSummarize.length
-    };
-    
-    console.log('📊 Risposta finale:', {
-      chunksCount: chunks.length,
-      finalSummaryLength: finalSummary?.length || 0,
-      messagesSummarized: messagesToSummarize.length
-    });
-
     return new Response(
-      JSON.stringify(responseData),
+      JSON.stringify({
+        success: true,
+        chunks,
+        finalSummary,
+        messagesSummarized: messagesToSummarize.length
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

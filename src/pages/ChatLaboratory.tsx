@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, FileText } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -27,6 +27,7 @@ import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggl
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
+import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
@@ -97,9 +98,6 @@ const ChatLaboratory = () => {
   // Settings Drawer State
   const [settingsOpen, setSettingsOpen] = useState(false);
   
-  // Summary Panel State
-  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
-  
   // Full Screen Mode State
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
   const [audioMode, setAudioMode] = useState<'continuous' | 'full-duplex' | 'push-to-talk'>('push-to-talk');
@@ -152,6 +150,19 @@ const ChatLaboratory = () => {
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
 
+  // Auto-summary hook
+  useSummaryAutoGenerator({
+    conversationId: currentConversationId,
+    messageCount: messages.length,
+    lastMessageSummarized: conversationData?.last_message_summarized || 0,
+    economyMode: conversationData?.economy_mode || false,
+    onSummaryGenerated: () => {
+      setSummaryRefreshKey(prev => prev + 1);
+      if (currentConversationId) {
+        loadMessages(currentConversationId);
+      }
+    }
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -893,7 +904,7 @@ const ChatLaboratory = () => {
                 </div>
               </div>
 
-              {/* Right side - Maximize, Summary, and Settings */}
+              {/* Right side - Maximize and Settings */}
               <div className="flex items-center gap-1">
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
@@ -905,19 +916,6 @@ const ChatLaboratory = () => {
                   isFullScreenMode={isFullScreenMode}
                   onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
                 />
-                
-                {/* Summary Icon */}
-                {conversationData && conversationData.riassunto_contesto && (
-                  <Button
-                    onClick={() => setShowSummaryPanel(!showSummaryPanel)}
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 h-8 w-8"
-                    title="Riassunto Conversazione"
-                  >
-                    <FileText className="h-5 w-5" />
-                  </Button>
-                )}
                 
                 {/* Settings Icon */}
                 <Button
@@ -933,44 +931,6 @@ const ChatLaboratory = () => {
             </div>
           </div>
         </div>
-
-      {/* Summary Panel Drawer */}
-      {showSummaryPanel && conversationData && conversationData.riassunto_contesto && (
-        <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
-            onClick={() => setShowSummaryPanel(false)}
-          />
-          
-          {/* Drawer */}
-          <div className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-black/90 border-l border-white/10 z-[101] overflow-y-auto animate-slide-in-right">
-            <div className="p-6 space-y-6">
-              {/* Header Drawer */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">📄 Riassunto Conversazione</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setShowSummaryPanel(false)}
-                  className="text-white hover:bg-white/10"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              
-              {/* Summary Panel Content */}
-              <ConversationSummaryPanel
-                finalSummary={conversationData.riassunto_contesto}
-                chunks={Array.isArray(conversationData.summary_chunks) ? conversationData.summary_chunks : []}
-                lastSummarizedAt={conversationData.last_summarized_at || null}
-                totalMessages={messages.length}
-                lastMessageSummarized={conversationData.last_message_summarized || 0}
-              />
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Settings Drawer */}
       {settingsOpen && (
@@ -1102,6 +1062,17 @@ const ChatLaboratory = () => {
             className="h-full overflow-y-auto p-1.5 md:p-2 space-y-1.5 md:space-y-2"
           >
             <div className="container mx-auto max-w-full">
+              {/* Summary Panel */}
+              {conversationData && conversationData.riassunto_contesto && (
+                <ConversationSummaryPanel
+                  finalSummary={conversationData.riassunto_contesto}
+                  chunks={Array.isArray(conversationData.summary_chunks) ? conversationData.summary_chunks : []}
+                  lastSummarizedAt={conversationData.last_summarized_at || null}
+                  totalMessages={messages.length}
+                  lastMessageSummarized={conversationData.last_message_summarized || 0}
+                />
+              )}
+
               {/* Summary Generation Button */}
               {currentConversationId && messages.length >= 5 && (
                 <div className="mb-4 flex justify-end">

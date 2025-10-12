@@ -365,8 +365,48 @@ ${userMessage}`;
       generateMessageSummary(aiResponseText, 'ultra_compressed', LOVABLE_API_KEY)
     ]);
 
-    // Salva messaggio AI con summaries
-    await supabaseClient
+    // Classify intent using LLM
+    let intentTags: string[] = [];
+    try {
+      const intentResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: 'Classify the intent of the message. Return ONLY a JSON array of intent types from: Proposal, Critique, Question, Evidence, Merge, Vote, Summarize, Meta. Example: ["Proposal","Evidence"]'
+            },
+            {
+              role: 'user',
+              content: `Classify this message:\n\n${aiResponseText}`
+            }
+          ],
+          max_tokens: 50,
+          temperature: 0.3
+        })
+      });
+
+      if (intentResponse.ok) {
+        const intentData = await intentResponse.json();
+        const intentText = intentData.choices?.[0]?.message?.content?.trim() || '[]';
+        try {
+          intentTags = JSON.parse(intentText);
+        } catch {
+          console.error('Failed to parse intent JSON:', intentText);
+          intentTags = [];
+        }
+      }
+    } catch (error) {
+      console.error('Intent classification error:', error);
+    }
+
+    // Salva messaggio AI con summaries e intent tags
+    const { data: savedMessage } = await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
@@ -377,16 +417,38 @@ ${userMessage}`;
         content_summary: ultraCompressedSummary,
         is_summary_available: true,
         is_visible_to_ai: true,
+        intent_tags: intentTags,
         token_input: tokensIn,
         token_output: tokensOut,
         tempo_risposta_ms: duration
-      });
+      })
+      .select()
+      .single();
 
     // Aggiorna last_speaker_index
     await supabaseClient
       .from('chat_laboratory_conversations')
       .update({ last_speaker_index: nextIndex })
       .eq('id', conversationId);
+
+    // Extract knowledge graph asynchronously (non-blocking)
+    if (savedMessage?.id) {
+      console.log('🧠 Triggering knowledge graph extraction...');
+      fetch(`${SUPABASE_URL}/functions/v1/extract-knowledge-graph`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messageId: savedMessage.id,
+          conversationId: conversationId,
+          messageContent: aiResponseText
+        })
+      }).catch(error => {
+        console.error('KG extraction failed (non-blocking):', error);
+      });
+    }
 
     return new Response(
       JSON.stringify({ 

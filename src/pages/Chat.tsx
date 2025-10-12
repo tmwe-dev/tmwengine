@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { ChatMemoryControls } from '@/components/chat/ChatMemoryControls';
+import { UnifiedMemoryControls } from '@/components/chat/UnifiedMemoryControls';
 import { ConversationStats } from '@/components/chat/ConversationStats';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -700,10 +700,11 @@ const Chat = () => {
                     )}
 
                     {selectedTab === 'controls' && (
-                      <ChatMemoryControls
+                      <UnifiedMemoryControls
                         conversationId={currentConversationId}
                         memoriaCompleta={currentConversation?.memoria_completa || false}
                         onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                        variant="chat"
                       />
                     )}
 
@@ -987,10 +988,11 @@ const Chat = () => {
                           </DialogHeader>
                           <div className="space-y-4 sm:space-y-6 pb-3 sm:pb-4">
                             <ConversationStats conversationId={currentConversationId} />
-                            <ChatMemoryControls 
+                            <UnifiedMemoryControls 
                               conversationId={currentConversationId}
                               memoriaCompleta={currentConversation?.memoria_completa || false}
                               onMemoriaCompletaChange={handleMemoriaCompletaChange}
+                              variant="chat"
                             />
                           </div>
                         </DialogContent>

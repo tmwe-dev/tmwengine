@@ -107,19 +107,18 @@ serve(async (req) => {
     // Get memory configuration
     const { data: memoryConfig } = await supabase
       .from('config_generale')
-      .select('memoria_messaggi, memoria_ore, usa_riassunto, max_token_conversazione')
+      .select('memoria_messaggi, usa_riassunto, max_token_conversazione')
       .single();
 
     const config = {
-      memoria_messaggi: memoryConfig?.memoria_messaggi || 10,
-      memoria_ore: memoryConfig?.memoria_ore || 2,
-      usa_riassunto: memoryConfig?.usa_riassunto || false,
-      max_token_conversazione: memoryConfig?.max_token_conversazione || 4000
+      memoria_messaggi: memoryConfig?.memoria_messaggi || 20,
+      usa_riassunto: memoryConfig?.usa_riassunto || true,
+      max_token_conversazione: memoryConfig?.max_token_conversazione || 6000
     };
 
     // Check if conversation has full memory enabled
     let useFullMemory = false;
-    let useEconomyMode = true; // Default economy mode
+    let useEconomyMode = config.usa_riassunto; // Usa impostazione globale
     
     if (conversationId) {
       const { data: convData } = await supabase
@@ -129,19 +128,39 @@ serve(async (req) => {
         .single();
       
       useFullMemory = convData?.memoria_completa || false;
-      useEconomyMode = convData?.economy_mode ?? true;
+      useEconomyMode = convData?.economy_mode ?? config.usa_riassunto;
     }
+
+    // Build system prompt con limite token
+    const systemPromptWithLimit = `${systemPrompt || 'Sei un assistente AI professionale che risponde SEMPRE in italiano in modo chiaro, preciso e utile. Non lasciare mai risposte vuote. Se non hai informazioni sufficienti, chiedi chiarimenti all\'utente.'}
+
+LIMITE RISPOSTA: La tua risposta non deve superare i ${config.max_token_conversazione} token (~${Math.floor(config.max_token_conversazione * 0.75)} parole). Adatta la lunghezza della risposta per rimanere entro questo limite mantenendo completezza e chiarezza.`;
 
     // Build message history
     let messages = [
       { 
         role: 'system', 
-        content: systemPrompt || 'Sei un assistente AI professionale che risponde SEMPRE in italiano in modo chiaro, preciso e utile. Non lasciare mai risposte vuote. Se non hai informazioni sufficienti, chiedi chiarimenti all\'utente.' 
+        content: systemPromptWithLimit
       }
     ];
 
     if (conversationId) {
       if (useFullMemory) {
+        // Memoria completa: tutti i messaggi con contenuto normale
+        const { data: allMessages } = await supabase
+          .from('chat_messages')
+          .select('role, content, content_summary, is_summary_available')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+
+        if (allMessages) {
+          messages.push(...allMessages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          })));
+        }
+      } else if (config.usa_riassunto) {
+        // Economy Mode attivo: leggi TUTTI i messaggi usando content_summary
         const { data: allMessages } = await supabase
           .from('chat_messages')
           .select('role, content, content_summary, is_summary_available')
@@ -150,60 +169,35 @@ serve(async (req) => {
 
         if (allMessages) {
           messages.push(...allMessages.map(msg => {
-            let msgContent = msg.content;
-            
-            // Use ultra-compressed summary for AI messages in economy mode
-            if (msg.role === 'assistant' && useEconomyMode && msg.is_summary_available && msg.content_summary) {
-              msgContent = msg.content_summary;
+            // Usa content_summary per messaggi AI con riassunto disponibile
+            if (msg.role === 'assistant' && msg.is_summary_available && msg.content_summary) {
+              return {
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content_summary
+              };
             }
-            
+            // Altrimenti usa contenuto normale
             return {
               role: msg.role as 'user' | 'assistant',
-              content: msgContent
+              content: msg.content
             };
           }));
         }
       } else {
-        const timeLimit = new Date(Date.now() - config.memoria_ore * 60 * 60 * 1000);
-        
+        // Economy Mode disattivato: leggi solo ultimi X messaggi (contenuto completo)
         const { data: recentMessages } = await supabase
           .from('chat_messages')
-          .select('role, content, content_summary, is_summary_available, created_at')
+          .select('role, content')
           .eq('conversation_id', conversationId)
-          .gte('created_at', timeLimit.toISOString())
           .order('created_at', { ascending: false })
           .limit(config.memoria_messaggi);
 
         if (recentMessages && recentMessages.length > 0) {
           const chronologicalMessages = recentMessages.reverse();
-          
-          if (config.usa_riassunto && recentMessages.length === config.memoria_messaggi) {
-            const { data: olderMessages } = await supabase
-              .from('chat_messages')
-              .select('content')
-              .eq('conversation_id', conversationId)
-              .lt('created_at', chronologicalMessages[0].created_at)
-              .order('created_at', { ascending: true });
-
-            if (olderMessages && olderMessages.length > 0) {
-              const summaryContent = `[Riassunto messaggi precedenti: ${olderMessages.length} messaggi scambiati precedentemente in questa conversazione]`;
-              messages.push({ role: 'system', content: summaryContent });
-            }
-          }
-
-          messages.push(...chronologicalMessages.map(msg => {
-            let msgContent = msg.content;
-            
-            // Use ultra-compressed summary for AI messages in economy mode
-            if (msg.role === 'assistant' && useEconomyMode && msg.is_summary_available && msg.content_summary) {
-              msgContent = msg.content_summary;
-            }
-            
-            return {
-              role: msg.role as 'user' | 'assistant',
-              content: msgContent
-            };
-          }));
+          messages.push(...chronologicalMessages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          })));
         }
       }
     }

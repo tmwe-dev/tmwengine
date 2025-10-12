@@ -128,8 +128,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     <div className="space-y-3">
       {/* Topic Selector */}
       <div className="grid grid-cols-2 gap-4 p-3 rounded-lg border border-border/40 bg-card/40">
-        {/* Topic Selector */}
-        <div className="flex items-center gap-2">
+        {/* Topic Selector - occupa tutta la riga */}
+        <div className="flex items-center gap-2 col-span-2">
           <Label htmlFor="topic" className="text-sm w-24">Argomento:</Label>
           <Select value={selectedTopic} onValueChange={updateTopic}>
             <SelectTrigger id="topic" className="flex-1 h-8">

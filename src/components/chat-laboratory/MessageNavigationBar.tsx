@@ -44,18 +44,18 @@ export const MessageNavigationBar = ({
     <div className="flex items-center justify-between gap-2 mb-3">
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={onPrevious}
         disabled={currentIndex === 0}
-        className="h-8"
+        className="h-8 w-8"
+        title="Precedente"
       >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Precedente
+        <ChevronLeft className="h-4 w-4" />
       </Button>
 
       <div className="flex items-center gap-2">
         <Badge variant="secondary" className="px-3 py-1">
-          Messaggio {currentIndex + 1} di {totalMessages}
+          {currentIndex + 1}/{totalMessages}
         </Badge>
 
         {canEnableFullScreen && (
@@ -77,13 +77,13 @@ export const MessageNavigationBar = ({
 
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={onNext}
         disabled={currentIndex === totalMessages - 1}
-        className="h-8"
+        className="h-8 w-8"
+        title="Successivo"
       >
-        Successivo
-        <ChevronRight className="h-4 w-4 ml-1" />
+        <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
   );

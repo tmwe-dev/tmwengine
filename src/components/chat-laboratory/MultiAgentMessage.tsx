@@ -214,7 +214,7 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
           <div className="mt-2">
             <AudioMessagePlayer 
               audioUrl={message.audio_url}
-              autoPlay={false}
+              autoPlay={true}
               onPlayStart={() => {
                 console.log(`🔊 Audio ${message.sender_name} started`);
                 onAIPlayStateChange?.(true);

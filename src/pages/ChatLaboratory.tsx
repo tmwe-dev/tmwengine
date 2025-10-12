@@ -1114,112 +1114,39 @@ const ChatLaboratory = () => {
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}
                 onTranscriptionComplete={async (text) => {
-                  console.log('🎤 Trascrizione vocale ricevuta:', text);
+                  console.log('✅ Trascrizione ricevuta:', text);
                   
                   if (!text.trim()) {
                     console.warn('⚠️ Testo vuoto, invio annullato');
                     return;
                   }
                   
-                  setIsLoading(true);
+                  // ✅ Evento sintetico React completo
+                  const syntheticEvent = {
+                    preventDefault: () => {
+                      console.log('preventDefault chiamato correttamente');
+                    },
+                    stopPropagation: () => {},
+                    target: {} as EventTarget,
+                    currentTarget: {} as EventTarget,
+                    nativeEvent: {} as Event,
+                    type: 'submit',
+                    bubbles: true,
+                    cancelable: true,
+                    defaultPrevented: false,
+                    eventPhase: 0,
+                    isTrusted: true,
+                    timeStamp: Date.now(),
+                    isDefaultPrevented: () => false,
+                    isPropagationStopped: () => false,
+                    persist: () => {}
+                  } as React.FormEvent<HTMLFormElement>;
                   
-                  try {
-                    let conversationId = currentConversationId;
-                    
-                    // Crea conversazione se non esiste
-                    if (!conversationId) {
-                      const { data: newConv, error: convError } = await supabase
-                        .from('chat_laboratory_conversations')
-                        .insert({
-                          titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
-                          active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
-                        })
-                        .select()
-                        .single();
-
-                      if (convError) throw convError;
-                      conversationId = newConv.id;
-                      setCurrentConversationId(conversationId);
-
-                      // Salva partecipanti
-                      for (const participant of participants.filter(p => p.is_active)) {
-                        await supabase
-                          .from('chat_laboratory_participants')
-                          .insert({
-                            conversation_id: conversationId,
-                            type: participant.type,
-                            name: participant.name,
-                            system_prompt: participant.system_prompt,
-                            is_active: true
-                          });
-                      }
-
-                      await transferPendingSettings(conversationId);
-                      await loadMessages(conversationId);
-                    }
-
-                    // Salva messaggio umano
-                    const { error: insertError } = await supabase
-                      .from('chat_laboratory_messages')
-                      .insert([{
-                        conversation_id: conversationId,
-                        sender_type: 'user',
-                        sender_name: 'Tu',
-                        content: text,
-                        is_visible_to_ai: true
-                      }]);
-
-                    if (insertError) throw insertError;
-                    
-                    console.log('✅ Messaggio vocale salvato nel DB');
-
-                    // Ricarica messaggi SUBITO per mostrare il messaggio utente
-                    await loadMessages(conversationId);
-                    
-                    toast({
-                      title: "✓ Messaggio inviato",
-                      description: "In attesa della risposta AI..."
-                    });
-
-                    // Chiama orchestratore
-                    const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
-                    
-                    const orchestratorName = isBarMode
-                      ? 'bar-chat-orchestrator'
-                      : 'chat-laboratory-orchestrator';
-
-                    console.log(`🎯 Invoco ${orchestratorName}...`);
-                    
-                    const { data, error } = await supabase.functions.invoke(orchestratorName, {
-                      body: { 
-                        conversationId,
-                        userMessage: text,
-                        participants: activeAIParticipants
-                      }
-                    });
-
-                    if (error) throw error;
-                    
-                    console.log('✅ Risposta AI ricevuta:', data);
-                    
-                    // Ricarica messaggi per mostrare la risposta AI
-                    await loadMessages(conversationId);
-                    
-                    toast({
-                      title: "✓ Risposta AI ricevuta",
-                      description: "La conversazione è aggiornata"
-                    });
-                    
-                  } catch (error) {
-                    console.error('❌ Errore invio messaggio vocale:', error);
-                    toast({
-                      title: "Errore",
-                      description: "Impossibile inviare il messaggio vocale",
-                      variant: "destructive"
-                    });
-                  } finally {
-                    setIsLoading(false);
-                  }
+                  // ✅ Chiama handleSubmit con evento completo
+                  await handleSubmit(syntheticEvent, text);
+                  
+                  console.log('✅ Messaggio inviato alla chat');
+                  toast({ title: "✓ Messaggio inviato" });
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

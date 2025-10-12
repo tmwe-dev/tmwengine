@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import '@/i18n/config';
 
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";

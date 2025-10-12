@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -11,6 +12,7 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ProfileDialog } from '@/components/tmwe/ProfileDialog';
 import { IntranetNavItems } from '@/components/layout/IntranetNavItems';
 import { GlobalCountrySelector } from '@/components/GlobalCountrySelector';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import findairLogo from '@/assets/findair-logo-header.png';
 import {
   Users, 
@@ -61,6 +63,7 @@ import {
 } from '@/components/ui/collapsible';
 
 const CRMLayout = ({ children }) => {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
@@ -111,45 +114,45 @@ const CRMLayout = ({ children }) => {
 
   const navigationGroups = [
     {
-      name: 'Commerciale',
+      name: t('nav.commercial'),
       icon: BarChart3,
       items: [
-        { name: 'Clienti', href: '/rubrica', icon: Users },
-        { name: 'Commerciale', href: '/rubrica-avanzata', icon: Database },
-        { name: 'Attività', href: '/attivita', icon: Calendar },
-        { name: 'Campagne', href: '/campagne', icon: BarChart3 },
+        { name: t('nav.clients'), href: '/rubrica', icon: Users },
+        { name: t('nav.commercial'), href: '/rubrica-avanzata', icon: Database },
+        { name: t('nav.activities'), href: '/attivita', icon: Calendar },
+        { name: t('nav.campaigns'), href: '/campagne', icon: BarChart3 },
       ]
     },
     {
       name: 'Email',
       icon: Mail,
       items: [
-        { name: 'Email Manager', href: '/email-manager', icon: Mail },
-        { name: 'Email Campagne', href: '/email-campagne', icon: Mail },
-        { name: 'Gestione Mittenti', href: '/email-senders', icon: UserCog },
+        { name: t('nav.emailManager'), href: '/email-manager', icon: Mail },
+        { name: t('nav.emailCampaigns'), href: '/email-campagne', icon: Mail },
+        { name: t('nav.senders'), href: '/email-senders', icon: UserCog },
       ]
     },
     {
       name: 'Chat & AI',
       icon: MessageSquare,
       items: [
-        { name: 'Chat AI', href: '/chat', icon: MessageSquare },
-        { name: 'Chat Laboratory', href: '/chat-laboratory', icon: Sparkles },
+        { name: t('nav.chat'), href: '/chat', icon: MessageSquare },
+        { name: t('nav.laboratory'), href: '/chat-laboratory', icon: Sparkles },
       ],
       customContent: <IntranetNavItems isActive={isActive} sidebarOpen={sidebarOpen} />
     },
     {
-      name: 'Import',
+      name: t('nav.import'),
       icon: FileUp,
       items: [
-        { name: 'Gestisci Import', href: '/gestisci-import', icon: FileCheck },
-        { name: 'Import Templates', href: '/import-templates', icon: FileUp },
+        { name: t('nav.manageImport'), href: '/gestisci-import', icon: FileCheck },
+        { name: t('nav.importTemplates'), href: '/import-templates', icon: FileUp },
       ]
     }
   ];
 
   const standaloneItems = [
-    { name: 'Impostazioni', href: '/settings', icon: Settings },
+    { name: t('nav.settings'), href: '/settings', icon: Settings },
   ];
 
   // Trova il nome della pagina corrente
@@ -264,6 +267,9 @@ const CRMLayout = ({ children }) => {
           {/* Global Country Selector */}
           <GlobalCountrySelector />
           
+          {/* Language Selector */}
+          <LanguageSelector />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-8 px-2">
@@ -291,14 +297,14 @@ const CRMLayout = ({ children }) => {
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  Impostazioni
+                  {t('nav.settings')}
                 </Link>
               </DropdownMenuItem>
               
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="flex items-center gap-2">
                   <Palette className="h-4 w-4" />
-                  Cambia Tema
+                  {t('settings.appearance')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="bg-popover z-50">
@@ -333,7 +339,7 @@ const CRMLayout = ({ children }) => {
                 className="flex items-center gap-2 text-destructive focus:text-destructive"
               >
                 <LogOut className="h-4 w-4" />
-                Esci
+                {t('nav.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

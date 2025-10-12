@@ -244,7 +244,7 @@ export const BarVoiceRecorder = ({
           "h-4 w-4",
           isRecording && "animate-pulse"
         )} />
-        <span className="font-medium">
+        <span className="font-medium hidden sm:inline">
           {isProcessing ? "Elaborazione..." : 
            isRecording ? "Registrando..." : 
            "Premi per parlare"}

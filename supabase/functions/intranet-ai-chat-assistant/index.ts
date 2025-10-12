@@ -1,6 +1,54 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
+// Helper: Generate message summaries
+async function generateMessageSummary(
+  content: string,
+  type: 'user_friendly' | 'ultra_compressed',
+  lovableApiKey: string
+): Promise<string> {
+  const prompts = {
+    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
+
+${content}
+
+Riassunto user-friendly:`,
+    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
+
+${content}
+
+Riassunto ultra-compresso:`
+  };
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: prompts[type] }
+        ],
+        temperature: 0.3,
+        max_tokens: type === 'user_friendly' ? 100 : 50
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Summary generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
+  } catch (error) {
+    console.error(`Error generating ${type} summary:`, error);
+    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -105,6 +153,15 @@ COSA NON DEVI FARE:
 Rispondi sempre in italiano, a meno che non ti venga chiesto esplicitamente di usare un'altra lingua.
 `;
 
+    // Check economy mode settings
+    const { data: roomEconomySettings } = await supabase
+      .from('intranet_rooms')
+      .select('economy_mode')
+      .eq('id', roomId)
+      .single();
+
+    const useEconomyMode = roomEconomySettings?.economy_mode ?? true;
+
     // 3. Carica gli ultimi N messaggi per il contesto
     const contextSize = roomSettings.ai_context_messages || 20;
     const { data: messages, error: messagesError } = await supabase
@@ -112,6 +169,8 @@ Rispondi sempre in italiano, a meno che non ti venga chiesto esplicitamente di u
       .select(`
         id,
         content,
+        content_summary,
+        is_summary_available,
         created_at,
         user_id,
         user_profiles!inner(display_name)
@@ -133,7 +192,15 @@ Rispondi sempre in italiano, a meno che non ti venga chiesto esplicitamente di u
       .reverse()
       .map((msg: any) => {
         const displayName = msg.user_profiles?.display_name || 'Utente';
-        return `${displayName}: ${msg.content}`;
+        const isAlbert = msg.user_id === ALBERT_USER_ID;
+        
+        // Use ultra-compressed summary for AI messages in economy mode
+        let content = msg.content;
+        if (isAlbert && useEconomyMode && msg.is_summary_available && msg.content_summary) {
+          content = msg.content_summary;
+        }
+        
+        return `${displayName}: ${content}`;
       })
       .join('\n');
 
@@ -197,13 +264,25 @@ Rispondi sempre in italiano, a meno che non ti venga chiesto esplicitamente di u
 
     console.log('Albert response generated:', albertMessage.substring(0, 100) + '...');
 
-    // 5. Inserisci il messaggio di Albert nella chat
+    // Generate summaries for the AI response
+    console.log('Generating message summaries...');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
+      generateMessageSummary(albertMessage, 'user_friendly', lovableApiKey!),
+      generateMessageSummary(albertMessage, 'ultra_compressed', lovableApiKey!)
+    ]);
+
+    // 5. Inserisci il messaggio di Albert con summaries nella chat
     const { error: insertError } = await supabase
       .from('intranet_messages')
       .insert({
         room_id: roomId,
         user_id: ALBERT_USER_ID,
         content: albertMessage,
+        content_user_friendly: userFriendlySummary,
+        content_summary: ultraCompressedSummary,
+        is_summary_available: true,
         message_type: 'text'
       });
 

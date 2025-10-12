@@ -146,27 +146,33 @@ export type Database = {
       chat_conversations: {
         Row: {
           created_at: string
+          economy_mode: boolean | null
           id: string
           memoria_completa: boolean | null
           riassunto_contesto: string | null
+          show_summaries_only: boolean | null
           system_prompt_id: string | null
           titolo: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          economy_mode?: boolean | null
           id?: string
           memoria_completa?: boolean | null
           riassunto_contesto?: string | null
+          show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           titolo?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          economy_mode?: boolean | null
           id?: string
           memoria_completa?: boolean | null
           riassunto_contesto?: string | null
+          show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           titolo?: string | null
           updated_at?: string
@@ -298,12 +304,14 @@ export type Database = {
           conversation_phase: string | null
           created_at: string | null
           current_turn_index: number | null
+          economy_mode: boolean | null
           final_summary: string | null
           id: string
           last_speaker_index: number | null
           memoria_completa: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
+          show_summaries_only: boolean | null
           system_prompt_id: string | null
           target_participant_type: string | null
           titolo: string | null
@@ -314,12 +322,14 @@ export type Database = {
           conversation_phase?: string | null
           created_at?: string | null
           current_turn_index?: number | null
+          economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
           last_speaker_index?: number | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
+          show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
@@ -330,12 +340,14 @@ export type Database = {
           conversation_phase?: string | null
           created_at?: string | null
           current_turn_index?: number | null
+          economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
           last_speaker_index?: number | null
           memoria_completa?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
+          show_summaries_only?: boolean | null
           system_prompt_id?: string | null
           target_participant_type?: string | null
           titolo?: string | null
@@ -355,11 +367,14 @@ export type Database = {
         Row: {
           attachments: Json | null
           content: string
+          content_summary: string | null
+          content_user_friendly: string | null
           conversation_id: string
           created_at: string | null
           generated_images: Json | null
           id: string
           images: Json | null
+          is_summary_available: boolean | null
           is_visible_to_ai: boolean | null
           sender_name: string
           sender_type: string
@@ -370,11 +385,14 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           content: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           conversation_id: string
           created_at?: string | null
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           sender_name: string
           sender_type: string
@@ -385,11 +403,14 @@ export type Database = {
         Update: {
           attachments?: Json | null
           content?: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           conversation_id?: string
           created_at?: string | null
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           sender_name?: string
           sender_type?: string
@@ -568,11 +589,14 @@ export type Database = {
         Row: {
           attachments: Json | null
           content: string
+          content_summary: string | null
+          content_user_friendly: string | null
           conversation_id: string
           created_at: string
           generated_images: Json | null
           id: string
           images: Json | null
+          is_summary_available: boolean | null
           model: string | null
           role: string
           tempo_risposta_ms: number | null
@@ -583,11 +607,14 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           content: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           conversation_id: string
           created_at?: string
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          is_summary_available?: boolean | null
           model?: string | null
           role: string
           tempo_risposta_ms?: number | null
@@ -598,11 +625,14 @@ export type Database = {
         Update: {
           attachments?: Json | null
           content?: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           conversation_id?: string
           created_at?: string
           generated_images?: Json | null
           id?: string
           images?: Json | null
+          is_summary_available?: boolean | null
           model?: string | null
           role?: string
           tempo_risposta_ms?: number | null
@@ -2091,8 +2121,11 @@ export type Database = {
         Row: {
           attachment_url: string | null
           content: string
+          content_summary: string | null
+          content_user_friendly: string | null
           created_at: string
           id: string
+          is_summary_available: boolean | null
           is_system_message: boolean | null
           message_type: string
           room_id: string
@@ -2101,8 +2134,11 @@ export type Database = {
         Insert: {
           attachment_url?: string | null
           content: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           created_at?: string
           id?: string
+          is_summary_available?: boolean | null
           is_system_message?: boolean | null
           message_type?: string
           room_id: string
@@ -2111,8 +2147,11 @@ export type Database = {
         Update: {
           attachment_url?: string | null
           content?: string
+          content_summary?: string | null
+          content_user_friendly?: string | null
           created_at?: string
           id?: string
+          is_summary_available?: boolean | null
           is_system_message?: boolean | null
           message_type?: string
           room_id?: string
@@ -2278,9 +2317,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          economy_mode: boolean | null
           id: string
           is_private: boolean | null
           name: string
+          show_summaries_only: boolean | null
           updated_at: string
         }
         Insert: {
@@ -2288,9 +2329,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          economy_mode?: boolean | null
           id?: string
           is_private?: boolean | null
           name: string
+          show_summaries_only?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -2298,9 +2341,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          economy_mode?: boolean | null
           id?: string
           is_private?: boolean | null
           name?: string
+          show_summaries_only?: boolean | null
           updated_at?: string
         }
         Relationships: []

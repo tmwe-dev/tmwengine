@@ -91,7 +91,7 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-3 px-2 py-1 cursor-pointer hover:scale-105 transition-transform"
+        className="flex items-end gap-3 px-2 py-1 cursor-pointer"
         onClick={onClick}
         title="Clicca per espandere il grafico"
       >

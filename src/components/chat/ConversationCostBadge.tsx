@@ -52,10 +52,12 @@ export const ConversationCostBadge = ({
     return () => { supabase.removeChannel(channel); };
   }, [conversationId, roomId, labConversationId]);
   
+  if (totalCost === 0) return null;
+  
   return (
     <Badge variant="outline" className="gap-2">
       <Euro className="h-3 w-3" />
-      {totalCost === 0 ? 'GRATUITO' : `€${totalCost.toFixed(4)}`}
+      €{totalCost.toFixed(4)}
     </Badge>
   );
 };

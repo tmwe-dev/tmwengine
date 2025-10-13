@@ -163,6 +163,24 @@ serve(async (req) => {
 
     if (convError) throw convError;
 
+    // ⏸️ CHECK PAUSA CONVERSAZIONE
+    const isPaused = conversation.is_paused || false;
+    const conversationStyle = conversation.conversation_style || 'colleagues';
+    
+    console.log('🎭 Conversation Style:', conversationStyle);
+    console.log('⏸️ Is Paused:', isPaused);
+
+    if (isPaused) {
+      console.log('⏸️ Conversazione in pausa, esco');
+      return new Response(
+        JSON.stringify({ 
+          paused: true, 
+          message: 'Conversazione in pausa. Riprendi per continuare.' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Fetch global system prompt
     const { data: systemPrompts } = await supabase
       .from('chat_laboratory_system_prompts')
@@ -211,17 +229,11 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // Turn-taking logic
-    let currentTurnIndex = conversation.current_turn_index || 0;
+    // ✅ TURNI SEQUENZIALI PURI (no random)
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
+    const currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
     
-    if (Math.random() < 0.3) {
-      currentTurnIndex = Math.floor(Math.random() * participants.length);
-      console.log('🎲 Turno randomizzato:', currentTurnIndex);
-    } else {
-      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-      console.log('➡️ Turno sequenziale:', currentTurnIndex);
-    }
+    console.log('➡️ Turno sequenziale FORZATO:', currentTurnIndex, 'Agent:', participants[currentTurnIndex].name);
 
     const selectedParticipant = participants[currentTurnIndex];
     console.log('🎯 Agente selezionato:', selectedParticipant.name);
@@ -260,8 +272,130 @@ serve(async (req) => {
       }
     }
 
-    // Compose system prompt
-    let composedPrompt = globalSystemPrompt + '\n\n';
+    // 🎭 CONVERSATION STYLE PROMPTS (injection dinamica)
+    const conversationStylePrompts = {
+      boss_talk: `
+🎯 MODALITÀ: BOSS TALK
+
+Sei in una riunione di lavoro ad alto livello. Il tuo obiettivo è RISOLVERE il problema nel modo più efficiente possibile.
+
+COMPORTAMENTO RICHIESTO:
+- ✅ Pragmatico e orientato ai risultati
+- ✅ Sintetico e diretto al punto (max 3-4 frasi)
+- ✅ Pronto a preparare report e analisi concrete
+- ✅ Collaborativo ma senza fronzoli
+- ❌ ZERO commenti inutili, battute, divagazioni
+- ❌ NO lunghe introduzioni o conclusioni
+
+FORMATO RISPOSTA:
+1. Vai dritto al punto
+2. Proponi soluzioni concrete
+3. Chiedi conferma o prossimo step
+
+ESEMPIO: "Analizzati i dati. Propongo soluzione X perché riduce costi del 30%. Procediamo o rivediamo?"
+`,
+
+      colleagues: `
+🤝 MODALITÀ: COLLEAGUES
+
+Sei in una discussione tra colleghi che vogliono risolvere un problema in modo professionale ma amichevole.
+
+COMPORTAMENTO RICHIESTO:
+- ✅ Professionale ma cordiale
+- ✅ Qualche battuta leggera se appropriata (max 1 per risposta)
+- ✅ Ascolti gli altri e riconosci i loro punti
+- ✅ Bilanciato tra pragmatismo e piacevolezza
+- ❌ NO eccessiva rigidità o serietà
+- ❌ NO eccesso di formalità
+
+FORMATO RISPOSTA:
+1. Riconosci contributo precedente (se rilevante)
+2. Aggiungi il tuo punto
+3. Lascia spazio agli altri (domanda aperta)
+
+ESEMPIO: "Bella idea Marco! Aggiungo che potremmo anche X per velocizzare. Che ne dite?"
+`,
+
+      bar_chat: `
+🍺 MODALITÀ: BAR CHAT
+
+Sei al bar dopo lavoro con i colleghi. L'atmosfera è rilassata, ma l'obiettivo resta risolvere il problema.
+
+COMPORTAMENTO RICHIESTO:
+- ✅ Informale e scherzoso (ma non volgare)
+- ✅ Battute su lavoro, calcio, caffè lunedì, ecc.
+- ✅ Prendi in giro bonariamente i colleghi (se pertinente)
+- ✅ Comunque arrivi a soluzioni concrete
+- ✅ Usa espressioni colloquiali ("dai", "vabbè", "aho")
+- ❌ NO eccessiva serietà o formalità
+
+FORMATO RISPOSTA:
+1. Commento leggero/battuta (max 1 frase)
+2. Soluzione proposta in modo informale
+3. Coinvolgi gli altri con domanda scherzosa
+
+ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del lunedì 😅. Che ne dite se proviamo X? O aspettiamo che si svegli da solo?"
+`
+    };
+
+    const stylePrompt = conversationStylePrompts[conversationStyle as keyof typeof conversationStylePrompts] || 
+      conversationStylePrompts.colleagues;
+
+    // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
+    let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
+3. Chiedi conferma o prossimo step
+
+ESEMPIO: "Analizzati i dati. Propongo soluzione X perché riduce costi del 30%. Procediamo o rivediamo?"
+`,
+
+    colleagues: `
+🤝 MODALITÀ: COLLEAGUES
+
+Sei in una discussione tra colleghi che vogliono risolvere un problema in modo professionale ma amichevole.
+
+COMPORTAMENTO RICHIESTO:
+- ✅ Professionale ma cordiale
+- ✅ Qualche battuta leggera se appropriata (max 1 per risposta)
+- ✅ Ascolti gli altri e riconosci i loro punti
+- ✅ Bilanciato tra pragmatismo e piacevolezza
+- ❌ NO eccessiva rigidità o serietà
+- ❌ NO eccesso di formalità
+
+FORMATO RISPOSTA:
+1. Riconosci contributo precedente (se rilevante)
+2. Aggiungi il tuo punto
+3. Lascia spazio agli altri (domanda aperta)
+
+ESEMPIO: "Bella idea Marco! Aggiungo che potremmo anche X per velocizzare. Che ne dite?"
+`,
+
+    bar_chat: `
+🍺 MODALITÀ: BAR CHAT
+
+Sei al bar dopo lavoro con i colleghi. L'atmosfera è rilassata, ma l'obiettivo resta risolvere il problema.
+
+COMPORTAMENTO RICHIESTO:
+- ✅ Informale e scherzoso (ma non volgare)
+- ✅ Battute su lavoro, calcio, caffè lunedì, ecc.
+- ✅ Prendi in giro bonariamente i colleghi (se pertinente)
+- ✅ Comunque arrivi a soluzioni concrete
+- ✅ Usa espressioni colloquiali ("dai", "vabbè", "aho")
+- ❌ NO eccessiva serietà o formalità
+
+FORMATO RISPOSTA:
+1. Commento leggero/battuta (max 1 frase)
+2. Soluzione proposta in modo informale
+3. Coinvolgi gli altri con domanda scherzosa
+
+ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del lunedì 😅. Che ne dite se proviamo X? O aspettiamo che si svegli da solo?"
+`
+  };
+
+  const stylePrompt = conversationStylePrompts[conversationStyle as keyof typeof conversationStylePrompts] || 
+    conversationStylePrompts.colleagues;
+
+  // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
+  let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
     
     if (baseSections && baseSections.length > 0) {
       composedPrompt += '=== CONTESTO BASE ===\n';

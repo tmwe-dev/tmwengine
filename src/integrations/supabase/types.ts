@@ -369,11 +369,13 @@ export type Database = {
           active_participants: Json | null
           convergence_metrics: Json | null
           conversation_phase: string | null
+          conversation_style: string | null
           created_at: string | null
           current_turn_index: number | null
           economy_mode: boolean | null
           final_summary: string | null
           id: string
+          is_paused: boolean | null
           last_compaction_at: string | null
           last_message_summarized: number | null
           last_speaker_index: number | null
@@ -391,16 +393,19 @@ export type Database = {
           token_count_total: number | null
           updated_at: string | null
           user_id: string | null
+          vad_silence_duration: number | null
         }
         Insert: {
           active_participants?: Json | null
           convergence_metrics?: Json | null
           conversation_phase?: string | null
+          conversation_style?: string | null
           created_at?: string | null
           current_turn_index?: number | null
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
+          is_paused?: boolean | null
           last_compaction_at?: string | null
           last_message_summarized?: number | null
           last_speaker_index?: number | null
@@ -418,16 +423,19 @@ export type Database = {
           token_count_total?: number | null
           updated_at?: string | null
           user_id?: string | null
+          vad_silence_duration?: number | null
         }
         Update: {
           active_participants?: Json | null
           convergence_metrics?: Json | null
           conversation_phase?: string | null
+          conversation_style?: string | null
           created_at?: string | null
           current_turn_index?: number | null
           economy_mode?: boolean | null
           final_summary?: string | null
           id?: string
+          is_paused?: boolean | null
           last_compaction_at?: string | null
           last_message_summarized?: number | null
           last_speaker_index?: number | null
@@ -445,6 +453,7 @@ export type Database = {
           token_count_total?: number | null
           updated_at?: string | null
           user_id?: string | null
+          vad_silence_duration?: number | null
         }
         Relationships: [
           {

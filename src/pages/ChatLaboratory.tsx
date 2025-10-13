@@ -24,6 +24,7 @@ import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
 import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
+import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
@@ -104,6 +105,9 @@ const ChatLaboratory = () => {
   // Full Screen Mode State
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
   const [audioMode, setAudioMode] = useState<'continuous' | 'full-duplex' | 'push-to-talk'>('push-to-talk');
+  
+  // ✅ Lock orchestrator per evitare chiamate parallele
+  const isOrchestratorRunning = useRef(false);
   
   // Summary States
   const [conversationData, setConversationData] = useState<Conversation | null>(null);
@@ -1149,6 +1153,23 @@ const ChatLaboratory = () => {
                   </Card>
                 )}
                 
+                {/* Bar Chat Settings (solo se Bar Mode attivo) */}
+                {currentConversationId && isBarMode && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">🍺 Impostazioni Bar Chat</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <BarChatSettings 
+                        conversationId={currentConversationId}
+                        onSettingsChange={(settings) => {
+                          console.log('📝 Bar Chat Settings aggiornati:', settings);
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
                 {/* Ottimizzazione Token */}
                 {currentConversationId && (
                   <Card className="bg-white/5 border-white/10">
@@ -1387,11 +1408,27 @@ const ChatLaboratory = () => {
                 onTranscriptionComplete={async (text) => {
                   console.log('✅ Trascrizione ricevuta:', text);
                   
-                  // ✅ Invio diretto passando il testo (no setPrompt asincrono)
-                  const fakeEvent = new Event('submit') as any;
-                  await handleSubmit(fakeEvent, text);
+                  // ✅ DOPPIO LOCK: audio playback + orchestrator running
+                  if (isAISpeaking || isOrchestratorRunning.current) {
+                    console.warn('⚠️ AI sta parlando o processando, messaggio bloccato');
+                    toast({
+                      title: "⏳ Attendi",
+                      description: "L'AI sta ancora elaborando o parlando"
+                    });
+                    return;
+                  }
+
+                  isOrchestratorRunning.current = true;
+                  console.log('🔒 Lock orchestrator attivato');
                   
-                  // toast({ title: "✓ Messaggio inviato alla chat" });
+                  try {
+                    // ✅ Invio diretto passando il testo (no setPrompt asincrono)
+                    const fakeEvent = new Event('submit') as any;
+                    await handleSubmit(fakeEvent, text);
+                  } finally {
+                    isOrchestratorRunning.current = false;
+                    console.log('🔓 Lock orchestrator rilasciato');
+                  }
                 }}
                 onInterrupt={async () => {
                   if (currentConversationId) {

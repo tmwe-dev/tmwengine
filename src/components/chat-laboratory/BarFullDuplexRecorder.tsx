@@ -22,6 +22,7 @@ export const BarFullDuplexRecorder = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [silenceDuration, setSilenceDuration] = useState(3000); // ✅ VAD dinamico
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
@@ -33,6 +34,34 @@ export const BarFullDuplexRecorder = ({
   const isSpeakingRef = useRef(false); // ✅ Ref per VAD - evita closure stale
   
   const { toast } = useToast();
+
+  // ✅ Carica VAD settings dal database
+  useEffect(() => {
+    if (conversationId) {
+      loadVADSettings();
+    }
+  }, [conversationId]);
+
+  const loadVADSettings = async () => {
+    if (!conversationId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('vad_silence_duration')
+        .eq('id', conversationId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.vad_silence_duration) {
+        setSilenceDuration(data.vad_silence_duration);
+        console.log('🎚️ VAD Threshold caricato:', data.vad_silence_duration, 'ms');
+      }
+    } catch (error) {
+      console.error('Error loading VAD settings:', error);
+    }
+  };
 
   // VAD Configuration - stessi valori del microfono funzionante
   const SILENCE_THRESHOLD = 0.05; // Soglia per rilevare silenzio
@@ -150,10 +179,10 @@ export const BarFullDuplexRecorder = ({
             silenceStartRef.current = Date.now();
           }
 
-          const silenceDuration = Date.now() - silenceStartRef.current;
-          console.log('⏱️ VAD: Silenzio da', (silenceDuration / 1000).toFixed(1), 's');
+          const currentSilenceDuration = Date.now() - silenceStartRef.current;
+          console.log('⏱️ VAD: Silenzio da', (currentSilenceDuration / 1000).toFixed(1), 's');
           
-          if (silenceDuration >= SILENCE_DURATION) {
+          if (currentSilenceDuration >= silenceDuration) {
             console.log('🎤 Fine parlato rilevato, processo trascrizione...');
             
             // 1️⃣ FERMA completamente il VAD

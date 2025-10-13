@@ -4,9 +4,11 @@ import { BarFullDuplexRecorder } from './BarFullDuplexRecorder';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Mic, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Mic, Users, Pause, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface BarChatAudioControlsProps {
   conversationId: string | null;
@@ -24,6 +26,61 @@ export const BarChatAudioControls = ({
   className
 }: BarChatAudioControlsProps) => {
   const [isDuplexMode, setIsDuplexMode] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (conversationId) {
+      loadPauseState();
+    }
+  }, [conversationId]);
+
+  const loadPauseState = async () => {
+    if (!conversationId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('is_paused')
+        .eq('id', conversationId)
+        .single();
+
+      if (error) throw error;
+      setIsPaused(data?.is_paused || false);
+    } catch (error) {
+      console.error('Error loading pause state:', error);
+    }
+  };
+
+  const togglePause = async () => {
+    if (!conversationId) return;
+    
+    const newPauseState = !isPaused;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_conversations')
+        .update({ is_paused: newPauseState })
+        .eq('id', conversationId);
+      
+      if (error) throw error;
+      
+      setIsPaused(newPauseState);
+      
+      toast[newPauseState ? 'warning' : 'success'](
+        newPauseState ? "⏸️ Conversazione in Pausa" : "▶️ Conversazione Ripresa",
+        {
+          description: newPauseState 
+            ? "L'AI non risponderà fino alla ripresa" 
+            : "L'AI può nuovamente rispondere"
+        }
+      );
+    } catch (error) {
+      console.error('Error toggling pause:', error);
+      toast.error("Errore", {
+        description: "Impossibile cambiare stato pausa"
+      });
+    }
+  };
 
   return (
     <div className={cn(
@@ -88,6 +145,20 @@ export const BarChatAudioControls = ({
             isDisabled={isAISpeaking}
           />
         )}
+
+        {/* Pause/Resume Button */}
+        <Button
+          variant={isPaused ? "default" : "outline"}
+          size="icon"
+          onClick={togglePause}
+          className={cn(
+            "h-12 w-12 rounded-full transition-all",
+            isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
+          )}
+          title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
+        >
+          {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+        </Button>
 
         {/* Interrupt Button - visibile solo quando AI parla */}
         <InterruptButton

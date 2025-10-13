@@ -141,6 +141,23 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     );
   }
 
+  // Custom Tooltip pulito senza sfondi
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    
+    return (
+      <div className="flex flex-col gap-1">
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2">
+            <span className="font-bold text-green-600">
+              {entry.name}: {formatTokens(entry.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Modalità espansa (normale)
   const chartData = tokenData.map(d => ({
     agent: d.agent,
@@ -163,7 +180,7 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
           <BarChart data={chartData}>
             <XAxis dataKey="agent" />
             <YAxis />
-            <Tooltip />
+            <Tooltip content={<CustomTooltip />} cursor={false} />
             <Bar dataKey="Token IN" fill="hsl(142, 76%, 70%)" radius={[8, 8, 0, 0]} />
             <Bar dataKey="Token OUT" fill="hsl(142, 76%, 40%)" radius={[8, 8, 0, 0]} />
           </BarChart>

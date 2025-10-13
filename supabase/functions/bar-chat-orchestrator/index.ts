@@ -183,13 +183,17 @@ serve(async (req) => {
       .order('created_at', { ascending: true });
 
     // 🎯 Apply economy mode: usa content_summary per messaggi AI quando disponibile
+    // CRITICO: i messaggi utente NON vengono MAI riassunti per preservare menzioni dirette
     const historyMessages = (messages || []).map((msg: any) => {
       let messageContent = msg.content;
       
-      // Economy mode: usa riassunto per messaggi AI (NON per messaggi utente)
+      // Economy mode: usa riassunto SOLO per messaggi AI (preserva menzioni utente)
       if (useEconomyMode && msg.sender_type !== 'user' && msg.is_summary_available && msg.content_summary) {
         messageContent = msg.content_summary;
-        console.log(`📝 [${msg.sender_name}] summary: ${messageContent.substring(0, 50)}...`);
+        console.log(`📝 [Economy] ${msg.sender_name} summary: ${messageContent.substring(0, 50)}...`);
+      } else if (msg.sender_type === 'user') {
+        // Log esplicito: messaggi utente sempre completi (preserva "@gpt", "claude?", etc.)
+        console.log(`💬 [User] Preservato contenuto completo (${messageContent.length} chars) - menzioni intatte`);
       }
       
       return {

@@ -55,8 +55,8 @@ export function UserLanguageSettings() {
     translationMode: profile?.translationMode || 'none',
     autoTranslateWriting: profile?.autoTranslateWriting || false,
     enableAutoSpeaker: profile?.enableAutoSpeaker || false,
-    ttsEngine: profile?.ttsEngine || 'native',
-    preferredElevenLabsVoice: profile?.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
+    ttsEngine: (profile as any)?.ttsEngine || 'native',
+    preferredElevenLabsVoice: (profile as any)?.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
   });
 
   const handleOpen = (isOpen: boolean) => {
@@ -68,8 +68,8 @@ export function UserLanguageSettings() {
         translationMode: profile.translationMode,
         autoTranslateWriting: profile.autoTranslateWriting,
         enableAutoSpeaker: profile.enableAutoSpeaker,
-        ttsEngine: profile.ttsEngine || 'native',
-        preferredElevenLabsVoice: profile.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
+        ttsEngine: (profile as any)?.ttsEngine || 'native',
+        preferredElevenLabsVoice: (profile as any)?.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
       });
     }
     setOpen(isOpen);

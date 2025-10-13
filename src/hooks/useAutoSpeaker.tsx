@@ -77,14 +77,14 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     const language = profile.readingLanguage || 'it';
 
     console.log('🔊 useAutoSpeaker - Avvio TTS:', {
-      engine: profile.ttsEngine || 'native',
+      engine: (profile as any)?.ttsEngine || 'native',
       messageId: latestMessage.id,
       language,
       isTranslated: !!translatedText
     });
 
     // ========= ROUTING TTS ENGINE =========
-    const ttsEngine = profile.ttsEngine || 'native';
+    const ttsEngine = (profile as any)?.ttsEngine || 'native';
 
     if (ttsEngine === 'elevenlabs') {
       // === ElevenLabs TTS ===
@@ -93,7 +93,7 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
       elevenLabsTTS.speak({
         text: textToSpeak,
         language,
-        voiceId: profile.preferredElevenLabsVoice,
+        voiceId: (profile as any)?.preferredElevenLabsVoice,
         onStart: () => setIsSpeaking(true),
         onEnd: () => setIsSpeaking(false),
         onError: (error) => {

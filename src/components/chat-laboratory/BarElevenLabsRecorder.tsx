@@ -56,6 +56,8 @@ export const BarElevenLabsRecorder = ({
       // Mostra widget (se non esiste, viene creato da useElevenLabsWidget)
       if (widget) {
         widget.style.display = 'block';
+        setIsActive(true);
+        console.log('🎙️ Widget ElevenLabs attivato');
       } else {
         // Trigger mount del widget
         const config = {
@@ -64,13 +66,35 @@ export const BarElevenLabsRecorder = ({
         };
         localStorage.setItem('voice_agent_config', JSON.stringify(config));
         
-        // Il widget verrà montato da useElevenLabsWidget
+        // Dispatch evento custom per triggerare reload immediato
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'voice_agent_config',
+          newValue: JSON.stringify(config)
+        }));
+        
         toast.info("Attivazione widget...", {
           description: "Il widget vocale si sta caricando"
         });
+        
+        // Verifica dopo 2 secondi se il widget è stato montato
+        setTimeout(() => {
+          const widgetCheck = document.querySelector('elevenlabs-convai') as HTMLElement;
+          if (widgetCheck) {
+            widgetCheck.style.display = 'block';
+            setIsActive(true);
+            toast.success("Widget pronto!", {
+              description: "Puoi iniziare a parlare"
+            });
+          } else {
+            toast.error("Errore caricamento", {
+              description: "Il widget non si è caricato correttamente"
+            });
+            setIsActive(false);
+          }
+        }, 2000);
+        
+        return;
       }
-      setIsActive(true);
-      console.log('🎙️ Widget ElevenLabs attivato');
     }
   };
 

@@ -94,10 +94,20 @@ export const useElevenLabsWidget = () => {
       }
     };
 
+    // Listener per cambiamenti config
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'voice_agent_config') {
+        console.log('Config changed, reloading widget');
+        loadAndMountWidget();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
     loadAndMountWidget();
 
     // Cleanup: rimuovi widget quando componente viene smontato
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       const widget = document.querySelector('elevenlabs-convai');
       if (widget) {
         widget.remove();

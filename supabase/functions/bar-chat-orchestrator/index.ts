@@ -310,6 +310,19 @@ serve(async (req) => {
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
+    // ✅ Moderazione lunghezza interventi (prompt engineering comportamentale)
+    composedPrompt += `
+=== STILE CONVERSAZIONE ===
+🍺 Sei al bar con colleghi esperti, non in aula universitaria.
+- Interventi rapidi e diretti: concetto chiave → esempio concreto → passa la palla
+- Se qualcuno monopolizza, gli altri si annoiano e cambiano discorso
+- Evita paragrafi lunghi: nessuno legge saggi al bar
+- Pensa "caffè veloce" non "conferenza TED"
+
+✅ Buon intervento: "Per la logistica, suggerisco hub regionali. Esempio: Milano-Roma riduce costi 30%. Vittorio, tu come gestiresti i picchi?"
+❌ Male: *tre paragrafi su supply chain theory con citazioni accademiche*
+\n\n`;
+
     console.log('📝 Prompt composto (primi 200 char):', composedPrompt.substring(0, 200) + '...');
 
     // Prepare conversation history
@@ -410,6 +423,33 @@ serve(async (req) => {
 
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
+
+    // ✅ Soft truncation fallback: solo per risposte eccessive (>150 parole)
+    const wordCount = aiResponse.trim().split(/\s+/).length;
+    console.log(`📊 Risposta: ${wordCount} parole`);
+
+    if (wordCount > 150) {
+      console.warn(`⚠️ ${selectedParticipant.name}: ${wordCount} parole, troncamento a frase completa`);
+      
+      const sentences = aiResponse.match(/[^.!?]+[.!?]+/g) || [];
+      let truncated = '';
+      let currentWords = 0;
+      
+      for (const sentence of sentences) {
+        const sentenceWords = sentence.trim().split(/\s+/).length;
+        if (currentWords + sentenceWords <= 120) {
+          truncated += sentence;
+          currentWords += sentenceWords;
+        } else {
+          break;
+        }
+      }
+      
+      if (truncated.length > 0) {
+        aiResponse = truncated.trim();
+        console.log(`✂️ Troncato a ${currentWords} parole (preservando coerenza)`);
+      }
+    }
 
     // Mappa provider type a sender_type compatibile col DB
     const senderTypeMap: Record<string, string> = {

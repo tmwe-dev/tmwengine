@@ -59,7 +59,6 @@ serve(async (req) => {
       .from('config_ai')
       .select('api_key')
       .eq('provider', 'openai')
-      .eq('attivo', true)
       .single();
 
     if (configError || !configData?.api_key) {

@@ -78,6 +78,7 @@ const ChatLaboratory = () => {
   const [prompt, setPrompt] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -460,11 +461,18 @@ const ChatLaboratory = () => {
   const handleSubmit = async (e?: React.FormEvent, overrideText?: string) => {
     e?.preventDefault();
     
+    // ✅ Previeni invii multipli concorrenti
+    if (isSubmitting) {
+      console.log('⏸️ Submit già in corso, ignoro richiesta duplicata');
+      return;
+    }
+    
     // ✅ Usa overrideText se fornito (da trascrizione), altrimenti usa prompt
     const currentPrompt = overrideText || prompt.trim();
     if (!currentPrompt) return;
 
     setIsLoading(true);
+    setIsSubmitting(true);
     setPrompt(''); // ✅ Pulisci sempre textarea
 
     try {
@@ -640,6 +648,7 @@ const ChatLaboratory = () => {
       // });
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -1283,7 +1292,7 @@ const ChatLaboratory = () => {
                 <Button 
                   type="submit" 
                   size="icon"
-                  disabled={isLoading || (!prompt.trim() && recordingState === 'idle')}
+                  disabled={isSubmitting || isLoading || (!prompt.trim() && recordingState === 'idle')}
                   className="h-auto px-3 md:px-4 shrink-0"
                   onClick={(e) => {
                     if (recordingState !== 'idle' && recordingState !== 'processing') {

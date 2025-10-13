@@ -37,6 +37,7 @@ import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
 import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBanner';
 import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
+import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
 
 interface Message {
   id: string;
@@ -1454,6 +1455,17 @@ const ChatLaboratory = () => {
                 </Button>
             </div>
           </form>
+
+          {/* Bar Mode Toggle - Desktop Quick Access */}
+          {!isMobile && (
+            <div className="mt-2 flex justify-center">
+              <BarModeToggle
+                conversationId={currentConversationId}
+                isBarMode={isBarMode}
+                onToggle={setIsBarMode}
+              />
+            </div>
+          )}
 
           {/* Bar Chat Audio Controls - Inline quando Bar Mode attivo */}
           {isBarMode && (

@@ -354,12 +354,6 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
 
     // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
     let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
-
-  const stylePrompt = conversationStylePrompts[conversationStyle as keyof typeof conversationStylePrompts] || 
-    conversationStylePrompts.colleagues;
-
-  // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
-  let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
     
     if (baseSections && baseSections.length > 0) {
       composedPrompt += '=== CONTESTO BASE ===\n';

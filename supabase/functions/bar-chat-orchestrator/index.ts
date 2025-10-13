@@ -6,6 +6,76 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============ HELPER FUNCTIONS PER RESILIENZA API ============
+
+/**
+ * Fetch con timeout usando AbortController
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 45000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`⏱️ Request timeout dopo ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Retry con exponential backoff e jitter
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: { retries?: number; baseDelayMs?: number } = {}
+): Promise<T> {
+  const { retries = 2, baseDelayMs = 300 } = options;
+  let attempt = 0;
+  
+  while (true) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      const isRetriable = /429|5\d\d|timeout/i.test(errorMsg);
+      
+      if (!isRetriable || attempt >= retries) {
+        throw error;
+      }
+      
+      const backoff = baseDelayMs * Math.pow(2, attempt);
+      const jitter = Math.floor(Math.random() * 100);
+      const waitTime = backoff + jitter;
+      
+      console.log(`⚠️ Tentativo ${attempt + 1}/${retries} fallito: ${errorMsg}. Retry tra ${waitTime}ms...`);
+      await delay(waitTime);
+      attempt++;
+    }
+  }
+}
+
+/**
+ * Utility per delay
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ============================================================
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -191,81 +261,138 @@ serve(async (req) => {
     // Route to appropriate AI provider
     if ((selectedParticipant.type === 'anthropic' || selectedParticipant.type === 'claude') && anthropicConfig?.api_key) {
       console.log('🤖 Calling Anthropic (Claude)...');
-      const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicConfig.api_key,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 4096,
-          messages: conversationHistory.filter(m => m.role !== 'system'),
-          system: composedPrompt
-        })
-      });
-
-      if (!anthropicResponse.ok) {
-        const errorText = await anthropicResponse.text();
-        console.error('❌ Anthropic error:', errorText);
-        throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
-      }
-
-      const anthropicData = await anthropicResponse.json();
-      aiResponse = anthropicData.content[0].text;
-      tokenInput = anthropicData.usage?.input_tokens || 0;
-      tokenOutput = anthropicData.usage?.output_tokens || 0;
-    } 
+      
+      const result = await withRetry(async () => {
+        const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicConfig.api_key,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-5',
+            max_tokens: 4096,
+            messages: conversationHistory.filter(m => m.role !== 'system'),
+            system: composedPrompt
+          })
+        }, 43000);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Anthropic error ${response.status}:`, errorText);
+          
+          if (response.status === 429) throw new Error('429');
+          if (response.status >= 500) throw new Error('5xx');
+          throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return {
+          content: data.content[0].text,
+          tokensIn: data.usage?.input_tokens || 0,
+          tokensOut: data.usage?.output_tokens || 0,
+          duration: Date.now() - startTime
+        };
+      }, { retries: 2, baseDelayMs: 300 });
+      
+      aiResponse = result.content;
+      tokenInput = result.tokensIn;
+      tokenOutput = result.tokensOut;
+      console.log(`✅ Claude: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
+    }
     else if ((selectedParticipant.type === 'openai' || selectedParticipant.type === 'chatgpt') && openaiConfig?.api_key) {
       console.log('🤖 Calling OpenAI (GPT)...');
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiConfig.api_key}`
-        },
-        body: JSON.stringify({
-          model: openaiConfig.modello || 'gpt-5-2025-08-07',
+      
+      const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
+      const isGPT5OrNewer = modelName.startsWith('gpt-5') || modelName.startsWith('o3') || modelName.startsWith('o4');
+      
+      console.log(`🎯 Modello: ${modelName}, GPT-5+: ${isGPT5OrNewer ? 'SÌ' : 'NO'}`);
+      
+      const result = await withRetry(async () => {
+        const body: any = {
+          model: modelName,
           messages: conversationHistory
-        })
-      });
-
-      if (!openaiResponse.ok) {
-        const errorText = await openaiResponse.text();
-        console.error('❌ OpenAI error:', errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
-      }
-
-      const openaiData = await openaiResponse.json();
-      aiResponse = openaiData.choices[0].message.content;
-      tokenInput = openaiData.usage?.prompt_tokens || 0;
-      tokenOutput = openaiData.usage?.completion_tokens || 0;
+        };
+        
+        if (isGPT5OrNewer) {
+          body.max_completion_tokens = 4096;
+        } else {
+          body.max_tokens = 4096;
+          body.temperature = 0.7;
+        }
+        
+        const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiConfig.api_key}`
+          },
+          body: JSON.stringify(body)
+        }, 43000);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ OpenAI error ${response.status}:`, errorText);
+          
+          if (response.status === 429) throw new Error('429');
+          if (response.status >= 500) throw new Error('5xx');
+          throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return {
+          content: data.choices[0].message.content,
+          tokensIn: data.usage?.prompt_tokens || 0,
+          tokensOut: data.usage?.completion_tokens || 0,
+          duration: Date.now() - startTime
+        };
+      }, { retries: 2, baseDelayMs: 300 });
+      
+      aiResponse = result.content;
+      tokenInput = result.tokensIn;
+      tokenOutput = result.tokensOut;
+      console.log(`✅ ChatGPT: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
     else if ((selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') && LOVABLE_API_KEY) {
       console.log('🤖 Calling Lovable AI (Gemini)...');
-      const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: conversationHistory
-        })
-      });
-
-      if (!lovableResponse.ok) {
-        const errorText = await lovableResponse.text();
-        console.error('❌ Lovable AI error:', errorText);
-        throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
-      }
-
-      const lovableData = await lovableResponse.json();
-      aiResponse = lovableData.choices[0].message.content;
-      tokenInput = lovableData.usage?.prompt_tokens || 0;
-      tokenOutput = lovableData.usage?.completion_tokens || 0;
+      
+      const result = await withRetry(async () => {
+        const response = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: conversationHistory
+          })
+        }, 43000);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Lovable AI error ${response.status}:`, errorText);
+          
+          if (response.status === 429) throw new Error('429');
+          if (response.status === 402) throw new Error('Payment Required');
+          if (response.status >= 500) throw new Error('5xx');
+          throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return {
+          content: data.choices[0].message.content,
+          tokensIn: data.usage?.prompt_tokens || 0,
+          tokensOut: data.usage?.completion_tokens || 0,
+          duration: Date.now() - startTime
+        };
+      }, { retries: 2, baseDelayMs: 300 });
+      
+      aiResponse = result.content;
+      tokenInput = result.tokensIn;
+      tokenOutput = result.tokensOut;
+      console.log(`✅ Gemini: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
     else {
       throw new Error(`No API key available for ${selectedParticipant.type}`);

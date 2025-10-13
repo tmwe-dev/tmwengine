@@ -30,6 +30,7 @@ export const BarFullDuplexRecorder = ({
   const chunksRef = useRef<Blob[]>([]);
   const vadTimerRef = useRef<NodeJS.Timeout | null>(null);
   const silenceStartRef = useRef<number | null>(null);
+  const isSpeakingRef = useRef(false); // ✅ Ref per VAD - evita closure stale
   
   const { toast } = useToast();
 
@@ -86,8 +87,8 @@ export const BarFullDuplexRecorder = ({
       mediaRecorder.start(1000); // Chunk ogni secondo come il microfono funzionante
       console.log('🎤 MediaRecorder.start() chiamato, stato:', mediaRecorder.state);
 
-      // Start VAD monitoring
-      startVADMonitoring();
+      // ❌ NON chiamare startVADMonitoring qui (race condition!)
+      // startVADMonitoring() sarà chiamato DOPO setIsActive(true)
 
       return true;
     } catch (error) {
@@ -110,7 +111,10 @@ export const BarFullDuplexRecorder = ({
     const dataArray = new Uint8Array(bufferLength);
 
     const detectVoice = async () => {
-      if (!isActive) return;
+      if (!isActive) {
+        console.log('❌ VAD: isActive è FALSE, esco dal loop');
+        return;
+      }
 
       analyser.getByteFrequencyData(dataArray);
       
@@ -118,26 +122,42 @@ export const BarFullDuplexRecorder = ({
       const sum = dataArray.reduce((acc, val) => acc + val * val, 0);
       const rms = Math.sqrt(sum / dataArray.length) / 255;
       
+      // ✅ LOG CRITICO ogni ~500ms (1 log ogni 30 frame)
+      if (Math.random() < 0.03) {
+        console.log('🎚️ VAD:', { 
+          rms: rms.toFixed(3), 
+          isSpeaking: isSpeakingRef.current, 
+          threshold: SILENCE_THRESHOLD 
+        });
+      }
+      
       setAudioLevel(rms);
 
-      // VAD Logic - semplificata come il microfono funzionante
+      // VAD Logic - usa REF invece di state per evitare closure stale
       if (rms > SILENCE_THRESHOLD) {
         // 🗣️ Parlato rilevato
+        if (!isSpeakingRef.current) {
+          console.log('🗣️ VAD: Parlato START');
+        }
+        isSpeakingRef.current = true;
         setIsSpeaking(true);
         silenceStartRef.current = null;
       } else {
         // 🤫 Silenzio rilevato
-        if (isSpeaking) {
+        if (isSpeakingRef.current) {
           if (!silenceStartRef.current) {
+            console.log('🤫 VAD: Silenzio START, countdown 3s...');
             silenceStartRef.current = Date.now();
           }
 
           const silenceDuration = Date.now() - silenceStartRef.current;
+          console.log('⏱️ VAD: Silenzio da', (silenceDuration / 1000).toFixed(1), 's');
           
           if (silenceDuration >= SILENCE_DURATION) {
             console.log('🎤 Fine parlato rilevato, processo trascrizione...');
             
             // 1️⃣ FERMA completamente il VAD
+            isSpeakingRef.current = false;
             setIsSpeaking(false);
             silenceStartRef.current = null;
             
@@ -252,6 +272,7 @@ export const BarFullDuplexRecorder = ({
       if (success) {
         setIsActive(true);
         console.log('✅ Full-duplex ATTIVO');
+        startVADMonitoring(); // ✅ CHIAMARE QUI dopo setIsActive(true)!
         toast({
           title: "🎙️ Modalità Full-Duplex Attiva",
           description: "Parla liberamente, il sistema rileverà automaticamente quando finisci.",
@@ -263,6 +284,7 @@ export const BarFullDuplexRecorder = ({
   const stopFullDuplex = () => {
     console.log('⏹️ Stop Full-Duplex');
     setIsActive(false);
+    isSpeakingRef.current = false; // ✅ Reset ref
     setIsSpeaking(false);
     setAudioLevel(0);
 

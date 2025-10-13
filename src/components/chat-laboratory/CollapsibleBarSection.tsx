@@ -53,6 +53,11 @@ export const CollapsibleBarSection = ({
       <CollapsibleContent>
         {isBarMode && (
           <div className="space-y-3 mt-2">
+            {/* Controlli conversazione: Argomento, Ritmo, Interruzioni, Autoplay */}
+            <div className="flex justify-center">
+              <BarModeControls conversationId={conversationId} />
+            </div>
+            
             {/* Knowledge Base selector */}
             <div className="flex justify-center">
               <KnowledgeBaseSelector

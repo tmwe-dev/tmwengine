@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BarElevenLabsRecorderProps {
   conversationId: string | null;
@@ -48,8 +49,8 @@ export const BarElevenLabsRecorder = ({
     onMessage: (message) => {
       console.log('📨 Messaggio ElevenLabs:', message);
       
-      // Intercetta trascrizioni utente
-      if (message.type === 'user_transcript' && message.message) {
+      // Intercetta trascrizioni utente (source = 'user')
+      if (message.source === 'user' && message.message) {
         console.log('🎯 Trascrizione utente:', message.message);
         onTranscriptionComplete(message.message);
       }
@@ -57,7 +58,7 @@ export const BarElevenLabsRecorder = ({
     onError: (error) => {
       console.error('❌ Errore ElevenLabs:', error);
       toast.error("Errore connessione", {
-        description: error.message || "Impossibile connettersi"
+        description: typeof error === 'string' ? error : "Impossibile connettersi"
       });
       setIsActive(false);
     }
@@ -81,9 +82,19 @@ export const BarElevenLabsRecorder = ({
         // Richiedi permesso microfono
         await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // Avvia sessione
+        // Ottieni signed URL tramite edge function
+        const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
+          body: { agentId }
+        });
+
+        if (error) throw error;
+        if (!data?.signedUrl) throw new Error('No signed URL returned');
+
+        console.log('🔐 Signed URL ottenuto');
+        
+        // Avvia sessione con signed URL
         const sessionId = await conversation.startSession({
-          agentId: agentId
+          signedUrl: data.signedUrl
         });
         
         console.log('✅ Sessione ElevenLabs avviata:', sessionId);

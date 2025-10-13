@@ -23,10 +23,25 @@ serve(async (req) => {
 
     console.log(`🔊 Generating speech with voice: ${voiceId}, model: ${modelId}`);
 
-    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY');
-    if (!elevenLabsApiKey) {
-      throw new Error('ELEVENLABS_API_KEY not configured');
+    // Leggi API key dal database CRM (voice_agent_config)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.58.0');
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+
+    const { data: config, error: configError } = await supabase
+      .from('voice_agent_config')
+      .select('elevenlabs_api_key')
+      .eq('enabled', true)
+      .single();
+
+    if (configError || !config?.elevenlabs_api_key) {
+      console.error('❌ ElevenLabs API key non trovata in voice_agent_config:', configError);
+      throw new Error('ElevenLabs API key non configurata nel CRM');
     }
+
+    const elevenLabsApiKey = config.elevenlabs_api_key;
 
     // Call ElevenLabs TTS API
     const response = await fetch(

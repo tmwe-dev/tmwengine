@@ -37,11 +37,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.error('[RAG Search] OPENAI_API_KEY not configured');
-      throw new Error('OPENAI_API_KEY not configured');
+    // Leggi API key dal database CRM (config_ai)
+    const { data: aiConfig, error: configError } = await supabase
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'openai')
+      .eq('attivo', true)
+      .single();
+
+    if (configError || !aiConfig?.api_key) {
+      console.error('[RAG Search] OpenAI API key non trovata in config_ai:', configError);
+      throw new Error('OpenAI API key non configurata nel CRM');
     }
+
+    const openaiApiKey = aiConfig.api_key;
 
     // 1. Genera embedding della query
     console.log('[RAG Search] Generating query embedding');

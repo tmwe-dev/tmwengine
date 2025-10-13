@@ -13,13 +13,29 @@ serve(async (req) => {
   try {
     console.log('🔍 Checking AI services status...');
 
+    // Leggi API keys dal database CRM (config_ai)
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.58.0');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: aiConfigs } = await supabase
+      .from('config_ai')
+      .select('provider, api_key')
+      .eq('attivo', true);
+
+    const anthropicKey = aiConfigs?.find(c => c.provider === 'anthropic')?.api_key;
+    const openaiKey = aiConfigs?.find(c => c.provider === 'openai')?.api_key;
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY'); // Questa rimane da Supabase Secrets (corretto)
+
     // Test each service with timeout
     const timeout = 5000;
     
     const [anthropicStatus, openaiStatus, lovableStatus] = await Promise.all([
-      checkAnthropic(timeout),
-      checkOpenAI(timeout),
-      checkLovableAI(timeout)
+      checkAnthropic(timeout, anthropicKey),
+      checkOpenAI(timeout, openaiKey),
+      checkLovableAI(timeout, lovableKey)
     ]);
 
     const result = {
@@ -44,10 +60,9 @@ serve(async (req) => {
   }
 });
 
-async function checkAnthropic(timeoutMs: number): Promise<boolean> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+async function checkAnthropic(timeoutMs: number, apiKey: string | undefined): Promise<boolean> {
   if (!apiKey) {
-    console.log('⚠️ ANTHROPIC_API_KEY not configured');
+    console.log('⚠️ Anthropic API key non configurata in config_ai');
     return false;
   }
 
@@ -82,10 +97,9 @@ async function checkAnthropic(timeoutMs: number): Promise<boolean> {
   }
 }
 
-async function checkOpenAI(timeoutMs: number): Promise<boolean> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
+async function checkOpenAI(timeoutMs: number, apiKey: string | undefined): Promise<boolean> {
   if (!apiKey) {
-    console.log('⚠️ OPENAI_API_KEY not configured');
+    console.log('⚠️ OpenAI API key non configurata in config_ai');
     return false;
   }
 
@@ -119,10 +133,9 @@ async function checkOpenAI(timeoutMs: number): Promise<boolean> {
   }
 }
 
-async function checkLovableAI(timeoutMs: number): Promise<boolean> {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY');
+async function checkLovableAI(timeoutMs: number, apiKey: string | undefined): Promise<boolean> {
   if (!apiKey) {
-    console.log('⚠️ LOVABLE_API_KEY not configured');
+    console.log('⚠️ LOVABLE_API_KEY non configurata (auto-provisionata da Supabase)');
     return false;
   }
 

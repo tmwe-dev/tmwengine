@@ -26,22 +26,25 @@ window.ElevenLabsConvaiLoader = {
   }
 };
 
-// Funzione globale per montare il widget
-window.mountElevenLabsConvai = function(agentId) {
-  console.log('Mounting ElevenLabs ConvAI widget with agentId:', agentId);
+// Funzione globale per montare il widget con ID univoco
+window.mountElevenLabsConvai = function(agentId, widgetId = 'global-widget') {
+  console.log(`Mounting ElevenLabs ConvAI widget with agentId: ${agentId}, widgetId: ${widgetId}`);
   
-  // Rimuovi widget esistente se presente
-  const existing = document.querySelector('elevenlabs-convai');
+  // Rimuovi widget esistente con lo stesso ID
+  const existing = document.querySelector(`elevenlabs-convai#${widgetId}`);
   if (existing) {
+    console.log(`Removing existing widget: ${widgetId}`);
     existing.remove();
   }
 
-  // Crea nuovo widget
+  // Crea nuovo widget con ID univoco
   const widget = document.createElement('elevenlabs-convai');
   widget.setAttribute('agent-id', agentId);
+  widget.id = widgetId;
   document.body.appendChild(widget);
   
-  console.log('ElevenLabs ConvAI widget mounted');
+  console.log(`ElevenLabs ConvAI widget mounted with ID: ${widgetId}`);
+  return widget;
 };
 
 // Client tools globali per interazione con il CRM e Email

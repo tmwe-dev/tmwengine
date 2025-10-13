@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useBarVoiceWidget } from '@/hooks/useBarVoiceWidget';
 
 interface BarElevenLabsRecorderProps {
   conversationId: string | null;
@@ -19,6 +20,9 @@ export const BarElevenLabsRecorder = ({
 }: BarElevenLabsRecorderProps) => {
   const [isActive, setIsActive] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
+
+  // Hook per gestire widget Bar dedicato
+  useBarVoiceWidget(isActive, agentId);
 
   // Carica Agent ID da voice_agent_config in localStorage
   useEffect(() => {
@@ -43,59 +47,9 @@ export const BarElevenLabsRecorder = ({
       return;
     }
 
-    const widget = document.querySelector('elevenlabs-convai') as HTMLElement;
-    
-    if (isActive) {
-      // Nascondi widget
-      if (widget) {
-        widget.style.display = 'none';
-      }
-      setIsActive(false);
-      console.log('📴 Widget ElevenLabs nascosto');
-    } else {
-      // Mostra widget (se non esiste, viene creato da useElevenLabsWidget)
-      if (widget) {
-        widget.style.display = 'block';
-        setIsActive(true);
-        console.log('🎙️ Widget ElevenLabs attivato');
-      } else {
-        // Trigger mount del widget
-        const config = {
-          agentId: agentId,
-          enabled: true
-        };
-        localStorage.setItem('voice_agent_config', JSON.stringify(config));
-        
-        // Dispatch evento custom per triggerare reload immediato
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'voice_agent_config',
-          newValue: JSON.stringify(config)
-        }));
-        
-        toast.info("Attivazione widget...", {
-          description: "Il widget vocale si sta caricando"
-        });
-        
-        // Verifica dopo 2 secondi se il widget è stato montato
-        setTimeout(() => {
-          const widgetCheck = document.querySelector('elevenlabs-convai') as HTMLElement;
-          if (widgetCheck) {
-            widgetCheck.style.display = 'block';
-            setIsActive(true);
-            toast.success("Widget pronto!", {
-              description: "Puoi iniziare a parlare"
-            });
-          } else {
-            toast.error("Errore caricamento", {
-              description: "Il widget non si è caricato correttamente"
-            });
-            setIsActive(false);
-          }
-        }, 2000);
-        
-        return;
-      }
-    }
+    // Toggle stato - il widget viene gestito da useBarVoiceWidget
+    setIsActive(!isActive);
+    console.log(isActive ? '📴 Widget Bar terminato' : '🎙️ Widget Bar avviato');
   };
 
   return (
@@ -131,10 +85,10 @@ export const BarElevenLabsRecorder = ({
         </span>
       )}
 
-      {/* Nota: il widget ElevenLabs viene già montato da useElevenLabsWidget */}
+      {/* Widget Bar Mode gestito da useBarVoiceWidget */}
       {isActive && (
         <span className="text-xs text-muted-foreground">
-          Il widget vocale è attivo nella pagina
+          Widget Bar Mode attivo
         </span>
       )}
     </div>

@@ -76,10 +76,14 @@ export const useElevenLabsWidget = () => {
 
         await loadScript();
 
-        // 4. Monta widget
+        // 4. Monta widget GLOBALE (nascosto di default)
         if (window.mountElevenLabsConvai) {
-          window.mountElevenLabsConvai(config.agentId);
-          console.log('Widget mounted successfully');
+          const widget = window.mountElevenLabsConvai(config.agentId, 'global-widget');
+          // Nascondi il widget globale di default
+          if (widget) {
+            widget.style.display = 'none';
+          }
+          console.log('Global widget mounted (hidden by default)');
         } else {
           throw new Error('mountElevenLabsConvai function not available');
         }
@@ -105,13 +109,26 @@ export const useElevenLabsWidget = () => {
     window.addEventListener('storage', handleStorageChange);
     loadAndMountWidget();
 
+    // Funzione globale per toggle visibilità widget globale
+    window.toggleGlobalVoiceWidget = () => {
+      const widget = document.querySelector('#global-widget') as HTMLElement;
+      if (widget) {
+        const isHidden = widget.style.display === 'none';
+        widget.style.display = isHidden ? 'block' : 'none';
+        console.log(`Global widget ${isHidden ? 'shown' : 'hidden'}`);
+        return !isHidden;
+      }
+      return false;
+    };
+
     // Cleanup: rimuovi widget quando componente viene smontato
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      const widget = document.querySelector('elevenlabs-convai');
+      const widget = document.querySelector('#global-widget');
       if (widget) {
         widget.remove();
       }
+      delete window.toggleGlobalVoiceWidget;
     };
   }, [toast]);
 };
@@ -123,7 +140,8 @@ declare global {
       scriptLoaded: boolean;
       loadScript: (callback?: () => void) => void;
     };
-    mountElevenLabsConvai: (agentId: string) => void;
+    mountElevenLabsConvai: (agentId: string, widgetId?: string) => HTMLElement | void;
+    toggleGlobalVoiceWidget?: () => boolean;
     executeAppCommand: (params: any) => any;
     read_page_content: () => any;
   }

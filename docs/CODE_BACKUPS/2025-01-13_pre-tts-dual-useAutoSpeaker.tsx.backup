@@ -1,6 +1,12 @@
+// ============================================
+// BACKUP PRE-IMPLEMENTAZIONE TTS DUALE
+// Data: 2025-01-13
+// File Originale: src/hooks/useAutoSpeaker.tsx
+// Motivo: Aggiunta sistema ElevenLabs TTS parallelo
+// ============================================
+
 import { useEffect, useRef, useState } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 
 interface Message {
   id: string;
@@ -22,9 +28,6 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
-  // Hook ElevenLabs TTS
-  const elevenLabsTTS = useElevenLabsTTS();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -72,81 +75,62 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     // Marca il messaggio come già letto
     lastMessageIdRef.current = latestMessage.id;
 
-    // Usa traduzione se disponibile, altrimenti originale
-    const textToSpeak = translatedText || latestMessage.content;
-    const language = profile.readingLanguage || 'it';
-
-    console.log('🔊 useAutoSpeaker - Avvio TTS:', {
-      engine: profile.ttsEngine || 'native',
-      messageId: latestMessage.id,
-      language,
-      isTranslated: !!translatedText
-    });
-
-    // ========= ROUTING TTS ENGINE =========
-    const ttsEngine = profile.ttsEngine || 'native';
-
-    if (ttsEngine === 'elevenlabs') {
-      // === ElevenLabs TTS ===
-      elevenLabsTTS.stop();
-      
-      elevenLabsTTS.speak({
-        text: textToSpeak,
-        language,
-        voiceId: profile.preferredElevenLabsVoice,
-        onStart: () => setIsSpeaking(true),
-        onEnd: () => setIsSpeaking(false),
-        onError: (error) => {
-          console.error('❌ ElevenLabs fallito, fallback su native:', error);
-          speakWithNative(textToSpeak, language);
-        }
-      });
-
-    } else {
-      // === SpeechSynthesis nativo ===
-      speakWithNative(textToSpeak, language);
-    }
-
-  }, [messages, currentUserId, profile, translatedMessages, userProfiles, elevenLabsTTS]);
-
-  // ========= FUNZIONE HELPER: TTS NATIVO =========
-  const speakWithNative = (text: string, language: string) => {
-    if (!synthRef.current) return;
-
+    // Cancella eventuali letture in corso
     synthRef.current.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
+    // Usa traduzione se disponibile, altrimenti originale
+    const textToSpeak = translatedText || latestMessage.content;
+
+    console.log('🔊 useAutoSpeaker - Parto immediatamente:', {
+      messageId: latestMessage.id,
+      textToSpeak,
+      isTranslated: !!translatedText,
+      needsTranslation
+    });
+
+    // Crea utterance
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     
+    // Imposta la lingua
+    utterance.lang = profile.readingLanguage || 'it-IT';
+    
+    // Cerca una voce appropriata
     const voices = synthRef.current.getVoices();
-    const voice = voices.find(v => v.lang.startsWith(language)) 
+    const voice = voices.find(v => v.lang.startsWith(profile.readingLanguage)) 
                   || voices.find(v => v.lang.startsWith('it'));
     
-    if (voice) utterance.voice = voice;
+    if (voice) {
+      utterance.voice = voice;
+    }
 
+    // Imposta velocità e pitch
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
+    // Eventi
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
     utterance.onerror = (event) => {
       console.error('Speech synthesis error:', event);
       setIsSpeaking(false);
     };
 
+    // Pronuncia
     synthRef.current.speak(utterance);
-  };
+  }, [messages, currentUserId, profile, translatedMessages, userProfiles]);
 
   const stopSpeaking = () => {
-    // Stop native
     if (synthRef.current) {
       synthRef.current.cancel();
+      setIsSpeaking(false);
     }
-    // Stop ElevenLabs
-    elevenLabsTTS.stop();
-    
-    setIsSpeaking(false);
   };
 
   return { stopSpeaking, isSpeaking };

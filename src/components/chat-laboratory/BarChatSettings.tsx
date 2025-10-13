@@ -14,7 +14,7 @@ interface BarChatSettingsProps {
 export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSettingsProps) => {
   const [conversationStyle, setConversationStyle] = useState('colleagues');
   const [vadDuration, setVadDuration] = useState(3000);
-  const [responseMode, setResponseMode] = useState('sequential');
+  const [responseMode, setResponseMode] = useState('single');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
       if (data) {
         setConversationStyle(data.conversation_style || 'colleagues');
         setVadDuration(data.vad_silence_duration || 3000);
-        setResponseMode(data.response_mode || 'sequential');
+        setResponseMode(data.response_mode || 'single');
       }
     } catch (error) {
       console.error('Error loading bar chat settings:', error);
@@ -82,7 +82,7 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
         toast.success(`VAD: ${(value / 1000).toFixed(1)}s`);
       } else if (field === 'response_mode') {
         setResponseMode(value);
-        toast.success(`Modalità: ${value === 'sequential' ? '🎯 Sequenziale' : '🔀 Parallelo'}`);
+        toast.success(`Modalità: ${value === 'single' ? '🎯 Sequenziale' : value === 'all' ? '🔀 Parallelo' : '🤖 Auto'}`);
       }
 
       onSettingsChange?.({
@@ -149,13 +149,13 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
             <SelectValue placeholder="Seleziona modalità" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="sequential">
+            <SelectItem value="single">
               <div className="flex flex-col">
                 <span className="font-semibold">🎯 Sequenziale</span>
                 <span className="text-xs text-muted-foreground">Un agente alla volta (come al bar)</span>
               </div>
             </SelectItem>
-            <SelectItem value="parallel">
+            <SelectItem value="all">
               <div className="flex flex-col">
                 <span className="font-semibold">🔀 Parallelo</span>
                 <span className="text-xs text-muted-foreground">Tutti gli agenti rispondono insieme</span>

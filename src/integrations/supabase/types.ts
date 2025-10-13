@@ -3591,6 +3591,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           created_at: string | null
+          default_voice_id: string | null
           elevenlabs_api_key: string
           enabled: boolean | null
           id: string
@@ -3599,6 +3600,7 @@ export type Database = {
         Insert: {
           agent_id?: string | null
           created_at?: string | null
+          default_voice_id?: string | null
           elevenlabs_api_key: string
           enabled?: boolean | null
           id?: string
@@ -3607,6 +3609,7 @@ export type Database = {
         Update: {
           agent_id?: string | null
           created_at?: string | null
+          default_voice_id?: string | null
           elevenlabs_api_key?: string
           enabled?: boolean | null
           id?: string

@@ -35,6 +35,8 @@ const Intranet = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showOrgUsers, setShowOrgUsers] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [ttsEngine, setTtsEngine] = useState('native');
+  const [selectedVoice, setSelectedVoice] = useState('Aria');
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   const { toast } = useToast();
   
@@ -277,7 +279,13 @@ const Intranet = () => {
                 {shouldHideHeader && isLayoutInverted && (
                   <Card className="bg-card-transparent border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden">
                     <CardContent className="p-0">
-                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                      <MessageInputWithAttachments 
+                        roomId={selectedRoomId}
+                        ttsEngine={ttsEngine}
+                        selectedVoice={selectedVoice}
+                        onEngineChange={setTtsEngine}
+                        onVoiceChange={setSelectedVoice}
+                      />
                     </CardContent>
                   </Card>
                 )}
@@ -285,7 +293,13 @@ const Intranet = () => {
                 {/* Messaggi - Area scrollabile indipendente con flex-1 */}
                 <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
                   <CardContent className={shouldHideHeader ? 'flex-1 min-h-0 overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}>
-                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={isLayoutInverted} shouldHideHeader={shouldHideHeader} />
+                     <ChatMessages 
+                      roomId={selectedRoomId!} 
+                      isLayoutInverted={isLayoutInverted} 
+                      shouldHideHeader={shouldHideHeader}
+                      ttsEngine={ttsEngine}
+                      selectedVoice={selectedVoice}
+                    />
                   </CardContent>
                 </Card>
 
@@ -293,7 +307,13 @@ const Intranet = () => {
                 {shouldHideHeader && !isLayoutInverted && (
                   <Card className="bg-card-transparent border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden">
                     <CardContent className="p-0">
-                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                      <MessageInputWithAttachments 
+                        roomId={selectedRoomId}
+                        ttsEngine={ttsEngine}
+                        selectedVoice={selectedVoice}
+                        onEngineChange={setTtsEngine}
+                        onVoiceChange={setSelectedVoice}
+                      />
                     </CardContent>
                   </Card>
                 )}
@@ -455,7 +475,13 @@ const Intranet = () => {
                 {/* Messaggi scrollabili */}
                 <Card className="bg-card-transparent flex-1 overflow-hidden">
                   <CardContent className="p-2 h-full overflow-y-auto">
-                    <ChatMessages roomId={selectedRoomId!} isLayoutInverted={false} shouldHideHeader={false} />
+                    <ChatMessages 
+                      roomId={selectedRoomId!} 
+                      isLayoutInverted={false} 
+                      shouldHideHeader={false}
+                      ttsEngine={ttsEngine}
+                      selectedVoice={selectedVoice}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -469,6 +495,10 @@ const Intranet = () => {
                     <MessageInputWithAttachments 
                       roomId={selectedRoomId} 
                       settingsButton={<SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />}
+                      ttsEngine={ttsEngine}
+                      selectedVoice={selectedVoice}
+                      onEngineChange={setTtsEngine}
+                      onVoiceChange={setSelectedVoice}
                     />
                   </CardContent>
                 </Card>

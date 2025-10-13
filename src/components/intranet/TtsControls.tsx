@@ -1,20 +1,14 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { Label } from '@/components/ui/label';
 
-export const TtsControls = () => {
-  const { profile, updateProfile } = useUserProfile();
-  
-  const currentEngine = (profile as any)?.ttsEngine || 'native';
-  const currentVoice = (profile as any)?.preferredElevenLabsVoice || 'Aria';
+interface TtsControlsProps {
+  ttsEngine: string;
+  selectedVoice: string;
+  onEngineChange: (value: string) => void;
+  onVoiceChange: (value: string) => void;
+}
 
-  const handleEngineChange = async (value: string) => {
-    await updateProfile({ ttsEngine: value } as any);
-  };
-
-  const handleVoiceChange = async (value: string) => {
-    await updateProfile({ preferredElevenLabsVoice: value } as any);
-  };
+export const TtsControls = ({ ttsEngine, selectedVoice, onEngineChange, onVoiceChange }: TtsControlsProps) => {
 
   return (
     <div className="flex items-center gap-4 px-2 py-2 border-t border-border bg-muted/30">
@@ -23,7 +17,7 @@ export const TtsControls = () => {
         <Label htmlFor="tts-engine" className="text-xs whitespace-nowrap">
           🎙️ TTS:
         </Label>
-        <Select value={currentEngine} onValueChange={handleEngineChange}>
+        <Select value={ttsEngine} onValueChange={onEngineChange}>
           <SelectTrigger id="tts-engine" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -35,15 +29,15 @@ export const TtsControls = () => {
       </div>
 
       {/* ElevenLabs Voice (solo se engine è ElevenLabs) */}
-      {currentEngine === 'elevenlabs' && (
+      {ttsEngine === 'elevenlabs' && (
         <div className="flex items-center gap-2 flex-1">
           <Label htmlFor="elevenlabs-voice" className="text-xs whitespace-nowrap">
             🔊 Voce:
           </Label>
-          <Select value={currentVoice} onValueChange={handleVoiceChange}>
-            <SelectTrigger id="elevenlabs-voice" className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
+          <Select value={selectedVoice} onValueChange={onVoiceChange}>
+          <SelectTrigger id="elevenlabs-voice" className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
             <SelectContent>
               <SelectItem value="Aria">Aria (Multilingua)</SelectItem>
               <SelectItem value="Roger">Roger (EN)</SelectItem>

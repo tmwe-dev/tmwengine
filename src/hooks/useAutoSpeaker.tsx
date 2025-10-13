@@ -15,9 +15,18 @@ interface AutoSpeakerProps {
   currentUserId: string;
   translatedMessages?: Record<string, string>;
   userProfiles?: Record<string, { preferred_language?: string }>;
+  ttsEngine?: string;
+  selectedVoice?: string;
 }
 
-export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {}, userProfiles = {} }: AutoSpeakerProps) => {
+export const useAutoSpeaker = ({ 
+  messages, 
+  currentUserId, 
+  translatedMessages = {}, 
+  userProfiles = {},
+  ttsEngine = 'native',
+  selectedVoice = 'Aria'
+}: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -77,15 +86,13 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     const language = profile.readingLanguage || 'it';
 
     console.log('🔊 useAutoSpeaker - Avvio TTS:', {
-      engine: (profile as any)?.ttsEngine || 'native',
+      engine: ttsEngine,
       messageId: latestMessage.id,
       language,
       isTranslated: !!translatedText
     });
 
     // ========= ROUTING TTS ENGINE =========
-    const ttsEngine = (profile as any)?.ttsEngine || 'native';
-
     if (ttsEngine === 'elevenlabs') {
       // === ElevenLabs TTS ===
       elevenLabsTTS.stop();
@@ -93,7 +100,7 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
       elevenLabsTTS.speak({
         text: textToSpeak,
         language,
-        voiceId: (profile as any)?.preferredElevenLabsVoice,
+        voiceId: selectedVoice,
         onStart: () => setIsSpeaking(true),
         onEnd: () => setIsSpeaking(false),
         onError: (error) => {

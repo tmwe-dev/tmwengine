@@ -18,11 +18,22 @@ interface FileAttachment {
 interface MessageInputWithAttachmentsProps {
   roomId: string;
   settingsButton?: React.ReactNode;
+  ttsEngine?: string;
+  selectedVoice?: string;
+  onEngineChange?: (value: string) => void;
+  onVoiceChange?: (value: string) => void;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
 
-export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageInputWithAttachmentsProps) => {
+export const MessageInputWithAttachments = ({ 
+  roomId, 
+  settingsButton,
+  ttsEngine = 'native',
+  selectedVoice = 'Aria',
+  onEngineChange = () => {},
+  onVoiceChange = () => {}
+}: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -389,7 +400,12 @@ export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageI
           </div>
 
           {/* Controlli TTS */}
-          <TtsControls />
+          <TtsControls 
+            ttsEngine={ttsEngine}
+            selectedVoice={selectedVoice}
+            onEngineChange={onEngineChange}
+            onVoiceChange={onVoiceChange}
+          />
         </div>
       </div>
     </>

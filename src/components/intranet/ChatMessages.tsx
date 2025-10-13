@@ -30,9 +30,17 @@ interface ChatMessagesProps {
   roomId: string;
   isLayoutInverted?: boolean;
   shouldHideHeader?: boolean;
+  ttsEngine: string;
+  selectedVoice: string;
 }
 
-export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeader = false }: ChatMessagesProps) => {
+export const ChatMessages = ({ 
+  roomId, 
+  isLayoutInverted = false, 
+  shouldHideHeader = false,
+  ttsEngine,
+  selectedVoice
+}: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
@@ -44,7 +52,14 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const { settings } = useRoomAISettings(roomId);
   
   // Auto-speaker per lettura automatica messaggi
-  const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId, translatedMessages, userProfiles });
+  const { stopSpeaking, isSpeaking } = useAutoSpeaker({ 
+    messages, 
+    currentUserId, 
+    translatedMessages, 
+    userProfiles,
+    ttsEngine,
+    selectedVoice
+  });
 
   // Load show_summaries_only setting from room
   useEffect(() => {

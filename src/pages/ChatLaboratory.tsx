@@ -926,6 +926,8 @@ const ChatLaboratory = () => {
             onUpdateTitle={handleUpdateTitle}
             onGenerateSummary={handleGenerateSummary}
             onGenerateFullReport={handleGenerateFullReport}
+            onCloseSidebar={() => setSidebarOpen(false)}
+            onFocusTextarea={() => textareaRef.current?.focus()}
           />
         </div>
       </>

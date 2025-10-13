@@ -66,6 +66,8 @@ interface ConversationsSidebarProps {
   onUpdateTitle: (id: string, title: string) => void;
   onGenerateSummary?: (id: string) => void;
   onGenerateFullReport?: (id: string) => void;
+  onCloseSidebar?: () => void;
+  onFocusTextarea?: () => void;
 }
 
 export const ConversationsSidebar = ({
@@ -76,7 +78,9 @@ export const ConversationsSidebar = ({
   onDeleteConversation,
   onUpdateTitle,
   onGenerateSummary,
-  onGenerateFullReport
+  onGenerateFullReport,
+  onCloseSidebar,
+  onFocusTextarea
 }: ConversationsSidebarProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -260,7 +264,11 @@ export const ConversationsSidebar = ({
 
             {/* New Conversation */}
             <Button
-              onClick={onNewConversation}
+              onClick={() => {
+                onNewConversation();
+                onCloseSidebar?.();
+                setTimeout(() => onFocusTextarea?.(), 100);
+              }}
               variant="ghost"
               size="icon"
               className="h-9 w-9 hover:animate-wiggle transition-all"

@@ -58,11 +58,14 @@ serve(async (req) => {
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('*')
+      .select('economy_mode, current_turn_index, last_speaker_index')
       .eq('id', conversationId)
       .single();
 
     if (convError) throw convError;
+
+    const useEconomyMode = conversation?.economy_mode ?? true;
+    console.log('💰 Economy Mode:', useEconomyMode ? 'ATTIVO (usa content_summary)' : 'DISATTIVO (usa content completo)');
 
     // Fetch global system prompt
     const { data: systemPrompts } = await supabaseClient
@@ -103,14 +106,25 @@ serve(async (req) => {
     // Fetch conversation messages
     const { data: messages } = await supabaseClient
       .from('chat_laboratory_messages')
-      .select('*')
+      .select('sender_type, sender_name, content, content_summary, is_summary_available')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    const historyMessages = (messages || []).map((msg: any) => ({
-      role: msg.sender_type === 'user' ? 'user' : 'assistant',
-      content: `[${msg.sender_name}]: ${msg.content}`
-    }));
+    // 🎯 Apply economy mode: usa content_summary per messaggi AI quando disponibile
+    const historyMessages = (messages || []).map((msg: any) => {
+      let messageContent = msg.content;
+      
+      // Economy mode: usa riassunto per messaggi AI (NON per messaggi utente)
+      if (useEconomyMode && msg.sender_type !== 'user' && msg.is_summary_available && msg.content_summary) {
+        messageContent = msg.content_summary;
+        console.log(`📝 [${msg.sender_name}] summary: ${messageContent.substring(0, 50)}...`);
+      }
+      
+      return {
+        role: msg.sender_type === 'user' ? 'user' : 'assistant',
+        content: `[${msg.sender_name}]: ${messageContent}`
+      };
+    });
 
     // Turn-taking logic (1 agente per volta)
     let currentTurnIndex = conversation.current_turn_index || 0;

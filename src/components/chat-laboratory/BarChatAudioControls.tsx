@@ -125,8 +125,8 @@ export const BarChatAudioControls = ({
         </div>
       </div>
 
-      {/* Controlli audio centrati sotto lo switch */}
-      <div className="flex justify-center items-center gap-4">
+      {/* Controlli audio allineati a sinistra */}
+      <div className="flex justify-start items-center gap-4">
         {/* Recorder (PTT o Full-Duplex) */}
         {isDuplexMode ? (
           <BarFullDuplexRecorder

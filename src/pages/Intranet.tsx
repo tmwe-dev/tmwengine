@@ -257,9 +257,22 @@ const Intranet = () => {
           </Sheet>
 
           {/* Area chat principale */}
-          <div className={`flex-1 ${shouldHideHeader ? `flex ${isLayoutInverted ? 'flex-col-reverse' : 'flex-col'} h-[calc(100vh-4rem)] overflow-hidden justify-between transition-all duration-300` : 'relative flex flex-col overflow-hidden space-y-6'}`}>
+          <div className={`flex-1 ${shouldHideHeader ? 'flex flex-col h-[calc(100vh-4rem)] overflow-hidden justify-between transition-all duration-300' : 'relative flex flex-col overflow-hidden space-y-6'}`}>
             {selectedRoomId ? (
               <>
+                {/* MobileTopBar in ALTO quando layout invertito */}
+                {shouldHideHeader && isLayoutInverted && (
+                  <MobileTopBar
+                    selectedRoomName={selectedRoomName}
+                    selectedRoomId={selectedRoomId}
+                    totalUnread={totalUnread}
+                    isLayoutInverted={isLayoutInverted}
+                    isCreatorOrAdmin={isCreatorOrAdmin}
+                    onMenuClick={() => setMobileSheetOpen(true)}
+                    onToggleLayout={() => setIsLayoutInverted(!isLayoutInverted)}
+                  />
+                )}
+
                 {/* Messaggi - Area scrollabile indipendente con flex-1 */}
                 <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
                   <CardContent className={shouldHideHeader ? 'flex-1 min-h-0 overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}>
@@ -274,8 +287,8 @@ const Intranet = () => {
                   </CardContent>
                 </Card>
 
-                {/* Barra mobile - FUORI dal Card, sempre in alto quando invertita */}
-                {shouldHideHeader && (
+                {/* MobileTopBar in BASSO quando layout normale */}
+                {shouldHideHeader && !isLayoutInverted && (
                   <MobileTopBar
                     selectedRoomName={selectedRoomName}
                     selectedRoomId={selectedRoomId}
@@ -287,6 +300,7 @@ const Intranet = () => {
                   />
                 )}
               </>
+
             ) : (
               <Card className="h-full flex flex-col overflow-hidden">
                 <div className="flex-1 flex items-center justify-center p-4">

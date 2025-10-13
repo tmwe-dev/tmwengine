@@ -416,7 +416,7 @@ serve(async (req) => {
     
     const nextSequence = (maxSeq?.message_sequence || 0) + 1;
 
-    await supabaseClient
+    const { data: savedMessage, error: saveError } = await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
@@ -427,7 +427,14 @@ serve(async (req) => {
         token_input: tokenInput,
         token_output: tokenOutput,
         tempo_risposta_ms: responseTime
-      });
+      })
+      .select()
+      .single();
+
+    if (saveError || !savedMessage) {
+      console.error('❌ Errore salvataggio messaggio:', saveError);
+      throw new Error('Errore salvataggio messaggio');
+    }
 
     // Update conversation turn index
     await supabaseClient
@@ -438,7 +445,7 @@ serve(async (req) => {
       })
       .eq('id', conversationId);
 
-    console.log('✅ Messaggio salvato e turno aggiornato');
+    console.log(`✅ Messaggio salvato (ID: ${savedMessage.id}) e turno aggiornato`);
 
     return new Response(
       JSON.stringify({ 
@@ -446,7 +453,9 @@ serve(async (req) => {
         content: aiResponse,
         speaker: selectedParticipant.name,
         tokens: { input: tokenInput, output: tokenOutput },
-        responseTime 
+        responseTime,
+        messageId: savedMessage.id,
+        audioGenerating: voiceEnabled
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

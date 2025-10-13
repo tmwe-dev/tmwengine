@@ -18,7 +18,10 @@ serve(async (req) => {
   try {
     const { messageId } = await req.json();
     
+    console.log('🎵 [GENERATE-AUDIO] Richiesta ricevuta:', { messageId });
+    
     if (!messageId) {
+      console.error('❌ [GENERATE-AUDIO] messageId mancante');
       throw new Error('messageId è obbligatorio');
     }
 
@@ -29,6 +32,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch messaggio
+    console.log('📥 [GENERATE-AUDIO] Recupero messaggio dal DB...');
     const { data: message, error: msgError } = await supabase
       .from('chat_laboratory_messages')
       .select('*, conversation_id')
@@ -36,47 +40,85 @@ serve(async (req) => {
       .single();
 
     if (msgError || !message) {
+      console.error('❌ [GENERATE-AUDIO] Messaggio non trovato:', msgError);
       throw new Error('Messaggio non trovato');
     }
+    
+    console.log('✅ [GENERATE-AUDIO] Messaggio trovato:', {
+      sender: message.sender_name,
+      contentLength: message.content?.length,
+      conversationId: message.conversation_id
+    });
 
     // Fetch settings conversazione
-    const { data: barSettings } = await supabase
+    console.log('⚙️ [GENERATE-AUDIO] Recupero impostazioni Bar Mode...');
+    const { data: barSettings, error: barError } = await supabase
       .from('chat_laboratory_bar_mode')
       .select('*')
       .eq('conversation_id', message.conversation_id)
       .single();
+    
+    if (barError) {
+      console.warn('⚠️ [GENERATE-AUDIO] Bar settings non trovate:', barError);
+    } else {
+      console.log('✅ [GENERATE-AUDIO] Bar settings:', {
+        voiceEnabled: barSettings?.voice_enabled,
+        userId: barSettings?.user_id
+      });
+    }
 
     // Fetch ElevenLabs config
-    const { data: voiceConfig } = await supabase
+    console.log('🔑 [GENERATE-AUDIO] Recupero configurazione ElevenLabs...');
+    const { data: voiceConfig, error: configError } = await supabase
       .from('voice_agent_config')
       .select('elevenlabs_api_key, enabled')
       .eq('enabled', true)
       .maybeSingle();
     
+    if (configError) {
+      console.error('❌ [GENERATE-AUDIO] Errore config:', configError);
+    }
+    
     const elevenLabsKey = voiceConfig?.elevenlabs_api_key;
 
     if (!elevenLabsKey) {
-      console.warn('⚠️ ElevenLabs API key non configurata, skip audio');
+      console.warn('⚠️ [GENERATE-AUDIO] ElevenLabs API key non configurata');
       return new Response(
         JSON.stringify({ success: false, retryable: false, reason: 'no_api_key' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('✅ [GENERATE-AUDIO] API key ElevenLabs trovata');
 
     // Fetch agenti vocali attivi
-    const { data: activeAgents } = await supabase
+    console.log('👥 [GENERATE-AUDIO] Recupero agenti vocali attivi...');
+    const { data: activeAgents, error: agentsError } = await supabase
       .from('elevenlabs_agents')
       .select('*')
       .eq('user_id', barSettings?.user_id)
       .eq('is_active', true)
       .order('order_index');
+    
+    if (agentsError) {
+      console.error('❌ [GENERATE-AUDIO] Errore recupero agenti:', agentsError);
+    }
+    
+    console.log(`✅ [GENERATE-AUDIO] Trovati ${activeAgents?.length || 0} agenti attivi`);
 
     // Trova voice_id corrispondente all'agente
     let voiceId = '';
+    let matchedAgent = '';
+    
     if (activeAgents && activeAgents.length > 0) {
+      console.log('🔍 [GENERATE-AUDIO] Ricerca agente per sender:', message.sender_name);
+      
       for (const agent of activeAgents) {
+        console.log(`  - Controllo agente: ${agent.name} (voice: ${agent.voice_id})`);
         if (agent.name?.toLowerCase().includes(message.sender_name.toLowerCase())) {
           voiceId = agent.voice_id || '';
+          matchedAgent = agent.name;
+          console.log(`  ✅ Match trovato: ${agent.name}`);
           break;
         }
       }
@@ -84,25 +126,30 @@ serve(async (req) => {
       // Fallback: primo agente disponibile
       if (!voiceId && activeAgents.length > 0) {
         voiceId = activeAgents[0].voice_id || '';
+        matchedAgent = activeAgents[0].name;
+        console.log(`  ⚠️ Nessun match, uso fallback: ${matchedAgent}`);
       }
     }
 
     if (!voiceId) {
-      console.warn('⚠️ Voice ID non trovato, skip audio');
+      console.warn('⚠️ [GENERATE-AUDIO] Voice ID non trovato');
       return new Response(
         JSON.stringify({ success: false, retryable: false, reason: 'no_voice_id' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('🎤 Generazione TTS con voice_id:', voiceId);
+    console.log(`🎤 [GENERATE-AUDIO] TTS con agente "${matchedAgent}" (voice: ${voiceId})`);
 
     // Limita testo per TTS (500 char per quick win)
     const textForTTS = message.content.length > 500 
       ? message.content.substring(0, 500) + '...'
       : message.content;
+    
+    console.log(`📝 [GENERATE-AUDIO] Testo da sintetizzare (${textForTTS.length} chars)`);
 
     // Chiama ElevenLabs TTS
+    console.log('🌐 [GENERATE-AUDIO] Chiamata API ElevenLabs...');
     const ttsResponse = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       {

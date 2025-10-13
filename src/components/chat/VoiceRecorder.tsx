@@ -12,21 +12,113 @@ export interface VoiceRecorderRef {
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
   onRecordingStateChange?: (state: 'idle' | 'recording' | 'paused' | 'processing') => void;
+  vadThreshold?: number; // Milliseconds of silence before auto-stop (default: 3000)
+  conversationId?: string; // To fetch VAD setting from DB
 }
 
 export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
-  ({ onTranscription, onRecordingStateChange }, ref) => {
+  ({ onTranscription, onRecordingStateChange, vadThreshold: propVadThreshold, conversationId }, ref) => {
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [audioLevel, setAudioLevel] = useState(0);
+    const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
+    const [vadThreshold, setVadThreshold] = useState(propVadThreshold || 3000);
+    
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const silenceTimerRef = useRef<number | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
+
+    // Fetch VAD threshold from database if conversationId provided
+    useEffect(() => {
+      if (conversationId) {
+        supabase
+          .from('chat_laboratory_conversations')
+          .select('vad_silence_duration')
+          .eq('id', conversationId)
+          .single()
+          .then(({ data }) => {
+            if (data?.vad_silence_duration) {
+              setVadThreshold(data.vad_silence_duration);
+            }
+          });
+      }
+    }, [conversationId]);
 
     const cleanupStream = () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      setSilenceCountdown(null);
+    };
+
+    // Monitor audio level and detect silence
+    const monitorAudioLevel = () => {
+      if (!analyserRef.current) return;
+
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(dataArray);
+
+      // Calculate average volume
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      const normalizedLevel = Math.min(100, (average / 128) * 100);
+      setAudioLevel(normalizedLevel);
+
+      // Voice Activity Detection (VAD)
+      const SILENCE_THRESHOLD = 5; // Volume below this is considered silence
+      const isSilent = normalizedLevel < SILENCE_THRESHOLD;
+
+      if (isSilent) {
+        if (!silenceTimerRef.current) {
+          // Start silence countdown
+          const remainingMs = vadThreshold;
+          setSilenceCountdown(Math.ceil(remainingMs / 1000));
+          
+          silenceTimerRef.current = window.setTimeout(() => {
+            console.log('🔇 VAD: Silence detected for', vadThreshold, 'ms - auto-stopping');
+            stopRecording();
+          }, vadThreshold);
+
+          // Update countdown every second
+          const countdownInterval = setInterval(() => {
+            setSilenceCountdown(prev => {
+              if (prev === null || prev <= 1) {
+                clearInterval(countdownInterval);
+                return null;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+      } else {
+        // Voice detected - reset silence timer
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+          setSilenceCountdown(null);
+        }
+      }
+
+      // Continue monitoring
+      if (isRecording && !isPaused) {
+        animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
       }
     };
 
@@ -34,6 +126,14 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
+        
+        // Setup audio analysis for VAD
+        audioContextRef.current = new AudioContext();
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        source.connect(analyserRef.current);
+        
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         chunksRef.current = [];
@@ -54,6 +154,10 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
         setIsRecording(true);
         setIsPaused(false);
         onRecordingStateChange?.('recording');
+        
+        // Start audio monitoring
+        monitorAudioLevel();
+        
         toast.success("Registrazione avviata");
       } catch (error) {
         console.error('Error starting recording:', error);
@@ -175,9 +279,30 @@ export const VoiceRecorder = forwardRef<VoiceRecorderRef, VoiceRecorderProps>(
         </Button>
         
         {isRecording && (
-          <Badge variant={isPaused ? "secondary" : "destructive"} className={isPaused ? "" : "animate-pulse"}>
-            {isPaused ? "⏸️ Pausa" : "🔴 Registrazione"}
-          </Badge>
+          <>
+            <Badge variant={isPaused ? "secondary" : "destructive"} className={isPaused ? "" : "animate-pulse"}>
+              {isPaused ? "⏸️ Pausa" : "🔴 Registrazione"}
+            </Badge>
+            
+            {!isPaused && (
+              <div className="flex items-center gap-2">
+                {/* Volume indicator */}
+                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-100"
+                    style={{ width: `${audioLevel}%` }}
+                  />
+                </div>
+                
+                {/* Silence countdown */}
+                {silenceCountdown !== null && (
+                  <Badge variant="outline" className="text-xs">
+                    🔇 {silenceCountdown}s
+                  </Badge>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     );

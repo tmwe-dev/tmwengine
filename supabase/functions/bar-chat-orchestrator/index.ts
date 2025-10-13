@@ -125,6 +125,8 @@ serve(async (req) => {
     const activeKbId = barModeSettings.active_kb_id;
     const voiceEnabled = barModeSettings.voice_enabled || false;
     const interruptRequested = barModeSettings.interrupt_requested || false;
+    const enableInterruptions = barModeSettings.enable_interruptions !== false; // default true
+    const conversationPace = barModeSettings.conversation_pace || 'normal';
     
     // Carica agenti vocali attivi dalla configurazione globale
     const { data: activeElevenLabsAgents } = await supabase
@@ -139,9 +141,11 @@ serve(async (req) => {
     console.log('🎤 Agenti vocali attivi:', activeElevenLabsAgents?.length || 0);
     console.log('🎤 Voice enabled:', voiceEnabled);
     console.log('⛔ Interrupt requested:', interruptRequested);
+    console.log('🚫 Enable interruptions:', enableInterruptions);
+    console.log('⏱️ Conversation pace:', conversationPace);
 
-    // Se interrupt è stato richiesto, ferma e pulisci flag
-    if (interruptRequested) {
+    // Se interrupt è stato richiesto E le interruzioni sono abilitate, ferma e pulisci flag
+    if (interruptRequested && enableInterruptions) {
       console.log('🛑 Interrupt attivo, annullo generazione');
       await supabase
         .from('chat_laboratory_bar_mode')
@@ -152,6 +156,13 @@ serve(async (req) => {
         JSON.stringify({ interrupted: true, message: 'Generation interrupted by user' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    } else if (interruptRequested && !enableInterruptions) {
+      console.log('⚠️ Interrupt richiesto ma interruzioni disabilitate - ignoro');
+      // Reset flag comunque
+      await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ interrupt_requested: false })
+        .eq('conversation_id', conversationId);
     }
 
     // Fetch conversation data
@@ -382,6 +393,16 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
     let tokenOutput = 0;
     const startTime = Date.now();
 
+    // 🎛️ CONVERSATION PACE SETTINGS
+    const paceSettings = {
+      slow: { max_tokens: 2000, temperature: 0.7 },
+      normal: { max_tokens: 4096, temperature: 0.8 },
+      fast: { max_tokens: 1000, temperature: 0.9 }
+    };
+
+    const currentPaceSettings = paceSettings[conversationPace as keyof typeof paceSettings] || paceSettings.normal;
+    console.log('⏱️ Pace settings applicati:', currentPaceSettings);
+
     // Route to AI provider - FIX type matching to support both naming conventions
     if ((selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') && anthropicKey) {
       console.log('🤖 Calling Anthropic (Claude)...');
@@ -394,7 +415,8 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: 8096,
+          max_tokens: currentPaceSettings.max_tokens,
+          temperature: currentPaceSettings.temperature,
           messages: conversationHistory.filter(m => m.role !== 'system'),
           system: composedPrompt
         })
@@ -422,7 +444,8 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: conversationHistory,
-          max_tokens: 4096
+          max_tokens: currentPaceSettings.max_tokens,
+          temperature: currentPaceSettings.temperature
         })
       });
 
@@ -447,7 +470,9 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
-          messages: conversationHistory
+          messages: conversationHistory,
+          max_tokens: currentPaceSettings.max_tokens,
+          temperature: currentPaceSettings.temperature
         })
       });
 

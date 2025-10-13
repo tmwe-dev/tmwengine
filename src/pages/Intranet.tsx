@@ -273,6 +273,15 @@ const Intranet = () => {
                   />
                 )}
 
+                {/* Input in ALTO quando layout invertito */}
+                {shouldHideHeader && isLayoutInverted && (
+                  <Card className="bg-card-transparent border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden">
+                    <CardContent className="p-0">
+                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Messaggi - Area scrollabile indipendente con flex-1 */}
                 <Card className={`bg-card-transparent ${shouldHideHeader ? 'flex-1 flex flex-col border-0 shadow-none overflow-hidden min-h-0' : ''}`}>
                   <CardContent className={shouldHideHeader ? 'flex-1 min-h-0 overflow-y-auto px-3 py-3' : 'space-y-3 px-2 sm:px-6 max-h-[600px] overflow-y-auto'}>
@@ -280,12 +289,14 @@ const Intranet = () => {
                   </CardContent>
                 </Card>
 
-                {/* Input - Area fissa con flex-shrink-0 e max-height */}
-                <Card className={`bg-card-transparent ${shouldHideHeader ? 'border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden' : ''}`}>
-                  <CardContent className={shouldHideHeader ? 'p-0' : 'p-3 sm:p-6'}>
-                    <MessageInputWithAttachments roomId={selectedRoomId} />
-                  </CardContent>
-                </Card>
+                {/* Input in BASSO quando layout normale */}
+                {shouldHideHeader && !isLayoutInverted && (
+                  <Card className="bg-card-transparent border-0 shadow-none flex-shrink-0 max-h-[240px] overflow-hidden">
+                    <CardContent className="p-0">
+                      <MessageInputWithAttachments roomId={selectedRoomId} />
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* MobileTopBar in BASSO quando layout normale */}
                 {shouldHideHeader && !isLayoutInverted && (

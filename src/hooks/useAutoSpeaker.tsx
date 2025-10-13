@@ -48,20 +48,46 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     // Cancella eventuali letture in corso
     synthRef.current.cancel();
 
-    // Aspetta 500ms per dare tempo alla traduzione asincrona
-    const timeoutId = setTimeout(() => {
-      // Debug logging per verificare cosa viene letto
-      console.log('🔊 useAutoSpeaker - Dati audio:', {
+    // Funzione async per gestire il polling della traduzione
+    const startSpeaking = async () => {
+      let textToSpeak = translatedMessages[latestMessage.id];
+      let attempts = 0;
+      const maxAttempts = 20; // 20 x 100ms = 2 secondi max
+      
+      console.log('🔊 useAutoSpeaker - Inizio polling traduzione:', {
+        messageId: latestMessage.id,
+        initialTranslation: textToSpeak,
+        originalText: latestMessage.content
+      });
+
+      // Polling: controlla ogni 100ms se traduzione è disponibile
+      while (!textToSpeak && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        textToSpeak = translatedMessages[latestMessage.id];
+        attempts++;
+        
+        if (textToSpeak) {
+          console.log(`✅ Traduzione trovata dopo ${attempts * 100}ms`);
+          break;
+        }
+      }
+
+      // Fallback su testo originale se traduzione non arriva
+      if (!textToSpeak) {
+        console.warn('⚠️ Traduzione non disponibile dopo 2s, uso testo originale');
+        textToSpeak = latestMessage.content;
+      }
+
+      console.log('🔊 useAutoSpeaker - Dati audio finali:', {
         messageId: latestMessage.id,
         originalText: latestMessage.content,
-        translatedText: translatedMessages[latestMessage.id],
-        textToSpeak: translatedMessages[latestMessage.id] || latestMessage.content,
+        textToSpeak,
         readingLanguage: profile.readingLanguage,
-        hasTranslation: !!translatedMessages[latestMessage.id]
+        isTranslated: textToSpeak !== latestMessage.content,
+        waitedMs: attempts * 100
       });
       
       // Crea utterance con testo tradotto se disponibile
-      const textToSpeak = translatedMessages[latestMessage.id] || latestMessage.content;
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       
       // Imposta la lingua
@@ -97,7 +123,12 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
 
       // Pronuncia
       synthRef.current?.speak(utterance);
-    }, 500);
+    };
+
+    // Aspetta 100ms e poi inizia il polling
+    const timeoutId = setTimeout(() => {
+      startSpeaking();
+    }, 100);
 
     // Cleanup timeout se il componente si smonta o il messaggio cambia
     return () => clearTimeout(timeoutId);

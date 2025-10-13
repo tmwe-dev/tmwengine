@@ -85,11 +85,12 @@ export const BarChatAudioControls = ({
   return (
     <div className={cn(
       "border-t border-border/40 backdrop-blur-xl bg-background/80",
-      "p-6 rounded-lg shadow-lg space-y-4",
+      "p-6 rounded-lg shadow-lg",
       className
     )}>
-      {/* Switch centrato */}
-      <div className="flex justify-center pb-3 border-b border-border/30">
+      {/* Tutti i controlli sulla stessa linea */}
+      <div className="flex justify-start items-center gap-4">
+        {/* Switch modalità */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Mic className="h-4 w-4 sm:hidden text-muted-foreground" />
@@ -123,10 +124,7 @@ export const BarChatAudioControls = ({
             </Label>
           </div>
         </div>
-      </div>
 
-      {/* Controlli audio allineati a sinistra */}
-      <div className="flex justify-start items-center gap-4">
         {/* Recorder (PTT o Full-Duplex) */}
         {isDuplexMode ? (
           <BarFullDuplexRecorder
@@ -146,9 +144,9 @@ export const BarChatAudioControls = ({
           />
         )}
 
-        {/* Pause/Resume Button */}
+        {/* Pause/Resume Button - senza bordo */}
         <Button
-          variant={isPaused ? "default" : "outline"}
+          variant={isPaused ? "default" : "ghost"}
           size="icon"
           onClick={togglePause}
           className={cn(

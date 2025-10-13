@@ -74,6 +74,38 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Collassa messaggi consecutivi dello stesso role per Claude API
+ * Claude richiede alternanza user/assistant, ma Bar Chat ha assistant consecutivi
+ */
+function collapseConsecutiveMessages(messages: any[]): any[] {
+  const collapsed = [];
+  let lastRole = null;
+  let buffer = '';
+
+  for (const msg of messages) {
+    if (msg.role === lastRole) {
+      // Accumula messaggi dello stesso tipo
+      buffer += '\n\n' + msg.content;
+    } else {
+      // Salva il buffer precedente
+      if (buffer && lastRole) {
+        collapsed.push({ role: lastRole, content: buffer });
+      }
+      // Inizia nuovo buffer
+      lastRole = msg.role;
+      buffer = msg.content;
+    }
+  }
+  
+  // Aggiungi l'ultimo buffer
+  if (buffer && lastRole) {
+    collapsed.push({ role: lastRole, content: buffer });
+  }
+
+  return collapsed;
+}
+
 // ============================================================
 
 serve(async (req) => {
@@ -321,7 +353,11 @@ serve(async (req) => {
       const result = await withRetry(async () => {
         // ✅ Estrai tutti i system messages (prompt + summary)
         const systemMessages = conversationHistory.filter(m => m.role === 'system');
-        const userMessages = conversationHistory.filter(m => m.role !== 'system');
+        const rawMessages = conversationHistory.filter(m => m.role !== 'system');
+        
+        // 🔧 Collassa messaggi consecutivi per alternanza user/assistant
+        const userMessages = collapseConsecutiveMessages(rawMessages);
+        console.log(`🔧 Claude: ${rawMessages.length} messaggi → ${userMessages.length} collassati`);
         
         // ✅ Componi UN SOLO system prompt con tutto
         const fullSystemPrompt = systemMessages.map(m => m.content).join('\n\n---\n\n');
@@ -374,16 +410,24 @@ serve(async (req) => {
       
       const result = await withRetry(async () => {
         // ✅ USA conversationHistory che include il summary!
-        const messages = conversationHistory.map(msg => {
+        const rawMessages = conversationHistory.map(msg => {
           if (msg.role === 'system') {
             return msg; // ✅ Mantieni system messages
           }
           // Converti human -> user per OpenAI
           return {
-            role: msg.role === 'human' ? 'user' : 'assistant',
+            role: msg.role === 'human' ? 'user' : msg.role,
             content: msg.content
           };
         });
+        
+        // 🔧 Separa system da user/assistant e collassa consecutivi
+        const systemMsgs = rawMessages.filter(m => m.role === 'system');
+        const nonSystemMsgs = rawMessages.filter(m => m.role !== 'system');
+        const collapsedMsgs = collapseConsecutiveMessages(nonSystemMsgs);
+        const messages = [...systemMsgs, ...collapsedMsgs];
+        
+        console.log(`🔧 GPT: ${nonSystemMsgs.length} messaggi → ${collapsedMsgs.length} collassati`);
         
         const body: any = {
           model: modelName,

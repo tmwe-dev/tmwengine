@@ -643,6 +643,45 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
+    // ✅ AI Cost Tracking: Calculate and save costs
+    const modelUsed = selectedParticipant.type === 'anthropic' ? 'claude-sonnet-4-5' 
+                    : selectedParticipant.type === 'openai' ? 'gpt-4o'
+                    : 'google/gemini-2.5-flash';
+    
+    const costRates: Record<string, { input: number; output: number }> = {
+      'claude-sonnet-4-5': { input: 3.00 / 1_000_000, output: 15.00 / 1_000_000 },
+      'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
+      'google/gemini-2.5-flash': { input: 0, output: 0 } // Free until Oct 13
+    };
+    
+    const rate = costRates[modelUsed] || { input: 0, output: 0 };
+    const costInputEur = tokenInput * rate.input * 1.1; // USD → EUR (~1.1)
+    const costOutputEur = tokenOutput * rate.output * 1.1;
+    const costTotalEur = costInputEur + costOutputEur;
+    
+    console.log(`💰 Cost tracking: ${tokenInput} in + ${tokenOutput} out = €${costTotalEur.toFixed(6)}`);
+    
+    // Save to ai_cost_tracking
+    const { error: costError } = await supabase
+      .from('ai_cost_tracking')
+      .insert({
+        lab_conversation_id: conversationId,
+        provider: selectedParticipant.type,
+        model: modelUsed,
+        operation_type: 'chat_completion',
+        input_tokens: tokenInput,
+        output_tokens: tokenOutput,
+        cost_input_eur: costInputEur,
+        cost_output_eur: costOutputEur,
+        cost_total_eur: costTotalEur
+      });
+    
+    if (costError) {
+      console.error('⚠️ Cost tracking failed:', costError);
+    } else {
+      console.log('✅ Cost tracked successfully');
+    }
+
     // ✅ Fase 2: Extract deliverable if present
     const deliverable = extractDeliverable(aiResponse);
     let deliverableId: string | null = null;

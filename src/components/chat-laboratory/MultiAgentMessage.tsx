@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Clock, Zap, Copy, Download, Link } from 'lucide-react';
+import { Bot, User, Clock, Zap, Copy, Download, Link, FileText, FileCheck, Sparkles } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
@@ -12,6 +13,9 @@ interface Message {
   sender_type: 'human' | 'chatgpt' | 'gemini' | 'claude';
   sender_name: string;
   content: string;
+  content_user_friendly?: string;
+  content_summary?: string;
+  is_summary_available?: boolean;
   attachments?: UploadedFile[];
   images?: string[];
   generated_images?: string[];
@@ -21,6 +25,8 @@ interface Message {
   created_at: string;
   audio_url?: string | null;
 }
+
+type ViewMode = 'summary' | 'friendly' | 'full';
 
 interface MultiAgentMessageProps {
   message: Message;
@@ -63,8 +69,27 @@ const SENDER_CONFIG = {
 };
 
 export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMessageProps) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('friendly');
   const config = SENDER_CONFIG[message.sender_type];
   const Icon = config.icon;
+
+  // Determine which content to display based on viewMode
+  const displayContent = (() => {
+    if (message.sender_type === 'human') return message.content; // Always show full for users
+    
+    if (viewMode === 'summary' && message.content_summary) {
+      return message.content_summary;
+    }
+    if (viewMode === 'friendly' && message.content_user_friendly) {
+      return message.content_user_friendly;
+    }
+    return message.content;
+  })();
+
+  // Calculate token savings if using summary
+  const tokenSavings = viewMode === 'summary' && message.token_output 
+    ? Math.round(message.token_output * 0.8) // ~80% saving
+    : 0;
 
   const formatTime = (ms?: number) => {
     if (!ms) return null;
@@ -123,6 +148,40 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
             <Badge className={config.badgeColor} variant="secondary">
               {message.sender_type.toUpperCase()}
             </Badge>
+            
+            {/* Desktop only: View mode toggle for AI messages */}
+            {message.sender_type !== 'human' && message.is_summary_available && (
+              <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'summary' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setViewMode('summary')}
+                  title="Sintetico (Economy Mode)"
+                >
+                  <Sparkles className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant={viewMode === 'friendly' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setViewMode('friendly')}
+                  title="Ibrido (User-Friendly)"
+                >
+                  <FileCheck className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant={viewMode === 'full' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setViewMode('full')}
+                  title="Completo"
+                >
+                  <FileText className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
@@ -137,7 +196,12 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
 
         {/* Content */}
         <div className="prose dark:prose-invert max-w-none">
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          {viewMode === 'summary' && tokenSavings > 0 && (
+            <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30">
+              ⚡ Economy Mode: -{tokenSavings} token
+            </Badge>
+          )}
+          <p className="whitespace-pre-wrap">{displayContent}</p>
         </div>
 
         {/* Images */}

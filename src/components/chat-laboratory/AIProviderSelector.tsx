@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Cpu } from "lucide-react";
+import { AI_PROVIDERS } from "@/lib/ai-models";
 
 interface AIConfig {
   id: string;
@@ -61,7 +62,19 @@ export const AIProviderSelector = ({
       'custom': 'Custom API'
     };
     const providerName = providerNames[config.provider] || config.provider.charAt(0).toUpperCase() + config.provider.slice(1);
-    return `${providerName} - ${config.modello}`;
+    
+    // Get cost info from AI_PROVIDERS
+    const models = AI_PROVIDERS[config.provider]?.models || [];
+    const modelInfo = models.find(m => m.value === config.modello);
+    
+    let costLabel = '';
+    if (modelInfo?.free) {
+      costLabel = ' - GRATUITO ⚡';
+    } else if (modelInfo?.costPerMillionInputTokens !== undefined) {
+      costLabel = ` - €${modelInfo.costPerMillionInputTokens.toFixed(2)}/1M tok`;
+    }
+    
+    return `${providerName} - ${config.modello}${costLabel}`;
   };
 
   if (configs.length === 0) {

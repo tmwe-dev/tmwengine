@@ -16,10 +16,24 @@ const LANGUAGES = [
   { code: 'fr', name: 'Français' },
   { code: 'de', name: 'Deutsch' },
   { code: 'pt', name: 'Português' },
+  { code: 'th', name: 'ไทย (Thai)' },
   { code: 'ru', name: 'Русский' },
   { code: 'zh', name: '中文' },
   { code: 'ja', name: '日本語' },
   { code: 'ar', name: 'العربية' }
+];
+
+const TTS_ENGINES = [
+  { value: 'native', label: 'Browser (Gratuito)', description: 'Voci native del sistema' },
+  { value: 'elevenlabs', label: 'ElevenLabs (Premium)', description: 'Voci naturali AI (richiede API key)' }
+];
+
+const ELEVENLABS_VOICES = [
+  { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria', lang: 'Multilingua (Neutrale)' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', lang: 'English (Professionale)' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', lang: 'Español (Neutrale)' },
+  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', lang: 'Français (Chiara)' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', lang: 'Deutsch (Neutrale)' }
 ];
 
 const TRANSLATION_MODES = [
@@ -40,7 +54,9 @@ export function UserLanguageSettings() {
     writingLanguage: profile?.writingLanguage || 'it',
     translationMode: profile?.translationMode || 'none',
     autoTranslateWriting: profile?.autoTranslateWriting || false,
-    enableAutoSpeaker: profile?.enableAutoSpeaker || false
+    enableAutoSpeaker: profile?.enableAutoSpeaker || false,
+    ttsEngine: profile?.ttsEngine || 'native',
+    preferredElevenLabsVoice: profile?.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
   });
 
   const handleOpen = (isOpen: boolean) => {
@@ -51,7 +67,9 @@ export function UserLanguageSettings() {
         writingLanguage: profile.writingLanguage,
         translationMode: profile.translationMode,
         autoTranslateWriting: profile.autoTranslateWriting,
-        enableAutoSpeaker: profile.enableAutoSpeaker
+        enableAutoSpeaker: profile.enableAutoSpeaker,
+        ttsEngine: profile.ttsEngine || 'native',
+        preferredElevenLabsVoice: profile.preferredElevenLabsVoice || '9BWtsMINqrJLrRacOk9x'
       });
     }
     setOpen(isOpen);
@@ -213,6 +231,61 @@ export function UserLanguageSettings() {
                   checked={tempSettings.enableAutoSpeaker}
                   onCheckedChange={(checked) => setTempSettings(prev => ({ ...prev, enableAutoSpeaker: checked }))}
                 />
+              </div>
+
+              <Separator />
+
+              {/* Sezione TTS Engine */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Motore Text-to-Speech</Label>
+                  <Select
+                    value={tempSettings.ttsEngine}
+                    onValueChange={(value) => setTempSettings(prev => ({ ...prev, ttsEngine: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TTS_ENGINES.map(engine => (
+                        <SelectItem key={engine.value} value={engine.value}>
+                          <div>
+                            <div className="font-medium">{engine.label}</div>
+                            <div className="text-xs text-muted-foreground">{engine.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Mostra selezione voce solo se ElevenLabs è attivo */}
+                {tempSettings.ttsEngine === 'elevenlabs' && (
+                  <div className="space-y-2">
+                    <Label>Voce ElevenLabs</Label>
+                    <Select
+                      value={tempSettings.preferredElevenLabsVoice}
+                      onValueChange={(value) => setTempSettings(prev => ({ ...prev, preferredElevenLabsVoice: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ELEVENLABS_VOICES.map(voice => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            <div>
+                              <div className="font-medium">{voice.name}</div>
+                              <div className="text-xs text-muted-foreground">{voice.lang}</div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-yellow-600">
+                      ⚠️ Richiede API key ElevenLabs configurata in Secrets
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Azioni */}

@@ -3440,6 +3440,7 @@ export type Database = {
           enable_auto_speaker: boolean
           id: string
           preferred_country: string | null
+          preferred_elevenlabs_voice: string | null
           preferred_language: string
           reading_language: string
           status_color: string | null
@@ -3447,6 +3448,7 @@ export type Database = {
           status_message: string | null
           tmwe_email: string | null
           translation_mode: string
+          tts_engine: string | null
           updated_at: string
           user_id: string
           writing_language: string
@@ -3459,6 +3461,7 @@ export type Database = {
           enable_auto_speaker?: boolean
           id?: string
           preferred_country?: string | null
+          preferred_elevenlabs_voice?: string | null
           preferred_language?: string
           reading_language?: string
           status_color?: string | null
@@ -3466,6 +3469,7 @@ export type Database = {
           status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
+          tts_engine?: string | null
           updated_at?: string
           user_id: string
           writing_language?: string
@@ -3478,6 +3482,7 @@ export type Database = {
           enable_auto_speaker?: boolean
           id?: string
           preferred_country?: string | null
+          preferred_elevenlabs_voice?: string | null
           preferred_language?: string
           reading_language?: string
           status_color?: string | null
@@ -3485,6 +3490,7 @@ export type Database = {
           status_message?: string | null
           tmwe_email?: string | null
           translation_mode?: string
+          tts_engine?: string | null
           updated_at?: string
           user_id?: string
           writing_language?: string

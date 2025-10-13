@@ -319,6 +319,13 @@ serve(async (req) => {
       console.log('🤖 Calling Anthropic (Claude)...');
       
       const result = await withRetry(async () => {
+        // ✅ Estrai tutti i system messages (prompt + summary)
+        const systemMessages = conversationHistory.filter(m => m.role === 'system');
+        const userMessages = conversationHistory.filter(m => m.role !== 'system');
+        
+        // ✅ Componi UN SOLO system prompt con tutto
+        const fullSystemPrompt = systemMessages.map(m => m.content).join('\n\n---\n\n');
+        
         const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -331,8 +338,8 @@ serve(async (req) => {
             max_tokens: 120, // 🔥 HARD LIMIT brevità (80-90 parole ~120 token)
             temperature: 0.4, // 🔥 Più deterministico
             stop_sequences: ['\n\n', '—', 'Fine.'], // 🔥 Stop anticipato
-            messages: conversationHistory.filter(m => m.role !== 'system'),
-            system: composedPrompt
+            messages: userMessages,  // ✅ Solo user/assistant
+            system: fullSystemPrompt // ✅ Prompt + Summary insieme
           })
         }, 43000);
         
@@ -366,23 +373,24 @@ serve(async (req) => {
       console.log(`🎯 Modello: ${modelName}`);
       
       const result = await withRetry(async () => {
-        // Converti history in stringa formattata (modello Laboratory)
-        const formattedHistory = historyMessages
-          .map((msg: any) => msg.content)
-          .join('\n\n');
+        // ✅ USA conversationHistory che include il summary!
+        const messages = conversationHistory.map(msg => {
+          if (msg.role === 'system') {
+            return msg; // ✅ Mantieni system messages
+          }
+          // Converti human -> user per OpenAI
+          return {
+            role: msg.role === 'human' ? 'user' : 'assistant',
+            content: msg.content
+          };
+        });
         
         const body: any = {
           model: modelName,
           max_completion_tokens: 100, // 🔥 HARD LIMIT brevità (40-60 parole ~100 token) - GPT-5 usa max_completion_tokens
           // temperature rimosso - non supportato da gpt-5-2025-08-07
           stop: ['\n\n', '—'], // 🔥 Stop anticipato
-          messages: [
-            { role: 'system', content: composedPrompt },
-            { 
-              role: 'user', 
-              content: `Conversazione:\n${formattedHistory}\n\nNuovo messaggio:\n${userMessage}` 
-            }
-          ]
+          messages: messages  // ✅ Usa la conversationHistory completa!
         };
         
         const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {

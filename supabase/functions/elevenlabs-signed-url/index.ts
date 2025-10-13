@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,11 +18,25 @@ serve(async (req) => {
       throw new Error('Agent ID is required')
     }
 
-    const elevenLabsApiKey = Deno.env.get('ELEVEN_LABS_API_KEY')
-    if (!elevenLabsApiKey) {
-      throw new Error('ELEVEN_LABS_API_KEY not configured')
+    // Inizializza Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Leggi la chiave API da voice_agent_config
+    const { data: config, error: configError } = await supabaseClient
+      .from('voice_agent_config')
+      .select('elevenlabs_api_key')
+      .eq('enabled', true)
+      .single()
+
+    if (configError || !config?.elevenlabs_api_key) {
+      console.error('❌ Errore caricamento config:', configError)
+      throw new Error('ElevenLabs API key not found in voice_agent_config')
     }
 
+    const elevenLabsApiKey = config.elevenlabs_api_key
     console.log('📞 Richiesta signed URL per agent:', agentId)
 
     const response = await fetch(

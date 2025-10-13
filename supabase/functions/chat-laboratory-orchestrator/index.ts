@@ -254,31 +254,7 @@ async function callAIProvider(
   }, { retries: 2, baseDelayMs: 300 });
 }
 
-// ═══════════════════════════════════════════════════════════
-// HELPER: Controlla se l'AI dovrebbe saltare il turno
-// ═══════════════════════════════════════════════════════════
-function checkIfShouldSkip(
-  visibleHistory: string,
-  userMessage: string,
-  messagesCount: number
-): boolean {
-  // Se la conversazione è appena iniziata (< 3 messaggi), tutti parlano
-  if (messagesCount < 3) return false;
-
-  // Se l'ultimo messaggio è una domanda diretta, risponde
-  if (userMessage.includes('?')) return false;
-
-  // Conta quanti messaggi recenti contengono parole di consenso
-  const lastMessages = visibleHistory.split('\n').slice(-3);
-  const consensusWords = ['concordo', 'sono d\'accordo', 'esatto', 'perfetto', 'giusto', 'condivido'];
-  
-  const consensusCount = lastMessages.filter(msg => 
-    consensusWords.some(word => msg.toLowerCase().includes(word))
-  ).length;
-  
-  // Se almeno 2 dei 3 ultimi messaggi esprimono consenso, skip
-  return consensusCount >= 2;
-}
+// Funzione checkIfShouldSkip rimossa - non più necessaria con orchestrazione parallela
 
 // ═══════════════════════════════════════════════════════════
 // MAIN HANDLER
@@ -339,31 +315,28 @@ REGOLE CRITICHE:
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    // LOGICA TURNAZIONE
-    const lastSpeakerIndex = conversation?.last_speaker_index ?? 0;
+    // Filtra solo gli AI attivi (escludi human)
     const activeAIs = participants.filter((p: any) => p.type !== 'human');
     
-    const shouldRandomize = Math.random() < 0.3;
-    let nextIndex;
-    
-    if (shouldRandomize) {
-      const availableIndices = activeAIs.map((_: any, i: number) => i).filter((i: number) => i !== lastSpeakerIndex);
-      nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)] ?? 0;
-    } else {
-      nextIndex = (lastSpeakerIndex + 1) % activeAIs.length;
-    }
-
-    const selectedParticipant = activeAIs[nextIndex];
-    console.log(`🎯 Turno di: ${selectedParticipant?.name} (index ${nextIndex})`);
-
-    if (!selectedParticipant) {
-      throw new Error('Nessun partecipante selezionato');
+    // Verifica che ci siano agenti attivi
+    if (activeAIs.length === 0) {
+      console.error('❌ Nessun agente AI attivo!');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Nessun agente AI attivo nella conversazione'
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     const startTime = Date.now();
 
     // Costruisci history completa con economy mode
-    const visibleHistory = (messages || [])
+    let visibleHistory = (messages || [])
       .filter((msg: any) => msg.is_visible_to_ai !== false)
       .map((msg: any) => {
         let content = msg.content;
@@ -377,40 +350,38 @@ REGOLE CRITICHE:
       })
       .join('\n');
 
-    // ──────── PRE-CHECK: Questo AI ha qualcosa da dire? ────────
-    const shouldSkip = checkIfShouldSkip(visibleHistory, userMessage, messages?.length || 0);
-    
-    if (shouldSkip) {
-      console.log(`🤐 ${selectedParticipant.name} non ha nulla da aggiungere (consenso rilevato)`);
+    // ✅ COMPRESSIONE HISTORY se troppo lunga (>2000 token stimati)
+    const estimatedTokens = visibleHistory.length / 4;
+    if (estimatedTokens > 2000) {
+      console.log(`⚠️ History troppo lunga (~${estimatedTokens} token). Compressione in corso...`);
       
-      // Salva un messaggio "skip" nella conversation (nascosto agli altri AI)
-      await supabaseClient.from('chat_laboratory_messages').insert({
-        conversation_id: conversationId,
-        sender_type: selectedParticipant.type,
-        sender_name: selectedParticipant.name,
-        content: "[Non ho nulla da aggiungere]",
-        is_visible_to_ai: false,
-      });
-
-      return new Response(
-        JSON.stringify({ 
-          skipped: true, 
-          participantName: selectedParticipant.name,
-          reason: 'consensus_detected'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const recentMessages = (messages || []).slice(-20);
+      visibleHistory = recentMessages
+        .filter((msg: any) => msg.is_visible_to_ai !== false)
+        .map((msg: any) => {
+          const content = (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente')
+            ? msg.content_summary
+            : msg.content;
+          return `${msg.sender_name}: ${content}`;
+        })
+        .join('\n');
+      
+      console.log(`✅ History compressa da ${estimatedTokens * 4} a ${visibleHistory.length} caratteri`);
     }
-
-    let aiResponseText = '';
-    let tokensIn = 0;
-    let tokensOut = 0;
 
     // ═══════════════════════════════════════════════════════════
     // ORCHESTRAZIONE PARALLELA CON DEADLINE GLOBALE
     // ═══════════════════════════════════════════════════════════
 
     console.log(`🚀 Avvio orchestrazione parallela per ${activeAIs.length} agenti`);
+    
+    console.log('🔍 DEBUG ORCHESTRAZIONE:', {
+      activeAIsCount: activeAIs.length,
+      activeAIsNames: activeAIs.map((p: any) => p.name),
+      visibleHistoryLength: visibleHistory.length,
+      userMessageLength: userMessage.length,
+      economyMode: useEconomyMode
+    });
 
     const GLOBAL_DEADLINE_MS = 45000; // 45 secondi per tutto
     const PER_AGENT_TIMEOUT_MS = 43000; // 43s per agent (margine per retry)

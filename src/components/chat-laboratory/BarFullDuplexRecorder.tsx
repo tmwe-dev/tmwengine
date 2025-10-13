@@ -133,25 +133,27 @@ export const BarFullDuplexRecorder = ({
           const silenceDuration = Date.now() - silenceStartRef.current;
           
           if (silenceDuration >= SILENCE_DURATION) {
-            console.log('🎤 Fine parlato rilevato, FERMO recorder prima di trascrivere...');
+            console.log('🎤 Fine parlato rilevato, processo trascrizione...');
             
-            // ✅ FERMA il MediaRecorder PRIMA di processare
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-              mediaRecorderRef.current.pause();
-              console.log('⏸️ MediaRecorder in pausa per trascrizione');
-            }
-            
-            await processRecording();
-            
-            // ✅ RIAVVIA il recorder dopo la trascrizione (se ancora in modalità Full-Duplex)
-            if (isActive && mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-              mediaRecorderRef.current.resume();
-              chunksRef.current = []; // Svuota per il prossimo turno
-              console.log('▶️ MediaRecorder ripreso, pronto per nuovo audio');
-            }
-            
+            // 1️⃣ FERMA completamente il VAD
             setIsSpeaking(false);
             silenceStartRef.current = null;
+            
+            // 2️⃣ PAUSA il recorder
+            if (mediaRecorderRef.current?.state === 'recording') {
+              mediaRecorderRef.current.pause();
+              console.log('⏸️ Recorder in PAUSA');
+            }
+            
+            // 3️⃣ ATTENDI la trascrizione COMPLETA
+            await processRecording();
+            console.log('✅ Trascrizione completata, riprendo recorder');
+            
+            // 4️⃣ RIPRENDI solo se ancora attivo
+            if (isActive && mediaRecorderRef.current?.state === 'paused') {
+              mediaRecorderRef.current.resume();
+              console.log('▶️ Recorder ripreso');
+            }
           }
         }
       }
@@ -165,54 +167,75 @@ export const BarFullDuplexRecorder = ({
   };
 
   const processRecording = async () => {
-    if (chunksRef.current.length === 0 || isProcessing) return;
-
-    // Crea copia dei chunks prima di inviare
-    const chunksToProcess = [...chunksRef.current];
-    chunksRef.current = []; // Svuota per continuare a registrare
+    console.log('🔵 [START] processRecording - chunks:', chunksRef.current.length);
     
+    if (chunksRef.current.length === 0) {
+      console.log('⚠️ Nessun chunk da processare');
+      return;
+    }
+    
+    if (isProcessing) {
+      console.log('⚠️ Già in elaborazione, skip');
+      return;
+    }
+    
+    // 1️⃣ Copia i chunks PRIMA di svuotare
+    const chunksToProcess = [...chunksRef.current];
+    console.log('📦 Chunks copiati:', chunksToProcess.length);
+    
+    // 2️⃣ Svuota SUBITO per evitare doppioni
+    chunksRef.current = [];
     setIsProcessing(true);
-
+    
     try {
+      // 3️⃣ Crea Blob
       const audioBlob = new Blob(chunksToProcess, { type: 'audio/webm' });
-
-      // Converti in base64 - stesso pattern del microfono funzionante
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
+      console.log('🎵 Blob creato, size:', audioBlob.size, 'bytes');
       
-      await new Promise((resolve, reject) => {
-        reader.onloadend = async () => {
-          try {
-            const base64Audio = (reader.result as string).split(',')[1];
-
-            console.log('📤 Invio audio per trascrizione...');
-            const { data, error } = await supabase.functions.invoke('voice-to-text', {
-              body: { audio: base64Audio }
-            });
-
-            if (error) throw error;
-
-            if (data?.text && data.text.trim()) {
-              console.log('📝 Trascrizione ricevuta:', data.text);
-              onTranscriptionComplete(data.text);
-            }
-
-            resolve(null);
-          } catch (err) {
-            reject(err);
-          }
+      // 4️⃣ Converti in base64 con Promise pulita
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = (reader.result as string).split(',')[1];
+          console.log('📤 Base64 pronto, lunghezza:', result.length);
+          resolve(result);
         };
-        reader.onerror = reject;
+        reader.onerror = () => {
+          console.error('❌ Errore lettura FileReader');
+          reject(new Error('FileReader error'));
+        };
+        reader.readAsDataURL(audioBlob);
       });
-
+      
+      // 5️⃣ Invia a Supabase
+      console.log('📡 Invio a voice-to-text...');
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio }
+      });
+      
+      if (error) {
+        console.error('❌ Errore API Supabase:', error);
+        throw error;
+      }
+      
+      console.log('✅ Trascrizione ricevuta:', data?.text);
+      
+      // 6️⃣ Callback solo se c'è testo
+      if (data?.text?.trim()) {
+        onTranscriptionComplete?.(data.text);
+      } else {
+        console.warn('⚠️ Trascrizione vuota');
+      }
+      
     } catch (error) {
-      console.error('❌ Errore trascrizione:', error);
+      console.error('❌ Errore processRecording:', error);
       toast({
         variant: "destructive",
         title: "Errore Trascrizione",
-        description: "Impossibile trascrivere l'audio. Riprova.",
+        description: error.message || "Impossibile trascrivere"
       });
     } finally {
+      console.log('🔵 [END] processRecording');
       setIsProcessing(false);
     }
   };

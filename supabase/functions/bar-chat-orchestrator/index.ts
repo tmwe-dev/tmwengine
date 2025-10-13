@@ -122,8 +122,10 @@ serve(async (req) => {
 
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
+    const voiceEnabled = barModeSettings.voice_enabled ?? true;
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
+    console.log('🎤 Voice enabled dal DB:', voiceEnabled);
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient

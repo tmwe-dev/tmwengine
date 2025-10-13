@@ -65,7 +65,7 @@ export const BarModeToggle = ({ conversationId, isBarMode, onToggle }: BarModeTo
             conversation_id: conversationId,
             user_id: user.id,
             mode: enabled ? 'bar' : 'laboratory',
-            voice_enabled: false,
+            voice_enabled: true,
             auto_play_audio: true,
             conversation_pace: 'normal',
             enable_interruptions: true,

@@ -511,7 +511,7 @@ const ChatLaboratory = () => {
           conversation_id: conversationId,
           user_id: user.id,
           mode: mode,
-          voice_enabled: false,
+          voice_enabled: true,
           active_kb_id: kb,
           ...controls,
         });

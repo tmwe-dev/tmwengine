@@ -10,7 +10,8 @@ import {
   Settings, 
   Sparkles, 
   Upload,
-  Shield
+  Shield,
+  Database
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -86,6 +87,7 @@ export const useNavigationGroups = () => {
       icon: Settings,
       items: [
         { name: 'Impostazioni', href: '/settings', icon: Settings },
+        { name: 'Impostazioni DB', href: '/database-settings', icon: Database },
       ]
     }
   ], [t, isAdmin]);

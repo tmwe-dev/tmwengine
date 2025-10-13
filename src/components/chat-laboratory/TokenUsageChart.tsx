@@ -87,6 +87,22 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     return `${(tokens / 1000).toFixed(1)}K`;
   };
 
+  // Custom Label per mostrare valori sotto le colonnine
+  const CustomBarLabel = (props: any) => {
+    const { x, y, width, height, value } = props;
+    return (
+      <text
+        x={x + width / 2}
+        y={y + height + 15}
+        fill="hsl(var(--foreground))"
+        className="text-xs font-semibold"
+        textAnchor="middle"
+      >
+        {formatTokens(value)}
+      </text>
+    );
+  };
+
   // Modalità compatta per header
   if (compact) {
     return (
@@ -141,23 +157,6 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     );
   }
 
-  // Custom Tooltip pulito senza sfondi
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload || payload.length === 0) return null;
-    
-    return (
-      <div className="flex flex-col gap-1">
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <span className="font-bold text-green-600">
-              {entry.name}: {formatTokens(entry.value)}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   // Modalità espansa (normale)
   const chartData = tokenData.map(d => ({
     agent: d.agent,
@@ -166,7 +165,7 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   }));
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4 border border-white/10 bg-background/40 backdrop-blur-md">
       <CardHeader>
         <CardTitle className="text-sm flex items-center justify-between">
           <span>📊 Token Usage</span>
@@ -176,13 +175,32 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={150}>
+        <ResponsiveContainer width="100%" height={180}>
           <BarChart data={chartData}>
+            <defs>
+              <linearGradient id="gradientIn" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 70%)" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 70%)" stopOpacity={0.3} />
+              </linearGradient>
+              <linearGradient id="gradientOut" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.4} />
+              </linearGradient>
+            </defs>
             <XAxis dataKey="agent" />
             <YAxis />
-            <Tooltip content={<CustomTooltip />} cursor={false} />
-            <Bar dataKey="Token IN" fill="hsl(142, 76%, 70%)" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="Token OUT" fill="hsl(142, 76%, 40%)" radius={[8, 8, 0, 0]} />
+            <Bar 
+              dataKey="Token IN" 
+              fill="url(#gradientIn)" 
+              radius={[8, 8, 0, 0]}
+              label={<CustomBarLabel />}
+            />
+            <Bar 
+              dataKey="Token OUT" 
+              fill="url(#gradientOut)" 
+              radius={[8, 8, 0, 0]}
+              label={<CustomBarLabel />}
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

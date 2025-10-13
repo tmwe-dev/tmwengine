@@ -1245,7 +1245,7 @@ const ChatLaboratory = () => {
       )}
 
       {/* Messaggi */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative max-h-[calc(100vh-180px)]">
         {viewMode === 'classic' ? (
           <div 
             ref={messagesContainerRef}
@@ -1332,8 +1332,8 @@ const ChatLaboratory = () => {
               
               {messages.length === 0 && (
                 <Card className="border-dashed">
-                  <CardContent className="py-8 md:py-12 px-4 text-center">
-                    <div className="flex flex-col items-center gap-3">
+                  <CardContent className="py-6 md:py-8 px-4 text-center">
+                    <div className="flex flex-col items-center gap-2">
               <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
                 <MessageSquare className="h-12 w-12 md:h-16 md:w-16 text-indigo-600" />
               </div>
@@ -1397,9 +1397,9 @@ const ChatLaboratory = () => {
 
       {/* Input Area - nascosta in full screen */}
       {!isFullScreenMode && (
-      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 md:p-1.5">
+      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1">
         <div className="container mx-auto px-2 md:px-3">
-          <form onSubmit={handleSubmit} className="space-y-1">
+          <form onSubmit={handleSubmit} className="space-y-0.5">
             {/* Textarea con icone a sinistra */}
             <div className="flex gap-2">
               {/* Icone verticali a sinistra */}

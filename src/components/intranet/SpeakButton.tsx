@@ -7,6 +7,17 @@ interface SpeakButtonProps {
   language?: string;
 }
 
+const getLanguageLocale = (lang: string): string => {
+  const localeMap: Record<string, string> = {
+    'it': 'it-IT',
+    'en': 'en-US',
+    'es': 'es-ES',
+    'fr': 'fr-FR',
+    'de': 'de-DE',
+  };
+  return localeMap[lang] || lang.includes('-') ? lang : 'it-IT';
+};
+
 export const SpeakButton = ({ text, language = 'it-IT' }: SpeakButtonProps) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -25,7 +36,7 @@ export const SpeakButton = ({ text, language = 'it-IT' }: SpeakButtonProps) => {
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
+    utterance.lang = getLanguageLocale(language);
     
     const voices = synth.getVoices();
     const voice = voices.find(v => v.lang.startsWith(language.split('-')[0])) 

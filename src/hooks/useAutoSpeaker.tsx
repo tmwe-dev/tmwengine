@@ -12,9 +12,10 @@ interface Message {
 interface AutoSpeakerProps {
   messages: Message[];
   currentUserId: string;
+  translatedMessages?: Record<string, string>;
 }
 
-export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) => {
+export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {} }: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -47,8 +48,9 @@ export const useAutoSpeaker = ({ messages, currentUserId }: AutoSpeakerProps) =>
     // Cancella eventuali letture in corso
     synthRef.current.cancel();
 
-    // Crea utterance
-    const utterance = new SpeechSynthesisUtterance(latestMessage.content);
+    // Crea utterance con testo tradotto se disponibile
+    const textToSpeak = translatedMessages[latestMessage.id] || latestMessage.content;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     
     // Imposta la lingua
     utterance.lang = profile.readingLanguage || 'it-IT';

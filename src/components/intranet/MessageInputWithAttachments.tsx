@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AISuggestions } from './AISuggestions';
 import { AutoSpeakerToggle } from './AutoSpeakerToggle';
 import { AIChatInvoker } from './AIChatInvoker';
+import { TtsControls } from './TtsControls';
 import { useAutoSpeaker } from '@/hooks/useAutoSpeaker';
 
 interface FileAttachment {
@@ -386,6 +387,9 @@ export const MessageInputWithAttachments = ({ roomId, settingsButton }: MessageI
               <Send className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Controlli TTS */}
+          <TtsControls />
         </div>
       </div>
     </>

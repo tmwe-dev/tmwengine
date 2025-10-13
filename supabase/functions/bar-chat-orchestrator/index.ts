@@ -466,6 +466,12 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
     
+    // ✂️ Server-side truncation safety net (se LLM ignora max_tokens)
+    if (aiResponse.length > 250) {
+      aiResponse = aiResponse.substring(0, 247) + '...';
+      console.log('✂️ Risposta troncata a 250 char (safety net)');
+    }
+    
     // ============ TELEMETRIA STRUTTURATA ============
     const telemetry = {
       conversation_id: conversationId,

@@ -305,22 +305,14 @@ serve(async (req) => {
       console.log('🤖 Calling OpenAI (GPT)...');
       
       const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
-      const isGPT5OrNewer = modelName.startsWith('gpt-5') || modelName.startsWith('o3') || modelName.startsWith('o4');
-      
-      console.log(`🎯 Modello: ${modelName}, GPT-5+: ${isGPT5OrNewer ? 'SÌ' : 'NO'}`);
+      console.log(`🎯 Modello: ${modelName}`);
       
       const result = await withRetry(async () => {
         const body: any = {
           model: modelName,
+          temperature: 0.7,
           messages: conversationHistory
         };
-        
-        if (isGPT5OrNewer) {
-          body.max_completion_tokens = 4096;
-        } else {
-          body.max_tokens = 4096;
-          body.temperature = 0.7;
-        }
         
         const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
           method: 'POST',

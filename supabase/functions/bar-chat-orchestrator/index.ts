@@ -214,6 +214,11 @@ serve(async (req) => {
     const selectedParticipant = participants[currentTurnIndex];
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
+    // 🎭 Pausa realistica prima di rispondere (simula "pensiero" naturale)
+    const thinkingDelay = Math.floor(Math.random() * 2000) + 500; // 500-2500ms
+    console.log(`⏱️ ${selectedParticipant.name} sta pensando... (${thinkingDelay}ms)`);
+    await delay(thinkingDelay);
+
     // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
     const { data: agentPersonalitySections } = await supabaseClient
       .from('chat_laboratory_prompt_sections')

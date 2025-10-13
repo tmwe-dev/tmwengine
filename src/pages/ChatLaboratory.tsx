@@ -659,68 +659,26 @@ const ChatLaboratory = () => {
       });
       
       if (isBarMode) {
-        // Carica le impostazioni di risposta dalla conversazione
-        const { data: convData } = await supabase
-          .from('chat_laboratory_conversations')
-          .select('response_mode')
-          .eq('id', conversationId)
-          .single();
+        // 🍹 BAR MODE: sempre modalità sequenziale (1 agente alla volta)
+        console.log('🎯 Bar Mode - Modalità Sequenziale (una chiamata all\'orchestrator)');
         
-        const responseMode = convData?.response_mode || 'sequential';
-        console.log(`🍹 Bar Mode - Modalità: ${responseMode}`);
-        
-        if (responseMode === 'sequential') {
-          // MODALITÀ SEQUENZIALE: una sola chiamata, l'orchestrator sceglie l'agente
-          console.log('🎯 Modalità Sequenziale - una chiamata all\'orchestrator');
-          
-          const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
-            body: { 
-              conversationId,
-              userMessage: currentPrompt,
-              participants: activeAIParticipants
-            }
-          });
-          
-          if (error) {
-            console.error('❌ ERRORE Bar Mode sequenziale:', JSON.stringify(error, null, 2));
-          } else {
-            console.log('✅ Risposta sequenziale completata:', data);
-            
-            if (data?.audioGenerating && data?.messageId) {
-              console.log('🔊 Triggering async audio generation for sequential message');
-              await triggerAudioGeneration(data.messageId);
-            }
+        const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+          body: { 
+            conversationId,
+            userMessage: currentPrompt,
+            participants: activeAIParticipants
           }
+        });
+        
+        if (error) {
+          console.error('❌ ERRORE Bar Mode:', JSON.stringify(error, null, 2));
         } else {
-          // MODALITÀ PARALLELO: loop per tutti gli agenti
-          console.log('🔀 Modalità Parallelo - loop per tutti gli agenti');
+          console.log('✅ Risposta completata:', data);
           
-          for (let i = 0; i < activeAIParticipants.length; i++) {
-            console.log(`🍹 Invocando agente ${i + 1}/${activeAIParticipants.length} in Bar Mode parallelo...`);
-            
-            const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
-              body: { 
-                conversationId,
-                userMessage: currentPrompt,
-                participants: activeAIParticipants,
-                forceTurn: i
-              }
-            });
-            
-            if (error) {
-              console.error(`❌ ERRORE agente ${i + 1}:`, JSON.stringify(error, null, 2));
-              break;
-            } else {
-              console.log(`✅ Agente ${i + 1} completato:`, data);
-              
-              if (data?.audioGenerating && data?.messageId) {
-                console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
-                triggerAudioGeneration(data.messageId);
-              }
-            }
+          if (data?.audioGenerating && data?.messageId) {
+            console.log('🔊 Triggering async audio generation');
+            await triggerAudioGeneration(data.messageId);
           }
-          
-          setConvergenceRefreshKey(prev => prev + 1);
         }
       } else {
         // ✅ MODALITÀ TESTUALE: Singola chiamata orchestrata parallela

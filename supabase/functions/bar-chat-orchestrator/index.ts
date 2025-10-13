@@ -85,9 +85,26 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch API keys
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+    // Parse request body (con supporto forceTurn)
+    const { conversationId, userMessage, participants, forceTurn } = await req.json();
+    
+    // Fetch API keys from config_ai table
+    const { data: anthropicConfig } = await supabase
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'anthropic')
+      .limit(1)
+      .maybeSingle();
+    
+    const { data: openaiConfig } = await supabase
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'openai')
+      .limit(1)
+      .maybeSingle();
+    
+    const anthropicKey = anthropicConfig?.api_key || Deno.env.get('ANTHROPIC_API_KEY');
+    const openAIKey = openaiConfig?.api_key || Deno.env.get('OPENAI_API_KEY');
     const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
     
     // ✅ RECUPERA ELEVENLABS DA voice_agent_config (come fa il frontend)
@@ -240,11 +257,13 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // ✅ TURNI SEQUENZIALI PURI (no random)
+    // ✅ TURNI SEQUENZIALI PURI (no random) - supporto forceTurn
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
-    const currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+    const currentTurnIndex = forceTurn !== undefined 
+      ? forceTurn 
+      : (lastSpeakerIndex + 1) % participants.length;
     
-    console.log('➡️ Turno sequenziale FORZATO:', currentTurnIndex, 'Agent:', participants[currentTurnIndex].name);
+    console.log('➡️ Turno selezionato:', currentTurnIndex, 'Agent:', participants[currentTurnIndex].name, forceTurn !== undefined ? '(FORCED)' : '(AUTO)');
 
     const selectedParticipant = participants[currentTurnIndex];
     console.log('🎯 Agente selezionato:', selectedParticipant.name);
@@ -599,10 +618,14 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
             audioUrl = urlData.publicUrl;
             console.log('🔗 Audio URL pubblico:', audioUrl);
           }
-        } else {
-          const errorText = await ttsResponse.text();
-          console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
-        }
+    } else {
+      const errorText = await ttsResponse.text();
+      console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
+      
+      if (ttsResponse.status === 402) {
+        console.error('💳 ElevenLabs QUOTA ESAURITA - verifica il tuo piano su elevenlabs.io');
+      }
+    }
       } catch (ttsError) {
         console.error('❌ Errore TTS completo:', ttsError);
       }

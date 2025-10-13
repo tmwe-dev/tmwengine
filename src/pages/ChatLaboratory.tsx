@@ -250,6 +250,17 @@ const ChatLaboratory = () => {
           },
           async (payload) => {
             console.log('🔔 Real-time update ricevuto:', payload);
+            const newMessage = payload.new as any;
+            
+            // ✅ Auto-play audio se presente e Bar Mode attivo
+            if (newMessage.audio_url && isBarMode && newMessage.sender_type === 'ai') {
+              console.log('🔊 Auto-playing audio:', newMessage.audio_url);
+              try {
+                await playAudio(newMessage.audio_url);
+              } catch (err) {
+                console.warn('⚠️ Audio autoplay bloccato dal browser:', err);
+              }
+            }
             
             // ✅ Sprint 1 P0: Progressive streaming rendering
             if (payload.eventType === 'UPDATE' && payload.new) {
@@ -627,46 +638,56 @@ const ChatLaboratory = () => {
       });
       
       if (isBarMode) {
-        console.log('🍹 Tentativo invocazione orchestrator...');
+        console.log('🍹 LOOP Bar Mode per tutti gli agenti attivi...');
         
-        const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
-          body: { 
-            conversationId,
-            userMessage: currentPrompt,
-            participants: activeAIParticipants
-          }
-        });
-        
-        console.log('📦 Risposta orchestrator:', {
-          hasData: !!data,
-          hasError: !!error,
-          errorDetails: error ? {
-            message: error.message,
-            status: (error as any).status,
-            statusText: (error as any).statusText
-          } : null,
-          data
-        });
-        
-        if (error) {
-          console.error('❌ ERRORE COMPLETO:', JSON.stringify(error, null, 2));
-        } else {
-          console.log('✅ Risposta ricevuta:', data);
+        // ✅ LOOP per tutti gli agenti attivi in Bar Mode
+        for (let i = 0; i < activeAIParticipants.length; i++) {
+          console.log(`🍹 Invocando agente ${i + 1}/${activeAIParticipants.length} in Bar Mode...`);
           
-          // ✅ messageId returned for real-time tracking
-          // Real-time subscription will handle progressive updates
-          if (data?.messageId) {
-            console.log('📝 Messaggio creato con ID:', data.messageId, '- real-time updates attivi');
+          const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+            body: { 
+              conversationId,
+              userMessage: currentPrompt,
+              participants: activeAIParticipants,
+              forceTurn: i // ✅ Forza turno specifico
+            }
+          });
+          
+          console.log(`📦 Risposta agente ${i + 1}:`, {
+            hasData: !!data,
+            hasError: !!error,
+            errorDetails: error ? {
+              message: error.message,
+              status: (error as any).status,
+              statusText: (error as any).statusText
+            } : null,
+            data
+          });
+          
+          if (error) {
+            console.error(`❌ ERRORE agente ${i + 1}:`, JSON.stringify(error, null, 2));
+            break; // Stop loop su errore
+          } else {
+            console.log(`✅ Agente ${i + 1} completato:`, data);
+            
+            if (data?.messageId) {
+              console.log('📝 Messaggio creato con ID:', data.messageId);
+            }
+            
+            // ✅ Trigger async audio generation se necessario
+            if (data?.audioGenerating && data?.messageId) {
+              console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
+              triggerAudioGeneration(data.messageId);
+            }
           }
           
-          // ✅ Trigger async audio generation se necessario
-          if (data?.audioGenerating && data?.messageId) {
-            console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
-            triggerAudioGeneration(data.messageId);
+          // Piccolo delay tra agenti (500ms)
+          if (i < activeAIParticipants.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
-          
-          setConvergenceRefreshKey(prev => prev + 1);
         }
+        
+        setConvergenceRefreshKey(prev => prev + 1);
       } else {
         // ✅ LOOP PER MODALITÀ TESTUALE (tutti gli agenti rispondono)
         for (let i = 0; i < activeAIParticipants.length; i++) {

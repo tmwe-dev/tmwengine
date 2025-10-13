@@ -48,25 +48,7 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
-    // Recupera la chiave OpenAI dalla tabella config_ai
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { data: configData, error: configError } = await supabaseClient
-      .from('config_ai')
-      .select('api_key')
-      .eq('provider', 'openai')
-      .single();
-
-    if (configError || !configData?.api_key) {
-      console.error('Errore recupero chiave OpenAI:', configError);
-      throw new Error('OPENAI_API_KEY non configurata nella tabella config_ai');
-    }
-
-    const OPENAI_API_KEY = configData.api_key;
+    console.log('🎤 Processing audio transcription...');
 
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
@@ -76,13 +58,12 @@ serve(async (req) => {
     const blob = new Blob([binaryAudio], { type: 'audio/webm' });
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
-    formData.append('language', 'it'); // Italian language
 
     // Send to OpenAI
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
       },
       body: formData,
     });
@@ -94,6 +75,7 @@ serve(async (req) => {
     }
 
     const result = await response.json();
+    console.log('✅ Transcription complete:', result.text);
 
     return new Response(
       JSON.stringify({ text: result.text }),
@@ -101,7 +83,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Voice to text error:', error);
+    console.error('❌ Transcription error:', error.message);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

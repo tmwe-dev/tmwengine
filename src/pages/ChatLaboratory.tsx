@@ -92,6 +92,7 @@ const ChatLaboratory = () => {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [tokenChartExpanded, setTokenChartExpanded] = useState(false);
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -1080,10 +1081,19 @@ const ChatLaboratory = () => {
                     <Layout className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex items-center gap-3">
                   <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
                     Chat Laboratory
                   </h1>
+                  
+                  {/* Token Usage Miniatura */}
+                  {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
+                    <TokenUsageChart 
+                      conversationId={currentConversationId}
+                      compact
+                      onClick={() => setTokenChartExpanded(true)}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1282,9 +1292,24 @@ const ChatLaboratory = () => {
                 <TokenWarningBanner conversationId={currentConversationId} />
               )}
 
-              {/* Token Usage Chart */}
-              {currentConversationId && messages.length > 0 && (
-                <TokenUsageChart conversationId={currentConversationId} />
+              {/* Token Usage Chart Espanso */}
+              {currentConversationId && messages.length > 0 && tokenChartExpanded && (
+                <Card className="mb-4">
+                  <CardContent className="p-4">
+                    <TokenUsageChart 
+                      conversationId={currentConversationId}
+                      compact={false}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setTokenChartExpanded(false)}
+                      className="mt-2 w-full"
+                    >
+                      Chiudi grafico
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Convergence Indicator */}

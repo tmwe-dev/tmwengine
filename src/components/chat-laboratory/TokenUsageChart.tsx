@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface TokenUsageChartProps {
   conversationId: string;
+  compact?: boolean;
+  onClick?: () => void;
 }
 
-export function TokenUsageChart({ conversationId }: TokenUsageChartProps) {
+export function TokenUsageChart({ conversationId, compact = false, onClick }: TokenUsageChartProps) {
   const [tokenData, setTokenData] = useState<Array<{
     agent: string;
     tokens: number;
@@ -67,7 +69,47 @@ export function TokenUsageChart({ conversationId }: TokenUsageChartProps) {
   if (tokenData.length === 0) return null;
 
   const totalTokens = tokenData.reduce((sum, d) => sum + d.tokens, 0);
+  const maxTokens = Math.max(...tokenData.map(d => d.tokens));
 
+  // Modalità compatta per header
+  if (compact) {
+    return (
+      <div 
+        className="flex items-end gap-2 px-3 py-1.5 rounded-md bg-black/20 backdrop-blur cursor-pointer hover:scale-105 transition-transform border border-white/10"
+        onClick={onClick}
+        title="Clicca per espandere il grafico"
+      >
+        {tokenData.map((agent) => {
+          const heightPercent = (agent.tokens / maxTokens) * 100;
+          const bgGradient = 
+            agent.agent === 'ChatGPT' ? 'bg-gradient-to-t from-green-500/30 to-green-400/50' :
+            agent.agent === 'Claude' ? 'bg-gradient-to-t from-purple-500/30 to-purple-400/50' :
+            'bg-gradient-to-t from-blue-500/30 to-blue-400/50';
+
+          return (
+            <div key={agent.agent} className="flex flex-col items-center gap-1">
+              {/* Colonnina */}
+              <div className="flex flex-col justify-end h-8">
+                <div 
+                  className={`w-6 rounded-t ${bgGradient}`}
+                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
+                />
+              </div>
+              
+              {/* Token count */}
+              <span className="text-xs text-white font-medium">
+                {agent.tokens > 999 
+                  ? `${(agent.tokens / 1000).toFixed(1)}K` 
+                  : agent.tokens}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Modalità espansa (normale)
   return (
     <Card className="mb-4">
       <CardHeader>

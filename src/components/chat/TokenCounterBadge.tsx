@@ -87,12 +87,12 @@ export const TokenCounterBadge = ({
   
   return (
     <div className="flex items-center gap-2">
-      <Badge variant={isNearLimit ? 'destructive' : 'secondary'} className="gap-2">
+      <Badge variant={isNearLimit ? 'destructive' : 'outline'} className="gap-2 bg-transparent">
         {isNearLimit ? <AlertTriangle className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
         <span className="font-mono">{tokenCount.toLocaleString()}</span>
       </Badge>
       <span className="text-xs text-muted-foreground">
-        / {totalTokens.toLocaleString()} totali
+        / {totalTokens.toLocaleString()}
       </span>
     </div>
   );

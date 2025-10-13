@@ -28,10 +28,10 @@ export const MobileTopBar = ({
     <div className={`flex flex-col border-t flex-shrink-0 z-50 py-2 ${isLayoutInverted ? 'order-first' : ''}`}>
       {/* Prima linea - Menu + Nome stanza + Toggle Layout */}
       <div className="flex items-center justify-between px-2 gap-2">
-        {/* Left - Menu button */}
-        <div className="flex items-center">
+        {/* Left - Menu button + Nome stanza */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <button 
-            className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors"
+            className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors flex-shrink-0"
             onClick={onMenuClick}
             aria-label="Apri menu"
           >
@@ -47,15 +47,11 @@ export const MobileTopBar = ({
               )}
             </div>
           </button>
-        </div>
-
-        {/* Center - Nome stanza */}
-        <div className="flex-1 text-center px-2">
           <h1 className="text-sm font-semibold text-foreground truncate">{selectedRoomName}</h1>
         </div>
 
         {/* Right - Layout toggle button */}
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           <Button
             size="icon"
             variant="ghost"

@@ -42,8 +42,9 @@ export const BarChatAudioControls = ({
                 "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
                 !isDuplexMode ? "text-foreground" : "text-muted-foreground"
               )}
+              title="Premi per parlare, rilascia per inviare"
             >
-              Premi per parlare
+              🎤 Manuale
             </Label>
           </div>
           <Switch
@@ -59,8 +60,9 @@ export const BarChatAudioControls = ({
                 "text-sm font-medium cursor-pointer transition-colors hidden sm:inline",
                 isDuplexMode ? "text-foreground" : "text-muted-foreground"
               )}
+              title="Parla liberamente come in una telefonata"
             >
-              Full-Duplex
+              📞 Conversazione Continua
             </Label>
           </div>
         </div>

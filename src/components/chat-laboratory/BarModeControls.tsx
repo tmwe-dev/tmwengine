@@ -177,56 +177,29 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         </div>
 
         {/* Interruzioni */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 col-span-2">
           <Zap className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="interruptions" className="text-sm cursor-pointer w-24">
-            Interruzioni
+          <Label htmlFor="interruptions" className="text-sm cursor-pointer flex-1" title="Ti permette di interrompere l'AI mentre sta parlando">
+            ✋ Posso interrompere l'AI
           </Label>
           <Switch
             id="interruptions"
             checked={settings.enable_interruptions}
             onCheckedChange={(checked) => updateSetting('enable_interruptions', checked)}
-            className="ml-auto"
-          />
-        </div>
-
-        {/* Auto-Play Audio */}
-        <div className="flex items-center gap-2">
-          <Play className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="autoplay" className="text-sm cursor-pointer w-24">
-            Auto-Play
-          </Label>
-          <Switch
-            id="autoplay"
-            checked={settings.auto_play_audio}
-            onCheckedChange={(checked) => updateSetting('auto_play_audio', checked)}
-            className="ml-auto"
           />
         </div>
 
         {/* Voice Enabled */}
         <div className="flex items-center gap-2 col-span-2">
           <Mic className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="voice" className="text-sm cursor-pointer w-24">
-            Voice TTS
+          <Label htmlFor="voice" className="text-sm cursor-pointer flex-1" title="L'AI risponde con voce sintetizzata invece che solo testo">
+            🔊 Voce AI
           </Label>
           <Switch
             id="voice"
             checked={settings.voice_enabled}
             onCheckedChange={(checked) => updateSetting('voice_enabled', checked)}
-            className="ml-auto"
           />
-        </div>
-
-        {/* Continuous Mic (solo visivo per ora, la logica è nei BarChatAudioControls) */}
-        <div className="flex items-center gap-2 col-span-2">
-          <Mic className="h-4 w-4 text-muted-foreground" />
-          <Label className="text-sm text-muted-foreground w-24">
-            Mic Continuo
-          </Label>
-          <span className="text-xs text-muted-foreground ml-auto">
-            Attiva/Disattiva con tasto 🍺 in basso
-          </span>
         </div>
 
       </div>

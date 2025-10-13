@@ -219,7 +219,6 @@ REGOLE CRITICHE:
         .from('config_ai')
         .select('api_key')
         .eq('provider', 'anthropic')
-        .eq('attivo', true)
         .single();
 
       if (!anthropicConfig?.api_key) {
@@ -264,7 +263,6 @@ REGOLE CRITICHE:
         .from('config_ai')
         .select('api_key, modello')
         .eq('provider', 'openai')
-        .eq('attivo', true)
         .single();
 
       if (!openaiConfig?.api_key) {

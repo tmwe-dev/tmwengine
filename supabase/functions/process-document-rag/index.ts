@@ -50,12 +50,21 @@ serve(async (req) => {
     const chunks = chunkText(fileText, 500);
     console.log(`[RAG] Created ${chunks.length} chunks`);
 
-    // 4. Genera embeddings per ogni chunk
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.error('[RAG] OPENAI_API_KEY not configured');
-      throw new Error('OPENAI_API_KEY not configured');
+    // 4. Recupera la chiave OpenAI dal database
+    const { data: configData, error: configError } = await supabase
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'openai')
+      .single();
+
+    if (configError || !configData?.api_key) {
+      console.error('[RAG] Errore recupero chiave OpenAI:', configError);
+      throw new Error('OPENAI_API_KEY non configurata nella tabella config_ai');
     }
+
+    const openaiApiKey = configData.api_key;
+
+    // 5. Genera embeddings per ogni chunk
 
     console.log('[RAG] Generating embeddings');
     const embeddingsPromises = chunks.map(async (chunkText, index) => {

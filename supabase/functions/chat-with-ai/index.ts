@@ -95,8 +95,8 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('config_ai')
         .select('*')
-        .eq('attivo', true)
-        .single();
+        .eq('provider', 'openai')
+        .maybeSingle();
       
       if (error) throw new Error('Nessuna configurazione AI attiva');
       aiConfig = data;

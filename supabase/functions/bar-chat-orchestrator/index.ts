@@ -209,27 +209,34 @@ serve(async (req) => {
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
     let mentionDetected = false;
     
-    // 1. Cerca menzioni dirette robuste (es: "gpt?", "@claude", "gemini cosa dici?")
+    // 1. Cerca menzioni dirette robuste (alias vocali comuni: "renny?", "vittorio", "tonino", "@gpt", etc.)
     for (const p of participants) {
-      const namePattern = p.name.toLowerCase().split(' ')[0]; // Usa solo il primo nome
+      const namePattern = p.name.toLowerCase().replace(/[^a-z]/g, '');
       const typePattern = p.type.toLowerCase();
       
-      // Crea regex che cattura: nome/tipo seguito da "?" o spazi o fine messaggio
-      const patterns = [
-        new RegExp(`\\b${namePattern}\\??\\b`, 'i'),
-        new RegExp(`@${namePattern}`, 'i'),
-        typePattern === 'chatgpt' ? /\bgpt\??/i : null,
-        typePattern === 'openai' ? /\bgpt\??/i : null,
-        typePattern === 'gemini' ? /\bgemini\??/i : null,
-        typePattern === 'claude' ? /\bclaude\??/i : null,
-        typePattern === 'anthropic' ? /\bclaude\??/i : null
+      // 🔥 Alias vocali estesi per robustezza
+      const aliases = [
+        namePattern, // es: "rennygpt"
+        p.name.split('-')[0].trim().toLowerCase(), // es: "renny"
+        p.name.split(' ')[0].trim().toLowerCase(), // es: "vittorio"
+        typePattern, // es: "openai"
+        // Alias specifici per provider comuni
+        (typePattern === 'openai' || typePattern === 'chatgpt') ? 'gpt' : null,
+        typePattern === 'anthropic' ? 'claude' : null,
+        (typePattern === 'gemini' || typePattern === 'google' || typePattern === 'lovable_ai') ? 'gemini' : null
       ].filter(Boolean);
       
-      if (patterns.some(regex => regex && regex.test(userMessageLower))) {
+      const patterns = aliases.map(alias => new RegExp(`\\b${alias}\\??\\b`, 'i'));
+      patterns.push(new RegExp(`@(${aliases.join('|')})`, 'i')); // @mention
+      
+      const matched = patterns.some(regex => regex.test(userMessageLower));
+      
+      if (matched) {
         selectedParticipant = p;
         currentTurnIndex = participants.findIndex(x => x.id === p.id);
         mentionDetected = true;
-        console.log(`🎯 Menzione diretta rilevata → forza risposta: ${p.name}`);
+        const detectedAlias = aliases.find(a => new RegExp(`\\b${a}\\??\\b`, 'i').test(userMessageLower));
+        console.log(`🎯 Menzione diretta rilevata → forza risposta: ${p.name} (alias: ${detectedAlias})`);
         break;
       }
     }
@@ -314,7 +321,9 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5',
-            max_tokens: 4096,
+            max_tokens: 120, // 🔥 HARD LIMIT brevità (80-90 parole ~120 token)
+            temperature: 0.4, // 🔥 Più deterministico
+            stop_sequences: ['\n\n', '—', 'Fine.'], // 🔥 Stop anticipato
             messages: conversationHistory.filter(m => m.role !== 'system'),
             system: composedPrompt
           })
@@ -357,8 +366,9 @@ serve(async (req) => {
         
         const body: any = {
           model: modelName,
-          // ✅ GPT-5 usa temperature di default (1.0)
+          max_completion_tokens: 100, // 🔥 HARD LIMIT brevità (40-60 parole ~100 token) - GPT-5 usa max_completion_tokens
           // temperature rimosso - non supportato da gpt-5-2025-08-07
+          stop: ['\n\n', '—'], // 🔥 Stop anticipato
           messages: [
             { role: 'system', content: composedPrompt },
             { 
@@ -412,6 +422,9 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
+            max_tokens: 110, // 🔥 HARD LIMIT brevità (70-80 parole ~110 token)
+            temperature: 0.35, // 🔥 Più deterministico
+            stop: ['\n\n'], // 🔥 Stop anticipato
             messages: conversationHistory
           })
         }, 43000);
@@ -444,6 +457,12 @@ serve(async (req) => {
       throw new Error(`No API key available for ${selectedParticipant.type}`);
     }
 
+    // 🔥 Server-side truncation safety net (>250 char)
+    if (aiResponse.length > 250) {
+      aiResponse = aiResponse.substring(0, 247) + '...';
+      console.log('✂️ Risposta troncata a 250 char (hard limit)');
+    }
+    
     const responseTime = Date.now() - startTime;
     console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
     

@@ -308,10 +308,21 @@ serve(async (req) => {
       console.log(`🎯 Modello: ${modelName}`);
       
       const result = await withRetry(async () => {
+        // Converti history in stringa formattata (modello Laboratory)
+        const formattedHistory = historyMessages
+          .map((msg: any) => msg.content)
+          .join('\n\n');
+        
         const body: any = {
           model: modelName,
           temperature: 0.7,
-          messages: conversationHistory
+          messages: [
+            { role: 'system', content: composedPrompt },
+            { 
+              role: 'user', 
+              content: `Conversazione:\n${formattedHistory}\n\nNuovo messaggio:\n${userMessage}` 
+            }
+          ]
         };
         
         const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {

@@ -1331,15 +1331,15 @@ const ChatLaboratory = () => {
               )}
               
               {messages.length === 0 && (
-                <Card className="border-dashed">
-                  <CardContent className="p-6 md:p-8 text-center">
+                <Card className="border-dashed min-h-[50vh] flex items-center justify-center">
+                  <CardContent className="py-12 md:py-16 px-4 text-center">
                     <div className="flex flex-col items-center gap-4">
-              <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20 mt-2">
-                <MessageSquare className="h-12 w-12 text-indigo-600" />
+              <div className="p-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
+                <MessageSquare className="h-16 w-16 md:h-20 md:w-20 text-indigo-600" />
               </div>
                       <div>
-                        <h3 className="text-lg font-semibold mb-2">Inizia una Discussione</h3>
-                        <p className="text-sm text-muted-foreground max-w-md">
+                        <h3 className="text-xl md:text-2xl font-semibold mb-3">Inizia una Discussione</h3>
+                        <p className="text-base md:text-lg text-muted-foreground max-w-lg">
                           Gli agenti AI selezionati risponderanno in sequenza, ognuno con la propria prospettiva
                         </p>
                       </div>

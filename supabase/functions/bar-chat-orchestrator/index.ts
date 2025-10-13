@@ -295,9 +295,9 @@ serve(async (req) => {
     let tokenOutput = 0;
     const startTime = Date.now();
 
-    // Route to AI provider
-    if (selectedParticipant.type === 'anthropic' && anthropicKey) {
-      console.log('🤖 Calling Anthropic...');
+    // Route to AI provider - FIX type matching to support both naming conventions
+    if ((selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') && anthropicKey) {
+      console.log('🤖 Calling Anthropic (Claude)...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -324,8 +324,8 @@ serve(async (req) => {
       tokenInput = anthropicData.usage?.input_tokens || 0;
       tokenOutput = anthropicData.usage?.output_tokens || 0;
     } 
-    else if (selectedParticipant.type === 'openai' && openAIKey) {
-      console.log('🤖 Calling OpenAI...');
+    else if ((selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') && openAIKey) {
+      console.log('🤖 Calling OpenAI (ChatGPT)...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -350,8 +350,8 @@ serve(async (req) => {
       tokenInput = openaiData.usage?.prompt_tokens || 0;
       tokenOutput = openaiData.usage?.completion_tokens || 0;
     }
-    else if (lovableAIKey) {
-      console.log('🤖 Calling Lovable AI...');
+    else if ((selectedParticipant.type === 'gemini' || selectedParticipant.type === 'lovable') && lovableAIKey) {
+      console.log('🤖 Calling Lovable AI (Gemini)...');
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -376,7 +376,8 @@ serve(async (req) => {
       tokenOutput = lovableData.usage?.completion_tokens || 0;
     }
     else {
-      throw new Error(`No API key available for ${selectedParticipant.type}`);
+      console.error('❌ Nessun provider disponibile per:', selectedParticipant.type);
+      throw new Error(`No API key available for ${selectedParticipant.type}. Verifica di aver configurato le API keys.`);
     }
 
     const responseTime = Date.now() - startTime;

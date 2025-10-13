@@ -77,12 +77,14 @@ export const BarFullDuplexRecorder = ({
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
+          console.log('📦 Chunk ricevuto, size:', event.data.size);
           chunksRef.current.push(event.data);
         }
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(1000); // Chunk ogni secondo come il microfono funzionante
+      console.log('🎤 MediaRecorder.start() chiamato, stato:', mediaRecorder.state);
 
       // Start VAD monitoring
       startVADMonitoring();
@@ -218,13 +220,14 @@ export const BarFullDuplexRecorder = ({
         throw error;
       }
       
-      console.log('✅ Trascrizione ricevuta:', data?.text);
+      console.log('📝 Trascrizione:', data?.text);
       
       // 6️⃣ Callback solo se c'è testo
       if (data?.text?.trim()) {
+        console.log('✅ Chiamata onTranscriptionComplete con:', data.text);
         onTranscriptionComplete?.(data.text);
       } else {
-        console.warn('⚠️ Trascrizione vuota');
+        console.warn('⚠️ Trascrizione vuota, skip callback');
       }
       
     } catch (error) {
@@ -241,12 +244,14 @@ export const BarFullDuplexRecorder = ({
   };
 
   const toggleFullDuplex = async () => {
+    console.log('🍺 Toggle cliccato, isActive:', isActive);
     if (isActive) {
       stopFullDuplex();
     } else {
       const success = await setupAudioContext();
       if (success) {
         setIsActive(true);
+        console.log('✅ Full-duplex ATTIVO');
         toast({
           title: "🎙️ Modalità Full-Duplex Attiva",
           description: "Parla liberamente, il sistema rileverà automaticamente quando finisci.",
@@ -256,12 +261,14 @@ export const BarFullDuplexRecorder = ({
   };
 
   const stopFullDuplex = () => {
+    console.log('⏹️ Stop Full-Duplex');
     setIsActive(false);
     setIsSpeaking(false);
     setAudioLevel(0);
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
+      console.log('⏹️ Recording stopped, chunks totali:', chunksRef.current.length);
     }
 
     if (audioStreamRef.current) {

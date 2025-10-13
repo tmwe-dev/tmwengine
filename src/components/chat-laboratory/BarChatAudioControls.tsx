@@ -74,7 +74,10 @@ export const BarChatAudioControls = ({
         {isDuplexMode ? (
           <BarFullDuplexRecorder
             conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
+            onTranscriptionComplete={(text) => {
+              console.log('🎯 [BarChatAudioControls] Trascrizione ricevuta da full-duplex:', text);
+              onTranscriptionComplete(text);
+            }}
             isDisabled={false}
             isAISpeaking={isAISpeaking}
           />

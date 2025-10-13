@@ -79,11 +79,24 @@ export const useElevenLabsWidget = () => {
         // 4. Monta widget GLOBALE (nascosto di default)
         if (window.mountElevenLabsConvai) {
           const widget = window.mountElevenLabsConvai(config.agentId, 'global-widget');
-          // Nascondi il widget globale di default
+          
+          // Nascondi widget globale con multiple proprietà per assicurare che rimanga nascosto
           if (widget) {
-            widget.style.display = 'none';
+            const hideWidget = () => {
+              widget.style.display = 'none';
+              widget.style.visibility = 'hidden';
+              widget.style.opacity = '0';
+              widget.style.pointerEvents = 'none';
+            };
+            
+            hideWidget();
+            // Riapplica dopo render per assicurare che funzioni
+            requestAnimationFrame(hideWidget);
+            setTimeout(hideWidget, 100);
+            setTimeout(hideWidget, 500);
+            
+            console.log('Global widget mounted (hidden by default)');
           }
-          console.log('Global widget mounted (hidden by default)');
         } else {
           throw new Error('mountElevenLabsConvai function not available');
         }
@@ -114,7 +127,21 @@ export const useElevenLabsWidget = () => {
       const widget = document.querySelector('#global-widget') as HTMLElement;
       if (widget) {
         const isHidden = widget.style.display === 'none';
-        widget.style.display = isHidden ? 'block' : 'none';
+        
+        if (isHidden) {
+          // Mostra widget
+          widget.style.display = 'block';
+          widget.style.visibility = 'visible';
+          widget.style.opacity = '1';
+          widget.style.pointerEvents = 'auto';
+        } else {
+          // Nascondi widget
+          widget.style.display = 'none';
+          widget.style.visibility = 'hidden';
+          widget.style.opacity = '0';
+          widget.style.pointerEvents = 'none';
+        }
+        
         console.log(`Global widget ${isHidden ? 'shown' : 'hidden'}`);
         return !isHidden;
       }

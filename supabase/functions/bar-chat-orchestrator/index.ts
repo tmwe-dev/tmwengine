@@ -1,58 +1,5 @@
-// Bar Chat Orchestrator con integrazione ElevenLabs TTS
-// Versione: 4.0 - Rollback + Sync Summaries
-// Data: 2025-01-20
-// Changes: Restored stable architecture + synchronous summary generation for Economy Mode
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// Helper: Generate message summaries SYNCHRONOUSLY
-async function generateMessageSummary(
-  content: string,
-  type: 'user_friendly' | 'ultra_compressed',
-  lovableApiKey: string
-): Promise<string> {
-  const prompts = {
-    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
-
-${content}
-
-Riassunto user-friendly:`,
-    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
-
-${content}
-
-Riassunto ultra-compresso:`
-  };
-
-  try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'user', content: prompts[type] }
-        ],
-        temperature: 0.3,
-        max_tokens: type === 'user_friendly' ? 100 : 50
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Summary generation failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
-  } catch (error) {
-    console.error(`Error generating ${type} summary:`, error);
-    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
-  }
-}
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,70 +12,35 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
-    const { conversationId, userMessage, participants, action } = requestBody;
-    
-    console.log('🍹 Bar Chat Orchestrator v4.0 riceve:', { conversationId, action, userMessage, participants });
+    const { conversationId, userMessage, participants } = await req.json();
+    console.log('🍹 Bar Chat Orchestrator riceve:', { conversationId, userMessage, participants });
 
-    // Handle INTERRUPT action
-    if (action === 'interrupt') {
-      console.log('⛔ Interrupt richiesto per conversazione:', conversationId);
-      return new Response(
-        JSON.stringify({ interrupted: true, message: 'Interrupt signal received' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Normal flow continua...
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Parse request body (con supporto forceTurn)
-    const { conversationId, userMessage, participants, forceTurn } = await req.json();
-    
-    // Fetch API keys from config_ai table
-    const { data: anthropicConfig } = await supabase
+    // Fetch API keys
+    const { data: anthropicConfig } = await supabaseClient
       .from('config_ai')
       .select('api_key')
       .eq('provider', 'anthropic')
-      .limit(1)
       .maybeSingle();
-    
-    const { data: openaiConfig } = await supabase
-      .from('config_ai')
-      .select('api_key')
-      .eq('provider', 'openai')
-      .limit(1)
-      .maybeSingle();
-    
-    const anthropicKey = anthropicConfig?.api_key || Deno.env.get('ANTHROPIC_API_KEY');
-    const openAIKey = openaiConfig?.api_key || Deno.env.get('OPENAI_API_KEY');
-    const lovableAIKey = Deno.env.get('LOVABLE_API_KEY');
-    
-    // ✅ RECUPERA ELEVENLABS DA voice_agent_config (come fa il frontend)
-    const { data: voiceConfig, error: voiceError } = await supabase
-      .from('voice_agent_config')
-      .select('elevenlabs_api_key, enabled')
-      .eq('enabled', true)
-      .maybeSingle();
-    
-    const elevenLabsKey = voiceConfig?.elevenlabs_api_key || null;
-    
-    console.log('🔑 ElevenLabs config recuperata da voice_agent_config:', {
-      trovato: !!voiceConfig,
-      hasKey: !!elevenLabsKey,
-      enabled: voiceConfig?.enabled,
-      error: voiceError?.message
-    });
 
-    if (!anthropicKey && !openAIKey && !lovableAIKey) {
-      throw new Error('Nessuna chiave API AI configurata');
+    const { data: openaiConfig } = await supabaseClient
+      .from('config_ai')
+      .select('api_key, modello')
+      .eq('provider', 'openai')
+      .maybeSingle();
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+    if (!anthropicConfig?.api_key && !openaiConfig?.api_key && !LOVABLE_API_KEY) {
+      throw new Error('Nessuna chiave API configurata');
     }
 
     // Fetch Bar Mode settings
-    const { data: barModeSettings } = await supabase
+    const { data: barModeSettings } = await supabaseClient
       .from('chat_laboratory_bar_mode')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -140,50 +52,11 @@ serve(async (req) => {
 
     const selectedTopic = barModeSettings.selected_topic;
     const activeKbId = barModeSettings.active_kb_id;
-    const voiceEnabled = barModeSettings.voice_enabled || false;
-    const interruptRequested = barModeSettings.interrupt_requested || false;
-    const enableInterruptions = barModeSettings.enable_interruptions !== false; // default true
-    const conversationPace = barModeSettings.conversation_pace || 'normal';
-    
-    // Carica agenti vocali attivi dalla configurazione globale
-    const { data: activeElevenLabsAgents } = await supabase
-      .from('elevenlabs_agents')
-      .select('*')
-      .eq('user_id', barModeSettings.user_id)
-      .eq('is_active', true)
-      .order('order_index');
-    
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
-    console.log('🎤 Agenti vocali attivi:', activeElevenLabsAgents?.length || 0);
-    console.log('🎤 Voice enabled:', voiceEnabled);
-    console.log('⛔ Interrupt requested:', interruptRequested);
-    console.log('🚫 Enable interruptions:', enableInterruptions);
-    console.log('⏱️ Conversation pace:', conversationPace);
-
-    // Se interrupt è stato richiesto E le interruzioni sono abilitate, ferma e pulisci flag
-    if (interruptRequested && enableInterruptions) {
-      console.log('🛑 Interrupt attivo, annullo generazione');
-      await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ interrupt_requested: false })
-        .eq('conversation_id', conversationId);
-      
-      return new Response(
-        JSON.stringify({ interrupted: true, message: 'Generation interrupted by user' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else if (interruptRequested && !enableInterruptions) {
-      console.log('⚠️ Interrupt richiesto ma interruzioni disabilitate - ignoro');
-      // Reset flag comunque
-      await supabase
-        .from('chat_laboratory_bar_mode')
-        .update({ interrupt_requested: false })
-        .eq('conversation_id', conversationId);
-    }
 
     // Fetch conversation data
-    const { data: conversation, error: convError } = await supabase
+    const { data: conversation, error: convError } = await supabaseClient
       .from('chat_laboratory_conversations')
       .select('*')
       .eq('id', conversationId)
@@ -191,26 +64,8 @@ serve(async (req) => {
 
     if (convError) throw convError;
 
-    // ⏸️ CHECK PAUSA CONVERSAZIONE
-    const isPaused = conversation.is_paused || false;
-    const conversationStyle = conversation.conversation_style || 'colleagues';
-    
-    console.log('🎭 Conversation Style:', conversationStyle);
-    console.log('⏸️ Is Paused:', isPaused);
-
-    if (isPaused) {
-      console.log('⏸️ Conversazione in pausa, esco');
-      return new Response(
-        JSON.stringify({ 
-          paused: true, 
-          message: 'Conversazione in pausa. Riprendi per continuare.' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Fetch global system prompt
-    const { data: systemPrompts } = await supabase
+    const { data: systemPrompts } = await supabaseClient
       .from('chat_laboratory_system_prompts')
       .select('contenuto')
       .eq('attivo', true)
@@ -220,8 +75,8 @@ serve(async (req) => {
     const globalSystemPrompt = systemPrompts?.[0]?.contenuto || 
       "Sei un assistente AI intelligente che partecipa a discussioni costruttive in un bar virtuale.";
 
-    // Fetch BASE sections
-    const { data: baseSections } = await supabase
+    // Fetch BASE sections (sempre attive)
+    const { data: baseSections } = await supabaseClient
       .from('chat_laboratory_prompt_sections')
       .select('content')
       .eq('section_type', 'BASE')
@@ -230,10 +85,10 @@ serve(async (req) => {
 
     console.log(`📦 Sezioni BASE: ${baseSections?.length || 0}`);
 
-    // Fetch TOPIC sections
+    // Fetch TOPIC sections (solo se topic selezionato)
     let topicSections: any[] = [];
     if (selectedTopic) {
-      const { data } = await supabase
+      const { data } = await supabaseClient
         .from('chat_laboratory_prompt_sections')
         .select('content')
         .eq('section_type', 'TOPIC')
@@ -246,7 +101,7 @@ serve(async (req) => {
     }
 
     // Fetch conversation messages
-    const { data: messages } = await supabase
+    const { data: messages } = await supabaseClient
       .from('chat_laboratory_messages')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -257,19 +112,24 @@ serve(async (req) => {
       content: `[${msg.sender_name}]: ${msg.content}`
     }));
 
-    // ✅ TURNI SEQUENZIALI PURI (no random) - supporto forceTurn
+    // Turn-taking logic (1 agente per volta)
+    let currentTurnIndex = conversation.current_turn_index || 0;
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
-    const currentTurnIndex = forceTurn !== undefined 
-      ? forceTurn 
-      : (lastSpeakerIndex + 1) % participants.length;
     
-    console.log('➡️ Turno selezionato:', currentTurnIndex, 'Agent:', participants[currentTurnIndex].name, forceTurn !== undefined ? '(FORCED)' : '(AUTO)');
+    // 30% chance of randomization
+    if (Math.random() < 0.3) {
+      currentTurnIndex = Math.floor(Math.random() * participants.length);
+      console.log('🎲 Turno randomizzato:', currentTurnIndex);
+    } else {
+      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+      console.log('➡️ Turno sequenziale:', currentTurnIndex);
+    }
 
     const selectedParticipant = participants[currentTurnIndex];
-    console.log('🎯 Agente selezionato:', selectedParticipant.name);
+    console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
-    // Fetch AGENT_PERSONALITY sections
-    const { data: agentPersonalitySections } = await supabase
+    // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
+    const { data: agentPersonalitySections } = await supabaseClient
       .from('chat_laboratory_prompt_sections')
       .select('content')
       .eq('section_type', 'AGENT_PERSONALITY')
@@ -277,122 +137,30 @@ serve(async (req) => {
       .ilike('section_name', `%${selectedParticipant.name}%`)
       .order('order_priority', { ascending: true });
 
-    console.log(`👤 Sezioni AGENT_PERSONALITY: ${agentPersonalitySections?.length || 0}`);
+    console.log(`👤 Sezioni AGENT_PERSONALITY per ${selectedParticipant.name}: ${agentPersonalitySections?.length || 0}`);
 
-    // Fallback su elevenlabs_agents.text_generation_prompt
-    let agentTextPrompt = '';
-    let elevenLabsVoiceId = '';
+    // Compose final system prompt
+    let composedPrompt = globalSystemPrompt + '\n\n';
     
-    if (activeElevenLabsAgents && activeElevenLabsAgents.length > 0) {
-      for (const agent of activeElevenLabsAgents) {
-        if (agent.name?.toLowerCase().includes(selectedParticipant.name.toLowerCase())) {
-          agentTextPrompt = agent.text_generation_prompt || '';
-          elevenLabsVoiceId = agent.voice_id || '';
-          console.log(`🎤 Agent match trovato: "${agent.name}", voice_id: ${elevenLabsVoiceId}`);
-          break;
-        }
-      }
-      
-      // Fallback: se non trova match, usa primo agente
-      if (!elevenLabsVoiceId && activeElevenLabsAgents.length > 0) {
-        const firstAgent = activeElevenLabsAgents[0];
-        elevenLabsVoiceId = firstAgent.voice_id || '';
-        agentTextPrompt = firstAgent.text_generation_prompt || '';
-        console.log(`⚠️ Nessun match trovato, uso primo agente: "${firstAgent.name}"`);
-      }
-    }
-
-    // 🎭 CONVERSATION STYLE PROMPTS (injection dinamica)
-    const conversationStylePrompts = {
-      boss_talk: `
-🎯 MODALITÀ: BOSS TALK
-
-Sei in una riunione di lavoro ad alto livello. Il tuo obiettivo è RISOLVERE il problema nel modo più efficiente possibile.
-
-COMPORTAMENTO RICHIESTO:
-- ✅ Pragmatico e orientato ai risultati
-- ✅ Sintetico e diretto al punto (max 3-4 frasi)
-- ✅ Pronto a preparare report e analisi concrete
-- ✅ Collaborativo ma senza fronzoli
-- ❌ ZERO commenti inutili, battute, divagazioni
-- ❌ NO lunghe introduzioni o conclusioni
-
-FORMATO RISPOSTA:
-1. Vai dritto al punto
-2. Proponi soluzioni concrete
-3. Chiedi conferma o prossimo step
-
-ESEMPIO: "Analizzati i dati. Propongo soluzione X perché riduce costi del 30%. Procediamo o rivediamo?"
-`,
-
-      colleagues: `
-🤝 MODALITÀ: COLLEAGUES
-
-Sei in una discussione tra colleghi che vogliono risolvere un problema in modo professionale ma amichevole.
-
-COMPORTAMENTO RICHIESTO:
-- ✅ Professionale ma cordiale
-- ✅ Qualche battuta leggera se appropriata (max 1 per risposta)
-- ✅ Ascolti gli altri e riconosci i loro punti
-- ✅ Bilanciato tra pragmatismo e piacevolezza
-- ❌ NO eccessiva rigidità o serietà
-- ❌ NO eccesso di formalità
-
-FORMATO RISPOSTA:
-1. Riconosci contributo precedente (se rilevante)
-2. Aggiungi il tuo punto
-3. Lascia spazio agli altri (domanda aperta)
-
-ESEMPIO: "Bella idea Marco! Aggiungo che potremmo anche X per velocizzare. Che ne dite?"
-`,
-
-      bar_chat: `
-🍺 MODALITÀ: BAR CHAT
-
-Sei al bar dopo lavoro con i colleghi. L'atmosfera è rilassata, ma l'obiettivo resta risolvere il problema.
-
-COMPORTAMENTO RICHIESTO:
-- ✅ Informale e scherzoso (ma non volgare)
-- ✅ Battute su lavoro, calcio, caffè lunedì, ecc.
-- ✅ Prendi in giro bonariamente i colleghi (se pertinente)
-- ✅ Comunque arrivi a soluzioni concrete
-- ✅ Usa espressioni colloquiali ("dai", "vabbè", "aho")
-- ❌ NO eccessiva serietà o formalità
-
-FORMATO RISPOSTA:
-1. Commento leggero/battuta (max 1 frase)
-2. Soluzione proposta in modo informale
-3. Coinvolgi gli altri con domanda scherzosa
-
-ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del lunedì 😅. Che ne dite se proviamo X? O aspettiamo che si svegli da solo?"
-`
-    };
-
-    const stylePrompt = conversationStylePrompts[conversationStyle as keyof typeof conversationStylePrompts] || 
-      conversationStylePrompts.colleagues;
-
-    // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
-    let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
-    
+    // Add BASE sections
     if (baseSections && baseSections.length > 0) {
       composedPrompt += '=== CONTESTO BASE ===\n';
       composedPrompt += baseSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
+    // Add AGENT_PERSONALITY sections
     if (agentPersonalitySections && agentPersonalitySections.length > 0) {
       composedPrompt += '=== TUA PERSONALITÀ ===\n';
       composedPrompt += agentPersonalitySections.map(s => s.content).join('\n\n') + '\n\n';
-    } else if (agentTextPrompt) {
-      composedPrompt += '=== TUA PERSONALITÀ ===\n';
-      composedPrompt += agentTextPrompt + '\n\n';
     }
 
+    // Add TOPIC sections
     if (topicSections.length > 0) {
       composedPrompt += `=== FOCUS TOPIC: ${selectedTopic} ===\n`;
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
-    console.log('📝 Prompt composto (primi 200 char):', composedPrompt.substring(0, 200) + '...');
+    console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
 
     // Prepare conversation history
     const conversationHistory = [
@@ -406,30 +174,19 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
     let tokenOutput = 0;
     const startTime = Date.now();
 
-    // 🎛️ CONVERSATION PACE SETTINGS
-    const paceSettings = {
-      slow: { max_tokens: 2000, temperature: 0.7 },
-      normal: { max_tokens: 4096, temperature: 0.8 },
-      fast: { max_tokens: 1000, temperature: 0.9 }
-    };
-
-    const currentPaceSettings = paceSettings[conversationPace as keyof typeof paceSettings] || paceSettings.normal;
-    console.log('⏱️ Pace settings applicati:', currentPaceSettings);
-
-    // Route to AI provider - FIX type matching to support both naming conventions
-    if ((selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') && anthropicKey) {
+    // Route to appropriate AI provider
+    if ((selectedParticipant.type === 'anthropic' || selectedParticipant.type === 'claude') && anthropicConfig?.api_key) {
       console.log('🤖 Calling Anthropic (Claude)...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
+          'x-api-key': anthropicConfig.api_key,
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
-          max_tokens: currentPaceSettings.max_tokens,
-          temperature: currentPaceSettings.temperature,
+          max_tokens: 4096,
           messages: conversationHistory.filter(m => m.role !== 'system'),
           system: composedPrompt
         })
@@ -437,7 +194,7 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
 
       if (!anthropicResponse.ok) {
         const errorText = await anthropicResponse.text();
-        console.error('Anthropic error:', errorText);
+        console.error('❌ Anthropic error:', errorText);
         throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
       }
 
@@ -446,25 +203,23 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
       tokenInput = anthropicData.usage?.input_tokens || 0;
       tokenOutput = anthropicData.usage?.output_tokens || 0;
     } 
-    else if ((selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') && openAIKey) {
-      console.log('🤖 Calling OpenAI (ChatGPT)...');
+    else if ((selectedParticipant.type === 'openai' || selectedParticipant.type === 'chatgpt') && openaiConfig?.api_key) {
+      console.log('🤖 Calling OpenAI (GPT)...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAIKey}`
+          'Authorization': `Bearer ${openaiConfig.api_key}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: conversationHistory,
-          max_tokens: currentPaceSettings.max_tokens,
-          temperature: currentPaceSettings.temperature
+          model: openaiConfig.modello || 'gpt-5-2025-08-07',
+          messages: conversationHistory
         })
       });
 
       if (!openaiResponse.ok) {
         const errorText = await openaiResponse.text();
-        console.error('OpenAI error:', errorText);
+        console.error('❌ OpenAI error:', errorText);
         throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
       }
 
@@ -473,25 +228,23 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
       tokenInput = openaiData.usage?.prompt_tokens || 0;
       tokenOutput = openaiData.usage?.completion_tokens || 0;
     }
-    else if ((selectedParticipant.type === 'gemini' || selectedParticipant.type === 'lovable') && lovableAIKey) {
+    else if ((selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') && LOVABLE_API_KEY) {
       console.log('🤖 Calling Lovable AI (Gemini)...');
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${lovableAIKey}`
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
-          messages: conversationHistory,
-          max_tokens: currentPaceSettings.max_tokens,
-          temperature: currentPaceSettings.temperature
+          messages: conversationHistory
         })
       });
 
       if (!lovableResponse.ok) {
         const errorText = await lovableResponse.text();
-        console.error('Lovable AI error:', errorText);
+        console.error('❌ Lovable AI error:', errorText);
         throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
       }
 
@@ -501,252 +254,68 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
       tokenOutput = lovableData.usage?.completion_tokens || 0;
     }
     else {
-      console.error('❌ Nessun provider disponibile per:', selectedParticipant.type);
-      throw new Error(`No API key available for ${selectedParticipant.type}. Verifica di aver configurato le API keys.`);
+      throw new Error(`No API key available for ${selectedParticipant.type}`);
     }
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
+    console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
 
-    // ✅ Map provider type to DB-compatible sender_type
-    const senderTypeMap: Record<string, string> = {
-      'anthropic': 'claude',
-      'openai': 'chatgpt',
-      'lovable': 'gemini',
-      'gemini': 'gemini',
-      'claude': 'claude',
-      'chatgpt': 'chatgpt'
-    };
-    const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
-
-    // ✅ SYNC SUMMARY GENERATION - Execute BEFORE saving message
-    console.log('🔄 Generazione summaries SINCRONA...');
-    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
-      generateMessageSummary(aiResponse, 'user_friendly', lovableAIKey!),
-      generateMessageSummary(aiResponse, 'ultra_compressed', lovableAIKey!)
-    ]);
+    // Save AI response to database
+    const { data: maxSeq } = await supabaseClient
+      .from('chat_laboratory_messages')
+      .select('message_sequence')
+      .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     
-    console.log('✅ Summaries generate:', {
-      userFriendly: userFriendlySummary.substring(0, 50) + '...',
-      ultraCompressed: ultraCompressedSummary.substring(0, 30) + '...'
-    });
+    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
 
-    // Generate audio with ElevenLabs TTS (se voice enabled)
-    let audioUrl: string | null = null;
-    
-    console.log('🎵 Tentativo generazione audio - Voice enabled:', voiceEnabled, 'API key presente:', !!elevenLabsKey, 'Voice ID:', elevenLabsVoiceId);
-    
-    if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
-      // Double-check interrupt flag prima di TTS
-      const { data: interruptCheck } = await supabase
-        .from('chat_laboratory_bar_mode')
-        .select('interrupt_requested')
-        .eq('conversation_id', conversationId)
-        .single();
-
-      if (interruptCheck?.interrupt_requested) {
-        console.log('⛔ Interrupt rilevato prima di TTS, annullo');
-        await supabase
-          .from('chat_laboratory_bar_mode')
-          .update({ interrupt_requested: false })
-          .eq('conversation_id', conversationId);
-        
-        return new Response(
-          JSON.stringify({ interrupted: true, message: 'Interrupted before TTS generation' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      try {
-        console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
-        
-        // ✅ USA user_friendly summary per TTS (no testo completo)
-        const textForTTS = userFriendlySummary.length > 4096 
-          ? userFriendlySummary.substring(0, 4096) + '...'
-          : userFriendlySummary;
-        
-        console.log('📝 Testo per TTS (user_friendly, primi 100 char):', textForTTS.substring(0, 100));
-
-        const ttsResponse = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`,
-          {
-            method: 'POST',
-            headers: {
-              'Accept': 'audio/mpeg',
-              'xi-api-key': elevenLabsKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text: textForTTS,
-              model_id: 'eleven_turbo_v2_5',
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.5,
-                use_speaker_boost: true
-              }
-            })
-          }
-        );
-
-        console.log('📡 ElevenLabs response status:', ttsResponse.status);
-        
-        if (ttsResponse.ok) {
-          const audioBlob = await ttsResponse.blob();
-          const audioBuffer = await audioBlob.arrayBuffer();
-          console.log('📦 Audio buffer size:', audioBuffer.byteLength, 'bytes');
-          
-          const fileName = `bar-chat/${conversationId}/${Date.now()}.mp3`;
-          console.log('☁️ Uploading to Supabase Storage:', fileName);
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('audio-responses')
-            .upload(fileName, audioBlob, {
-              contentType: 'audio/mpeg',
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.error('❌ Errore upload Supabase Storage:', uploadError);
-          } else {
-            console.log('✅ Upload completato:', uploadData);
-            
-            const { data: urlData } = supabase.storage
-              .from('audio-responses')
-              .getPublicUrl(fileName);
-            
-            audioUrl = urlData.publicUrl;
-            console.log('🔗 Audio URL pubblico:', audioUrl);
-          }
-    } else {
-      const errorText = await ttsResponse.text();
-      console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
-      
-      if (ttsResponse.status === 402) {
-        console.error('💳 ElevenLabs QUOTA ESAURITA - verifica il tuo piano su elevenlabs.io');
-      }
-    }
-      } catch (ttsError) {
-        console.error('❌ Errore TTS completo:', ttsError);
-      }
-    } else {
-      console.log('⏭️ Audio skip: voice_enabled =', voiceEnabled, ', hasKey =', !!elevenLabsKey, ', voiceId =', elevenLabsVoiceId);
-    }
-
-    // ✅ Save message with ALL 3 content types + is_summary_available=true
-    const { data: savedMessage, error: saveError } = await supabase
+    await supabaseClient
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
-        sender_type: dbSenderType,
+        message_sequence: nextSequence,
+        sender_type: selectedParticipant.type,
         sender_name: selectedParticipant.name,
         content: aiResponse,
-        content_user_friendly: userFriendlySummary,
-        content_summary: ultraCompressedSummary,
-        is_summary_available: true,
         token_input: tokenInput,
         token_output: tokenOutput,
-        tempo_risposta_ms: responseTime,
-        audio_url: audioUrl
-      })
-      .select()
-      .single();
-
-    if (saveError) {
-      console.error('❌ Errore salvataggio messaggio:', saveError);
-      throw saveError;
-    }
-
-    console.log('✅ Messaggio salvato con ID:', savedMessage.id);
-    console.log('✅ Economy Mode attivo: is_summary_available =', savedMessage.is_summary_available);
-
-    // AI Cost Tracking
-    const providerMap: Record<string, string> = {
-      'anthropic': 'anthropic',
-      'openai': 'openai',
-      'lovable': 'lovable_ai'
-    };
-    const provider = providerMap[selectedParticipant.type] || selectedParticipant.type;
-    
-    const modelMap: Record<string, string> = {
-      'anthropic': 'claude-sonnet-4-5',
-      'openai': 'gpt-4o',
-      'lovable': 'google/gemini-2.5-flash'
-    };
-    const model = modelMap[selectedParticipant.type] || 'unknown';
-
-    // Cost calculation (EUR)
-    const pricePerMillionInput: Record<string, number> = {
-      'anthropic': 3.00,
-      'openai': 2.50,
-      'lovable': 0.00 // Gemini free
-    };
-    const pricePerMillionOutput: Record<string, number> = {
-      'anthropic': 15.00,
-      'openai': 10.00,
-      'lovable': 0.00
-    };
-
-    const costInputEur = (tokenInput / 1_000_000) * (pricePerMillionInput[selectedParticipant.type] || 0);
-    const costOutputEur = (tokenOutput / 1_000_000) * (pricePerMillionOutput[selectedParticipant.type] || 0);
-    
-    console.log(`💰 Cost tracking: ${tokenInput} in + ${tokenOutput} out = €${(costInputEur + costOutputEur).toFixed(6)}`);
-    
-    // Save to ai_cost_tracking (cost_total_eur is auto-calculated by DB)
-    const { error: costError } = await supabase
-      .from('ai_cost_tracking')
-      .insert({
-        provider,
-        model,
-        operation_type: 'chat_laboratory',
-        lab_conversation_id: conversationId,
-        input_tokens: tokenInput,
-        output_tokens: tokenOutput,
-        cost_input_eur: costInputEur,
-        cost_output_eur: costOutputEur
+        tempo_risposta_ms: responseTime
       });
-    
-    if (costError) {
-      console.error('⚠️ Cost tracking error (non-blocking):', costError);
-    }
 
-    // Update conversation turn tracking
-    const { error: updateError } = await supabase
+    // Update conversation turn index
+    await supabaseClient
       .from('chat_laboratory_conversations')
-      .update({
-        current_turn_index: currentTurnIndex,
-        last_speaker_index: currentTurnIndex
+      .update({ 
+        last_speaker_index: currentTurnIndex,
+        current_turn_index: (currentTurnIndex + 1) % participants.length
       })
       .eq('id', conversationId);
 
-    if (updateError) {
-      console.error('⚠️ Errore aggiornamento turno (non-blocking):', updateError);
-    }
+    console.log('✅ Messaggio salvato e turno aggiornato');
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
+        success: true, 
         content: aiResponse,
         speaker: selectedParticipant.name,
-        tokenInput,
-        tokenOutput,
-        responseTime,
-        audioUrl,
-        userFriendlySummary,
-        ultraCompressedSummary,
-        economyModeReady: true
+        tokens: { input: tokenInput, output: tokenOutput },
+        responseTime 
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('❌ Errore orchestrator:', error);
+  } catch (error: any) {
+    console.error('❌ Bar Chat Orchestrator error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

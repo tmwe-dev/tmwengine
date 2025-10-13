@@ -13,8 +13,10 @@ interface TokenUsageChartProps {
 export function TokenUsageChart({ conversationId, compact = false, onClick, onTotalTokensChange }: TokenUsageChartProps) {
   const [tokenData, setTokenData] = useState<Array<{
     agent: string;
-    tokens: number;
-    color: string;
+    tokensIn: number;
+    tokensOut: number;
+    colorIn: string;
+    colorOut: string;
   }>>([]);
 
   useEffect(() => {
@@ -42,9 +44,9 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   async function loadTokenStats() {
     const { data } = await supabase
       .from('chat_laboratory_messages')
-      .select('sender_name, token_output')
+      .select('sender_name, token_input, token_output')
       .eq('conversation_id', conversationId)
-      .not('token_output', 'is', null);
+      .or('token_input.not.is.null,token_output.not.is.null');
 
     if (!data) return;
 
@@ -52,29 +54,33 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     const aggregated = data.reduce((acc, msg) => {
       const existing = acc.find(x => x.agent === msg.sender_name);
       if (existing) {
-        existing.tokens += msg.token_output || 0;
+        existing.tokensIn += msg.token_input || 0;
+        existing.tokensOut += msg.token_output || 0;
       } else {
+        const baseColor = msg.sender_name === 'ChatGPT' ? '142, 76%' : 
+                         msg.sender_name === 'Claude' ? '262, 83%' : '221, 83%';
         acc.push({
           agent: msg.sender_name,
-          tokens: msg.token_output || 0,
-          color: msg.sender_name === 'ChatGPT' ? 'hsl(var(--chart-1))' : 
-                 msg.sender_name === 'Claude' ? 'hsl(var(--chart-2))' : 'hsl(var(--chart-3))'
+          tokensIn: msg.token_input || 0,
+          tokensOut: msg.token_output || 0,
+          colorIn: `hsl(${baseColor}, 70%)`,
+          colorOut: `hsl(${baseColor}, 40%)`
         });
       }
       return acc;
-    }, [] as Array<{ agent: string; tokens: number; color: string }>);
+    }, [] as Array<{ agent: string; tokensIn: number; tokensOut: number; colorIn: string; colorOut: string }>);
 
     setTokenData(aggregated);
     
     // Notifica parent del totale
-    const total = aggregated.reduce((sum, d) => sum + d.tokens, 0);
+    const total = aggregated.reduce((sum, d) => sum + d.tokensIn + d.tokensOut, 0);
     onTotalTokensChange?.(total);
   }
 
   if (tokenData.length === 0) return null;
 
-  const totalTokens = tokenData.reduce((sum, d) => sum + d.tokens, 0);
-  const maxTokens = Math.max(...tokenData.map(d => d.tokens));
+  const totalTokens = tokenData.reduce((sum, d) => sum + d.tokensIn + d.tokensOut, 0);
+  const maxTokens = Math.max(...tokenData.map(d => d.tokensIn + d.tokensOut));
 
   // Formato numeri: sempre in migliaia con 1 decimale
   const formatTokens = (tokens: number): string => {
@@ -85,27 +91,46 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-2 px-2 py-1 cursor-pointer hover:scale-105 transition-transform"
+        className="flex items-end gap-3 px-2 py-1 cursor-pointer hover:scale-105 transition-transform"
         onClick={onClick}
         title="Clicca per espandere il grafico"
       >
         {tokenData.map((agent) => {
-          const heightPercent = (agent.tokens / maxTokens) * 100;
-          const bgGradient = 
-            agent.agent === 'ChatGPT' ? 'bg-gradient-to-t from-green-500/30 to-green-400/50' :
-            agent.agent === 'Claude' ? 'bg-gradient-to-t from-purple-500/30 to-purple-400/50' :
-            'bg-gradient-to-t from-blue-500/30 to-blue-400/50';
+          const heightPercentIn = (agent.tokensIn / maxTokens) * 100;
+          const heightPercentOut = (agent.tokensOut / maxTokens) * 100;
 
           return (
-            <div key={agent.agent} className="flex flex-col items-center">
-              {/* Colonnina con numero dentro */}
+            <div key={agent.agent} className="flex gap-0.5 items-end">
+              {/* Colonnina Token IN */}
               <div className="flex flex-col justify-end h-12 md:h-16">
                 <div 
-                  className={`w-8 md:w-16 rounded-t ${bgGradient} flex items-center justify-center ${totalTokens > 50000 ? 'border border-red-500' : ''}`}
-                  style={{ height: `${Math.max(heightPercent, 30)}%`, minHeight: '24px' }}
+                  className="w-4 md:w-8 rounded-t flex items-center justify-center"
+                  style={{ 
+                    height: `${Math.max(heightPercentIn, 20)}%`, 
+                    minHeight: '20px',
+                    background: `linear-gradient(to top, ${agent.colorIn}CC, ${agent.colorIn})`
+                  }}
+                  title={`${agent.agent} IN: ${formatTokens(agent.tokensIn)}`}
                 >
-                  <span className={`text-xs md:text-sm font-bold ${totalTokens > 50000 ? 'text-red-500' : 'text-white'} drop-shadow-lg`}>
-                    {formatTokens(agent.tokens)}
+                  <span className="text-[9px] md:text-xs font-bold text-white drop-shadow">
+                    {formatTokens(agent.tokensIn)}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Colonnina Token OUT */}
+              <div className="flex flex-col justify-end h-12 md:h-16">
+                <div 
+                  className="w-4 md:w-8 rounded-t flex items-center justify-center"
+                  style={{ 
+                    height: `${Math.max(heightPercentOut, 20)}%`, 
+                    minHeight: '20px',
+                    background: `linear-gradient(to top, ${agent.colorOut}DD, ${agent.colorOut})`
+                  }}
+                  title={`${agent.agent} OUT: ${formatTokens(agent.tokensOut)}`}
+                >
+                  <span className="text-[9px] md:text-xs font-bold text-white drop-shadow">
+                    {formatTokens(agent.tokensOut)}
                   </span>
                 </div>
               </div>
@@ -117,6 +142,12 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   }
 
   // Modalità espansa (normale)
+  const chartData = tokenData.map(d => ({
+    agent: d.agent,
+    'Token IN': d.tokensIn,
+    'Token OUT': d.tokensOut
+  }));
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -129,15 +160,12 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={150}>
-          <BarChart data={tokenData}>
+          <BarChart data={chartData}>
             <XAxis dataKey="agent" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="tokens" radius={[8, 8, 0, 0]}>
-              {tokenData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
+            <Bar dataKey="Token IN" fill="hsl(142, 76%, 70%)" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="Token OUT" fill="hsl(142, 76%, 40%)" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

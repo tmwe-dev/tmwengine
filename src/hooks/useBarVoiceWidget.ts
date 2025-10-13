@@ -6,7 +6,11 @@ interface BarVoiceWidgetConfig {
   enabled: boolean;
 }
 
-export const useBarVoiceWidget = (isActive: boolean, agentId: string | null) => {
+export const useBarVoiceWidget = (
+  isActive: boolean, 
+  agentId: string | null,
+  onTranscriptionComplete?: (text: string) => void
+) => {
   useEffect(() => {
     const loadAndMountBarWidget = async () => {
       if (!isActive || !agentId) {
@@ -67,6 +71,21 @@ export const useBarVoiceWidget = (isActive: boolean, agentId: string | null) => 
           const widget = window.mountElevenLabsConvai(agentId, 'bar-widget');
           if (widget) {
             widget.style.display = 'block';
+            
+            // Aggiungi event listener per trascrizioni
+            widget.addEventListener('message', (event: any) => {
+              console.log('🎤 [Bar Widget] Evento ricevuto:', event.detail);
+              
+              if (event.detail?.type === 'transcript' && event.detail?.text) {
+                console.log('📝 [Bar Widget] Trascrizione:', event.detail.text);
+                
+                if (onTranscriptionComplete) {
+                  onTranscriptionComplete(event.detail.text);
+                }
+              }
+            });
+            
+            console.log('Bar widget event listeners attached');
           }
           console.log('Bar widget mounted successfully');
           

@@ -23,7 +23,7 @@ export const BarElevenLabsRecorder = ({
   const [isActive, setIsActive] = useState(false);
 
   // Hook per gestire widget Bar dedicato - usa activeAgentId da props
-  useBarVoiceWidget(isActive, activeAgentId || null);
+  useBarVoiceWidget(isActive, activeAgentId || null, onTranscriptionComplete);
 
   const toggleWidget = () => {
     if (!activeAgentId) {

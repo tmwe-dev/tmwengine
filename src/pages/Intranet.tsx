@@ -361,9 +361,9 @@ const Intranet = () => {
 
   // Tablet/Desktop: layout con sidebar locale isolata
   return (
-    <div className="flex w-full h-full">
-      {/* Sidebar Intranet - con SidebarProvider locale isolato */}
-      <SidebarProvider defaultOpen={!sidebarCollapsed}>
+    <SidebarProvider defaultOpen={!sidebarCollapsed}>
+      <div className="flex w-full h-full">
+        {/* Sidebar Intranet */}
         <div className={`border-r bg-card-transparent transition-all duration-300 relative flex flex-col ${sidebarCollapsed ? 'w-12' : 'w-56'}`}>
           <div className="p-2 border-b flex items-center justify-between">
             <Button
@@ -417,10 +417,9 @@ const Intranet = () => {
             )}
           </div>
         </div>
-      </SidebarProvider>
 
-      {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
-      <main className="flex-1 flex flex-col h-screen">
+        {/* Main content - layout a 3 sezioni: header, messaggi scrollabili, input fisso */}
+        <main className="flex-1 flex flex-col h-screen">
         {/* Header con titolo e pulsante Utenti Organizzazione */}
         <div className="flex-shrink-0 border-b">
           <div className="px-4 py-2 w-full">
@@ -501,6 +500,7 @@ const Intranet = () => {
         )}
       </main>
     </div>
+    </SidebarProvider>
   );
 };
 

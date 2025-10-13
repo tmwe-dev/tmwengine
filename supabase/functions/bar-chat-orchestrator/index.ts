@@ -661,7 +661,7 @@ serve(async (req) => {
     
     console.log(`💰 Cost tracking: ${tokenInput} in + ${tokenOutput} out = €${costTotalEur.toFixed(6)}`);
     
-    // Save to ai_cost_tracking
+    // Save to ai_cost_tracking (cost_total_eur is auto-calculated by DB)
     const { error: costError } = await supabase
       .from('ai_cost_tracking')
       .insert({
@@ -672,8 +672,7 @@ serve(async (req) => {
         input_tokens: tokenInput,
         output_tokens: tokenOutput,
         cost_input_eur: costInputEur,
-        cost_output_eur: costOutputEur,
-        cost_total_eur: costTotalEur
+        cost_output_eur: costOutputEur
       });
     
     if (costError) {
@@ -773,7 +772,7 @@ serve(async (req) => {
     // 🚀 NON-BLOCKING: Genera summaries in background
     supabase.functions.invoke('generate-message-summaries', {
       body: { 
-        messageId: savedMessage.id, 
+        messageId: messageId, 
         content: aiResponse,
         conversationId,
         table: 'chat_laboratory_messages'

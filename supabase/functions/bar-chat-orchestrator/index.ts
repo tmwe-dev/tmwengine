@@ -228,19 +228,30 @@ serve(async (req) => {
       };
     });
 
-    // Turn-taking logic
-    let currentTurnIndex = conversation.current_turn_index || 0;
-    const lastSpeakerIndex = conversation.last_speaker_index || 0;
-    
-    if (Math.random() < 0.3) {
-      currentTurnIndex = Math.floor(Math.random() * participants.length);
-      console.log('🎲 Turno randomizzato:', currentTurnIndex);
-    } else {
-      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-      console.log('➡️ Turno sequenziale:', currentTurnIndex);
+    // ✅ HOTFIX Sprint 0: Filtra solo partecipanti attivi prima della selezione
+    const activeParticipants = participants.filter(p => p.is_active);
+    const activeCount = activeParticipants.length;
+
+    if (activeCount === 0) {
+      throw new Error('❌ Nessun partecipante attivo disponibile per la conversazione');
     }
 
-    const selectedParticipant = participants[currentTurnIndex];
+    console.log(`👥 Partecipanti attivi: ${activeCount}/${participants.length}`);
+
+    // Turn-taking logic (30% random, 70% sequential)
+    const useRandom = Math.random() < 0.3;
+    let currentTurnIndex: number;
+    
+    if (useRandom) {
+      currentTurnIndex = Math.floor(Math.random() * activeCount);
+      console.log(`🎲 Turno randomizzato: indice ${currentTurnIndex} su ${activeCount} attivi`);
+    } else {
+      const lastSpeakerIndex = conversation.last_speaker_index || 0;
+      currentTurnIndex = (lastSpeakerIndex + 1) % activeCount;
+      console.log(`➡️ Turno sequenziale: indice ${currentTurnIndex} (dopo ${lastSpeakerIndex})`);
+    }
+
+    const selectedParticipant = activeParticipants[currentTurnIndex];
     console.log('🎯 Agente selezionato:', selectedParticipant.name);
 
     // Fetch AGENT_PERSONALITY sections

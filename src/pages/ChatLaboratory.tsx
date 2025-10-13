@@ -1121,22 +1121,20 @@ const ChatLaboratory = () => {
               
               {/* Sezioni */}
               <div className="space-y-4">
-                {/* Ottimizzazione Token - PRIMA */}
-                {currentConversationId && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">Ottimizzazione Token</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <EconomyModeToggle 
-                        conversationId={currentConversationId}
-                        onSettingsChange={(settings) => {
-                          console.log('Economy settings updated:', settings);
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Ottimizzazione Token - PRIMA (sempre visibile) */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">Ottimizzazione Token</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <EconomyModeToggle 
+                      conversationId={currentConversationId}
+                      onSettingsChange={(settings) => {
+                        console.log('Economy settings updated:', settings);
+                      }}
+                    />
+                  </CardContent>
+                </Card>
                 
                 {/* Bar Mode - SECONDA */}
                 <Card className="bg-white/5 border-white/10">
@@ -1170,22 +1168,28 @@ const ChatLaboratory = () => {
                   </Card>
                 )}
                 
-                {/* Stats - QUARTA (in fondo) */}
-                {currentConversationId && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">Statistiche</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <TokenCounterBadge
-                        labConversationId={currentConversationId}
-                        variant="laboratory"
-                        alertThreshold={15000}
-                      />
-                      <ConversationCostBadge labConversationId={currentConversationId} />
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Stats - QUARTA (in fondo, con placeholder se no conversazione) */}
+                <Card className="bg-white/5 border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm">Statistiche</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {currentConversationId ? (
+                      <>
+                        <TokenCounterBadge
+                          labConversationId={currentConversationId}
+                          variant="laboratory"
+                          alertThreshold={15000}
+                        />
+                        <ConversationCostBadge labConversationId={currentConversationId} />
+                      </>
+                    ) : (
+                      <p className="text-white/50 text-sm text-center py-4">
+                        Avvia una conversazione per vedere le statistiche
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
                 
                 {/* Link Impostazioni Globali */}
                 <Card className="bg-white/5 border-white/10">

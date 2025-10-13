@@ -44,7 +44,7 @@ export const ChatMessages = ({ roomId, isLayoutInverted = false, shouldHideHeade
   const { settings } = useRoomAISettings(roomId);
   
   // Auto-speaker per lettura automatica messaggi
-  const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId, translatedMessages });
+  const { stopSpeaking, isSpeaking } = useAutoSpeaker({ messages, currentUserId, translatedMessages, userProfiles });
 
   // Load show_summaries_only setting from room
   useEffect(() => {

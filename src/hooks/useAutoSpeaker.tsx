@@ -13,9 +13,10 @@ interface AutoSpeakerProps {
   messages: Message[];
   currentUserId: string;
   translatedMessages?: Record<string, string>;
+  userProfiles?: Record<string, { preferred_language?: string }>;
 }
 
-export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {} }: AutoSpeakerProps) => {
+export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {}, userProfiles = {} }: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -43,96 +44,80 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     // Non leggere messaggi non testuali
     if (latestMessage.message_type !== 'text' || !latestMessage.content) return;
 
+    // Controlla se il messaggio è già stato letto
+    if (latestMessage.id === lastMessageIdRef.current) return;
+
+    // Determina se serve traduzione
+    const senderProfile = userProfiles[latestMessage.user_id];
+    const needsTranslation = senderProfile?.preferred_language && 
+                            senderProfile.preferred_language !== profile.readingLanguage &&
+                            profile.readingLanguage;
+
+    const translatedText = translatedMessages[latestMessage.id];
+
+    // Se serve traduzione ma non è ancora pronta, aspetta il prossimo update
+    if (needsTranslation && !translatedText) {
+      console.log('⏳ useAutoSpeaker - Traduzione non ancora pronta, aspetto update:', {
+        messageId: latestMessage.id,
+        senderLanguage: senderProfile?.preferred_language,
+        targetLanguage: profile.readingLanguage
+      });
+      return;
+    }
+
+    // Marca il messaggio come già letto
     lastMessageIdRef.current = latestMessage.id;
 
     // Cancella eventuali letture in corso
     synthRef.current.cancel();
 
-    // Funzione async per gestire il polling della traduzione
-    const startSpeaking = async () => {
-      let textToSpeak = translatedMessages[latestMessage.id];
-      let attempts = 0;
-      const maxAttempts = 20; // 20 x 100ms = 2 secondi max
-      
-      console.log('🔊 useAutoSpeaker - Inizio polling traduzione:', {
-        messageId: latestMessage.id,
-        initialTranslation: textToSpeak,
-        originalText: latestMessage.content
-      });
+    // Usa traduzione se disponibile, altrimenti originale
+    const textToSpeak = translatedText || latestMessage.content;
 
-      // Polling: controlla ogni 100ms se traduzione è disponibile
-      while (!textToSpeak && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        textToSpeak = translatedMessages[latestMessage.id];
-        attempts++;
-        
-        if (textToSpeak) {
-          console.log(`✅ Traduzione trovata dopo ${attempts * 100}ms`);
-          break;
-        }
-      }
+    console.log('🔊 useAutoSpeaker - Parto immediatamente:', {
+      messageId: latestMessage.id,
+      textToSpeak,
+      isTranslated: !!translatedText,
+      needsTranslation
+    });
 
-      // Fallback su testo originale se traduzione non arriva
-      if (!textToSpeak) {
-        console.warn('⚠️ Traduzione non disponibile dopo 2s, uso testo originale');
-        textToSpeak = latestMessage.content;
-      }
+    // Crea utterance
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    
+    // Imposta la lingua
+    utterance.lang = profile.readingLanguage || 'it-IT';
+    
+    // Cerca una voce appropriata
+    const voices = synthRef.current.getVoices();
+    const voice = voices.find(v => v.lang.startsWith(profile.readingLanguage)) 
+                  || voices.find(v => v.lang.startsWith('it'));
+    
+    if (voice) {
+      utterance.voice = voice;
+    }
 
-      console.log('🔊 useAutoSpeaker - Dati audio finali:', {
-        messageId: latestMessage.id,
-        originalText: latestMessage.content,
-        textToSpeak,
-        readingLanguage: profile.readingLanguage,
-        isTranslated: textToSpeak !== latestMessage.content,
-        waitedMs: attempts * 100
-      });
-      
-      // Crea utterance con testo tradotto se disponibile
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      
-      // Imposta la lingua
-      utterance.lang = profile.readingLanguage || 'it-IT';
-      
-      // Cerca una voce appropriata
-      const voices = synthRef.current!.getVoices();
-      const voice = voices.find(v => v.lang.startsWith(profile.readingLanguage)) 
-                    || voices.find(v => v.lang.startsWith('it'));
-      
-      if (voice) {
-        utterance.voice = voice;
-      }
+    // Imposta velocità e pitch
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
 
-      // Imposta velocità e pitch
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Eventi
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-      };
-
-      utterance.onend = () => {
-        setIsSpeaking(false);
-      };
-
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        setIsSpeaking(false);
-      };
-
-      // Pronuncia
-      synthRef.current?.speak(utterance);
+    // Eventi
+    utterance.onstart = () => {
+      setIsSpeaking(true);
     };
 
-    // Aspetta 100ms e poi inizia il polling
-    const timeoutId = setTimeout(() => {
-      startSpeaking();
-    }, 100);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
 
-    // Cleanup timeout se il componente si smonta o il messaggio cambia
-    return () => clearTimeout(timeoutId);
-  }, [messages, currentUserId, profile, translatedMessages]);
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsSpeaking(false);
+    };
+
+    // Pronuncia
+    synthRef.current.speak(utterance);
+  }, [messages, currentUserId, profile, translatedMessages, userProfiles]);
 
   const stopSpeaking = () => {
     if (synthRef.current) {

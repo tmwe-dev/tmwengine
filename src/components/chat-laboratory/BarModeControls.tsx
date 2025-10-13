@@ -20,23 +20,38 @@ interface BarModeSettings {
 
 
 export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
-  // Inizializza lo stato con i valori da localStorage per evitare flash dello switch
+  // Inizializza lo stato con priorità: global -> pending -> default
   const [settings, setSettings] = useState<BarModeSettings>(() => {
+    // 1. Prova a caricare da localStorage globale (persistente)
+    const global = localStorage.getItem('bar-mode-global-settings');
+    if (global) {
+      try {
+        const saved = JSON.parse(global);
+        console.log('🎙️ BarModeControls - Caricato da localStorage GLOBALE:', saved);
+        return saved;
+      } catch (e) {
+        console.error('Errore parsing global localStorage:', e);
+      }
+    }
+    
+    // 2. Fallback a impostazioni pending
     const pending = localStorage.getItem('bar-mode-controls-pending');
     if (pending) {
       try {
         const saved = JSON.parse(pending);
-        console.log('🎙️ BarModeControls - Caricato da localStorage:', saved);
+        console.log('🎙️ BarModeControls - Caricato da localStorage pending:', saved);
         return saved;
       } catch (e) {
-        console.error('Errore parsing localStorage:', e);
+        console.error('Errore parsing pending localStorage:', e);
       }
     }
+    
+    // 3. Default con voice_enabled TRUE
     return {
       conversation_pace: 'normal',
       enable_interruptions: true,
       auto_play_audio: true,
-      voice_enabled: false,
+      voice_enabled: true,
     };
   });
 
@@ -84,6 +99,10 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
 
     console.log(`🎙️ BarModeControls - ${key} cambiato a:`, value);
 
+    // SEMPRE salva in localStorage globale (persistenza tra sessioni)
+    localStorage.setItem('bar-mode-global-settings', JSON.stringify(newSettings));
+    console.log('💾 Salvato in localStorage GLOBALE:', newSettings);
+
     if (conversationId) {
       // Salva nel database
       try {
@@ -96,9 +115,9 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         console.error('Errore salvataggio impostazione:', error);
       }
     } else {
-      // Salva in localStorage
+      // Salva anche in pending per nuove conversazioni
       localStorage.setItem('bar-mode-controls-pending', JSON.stringify(newSettings));
-      console.log('✅ Salvato in localStorage:', newSettings);
+      console.log('✅ Salvato in localStorage pending:', newSettings);
     }
   };
 

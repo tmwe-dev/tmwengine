@@ -21,6 +21,7 @@ import EmailCampagne from "./pages/EmailCampagne";
 
 import Chat from "./pages/Chat";
 import ChatLaboratory from "./pages/ChatLaboratory";
+import ChatLaboratoryTechnicalAnalytics from "./pages/ChatLaboratoryTechnicalAnalytics";
 import AdminPrompts from "./pages/AdminPrompts";
 import ImportTemplates from "./pages/ImportTemplates";
 import GestisciImport from "./pages/GestisciImport";
@@ -98,6 +99,11 @@ const App = () => (
             <Route path="/chat-laboratory" element={
               <ProtectedRoute>
                 <CRMLayout><ChatLaboratory /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/chat-laboratory/analytics/:conversationId" element={
+              <ProtectedRoute>
+                <CRMLayout><ChatLaboratoryTechnicalAnalytics /></CRMLayout>
               </ProtectedRoute>
             } />
             <Route path="/admin/prompts" element={

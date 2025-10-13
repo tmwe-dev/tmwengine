@@ -137,7 +137,18 @@
         "a": "Usa Economy Mode, limita gli agenti attivi, disattiva 'All Mode' per usare Turn-based che ottimizza le chiamate API."
       }
     ],
-    "related": ["chat", "ai-config", "settings"]
+    "related": ["chat", "ai-config", "settings", "sistema-tecnico"]
+  },
+  "sistema-tecnico": {
+    "title": "Sistema e Strumenti Tecnici",
+    "overview": "Documentazione completa architettura backend, economy mode, deliverable system e ottimizzazioni per sviluppatori.",
+    "sections": [
+      {
+        "title": "Vedere sezione dedicata",
+        "content": "Consulta il file sistema-tecnico.json per documentazione tecnica completa di:\n- Architettura Edge Functions\n- Database Schema dettagliato\n- Flusso Economy Mode (sistema a 3 versioni)\n- Deliverable System\n- Analisi Costi vs Prestazioni\n- Ottimizzazioni Future\n- Debugging & Troubleshooting\n\n**Analytics Dashboard**: /chat-laboratory/analytics/:conversationId per analisi tecnica conversazioni."
+      }
+    ],
+    "related": ["chat-laboratory"]
   },
   "import-templates": {
     "title": "Import Templates",

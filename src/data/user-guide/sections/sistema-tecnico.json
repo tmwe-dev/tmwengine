@@ -1,0 +1,380 @@
+{
+  "id": "sistema-tecnico",
+  "title": "Sistema e Strumenti Tecnici",
+  "icon": "Settings",
+  "description": "Documentazione completa dell'architettura, economia token e ottimizzazioni",
+  "sections": [
+    {
+      "title": "Architettura Chat Laboratory",
+      "content": "Il sistema Chat Laboratory è costruito su un'architettura multi-layer che integra AI streaming, economy mode e deliverable generation.",
+      "subsections": [
+        {
+          "title": "1. Edge Functions (Backend)",
+          "items": [
+            {
+              "name": "bar-chat-orchestrator",
+              "description": "Orchestratore principale che gestisce il flusso completo della conversazione",
+              "features": [
+                "Streaming real-time da AI (Anthropic, OpenAI, Lovable/Gemini)",
+                "Routing semantico basato su expertise keywords degli agenti",
+                "Gestione economy mode con content_summary",
+                "Moderazione lunghezza risposte (adaptive word limit)",
+                "Integrazione deliverable detection & generation",
+                "Turn-taking management con optimistic locking"
+              ],
+              "location": "supabase/functions/bar-chat-orchestrator/index.ts"
+            },
+            {
+              "name": "generate-message-summaries",
+              "description": "Generazione background dei riassunti a 3 versioni",
+              "features": [
+                "Versione User-Friendly: max 60 parole, linguaggio naturale",
+                "Versione Ultra-Compressed: max 25 parole, solo concetti tecnici chiave",
+                "Utilizza google/gemini-2.5-flash per riassunti",
+                "Invocata in background (non-blocking)",
+                "Aggiorna is_summary_available quando completato"
+              ],
+              "location": "supabase/functions/generate-message-summaries/index.ts"
+            },
+            {
+              "name": "generate-deliverable",
+              "description": "Genera file strutturati (CSV, Markdown, Mermaid, Excalidraw) da richieste AI",
+              "features": [
+                "Parsing blocchi [DELIVERABLE]...[/DELIVERABLE]",
+                "Validazione formato e metadata",
+                "Upload su Supabase Storage (bucket: chat-deliverables)",
+                "Creazione record in chat_laboratory_deliverables",
+                "Supporto versioning e parent_deliverable_id"
+              ],
+              "location": "supabase/functions/generate-deliverable/index.ts"
+            }
+          ]
+        },
+        {
+          "title": "2. Database Schema",
+          "tables": [
+            {
+              "name": "chat_laboratory_conversations",
+              "description": "Stato della conversazione e configurazione economy mode",
+              "key_fields": [
+                "economy_mode (boolean): Abilita modalità risparmio token",
+                "show_summaries_only (boolean): Utilizza content_summary invece di content",
+                "token_count_current (int): Token accumulati da ultimo reset",
+                "token_count_total (int): Token totali lifetime conversazione",
+                "last_compaction_at: Ultimo reset context window",
+                "riassunto_contesto: Riassunto cumulativo per context compaction",
+                "current_turn_index: Indice turno corrente per round-robin",
+                "last_speaker_index: Chi ha parlato per ultimo (semantic routing)"
+              ]
+            },
+            {
+              "name": "chat_laboratory_messages",
+              "description": "Messaggi con sistema a 3 versioni",
+              "key_fields": [
+                "content (text): Versione completa del messaggio",
+                "content_user_friendly (text): Riassunto 60 parole, linguaggio naturale",
+                "content_summary (text): Riassunto ultra-compresso 25 parole, tecnico",
+                "is_summary_available (bool): Flag riassunti pronti",
+                "token_input (int): Token input per questa risposta",
+                "token_output (int): Token output generati",
+                "tempo_risposta_ms (int): Latenza risposta AI",
+                "is_streaming (bool): Indica se ancora in generazione"
+              ]
+            },
+            {
+              "name": "ai_cost_tracking",
+              "description": "Tracciamento costi per provider/model",
+              "key_fields": [
+                "provider (text): anthropic | openai | lovable",
+                "model (text): claude-sonnet-4-5 | gpt-4o | google/gemini-2.5-flash",
+                "input_tokens (int): Token input utilizzati",
+                "output_tokens (int): Token output generati",
+                "cost_input_eur (numeric): Costo input in EUR",
+                "cost_output_eur (numeric): Costo output in EUR",
+                "cost_total_eur (numeric): Costo totale operazione",
+                "lab_conversation_id (uuid): Riferimento conversazione"
+              ]
+            },
+            {
+              "name": "chat_laboratory_prompt_sections",
+              "description": "Sezioni prompt modulari per composizione dinamica",
+              "key_fields": [
+                "section_type: BASE | TOPIC | AGENT_PERSONALITY",
+                "topic_tags: Array di tag per filtraggio topic",
+                "order_priority: Ordine di composizione nel prompt finale",
+                "is_active: Abilita/disabilita sezione"
+              ]
+            },
+            {
+              "name": "chat_laboratory_deliverables",
+              "description": "File generati (report, canvas, diagrammi)",
+              "key_fields": [
+                "message_id: Riferimento al messaggio che ha generato il deliverable",
+                "type: report | business_canvas | table | diagram",
+                "format: csv | md | mermaid | excalidraw",
+                "storage_path: Percorso file su Supabase Storage",
+                "metadata: JSONB con info aggiuntive (colonne, dimensioni, etc)",
+                "version: Numero versione deliverable",
+                "generation_status: pending | completed | failed"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "3. Flusso Economy Mode (Sistema a 3 Versioni)",
+          "flow": [
+            {
+              "step": 1,
+              "action": "User invia messaggio",
+              "detail": "Frontend chiama bar-chat-orchestrator con userMessage e participants attivi"
+            },
+            {
+              "step": 2,
+              "action": "Caricamento history con economy mode",
+              "detail": "Se economy_mode=true && show_summaries_only=true, carica content_summary invece di content per messaggi AI (NON user)",
+              "code_ref": "bar-chat-orchestrator/index.ts:226-239"
+            },
+            {
+              "step": 3,
+              "action": "Composizione prompt contestuale",
+              "detail": "Combina: global_system_prompt + BASE sections + TOPIC sections + AGENT_PERSONALITY + moderazione lunghezza",
+              "adaptive_limit": "getAdaptiveWordLimit(agentName, intent, baseLimit=120) applica moltiplicatori per agent (Renny 1.5x, Vittorio 2.0x, Tonino 2.5x) e intent depth (deep 3x)"
+            },
+            {
+              "step": 4,
+              "action": "Streaming AI response",
+              "detail": "Streaming da provider AI, salvataggio incrementale ogni 50 caratteri per display real-time"
+            },
+            {
+              "step": 5,
+              "action": "Salvataggio versione completa",
+              "detail": "Messaggio salvato con content completo, is_streaming=false, token_input/output, tempo_risposta_ms"
+            },
+            {
+              "step": 6,
+              "action": "Generazione riassunti (background)",
+              "detail": "Invoca generate-message-summaries in fire-and-forget, non blocca risposta utente",
+              "code_ref": "bar-chat-orchestrator/index.ts:735-746"
+            },
+            {
+              "step": 7,
+              "action": "generate-message-summaries elabora",
+              "detail": "Chiama Lovable AI 2 volte: 1) prompt user-friendly (60 parole), 2) prompt ultra-compressed (25 parole). Aggiorna record con content_user_friendly, content_summary, is_summary_available=true"
+            },
+            {
+              "step": 8,
+              "action": "Prossima richiesta usa riassunti",
+              "detail": "Quando nuovo messaggio arriva, orchestrator carica content_summary per context economy, riducendo token fino al 90%"
+            }
+          ]
+        },
+        {
+          "title": "4. Deliverable System (Fase 2)",
+          "workflow": [
+            {
+              "phase": "Detection",
+              "description": "detectIntent(userMessage) usa regex per identificare richieste di report/canvas/tabelle",
+              "keywords": [
+                "report|relazione → depth: deep, type: report",
+                "business canvas|bmс → type: business_canvas",
+                "tabella|confronto → type: table",
+                "diagramma|mermaid → type: diagram"
+              ]
+            },
+            {
+              "phase": "Prompt Injection",
+              "description": "buildDeliverablePrompt(intent) aggiunge al prompt istruzioni per wrappare output in [DELIVERABLE]...[/DELIVERABLE]",
+              "format_example": "[DELIVERABLE type='report' format='md' title='...' tldr='...']\\n<contenuto>\\n[/DELIVERABLE]"
+            },
+            {
+              "phase": "Extraction",
+              "description": "extractDeliverable(aiResponse) parsa blocco deliverable, estrae type, format, title, tldr, content, metadata"
+            },
+            {
+              "phase": "Generation",
+              "description": "generate-deliverable riceve deliverable estratto, crea file (CSV/MD/Mermaid), upload su Storage, crea record DB"
+            },
+            {
+              "phase": "Display",
+              "description": "Frontend usa DeliverableCard per mostrare card download, sostituisce AI response con tldr breve"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Economy Mode: Analisi Costi vs Prestazioni",
+      "content": "L'Economy Mode riduce drasticamente i costi API mantenendo qualità conversazione accettabile.",
+      "subsections": [
+        {
+          "title": "Comparazione Token Usage",
+          "scenarios": [
+            {
+              "mode": "Completo (economy_mode=false)",
+              "token_per_message": "Variabile, dipende da lunghezza originale (100-500 parole tipicamente 150-750 token)",
+              "context_window": "Cresce linearmente con ogni messaggio",
+              "costo_10_messaggi_esempio": "~15000 token input (10 msg * 150 parole medie * 1.5 token/parola)",
+              "note": "Conversazioni lunghe diventano rapidamente costose"
+            },
+            {
+              "mode": "Economy (economy_mode=true && show_summaries_only=true)",
+              "token_per_message": "Ultra-compressed: 25 parole → ~38 token",
+              "context_window": "Crescita controllata, 38 token/msg costante",
+              "costo_10_messaggi_esempio": "~380 token input (10 msg * 38 token)",
+              "note": "Riduzione ~97% rispetto a completo in conversazioni lunghe"
+            }
+          ]
+        },
+        {
+          "title": "Quando Usare Economy Mode",
+          "recommendations": [
+            {
+              "scenario": "Conversazioni lunghe (>20 messaggi)",
+              "recommendation": "Economy ATTIVO - Mantiene context window gestibile",
+              "benefit": "Riduzione costi 90%+, latenza ridotta, no degradazione qualità percepibile"
+            },
+            {
+              "scenario": "Brainstorming tecnico approfondito",
+              "recommendation": "Economy DISATTIVO - Preserva dettagli tecnici e sfumature",
+              "benefit": "AI ha accesso completo a discussioni precedenti, migliore coerenza"
+            },
+            {
+              "scenario": "Discussioni multi-topic con switch frequenti",
+              "recommendation": "Economy ATTIVO con topic sections modulari",
+              "benefit": "Context compresso + topic injection dinamico = efficienza ottimale"
+            }
+          ]
+        },
+        {
+          "title": "Metriche da Monitorare",
+          "kpis": [
+            {
+              "metric": "Token Ratio (compressed/full)",
+              "target": "<0.1 (90%+ riduzione)",
+              "monitoring": "Usa ChatLaboratoryTechnicalAnalytics per verificare"
+            },
+            {
+              "metric": "Summary Quality Score",
+              "target": "Concetti chiave preservati al 100%",
+              "monitoring": "Review manuale messaggi con is_summary_available=true"
+            },
+            {
+              "metric": "Costo EUR per conversazione",
+              "target": "<€0.05 per conversazione media (30 msg)",
+              "monitoring": "Query ai_cost_tracking aggregata per lab_conversation_id"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Ottimizzazioni Future (Roadmap)",
+      "content": "Strategie avanzate per ridurre ulteriormente costi e migliorare prestazioni.",
+      "strategies": [
+        {
+          "name": "Knowledge Nodes Extraction",
+          "description": "Estrazione automatica di concetti chiave ricorrenti in un knowledge graph separato",
+          "implementation": [
+            "Dopo ogni N messaggi, invoca edge function extract-knowledge-nodes",
+            "Identifica entità (persone, aziende, concetti) e relazioni usando NER + AI",
+            "Salva in tabella knowledge_nodes con embedding vettoriali",
+            "Quando componi prompt, query knowledge_nodes per concetti rilevanti",
+            "Riduci dipendenza da messaggi storici: invece di 20 msg completi, usa 5 msg recenti + 10 knowledge nodes"
+          ],
+          "benefit": "Riduzione ulteriore 50% token mantenendo memoria a lungo termine"
+        },
+        {
+          "name": "Context Compaction (Sliding Window)",
+          "description": "Reset periodico context window con riassunto cumulativo",
+          "implementation": [
+            "Quando token_count_current > compaction_trigger_tokens (3000), genera riassunto cumulativo",
+            "Riassunto include: topic discussi, decisioni chiave, azioni concordate, punti aperti",
+            "Salva in riassunto_contesto, reset token_count_current=0",
+            "Prossime richieste usano: riassunto_contesto + ultimi 5 messaggi + nuovo input",
+            "Mantiene context window costante indipendentemente da lunghezza conversazione"
+          ],
+          "benefit": "Conversazioni illimitate con costi bounded, memory retention efficiente"
+        },
+        {
+          "name": "Adaptive Summarization Depth",
+          "description": "Riassunti più aggressivi per messaggi vecchi, meno per recenti",
+          "implementation": [
+            "Messaggi 0-5 turni fa: 60 parole (user-friendly)",
+            "Messaggi 6-15 turni fa: 25 parole (ultra-compressed)",
+            "Messaggi 16+ turni fa: 10 parole (extreme compression) o knowledge nodes only",
+            "Dinamicamente adatta profondità in base a token budget residuo"
+          ],
+          "benefit": "Bilanciamento ottimale tra contesto recente e memoria storica"
+        },
+        {
+          "name": "Semantic Caching",
+          "description": "Cache risposte AI per query semanticamente simili",
+          "implementation": [
+            "Embedding di ogni user message",
+            "Query cache vettoriale per messaggi simili (cosine similarity >0.95)",
+            "Se hit, riutilizza risposta precedente (con disclaimer 'risposta cached')",
+            "Riduce chiamate API per domande ripetitive"
+          ],
+          "benefit": "Riduzione costi per pattern ricorrenti, latenza ~0ms per cache hit"
+        }
+      ]
+    },
+    {
+      "title": "Debugging & Troubleshooting",
+      "content": "Strumenti e tecniche per diagnosticare problemi economy mode.",
+      "tools": [
+        {
+          "name": "ChatLaboratoryTechnicalAnalytics",
+          "path": "/chat-laboratory/analytics/:conversationId",
+          "features": [
+            "Visualizzazione 3 versioni messaggio side-by-side",
+            "Metriche token per provider/model",
+            "Verifica is_summary_available flag",
+            "Costo cumulativo conversazione",
+            "Tempo risposta medio per agente"
+          ],
+          "use_case": "Verificare che riassunti siano generati correttamente e utilizzati"
+        },
+        {
+          "name": "Supabase Edge Function Logs",
+          "access": "Dashboard Lovable → Edge Function Logs → bar-chat-orchestrator",
+          "what_to_look_for": [
+            "Log '📉 [AgentName] usa summary: ...' conferma economy mode attivo",
+            "Log '🔄 Background summary generation triggered' conferma invocazione generate-message-summaries",
+            "Log '✅ Summaries generate: {...}' in generate-message-summaries conferma completamento"
+          ]
+        },
+        {
+          "name": "Database Queries Dirette",
+          "examples": [
+            {
+              "query": "SELECT id, sender_name, LENGTH(content) as full_len, LENGTH(content_summary) as summary_len, is_summary_available FROM chat_laboratory_messages WHERE conversation_id='...' ORDER BY created_at",
+              "purpose": "Verificare presenza riassunti e ratio compressione"
+            },
+            {
+              "query": "SELECT provider, model, SUM(input_tokens) as total_in, SUM(output_tokens) as total_out, SUM(cost_total_eur) as total_cost FROM ai_cost_tracking WHERE lab_conversation_id='...' GROUP BY provider, model",
+              "purpose": "Analizzare distribuzione costi per provider"
+            }
+          ]
+        }
+      ],
+      "common_issues": [
+        {
+          "symptom": "is_summary_available sempre false",
+          "cause": "generate-message-summaries non invocata o fallita",
+          "solution": "Check edge function logs per errori, verifica LOVABLE_API_KEY configurata"
+        },
+        {
+          "symptom": "Economy mode non riduce token",
+          "cause": "show_summaries_only=false oppure content_summary null",
+          "solution": "Verifica chat_laboratory_conversations.show_summaries_only=true e attendi generazione riassunti"
+        },
+        {
+          "symptom": "Risposte AI generiche/prive contesto",
+          "cause": "Riassunti troppo aggressivi perdono info critiche",
+          "solution": "Aumenta parole ultra-compressed da 25 a 40, oppure disabilita economy per topic specifici"
+        }
+      ]
+    }
+  ]
+}

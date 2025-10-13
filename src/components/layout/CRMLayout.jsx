@@ -116,7 +116,6 @@ const CRMLayout = ({ children }) => {
   const navigationGroups = useNavigationGroups();
 
   const standaloneItems = [
-    { name: t('nav.settings'), href: '/settings', icon: Settings },
     { name: 'Gestione Lingue', href: '/language-manager', icon: Globe },
   ];
 

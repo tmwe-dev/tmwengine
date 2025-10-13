@@ -86,8 +86,8 @@ export const useNavigationGroups = () => {
       name: 'Impostazioni',
       icon: Settings,
       items: [
-        { name: 'Impostazioni', href: '/settings', icon: Settings },
-        { name: 'Impostazioni DB', href: '/database-settings', icon: Database },
+        { name: 'Main', href: '/settings', icon: Settings },
+        { name: 'DB', href: '/database-settings', icon: Database },
       ]
     }
   ], [t, isAdmin]);

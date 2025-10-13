@@ -343,53 +343,6 @@ ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del luned�
 
     // Compose system prompt con STYLE INJECTION COME PRIMO ELEMENTO
     let composedPrompt = stylePrompt + '\n\n' + globalSystemPrompt + '\n\n';
-3. Chiedi conferma o prossimo step
-
-ESEMPIO: "Analizzati i dati. Propongo soluzione X perché riduce costi del 30%. Procediamo o rivediamo?"
-`,
-
-    colleagues: `
-🤝 MODALITÀ: COLLEAGUES
-
-Sei in una discussione tra colleghi che vogliono risolvere un problema in modo professionale ma amichevole.
-
-COMPORTAMENTO RICHIESTO:
-- ✅ Professionale ma cordiale
-- ✅ Qualche battuta leggera se appropriata (max 1 per risposta)
-- ✅ Ascolti gli altri e riconosci i loro punti
-- ✅ Bilanciato tra pragmatismo e piacevolezza
-- ❌ NO eccessiva rigidità o serietà
-- ❌ NO eccesso di formalità
-
-FORMATO RISPOSTA:
-1. Riconosci contributo precedente (se rilevante)
-2. Aggiungi il tuo punto
-3. Lascia spazio agli altri (domanda aperta)
-
-ESEMPIO: "Bella idea Marco! Aggiungo che potremmo anche X per velocizzare. Che ne dite?"
-`,
-
-    bar_chat: `
-🍺 MODALITÀ: BAR CHAT
-
-Sei al bar dopo lavoro con i colleghi. L'atmosfera è rilassata, ma l'obiettivo resta risolvere il problema.
-
-COMPORTAMENTO RICHIESTO:
-- ✅ Informale e scherzoso (ma non volgare)
-- ✅ Battute su lavoro, calcio, caffè lunedì, ecc.
-- ✅ Prendi in giro bonariamente i colleghi (se pertinente)
-- ✅ Comunque arrivi a soluzioni concrete
-- ✅ Usa espressioni colloquiali ("dai", "vabbè", "aho")
-- ❌ NO eccessiva serietà o formalità
-
-FORMATO RISPOSTA:
-1. Commento leggero/battuta (max 1 frase)
-2. Soluzione proposta in modo informale
-3. Coinvolgi gli altri con domanda scherzosa
-
-ESEMPIO: "Raga, il problema è che il sistema è lento come il caffè del lunedì 😅. Che ne dite se proviamo X? O aspettiamo che si svegli da solo?"
-`
-  };
 
   const stylePrompt = conversationStylePrompts[conversationStyle as keyof typeof conversationStylePrompts] || 
     conversationStylePrompts.colleagues;

@@ -48,44 +48,50 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
     // Cancella eventuali letture in corso
     synthRef.current.cancel();
 
-    // Crea utterance con testo tradotto se disponibile
-    const textToSpeak = translatedMessages[latestMessage.id] || latestMessage.content;
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    
-    // Imposta la lingua
-    utterance.lang = profile.readingLanguage || 'it-IT';
-    
-    // Cerca una voce appropriata
-    const voices = synthRef.current.getVoices();
-    const voice = voices.find(v => v.lang.startsWith(profile.readingLanguage)) 
-                  || voices.find(v => v.lang.startsWith('it'));
-    
-    if (voice) {
-      utterance.voice = voice;
-    }
+    // Aspetta 500ms per dare tempo alla traduzione asincrona
+    const timeoutId = setTimeout(() => {
+      // Crea utterance con testo tradotto se disponibile
+      const textToSpeak = translatedMessages[latestMessage.id] || latestMessage.content;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      
+      // Imposta la lingua
+      utterance.lang = profile.readingLanguage || 'it-IT';
+      
+      // Cerca una voce appropriata
+      const voices = synthRef.current!.getVoices();
+      const voice = voices.find(v => v.lang.startsWith(profile.readingLanguage)) 
+                    || voices.find(v => v.lang.startsWith('it'));
+      
+      if (voice) {
+        utterance.voice = voice;
+      }
 
-    // Imposta velocità e pitch
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+      // Imposta velocità e pitch
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
 
-    // Eventi
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-    };
+      // Eventi
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
 
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
-      setIsSpeaking(false);
-    };
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        setIsSpeaking(false);
+      };
 
-    // Pronuncia
-    synthRef.current.speak(utterance);
-  }, [messages, currentUserId, profile]);
+      // Pronuncia
+      synthRef.current?.speak(utterance);
+    }, 500);
+
+    // Cleanup timeout se il componente si smonta o il messaggio cambia
+    return () => clearTimeout(timeoutId);
+  }, [messages, currentUserId, profile, translatedMessages]);
 
   const stopSpeaking = () => {
     if (synthRef.current) {

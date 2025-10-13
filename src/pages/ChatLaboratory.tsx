@@ -1121,7 +1121,24 @@ const ChatLaboratory = () => {
               
               {/* Sezioni */}
               <div className="space-y-4">
-                {/* Bar Mode */}
+                {/* Ottimizzazione Token - PRIMA */}
+                {currentConversationId && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">Ottimizzazione Token</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EconomyModeToggle 
+                        conversationId={currentConversationId}
+                        onSettingsChange={(settings) => {
+                          console.log('Economy settings updated:', settings);
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Bar Mode - SECONDA */}
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>
                     <CardTitle className="text-white text-sm">Bar Mode</CardTitle>
@@ -1136,24 +1153,7 @@ const ChatLaboratory = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Stats */}
-                {currentConversationId && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">Statistiche</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <TokenCounterBadge
-                        labConversationId={currentConversationId}
-                        variant="laboratory"
-                        alertThreshold={15000}
-                      />
-                      <ConversationCostBadge labConversationId={currentConversationId} />
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {/* Bar Chat Settings (solo se Bar Mode attivo) */}
+                {/* Bar Chat Settings - TERZA (solo se Bar Mode attivo) */}
                 {currentConversationId && isBarMode && (
                   <Card className="bg-white/5 border-white/10">
                     <CardHeader>
@@ -1170,19 +1170,19 @@ const ChatLaboratory = () => {
                   </Card>
                 )}
                 
-                {/* Ottimizzazione Token */}
+                {/* Stats - QUARTA (in fondo) */}
                 {currentConversationId && (
                   <Card className="bg-white/5 border-white/10">
                     <CardHeader>
-                      <CardTitle className="text-white text-sm">Ottimizzazione Token</CardTitle>
+                      <CardTitle className="text-white text-sm">Statistiche</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <EconomyModeToggle 
-                        conversationId={currentConversationId}
-                        onSettingsChange={(settings) => {
-                          console.log('Economy settings updated:', settings);
-                        }}
+                    <CardContent className="space-y-3">
+                      <TokenCounterBadge
+                        labConversationId={currentConversationId}
+                        variant="laboratory"
+                        alertThreshold={15000}
                       />
+                      <ConversationCostBadge labConversationId={currentConversationId} />
                     </CardContent>
                   </Card>
                 )}
@@ -1442,18 +1442,6 @@ const ChatLaboratory = () => {
                   }
                 }}
               />
-              
-              {/* Bar Chat Settings - sempre visibili in fondo */}
-              {currentConversationId && (
-                <div className="border-t border-white/10 pt-3">
-                  <BarChatSettings 
-                    conversationId={currentConversationId}
-                    onSettingsChange={(settings) => {
-                      console.log('📝 Bar Chat Settings aggiornati:', settings);
-                    }}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>

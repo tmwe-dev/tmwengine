@@ -1152,23 +1152,6 @@ const ChatLaboratory = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Controlli Conversazione - TERZA (Argomento, Ritmo, Interruzioni, Voce) */}
-                {isBarMode && (
-                  <Card className="bg-white/5 border-white/10">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm">🎯 Controlli Conversazione</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <BarModeControls 
-                        conversationId={currentConversationId}
-                        onSettingsChange={(settings) => {
-                          console.log('🎯 Controlli Conversazione aggiornati:', settings);
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                
                 {/* Bar Chat Settings - QUARTA (Stile Conversazione + VAD) */}
                 {isBarMode && (
                   <Card className="bg-white/5 border-white/10">

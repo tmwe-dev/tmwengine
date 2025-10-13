@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
 import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
 import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
+import { OnlineUsersList } from '@/components/chat-laboratory/OnlineUsersList';
 import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
 import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
@@ -125,6 +126,7 @@ const ChatLaboratory = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -219,6 +221,14 @@ const ChatLaboratory = () => {
   useEffect(() => {
     initializeParticipants();
     loadConversations();
+    
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    };
+    getCurrentUser();
   }, []);
 
   useEffect(() => {
@@ -1226,6 +1236,22 @@ const ChatLaboratory = () => {
                     )}
                   </CardContent>
                 </Card>
+                
+                {/* Utenti Online */}
+                {currentConversationId && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">Utenti Online</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <OnlineUsersList
+                        conversationId={currentConversationId}
+                        currentUserId={currentUserId}
+                        onCallUser={(userId) => navigate(`/call-room?userId=${userId}&roomId=${currentConversationId}`)}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {/* Link Impostazioni Globali */}
                 <Card className="bg-white/5 border-white/10">

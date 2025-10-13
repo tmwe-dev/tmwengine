@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +9,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 const CallRoom = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
-  const [roomId] = useState('main-call-room');
+  
+  const targetUserId = searchParams.get('userId');
+  const roomIdParam = searchParams.get('roomId');
+  const [roomId] = useState(roomIdParam || 'main-call-room');
 
   const {
     isInCall,
@@ -32,6 +36,13 @@ const CallRoom = () => {
     };
     getUser();
   }, []);
+
+  // Auto-avvia chiamata se c'è un targetUserId nei query params
+  useEffect(() => {
+    if (targetUserId && !isInCall && userId) {
+      startCall(targetUserId);
+    }
+  }, [targetUserId, isInCall, userId, startCall]);
 
   const qualityColors = {
     good: 'bg-green-500',

@@ -115,28 +115,41 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
           const heightPercentIn = (agent.tokensIn / maxTokens) * 100;
           const heightPercentOut = (agent.tokensOut / maxTokens) * 100;
 
+          // Applica gli stessi gradient delle message cards
+          const getAgentGradient = (agentName: string, isInput: boolean) => {
+            const opacity = isInput ? '/15' : '/10';
+            const opacityEnd = isInput ? '/8' : '/5';
+            
+            if (agentName === 'ChatGPT') {
+              return `bg-gradient-to-br from-green-500${opacity} to-green-600${opacityEnd} border border-green-500/20`;
+            } else if (agentName === 'Claude') {
+              return `bg-gradient-to-br from-purple-500${opacity} to-purple-600${opacityEnd} border border-purple-500/20`;
+            } else if (agentName === 'Gemini') {
+              return `bg-gradient-to-br from-cyan-500${opacity} to-cyan-600${opacityEnd} border border-cyan-500/20`;
+            }
+            return `bg-gradient-to-br from-blue-500${opacity} to-blue-600${opacityEnd} border border-blue-500/20`;
+          };
+
           return (
             <div key={agent.agent} className="flex flex-col items-center gap-1.5">
               {/* Coppia colonnine IN + OUT affiancate */}
               <div className="flex gap-1 items-end h-16 md:h-20">
                 {/* Colonnina Token IN */}
                 <div 
-                  className="w-6 md:w-10 rounded-t"
+                  className={`w-6 md:w-10 rounded-t ${getAgentGradient(agent.agent, true)}`}
                   style={{ 
                     height: `${Math.max(heightPercentIn, 30)}%`, 
-                    minHeight: '24px',
-                    background: `linear-gradient(to top, ${agent.colorIn}CC, ${agent.colorIn})`
+                    minHeight: '24px'
                   }}
                   title={`${agent.agent} IN: ${formatTokens(agent.tokensIn)}`}
                 />
                 
                 {/* Colonnina Token OUT */}
                 <div 
-                  className="w-6 md:w-10 rounded-t"
+                  className={`w-6 md:w-10 rounded-t ${getAgentGradient(agent.agent, false)}`}
                   style={{ 
                     height: `${Math.max(heightPercentOut, 30)}%`, 
-                    minHeight: '24px',
-                    background: `linear-gradient(to top, ${agent.colorOut}DD, ${agent.colorOut})`
+                    minHeight: '24px'
                   }}
                   title={`${agent.agent} OUT: ${formatTokens(agent.tokensOut)}`}
                 />

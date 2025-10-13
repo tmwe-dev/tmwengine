@@ -8,8 +8,6 @@ import { UserAvailabilityBadge } from './UserAvailabilityBadge';
 import { UserAvailabilitySelector } from './UserAvailabilitySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserPresence {
@@ -35,14 +33,6 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
   
-  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
-  let sidebarState = 'expanded';
-  try {
-    const sidebar = useSidebar();
-    sidebarState = sidebar.state;
-  } catch (error) {
-    // Non siamo in un contesto Sidebar, usa stato di default
-  }
 
   // Carica current user solo al mount
   useEffect(() => {
@@ -112,19 +102,17 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
     return userId.substring(0, 2).toUpperCase();
   };
 
-  const isCollapsed = sidebarState === 'collapsed';
 
   return (
     <TooltipProvider>
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2">
-          {!isCollapsed && "Utenti Online"}
-        </SidebarGroupLabel>
+      <div>
+        <h3 className="text-sm font-semibold px-2 mb-2">
+          Utenti Online
+        </h3>
 
-        <SidebarGroupContent>
+        <div>
           <div className="px-2">
-            {!isCollapsed ? (
-              <div className="space-y-2">
+            <div className="space-y-2">
                 <div className="flex items-center justify-between mb-2">
                   {currentUser && (
                     <UserAvailabilitySelector
@@ -184,45 +172,9 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
                   </div>
                 </ScrollArea>
               </div>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="w-full h-10 flex items-center justify-center">
-                    <Users className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[300px]">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-sm mb-2">
-                      Utenti Online
-                    </div>
-                    {users.slice(0, 5).map((user) => {
-                      const profile = userProfiles.get(user.user_id);
-                      return (
-                        <div key={user.user_id} className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px]">
-                              {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate">
-                            {profile?.display_name || 'Utente'}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {users.length > 5 && (
-                      <div className="text-xs text-muted-foreground">
-                        +{users.length - 5} altri
-                      </div>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
-        </SidebarGroupContent>
-      </SidebarGroup>
+        </div>
+      </div>
     </TooltipProvider>
   );
 };

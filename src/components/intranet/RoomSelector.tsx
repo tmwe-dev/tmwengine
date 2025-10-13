@@ -10,8 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, Users, Plus, Globe, Lock, UserPlus, Clock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRoomAccessRequests } from '@/hooks/useRoomAccessRequests';
-import { useSidebar } from '@/components/ui/sidebar';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroupLabel, SidebarGroup, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Room {
@@ -45,14 +43,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
   const { toast } = useToast();
   const { requests, requestAccess } = useRoomAccessRequests();
   
-  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
-  let sidebarState = 'expanded';
-  try {
-    const sidebar = useSidebar();
-    sidebarState = sidebar.state;
-  } catch (error) {
-    // Non siamo in un contesto Sidebar (es: mobile sheet), usa stato di default
-  }
 
   useEffect(() => {
     loadRooms();
@@ -285,26 +275,24 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     return null; // Non mostrare nulla durante il caricamento
   }
 
-  const isCollapsed = sidebarState === 'collapsed';
 
   return (
     <TooltipProvider>
-      <SidebarGroup>
+      <div>
         <div className="flex items-center justify-between px-2 mb-2">
-          {!isCollapsed && <SidebarGroupLabel>Stanze Chat</SidebarGroupLabel>}
+          <h3 className="text-sm font-semibold">Stanze Chat</h3>
           <Button 
-            size={isCollapsed ? "icon" : "sm"} 
+            size="sm" 
             variant="outline" 
             onClick={() => setIsCreateDialogOpen(true)}
-            className={isCollapsed ? "h-8 w-8" : ""}
           >
             <Plus className="h-4 w-4" />
-            {!isCollapsed && <span className="ml-2">Nuova</span>}
+            <span className="ml-2">Nuova</span>
           </Button>
         </div>
 
-        <SidebarGroupContent>
-          <SidebarMenu>
+        <div>
+          <div className="space-y-1 px-2">
             {rooms.map((room) => {
               const canAccess = room.access_type === 'public' || room.is_member;
               const unreadCount = getUnreadCount ? getUnreadCount(room.id) : 0;
@@ -312,68 +300,34 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
               
               const button = (
                 <div className="flex items-center gap-2 w-full">
-                  <SidebarMenuButton
+                  <Button
+                    variant={selectedRoomId === room.id ? "secondary" : "ghost"}
+                    size="sm"
                     onClick={() => canAccess && onRoomSelect(room.id)}
-                    isActive={selectedRoomId === room.id}
                     disabled={!canAccess}
-                    className="flex-1"
+                    className="flex-1 justify-start"
                   >
                     <AccessIcon className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && (
-                      <span className="truncate flex-1">{room.name}</span>
-                    )}
-                  </SidebarMenuButton>
+                    <span className="truncate flex-1">{room.name}</span>
+                  </Button>
                 </div>
               );
 
               return (
-                <SidebarMenuItem key={room.id}>
-                  {isCollapsed ? (
-                    <div className="flex flex-col items-center gap-1 w-full py-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton
-                            onClick={() => canAccess && onRoomSelect(room.id)}
-                            isActive={selectedRoomId === room.id}
-                            disabled={!canAccess}
-                            className="w-full justify-center"
-                          >
-                            <AccessIcon className="h-4 w-4" />
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="flex flex-col gap-1">
-                          <div className="font-medium">{room.name}</div>
-                          {room.description && (
-                            <div className="text-xs text-muted-foreground max-w-[200px]">
-                              {room.description}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 text-xs">
-                            {getAccessBadge(room.access_type)}
-                            {!canAccess && (
-                              <Badge variant="outline" className="text-xs">
-                                {room.has_pending_request ? 'In attesa' : 'Non accessibile'}
-                              </Badge>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  ) : (
-                    button
-                  )}
-                </SidebarMenuItem>
+                <div key={room.id}>
+                  {button}
+                </div>
               );
             })}
 
-            {rooms.length === 0 && !isCollapsed && (
+            {rooms.length === 0 && (
               <div className="text-center py-8 px-2 text-muted-foreground text-sm">
                 Nessuna stanza disponibile
               </div>
             )}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+          </div>
+        </div>
+      </div>
 
       {/* Request Access Dialog */}
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>

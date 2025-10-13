@@ -6,65 +6,49 @@ import { Check, X, Clock, Users, Mail } from "lucide-react";
 import { useRoomAccessRequests } from "@/hooks/useRoomAccessRequests";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { useSidebar } from "@/components/ui/sidebar";
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const AccessRequestsPanel = () => {
   const { requests, isLoading, approveRequest, rejectRequest } = useRoomAccessRequests();
   
-  // useSidebar è opzionale - funziona solo se wrappato in SidebarProvider
-  let sidebarState = 'expanded';
-  try {
-    const sidebar = useSidebar();
-    sidebarState = sidebar.state;
-  } catch (error) {
-    // Non siamo in un contesto Sidebar, usa stato di default
-  }
 
   const pendingRequests = requests.filter(r => r.status === 'pending' && !r.is_invite);
-  const isCollapsed = sidebarState === 'collapsed';
 
   if (isLoading) {
     return (
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2">
-          {!isCollapsed && "Richieste"}
-          {isCollapsed && <Clock className="h-4 w-4" />}
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
+      <div>
+        <h3 className="text-sm font-semibold px-2 mb-2">
+          Richieste
+        </h3>
+        <div>
           <p className="text-xs text-muted-foreground px-2">Caricamento...</p>
-        </SidebarGroupContent>
-      </SidebarGroup>
+        </div>
+      </div>
     );
   }
 
   if (pendingRequests.length === 0) {
     return (
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2">
-          {!isCollapsed && "Richieste"}
-          {isCollapsed && <Clock className="h-4 w-4" />}
-        </SidebarGroupLabel>
-        <SidebarGroupContent>
-          {!isCollapsed && (
-            <p className="text-xs text-muted-foreground px-2">Nessuna richiesta</p>
-          )}
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <div>
+        <h3 className="text-sm font-semibold px-2 mb-2">
+          Richieste
+        </h3>
+        <div>
+          <p className="text-xs text-muted-foreground px-2">Nessuna richiesta</p>
+        </div>
+      </div>
     );
   }
 
   return (
     <TooltipProvider>
-      <SidebarGroup>
-        <SidebarGroupLabel className="px-2">
+      <div>
+        <h3 className="text-sm font-semibold px-2 mb-2">
           Richieste
-        </SidebarGroupLabel>
+        </h3>
 
-        <SidebarGroupContent>
-          {!isCollapsed ? (
-            <ScrollArea className="h-[300px]">
+        <div>
+          <ScrollArea className="h-[300px]">
               <div className="space-y-2 px-2 pr-4">
                 {pendingRequests.map((request) => (
                   <Card key={request.id} className="p-3">
@@ -114,9 +98,8 @@ export const AccessRequestsPanel = () => {
                 ))}
               </div>
             </ScrollArea>
-          ) : null}
-        </SidebarGroupContent>
-      </SidebarGroup>
+        </div>
+      </div>
     </TooltipProvider>
   );
 };

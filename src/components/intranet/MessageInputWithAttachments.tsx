@@ -15,6 +15,11 @@ interface FileAttachment {
   preview?: string;
 }
 
+interface ElevenLabsVoice {
+  voice_id: string;
+  name: string;
+}
+
 interface MessageInputWithAttachmentsProps {
   roomId: string;
   settingsButton?: React.ReactNode;
@@ -22,6 +27,8 @@ interface MessageInputWithAttachmentsProps {
   selectedVoice?: string;
   onEngineChange?: (value: string) => void;
   onVoiceChange?: (value: string) => void;
+  elevenLabsVoices?: ElevenLabsVoice[];
+  isLoadingVoices?: boolean;
 }
 
 const EMOTICONS = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🤔', '👏', '🙌', '💪', '🎯', '⚡', '🌟'];
@@ -30,9 +37,11 @@ export const MessageInputWithAttachments = ({
   roomId, 
   settingsButton,
   ttsEngine = 'native',
-  selectedVoice = 'Aria',
+  selectedVoice = '',
   onEngineChange = () => {},
-  onVoiceChange = () => {}
+  onVoiceChange = () => {},
+  elevenLabsVoices = [],
+  isLoadingVoices = false
 }: MessageInputWithAttachmentsProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -405,6 +414,8 @@ export const MessageInputWithAttachments = ({
             selectedVoice={selectedVoice}
             onEngineChange={onEngineChange}
             onVoiceChange={onVoiceChange}
+            elevenLabsVoices={elevenLabsVoices}
+            isLoadingVoices={isLoadingVoices}
           />
         </div>
       </div>

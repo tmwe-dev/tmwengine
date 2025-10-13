@@ -1,14 +1,28 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
+interface ElevenLabsVoice {
+  voice_id: string;
+  name: string;
+}
+
 interface TtsControlsProps {
   ttsEngine: string;
   selectedVoice: string;
   onEngineChange: (value: string) => void;
   onVoiceChange: (value: string) => void;
+  elevenLabsVoices?: ElevenLabsVoice[];
+  isLoadingVoices?: boolean;
 }
 
-export const TtsControls = ({ ttsEngine, selectedVoice, onEngineChange, onVoiceChange }: TtsControlsProps) => {
+export const TtsControls = ({ 
+  ttsEngine, 
+  selectedVoice, 
+  onEngineChange, 
+  onVoiceChange,
+  elevenLabsVoices = [],
+  isLoadingVoices = false 
+}: TtsControlsProps) => {
 
   return (
     <div className="flex items-center gap-4 px-2 py-2 border-t border-border bg-muted/30">
@@ -34,31 +48,24 @@ export const TtsControls = ({ ttsEngine, selectedVoice, onEngineChange, onVoiceC
           <Label htmlFor="elevenlabs-voice" className="text-xs whitespace-nowrap">
             🔊 Voce:
           </Label>
-          <Select value={selectedVoice} onValueChange={onVoiceChange}>
-          <SelectTrigger id="elevenlabs-voice" className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
+          <Select value={selectedVoice} onValueChange={onVoiceChange} disabled={isLoadingVoices}>
+            <SelectTrigger id="elevenlabs-voice" className="h-8 text-xs">
+              <SelectValue placeholder={isLoadingVoices ? "Caricamento..." : "Seleziona voce"} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Aria">Aria (Multilingua)</SelectItem>
-              <SelectItem value="Roger">Roger (EN)</SelectItem>
-              <SelectItem value="Sarah">Sarah (EN)</SelectItem>
-              <SelectItem value="Laura">Laura (EN)</SelectItem>
-              <SelectItem value="Charlie">Charlie (EN)</SelectItem>
-              <SelectItem value="George">George (EN)</SelectItem>
-              <SelectItem value="Callum">Callum (EN)</SelectItem>
-              <SelectItem value="River">River (EN)</SelectItem>
-              <SelectItem value="Liam">Liam (EN)</SelectItem>
-              <SelectItem value="Charlotte">Charlotte (EN)</SelectItem>
-              <SelectItem value="Alice">Alice (EN)</SelectItem>
-              <SelectItem value="Matilda">Matilda (EN)</SelectItem>
-              <SelectItem value="Will">Will (EN)</SelectItem>
-              <SelectItem value="Jessica">Jessica (EN)</SelectItem>
-              <SelectItem value="Eric">Eric (EN)</SelectItem>
-              <SelectItem value="Chris">Chris (EN)</SelectItem>
-              <SelectItem value="Brian">Brian (EN)</SelectItem>
-              <SelectItem value="Daniel">Daniel (ES)</SelectItem>
-              <SelectItem value="Lily">Lily (FR)</SelectItem>
-              <SelectItem value="Bill">Bill (EN)</SelectItem>
+              {isLoadingVoices ? (
+                <SelectItem value="loading" disabled>Caricamento voci...</SelectItem>
+              ) : elevenLabsVoices.length > 0 ? (
+                elevenLabsVoices.map(voice => (
+                  <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                    {voice.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-voices" disabled>
+                  Nessuna voce disponibile
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>

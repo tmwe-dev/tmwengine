@@ -36,7 +36,9 @@ const Intranet = () => {
   const [showOrgUsers, setShowOrgUsers] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [ttsEngine, setTtsEngine] = useState('native');
-  const [selectedVoice, setSelectedVoice] = useState('Aria');
+  const [selectedVoice, setSelectedVoice] = useState('');
+  const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{voice_id: string; name: string}>>([]);
+  const [isLoadingVoices, setIsLoadingVoices] = useState(false);
   const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
   const { toast } = useToast();
   
@@ -52,7 +54,54 @@ const Intranet = () => {
 
   useEffect(() => {
     loadCurrentUser();
+    loadElevenLabsVoices();
   }, []);
+
+  const loadElevenLabsVoices = async () => {
+    setIsLoadingVoices(true);
+    try {
+      // Ottieni API key dal localStorage
+      const apiKey = localStorage.getItem('elevenlabs_api_key');
+      
+      if (!apiKey) {
+        console.log('ℹ️ ElevenLabs API key non configurata');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices', {
+        body: { apiKey }
+      });
+
+      if (error) {
+        console.error('❌ Error loading ElevenLabs voices:', error);
+        toast({
+          title: 'Errore caricamento voci',
+          description: 'Impossibile caricare le voci ElevenLabs. Verifica la tua API key.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (data?.voices) {
+        const voices = data.voices.map((v: any) => ({
+          voice_id: v.voice_id,
+          name: v.name
+        }));
+        setElevenLabsVoices(voices);
+        
+        // Imposta la prima voce come default
+        if (voices.length > 0 && !selectedVoice) {
+          setSelectedVoice(voices[0].voice_id);
+        }
+        
+        console.log(`✅ Caricate ${voices.length} voci ElevenLabs`);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    } finally {
+      setIsLoadingVoices(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -285,6 +334,8 @@ const Intranet = () => {
                         selectedVoice={selectedVoice}
                         onEngineChange={setTtsEngine}
                         onVoiceChange={setSelectedVoice}
+                        elevenLabsVoices={elevenLabsVoices}
+                        isLoadingVoices={isLoadingVoices}
                       />
                     </CardContent>
                   </Card>
@@ -313,6 +364,8 @@ const Intranet = () => {
                         selectedVoice={selectedVoice}
                         onEngineChange={setTtsEngine}
                         onVoiceChange={setSelectedVoice}
+                        elevenLabsVoices={elevenLabsVoices}
+                        isLoadingVoices={isLoadingVoices}
                       />
                     </CardContent>
                   </Card>
@@ -499,6 +552,8 @@ const Intranet = () => {
                       selectedVoice={selectedVoice}
                       onEngineChange={setTtsEngine}
                       onVoiceChange={setSelectedVoice}
+                      elevenLabsVoices={elevenLabsVoices}
+                      isLoadingVoices={isLoadingVoices}
                     />
                   </CardContent>
                 </Card>

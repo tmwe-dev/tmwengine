@@ -177,8 +177,8 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        // ✅ NO max_tokens: GPT-5 decide autonomamente
-        temperature: 0.7,
+        // ✅ GPT-5 usa temperature di default (1.0)
+        // temperature rimosso - non supportato da gpt-5-2025-08-07
         messages: [
           { role: 'system', content: concisePrompt },
           { 

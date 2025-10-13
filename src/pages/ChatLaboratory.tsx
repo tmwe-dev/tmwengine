@@ -95,7 +95,7 @@ const ChatLaboratory = () => {
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(!useIsMobile());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Bar Mode States
   const [isBarMode, setIsBarMode] = useState(false);

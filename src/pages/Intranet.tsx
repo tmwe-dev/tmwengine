@@ -12,6 +12,7 @@ import { OnlineUsers } from '@/components/intranet/OnlineUsers';
 import { OrganizationUsers } from '@/components/intranet/OrganizationUsers';
 import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
 import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
+import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -411,6 +412,13 @@ const Intranet = () => {
                     </div>
                   </>
                 )}
+
+                <div className="px-4 pt-6 pb-3">
+                  <h3 className="text-sm font-semibold">Impostazioni</h3>
+                </div>
+                <div className="px-2">
+                  <UserLanguageSettings />
+                </div>
               </>
             )}
           </div>

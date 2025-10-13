@@ -126,6 +126,46 @@ async function withRetry<T>(
  * Chiamata a un provider AI con timeout, retry e NO limiti token.
  * Include "soft prompt" per incoraggiare concisione.
  */
+// ═══════════════════════════════════════════════════════════
+// CIRCUIT BREAKER PER PROVIDER
+// ═══════════════════════════════════════════════════════════
+
+interface ProviderStats {
+  failures: number;
+  avgLatency: number;
+  lastFailureTime: number;
+}
+
+const providerStats = new Map<string, ProviderStats>();
+
+function shouldSkipProvider(providerName: string): boolean {
+  const stats = providerStats.get(providerName);
+  if (!stats) return false;
+  
+  // Skip se >5 failure consecutivi o latenza media >30s o fallimento recente (<2 min)
+  const recentFailure = Date.now() - stats.lastFailureTime < 120000;
+  return stats.failures > 5 || stats.avgLatency > 30000 || recentFailure;
+}
+
+function updateProviderStats(providerName: string, success: boolean, latency: number) {
+  const stats = providerStats.get(providerName) || { failures: 0, avgLatency: 0, lastFailureTime: 0 };
+  
+  if (success) {
+    stats.avgLatency = (stats.avgLatency * 0.8) + (latency * 0.2); // EMA
+    stats.failures = Math.max(0, stats.failures - 1);
+  } else {
+    stats.failures++;
+    stats.lastFailureTime = Date.now();
+  }
+  
+  providerStats.set(providerName, stats);
+  console.log(`📊 Circuit Breaker [${providerName}]: failures=${stats.failures}, avgLatency=${Math.round(stats.avgLatency)}ms`);
+}
+
+/**
+ * Chiamata a un provider AI con timeout, retry e NO limiti token.
+ * Include "soft prompt" per incoraggiare concisione.
+ */
 async function callAIProvider(
   participant: any,
   config: {
@@ -217,11 +257,14 @@ async function callAIProvider(
       console.error(`❌ ${participant.name} error ${response.status}:`, errorText);
       
       if (response.status === 429) {
+        updateProviderStats(participant.name, false, Date.now() - startTime);
         throw new Error('429'); // Trigger retry
       }
       if (response.status >= 500) {
+        updateProviderStats(participant.name, false, Date.now() - startTime);
         throw new Error(`5xx`); // Trigger retry
       }
+      updateProviderStats(participant.name, false, Date.now() - startTime);
       throw new Error(`API error ${response.status}: ${errorText}`);
     }
     
@@ -249,6 +292,9 @@ async function callAIProvider(
     if (tokensOut > 2000) {
       console.warn(`⚠️ ${participant.name} ha generato ${tokensOut} token (>2000). Considera ottimizzazione prompt.`);
     }
+    
+    // ✅ Aggiorna circuit breaker stats
+    updateProviderStats(participant.name, true, duration);
     
     return { content, tokensIn, tokensOut, duration };
   }, { retries: 2, baseDelayMs: 300 });
@@ -362,20 +408,50 @@ REGOLE CRITICHE:
 
     const startTime = Date.now();
 
-    // Costruisci history completa con economy mode
-    const visibleHistory = (messages || [])
-      .filter((msg: any) => msg.is_visible_to_ai !== false)
-      .map((msg: any) => {
+    // ═══════════════════════════════════════════════════════════
+    // COMPRESSIONE HISTORY SE TROPPO LUNGA
+    // ═══════════════════════════════════════════════════════════
+    
+    // Costruisci history iniziale
+    let visibleMessages = (messages || []).filter((msg: any) => msg.is_visible_to_ai !== false);
+    
+    // Stima token (approssimativa: 4 caratteri = 1 token)
+    const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+    
+    let fullHistory = visibleMessages.map((msg: any) => {
+      let content = msg.content;
+      
+      // Use ultra-compressed summary in economy mode for AI messages
+      if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente') {
+        content = msg.content_summary;
+      }
+      
+      return `${msg.sender_name}: ${content}`;
+    }).join('\n');
+    
+    const estimatedTokens = estimateTokens(fullHistory);
+    console.log(`📊 History tokens stimati: ${estimatedTokens}`);
+    
+    let visibleHistory = fullHistory;
+    
+    // ✅ COMPRESSIONE: Se history > 2000 token, usa solo ultimi 20 messaggi
+    if (estimatedTokens > 2000) {
+      console.log(`⚠️ History troppo lunga (~${estimatedTokens} token). Compressione a ultimi 20 messaggi...`);
+      
+      const recentMessages = visibleMessages.slice(-20);
+      visibleHistory = recentMessages.map((msg: any) => {
         let content = msg.content;
         
-        // Use ultra-compressed summary in economy mode for AI messages
         if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_name !== 'Utente') {
           content = msg.content_summary;
         }
         
         return `${msg.sender_name}: ${content}`;
-      })
-      .join('\n');
+      }).join('\n');
+      
+      const compressedTokens = estimateTokens(visibleHistory);
+      console.log(`✅ History compressa: ${compressedTokens} token (riduzione ${Math.round((1 - compressedTokens/estimatedTokens) * 100)}%)`);
+    }
 
     // ──────── PRE-CHECK: Questo AI ha qualcosa da dire? ────────
     const shouldSkip = checkIfShouldSkip(visibleHistory, userMessage, messages?.length || 0);
@@ -431,6 +507,12 @@ REGOLE CRITICHE:
     // Crea array di Promise per chiamate parallele
     const agentTasks = activeAIs.map(async (participant: any) => {
       try {
+        // ✅ Circuit breaker: skip provider se problematico
+        if (shouldSkipProvider(participant.name)) {
+          console.log(`🚫 Circuit breaker: Skipping ${participant.name} (troppi errori recenti)`);
+          throw new Error('Circuit breaker attivo - provider temporaneamente disabilitato');
+        }
+        
         let apiKey: string;
         let model: string;
         

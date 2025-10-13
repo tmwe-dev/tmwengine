@@ -1,0 +1,214 @@
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Mic, Square } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+interface VoiceRecorderProps {
+  onTranscriptionComplete: (text: string) => void;
+  isActive: boolean;
+  onActiveChange: (active: boolean) => void;
+  disabled?: boolean;
+}
+
+export const VoiceRecorder = ({
+  onTranscriptionComplete,
+  isActive,
+  onActiveChange,
+  disabled = false,
+}: VoiceRecorderProps) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Cleanup function
+  const cleanup = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    setAudioLevel(0);
+  };
+
+  // Monitor audio level
+  const monitorAudioLevel = () => {
+    if (!analyserRef.current) return;
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+    setAudioLevel(Math.min(100, (average / 255) * 100));
+
+    animationFrameRef.current = requestAnimationFrame(monitorAudioLevel);
+  };
+
+  // Start recording
+  const startRecording = async () => {
+    try {
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+
+      // Setup audio context for visualization
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      const analyser = audioContext.createAnalyser();
+      analyserRef.current = analyser;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      monitorAudioLevel();
+
+      // Setup MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await transcribeAudio(audioBlob);
+        cleanup();
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      console.log('🎤 Recording started');
+      
+    } catch (error) {
+      console.error('Microphone error:', error);
+      toast.error('Errore microfono', {
+        description: 'Impossibile accedere al microfono',
+      });
+      cleanup();
+    }
+  };
+
+  // Stop recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      console.log('🎤 Recording stopped');
+    }
+  };
+
+  // Transcribe audio
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      toast.info('Trascrizione in corso...');
+
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      
+      const base64Audio = await new Promise<string>((resolve) => {
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+      });
+
+      // Call voice-to-text edge function
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio },
+      });
+
+      if (error) throw error;
+
+      if (data?.text) {
+        console.log('✅ Transcription:', data.text);
+        onTranscriptionComplete(data.text);
+        toast.success('Trascrizione completata');
+      } else {
+        throw new Error('No transcription received');
+      }
+
+    } catch (error) {
+      console.error('Transcription error:', error);
+      toast.error('Errore trascrizione', {
+        description: error.message,
+      });
+    }
+  };
+
+  // Toggle recording
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Cleanup on unmount or when isActive becomes false
+  useEffect(() => {
+    if (!isActive) {
+      stopRecording();
+      cleanup();
+    }
+    return () => {
+      cleanup();
+    };
+  }, [isActive]);
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button
+        variant={isRecording ? "destructive" : "default"}
+        size="lg"
+        onClick={toggleRecording}
+        disabled={disabled || !isActive}
+        className={cn(
+          "h-12 px-6 gap-2 transition-all",
+          isRecording && "animate-pulse"
+        )}
+      >
+        {isRecording ? (
+          <>
+            <Square className="h-5 w-5" />
+            <span>Stop Recording</span>
+          </>
+        ) : (
+          <>
+            <Mic className="h-5 w-5" />
+            <span>Start Recording</span>
+          </>
+        )}
+      </Button>
+
+      {/* Audio level indicator */}
+      {isRecording && (
+        <div className="flex items-center gap-2">
+          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-100"
+              style={{ width: `${audioLevel}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {Math.round(audioLevel)}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Import supabase
+import { supabase } from '@/integrations/supabase/client';

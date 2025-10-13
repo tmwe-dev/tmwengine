@@ -89,12 +89,11 @@ export const useBarVoiceWidget = (isActive: boolean, agentId: string | null) => 
 
     // Cleanup quando componente smonta o isActive diventa false
     return () => {
-      if (!isActive) {
-        const widget = document.querySelector('#bar-widget');
-        if (widget) {
-          widget.remove();
-          console.log('Bar widget cleanup');
-        }
+      // SEMPRE rimuovi widget nel cleanup, indipendentemente da isActive
+      const widget = document.querySelector('#bar-widget');
+      if (widget) {
+        widget.remove();
+        console.log('Bar widget cleanup');
       }
     };
   }, [isActive, agentId]);

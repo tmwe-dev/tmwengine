@@ -7,9 +7,10 @@ interface TokenUsageChartProps {
   conversationId: string;
   compact?: boolean;
   onClick?: () => void;
+  onTotalTokensChange?: (total: number) => void;
 }
 
-export function TokenUsageChart({ conversationId, compact = false, onClick }: TokenUsageChartProps) {
+export function TokenUsageChart({ conversationId, compact = false, onClick, onTotalTokensChange }: TokenUsageChartProps) {
   const [tokenData, setTokenData] = useState<Array<{
     agent: string;
     tokens: number;
@@ -64,6 +65,10 @@ export function TokenUsageChart({ conversationId, compact = false, onClick }: To
     }, [] as Array<{ agent: string; tokens: number; color: string }>);
 
     setTokenData(aggregated);
+    
+    // Notifica parent del totale
+    const total = aggregated.reduce((sum, d) => sum + d.tokens, 0);
+    onTotalTokensChange?.(total);
   }
 
   if (tokenData.length === 0) return null;
@@ -71,11 +76,16 @@ export function TokenUsageChart({ conversationId, compact = false, onClick }: To
   const totalTokens = tokenData.reduce((sum, d) => sum + d.tokens, 0);
   const maxTokens = Math.max(...tokenData.map(d => d.tokens));
 
+  // Formato numeri: sempre in migliaia con 1 decimale
+  const formatTokens = (tokens: number): string => {
+    return `${(tokens / 1000).toFixed(1)}K`;
+  };
+
   // Modalità compatta per header
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-2 px-3 py-1.5 rounded-md bg-black/20 backdrop-blur cursor-pointer hover:scale-105 transition-transform border border-white/10"
+        className="flex items-end gap-2 px-2 py-1 cursor-pointer hover:scale-105 transition-transform"
         onClick={onClick}
         title="Clicca per espandere il grafico"
       >
@@ -87,21 +97,18 @@ export function TokenUsageChart({ conversationId, compact = false, onClick }: To
             'bg-gradient-to-t from-blue-500/30 to-blue-400/50';
 
           return (
-            <div key={agent.agent} className="flex flex-col items-center gap-1">
-              {/* Colonnina */}
-              <div className="flex flex-col justify-end h-8">
+            <div key={agent.agent} className="flex flex-col items-center">
+              {/* Colonnina con numero dentro */}
+              <div className="flex flex-col justify-end h-12 md:h-16">
                 <div 
-                  className={`w-6 rounded-t ${bgGradient}`}
-                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                />
+                  className={`w-8 md:w-16 rounded-t ${bgGradient} flex items-center justify-center ${totalTokens > 50000 ? 'border border-red-500' : ''}`}
+                  style={{ height: `${Math.max(heightPercent, 30)}%`, minHeight: '24px' }}
+                >
+                  <span className={`text-xs md:text-sm font-bold ${totalTokens > 50000 ? 'text-red-500' : 'text-white'} drop-shadow-lg`}>
+                    {formatTokens(agent.tokens)}
+                  </span>
+                </div>
               </div>
-              
-              {/* Token count */}
-              <span className="text-xs text-white font-medium">
-                {agent.tokens > 999 
-                  ? `${(agent.tokens / 1000).toFixed(1)}K` 
-                  : agent.tokens}
-              </span>
             </div>
           );
         })}

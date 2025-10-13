@@ -93,6 +93,8 @@ const ChatLaboratory = () => {
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [tokenChartExpanded, setTokenChartExpanded] = useState(false);
+  const [totalTokensUsed, setTotalTokensUsed] = useState(0);
+  const [isTokenLimitReached, setIsTokenLimitReached] = useState(false);
   
   // Sidebar States
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -531,6 +533,16 @@ const ChatLaboratory = () => {
 
   const handleSubmit = async (e?: React.FormEvent, overrideText?: string) => {
     e?.preventDefault();
+    
+    if (isTokenLimitReached) {
+      toast({
+        title: "⛔ Limite Token Raggiunto",
+        description: `Hai raggiunto il limite di 100.000 token per questa conversazione (${totalTokensUsed.toLocaleString()} token usati). Crea una nuova conversazione per continuare.`,
+        variant: "destructive",
+        duration: 6000,
+      });
+      return;
+    }
     
     // ✅ Previeni invii multipli concorrenti
     if (isSubmitting) {
@@ -1088,11 +1100,25 @@ const ChatLaboratory = () => {
                   
                   {/* Token Usage Miniatura */}
                   {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
-                    <TokenUsageChart 
-                      conversationId={currentConversationId}
-                      compact
-                      onClick={() => setTokenChartExpanded(true)}
-                    />
+                    <>
+                      <TokenUsageChart 
+                        conversationId={currentConversationId}
+                        compact
+                        onClick={() => setTokenChartExpanded(true)}
+                        onTotalTokensChange={setTotalTokensUsed}
+                      />
+                      
+                      {/* Warning Badge */}
+                      {totalTokensUsed > 50000 && (
+                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          totalTokensUsed >= 100000 
+                            ? 'bg-red-500 text-white animate-pulse' 
+                            : 'bg-yellow-500 text-black'
+                        }`}>
+                          {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1442,8 +1468,11 @@ const ChatLaboratory = () => {
                 ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza"}
-                className="min-h-[40px] md:min-h-[60px] resize-none text-sm md:text-base"
+                placeholder={isTokenLimitReached 
+                  ? "⛔ Limite 100K token raggiunto - Crea nuova conversazione" 
+                  : (isMobile ? "Scrivi il messaggio..." : "Scrivi il tuo messaggio... Gli agenti AI risponderanno in sequenza")}
+                disabled={isTokenLimitReached}
+                className={`min-h-[40px] md:min-h-[60px] resize-none text-sm md:text-base ${isTokenLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();

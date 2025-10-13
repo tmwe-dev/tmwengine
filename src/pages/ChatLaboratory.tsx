@@ -225,6 +225,26 @@ const ChatLaboratory = () => {
           },
           async (payload) => {
             console.log('🔔 Real-time update ricevuto:', payload);
+            
+            // ✅ Sprint 1 P0: Progressive streaming rendering
+            if (payload.eventType === 'UPDATE' && payload.new) {
+              const updatedMessage = payload.new as any;
+              
+              // Update message in state immediately for streaming effect
+              setMessages(prev => prev.map(msg => 
+                msg.id === updatedMessage.id 
+                  ? { ...msg, ...updatedMessage }
+                  : msg
+              ));
+              
+              // If message is still streaming, don't reload all messages
+              if (updatedMessage.is_streaming) {
+                console.log('📝 Streaming in corso, aggiornamento progressivo...');
+                return;
+              }
+            }
+            
+            // For other events or completed streaming, reload all messages
             await loadMessages(currentConversationId);
             
             // ✅ Auto-play audio se presente
@@ -561,7 +581,7 @@ const ChatLaboratory = () => {
       
       if (isBarMode) {
         // ✅ UNA SOLA CHIAMATA per Bar Mode - l'orchestrator decide chi parla
-        console.log('🍹 Bar Mode: invocazione singola orchestrator');
+        console.log('🍹 Bar Mode: invocazione singola orchestrator con streaming');
         
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
@@ -573,21 +593,21 @@ const ChatLaboratory = () => {
         
         if (error) {
           console.error('❌ Errore Bar Mode:', error);
-          // toast({
-          //   title: "Errore",
-          //   description: error.message || 'Impossibile ottenere risposta',
-          //   variant: "destructive",
-          // });
         } else {
           console.log('✅ Risposta ricevuta:', data);
           
-          // ✅ Opzione D: Trigger async audio generation se necessario
+          // ✅ messageId returned for real-time tracking
+          // Real-time subscription will handle progressive updates
+          if (data?.messageId) {
+            console.log('📝 Messaggio creato con ID:', data.messageId, '- real-time updates attivi');
+          }
+          
+          // ✅ Trigger async audio generation se necessario
           if (data?.audioGenerating && data?.messageId) {
             console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
             triggerAudioGeneration(data.messageId);
           }
           
-          await loadMessages(conversationId);
           setConvergenceRefreshKey(prev => prev + 1);
         }
       } else {

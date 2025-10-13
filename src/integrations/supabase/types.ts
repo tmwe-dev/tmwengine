@@ -469,6 +469,7 @@ export type Database = {
           id: string
           images: Json | null
           intent_tags: Json | null
+          is_streaming: boolean | null
           is_summary_available: boolean | null
           is_visible_to_ai: boolean | null
           message_sequence: number | null
@@ -490,6 +491,7 @@ export type Database = {
           id?: string
           images?: Json | null
           intent_tags?: Json | null
+          is_streaming?: boolean | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           message_sequence?: number | null
@@ -511,6 +513,7 @@ export type Database = {
           id?: string
           images?: Json | null
           intent_tags?: Json | null
+          is_streaming?: boolean | null
           is_summary_available?: boolean | null
           is_visible_to_ai?: boolean | null
           message_sequence?: number | null
@@ -1010,6 +1013,7 @@ export type Database = {
         Row: {
           created_at: string
           elevenlabs_agent_id: string
+          expertise_keywords: string[] | null
           id: string
           interruption_style: string
           is_active: boolean
@@ -1027,6 +1031,7 @@ export type Database = {
         Insert: {
           created_at?: string
           elevenlabs_agent_id: string
+          expertise_keywords?: string[] | null
           id?: string
           interruption_style?: string
           is_active?: boolean
@@ -1044,6 +1049,7 @@ export type Database = {
         Update: {
           created_at?: string
           elevenlabs_agent_id?: string
+          expertise_keywords?: string[] | null
           id?: string
           interruption_style?: string
           is_active?: boolean

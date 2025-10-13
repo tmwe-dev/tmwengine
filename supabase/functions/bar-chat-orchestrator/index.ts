@@ -228,7 +228,7 @@ serve(async (req) => {
       };
     });
 
-    // ✅ HOTFIX Sprint 0: Filtra solo partecipanti attivi prima della selezione
+    // ✅ Sprint 1 P1: Context-Aware Turn-Taking con semantic routing
     const activeParticipants = participants.filter(p => p.is_active);
     const activeCount = activeParticipants.length;
 
@@ -238,21 +238,78 @@ serve(async (req) => {
 
     console.log(`👥 Partecipanti attivi: ${activeCount}/${participants.length}`);
 
-    // Turn-taking logic (30% random, 70% sequential)
-    const useRandom = Math.random() < 0.3;
+    // Extract keywords from user message (simple keyword extraction)
+    const extractKeywords = (text: string): string[] => {
+      const stopWords = new Set(['il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'di', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'a', 'è', 'e', 'o', 'che', 'mi', 'ti', 'si', 'ci', 'vi']);
+      return text.toLowerCase()
+        .split(/\W+/)
+        .filter(word => word.length > 3 && !stopWords.has(word))
+        .slice(0, 10); // Top 10 keywords
+    };
+
+    const messageKeywords = extractKeywords(userMessage);
+    console.log('🔑 Keywords messaggio utente:', messageKeywords);
+
+    // Fetch agent expertise keywords from elevenlabs_agents
+    const { data: agentsWithExpertise } = await supabase
+      .from('elevenlabs_agents')
+      .select('name, expertise_keywords, voice_id')
+      .eq('is_active', true);
+
+    console.log('🎯 Agenti con expertise:', agentsWithExpertise?.map(a => ({ name: a.name, keywords: a.expertise_keywords })));
+
+    // Semantic routing: 50% best match, 30% sequential, 20% random
+    const routingMethod = Math.random();
     let currentTurnIndex: number;
-    
-    if (useRandom) {
-      currentTurnIndex = Math.floor(Math.random() * activeCount);
-      console.log(`🎲 Turno randomizzato: indice ${currentTurnIndex} su ${activeCount} attivi`);
-    } else {
+    let selectedParticipant;
+
+    if (routingMethod < 0.5 && agentsWithExpertise && agentsWithExpertise.length > 0) {
+      // 50%: Semantic match basato su expertise keywords
+      const agentScores = activeParticipants.map(participant => {
+        const matchingAgent = agentsWithExpertise.find(a => 
+          a.name?.toLowerCase().includes(participant.name.toLowerCase())
+        );
+        
+        if (!matchingAgent || !matchingAgent.expertise_keywords || matchingAgent.expertise_keywords.length === 0) {
+          return { participant, score: 0 };
+        }
+
+        // Count keyword matches
+        const expertiseKeywords = matchingAgent.expertise_keywords.map(k => k.toLowerCase());
+        const matchCount = messageKeywords.filter(mk => 
+          expertiseKeywords.some(ek => ek.includes(mk) || mk.includes(ek))
+        ).length;
+
+        return { participant, score: matchCount };
+      });
+
+      const bestMatch = agentScores.sort((a, b) => b.score - a.score)[0];
+      
+      if (bestMatch.score > 0) {
+        selectedParticipant = bestMatch.participant;
+        currentTurnIndex = activeParticipants.indexOf(selectedParticipant);
+        console.log(`🎯 Semantic routing: ${selectedParticipant.name} (score: ${bestMatch.score})`);
+      } else {
+        // No match, fallback to sequential
+        const lastSpeakerIndex = conversation.last_speaker_index || 0;
+        currentTurnIndex = (lastSpeakerIndex + 1) % activeCount;
+        selectedParticipant = activeParticipants[currentTurnIndex];
+        console.log(`➡️ Semantic routing fallback (no match): ${selectedParticipant.name}`);
+      }
+    } else if (routingMethod < 0.8) {
+      // 30%: Sequential
       const lastSpeakerIndex = conversation.last_speaker_index || 0;
       currentTurnIndex = (lastSpeakerIndex + 1) % activeCount;
-      console.log(`➡️ Turno sequenziale: indice ${currentTurnIndex} (dopo ${lastSpeakerIndex})`);
+      selectedParticipant = activeParticipants[currentTurnIndex];
+      console.log(`➡️ Sequential routing: ${selectedParticipant.name} (indice ${currentTurnIndex})`);
+    } else {
+      // 20%: Random
+      currentTurnIndex = Math.floor(Math.random() * activeCount);
+      selectedParticipant = activeParticipants[currentTurnIndex];
+      console.log(`🎲 Random routing: ${selectedParticipant.name} (indice ${currentTurnIndex})`);
     }
 
-    const selectedParticipant = activeParticipants[currentTurnIndex];
-    console.log('🎯 Agente selezionato:', selectedParticipant.name);
+    console.log('✅ Agente selezionato:', selectedParticipant.name);
 
     // Fetch AGENT_PERSONALITY sections
     const { data: agentPersonalitySections } = await supabase
@@ -343,14 +400,39 @@ serve(async (req) => {
       { role: 'user', content: userMessage }
     ];
 
+    // ✅ Sprint 1 P0: AI Response Streaming with SSE
+    const encoder = new TextEncoder();
+    
+    // Create message record first with is_streaming=true
+    const { data: streamingMessage, error: messageError } = await supabase
+      .from('chat_laboratory_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_type: selectedParticipant.type,
+        sender_name: selectedParticipant.name,
+        content: '',
+        is_streaming: true,
+        message_sequence: (conversation.current_turn_index || 0) + 1
+      })
+      .select()
+      .single();
+
+    if (messageError) {
+      console.error('❌ Errore creazione messaggio streaming:', messageError);
+      throw messageError;
+    }
+
+    const messageId = streamingMessage.id;
+    console.log('📝 Messaggio streaming creato:', messageId);
+
+    // Stream AI response based on provider
     let aiResponse = '';
     let tokenInput = 0;
     let tokenOutput = 0;
     const startTime = Date.now();
 
-    // Route to AI provider
     if (selectedParticipant.type === 'anthropic' && anthropicKey) {
-      console.log('🤖 Calling Anthropic...');
+      console.log('🤖 Streaming from Anthropic...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -362,7 +444,8 @@ serve(async (req) => {
           model: 'claude-sonnet-4-5',
           max_tokens: 8096,
           messages: conversationHistory.filter(m => m.role !== 'system'),
-          system: composedPrompt
+          system: composedPrompt,
+          stream: true
         })
       });
 
@@ -372,13 +455,48 @@ serve(async (req) => {
         throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
       }
 
-      const anthropicData = await anthropicResponse.json();
-      aiResponse = anthropicData.content[0].text;
-      tokenInput = anthropicData.usage?.input_tokens || 0;
-      tokenOutput = anthropicData.usage?.output_tokens || 0;
+      const reader = anthropicResponse.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                
+                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                  aiResponse += parsed.delta.text;
+                  
+                  // Update DB every 50 characters for real-time display
+                  if (aiResponse.length % 50 === 0) {
+                    await supabase
+                      .from('chat_laboratory_messages')
+                      .update({ content: aiResponse })
+                      .eq('id', messageId);
+                  }
+                } else if (parsed.type === 'message_delta' && parsed.usage) {
+                  tokenOutput = parsed.usage.output_tokens || 0;
+                }
+              } catch (e) {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
+      }
     } 
     else if (selectedParticipant.type === 'openai' && openAIKey) {
-      console.log('🤖 Calling OpenAI...');
+      console.log('🤖 Streaming from OpenAI...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -388,7 +506,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: conversationHistory,
-          max_tokens: 4096
+          max_tokens: 4096,
+          stream: true
         })
       });
 
@@ -398,13 +517,47 @@ serve(async (req) => {
         throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
       }
 
-      const openaiData = await openaiResponse.json();
-      aiResponse = openaiData.choices[0].message.content;
-      tokenInput = openaiData.usage?.prompt_tokens || 0;
-      tokenOutput = openaiData.usage?.completion_tokens || 0;
+      const reader = openaiResponse.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                
+                if (content) {
+                  aiResponse += content;
+                  
+                  // Update DB every 50 characters
+                  if (aiResponse.length % 50 === 0) {
+                    await supabase
+                      .from('chat_laboratory_messages')
+                      .update({ content: aiResponse })
+                      .eq('id', messageId);
+                  }
+                }
+              } catch (e) {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
+      }
     }
     else if (lovableAIKey) {
-      console.log('🤖 Calling Lovable AI...');
+      console.log('🤖 Streaming from Lovable AI...');
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -413,7 +566,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
-          messages: conversationHistory
+          messages: conversationHistory,
+          stream: true
         })
       });
 
@@ -423,10 +577,44 @@ serve(async (req) => {
         throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
       }
 
-      const lovableData = await lovableResponse.json();
-      aiResponse = lovableData.choices[0].message.content;
-      tokenInput = lovableData.usage?.prompt_tokens || 0;
-      tokenOutput = lovableData.usage?.completion_tokens || 0;
+      const reader = lovableResponse.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                
+                if (content) {
+                  aiResponse += content;
+                  
+                  // Update DB every 50 characters
+                  if (aiResponse.length % 50 === 0) {
+                    await supabase
+                      .from('chat_laboratory_messages')
+                      .update({ content: aiResponse })
+                      .eq('id', messageId);
+                  }
+                }
+              } catch (e) {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
+      }
     }
     else {
       throw new Error(`No API key available for ${selectedParticipant.type}`);
@@ -462,7 +650,6 @@ serve(async (req) => {
       }
     }
 
-    // Mappa provider type a sender_type compatibile col DB
     const senderTypeMap: Record<string, string> = {
       'anthropic': 'claude',
       'openai': 'chatgpt', 
@@ -471,44 +658,26 @@ serve(async (req) => {
     };
     const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
 
-    // Get next sequence number
-    const { data: maxSeq } = await supabase
+    // ✅ Final update: Mark streaming as complete
+    const { error: finalUpdateError } = await supabase
       .from('chat_laboratory_messages')
-      .select('message_sequence')
-      .eq('conversation_id', conversationId)
-      .order('message_sequence', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
-
-    // ✅ Salva messaggio IMMEDIATAMENTE senza summaries (saranno generate in background)
-    const { data: savedMessage, error: saveError } = await supabase
-      .from('chat_laboratory_messages')
-      .insert({
-        conversation_id: conversationId,
-        message_sequence: nextSequence,
-        sender_type: dbSenderType,
-        sender_name: selectedParticipant.name,
-        content: aiResponse,                           // ✅ Messaggio completo (per UI)
-        content_user_friendly: null,                   // ⏳ Sarà popolato in background
-        content_summary: null,                         // ⏳ Sarà popolato in background
-        is_summary_available: false,                   // ⏳ Diventerà true quando pronto
+      .update({
+        content: aiResponse,
+        is_streaming: false,
         token_input: tokenInput,
         token_output: tokenOutput,
         tempo_risposta_ms: responseTime,
-        is_visible_to_ai: true,
-        audio_url: null // ⚠️ Verrà popolato da generate-audio in background
+        content_user_friendly: null,  // Will be populated in background
+        content_summary: null,         // Will be populated in background
+        is_summary_available: false
       })
-      .select()
-      .single();
+      .eq('id', messageId);
 
-    if (saveError) {
-      console.error('❌ Errore salvataggio messaggio:', saveError);
-      throw saveError;
+    if (finalUpdateError) {
+      console.error('❌ Errore aggiornamento finale messaggio:', finalUpdateError);
     }
 
-    console.log('✅ Messaggio salvato con ID:', savedMessage.id);
+    console.log('✅ Messaggio streaming completato, ID:', messageId);
 
     // 🚀 NON-BLOCKING: Genera summaries in background
     supabase.functions.invoke('generate-message-summaries', {
@@ -589,17 +758,15 @@ serve(async (req) => {
       }
     }
 
-    // ✅ Restituisci risposta immediata con flag audioGenerating
+    // ✅ Restituisci risposta immediata con messageId per real-time tracking
     return new Response(
       JSON.stringify({ 
         success: true,
         participant: selectedParticipant.name,
-        content: aiResponse,
+        messageId: messageId, // ⚡ Frontend tracks questo per real-time updates
+        audioGenerating: shouldGenerateAudio,
         tokens: { input: tokenInput, output: tokenOutput },
-        responseTime: responseTime,
-        messageId: savedMessage.id, // ⚡ Necessario per generate-audio
-        audioGenerating: shouldGenerateAudio, // ⚡ Flag per frontend
-        audioUrl: null // ⚠️ Sarà popolato da generate-audio
+        responseTime: responseTime
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

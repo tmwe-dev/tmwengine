@@ -61,7 +61,7 @@ const Intranet = () => {
     setIsLoadingVoices(true);
     try {
       // Ottieni API key dal localStorage
-      const apiKey = localStorage.getItem('elevenlabs_api_key');
+      const apiKey = localStorage.getItem('elevenLabsApiKey');
       
       if (!apiKey) {
         console.log('ℹ️ ElevenLabs API key non configurata');
@@ -350,6 +350,8 @@ const Intranet = () => {
                       shouldHideHeader={shouldHideHeader}
                       ttsEngine={ttsEngine}
                       selectedVoice={selectedVoice}
+                      elevenLabsVoices={elevenLabsVoices}
+                      isLoadingVoices={isLoadingVoices}
                     />
                   </CardContent>
                 </Card>
@@ -534,6 +536,8 @@ const Intranet = () => {
                       shouldHideHeader={false}
                       ttsEngine={ttsEngine}
                       selectedVoice={selectedVoice}
+                      elevenLabsVoices={elevenLabsVoices}
+                      isLoadingVoices={isLoadingVoices}
                     />
                   </CardContent>
                 </Card>

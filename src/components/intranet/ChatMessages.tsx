@@ -32,6 +32,8 @@ interface ChatMessagesProps {
   shouldHideHeader?: boolean;
   ttsEngine: string;
   selectedVoice: string;
+  elevenLabsVoices?: Array<{ voice_id: string; name: string }>;
+  isLoadingVoices?: boolean;
 }
 
 export const ChatMessages = ({ 
@@ -39,7 +41,9 @@ export const ChatMessages = ({
   isLayoutInverted = false, 
   shouldHideHeader = false,
   ttsEngine,
-  selectedVoice
+  selectedVoice,
+  elevenLabsVoices = [],
+  isLoadingVoices = false
 }: ChatMessagesProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -58,7 +62,9 @@ export const ChatMessages = ({
     translatedMessages, 
     userProfiles,
     ttsEngine,
-    selectedVoice
+    selectedVoice,
+    elevenLabsVoices,
+    isLoadingVoices
   });
 
   // Load show_summaries_only setting from room

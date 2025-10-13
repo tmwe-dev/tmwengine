@@ -17,6 +17,8 @@ interface AutoSpeakerProps {
   userProfiles?: Record<string, { preferred_language?: string }>;
   ttsEngine?: string;
   selectedVoice?: string;
+  elevenLabsVoices?: Array<{ voice_id: string; name: string }>;
+  isLoadingVoices?: boolean;
 }
 
 export const useAutoSpeaker = ({ 
@@ -25,7 +27,9 @@ export const useAutoSpeaker = ({
   translatedMessages = {}, 
   userProfiles = {},
   ttsEngine = 'native',
-  selectedVoice = 'Aria'
+  selectedVoice = 'Aria',
+  elevenLabsVoices = [],
+  isLoadingVoices = false
 }: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);

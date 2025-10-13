@@ -25,6 +25,7 @@ import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioC
 import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
 import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
 import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings';
+import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
 import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
 import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
 import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
@@ -1151,8 +1152,25 @@ const ChatLaboratory = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Bar Chat Settings - TERZA (solo se Bar Mode attivo) */}
-                {currentConversationId && isBarMode && (
+                {/* Controlli Conversazione - TERZA (Argomento, Ritmo, Interruzioni, Voce) */}
+                {isBarMode && (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="text-white text-sm">🎯 Controlli Conversazione</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <BarModeControls 
+                        conversationId={currentConversationId}
+                        onSettingsChange={(settings) => {
+                          console.log('🎯 Controlli Conversazione aggiornati:', settings);
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Bar Chat Settings - QUARTA (Stile Conversazione + VAD) */}
+                {isBarMode && (
                   <Card className="bg-white/5 border-white/10">
                     <CardHeader>
                       <CardTitle className="text-white text-sm">🍺 Impostazioni Bar Chat</CardTitle>

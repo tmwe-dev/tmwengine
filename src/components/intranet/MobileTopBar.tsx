@@ -48,7 +48,7 @@ export const MobileTopBar = ({
         <h1 className="text-sm font-semibold text-foreground truncate max-w-[120px]">{selectedRoomName}</h1>
       </div>
 
-      {/* Center - Token Badge + Cost Badge + Settings */}
+      {/* Center - Token Badge + Cost Badge */}
       <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
         {selectedRoomId && (
           <>
@@ -60,11 +60,11 @@ export const MobileTopBar = ({
             <ConversationCostBadge roomId={selectedRoomId} />
           </>
         )}
-        <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
       </div>
 
-      {/* Right - Layout toggle button */}
-      <div className="flex items-center flex-shrink-0">
+      {/* Right - Settings + Layout toggle button */}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
         <Button
           size="icon"
           variant="ghost"

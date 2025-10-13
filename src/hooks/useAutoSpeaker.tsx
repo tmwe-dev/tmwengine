@@ -50,6 +50,16 @@ export const useAutoSpeaker = ({ messages, currentUserId, translatedMessages = {
 
     // Aspetta 500ms per dare tempo alla traduzione asincrona
     const timeoutId = setTimeout(() => {
+      // Debug logging per verificare cosa viene letto
+      console.log('🔊 useAutoSpeaker - Dati audio:', {
+        messageId: latestMessage.id,
+        originalText: latestMessage.content,
+        translatedText: translatedMessages[latestMessage.id],
+        textToSpeak: translatedMessages[latestMessage.id] || latestMessage.content,
+        readingLanguage: profile.readingLanguage,
+        hasTranslation: !!translatedMessages[latestMessage.id]
+      });
+      
       // Crea utterance con testo tradotto se disponibile
       const textToSpeak = translatedMessages[latestMessage.id] || latestMessage.content;
       const utterance = new SpeechSynthesisUtterance(textToSpeak);

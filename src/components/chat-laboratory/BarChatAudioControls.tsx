@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarFullDuplexRecorder } from './BarFullDuplexRecorder';
+import { BarElevenLabsRecorder } from './BarElevenLabsRecorder';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -125,12 +125,12 @@ export const BarChatAudioControls = ({
           </div>
         </div>
 
-        {/* Recorder (PTT o Full-Duplex) */}
+        {/* Recorder (PTT o ElevenLabs Full-Duplex) */}
         {isDuplexMode ? (
-          <BarFullDuplexRecorder
+          <BarElevenLabsRecorder
             conversationId={conversationId}
             onTranscriptionComplete={(text) => {
-              console.log('🎯 [BarChatAudioControls] Trascrizione ricevuta da full-duplex:', text);
+              console.log('🎯 [BarChatAudioControls] Trascrizione ricevuta da ElevenLabs:', text);
               onTranscriptionComplete(text);
             }}
             isDisabled={false}

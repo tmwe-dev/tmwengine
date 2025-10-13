@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const GlobalVoiceButton = () => {
   const [isActive, setIsActive] = useState(false);
+
+  // Verifica se widget è già presente all'avvio
+  useEffect(() => {
+    const widget = document.querySelector('#global-widget');
+    setIsActive(!!widget);
+  }, []);
 
   const toggleWidget = () => {
     if (window.toggleGlobalVoiceWidget) {

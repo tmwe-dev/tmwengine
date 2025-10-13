@@ -76,30 +76,8 @@ export const useElevenLabsWidget = () => {
 
         await loadScript();
 
-        // 4. Monta widget GLOBALE (nascosto di default)
-        if (window.mountElevenLabsConvai) {
-          const widget = window.mountElevenLabsConvai(config.agentId, 'global-widget');
-          
-          // Nascondi widget globale con multiple proprietà per assicurare che rimanga nascosto
-          if (widget) {
-            const hideWidget = () => {
-              widget.style.display = 'none';
-              widget.style.visibility = 'hidden';
-              widget.style.opacity = '0';
-              widget.style.pointerEvents = 'none';
-            };
-            
-            hideWidget();
-            // Riapplica dopo render per assicurare che funzioni
-            requestAnimationFrame(hideWidget);
-            setTimeout(hideWidget, 100);
-            setTimeout(hideWidget, 500);
-            
-            console.log('Global widget mounted (hidden by default)');
-          }
-        } else {
-          throw new Error('mountElevenLabsConvai function not available');
-        }
+        // 4. Script pronto - widget si monta on-demand al click del bottone
+        console.log('ElevenLabs script ready, widget will mount on demand');
 
       } catch (error) {
         console.error('Error loading ElevenLabs widget:', error);
@@ -122,30 +100,28 @@ export const useElevenLabsWidget = () => {
     window.addEventListener('storage', handleStorageChange);
     loadAndMountWidget();
 
-    // Funzione globale per toggle visibilità widget globale
+    // Funzione globale per toggle widget globale (mount/unmount)
     window.toggleGlobalVoiceWidget = () => {
       const widget = document.querySelector('#global-widget') as HTMLElement;
+      
       if (widget) {
-        const isHidden = widget.style.display === 'none';
+        // Widget già montato - rimuovilo
+        widget.remove();
+        console.log('Global widget removed');
+        return false;
+      } else {
+        // Widget non montato - crealo ORA
+        const configStr = localStorage.getItem('voice_agent_config');
+        if (!configStr) return false;
         
-        if (isHidden) {
-          // Mostra widget
-          widget.style.display = 'block';
-          widget.style.visibility = 'visible';
-          widget.style.opacity = '1';
-          widget.style.pointerEvents = 'auto';
-        } else {
-          // Nascondi widget
-          widget.style.display = 'none';
-          widget.style.visibility = 'hidden';
-          widget.style.opacity = '0';
-          widget.style.pointerEvents = 'none';
+        const config: ElevenLabsConfig = JSON.parse(configStr);
+        if (window.mountElevenLabsConvai && config.agentId && config.enabled) {
+          window.mountElevenLabsConvai(config.agentId, 'global-widget');
+          console.log('Global widget mounted');
+          return true;
         }
-        
-        console.log(`Global widget ${isHidden ? 'shown' : 'hidden'}`);
-        return !isHidden;
+        return false;
       }
-      return false;
     };
 
     // Cleanup: rimuovi widget quando componente viene smontato

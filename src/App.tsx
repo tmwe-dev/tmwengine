@@ -42,6 +42,7 @@ import LanguageManager from "./pages/LanguageManager";
 import UserGuide from "./pages/UserGuide";
 import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
+import CallRoom from "./pages/CallRoom";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
 import { GlobalVoiceButton } from "./components/voice/GlobalVoiceButton";
@@ -204,6 +205,11 @@ const App = () => (
             <Route path="/database-settings" element={
               <ProtectedRoute>
                 <CRMLayout><DatabaseSettings /></CRMLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/call-room" element={
+              <ProtectedRoute>
+                <CallRoom />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

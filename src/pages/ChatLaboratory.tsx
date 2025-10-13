@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -1104,6 +1104,17 @@ const ChatLaboratory = () => {
                   onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
                 />
                 
+                {/* Call Room Icon */}
+                <Button
+                  onClick={() => navigate('/call-room')}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 h-8 w-8"
+                  title="Call Room - Chiamate Audio"
+                >
+                  <Phone className="h-5 w-5" />
+                </Button>
+
                 {/* Settings Icon */}
                 <Button
                   onClick={() => setSettingsOpen(!settingsOpen)}

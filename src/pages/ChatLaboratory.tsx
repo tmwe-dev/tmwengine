@@ -35,6 +35,8 @@ import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
 import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
 import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
 import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
+import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBanner';
+import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
 
 interface Message {
   id: string;
@@ -115,7 +117,7 @@ const ChatLaboratory = () => {
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
   const [convergenceRefreshKey, setConvergenceRefreshKey] = useState(0);
   
-  const SUBMIT_TIMEOUT = 30000; // 30 secondi
+  const SUBMIT_TIMEOUT = 120000; // 120 secondi (2 minuti)
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -680,58 +682,45 @@ const ChatLaboratory = () => {
               triggerAudioGeneration(data.messageId);
             }
           }
-          
-          // Piccolo delay tra agenti (500ms)
-          if (i < activeAIParticipants.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
         }
         
         setConvergenceRefreshKey(prev => prev + 1);
       } else {
-        // ✅ LOOP PER MODALITÀ TESTUALE (tutti gli agenti rispondono)
-        for (let i = 0; i < activeAIParticipants.length; i++) {
-          try {
-            console.log(`🤖 Invocando agente ${i + 1}/${activeAIParticipants.length}...`);
-            
-            const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
-              body: { 
-                conversationId,
-                userMessage: currentPrompt,
-                participants: activeAIParticipants
-              }
-            });
+        // ✅ MODALITÀ TESTUALE: Singola chiamata orchestrata parallela
+        console.log(`🤖 Invocando orchestrator per ${activeAIParticipants.length} agenti in parallelo...`);
 
-            if (error) {
-              console.error(`❌ Errore agente ${i + 1}:`, error);
-              // toast({
-              //   title: `Errore Agente ${i + 1}`,
-              //   description: error.message || 'Impossibile ottenere risposta',
-              //   variant: "destructive",
-              // });
-              break;
-            }
-
-            console.log(`✅ Agente ${i + 1} completato:`, data);
-            
-            // Ricarica messaggi dopo ogni risposta
-            await loadMessages(conversationId);
-            setConvergenceRefreshKey(prev => prev + 1);
-            
-            // Piccolo delay per evitare rate limiting
-            if (i < activeAIParticipants.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-          } catch (loopError) {
-            console.error(`❌ Errore nel loop agente ${i + 1}:`, loopError);
-            // toast({
-            //   title: "Errore di Comunicazione",
-            //   description: "Si è verificato un problema nella catena di risposte",
-            //   variant: "destructive",
-            // });
-            break;
+        const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+          body: { 
+            conversationId,
+            userMessage: currentPrompt,
+            participants: activeAIParticipants
           }
+        });
+
+        if (error) {
+          console.error('❌ Errore orchestrator:', error);
+          toast({
+            title: "Errore",
+            description: error.message || 'Impossibile ottenere risposte',
+            variant: "destructive",
+          });
+        } else {
+          console.log('✅ Orchestrator completato:', data);
+          console.log(`⏱️ Tempo totale: ${data.orchestrationTimeMs}ms`);
+          console.log(`📊 Token generati: ${data.totalTokensOut}`);
+          console.log(`✅ Risposte ricevute: ${data.responses?.length || 0}`);
+          
+          // ⚠️ Soft warning se risposta molto verbosa (solo console, non UI)
+          if (data.totalTokensOut > 4000) {
+            console.warn(`⚠️ Risposta complessiva molto lunga: ${data.totalTokensOut} token. Considera prompt più specifico.`);
+          }
+          
+          if (data.errors && data.errors.length > 0) {
+            console.warn('⚠️ Alcuni agenti hanno fallito:', data.errors);
+          }
+          
+          // Real-time listener aggiornerà automaticamente i messaggi
+          setConvergenceRefreshKey(prev => prev + 1);
         }
       }
 
@@ -1267,6 +1256,16 @@ const ChatLaboratory = () => {
                     }}
                   />
                 </div>
+              )}
+
+              {/* Token Warning Banner */}
+              {currentConversationId && (
+                <TokenWarningBanner conversationId={currentConversationId} />
+              )}
+
+              {/* Token Usage Chart */}
+              {currentConversationId && messages.length > 0 && (
+                <TokenUsageChart conversationId={currentConversationId} />
               )}
 
               {/* Convergence Indicator */}

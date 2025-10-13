@@ -56,6 +56,205 @@ const corsHeaders = {
 };
 
 // ═══════════════════════════════════════════════════════════
+// HELPERS PER ORCHESTRAZIONE PARALLELA ROBUSTA
+// ═══════════════════════════════════════════════════════════
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch con timeout e abort signal
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 45000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout dopo ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Retry automatico con exponential backoff per errori transienti
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: { retries?: number; baseDelayMs?: number } = {}
+): Promise<T> {
+  const { retries = 2, baseDelayMs = 300 } = options;
+  let attempt = 0;
+  
+  while (true) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      const isRetriable = /429|5\d\d|timeout/i.test(errorMsg);
+      
+      if (!isRetriable || attempt >= retries) {
+        throw error;
+      }
+      
+      const backoff = baseDelayMs * Math.pow(2, attempt);
+      const jitter = Math.floor(Math.random() * 100);
+      const waitTime = backoff + jitter;
+      
+      console.log(`⚠️ Tentativo ${attempt + 1}/${retries} fallito: ${errorMsg}. Retry tra ${waitTime}ms...`);
+      await delay(waitTime);
+      attempt++;
+    }
+  }
+}
+
+/**
+ * Chiamata a un provider AI con timeout, retry e NO limiti token.
+ * Include "soft prompt" per incoraggiare concisione.
+ */
+async function callAIProvider(
+  participant: any,
+  config: {
+    apiKey: string;
+    model: string;
+    basePrompt: string;
+    visibleHistory: string;
+    userMessage: string;
+    timeoutMs: number;
+  }
+): Promise<{ content: string; tokensIn: number; tokensOut: number; duration: number }> {
+  const startTime = Date.now();
+  
+  // ✅ SOFT PROMPT: Suggerisce concisione senza limitare
+  const concisePrompt = `${config.basePrompt}
+
+**Linee guida di risposta**:
+- Sii preciso e sintetico, ma completo
+- Se serve codice/analisi approfondita, forniscila interamente
+- Evita ripetizioni inutili o digressioni
+- Target: 300-600 parole, ma estendi se necessario per completezza tecnica`;
+
+  return withRetry(async () => {
+    let url: string;
+    let headers: Record<string, string>;
+    let body: any;
+    
+    // Prepara request in base al provider
+    if (participant.type === 'claude' || participant.type === 'anthropic') {
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = {
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      };
+      body = {
+        model: config.model,
+        max_tokens: 4096, // ✅ Massimo supportato da Claude (non limitante)
+        messages: [{
+          role: 'user',
+          content: `${concisePrompt}\n\nConversazione:\n${config.visibleHistory}\n\nNuovo:\n${config.userMessage}`
+        }]
+      };
+    } else if (participant.type === 'chatgpt' || participant.type === 'openai') {
+      url = 'https://api.openai.com/v1/chat/completions';
+      headers = {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+      };
+      body = {
+        model: config.model,
+        // ✅ NO max_tokens: GPT-5 decide autonomamente
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: concisePrompt },
+          { 
+            role: 'user', 
+            content: `Conversazione:\n${config.visibleHistory}\n\nNuovo:\n${config.userMessage}` 
+          }
+        ]
+      };
+    } else if (participant.type === 'gemini' || participant.type === 'google') {
+      url = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+      headers = {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+      };
+      body = {
+        model: config.model,
+        // ✅ NO max_tokens: Gemini decide autonomamente
+        temperature: 0.7,
+        messages: [{
+          role: 'user',
+          content: `${concisePrompt}\n\nConversazione:\n${config.visibleHistory}\n\nNuovo:\n${config.userMessage}`
+        }]
+      };
+    } else {
+      throw new Error(`Provider non supportato: ${participant.type}`);
+    }
+    
+    const response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    }, config.timeoutMs);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ ${participant.name} error ${response.status}:`, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('429'); // Trigger retry
+      }
+      if (response.status >= 500) {
+        throw new Error(`5xx`); // Trigger retry
+      }
+      throw new Error(`API error ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    const duration = Date.now() - startTime;
+    
+    // Estrai risposta in base al provider
+    let content: string;
+    let tokensIn: number;
+    let tokensOut: number;
+    
+    if (participant.type === 'claude' || participant.type === 'anthropic') {
+      content = data.content[0].text;
+      tokensIn = data.usage?.input_tokens || 0;
+      tokensOut = data.usage?.output_tokens || 0;
+    } else {
+      content = data.choices[0].message.content;
+      tokensIn = data.usage?.prompt_tokens || 0;
+      tokensOut = data.usage?.completion_tokens || 0;
+    }
+    
+    console.log(`✅ ${participant.name}: ${tokensOut} token out (${tokensIn} in) in ${duration}ms`);
+    
+    // ⚠️ Soft warning se risposta molto verbosa (solo log, non errore)
+    if (tokensOut > 2000) {
+      console.warn(`⚠️ ${participant.name} ha generato ${tokensOut} token (>2000). Considera ottimizzazione prompt.`);
+    }
+    
+    return { content, tokensIn, tokensOut, duration };
+  }, { retries: 2, baseDelayMs: 300 });
+}
+
+// ═══════════════════════════════════════════════════════════
 // HELPER: Controlla se l'AI dovrebbe saltare il turno
 // ═══════════════════════════════════════════════════════════
 function checkIfShouldSkip(
@@ -208,216 +407,177 @@ REGOLE CRITICHE:
     let tokensOut = 0;
 
     // ═══════════════════════════════════════════════════════════
-    // GESTIONE PROVIDER DIVERSI
+    // ORCHESTRAZIONE PARALLELA CON DEADLINE GLOBALE
     // ═══════════════════════════════════════════════════════════
 
-    if (selectedParticipant.type === 'claude' || selectedParticipant.type === 'anthropic') {
-      // ──────── ANTHROPIC DIRETTO ────────
-      console.log(`🧠 ${selectedParticipant.name} elabora con Anthropic Claude`);
-      
-      const { data: anthropicConfig } = await supabaseClient
-        .from('config_ai')
-        .select('api_key')
-        .eq('provider', 'anthropic')
-        .single();
+    console.log(`🚀 Avvio orchestrazione parallela per ${activeAIs.length} agenti`);
 
-      if (!anthropicConfig?.api_key) {
-        throw new Error('Anthropic API key non configurata in config_ai');
-      }
+    const GLOBAL_DEADLINE_MS = 45000; // 45 secondi per tutto
+    const PER_AGENT_TIMEOUT_MS = 43000; // 43s per agent (margine per retry)
 
-      const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': anthropicConfig.api_key,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 4096, // Massimo consentito da Anthropic
-          messages: [
-            {
-              role: 'user',
-              content: `${basePrompt}\n\nConversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}`
-            }
-          ],
-        }),
-      });
-
-      if (!anthropicResponse.ok) {
-        const errorText = await anthropicResponse.text();
-        console.error(`❌ Anthropic Error:`, anthropicResponse.status, errorText);
-        throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
-      }
-
-      const anthropicData = await anthropicResponse.json();
-      aiResponseText = anthropicData.content[0].text;
-      tokensIn = anthropicData.usage?.input_tokens || 0;
-      tokensOut = anthropicData.usage?.output_tokens || 0;
-
-    } else if (selectedParticipant.type === 'chatgpt' || selectedParticipant.type === 'openai') {
-      // ──────── OPENAI DIRETTO ────────
-      console.log(`🧠 ${selectedParticipant.name} elabora con OpenAI GPT`);
-      
-      const { data: openaiConfig } = await supabaseClient
-        .from('config_ai')
-        .select('api_key, modello')
-        .eq('provider', 'openai')
-        .single();
-
-      if (!openaiConfig?.api_key) {
-        throw new Error('OpenAI API key non configurata in config_ai');
-      }
-
-      // ✅ CORREZIONE: Separa system prompt dal messaggio user per ChatGPT
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiConfig.api_key}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: openaiConfig.modello || 'gpt-5-2025-08-07',
-          messages: [
-            { role: 'system', content: basePrompt },
-            { 
-              role: 'user', 
-              content: `Conversazione finora:\n${visibleHistory}\n\nNuovo messaggio:\n${userMessage}` 
-            }
-          ],
-          // Nessuna limitazione di token - risponde come crede
-        }),
-      });
-
-      if (!openaiResponse.ok) {
-        const errorText = await openaiResponse.text();
-        console.error(`❌ OpenAI Error:`, openaiResponse.status, errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-      }
-
-      const openaiData = await openaiResponse.json();
-      aiResponseText = openaiData.choices[0].message.content;
-      tokensIn = openaiData.usage?.prompt_tokens || 0;
-      tokensOut = openaiData.usage?.completion_tokens || 0;
-
-    } else if (selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') {
-      // ──────── LOVABLE AI GATEWAY (solo Gemini) ────────
-      const model = 'google/gemini-2.5-flash';
-      console.log(`🧠 ${selectedParticipant.name} elabora con modello: ${model}`);
-
-      const fullPrompt = `${basePrompt}
-
-Conversazione finora:
-${visibleHistory}
-
-Nuovo messaggio dell'utente:
-${userMessage}`;
-
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [{ role: 'user', content: fullPrompt }],
-          // Nessuna limitazione di token - risponde come crede
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        const errorText = await aiResponse.text();
-        console.error(`❌ AI Gateway Error (${model}):`, aiResponse.status, errorText);
-        
-        if (aiResponse.status === 429) {
-          throw new Error('Rate limit superato. Riprova tra qualche istante.');
-        }
-        if (aiResponse.status === 402) {
-          throw new Error('Crediti AI esauriti. Aggiungi crediti al tuo workspace.');
-        }
-        throw new Error(`AI Gateway error ${aiResponse.status}: ${errorText}`);
-      }
-
-      const aiData = await aiResponse.json();
-      aiResponseText = aiData.choices[0].message.content;
-      tokensIn = aiData.usage?.prompt_tokens || 0;
-      tokensOut = aiData.usage?.completion_tokens || 0;
-      
-    } else {
-      throw new Error(`Tipo partecipante non supportato: ${selectedParticipant.type}`);
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // SALVATAGGIO RISULTATO
-    // ═══════════════════════════════════════════════════════════
-
-    const duration = Date.now() - startTime;
-    console.log(`📊 ${selectedParticipant.name} - Token in:${tokensIn} out:${tokensOut} - ${duration}ms`);
-    console.log(`✅ ${selectedParticipant.name} risposta: ${aiResponseText.substring(0, 100)}`);
-
-    // Get next sequence number
-    const { data: maxSeq } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .select('message_sequence')
-      .eq('conversation_id', conversationId)
-      .order('message_sequence', { ascending: false })
-      .limit(1)
+    // Recupera API keys per tutti i provider attivi
+    const { data: anthropicConfig } = await supabaseClient
+      .from('config_ai')
+      .select('api_key')
+      .eq('provider', 'anthropic')
       .maybeSingle();
 
-    const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+    const { data: openaiConfig } = await supabaseClient
+      .from('config_ai')
+      .select('api_key, modello')
+      .eq('provider', 'openai')
+      .maybeSingle();
 
-    // ✅ Salva messaggio IMMEDIATAMENTE senza summaries e intent (saranno generate in background)
-    const { data: savedMessage } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .insert({
-        conversation_id: conversationId,
-        message_sequence: nextSequence,
-        sender_type: selectedParticipant.type,
-        sender_name: selectedParticipant.name,
-        content: aiResponseText,
-        content_user_friendly: null,                   // ⏳ Sarà popolato in background
-        content_summary: null,                         // ⏳ Sarà popolato in background
-        is_summary_available: false,                   // ⏳ Diventerà true quando pronto
-        is_visible_to_ai: true,
-        intent_tags: [],                               // ⏳ Sarà popolato in background
-        token_input: tokensIn,
-        token_output: tokensOut,
-        tempo_risposta_ms: duration
-      })
-      .select()
-      .single();
-
-    // 🚀 NON-BLOCKING: Genera summaries in background
-    supabaseClient.functions.invoke('generate-message-summaries', {
-      body: { 
-        messageId: savedMessage.id, 
-        content: aiResponseText,
-        conversationId,
-        table: 'chat_laboratory_messages'
+    // Crea array di Promise per chiamate parallele
+    const agentTasks = activeAIs.map(async (participant: any) => {
+      try {
+        let apiKey: string;
+        let model: string;
+        
+        if (participant.type === 'claude' || participant.type === 'anthropic') {
+          if (!anthropicConfig?.api_key) {
+            throw new Error('Anthropic API key non configurata');
+          }
+          apiKey = anthropicConfig.api_key;
+          model = 'claude-sonnet-4-5';
+        } else if (participant.type === 'chatgpt' || participant.type === 'openai') {
+          if (!openaiConfig?.api_key) {
+            throw new Error('OpenAI API key non configurata');
+          }
+          apiKey = openaiConfig.api_key;
+          model = openaiConfig.modello || 'gpt-5-2025-08-07';
+        } else if (participant.type === 'gemini' || participant.type === 'google') {
+          apiKey = LOVABLE_API_KEY;
+          model = 'google/gemini-2.5-flash';
+        } else {
+          throw new Error(`Provider sconosciuto: ${participant.type}`);
+        }
+        
+        const result = await callAIProvider(participant, {
+          apiKey,
+          model,
+          basePrompt,
+          visibleHistory,
+          userMessage,
+          timeoutMs: PER_AGENT_TIMEOUT_MS
+        });
+        
+        return {
+          success: true,
+          participant,
+          ...result
+        };
+      } catch (error: any) {
+        console.error(`❌ ${participant.name} fallito:`, error.message);
+        return {
+          success: false,
+          participant,
+          error: error.message
+        };
       }
-    }).then(() => {
-      console.log('🔄 Background summary generation triggered');
-    }).catch((err) => {
-      console.error('⚠️ Background summary generation failed:', err);
     });
 
-    // Aggiorna last_speaker_index
-    await supabaseClient
-      .from('chat_laboratory_conversations')
-      .update({ last_speaker_index: nextIndex })
-      .eq('id', conversationId);
+    // Esegui tutte le chiamate in parallelo con deadline globale
+    const orchestrationStart = Date.now();
+    const results = await Promise.allSettled(agentTasks);
+    const orchestrationDuration = Date.now() - orchestrationStart;
+
+    console.log(`🎯 Orchestrazione completata in ${orchestrationDuration}ms`);
+
+    // Elabora risultati e salva nel database
+    const successfulResponses: any[] = [];
+    const failedResponses: any[] = [];
+    let totalTokensOut = 0;
+
+    for (const result of results) {
+      const value = result.status === 'fulfilled' ? result.value : { success: false, error: 'Promise rejected' };
+      
+      if (value.success) {
+        successfulResponses.push(value);
+        totalTokensOut += value.tokensOut;
+        
+        // Salva messaggio nel database
+        const { data: maxSeq } = await supabaseClient
+          .from('chat_laboratory_messages')
+          .select('message_sequence')
+          .eq('conversation_id', conversationId)
+          .order('message_sequence', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const nextSequence = (maxSeq?.message_sequence || 0) + 1;
+        
+        const { data: savedMessage } = await supabaseClient
+          .from('chat_laboratory_messages')
+          .insert({
+            conversation_id: conversationId,
+            message_sequence: nextSequence,
+            sender_type: value.participant.type,
+            sender_name: value.participant.name,
+            content: value.content,
+            content_user_friendly: null,
+            content_summary: null,
+            is_summary_available: false,
+            is_visible_to_ai: true,
+            intent_tags: [],
+            token_input: value.tokensIn,
+            token_output: value.tokensOut,
+            tempo_risposta_ms: value.duration
+          })
+          .select()
+          .single();
+        
+        // Trigger background summary generation
+        supabaseClient.functions.invoke('generate-message-summaries', {
+          body: { 
+            messageId: savedMessage.id, 
+            content: value.content,
+            conversationId,
+            table: 'chat_laboratory_messages'
+          }
+        }).catch((err) => {
+          console.error('⚠️ Summary generation failed:', err);
+        });
+        
+      } else {
+        failedResponses.push(value);
+      }
+    }
+
+    console.log(`✅ Successi: ${successfulResponses.length}, ❌ Falliti: ${failedResponses.length}`);
+    console.log(`📊 Token totali generati: ${totalTokensOut}`);
+
+    // Aggiorna last_speaker_index (usa primo agente di successo)
+    if (successfulResponses.length > 0) {
+      const firstSuccessIndex = activeAIs.findIndex(
+        (p: any) => p.name === successfulResponses[0].participant.name
+      );
+      
+      await supabaseClient
+        .from('chat_laboratory_conversations')
+        .update({ last_speaker_index: firstSuccessIndex })
+        .eq('id', conversationId);
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        participant: selectedParticipant.name,
-        content: aiResponseText,
-        tokens: { input: tokensIn, output: tokensOut },
-        responseTime: duration
+        orchestrationTimeMs: orchestrationDuration,
+        totalTokensOut, // ✅ Nuovo campo per monitoring
+        responses: successfulResponses.map(r => ({
+          participant: r.participant.name,
+          content: r.content,
+          tokens: { input: r.tokensIn, output: r.tokensOut },
+          duration: r.duration
+        })),
+        errors: failedResponses.map(f => ({
+          participant: f.participant?.name || 'unknown',
+          error: f.error
+        }))
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
 
   } catch (error) {
     console.error('❌ Orchestrator error:', error);

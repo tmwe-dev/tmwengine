@@ -254,6 +254,12 @@ const ChatLaboratory = () => {
             console.log('🔔 Real-time update ricevuto:', payload);
             const newMessage = payload.new as any;
             
+            // 🚫 Ignora messaggi di altre conversazioni
+            if (newMessage.conversation_id !== currentConversationId) {
+              console.log('🚫 Messaggio ignorato: appartiene a conversazione diversa');
+              return;
+            }
+            
             // ✅ Auto-play audio se presente e Bar Mode attivo
             if (newMessage.audio_url && isBarMode && newMessage.sender_type === 'ai') {
               console.log('🔊 Auto-playing audio:', newMessage.audio_url);

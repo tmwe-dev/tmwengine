@@ -150,7 +150,7 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
             </Badge>
             
             {/* Desktop only: View mode toggle for AI messages */}
-            {message.sender_type !== 'human' && message.is_summary_available && (
+            {message.sender_type !== 'human' && (
               <div className="hidden md:flex items-center gap-1 border rounded-lg p-1">
                 <Button
                   variant={viewMode === 'summary' ? 'secondary' : 'ghost'}

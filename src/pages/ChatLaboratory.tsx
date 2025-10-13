@@ -1401,7 +1401,7 @@ const ChatLaboratory = () => {
 
           {/* Bar Chat Audio Controls - Inline quando Bar Mode attivo */}
           {isBarMode && (
-            <div className="mt-2">
+            <div className="mt-2 space-y-3">
               <BarChatAudioControls
                 conversationId={currentConversationId}
                 isAISpeaking={isAISpeaking}
@@ -1442,6 +1442,18 @@ const ChatLaboratory = () => {
                   }
                 }}
               />
+              
+              {/* Bar Chat Settings - sempre visibili in fondo */}
+              {currentConversationId && (
+                <div className="border-t border-white/10 pt-3">
+                  <BarChatSettings 
+                    conversationId={currentConversationId}
+                    onSettingsChange={(settings) => {
+                      console.log('📝 Bar Chat Settings aggiornati:', settings);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

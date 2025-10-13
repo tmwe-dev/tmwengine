@@ -20,25 +20,40 @@ interface BarModeSettings {
 
 
 export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeControlsProps) => {
-  const [settings, setSettings] = useState<BarModeSettings>({
-    conversation_pace: 'normal',
-    enable_interruptions: true,
-    auto_play_audio: true,
-    voice_enabled: false,
-  });
-
-  useEffect(() => {
-    if (conversationId) {
-      loadSettings();
-    } else {
-      // Carica da localStorage se non c'è conversationId
-      const pending = localStorage.getItem('bar-mode-controls-pending');
-      if (pending) {
+  // Inizializza lo stato con i valori da localStorage per evitare flash dello switch
+  const [settings, setSettings] = useState<BarModeSettings>(() => {
+    const pending = localStorage.getItem('bar-mode-controls-pending');
+    if (pending) {
+      try {
         const saved = JSON.parse(pending);
-        setSettings(saved);
-        onSettingsChange?.(saved);
+        console.log('🎙️ BarModeControls - Caricato da localStorage:', saved);
+        return saved;
+      } catch (e) {
+        console.error('Errore parsing localStorage:', e);
       }
     }
+    return {
+      conversation_pace: 'normal',
+      enable_interruptions: true,
+      auto_play_audio: true,
+      voice_enabled: false,
+    };
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      if (conversationId) {
+        await loadSettings();
+      } else {
+        // Già caricato nello stato iniziale, ma aggiorna callback
+        onSettingsChange?.(settings);
+      }
+      setIsLoading(false);
+    };
+    init();
   }, [conversationId]);
 
   const loadSettings = async () => {
@@ -50,6 +65,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
         .single();
 
       if (data) {
+        console.log('🎙️ BarModeControls - Caricato da DB:', data);
         setSettings(data as BarModeSettings);
         onSettingsChange?.(data as BarModeSettings);
       }
@@ -66,6 +82,8 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
     setSettings(newSettings);
     onSettingsChange?.(newSettings);
 
+    console.log(`🎙️ BarModeControls - ${key} cambiato a:`, value);
+
     if (conversationId) {
       // Salva nel database
       try {
@@ -73,12 +91,14 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
           .from('chat_laboratory_bar_mode')
           .update({ [key]: value })
           .eq('conversation_id', conversationId);
+        console.log(`✅ Salvato in DB: ${key} = ${value}`);
       } catch (error) {
         console.error('Errore salvataggio impostazione:', error);
       }
     } else {
       // Salva in localStorage
       localStorage.setItem('bar-mode-controls-pending', JSON.stringify(newSettings));
+      console.log('✅ Salvato in localStorage:', newSettings);
     }
   };
 
@@ -199,6 +219,7 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
             id="voice"
             checked={settings.voice_enabled}
             onCheckedChange={(checked) => updateSetting('voice_enabled', checked)}
+            disabled={isLoading}
           />
         </div>
 

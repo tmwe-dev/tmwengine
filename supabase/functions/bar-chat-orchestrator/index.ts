@@ -130,14 +130,16 @@ serve(async (req) => {
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('economy_mode, current_turn_index, last_speaker_index')
+      .select('economy_mode, current_turn_index, last_speaker_index, riassunto_contesto')
       .eq('id', conversationId)
       .single();
 
     if (convError) throw convError;
 
     const useEconomyMode = conversation?.economy_mode ?? true;
+    const cumulativeSummary = conversation?.riassunto_contesto || null;
     console.log('💰 Economy Mode:', useEconomyMode ? 'ATTIVO (usa content_summary)' : 'DISATTIVO (usa content completo)');
+    console.log('📚 Riassunto cumulativo:', cumulativeSummary ? `${cumulativeSummary.substring(0, 100)}...` : 'Nessuno');
 
     // Fetch global system prompt
     const { data: systemPrompts } = await supabaseClient
@@ -298,6 +300,11 @@ serve(async (req) => {
     // Prepare conversation history
     const conversationHistory = [
       { role: 'system', content: composedPrompt },
+      // ✅ INSERIMENTO SUMMARY CUMULATIVO (se esiste)
+      ...(cumulativeSummary ? [{ 
+        role: 'system', 
+        content: `📚 CONTESTO PRECEDENTE (Riassunto cumulativo):\n${cumulativeSummary}\n\n---\n\n` 
+      }] : []),
       ...historyMessages,
       { role: 'user', content: userMessage }
     ];
@@ -527,6 +534,27 @@ serve(async (req) => {
       .eq('id', conversationId);
 
     console.log(`✅ Messaggio salvato (ID: ${savedMessage.id}) e turno aggiornato`);
+
+    // ✅ AUTO-REGENERAZIONE SUMMARY ogni 20 messaggi
+    const totalMessages = (messages?.length || 0) + 2; // +2 per user+AI appena salvati
+    if (totalMessages % 20 === 0) {
+      console.log(`🔄 Trigger auto-summary: ${totalMessages} messaggi raggiunti`);
+      
+      // Chiamata asincrona in background (non blocca la risposta)
+      supabaseClient.functions.invoke('generate-chunked-summary', {
+        body: {
+          conversationId,
+          chunkSize: 50,
+          includeAll: false
+        }
+      }).then(({ error: summaryError }) => {
+        if (summaryError) {
+          console.error('⚠️ Errore auto-summary:', summaryError);
+        } else {
+          console.log('✅ Summary cumulativo rigenerato automaticamente');
+        }
+      });
+    }
 
     return new Response(
       JSON.stringify({ 

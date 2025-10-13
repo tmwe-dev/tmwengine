@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ElevenLabsTTSProps {
@@ -10,24 +10,44 @@ interface ElevenLabsTTSProps {
   onError?: (error: Error) => void;
 }
 
-// Mapping lingua -> Voice ID ElevenLabs
-const VOICE_MAP: Record<string, string> = {
-  'it': '9BWtsMINqrJLrRacOk9x', // Aria (Italian)
-  'en': 'EXAVITQu4vr4xnSDxMaL', // Sarah (English)
-  'es': 'onwK4e9ZLuTAKqWW03F9', // Daniel (Spanish)
-  'fr': 'pFZP5JQG7iQjIQuC4Bku', // Lily (French)
-  'de': 'TX3LPaxmHKxFdv7VOQHJ', // Liam (German)
-  'th': '9BWtsMINqrJLrRacOk9x', // Aria (Thai supported by Turbo v2.5)
-  'pt': 'pqHfZKP75CvOlQylNhV4', // Bill (Portuguese)
-  'ru': 'cjVigY5qzO86Huf0OWal', // Eric (Russian)
-  'zh': 'cgSgspJ2msm6clMCkdW9', // Jessica (Chinese)
-  'ja': 'iP95p4xoKVk53GoZ742B', // Chris (Japanese)
-  'ar': 'bIHbv24MWmeRgasZH58o'  // Will (Arabic)
-};
-
 export const useElevenLabsTTS = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [defaultVoiceId, setDefaultVoiceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDefaultVoiceId = async () => {
+      try {
+        // Prova a leggere da voice_agent_config
+        const { data: config } = await supabase
+          .from('voice_agent_config')
+          .select('default_voice_id')
+          .eq('enabled', true)
+          .single();
+        
+        if (config?.default_voice_id) {
+          setDefaultVoiceId(config.default_voice_id);
+          return;
+        }
+        
+        // Fallback: primo agent attivo da elevenlabs_agents
+        const { data: agents } = await supabase
+          .from('elevenlabs_agents')
+          .select('voice_id')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true })
+          .limit(1);
+        
+        if (agents && agents.length > 0) {
+          setDefaultVoiceId(agents[0].voice_id);
+        }
+      } catch (error) {
+        console.error('❌ Errore caricamento default voice ID:', error);
+      }
+    };
+    
+    loadDefaultVoiceId();
+  }, []);
 
   const speak = async ({
     text,
@@ -47,8 +67,12 @@ export const useElevenLabsTTS = () => {
       setIsSpeaking(true);
       onStart?.();
 
-      // Seleziona voice ID in base alla lingua
-      const selectedVoiceId = voiceId || VOICE_MAP[language] || VOICE_MAP['it'];
+      // Seleziona voice ID: priorità a voiceId prop, poi DB, poi fallback
+      const selectedVoiceId = voiceId || defaultVoiceId || '9BWtsMINqrJLrRacOk9x';
+      
+      if (!selectedVoiceId) {
+        console.warn('⚠️ Nessun voice ID configurato in voice_agent_config o elevenlabs_agents');
+      }
 
       console.log('🎙️ ElevenLabs TTS Request:', {
         text: text.substring(0, 50) + '...',

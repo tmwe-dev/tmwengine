@@ -43,6 +43,8 @@ import UserGuide from "./pages/UserGuide";
 import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
+import { VoiceAgentWidget } from "./components/voice/VoiceAgentWidget";
+import { GlobalVoiceButton } from "./components/voice/GlobalVoiceButton";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <VoiceAgentWidget />
+        <GlobalVoiceButton />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={

@@ -1,15 +1,16 @@
-import { useState } from 'react';
-import { VoiceRecorder } from './VoiceRecorder';
-import { AudioPlayer } from './AudioPlayer';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Phone, PhoneOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useBarVoiceWidget } from '@/hooks/useBarVoiceWidget';
 
 interface BarElevenLabsRecorderProps {
   conversationId: string | null;
   onTranscriptionComplete: (text: string) => void;
   isDisabled?: boolean;
   isAISpeaking?: boolean;
-  activeAgentId?: string;
+  activeAgentId?: string; // Agent ID dall'orchestratore/settings
 }
 
 export const BarElevenLabsRecorder = ({
@@ -20,69 +21,62 @@ export const BarElevenLabsRecorder = ({
   activeAgentId
 }: BarElevenLabsRecorderProps) => {
   const [isActive, setIsActive] = useState(false);
-  const [audioBase64, setAudioBase64] = useState<string | null>(null);
 
-  const handleTranscription = async (text: string) => {
-    console.log('📝 Trascrizione ricevuta:', text);
-    
-    // Passa il testo all'orchestratore
-    onTranscriptionComplete(text);
-    
-    // Chiama orchestratore per ottenere risposta
-    try {
-      const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
-        body: {
-          conversationId,
-          userMessage: text,
-          voiceMode: true,
-        },
+  // Hook per gestire widget Bar dedicato - usa activeAgentId da props
+  useBarVoiceWidget(isActive, activeAgentId || null, onTranscriptionComplete);
+
+  const toggleWidget = () => {
+    if (!activeAgentId) {
+      toast.error("Agent ID mancante", {
+        description: "Configura un Bar Agent nelle impostazioni"
       });
-
-      if (error) throw error;
-
-      if (data?.response) {
-        console.log('🤖 Risposta AI:', data.response);
-        
-        // Genera audio della risposta
-        const { data: ttsData, error: ttsError } = await supabase.functions.invoke('text-to-speech', {
-          body: {
-            text: data.response,
-            voice_id: data.voice_id || '9BWtsMINqrJLrRacOk9x',
-            model_id: 'eleven_turbo_v2_5',
-          },
-        });
-
-        if (ttsError) throw ttsError;
-
-        if (ttsData?.audio) {
-          console.log('🔊 Audio generato, riproduzione...');
-          setAudioBase64(ttsData.audio);
-        }
-      }
-    } catch (error) {
-      console.error('Errore orchestratore:', error);
-      toast.error('Errore', {
-        description: error.message,
-      });
+      return;
     }
+
+    // Toggle stato - il widget viene gestito da useBarVoiceWidget
+    setIsActive(!isActive);
+    console.log(isActive ? '📴 Widget Bar terminato' : '🎙️ Widget Bar avviato');
   };
 
   return (
-    <>
-      <VoiceRecorder
-        onTranscriptionComplete={handleTranscription}
-        isActive={isActive}
-        onActiveChange={setIsActive}
-        disabled={isDisabled}
-      />
-      
-      {/* Audio player per riprodurre la risposta AI */}
-      {audioBase64 && (
-        <AudioPlayer
-          audioBase64={audioBase64}
-          onPlaybackComplete={() => setAudioBase64(null)}
-        />
+    <div className="flex items-center gap-2">
+      <Button
+        variant={isActive ? "destructive" : "default"}
+        size="lg"
+        onClick={toggleWidget}
+        disabled={isDisabled || !activeAgentId}
+        className={cn(
+          "h-12 px-6 gap-2 transition-all",
+          isActive && "animate-pulse"
+        )}
+        title={!activeAgentId ? "Configura Bar Agent nelle impostazioni" : ""}
+      >
+        {isActive ? (
+          <>
+            <PhoneOff className="h-5 w-5" />
+            <span>Termina Conversazione</span>
+          </>
+        ) : (
+          <>
+            <Phone className="h-5 w-5" />
+            <span>Avvia Conversazione</span>
+          </>
+        )}
+      </Button>
+
+      {/* Config warning */}
+      {!activeAgentId && (
+        <span className="text-xs text-yellow-600">
+          ⚠️ Bar Agent non configurato
+        </span>
       )}
-    </>
+
+      {/* Widget Bar Mode gestito da useBarVoiceWidget */}
+      {isActive && (
+        <span className="text-xs text-muted-foreground">
+          Widget Bar Mode attivo
+        </span>
+      )}
+    </div>
   );
 };

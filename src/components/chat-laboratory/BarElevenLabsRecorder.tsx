@@ -10,39 +10,25 @@ interface BarElevenLabsRecorderProps {
   onTranscriptionComplete: (text: string) => void;
   isDisabled?: boolean;
   isAISpeaking?: boolean;
+  activeAgentId?: string; // Agent ID dall'orchestratore/settings
 }
 
 export const BarElevenLabsRecorder = ({
   conversationId,
   onTranscriptionComplete,
   isDisabled = false,
-  isAISpeaking = false
+  isAISpeaking = false,
+  activeAgentId
 }: BarElevenLabsRecorderProps) => {
   const [isActive, setIsActive] = useState(false);
-  const [agentId, setAgentId] = useState<string | null>(null);
 
-  // Hook per gestire widget Bar dedicato
-  useBarVoiceWidget(isActive, agentId);
-
-  // Carica Agent ID da voice_agent_config in localStorage
-  useEffect(() => {
-    const config = localStorage.getItem('voice_agent_config');
-    if (config) {
-      try {
-        const parsed = JSON.parse(config);
-        if (parsed.agentId) {
-          setAgentId(parsed.agentId);
-        }
-      } catch (error) {
-        console.error('Errore parsing voice_agent_config:', error);
-      }
-    }
-  }, []);
+  // Hook per gestire widget Bar dedicato - usa activeAgentId da props
+  useBarVoiceWidget(isActive, activeAgentId || null);
 
   const toggleWidget = () => {
-    if (!agentId) {
+    if (!activeAgentId) {
       toast.error("Agent ID mancante", {
-        description: "Configura ElevenLabs nelle impostazioni"
+        description: "Configura un Bar Agent nelle impostazioni"
       });
       return;
     }
@@ -58,12 +44,12 @@ export const BarElevenLabsRecorder = ({
         variant={isActive ? "destructive" : "default"}
         size="lg"
         onClick={toggleWidget}
-        disabled={isDisabled || !agentId}
+        disabled={isDisabled || !activeAgentId}
         className={cn(
           "h-12 px-6 gap-2 transition-all",
           isActive && "animate-pulse"
         )}
-        title={!agentId ? "Configura Agent ID nelle impostazioni" : ""}
+        title={!activeAgentId ? "Configura Bar Agent nelle impostazioni" : ""}
       >
         {isActive ? (
           <>
@@ -79,9 +65,9 @@ export const BarElevenLabsRecorder = ({
       </Button>
 
       {/* Config warning */}
-      {!agentId && (
+      {!activeAgentId && (
         <span className="text-xs text-yellow-600">
-          ⚠️ Agent ID non configurato
+          ⚠️ Bar Agent non configurato
         </span>
       )}
 

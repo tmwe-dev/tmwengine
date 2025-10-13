@@ -27,12 +27,39 @@ export const BarChatAudioControls = ({
 }: BarChatAudioControlsProps) => {
   const [isDuplexMode, setIsDuplexMode] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [activeBarAgent, setActiveBarAgent] = useState<string | null>(null);
 
   useEffect(() => {
     if (conversationId) {
       loadPauseState();
     }
   }, [conversationId]);
+
+  // Carica l'agent attivo da elevenlabs_agents
+  useEffect(() => {
+    const loadActiveBarAgent = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('elevenlabs_agents')
+          .select('elevenlabs_agent_id')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (data && !error) {
+          setActiveBarAgent(data.elevenlabs_agent_id);
+          console.log('🎙️ Bar Agent attivo caricato:', data.elevenlabs_agent_id);
+        } else {
+          console.warn('⚠️ Nessun Bar Agent attivo trovato');
+        }
+      } catch (error) {
+        console.error('Error loading active Bar Agent:', error);
+      }
+    };
+
+    loadActiveBarAgent();
+  }, []);
 
   const loadPauseState = async () => {
     if (!conversationId) return;
@@ -135,6 +162,7 @@ export const BarChatAudioControls = ({
             }}
             isDisabled={false}
             isAISpeaking={isAISpeaking}
+            activeAgentId={activeBarAgent || undefined}
           />
         ) : (
           <BarVoiceRecorder

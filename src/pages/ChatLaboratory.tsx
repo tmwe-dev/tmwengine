@@ -640,51 +640,69 @@ const ChatLaboratory = () => {
       });
       
       if (isBarMode) {
-        console.log('🍹 LOOP Bar Mode per tutti gli agenti attivi...');
+        // Carica le impostazioni di risposta dalla conversazione
+        const { data: convData } = await supabase
+          .from('chat_laboratory_conversations')
+          .select('response_mode')
+          .eq('id', conversationId)
+          .single();
         
-        // ✅ LOOP per tutti gli agenti attivi in Bar Mode
-        for (let i = 0; i < activeAIParticipants.length; i++) {
-          console.log(`🍹 Invocando agente ${i + 1}/${activeAIParticipants.length} in Bar Mode...`);
+        const responseMode = convData?.response_mode || 'sequential';
+        console.log(`🍹 Bar Mode - Modalità: ${responseMode}`);
+        
+        if (responseMode === 'sequential') {
+          // MODALITÀ SEQUENZIALE: una sola chiamata, l'orchestrator sceglie l'agente
+          console.log('🎯 Modalità Sequenziale - una chiamata all\'orchestrator');
           
           const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
             body: { 
               conversationId,
               userMessage: currentPrompt,
-              participants: activeAIParticipants,
-              forceTurn: i // ✅ Forza turno specifico
+              participants: activeAIParticipants
             }
-          });
-          
-          console.log(`📦 Risposta agente ${i + 1}:`, {
-            hasData: !!data,
-            hasError: !!error,
-            errorDetails: error ? {
-              message: error.message,
-              status: (error as any).status,
-              statusText: (error as any).statusText
-            } : null,
-            data
           });
           
           if (error) {
-            console.error(`❌ ERRORE agente ${i + 1}:`, JSON.stringify(error, null, 2));
-            break; // Stop loop su errore
+            console.error('❌ ERRORE Bar Mode sequenziale:', JSON.stringify(error, null, 2));
           } else {
-            console.log(`✅ Agente ${i + 1} completato:`, data);
+            console.log('✅ Risposta sequenziale completata:', data);
             
-            if (data?.messageId) {
-              console.log('📝 Messaggio creato con ID:', data.messageId);
-            }
-            
-            // ✅ Trigger async audio generation se necessario
             if (data?.audioGenerating && data?.messageId) {
-              console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
-              triggerAudioGeneration(data.messageId);
+              console.log('🔊 Triggering async audio generation for sequential message');
+              await triggerAudioGeneration(data.messageId);
             }
           }
+        } else {
+          // MODALITÀ PARALLELO: loop per tutti gli agenti
+          console.log('🔀 Modalità Parallelo - loop per tutti gli agenti');
+          
+          for (let i = 0; i < activeAIParticipants.length; i++) {
+            console.log(`🍹 Invocando agente ${i + 1}/${activeAIParticipants.length} in Bar Mode parallelo...`);
+            
+            const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
+              body: { 
+                conversationId,
+                userMessage: currentPrompt,
+                participants: activeAIParticipants,
+                forceTurn: i
+              }
+            });
+            
+            if (error) {
+              console.error(`❌ ERRORE agente ${i + 1}:`, JSON.stringify(error, null, 2));
+              break;
+            } else {
+              console.log(`✅ Agente ${i + 1} completato:`, data);
+              
+              if (data?.audioGenerating && data?.messageId) {
+                console.log('🎵 Trigger generazione audio asincrona per messageId:', data.messageId);
+                triggerAudioGeneration(data.messageId);
+              }
+            }
+          }
+          
+          setConvergenceRefreshKey(prev => prev + 1);
         }
-        
-        setConvergenceRefreshKey(prev => prev + 1);
       } else {
         // ✅ MODALITÀ TESTUALE: Singola chiamata orchestrata parallela
         console.log(`🤖 Invocando orchestrator per ${activeAIParticipants.length} agenti in parallelo...`);

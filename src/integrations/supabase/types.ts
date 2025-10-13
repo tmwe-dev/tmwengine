@@ -308,6 +308,7 @@ export type Database = {
           interrupt_requested: boolean | null
           kb_navigation_history: Json | null
           mode: string
+          response_mode: string
           selected_topic: string | null
           updated_at: string
           user_id: string | null
@@ -325,6 +326,7 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          response_mode?: string
           selected_topic?: string | null
           updated_at?: string
           user_id?: string | null
@@ -342,6 +344,7 @@ export type Database = {
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          response_mode?: string
           selected_topic?: string | null
           updated_at?: string
           user_id?: string | null

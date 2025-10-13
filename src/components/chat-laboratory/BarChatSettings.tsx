@@ -8,12 +8,13 @@ import { toast } from 'sonner';
 
 interface BarChatSettingsProps {
   conversationId: string | null;
-  onSettingsChange?: (settings: { conversation_style: string; vad_silence_duration: number }) => void;
+  onSettingsChange?: (settings: { conversation_style: string; vad_silence_duration: number; response_mode: string }) => void;
 }
 
 export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSettingsProps) => {
   const [conversationStyle, setConversationStyle] = useState('colleagues');
   const [vadDuration, setVadDuration] = useState(3000);
+  const [responseMode, setResponseMode] = useState('sequential');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
     try {
       const { data, error } = await supabase
         .from('chat_laboratory_conversations')
-        .select('conversation_style, vad_silence_duration')
+        .select('conversation_style, vad_silence_duration, response_mode')
         .eq('id', conversationId)
         .single();
 
@@ -37,6 +38,7 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
       if (data) {
         setConversationStyle(data.conversation_style || 'colleagues');
         setVadDuration(data.vad_silence_duration || 3000);
+        setResponseMode(data.response_mode || 'sequential');
       }
     } catch (error) {
       console.error('Error loading bar chat settings:', error);
@@ -49,13 +51,16 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
       
       if (field === 'conversation_style') {
         setConversationStyle(value);
-      } else {
+      } else if (field === 'vad_silence_duration') {
         setVadDuration(value);
+      } else if (field === 'response_mode') {
+        setResponseMode(value);
       }
 
       onSettingsChange?.({
         conversation_style: field === 'conversation_style' ? value : conversationStyle,
-        vad_silence_duration: field === 'vad_silence_duration' ? value : vadDuration
+        vad_silence_duration: field === 'vad_silence_duration' ? value : vadDuration,
+        response_mode: field === 'response_mode' ? value : responseMode
       });
       return;
     }
@@ -72,14 +77,18 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
       if (field === 'conversation_style') {
         setConversationStyle(value);
         toast.success(`Stile: ${value === 'boss_talk' ? '🎯 Boss Talk' : value === 'colleagues' ? '🤝 Colleghi' : '🍺 Bar Chat'}`);
-      } else {
+      } else if (field === 'vad_silence_duration') {
         setVadDuration(value);
         toast.success(`VAD: ${(value / 1000).toFixed(1)}s`);
+      } else if (field === 'response_mode') {
+        setResponseMode(value);
+        toast.success(`Modalità: ${value === 'sequential' ? '🎯 Sequenziale' : '🔀 Parallelo'}`);
       }
 
       onSettingsChange?.({
         conversation_style: field === 'conversation_style' ? value : conversationStyle,
-        vad_silence_duration: field === 'vad_silence_duration' ? value : vadDuration
+        vad_silence_duration: field === 'vad_silence_duration' ? value : vadDuration,
+        response_mode: field === 'response_mode' ? value : responseMode
       });
     } catch (error) {
       console.error('Error updating bar chat setting:', error);
@@ -122,6 +131,34 @@ export const BarChatSettings = ({ conversationId, onSettingsChange }: BarChatSet
               <div className="flex flex-col">
                 <span className="font-semibold">🍺 Bar Chat</span>
                 <span className="text-xs text-muted-foreground">Informale, scherzoso, rilassato</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Response Mode Selector */}
+      <div className="flex flex-col gap-2 pt-2 border-t border-border/20">
+        <Label className="text-sm font-medium">Modalità Risposta</Label>
+        <Select
+          value={responseMode}
+          onValueChange={(value) => updateSetting('response_mode', value)}
+          disabled={isLoading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Seleziona modalità" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sequential">
+              <div className="flex flex-col">
+                <span className="font-semibold">🎯 Sequenziale</span>
+                <span className="text-xs text-muted-foreground">Un agente alla volta (come al bar)</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="parallel">
+              <div className="flex flex-col">
+                <span className="font-semibold">🔀 Parallelo</span>
+                <span className="text-xs text-muted-foreground">Tutti gli agenti rispondono insieme</span>
               </div>
             </SelectItem>
           </SelectContent>

@@ -107,7 +107,7 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-3 px-2 py-1 cursor-pointer"
+        className="flex items-end gap-4 md:gap-6 px-3 py-2 cursor-pointer"
         onClick={onClick}
         title="Clicca per espandere il grafico"
       >
@@ -116,40 +116,46 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
           const heightPercentOut = (agent.tokensOut / maxTokens) * 100;
 
           return (
-            <div key={agent.agent} className="flex gap-0.5 items-end">
-              {/* Colonnina Token IN */}
-              <div className="flex flex-col justify-end h-12 md:h-16">
+            <div key={agent.agent} className="flex flex-col items-center gap-1.5">
+              {/* Coppia colonnine IN + OUT affiancate */}
+              <div className="flex gap-1 items-end h-16 md:h-20">
+                {/* Colonnina Token IN */}
                 <div 
-                  className="w-4 md:w-8 rounded-t flex items-center justify-center"
+                  className="w-6 md:w-10 rounded-t"
                   style={{ 
-                    height: `${Math.max(heightPercentIn, 20)}%`, 
-                    minHeight: '20px',
+                    height: `${Math.max(heightPercentIn, 30)}%`, 
+                    minHeight: '24px',
                     background: `linear-gradient(to top, ${agent.colorIn}CC, ${agent.colorIn})`
                   }}
                   title={`${agent.agent} IN: ${formatTokens(agent.tokensIn)}`}
-                >
-                  <span className="text-[9px] md:text-xs font-bold text-white drop-shadow">
-                    {formatTokens(agent.tokensIn)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Colonnina Token OUT */}
-              <div className="flex flex-col justify-end h-12 md:h-16">
+                />
+                
+                {/* Colonnina Token OUT */}
                 <div 
-                  className="w-4 md:w-8 rounded-t flex items-center justify-center"
+                  className="w-6 md:w-10 rounded-t"
                   style={{ 
-                    height: `${Math.max(heightPercentOut, 20)}%`, 
-                    minHeight: '20px',
+                    height: `${Math.max(heightPercentOut, 30)}%`, 
+                    minHeight: '24px',
                     background: `linear-gradient(to top, ${agent.colorOut}DD, ${agent.colorOut})`
                   }}
                   title={`${agent.agent} OUT: ${formatTokens(agent.tokensOut)}`}
-                >
-                  <span className="text-[9px] md:text-xs font-bold text-white drop-shadow">
-                    {formatTokens(agent.tokensOut)}
-                  </span>
-                </div>
+                />
               </div>
+              
+              {/* Labels sotto le colonnine */}
+              <div className="flex gap-1 text-[10px] md:text-xs font-semibold">
+                <span className="w-6 md:w-10 text-center" style={{ color: agent.colorIn }}>
+                  {formatTokens(agent.tokensIn)}
+                </span>
+                <span className="w-6 md:w-10 text-center" style={{ color: agent.colorOut }}>
+                  {formatTokens(agent.tokensOut)}
+                </span>
+              </div>
+              
+              {/* Nome agente */}
+              <span className="text-[9px] md:text-[10px] text-muted-foreground font-medium">
+                {agent.agent}
+              </span>
             </div>
           );
         })}

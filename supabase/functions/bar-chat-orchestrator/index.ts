@@ -14,7 +14,7 @@ const corsHeaders = {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs: number = 45000
+  timeoutMs: number = 8000
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -198,20 +198,51 @@ serve(async (req) => {
       };
     });
 
-    // Turn-taking logic (1 agente per volta)
+    // ============ CONTEXT MATCHING: Rilevamento Menzioni Dirette ============
+    const userMessageLower = userMessage.toLowerCase().trim();
+    let selectedParticipant: any = null;
     let currentTurnIndex = conversation.current_turn_index || 0;
     const lastSpeakerIndex = conversation.last_speaker_index || 0;
+    let mentionDetected = false;
     
-    // 30% chance of randomization
-    if (Math.random() < 0.3) {
-      currentTurnIndex = Math.floor(Math.random() * participants.length);
-      console.log('🎲 Turno randomizzato:', currentTurnIndex);
-    } else {
-      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-      console.log('➡️ Turno sequenziale:', currentTurnIndex);
+    // 1. Cerca menzioni dirette robuste (es: "gpt?", "@claude", "gemini cosa dici?")
+    for (const p of participants) {
+      const namePattern = p.name.toLowerCase().split(' ')[0]; // Usa solo il primo nome
+      const typePattern = p.type.toLowerCase();
+      
+      // Crea regex che cattura: nome/tipo seguito da "?" o spazi o fine messaggio
+      const patterns = [
+        new RegExp(`\\b${namePattern}\\??\\b`, 'i'),
+        new RegExp(`@${namePattern}`, 'i'),
+        typePattern === 'chatgpt' ? /\bgpt\??/i : null,
+        typePattern === 'openai' ? /\bgpt\??/i : null,
+        typePattern === 'gemini' ? /\bgemini\??/i : null,
+        typePattern === 'claude' ? /\bclaude\??/i : null,
+        typePattern === 'anthropic' ? /\bclaude\??/i : null
+      ].filter(Boolean);
+      
+      if (patterns.some(regex => regex && regex.test(userMessageLower))) {
+        selectedParticipant = p;
+        currentTurnIndex = participants.findIndex(x => x.id === p.id);
+        mentionDetected = true;
+        console.log(`🎯 Menzione diretta rilevata → forza risposta: ${p.name}`);
+        break;
+      }
     }
-
-    const selectedParticipant = participants[currentTurnIndex];
+    
+    // 2. Se nessuna menzione, usa logica random/sequential
+    if (!selectedParticipant) {
+      // 30% chance of randomization
+      if (Math.random() < 0.3) {
+        currentTurnIndex = Math.floor(Math.random() * participants.length);
+        console.log('🎲 Turno randomizzato:', currentTurnIndex);
+      } else {
+        currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+        console.log('➡️ Turno sequenziale:', currentTurnIndex);
+      }
+      selectedParticipant = participants[currentTurnIndex];
+    }
+    
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
     // 🎭 Pausa realistica prima di rispondere (simula "pensiero" naturale)
@@ -411,6 +442,20 @@ serve(async (req) => {
 
     const responseTime = Date.now() - startTime;
     console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
+    
+    // ============ TELEMETRIA STRUTTURATA ============
+    const telemetry = {
+      conversation_id: conversationId,
+      provider: selectedParticipant.type,
+      agent_name: selectedParticipant.name,
+      latency_ms: responseTime,
+      tokens_in: tokenInput,
+      tokens_out: tokenOutput,
+      mention_detected: mentionDetected,
+      economy_mode: useEconomyMode,
+      timestamp: new Date().toISOString()
+    };
+    console.log('📊 TELEMETRY:', JSON.stringify(telemetry));
 
     // Save AI response to database
     const { data: maxSeq } = await supabaseClient

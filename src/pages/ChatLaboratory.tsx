@@ -110,6 +110,8 @@ const ChatLaboratory = () => {
   const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
   const [convergenceRefreshKey, setConvergenceRefreshKey] = useState(0);
   
+  const SUBMIT_TIMEOUT = 30000; // 30 secondi
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -152,6 +154,24 @@ const ChatLaboratory = () => {
     
     previousMessagesLengthRef.current = messages.length;
   }, [messages]);
+
+  // ⚠️ Safety timeout per prevenire lock permanenti
+  useEffect(() => {
+    if (isSubmitting) {
+      const timer = setTimeout(() => {
+        console.warn('⚠️ Timeout submit forzato - reset stato dopo 30s');
+        setIsSubmitting(false);
+        setIsLoading(false);
+        toast({
+          title: "Timeout",
+          description: "L'operazione sta impiegando troppo tempo. Riprova.",
+          variant: "destructive",
+        });
+      }, SUBMIT_TIMEOUT);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitting, toast, SUBMIT_TIMEOUT]);
 
   // Auto-summary hook
   useSummaryAutoGenerator({

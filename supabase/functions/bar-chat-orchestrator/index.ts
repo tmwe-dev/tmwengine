@@ -382,6 +382,17 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
+    // ✅ Map provider type to DB-compatible sender_type
+    const senderTypeMap: Record<string, string> = {
+      'anthropic': 'claude',
+      'openai': 'chatgpt',
+      'lovable': 'gemini',
+      'gemini': 'gemini',
+      'claude': 'claude',
+      'chatgpt': 'chatgpt'
+    };
+    const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
+
     // ✅ SYNC SUMMARY GENERATION - Execute BEFORE saving message
     console.log('🔄 Generazione summaries SINCRONA...');
     const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
@@ -497,7 +508,7 @@ serve(async (req) => {
       .from('chat_laboratory_messages')
       .insert({
         conversation_id: conversationId,
-        sender_type: 'ai',
+        sender_type: dbSenderType,
         sender_name: selectedParticipant.name,
         content: aiResponse,
         content_user_friendly: userFriendlySummary,

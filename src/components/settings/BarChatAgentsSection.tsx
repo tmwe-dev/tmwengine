@@ -117,26 +117,20 @@ export const BarChatAgentsSection = ({
     try {
       setLoadingVoices(true);
       
-      // Carica l'API key da localStorage
-      const voiceAgentConfig = localStorage.getItem('voice_agent_config');
-      let apiKey = '';
+      // Leggi API key dal database
+      const { data: config } = await supabase
+        .from('voice_agent_config')
+        .select('elevenlabs_api_key')
+        .eq('enabled', true)
+        .single();
       
-      if (voiceAgentConfig) {
-        try {
-          const parsed = JSON.parse(voiceAgentConfig);
-          apiKey = parsed.elevenLabsApiKey || '';
-        } catch (e) {
-          console.error('Error parsing voice agent config:', e);
-        }
-      }
-      
-      if (!apiKey) {
+      if (!config?.elevenlabs_api_key) {
         toast.error("Configura l'API Key in Impostazioni > Voice Agent (ElevenLabs)");
         return;
       }
       
       const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices', {
-        body: { apiKey }
+        body: { apiKey: config.elevenlabs_api_key }
       });
       
       if (error) throw error;
@@ -154,7 +148,7 @@ export const BarChatAgentsSection = ({
         // Unisce: prima personali, poi ElevenLabs
         const sortedVoices = [...personalVoices, ...elevenlabsVoices];
         setVoices(sortedVoices);
-        toast.success(`${sortedVoices.length} voci caricate (${personalVoices.length} personali, ${elevenlabsVoices.length} ElevenLabs)`);
+        toast.success(`${sortedVoices.length} voci caricate dal database (${personalVoices.length} personali, ${elevenlabsVoices.length} ElevenLabs)`);
       }
     } catch (error) {
       console.error('Errore caricamento voci:', error);

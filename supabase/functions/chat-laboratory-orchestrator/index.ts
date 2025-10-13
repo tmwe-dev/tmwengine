@@ -417,7 +417,7 @@ REGOLE CRITICHE:
           }
           apiKey = openaiConfig.api_key;
           model = openaiConfig.modello || 'gpt-5-2025-08-07';
-        } else if (participant.type === 'gemini' || participant.type === 'google') {
+    } else if (participant.type === 'gemini') {
           apiKey = LOVABLE_API_KEY;
           model = 'google/gemini-2.5-flash';
         } else {

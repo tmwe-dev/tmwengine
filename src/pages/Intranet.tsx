@@ -60,25 +60,31 @@ const Intranet = () => {
   const loadElevenLabsVoices = async () => {
     setIsLoadingVoices(true);
     try {
-      // Ottieni API key dal localStorage
-      const apiKey = localStorage.getItem('elevenLabsApiKey');
+      // Leggi API key dal database (NON da localStorage)
+      const { data: config } = await supabase
+        .from('voice_agent_config')
+        .select('elevenlabs_api_key')
+        .eq('enabled', true)
+        .single();
       
-      if (!apiKey) {
-        console.log('ℹ️ ElevenLabs API key non configurata');
+      if (!config?.elevenlabs_api_key) {
+        console.log('ℹ️ ElevenLabs API key non configurata nel database');
+        setElevenLabsVoices([]);
         return;
       }
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-get-voices', {
-        body: { apiKey }
+        body: { apiKey: config.elevenlabs_api_key }
       });
 
       if (error) {
         console.error('❌ Error loading ElevenLabs voices:', error);
         toast({
           title: 'Errore caricamento voci',
-          description: 'Impossibile caricare le voci ElevenLabs. Verifica la tua API key.',
+          description: 'Impossibile caricare le voci ElevenLabs. Verifica la tua API key nel database.',
           variant: 'destructive'
         });
+        setElevenLabsVoices([]);
         return;
       }
 

@@ -257,7 +257,7 @@ serve(async (req) => {
         // Alias specifici per provider comuni
         (typePattern === 'openai' || typePattern === 'chatgpt') ? 'gpt' : null,
         typePattern === 'anthropic' ? 'claude' : null,
-        (typePattern === 'gemini' || typePattern === 'google' || typePattern === 'lovable_ai') ? 'gemini' : null
+        typePattern === 'gemini' ? 'gemini' : null
       ].filter(Boolean);
       
       const patterns = aliases.map(alias => new RegExp(`\\b${alias}\\??\\b`, 'i'));
@@ -406,7 +406,11 @@ serve(async (req) => {
       console.log('🤖 Calling OpenAI (GPT)...');
       
       const modelName = openaiConfig.modello || 'gpt-5-2025-08-07';
-      console.log(`🎯 Modello: ${modelName}`);
+      const isNewerModel = modelName.startsWith('gpt-5') || 
+                          modelName.startsWith('o3') || 
+                          modelName.startsWith('o4');
+      
+      console.log(`🎯 Modello: ${modelName} (${isNewerModel ? 'newer' : 'legacy'} parameters)`);
       
       const result = await withRetry(async () => {
         // ✅ USA conversationHistory che include il summary!
@@ -431,11 +435,17 @@ serve(async (req) => {
         
         const body: any = {
           model: modelName,
-          max_completion_tokens: 100, // 🔥 HARD LIMIT brevità (40-60 parole ~100 token) - GPT-5 usa max_completion_tokens
-          // temperature rimosso - non supportato da gpt-5-2025-08-07
           stop: ['\n\n', '—'], // 🔥 Stop anticipato
           messages: messages  // ✅ Usa la conversationHistory completa!
         };
+        
+        // Parametri specifici per versione modello
+        if (isNewerModel) {
+          body.max_completion_tokens = 100; // GPT-5+, O3, O4
+        } else {
+          body.max_tokens = 110; // gpt-4o, gpt-4o-mini legacy
+          body.temperature = 0.25; // Solo legacy models
+        }
         
         const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -469,7 +479,7 @@ serve(async (req) => {
       tokenOutput = result.tokensOut;
       console.log(`✅ ChatGPT: ${tokenOutput} token out (${tokenInput} in) in ${result.duration}ms`);
     }
-    else if ((selectedParticipant.type === 'gemini' || selectedParticipant.type === 'google') && LOVABLE_API_KEY) {
+    else if (selectedParticipant.type === 'gemini' && LOVABLE_API_KEY) {
       console.log('🤖 Calling Lovable AI (Gemini)...');
       
       const result = await withRetry(async () => {

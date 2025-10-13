@@ -300,6 +300,12 @@ const ChatLaboratory = () => {
         .eq('conversation_id', currentConversationId)
         .single();
 
+      console.log('🎯 STATO BAR MODE:', {
+        isBarMode,
+        barModeConfig: data,
+        mode: data?.mode
+      });
+
       if (data) {
         setIsBarMode(data.mode === 'bar');
         setActiveKnowledgeBase(data.active_kb_id);
@@ -593,15 +599,30 @@ const ChatLaboratory = () => {
 
       if (insertError) throw insertError;
 
+      // 🔐 Verifica sessione
+      const session = await supabase.auth.getSession();
+      console.log('🔐 SESSION CHECK:', {
+        hasSession: !!session.data.session,
+        accessToken: session.data.session?.access_token ? 'present' : 'missing'
+      });
+
       setUploadedFiles([]);
       setGeneratedImage(null);
 
       // ✅ FASE 1: Single Invocation per Bar Mode
       const activeAIParticipants = participants.filter(p => p.is_active && p.type !== 'human');
       
+      console.log('🔍 DEBUG PRE-INVOCAZIONE:', {
+        isBarMode,
+        conversationId,
+        activeAIParticipants: activeAIParticipants.length,
+        currentPrompt,
+        hasSupabase: !!supabase,
+        participantsDetails: activeAIParticipants.map(p => ({ type: p.type, name: p.name }))
+      });
+      
       if (isBarMode) {
-        // ✅ UNA SOLA CHIAMATA per Bar Mode - l'orchestrator decide chi parla
-        console.log('🍹 Bar Mode: invocazione singola orchestrator con streaming');
+        console.log('🍹 Tentativo invocazione orchestrator...');
         
         const { data, error } = await supabase.functions.invoke('bar-chat-orchestrator', {
           body: { 
@@ -611,8 +632,19 @@ const ChatLaboratory = () => {
           }
         });
         
+        console.log('📦 Risposta orchestrator:', {
+          hasData: !!data,
+          hasError: !!error,
+          errorDetails: error ? {
+            message: error.message,
+            status: (error as any).status,
+            statusText: (error as any).statusText
+          } : null,
+          data
+        });
+        
         if (error) {
-          console.error('❌ Errore Bar Mode:', error);
+          console.error('❌ ERRORE COMPLETO:', JSON.stringify(error, null, 2));
         } else {
           console.log('✅ Risposta ricevuta:', data);
           

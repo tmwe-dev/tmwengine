@@ -1,17 +1,12 @@
 // Bar Chat Orchestrator con integrazione ElevenLabs TTS
-// Versione: 4.0 - Deliverable Support + Streaming + Semantic Routing
-// Data: 2025-01-13
+// Versione: 4.0 - Rollback + Sync Summaries
+// Data: 2025-01-20
+// Changes: Restored stable architecture + synchronous summary generation for Economy Mode
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { 
-  detectIntent, 
-  extractDeliverable, 
-  getAdaptiveWordLimit,
-  buildDeliverablePrompt 
-} from "../_shared/deliverable-utils.ts";
 
-// Helper: Generate message summaries
+// Helper: Generate message summaries SYNCHRONOUSLY
 async function generateMessageSummary(
   content: string,
   type: 'user_friendly' | 'ultra_compressed',
@@ -74,10 +69,6 @@ serve(async (req) => {
     const { conversationId, userMessage, participants, action } = requestBody;
     
     console.log('🍹 Bar Chat Orchestrator v4.0 riceve:', { conversationId, action, userMessage, participants });
-
-    // ✅ Fase 2: Detect deliverable intent
-    const intent = detectIntent(userMessage);
-    console.log('🎯 Intent detected:', intent);
 
     // Handle INTERRUPT action
     if (action === 'interrupt') {
@@ -146,11 +137,6 @@ serve(async (req) => {
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
     console.log('🎤 Agenti vocali attivi:', activeElevenLabsAgents?.length || 0);
-    console.log('🔍 Debug agenti:', activeElevenLabsAgents?.map(a => ({ 
-      id: a.id, 
-      name: a.name, 
-      voice_id: a.voice_id 
-    })));
     console.log('🎤 Voice enabled:', voiceEnabled);
     console.log('⛔ Interrupt requested:', interruptRequested);
 
@@ -168,17 +154,14 @@ serve(async (req) => {
       );
     }
 
-    // Fetch conversation data + economy mode settings
+    // Fetch conversation data
     const { data: conversation, error: convError } = await supabase
       .from('chat_laboratory_conversations')
-      .select('economy_mode, show_summaries_only, current_turn_index, last_speaker_index')
+      .select('*')
       .eq('id', conversationId)
       .single();
 
     if (convError) throw convError;
-
-    const useEconomyMode = conversation?.economy_mode && conversation?.show_summaries_only;
-    console.log(`⚙️ Economy Mode: ${useEconomyMode ? 'ATTIVO' : 'Disattivo'}`);
 
     // Fetch global system prompt
     const { data: systemPrompts } = await supabase
@@ -216,110 +199,32 @@ serve(async (req) => {
       console.log(`📦 Sezioni TOPIC (${selectedTopic}): ${topicSections.length}`);
     }
 
-    // Fetch conversation messages WITH summaries
+    // Fetch conversation messages
     const { data: messages } = await supabase
       .from('chat_laboratory_messages')
-      .select('sender_type, sender_name, content, content_summary, is_summary_available')
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    const historyMessages = (messages || []).map((msg: any) => {
-      let messageContent = msg.content; // Default: completo
-      
-      // Economy Mode: usa content_summary per AI (SOLO per messaggi AI, non utente)
-      if (useEconomyMode && msg.is_summary_available && msg.content_summary && msg.sender_type !== 'user') {
-        messageContent = msg.content_summary;
-        console.log(`📉 [${msg.sender_name}] usa summary: "${messageContent.substring(0, 40)}..."`);
-      }
-      
-      return {
-        role: msg.sender_type === 'user' ? 'user' : 'assistant',
-        content: `[${msg.sender_name}]: ${messageContent}`
-      };
-    });
+    const historyMessages = (messages || []).map((msg: any) => ({
+      role: msg.sender_type === 'user' ? 'user' : 'assistant',
+      content: `[${msg.sender_name}]: ${msg.content}`
+    }));
 
-    // ✅ Sprint 1 P1: Context-Aware Turn-Taking con semantic routing
-    const activeParticipants = participants.filter(p => p.is_active);
-    const activeCount = activeParticipants.length;
-
-    if (activeCount === 0) {
-      throw new Error('❌ Nessun partecipante attivo disponibile per la conversazione');
-    }
-
-    console.log(`👥 Partecipanti attivi: ${activeCount}/${participants.length}`);
-
-    // Extract keywords from user message (simple keyword extraction)
-    const extractKeywords = (text: string): string[] => {
-      const stopWords = new Set(['il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'di', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'a', 'è', 'e', 'o', 'che', 'mi', 'ti', 'si', 'ci', 'vi']);
-      return text.toLowerCase()
-        .split(/\W+/)
-        .filter(word => word.length > 3 && !stopWords.has(word))
-        .slice(0, 10); // Top 10 keywords
-    };
-
-    const messageKeywords = extractKeywords(userMessage);
-    console.log('🔑 Keywords messaggio utente:', messageKeywords);
-
-    // Fetch agent expertise keywords from elevenlabs_agents
-    const { data: agentsWithExpertise } = await supabase
-      .from('elevenlabs_agents')
-      .select('name, expertise_keywords, voice_id')
-      .eq('is_active', true);
-
-    console.log('🎯 Agenti con expertise:', agentsWithExpertise?.map(a => ({ name: a.name, keywords: a.expertise_keywords })));
-
-    // Semantic routing: 50% best match, 30% sequential, 20% random
-    const routingMethod = Math.random();
-    let currentTurnIndex: number;
-    let selectedParticipant;
-
-    if (routingMethod < 0.5 && agentsWithExpertise && agentsWithExpertise.length > 0) {
-      // 50%: Semantic match basato su expertise keywords
-      const agentScores = activeParticipants.map(participant => {
-        const matchingAgent = agentsWithExpertise.find(a => 
-          a.name?.toLowerCase().includes(participant.name.toLowerCase())
-        );
-        
-        if (!matchingAgent || !matchingAgent.expertise_keywords || matchingAgent.expertise_keywords.length === 0) {
-          return { participant, score: 0 };
-        }
-
-        // Count keyword matches
-        const expertiseKeywords = matchingAgent.expertise_keywords.map(k => k.toLowerCase());
-        const matchCount = messageKeywords.filter(mk => 
-          expertiseKeywords.some(ek => ek.includes(mk) || mk.includes(ek))
-        ).length;
-
-        return { participant, score: matchCount };
-      });
-
-      const bestMatch = agentScores.sort((a, b) => b.score - a.score)[0];
-      
-      if (bestMatch.score > 0) {
-        selectedParticipant = bestMatch.participant;
-        currentTurnIndex = activeParticipants.indexOf(selectedParticipant);
-        console.log(`🎯 Semantic routing: ${selectedParticipant.name} (score: ${bestMatch.score})`);
-      } else {
-        // No match, fallback to sequential
-        const lastSpeakerIndex = conversation.last_speaker_index || 0;
-        currentTurnIndex = (lastSpeakerIndex + 1) % activeCount;
-        selectedParticipant = activeParticipants[currentTurnIndex];
-        console.log(`➡️ Semantic routing fallback (no match): ${selectedParticipant.name}`);
-      }
-    } else if (routingMethod < 0.8) {
-      // 30%: Sequential
-      const lastSpeakerIndex = conversation.last_speaker_index || 0;
-      currentTurnIndex = (lastSpeakerIndex + 1) % activeCount;
-      selectedParticipant = activeParticipants[currentTurnIndex];
-      console.log(`➡️ Sequential routing: ${selectedParticipant.name} (indice ${currentTurnIndex})`);
+    // Turn-taking logic
+    let currentTurnIndex = conversation.current_turn_index || 0;
+    const lastSpeakerIndex = conversation.last_speaker_index || 0;
+    
+    if (Math.random() < 0.3) {
+      currentTurnIndex = Math.floor(Math.random() * participants.length);
+      console.log('🎲 Turno randomizzato:', currentTurnIndex);
     } else {
-      // 20%: Random
-      currentTurnIndex = Math.floor(Math.random() * activeCount);
-      selectedParticipant = activeParticipants[currentTurnIndex];
-      console.log(`🎲 Random routing: ${selectedParticipant.name} (indice ${currentTurnIndex})`);
+      currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+      console.log('➡️ Turno sequenziale:', currentTurnIndex);
     }
 
-    console.log('✅ Agente selezionato:', selectedParticipant.name);
+    const selectedParticipant = participants[currentTurnIndex];
+    console.log('🎯 Agente selezionato:', selectedParticipant.name);
 
     // Fetch AGENT_PERSONALITY sections
     const { data: agentPersonalitySections } = await supabase
@@ -337,7 +242,6 @@ serve(async (req) => {
     let elevenLabsVoiceId = '';
     
     if (activeElevenLabsAgents && activeElevenLabsAgents.length > 0) {
-      // activeElevenLabsAgents è già un array di oggetti completi
       for (const agent of activeElevenLabsAgents) {
         if (agent.name?.toLowerCase().includes(selectedParticipant.name.toLowerCase())) {
           agentTextPrompt = agent.text_generation_prompt || '';
@@ -354,17 +258,6 @@ serve(async (req) => {
         agentTextPrompt = firstAgent.text_generation_prompt || '';
         console.log(`⚠️ Nessun match trovato, uso primo agente: "${firstAgent.name}"`);
       }
-    }
-
-    // Log di debug CRITICO
-    if (!elevenLabsVoiceId) {
-      console.error('❌ CRITICO: elevenLabsVoiceId vuoto! Nessun audio verrà generato');
-      console.error('Agenti disponibili:', activeElevenLabsAgents?.map(a => ({ 
-        name: a.name, 
-        voice_id: a.voice_id 
-      })));
-    } else {
-      console.log('✅ Voice ID configurato:', elevenLabsVoiceId);
     }
 
     // Compose system prompt
@@ -388,29 +281,6 @@ serve(async (req) => {
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
-    // ✅ Fase 2: Adaptive word limit based on intent and agent
-    const adaptiveLimit = getAdaptiveWordLimit(selectedParticipant.name, intent, 120);
-    console.log(`📏 Adaptive limit: ${adaptiveLimit} parole (base: 120, agent: ${selectedParticipant.name}, depth: ${intent.depth})`);
-
-    // ✅ Moderazione lunghezza interventi (prompt engineering comportamentale)
-    composedPrompt += `
-=== STILE CONVERSAZIONE ===
-🍺 Sei al bar con colleghi esperti, non in aula universitaria.
-- Interventi rapidi e diretti: concetto chiave → esempio concreto → passa la palla
-- Se qualcuno monopolizza, gli altri si annoiano e cambiano discorso
-- Evita paragrafi lunghi: nessuno legge saggi al bar
-- Pensa "caffè veloce" non "conferenza TED"
-- MAX ${adaptiveLimit} parole per intervento${intent.depth === 'deep' ? ' (eccetto deliverable strutturati)' : ''}
-
-✅ Buon intervento: "Per la logistica, suggerisco hub regionali. Esempio: Milano-Roma riduce costi 30%. Vittorio, tu come gestiresti i picchi?"
-❌ Male: *tre paragrafi su supply chain theory con citazioni accademiche*
-\n\n`;
-
-    // ✅ Fase 2: Inject deliverable prompt if requested
-    if (intent.deliverableType) {
-      composedPrompt += buildDeliverablePrompt(intent);
-    }
-
     console.log('📝 Prompt composto (primi 200 char):', composedPrompt.substring(0, 200) + '...');
 
     // Prepare conversation history
@@ -420,39 +290,14 @@ serve(async (req) => {
       { role: 'user', content: userMessage }
     ];
 
-    // ✅ Sprint 1 P0: AI Response Streaming with SSE
-    const encoder = new TextEncoder();
-    
-    // Create message record first with is_streaming=true
-    const { data: streamingMessage, error: messageError } = await supabase
-      .from('chat_laboratory_messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_type: selectedParticipant.type,
-        sender_name: selectedParticipant.name,
-        content: '',
-        is_streaming: true,
-        message_sequence: (conversation.current_turn_index || 0) + 1
-      })
-      .select()
-      .single();
-
-    if (messageError) {
-      console.error('❌ Errore creazione messaggio streaming:', messageError);
-      throw messageError;
-    }
-
-    const messageId = streamingMessage.id;
-    console.log('📝 Messaggio streaming creato:', messageId);
-
-    // Stream AI response based on provider
     let aiResponse = '';
     let tokenInput = 0;
     let tokenOutput = 0;
     const startTime = Date.now();
 
+    // Route to AI provider
     if (selectedParticipant.type === 'anthropic' && anthropicKey) {
-      console.log('🤖 Streaming from Anthropic...');
+      console.log('🤖 Calling Anthropic...');
       const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -464,8 +309,7 @@ serve(async (req) => {
           model: 'claude-sonnet-4-5',
           max_tokens: 8096,
           messages: conversationHistory.filter(m => m.role !== 'system'),
-          system: composedPrompt,
-          stream: true
+          system: composedPrompt
         })
       });
 
@@ -475,48 +319,13 @@ serve(async (req) => {
         throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
       }
 
-      const reader = anthropicResponse.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                
-                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  aiResponse += parsed.delta.text;
-                  
-                  // Update DB every 50 characters for real-time display
-                  if (aiResponse.length % 50 === 0) {
-                    await supabase
-                      .from('chat_laboratory_messages')
-                      .update({ content: aiResponse })
-                      .eq('id', messageId);
-                  }
-                } else if (parsed.type === 'message_delta' && parsed.usage) {
-                  tokenOutput = parsed.usage.output_tokens || 0;
-                }
-              } catch (e) {
-                // Skip malformed JSON
-              }
-            }
-          }
-        }
-      }
+      const anthropicData = await anthropicResponse.json();
+      aiResponse = anthropicData.content[0].text;
+      tokenInput = anthropicData.usage?.input_tokens || 0;
+      tokenOutput = anthropicData.usage?.output_tokens || 0;
     } 
     else if (selectedParticipant.type === 'openai' && openAIKey) {
-      console.log('🤖 Streaming from OpenAI...');
+      console.log('🤖 Calling OpenAI...');
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -526,8 +335,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: conversationHistory,
-          max_tokens: 4096,
-          stream: true
+          max_tokens: 4096
         })
       });
 
@@ -537,47 +345,13 @@ serve(async (req) => {
         throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
       }
 
-      const reader = openaiResponse.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                
-                if (content) {
-                  aiResponse += content;
-                  
-                  // Update DB every 50 characters
-                  if (aiResponse.length % 50 === 0) {
-                    await supabase
-                      .from('chat_laboratory_messages')
-                      .update({ content: aiResponse })
-                      .eq('id', messageId);
-                  }
-                }
-              } catch (e) {
-                // Skip malformed JSON
-              }
-            }
-          }
-        }
-      }
+      const openaiData = await openaiResponse.json();
+      aiResponse = openaiData.choices[0].message.content;
+      tokenInput = openaiData.usage?.prompt_tokens || 0;
+      tokenOutput = openaiData.usage?.completion_tokens || 0;
     }
     else if (lovableAIKey) {
-      console.log('🤖 Streaming from Lovable AI...');
+      console.log('🤖 Calling Lovable AI...');
       const lovableResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -586,8 +360,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
-          messages: conversationHistory,
-          stream: true
+          messages: conversationHistory
         })
       });
 
@@ -597,44 +370,10 @@ serve(async (req) => {
         throw new Error(`Lovable AI error: ${lovableResponse.statusText}`);
       }
 
-      const reader = lovableResponse.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                
-                if (content) {
-                  aiResponse += content;
-                  
-                  // Update DB every 50 characters
-                  if (aiResponse.length % 50 === 0) {
-                    await supabase
-                      .from('chat_laboratory_messages')
-                      .update({ content: aiResponse })
-                      .eq('id', messageId);
-                  }
-                }
-              } catch (e) {
-                // Skip malformed JSON
-              }
-            }
-          }
-        }
-      }
+      const lovableData = await lovableResponse.json();
+      aiResponse = lovableData.choices[0].message.content;
+      tokenInput = lovableData.usage?.prompt_tokens || 0;
+      tokenOutput = lovableData.usage?.completion_tokens || 0;
     }
     else {
       throw new Error(`No API key available for ${selectedParticipant.type}`);
@@ -643,32 +382,183 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
-    // ✅ AI Cost Tracking: Calculate and save costs
-    const modelUsed = selectedParticipant.type === 'anthropic' ? 'claude-sonnet-4-5' 
-                    : selectedParticipant.type === 'openai' ? 'gpt-4o'
-                    : 'google/gemini-2.5-flash';
+    // ✅ SYNC SUMMARY GENERATION - Execute BEFORE saving message
+    console.log('🔄 Generazione summaries SINCRONA...');
+    const [userFriendlySummary, ultraCompressedSummary] = await Promise.all([
+      generateMessageSummary(aiResponse, 'user_friendly', lovableAIKey!),
+      generateMessageSummary(aiResponse, 'ultra_compressed', lovableAIKey!)
+    ]);
     
-    const costRates: Record<string, { input: number; output: number }> = {
-      'claude-sonnet-4-5': { input: 3.00 / 1_000_000, output: 15.00 / 1_000_000 },
-      'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
-      'google/gemini-2.5-flash': { input: 0, output: 0 } // Free until Oct 13
+    console.log('✅ Summaries generate:', {
+      userFriendly: userFriendlySummary.substring(0, 50) + '...',
+      ultraCompressed: ultraCompressedSummary.substring(0, 30) + '...'
+    });
+
+    // Generate audio with ElevenLabs TTS (se voice enabled)
+    let audioUrl: string | null = null;
+    
+    console.log('🎵 Tentativo generazione audio - Voice enabled:', voiceEnabled, 'API key presente:', !!elevenLabsKey, 'Voice ID:', elevenLabsVoiceId);
+    
+    if (voiceEnabled && elevenLabsKey && elevenLabsVoiceId) {
+      // Double-check interrupt flag prima di TTS
+      const { data: interruptCheck } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('interrupt_requested')
+        .eq('conversation_id', conversationId)
+        .single();
+
+      if (interruptCheck?.interrupt_requested) {
+        console.log('⛔ Interrupt rilevato prima di TTS, annullo');
+        await supabase
+          .from('chat_laboratory_bar_mode')
+          .update({ interrupt_requested: false })
+          .eq('conversation_id', conversationId);
+        
+        return new Response(
+          JSON.stringify({ interrupted: true, message: 'Interrupted before TTS generation' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        console.log(`🎤 Generazione audio con ElevenLabs (voice_id: ${elevenLabsVoiceId})...`);
+        
+        // ✅ USA user_friendly summary per TTS (no testo completo)
+        const textForTTS = userFriendlySummary.length > 4096 
+          ? userFriendlySummary.substring(0, 4096) + '...'
+          : userFriendlySummary;
+        
+        console.log('📝 Testo per TTS (user_friendly, primi 100 char):', textForTTS.substring(0, 100));
+
+        const ttsResponse = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`,
+          {
+            method: 'POST',
+            headers: {
+              'Accept': 'audio/mpeg',
+              'xi-api-key': elevenLabsKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: textForTTS,
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.5,
+                use_speaker_boost: true
+              }
+            })
+          }
+        );
+
+        console.log('📡 ElevenLabs response status:', ttsResponse.status);
+        
+        if (ttsResponse.ok) {
+          const audioBlob = await ttsResponse.blob();
+          const audioBuffer = await audioBlob.arrayBuffer();
+          console.log('📦 Audio buffer size:', audioBuffer.byteLength, 'bytes');
+          
+          const fileName = `bar-chat/${conversationId}/${Date.now()}.mp3`;
+          console.log('☁️ Uploading to Supabase Storage:', fileName);
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('audio-responses')
+            .upload(fileName, audioBlob, {
+              contentType: 'audio/mpeg',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('❌ Errore upload Supabase Storage:', uploadError);
+          } else {
+            console.log('✅ Upload completato:', uploadData);
+            
+            const { data: urlData } = supabase.storage
+              .from('audio-responses')
+              .getPublicUrl(fileName);
+            
+            audioUrl = urlData.publicUrl;
+            console.log('🔗 Audio URL pubblico:', audioUrl);
+          }
+        } else {
+          const errorText = await ttsResponse.text();
+          console.error('❌ ElevenLabs TTS error:', ttsResponse.status, errorText);
+        }
+      } catch (ttsError) {
+        console.error('❌ Errore TTS completo:', ttsError);
+      }
+    } else {
+      console.log('⏭️ Audio skip: voice_enabled =', voiceEnabled, ', hasKey =', !!elevenLabsKey, ', voiceId =', elevenLabsVoiceId);
+    }
+
+    // ✅ Save message with ALL 3 content types + is_summary_available=true
+    const { data: savedMessage, error: saveError } = await supabase
+      .from('chat_laboratory_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_type: 'ai',
+        sender_name: selectedParticipant.name,
+        content: aiResponse,
+        content_user_friendly: userFriendlySummary,
+        content_summary: ultraCompressedSummary,
+        is_summary_available: true,
+        token_input: tokenInput,
+        token_output: tokenOutput,
+        tempo_risposta_ms: responseTime,
+        audio_url: audioUrl
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('❌ Errore salvataggio messaggio:', saveError);
+      throw saveError;
+    }
+
+    console.log('✅ Messaggio salvato con ID:', savedMessage.id);
+    console.log('✅ Economy Mode attivo: is_summary_available =', savedMessage.is_summary_available);
+
+    // AI Cost Tracking
+    const providerMap: Record<string, string> = {
+      'anthropic': 'anthropic',
+      'openai': 'openai',
+      'lovable': 'lovable_ai'
     };
+    const provider = providerMap[selectedParticipant.type] || selectedParticipant.type;
     
-    const rate = costRates[modelUsed] || { input: 0, output: 0 };
-    const costInputEur = tokenInput * rate.input * 1.1; // USD → EUR (~1.1)
-    const costOutputEur = tokenOutput * rate.output * 1.1;
-    const costTotalEur = costInputEur + costOutputEur;
+    const modelMap: Record<string, string> = {
+      'anthropic': 'claude-sonnet-4-5',
+      'openai': 'gpt-4o',
+      'lovable': 'google/gemini-2.5-flash'
+    };
+    const model = modelMap[selectedParticipant.type] || 'unknown';
+
+    // Cost calculation (EUR)
+    const pricePerMillionInput: Record<string, number> = {
+      'anthropic': 3.00,
+      'openai': 2.50,
+      'lovable': 0.00 // Gemini free
+    };
+    const pricePerMillionOutput: Record<string, number> = {
+      'anthropic': 15.00,
+      'openai': 10.00,
+      'lovable': 0.00
+    };
+
+    const costInputEur = (tokenInput / 1_000_000) * (pricePerMillionInput[selectedParticipant.type] || 0);
+    const costOutputEur = (tokenOutput / 1_000_000) * (pricePerMillionOutput[selectedParticipant.type] || 0);
     
-    console.log(`💰 Cost tracking: ${tokenInput} in + ${tokenOutput} out = €${costTotalEur.toFixed(6)}`);
+    console.log(`💰 Cost tracking: ${tokenInput} in + ${tokenOutput} out = €${(costInputEur + costOutputEur).toFixed(6)}`);
     
     // Save to ai_cost_tracking (cost_total_eur is auto-calculated by DB)
     const { error: costError } = await supabase
       .from('ai_cost_tracking')
       .insert({
+        provider,
+        model,
+        operation_type: 'chat_laboratory',
         lab_conversation_id: conversationId,
-        provider: selectedParticipant.type,
-        model: modelUsed,
-        operation_type: 'chat_completion',
         input_tokens: tokenInput,
         output_tokens: tokenOutput,
         cost_input_eur: costInputEur,
@@ -676,198 +566,46 @@ serve(async (req) => {
       });
     
     if (costError) {
-      console.error('⚠️ Cost tracking failed:', costError);
-    } else {
-      console.log('✅ Cost tracked successfully');
+      console.error('⚠️ Cost tracking error (non-blocking):', costError);
     }
 
-    // ✅ Fase 2: Extract deliverable if present
-    const deliverable = extractDeliverable(aiResponse);
-    let deliverableId: string | null = null;
-    
-    if (deliverable) {
-      console.log('📦 Deliverable detected:', deliverable.type, deliverable.format);
-      
-      // Trigger async deliverable generation (fire-and-forget)
-      const deliverablePromise = fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-deliverable`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify({
-          messageId,
-          type: deliverable.type,
-          format: deliverable.format,
-          title: deliverable.title,
-          content: deliverable.content,
-          metadata: deliverable.metadata
-        })
-      }).catch(e => console.error('Deliverable generation failed:', e));
-      
-      console.log('🚀 Deliverable generation triggered asynchronously');
-    }
-
-    // ✅ Soft truncation fallback: solo per risposte NON-deliverable eccessive (>adaptive limit)
-    const wordCount = aiResponse.trim().split(/\s+/).length;
-    console.log(`📊 Risposta: ${wordCount} parole (limit: ${adaptiveLimit})`);
-
-    // Skip truncation if deliverable detected (already structured)
-    if (!deliverable && wordCount > adaptiveLimit) {
-      console.warn(`⚠️ ${selectedParticipant.name}: ${wordCount} parole, troncamento a frase completa`);
-      
-      const sentences = aiResponse.match(/[^.!?]+[.!?]+/g) || [];
-      let truncated = '';
-      let currentWords = 0;
-      
-      for (const sentence of sentences) {
-        const sentenceWords = sentence.trim().split(/\s+/).length;
-        if (currentWords + sentenceWords <= adaptiveLimit - 10) {
-          truncated += sentence;
-          currentWords += sentenceWords;
-        } else {
-          break;
-        }
-      }
-      
-      if (truncated.length > 0) {
-        aiResponse = truncated.trim();
-        console.log(`✂️ Troncato a ${currentWords} parole (preservando coerenza)`);
-      }
-    } else if (deliverable) {
-      // For deliverable responses, use only TL;DR for display (full content in file)
-      aiResponse = `${deliverable.tldr}\n\n📄 Ho generato un **${deliverable.type}** completo. Scaricalo dal pulsante qui sotto.`;
-      console.log('📝 Response sostituita con TL;DR per deliverable');
-    }
-
-    const senderTypeMap: Record<string, string> = {
-      'anthropic': 'claude',
-      'openai': 'chatgpt', 
-      'lovable': 'gemini',
-      'human': 'human'
-    };
-    const dbSenderType = senderTypeMap[selectedParticipant.type] || selectedParticipant.type;
-
-    // ✅ Final update: Mark streaming as complete
-    const { error: finalUpdateError } = await supabase
-      .from('chat_laboratory_messages')
+    // Update conversation turn tracking
+    const { error: updateError } = await supabase
+      .from('chat_laboratory_conversations')
       .update({
-        content: aiResponse,
-        is_streaming: false,
-        token_input: tokenInput,
-        token_output: tokenOutput,
-        tempo_risposta_ms: responseTime,
-        content_user_friendly: null,  // Will be populated in background
-        content_summary: null,         // Will be populated in background
-        is_summary_available: false
+        current_turn_index: currentTurnIndex,
+        last_speaker_index: currentTurnIndex
       })
-      .eq('id', messageId);
+      .eq('id', conversationId);
 
-    if (finalUpdateError) {
-      console.error('❌ Errore aggiornamento finale messaggio:', finalUpdateError);
+    if (updateError) {
+      console.error('⚠️ Errore aggiornamento turno (non-blocking):', updateError);
     }
 
-    console.log('✅ Messaggio streaming completato, ID:', messageId);
-
-    // 🚀 NON-BLOCKING: Genera summaries in background
-    supabase.functions.invoke('generate-message-summaries', {
-      body: { 
-        messageId: messageId, 
-        content: aiResponse,
-        conversationId,
-        table: 'chat_laboratory_messages'
-      }
-    }).then(() => {
-      console.log('🔄 Background summary generation triggered');
-    }).catch((err) => {
-      console.error('⚠️ Background summary generation failed:', err);
-    });
-
-    // ✅ Update conversation turn index with optimistic lock (CAS)
-    const expectedPreviousTurnIndex = conversation?.current_turn_index ?? 0;
-    const nextTurnIndex = (currentTurnIndex + 1) % activeAICount;
-    
-    let retryCount = 0;
-    let updateSuccess = false;
-    
-    while (retryCount < 3 && !updateSuccess) {
-      const { data: updated, error: updateError } = await supabase
-        .from('chat_laboratory_conversations')
-        .update({ 
-          current_turn_index: nextTurnIndex,
-          last_speaker_index: currentTurnIndex,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conversationId)
-        .eq('current_turn_index', expectedPreviousTurnIndex) // Optimistic lock
-        .select('current_turn_index')
-        .maybeSingle();
-      
-      if (updated && !updateError) {
-        updateSuccess = true;
-        console.log(`✅ Turn index updated: ${expectedPreviousTurnIndex} → ${nextTurnIndex}`);
-      } else {
-        retryCount++;
-        console.warn(`⚠️ Concurrent update detected (attempt ${retryCount}/3), retrying...`);
-        
-        // Exponential backoff: 50ms, 100ms, 200ms
-        await new Promise(resolve => setTimeout(resolve, 50 * Math.pow(2, retryCount - 1)));
-        
-        // Re-fetch current turn index for next attempt
-        const { data: freshConv } = await supabase
-          .from('chat_laboratory_conversations')
-          .select('current_turn_index')
-          .eq('id', conversationId)
-          .single();
-        
-        if (freshConv) {
-          // Recalculate based on fresh data
-          const freshExpected = freshConv.current_turn_index;
-          const freshNext = (freshExpected + 1) % activeAICount;
-          // Note: For simplicity, we keep currentTurnIndex as the speaker for this message
-          // but update the next turn based on fresh data
-        }
-      }
-    }
-    
-    if (!updateSuccess) {
-      console.error('❌ Failed to update turn index after 3 attempts');
-      // Continue anyway - the message was saved, just the turn tracking might be slightly off
-    }
-
-    // ✅ Determina se generare audio (delegato al frontend)
-    const shouldGenerateAudio = voiceEnabled && elevenLabsKey && elevenLabsVoiceId;
-
-    if (!shouldGenerateAudio) {
-      if (!voiceEnabled) {
-        console.log('🔇 Voice non abilitato per questa conversazione');
-      } else if (!elevenLabsKey) {
-        console.log('⚠️ ElevenLabs API key mancante - audio non generato');
-      } else {
-        console.log('⚠️ Voice ID mancante - audio non generato');
-      }
-    }
-
-    // ✅ Restituisci risposta immediata con messageId per real-time tracking
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        participant: selectedParticipant.name,
-        messageId: messageId, // ⚡ Frontend tracks questo per real-time updates
-        audioGenerating: shouldGenerateAudio,
-        tokens: { input: tokenInput, output: tokenOutput },
-        responseTime: responseTime
+      JSON.stringify({
+        content: aiResponse,
+        speaker: selectedParticipant.name,
+        tokenInput,
+        tokenOutput,
+        responseTime,
+        audioUrl,
+        userFriendlySummary,
+        ultraCompressedSummary,
+        economyModeReady: true
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
 
   } catch (error) {
-    console.error('❌ Bar Chat Orchestrator error:', error);
+    console.error('❌ Errore orchestrator:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }

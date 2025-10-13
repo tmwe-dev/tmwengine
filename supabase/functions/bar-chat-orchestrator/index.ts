@@ -1,9 +1,15 @@
 // Bar Chat Orchestrator con integrazione ElevenLabs TTS
-// Versione: 3.1 - Tripartite Message System + Economy Mode
-// Data: 2025-01-12
+// Versione: 4.0 - Deliverable Support + Streaming + Semantic Routing
+// Data: 2025-01-13
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  detectIntent, 
+  extractDeliverable, 
+  getAdaptiveWordLimit,
+  buildDeliverablePrompt 
+} from "../_shared/deliverable-utils.ts";
 
 // Helper: Generate message summaries
 async function generateMessageSummary(
@@ -67,7 +73,11 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { conversationId, userMessage, participants, action } = requestBody;
     
-    console.log('🍹 Bar Chat Orchestrator v3.0 riceve:', { conversationId, action, userMessage, participants });
+    console.log('🍹 Bar Chat Orchestrator v4.0 riceve:', { conversationId, action, userMessage, participants });
+
+    // ✅ Fase 2: Detect deliverable intent
+    const intent = detectIntent(userMessage);
+    console.log('🎯 Intent detected:', intent);
 
     // Handle INTERRUPT action
     if (action === 'interrupt') {
@@ -378,6 +388,10 @@ serve(async (req) => {
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
 
+    // ✅ Fase 2: Adaptive word limit based on intent and agent
+    const adaptiveLimit = getAdaptiveWordLimit(selectedParticipant.name, intent, 120);
+    console.log(`📏 Adaptive limit: ${adaptiveLimit} parole (base: 120, agent: ${selectedParticipant.name}, depth: ${intent.depth})`);
+
     // ✅ Moderazione lunghezza interventi (prompt engineering comportamentale)
     composedPrompt += `
 === STILE CONVERSAZIONE ===
@@ -386,10 +400,16 @@ serve(async (req) => {
 - Se qualcuno monopolizza, gli altri si annoiano e cambiano discorso
 - Evita paragrafi lunghi: nessuno legge saggi al bar
 - Pensa "caffè veloce" non "conferenza TED"
+- MAX ${adaptiveLimit} parole per intervento${intent.depth === 'deep' ? ' (eccetto deliverable strutturati)' : ''}
 
 ✅ Buon intervento: "Per la logistica, suggerisco hub regionali. Esempio: Milano-Roma riduce costi 30%. Vittorio, tu come gestiresti i picchi?"
 ❌ Male: *tre paragrafi su supply chain theory con citazioni accademiche*
 \n\n`;
+
+    // ✅ Fase 2: Inject deliverable prompt if requested
+    if (intent.deliverableType) {
+      composedPrompt += buildDeliverablePrompt(intent);
+    }
 
     console.log('📝 Prompt composto (primi 200 char):', composedPrompt.substring(0, 200) + '...');
 
@@ -623,11 +643,39 @@ serve(async (req) => {
     const responseTime = Date.now() - startTime;
     console.log(`✅ Risposta AI ricevuta in ${responseTime}ms`);
 
-    // ✅ Soft truncation fallback: solo per risposte eccessive (>150 parole)
-    const wordCount = aiResponse.trim().split(/\s+/).length;
-    console.log(`📊 Risposta: ${wordCount} parole`);
+    // ✅ Fase 2: Extract deliverable if present
+    const deliverable = extractDeliverable(aiResponse);
+    let deliverableId: string | null = null;
+    
+    if (deliverable) {
+      console.log('📦 Deliverable detected:', deliverable.type, deliverable.format);
+      
+      // Trigger async deliverable generation (fire-and-forget)
+      const deliverablePromise = fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-deliverable`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        },
+        body: JSON.stringify({
+          messageId,
+          type: deliverable.type,
+          format: deliverable.format,
+          title: deliverable.title,
+          content: deliverable.content,
+          metadata: deliverable.metadata
+        })
+      }).catch(e => console.error('Deliverable generation failed:', e));
+      
+      console.log('🚀 Deliverable generation triggered asynchronously');
+    }
 
-    if (wordCount > 150) {
+    // ✅ Soft truncation fallback: solo per risposte NON-deliverable eccessive (>adaptive limit)
+    const wordCount = aiResponse.trim().split(/\s+/).length;
+    console.log(`📊 Risposta: ${wordCount} parole (limit: ${adaptiveLimit})`);
+
+    // Skip truncation if deliverable detected (already structured)
+    if (!deliverable && wordCount > adaptiveLimit) {
       console.warn(`⚠️ ${selectedParticipant.name}: ${wordCount} parole, troncamento a frase completa`);
       
       const sentences = aiResponse.match(/[^.!?]+[.!?]+/g) || [];
@@ -636,7 +684,7 @@ serve(async (req) => {
       
       for (const sentence of sentences) {
         const sentenceWords = sentence.trim().split(/\s+/).length;
-        if (currentWords + sentenceWords <= 120) {
+        if (currentWords + sentenceWords <= adaptiveLimit - 10) {
           truncated += sentence;
           currentWords += sentenceWords;
         } else {
@@ -648,6 +696,10 @@ serve(async (req) => {
         aiResponse = truncated.trim();
         console.log(`✂️ Troncato a ${currentWords} parole (preservando coerenza)`);
       }
+    } else if (deliverable) {
+      // For deliverable responses, use only TL;DR for display (full content in file)
+      aiResponse = `${deliverable.tldr}\n\n📄 Ho generato un **${deliverable.type}** completo. Scaricalo dal pulsante qui sotto.`;
+      console.log('📝 Response sostituita con TL;DR per deliverable');
     }
 
     const senderTypeMap: Record<string, string> = {

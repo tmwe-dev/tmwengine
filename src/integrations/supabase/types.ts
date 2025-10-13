@@ -456,6 +456,66 @@ export type Database = {
           },
         ]
       }
+      chat_laboratory_deliverables: {
+        Row: {
+          created_at: string | null
+          file_size_bytes: number | null
+          format: string
+          generation_status: string | null
+          id: string
+          message_id: string
+          metadata: Json | null
+          parent_deliverable_id: string | null
+          storage_path: string
+          type: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_size_bytes?: number | null
+          format: string
+          generation_status?: string | null
+          id?: string
+          message_id: string
+          metadata?: Json | null
+          parent_deliverable_id?: string | null
+          storage_path: string
+          type: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          file_size_bytes?: number | null
+          format?: string
+          generation_status?: string | null
+          id?: string
+          message_id?: string
+          metadata?: Json | null
+          parent_deliverable_id?: string | null
+          storage_path?: string
+          type?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_laboratory_deliverables_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_laboratory_deliverables_parent_deliverable_id_fkey"
+            columns: ["parent_deliverable_id"]
+            isOneToOne: false
+            referencedRelation: "chat_laboratory_deliverables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_laboratory_messages: {
         Row: {
           attachments: Json | null

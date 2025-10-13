@@ -5,6 +5,7 @@ import { Bot, User, Clock, Zap, Copy, Download, Link } from 'lucide-react';
 import { UploadedFile } from '@/components/chat/FileUploader';
 import { toast } from '@/hooks/use-toast';
 import { AudioMessagePlayer } from '@/components/chat-laboratory/AudioMessagePlayer';
+import { DeliverableCard } from './DeliverableCard';
 
 interface Message {
   id: string;
@@ -226,6 +227,9 @@ export const MultiAgentMessage = ({ message, onAIPlayStateChange }: MultiAgentMe
             />
           </div>
         )}
+
+        {/* Deliverable Card */}
+        <DeliverableCard messageId={message.id} />
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (

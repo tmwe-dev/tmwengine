@@ -25,68 +25,54 @@ export const MobileTopBar = ({
   onToggleLayout
 }: MobileTopBarProps) => {
   return (
-    <div className={`flex flex-col border-t flex-shrink-0 z-50 py-2 ${isLayoutInverted ? 'order-first' : ''}`}>
-      {/* Prima linea - Menu + Nome stanza + Toggle Layout */}
-      <div className="flex items-center justify-between px-2 gap-2">
-        {/* Left - Menu button + Nome stanza */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button 
-            className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors flex-shrink-0"
-            onClick={onMenuClick}
-            aria-label="Apri menu"
-          >
-            <div className="relative">
-              <Menu className="h-5 w-5 text-foreground" />
-              {totalUnread > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
-                >
-                  {totalUnread}
-                </Badge>
-              )}
-            </div>
-          </button>
-          <h1 className="text-sm font-semibold text-foreground truncate">{selectedRoomName}</h1>
-        </div>
-
-        {/* Right - Layout toggle button */}
-        <div className="flex items-center flex-shrink-0">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onToggleLayout}
-            title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
-          >
-            {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-          </Button>
-        </div>
+    <div className={`flex items-center justify-between border-t flex-shrink-0 z-50 py-2 px-2 gap-2 ${isLayoutInverted ? 'order-first' : ''}`}>
+      {/* Left - Menu button + Nome stanza */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button 
+          className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors"
+          onClick={onMenuClick}
+          aria-label="Apri menu"
+        >
+          <div className="relative">
+            <Menu className="h-5 w-5 text-foreground" />
+            {totalUnread > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px]"
+              >
+                {totalUnread}
+              </Badge>
+            )}
+          </div>
+        </button>
+        <h1 className="text-sm font-semibold text-foreground truncate max-w-[120px]">{selectedRoomName}</h1>
       </div>
 
-      {/* Seconda linea - Token Badge + Cost Badge + Settings */}
-      <div className="flex items-center justify-between px-2 mt-1">
-        {/* Left - Token Counter */}
-        <div className="flex items-center">
-          {selectedRoomId && (
+      {/* Center - Token Badge + Cost Badge + Settings */}
+      <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
+        {selectedRoomId && (
+          <>
             <TokenCounterBadge 
               roomId={selectedRoomId}
               variant="intranet"
               alertThreshold={15000}
             />
-          )}
-        </div>
-
-        {/* Center - Cost Badge */}
-        <div className="flex items-center justify-center flex-1">
-          {selectedRoomId && (
             <ConversationCostBadge roomId={selectedRoomId} />
-          )}
-        </div>
+          </>
+        )}
+        <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
+      </div>
 
-        {/* Right - Settings button */}
-        <div className="flex items-center">
-          <SettingsButton roomId={selectedRoomId} isCreatorOrAdmin={isCreatorOrAdmin} />
-        </div>
+      {/* Right - Layout toggle button */}
+      <div className="flex items-center flex-shrink-0">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={onToggleLayout}
+          title={isLayoutInverted ? "Vista normale" : "Vista invertita"}
+        >
+          {isLayoutInverted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+        </Button>
       </div>
     </div>
   );

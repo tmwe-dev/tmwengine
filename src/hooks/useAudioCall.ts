@@ -10,12 +10,14 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const [remotePeerId, setRemotePeerId] = useState<string | null>(null);
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
   const [networkQuality, setNetworkQuality] = useState<'good' | 'poor' | 'bad'>('good');
+  const [incomingCallFrom, setIncomingCallFrom] = useState<string | null>(null);
 
   const peerConnectionRef = useRef<WebRTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingOfferRef = useRef<{ from: string; offer: RTCSessionDescriptionInit } | null>(null);
 
   const { toast } = useToast();
   const { sendSignal, setHandlers } = useWebRTCSignaling(roomId, userId);
@@ -51,44 +53,15 @@ export const useAudioCall = (roomId: string, userId: string) => {
     setHandlers({
       onOffer: async (offer, from) => {
         console.log('[useAudioCall] Received offer from:', from);
+        // Salva l'offer per rispondere manualmente
+        pendingOfferRef.current = { from, offer };
+        setIncomingCallFrom(from);
         setRemotePeerId(from);
         
         toast({
           title: 'Chiamata in arrivo',
-          description: 'Risposta automatica in corso...'
+          description: 'Premi Rispondi per accettare'
         });
-        
-        const pc = new WebRTCPeerConnection({
-          onIceCandidate: (candidate) => {
-            sendSignal({ type: 'ice-candidate', to: from, payload: candidate });
-          },
-          onRemoteStream: (stream) => {
-            remoteStreamRef.current = stream;
-            if (remoteAudioRef.current) {
-              remoteAudioRef.current.srcObject = stream;
-            }
-            setIsInCall(true);
-          },
-          onConnectionStateChange: setConnectionState
-        });
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 48000
-          }
-        });
-
-        localStreamRef.current = stream;
-        await pc.addLocalStream(stream);
-        await pc.setRemoteDescription(offer);
-        const answer = await pc.createAnswer();
-        await sendSignal({ type: 'answer', to: from, payload: answer });
-
-        peerConnectionRef.current = pc;
-        statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
       },
       onAnswer: async (answer) => {
         console.log('[useAudioCall] Received answer');
@@ -257,17 +230,99 @@ export const useAudioCall = (roomId: string, userId: string) => {
     }
   }, []);
 
+  const answerCall = useCallback(async () => {
+    if (!pendingOfferRef.current) {
+      console.error('[useAudioCall] No pending offer to answer');
+      return;
+    }
+
+    const { from, offer } = pendingOfferRef.current;
+    console.log('[useAudioCall] Answering call from:', from);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000
+        }
+      });
+
+      localStreamRef.current = stream;
+
+      const pc = new WebRTCPeerConnection({
+        onIceCandidate: (candidate) => {
+          sendSignal({ type: 'ice-candidate', to: from, payload: candidate });
+        },
+        onRemoteStream: (stream) => {
+          remoteStreamRef.current = stream;
+          if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = stream;
+          }
+        },
+        onConnectionStateChange: setConnectionState
+      });
+
+      await pc.addLocalStream(stream);
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await sendSignal({ type: 'answer', to: from, payload: answer });
+
+      peerConnectionRef.current = pc;
+      setIsInCall(true);
+      setIncomingCallFrom(null);
+      pendingOfferRef.current = null;
+
+      statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
+
+      toast({
+        title: 'Chiamata accettata',
+        description: 'Connessione in corso...'
+      });
+    } catch (error: any) {
+      console.error('[useAudioCall] Error answering call:', error);
+      toast({
+        title: 'Errore',
+        description: error.name === 'NotAllowedError' 
+          ? 'Permessi microfono negati' 
+          : 'Impossibile rispondere alla chiamata',
+        variant: 'destructive'
+      });
+      setIncomingCallFrom(null);
+      pendingOfferRef.current = null;
+    }
+  }, [sendSignal, toast, monitorNetworkQuality]);
+
+  const rejectCall = useCallback(() => {
+    if (incomingCallFrom) {
+      console.log('[useAudioCall] Rejecting call from:', incomingCallFrom);
+      sendSignal({ type: 'call-rejected', to: incomingCallFrom, payload: {} });
+      setIncomingCallFrom(null);
+      pendingOfferRef.current = null;
+      setRemotePeerId(null);
+      
+      toast({
+        title: 'Chiamata rifiutata',
+        description: 'Hai rifiutato la chiamata'
+      });
+    }
+  }, [incomingCallFrom, sendSignal, toast]);
+
   return {
     isInCall,
     isMuted,
     remotePeerId,
     connectionState,
     networkQuality,
+    incomingCallFrom,
     localStream: localStreamRef.current,
     remoteStream: remoteStreamRef.current,
     remoteAudioRef,
     startCall,
     endCall,
-    toggleMute
+    toggleMute,
+    answerCall,
+    rejectCall
   };
 };

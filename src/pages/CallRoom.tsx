@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, PhoneOff, ArrowLeft, User } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, ArrowLeft, User, Phone } from 'lucide-react';
 import { useAudioCall } from '@/hooks/useAudioCall';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,10 +21,13 @@ const CallRoom = () => {
     isMuted,
     connectionState,
     networkQuality,
+    incomingCallFrom,
     remoteAudioRef,
     startCall,
     endCall,
-    toggleMute
+    toggleMute,
+    answerCall,
+    rejectCall
   } = useAudioCall(roomId, userId);
 
   useEffect(() => {
@@ -119,7 +122,38 @@ const CallRoom = () => {
               <p className="text-muted-foreground">Sistema chiamate audio WebRTC</p>
             </div>
 
-            {!isInCall ? (
+            {incomingCallFrom ? (
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                  <Phone className="h-16 w-16 text-primary" />
+                </div>
+                
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-2">Chiamata in arrivo</h2>
+                  <p className="text-muted-foreground">
+                    Da utente {incomingCallFrom.substring(0, 8)}...
+                  </p>
+                </div>
+              
+                <div className="flex gap-4">
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    onClick={rejectCall}
+                    className="rounded-full w-16 h-16"
+                  >
+                    <PhoneOff className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={answerCall}
+                    className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600"
+                  >
+                    <Phone className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+            ) : !isInCall ? (
               <div className="flex flex-col items-center gap-6">
                 <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
                   <User className="h-16 w-16 text-muted-foreground" />

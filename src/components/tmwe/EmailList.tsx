@@ -378,7 +378,7 @@ export const EmailList = ({
           </div>
         </div>
       </div>
-      <ScrollArea className="h-full" ref={scrollRef}>
+      <ScrollArea className="h-full overflow-x-hidden" ref={scrollRef}>
         {viewMode === 'list' && renderListView()}
         {viewMode === 'grid' && renderGridView()}
         

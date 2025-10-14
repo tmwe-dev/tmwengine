@@ -1039,9 +1039,9 @@ const ChatLaboratory = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
-          <div className="container mx-auto px-3">
+          <div className="container mx-auto px-3 pt-0">
             {/* Title above - separated */}
-            <div className="pt-0.5 pb-0">
+            <div className="pt-0 pb-0">
               <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
                 ChatLab
               </h1>

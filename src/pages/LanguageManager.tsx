@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/select';
 import { Globe, Plus, Trash2, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Lista completa lingue ISO 639-1
 const WORLD_LANGUAGES = [
@@ -57,25 +59,90 @@ const WORLD_LANGUAGES = [
 
 const LanguageManager = () => {
   const { t } = useTranslation();
-  const [activeLanguages, setActiveLanguages] = useState<string[]>(['it', 'en', 'es', 'fr', 'de']);
+  const queryClient = useQueryClient();
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch active languages from database
+  const { data: activeLanguagesData = [], isLoading } = useQuery({
+    queryKey: ['system-languages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_languages')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Add language mutation
+  const addLanguageMutation = useMutation({
+    mutationFn: async (languageCode: string) => {
+      const lang = WORLD_LANGUAGES.find(l => l.code === languageCode);
+      if (!lang) throw new Error('Language not found');
+
+      const maxOrder = activeLanguagesData.length > 0 
+        ? Math.max(...activeLanguagesData.map(l => l.order_index)) 
+        : 0;
+
+      const { error } = await supabase
+        .from('system_languages')
+        .insert({
+          code: lang.code,
+          name: lang.name,
+          native_name: lang.nativeName,
+          flag: lang.flag,
+          is_active: true,
+          order_index: maxOrder + 1
+        });
+      
+      if (error) throw error;
+      return lang;
+    },
+    onSuccess: (lang) => {
+      queryClient.invalidateQueries({ queryKey: ['system-languages'] });
+      toast.success(`${lang.flag} ${lang.nativeName} aggiunta con successo`);
+      setSelectedLanguage('');
+    },
+    onError: (error: any) => {
+      if (error.code === '23505') {
+        toast.error('Lingua già presente nel sistema');
+      } else {
+        toast.error('Errore durante l\'aggiunta della lingua');
+      }
+    }
+  });
+
+  // Remove language mutation
+  const removeLanguageMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const { error } = await supabase
+        .from('system_languages')
+        .delete()
+        .eq('code', code);
+      
+      if (error) throw error;
+      return code;
+    },
+    onSuccess: (code) => {
+      queryClient.invalidateQueries({ queryKey: ['system-languages'] });
+      const lang = WORLD_LANGUAGES.find(l => l.code === code);
+      toast.success(`${lang?.flag} ${lang?.nativeName} rimossa`);
+    },
+    onError: () => {
+      toast.error('Errore durante la rimozione della lingua');
+    }
+  });
 
   const handleAddLanguage = () => {
     if (!selectedLanguage) {
       toast.error('Seleziona una lingua da aggiungere');
       return;
     }
-
-    if (activeLanguages.includes(selectedLanguage)) {
-      toast.error('Lingua già presente nel sistema');
-      return;
-    }
-
-    setActiveLanguages([...activeLanguages, selectedLanguage]);
-    const lang = WORLD_LANGUAGES.find(l => l.code === selectedLanguage);
-    toast.success(`${lang?.flag} ${lang?.nativeName} aggiunta con successo`);
-    setSelectedLanguage('');
+    addLanguageMutation.mutate(selectedLanguage);
   };
 
   const handleRemoveLanguage = (code: string) => {
@@ -83,15 +150,17 @@ const LanguageManager = () => {
       toast.error('Impossibile rimuovere la lingua predefinita');
       return;
     }
-
-    setActiveLanguages(activeLanguages.filter(l => l !== code));
-    const lang = WORLD_LANGUAGES.find(l => l.code === code);
-    toast.success(`${lang?.flag} ${lang?.nativeName} rimossa`);
+    removeLanguageMutation.mutate(code);
   };
 
   const handleExportTranslations = () => {
     const data = {
-      languages: activeLanguages,
+      languages: activeLanguagesData.map(l => ({
+        code: l.code,
+        name: l.name,
+        nativeName: l.native_name,
+        flag: l.flag
+      })),
       timestamp: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -103,15 +172,12 @@ const LanguageManager = () => {
     toast.success('Configurazione esportata');
   };
 
+  const activeCodes = activeLanguagesData.map(l => l.code);
   const availableLanguages = WORLD_LANGUAGES.filter(
-    lang => !activeLanguages.includes(lang.code) &&
+    lang => !activeCodes.includes(lang.code) &&
     (lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
      lang.nativeName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const activeLanguagesData = activeLanguages
-    .map(code => WORLD_LANGUAGES.find(l => l.code === code))
-    .filter(Boolean);
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -130,39 +196,44 @@ const LanguageManager = () => {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Lingue Attive</h2>
-            <Badge variant="secondary">{activeLanguages.length} lingue</Badge>
+            <Badge variant="secondary">{activeLanguagesData.length} lingue</Badge>
           </div>
 
-          <div className="space-y-2">
-            {activeLanguagesData.map((lang) => (
-              <div
-                key={lang.code}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{lang.flag}</span>
-                  <div>
-                    <div className="font-medium">{lang.nativeName}</div>
-                    <div className="text-sm text-muted-foreground">{lang.name}</div>
+          {isLoading ? (
+            <div className="text-center text-muted-foreground py-8">Caricamento...</div>
+          ) : (
+            <div className="space-y-2">
+              {activeLanguagesData.map((lang) => (
+                <div
+                  key={lang.code}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{lang.flag}</span>
+                    <div>
+                      <div className="font-medium">{lang.native_name}</div>
+                      <div className="text-sm text-muted-foreground">{lang.name}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {lang.code}
+                    </Badge>
+                    {lang.code !== 'it' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveLanguage(lang.code)}
+                        disabled={removeLanguageMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {lang.code}
-                  </Badge>
-                  {lang.code !== 'it' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveLanguage(lang.code)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 pt-4 border-t">
             <Button
@@ -216,9 +287,13 @@ const LanguageManager = () => {
               </Select>
             </div>
 
-            <Button onClick={handleAddLanguage} className="w-full">
+            <Button 
+              onClick={handleAddLanguage} 
+              className="w-full"
+              disabled={addLanguageMutation.isPending || !selectedLanguage}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Aggiungi Lingua
+              {addLanguageMutation.isPending ? 'Aggiunta in corso...' : 'Aggiungi Lingua'}
             </Button>
           </div>
 
@@ -239,7 +314,7 @@ const LanguageManager = () => {
         <h2 className="text-xl font-semibold mb-4">Statistiche e Istruzioni</h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="p-4 bg-primary/5 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{activeLanguages.length}</div>
+            <div className="text-2xl font-bold text-primary">{activeLanguagesData.length}</div>
             <div className="text-sm text-muted-foreground">Lingue Attive</div>
           </div>
           <div className="p-4 bg-primary/5 rounded-lg">
@@ -248,7 +323,7 @@ const LanguageManager = () => {
           </div>
           <div className="p-4 bg-primary/5 rounded-lg">
             <div className="text-2xl font-bold text-primary">
-              {WORLD_LANGUAGES.length - activeLanguages.length}
+              {WORLD_LANGUAGES.length - activeLanguagesData.length}
             </div>
             <div className="text-sm text-muted-foreground">Da Aggiungere</div>
           </div>
@@ -260,7 +335,7 @@ const LanguageManager = () => {
             <li>Aggiungi la lingua desiderata dalla lista</li>
             <li>Crea il file JSON corrispondente in <code className="bg-muted px-1 rounded">src/locales/[code].json</code></li>
             <li>Importa il file in <code className="bg-muted px-1 rounded">src/i18n/config.ts</code></li>
-            <li>Aggiungi la lingua all'array in <code className="bg-muted px-1 rounded">useLanguage.tsx</code></li>
+            <li>✅ Le lingue aggiunte qui appariranno automaticamente nel dropdown!</li>
           </ol>
         </div>
       </Card>

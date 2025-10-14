@@ -1,11 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUserProfile } from './useUserProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export const useLanguage = () => {
   const { i18n } = useTranslation();
   const { profile, updateProfile } = useUserProfile();
+  
+  // Fetch active languages from database
+  const { data: systemLanguages = [] } = useQuery({
+    queryKey: ['system-languages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_languages')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching system languages:', error);
+        return [];
+      }
+      
+      return data.map(lang => ({
+        code: lang.code,
+        name: lang.name,
+        flag: lang.flag
+      }));
+    }
+  });
 
   // Sincronizza la lingua da user_profiles all'avvio
   useEffect(() => {
@@ -51,12 +76,6 @@ export const useLanguage = () => {
   return {
     currentLanguage: i18n.language,
     changeLanguage,
-    languages: [
-      { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-      { code: 'en', name: 'English', flag: '🇬🇧' },
-      { code: 'es', name: 'Español', flag: '🇪🇸' },
-      { code: 'fr', name: 'Français', flag: '🇫🇷' },
-      { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    ],
+    languages: systemLanguages,
   };
 };

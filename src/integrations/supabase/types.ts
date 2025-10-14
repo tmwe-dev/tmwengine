@@ -3289,6 +3289,42 @@ export type Database = {
           },
         ]
       }
+      system_languages: {
+        Row: {
+          code: string
+          created_at: string
+          flag: string
+          id: string
+          is_active: boolean
+          name: string
+          native_name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          flag: string
+          id?: string
+          is_active?: boolean
+          name: string
+          native_name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          flag?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          native_name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       temp_ai_import: {
         Row: {
           created_at: string

@@ -1522,51 +1522,6 @@ const ChatLaboratory = () => {
             </div>
           )}
 
-          {/* Bar Chat Audio Controls - Inline quando Bar Mode attivo */}
-          {isBarMode && (
-            <div className="mt-2 space-y-3">
-              <BarChatAudioControls
-                conversationId={currentConversationId}
-                isAISpeaking={isAISpeaking}
-                onTranscriptionComplete={async (text) => {
-                  console.log('✅ Trascrizione ricevuta:', text);
-                  
-                  // ✅ DOPPIO LOCK: audio playback + orchestrator running
-                  if (isAISpeaking || isOrchestratorRunning.current) {
-                    console.warn('⚠️ AI sta parlando o processando, messaggio bloccato');
-                    toast({
-                      title: "⏳ Attendi",
-                      description: "L'AI sta ancora elaborando o parlando"
-                    });
-                    return;
-                  }
-
-                  isOrchestratorRunning.current = true;
-                  console.log('🔒 Lock orchestrator attivato');
-                  
-                  try {
-                    // ✅ Invio diretto passando il testo (no setPrompt asincrono)
-                    const fakeEvent = new Event('submit') as any;
-                    await handleSubmit(fakeEvent, text);
-                  } finally {
-                    isOrchestratorRunning.current = false;
-                    console.log('🔓 Lock orchestrator rilasciato');
-                  }
-                }}
-                onInterrupt={async () => {
-                  if (currentConversationId) {
-                    await supabase
-                      .from('chat_laboratory_bar_mode')
-                      .update({ interrupt_requested: true })
-                      .eq('conversation_id', currentConversationId);
-                    
-                    setIsAISpeaking(false);
-                    // toast({ title: "⛔ AI interrotta" });
-                  }
-                }}
-              />
-            </div>
-          )}
         </div>
       </div>
       )}

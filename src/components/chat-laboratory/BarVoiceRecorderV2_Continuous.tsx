@@ -264,14 +264,21 @@ export const BarVoiceRecorderV2_Continuous = ({
   }, []);
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant={isRecording ? "destructive" : "default"}
-        size="lg"
-        onClick={handleToggle}
-        disabled={isDisabled || isProcessing}
-        className="relative"
-      >
+    <div className="flex flex-col items-center gap-2">
+      {/* Indicatore modalità */}
+      <div className="text-xs text-muted-foreground">
+        ⚡ Modalità: Auto-stop silenzio
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant={isRecording ? "destructive" : "default"}
+          size="lg"
+          onClick={handleToggle}
+          disabled={isDisabled || isProcessing}
+          className="relative"
+          title="🎤 CONTINUOUS: Premi per iniziare. Stop automatico dopo 1.5s silenzio. Ripremi per fermare manualmente."
+        >
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (
@@ -298,6 +305,7 @@ export const BarVoiceRecorderV2_Continuous = ({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

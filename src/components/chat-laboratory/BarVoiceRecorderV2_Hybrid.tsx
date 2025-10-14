@@ -275,14 +275,21 @@ export const BarVoiceRecorderV2_Hybrid = ({
   }, []);
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant={isActive ? "destructive" : "default"}
-        size="lg"
-        onClick={handleToggle}
-        disabled={isDisabled || isProcessing}
-        className="relative"
-      >
+    <div className="flex flex-col items-center gap-2">
+      {/* Indicatore modalità */}
+      <div className="text-xs text-muted-foreground">
+        🔄 Modalità: Multi-chunk
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant={isActive ? "destructive" : "default"}
+          size="lg"
+          onClick={handleToggle}
+          disabled={isDisabled || isProcessing}
+          className="relative"
+          title="🎤 HYBRID: Premi per attivare microfono sempre acceso. Auto-invio ogni pausa 1.5s. Ripremi per disattivare."
+        >
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (
@@ -312,6 +319,7 @@ export const BarVoiceRecorderV2_Hybrid = ({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

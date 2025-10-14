@@ -269,16 +269,23 @@ export const BarVoiceRecorderV2_Extended = ({
   }, []);
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant={isRecording ? "destructive" : "default"}
-        size="lg"
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        disabled={isDisabled || isProcessing}
-        className="relative"
-      >
+    <div className="flex flex-col items-center gap-2">
+      {/* Indicatore modalità */}
+      <div className="text-xs text-muted-foreground">
+        🤚 Modalità: Press & Hold
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant={isRecording ? "destructive" : "default"}
+          size="lg"
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          disabled={isDisabled || isProcessing}
+          className="relative"
+          title="🎤 EXTENDED: TIENI PREMUTO per parlare. Rilascia quando finisci. Auto-invio dopo 1.5s silenzio."
+        >
         {isProcessing ? (
           <div className="animate-spin">⏳</div>
         ) : (
@@ -305,6 +312,7 @@ export const BarVoiceRecorderV2_Extended = ({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

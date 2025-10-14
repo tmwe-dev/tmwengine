@@ -366,6 +366,7 @@ export type Database = {
       chat_laboratory_bar_mode: {
         Row: {
           active_kb_id: string | null
+          audio_mode: string
           auto_play_audio: boolean
           cognitive_buffers: Json | null
           continuous_mic_enabled: boolean | null
@@ -379,6 +380,7 @@ export type Database = {
           kb_navigation_history: Json | null
           mode: string
           pause_between_turns_ms: number | null
+          preset: string
           response_mode: string
           selected_topic: string | null
           turn_strategy: string
@@ -388,6 +390,7 @@ export type Database = {
         }
         Insert: {
           active_kb_id?: string | null
+          audio_mode?: string
           auto_play_audio?: boolean
           cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
@@ -401,6 +404,7 @@ export type Database = {
           kb_navigation_history?: Json | null
           mode?: string
           pause_between_turns_ms?: number | null
+          preset?: string
           response_mode?: string
           selected_topic?: string | null
           turn_strategy?: string
@@ -410,6 +414,7 @@ export type Database = {
         }
         Update: {
           active_kb_id?: string | null
+          audio_mode?: string
           auto_play_audio?: boolean
           cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
@@ -423,6 +428,7 @@ export type Database = {
           kb_navigation_history?: Json | null
           mode?: string
           pause_between_turns_ms?: number | null
+          preset?: string
           response_mode?: string
           selected_topic?: string | null
           turn_strategy?: string

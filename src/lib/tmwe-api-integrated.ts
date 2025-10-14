@@ -373,58 +373,70 @@ const ensureValidToken = async (): Promise<string | null> => {
   return config.accessToken;
 };
 
-// API request wrapper
+// API request wrapper - CHIAMATA DIRETTA ALL'API TMWE
 const fetchApi = async (endpoint: string, data: any) => {
   const accessToken = await ensureValidToken();
   
   if (!accessToken) {
+    console.error('❌ No valid token available');
     throw new Error('No valid token. Please login to TMWE first.');
   }
 
-  const requestBody = {
-    endpoint,
-    data,
-    bearerToken: accessToken
-  };
+  const apiUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
 
   console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 SOLICITUD AL API TMWE');
+  console.log('📤 CHIAMATA DIRETTA API TMWE');
   console.log('═══════════════════════════════════════════════════════');
   console.log('⏰ Timestamp:', new Date().toISOString());
+  console.log('🌐 URL:', apiUrl);
   console.log('📍 Endpoint:', endpoint);
   console.log('🎯 Handler:', data.handler);
-  console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
-  console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
+  console.log('📦 Request Data:', JSON.stringify(data, null, 2));
+  console.log('🔑 Token (primi 20 chars):', accessToken.substring(0, 20) + '...');
   console.log('═══════════════════════════════════════════════════════');
 
   try {
-    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: requestBody
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(data),
     });
 
     console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 RESPUESTA DEL API TMWE');
+    console.log('📥 RISPOSTA API TMWE');
     console.log('═══════════════════════════════════════════════════════');
     console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📊 HTTP Status:', response.status, response.statusText);
     console.log('📍 Endpoint:', endpoint);
     console.log('🎯 Handler:', data.handler);
-    
-    if (error) {
-      console.error('❌ ERROR en la respuesta');
-      console.error('⚠️ Error Object:', error);
-      console.error('📄 Error Message:', error.message);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ ERROR HTTP');
+      console.error('📄 Status:', response.status);
+      console.error('📄 Response:', errorText);
       console.log('═══════════════════════════════════════════════════════');
-      throw new Error(error.message || 'API request failed');
+      throw new Error(`API error ${response.status}: ${response.statusText}`);
     }
 
-    console.log('✅ RESPUESTA EXITOSA');
+    const responseData = await response.json();
+    console.log('✅ RISPOSTA EXITOSA');
     console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
     console.log('═══════════════════════════════════════════════════════');
+
+    // Se la risposta contiene un errore
+    if (responseData?.error) {
+      console.error('❌ API Error Response:', responseData.error);
+      throw new Error(responseData.error.message || 'API request failed');
+    }
 
     return responseData;
   } catch (error: any) {
     console.log('═══════════════════════════════════════════════════════');
-    console.error('🔥 ERROR EN LA COMUNICACIÓN');
+    console.error('🔥 ERROR NELLA COMUNICAZIONE');
     console.log('═══════════════════════════════════════════════════════');
     console.error('📍 Endpoint:', endpoint);
     console.error('🎯 Handler:', data.handler);

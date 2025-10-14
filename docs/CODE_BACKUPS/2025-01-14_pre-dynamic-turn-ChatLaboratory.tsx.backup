@@ -1,0 +1,828 @@
+// ============================================
+// BACKUP PRE-IMPLEMENTAZIONE Dynamic Turn-Taking
+// Data: 2025-01-14
+// File Originale: src/pages/ChatLaboratory.tsx
+// Motivo: Integrazione logica dynamic turn-taking nell'orchestratore
+// ============================================
+
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
+import { MultiAgentMessage } from '@/components/chat-laboratory/MultiAgentMessage';
+import { LaboratoryPromptManager } from '@/components/chat-laboratory/LaboratoryPromptManager';
+import { FileUploader, UploadedFile } from '@/components/chat/FileUploader';
+import { ImageGenerator } from '@/components/chat/ImageGenerator';
+import { VoiceRecorder, type VoiceRecorderRef } from '@/components/chat/VoiceRecorder';
+import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MessageTabsView } from '@/components/chat-laboratory/MessageTabsView';
+import { CollapsibleBarSection } from '@/components/chat-laboratory/CollapsibleBarSection';
+import { ConversationsSidebar } from '@/components/chat-laboratory/ConversationsSidebar';
+import { OnlineUsersList } from '@/components/chat-laboratory/OnlineUsersList';
+import { LabHeaderControls } from '@/components/chat-laboratory/LabHeaderControls';
+import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
+import { ConversationCostBadge } from '@/components/chat/ConversationCostBadge';
+import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
+import { BarChatAudioControls } from '@/components/chat-laboratory/BarChatAudioControls';
+import { EconomyModeToggleCompact } from '@/components/chat-laboratory/EconomyModeToggleCompact';
+import { EconomyModeToggle } from '@/components/chat-laboratory/EconomyModeToggle';
+import { BarChatSettings } from '@/components/chat-laboratory/BarChatSettings';
+import { BarModeControls } from '@/components/chat-laboratory/BarModeControls';
+import { MessageNavigationBar } from '@/components/chat-laboratory/MessageNavigationBar';
+import { ConversationSummaryPanel } from '@/components/chat-laboratory/ConversationSummaryPanel';
+import { LabMainControls } from '@/components/chat-laboratory/LabMainControls';
+import { SummaryGenerationButton } from '@/components/chat-laboratory/SummaryGenerationButton';
+import { Link } from 'react-router-dom';
+import { useSummaryAutoGenerator } from '@/hooks/useSummaryAutoGenerator';
+import { ConvergenceIndicator } from '@/components/chat-laboratory/ConvergenceIndicator';
+import { IntentBadges } from '@/components/chat-laboratory/IntentBadges';
+import { KnowledgeGraphViewer } from '@/components/chat-laboratory/KnowledgeGraphViewer';
+import { TokenWarningBanner } from '@/components/chat-laboratory/TokenWarningBanner';
+import { TokenUsageChart } from '@/components/chat-laboratory/TokenUsageChart';
+import { BarModeToggle } from '@/components/chat-laboratory/BarModeToggle';
+
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: string;
+  agent_id?: string;
+  agent_name?: string;
+  agent_color?: string;
+  agent_icon?: string;
+  model?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  cost?: number;
+  convergence_score?: number;
+  intent_tags?: string[];
+  knowledge_graph?: any;
+  audio_url?: string;
+  audio_duration_ms?: number;
+  voice_id?: string;
+  voice_name?: string;
+  audio_generation_cost?: number;
+}
+
+interface Participant {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  model: string;
+  system_prompt?: string;
+  is_active: boolean;
+  order_index: number;
+}
+
+type ViewMode = 'unified' | 'tabs' | 'columns';
+
+const ChatLaboratory = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('unified');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBarMode, setIsBarMode] = useState(false);
+  const [isBarSettingsOpen, setIsBarSettingsOpen] = useState(false);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [isEconomyMode, setIsEconomyMode] = useState(false);
+  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
+  const [conversationSummary, setConversationSummary] = useState<string | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState<string>('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [autoPlayAudio, setAutoPlayAudio] = useState(true);
+  const [conversationPace, setConversationPace] = useState<'slow' | 'normal' | 'fast'>('normal');
+  const [enableInterruptions, setEnableInterruptions] = useState(true);
+  const [interruptRequested, setInterruptRequested] = useState(false);
+  const [continuousMicEnabled, setContinuousMicEnabled] = useState(false);
+  const [responseMode, setResponseMode] = useState<'sequential' | 'parallel'>('sequential');
+  
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isMobile = useIsMobile();
+  const voiceRecorderRef = useRef<VoiceRecorderRef>(null);
+
+  useSummaryAutoGenerator({
+    conversationId,
+    messages,
+    onSummaryGenerated: (summary) => {
+      setConversationSummary(summary);
+      toast({
+        title: "✨ Riepilogo Aggiornato",
+        description: "Il riepilogo della conversazione è stato aggiornato automaticamente",
+      });
+    }
+  });
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    loadParticipants();
+    loadOrCreateConversation();
+  }, []);
+
+  useEffect(() => {
+    if (conversationId) {
+      loadMessages();
+      loadConversationTitle();
+      loadBarModeSettings();
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_laboratory_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        async (payload) => {
+          console.log('📨 Nuovo messaggio ricevuto via real-time:', payload);
+          
+          const newMessage = payload.new as Message;
+          
+          if (newMessage.role === 'assistant') {
+            const { data: agentData } = await supabase
+              .from('chat_laboratory_agents')
+              .select('name, color, icon, model')
+              .eq('id', newMessage.agent_id)
+              .single();
+
+            if (agentData) {
+              newMessage.agent_name = agentData.name;
+              newMessage.agent_color = agentData.color;
+              newMessage.agent_icon = agentData.icon;
+              newMessage.model = agentData.model;
+            }
+
+            if (newMessage.audio_url && autoPlayAudio && !interruptRequested) {
+              console.log('🔊 Auto-play audio abilitato, riproduco:', newMessage.audio_url);
+              playAudio(newMessage.audio_url);
+            }
+          }
+
+          setMessages((prev) => {
+            const exists = prev.some(m => m.id === newMessage.id);
+            if (exists) {
+              console.log('⚠️ Messaggio già presente, skip duplicato');
+              return prev;
+            }
+            console.log('✅ Aggiunto nuovo messaggio alla lista');
+            return [...prev, newMessage];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, autoPlayAudio, interruptRequested]);
+
+  useEffect(() => {
+    if (interruptRequested && conversationId) {
+      const updateInterruptFlag = async () => {
+        await supabase
+          .from('chat_laboratory_bar_mode')
+          .update({ interrupt_requested: true })
+          .eq('conversation_id', conversationId);
+      };
+      updateInterruptFlag();
+    }
+  }, [interruptRequested, conversationId]);
+
+  const loadBarModeSettings = async () => {
+    if (!conversationId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setAutoPlayAudio(data.auto_play_audio ?? true);
+        setConversationPace(data.conversation_pace || 'normal');
+        setEnableInterruptions(data.enable_interruptions ?? true);
+        setContinuousMicEnabled(data.continuous_mic_enabled ?? false);
+        setResponseMode(data.response_mode || 'sequential');
+      }
+    } catch (error) {
+      console.error('Error loading bar mode settings:', error);
+    }
+  };
+
+  const loadConversationTitle = async () => {
+    if (!conversationId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('title')
+        .eq('id', conversationId)
+        .single();
+
+      if (error) throw error;
+      setConversationTitle(data?.title || 'Nuova Conversazione');
+    } catch (error) {
+      console.error('Error loading conversation title:', error);
+    }
+  };
+
+  const loadParticipants = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('chat_laboratory_agents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('order_index');
+
+      if (error) throw error;
+      setParticipants(data || []);
+    } catch (error) {
+      console.error('Error loading participants:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare i partecipanti",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadOrCreateConversation = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: conversations, error: fetchError } = await supabase
+        .from('chat_laboratory_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      if (conversations && conversations.length > 0) {
+        setConversationId(conversations[0].id);
+      } else {
+        const { data: newConversation, error: createError } = await supabase
+          .from('chat_laboratory_conversations')
+          .insert([{ user_id: user.id, title: 'Nuova Conversazione' }])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setConversationId(newConversation.id);
+      }
+    } catch (error) {
+      console.error('Error loading/creating conversation:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare la conversazione",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadMessages = async () => {
+    if (!conversationId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_messages')
+        .select(`
+          *,
+          agent:chat_laboratory_agents(name, color, icon, model)
+        `)
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedMessages = data.map((msg: any) => ({
+        ...msg,
+        agent_name: msg.agent?.name,
+        agent_color: msg.agent?.color,
+        agent_icon: msg.agent?.icon,
+        model: msg.agent?.model,
+      }));
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare i messaggi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    setCurrentAudioUrl(audioUrl);
+    setIsAISpeaking(true);
+
+    audio.onended = () => {
+      setIsAISpeaking(false);
+      setCurrentAudioUrl(null);
+      audioRef.current = null;
+    };
+
+    audio.onerror = () => {
+      console.error('Errore riproduzione audio');
+      setIsAISpeaking(false);
+      setCurrentAudioUrl(null);
+      audioRef.current = null;
+    };
+
+    audio.play().catch(err => {
+      console.error('Errore play audio:', err);
+      setIsAISpeaking(false);
+      setCurrentAudioUrl(null);
+    });
+  };
+
+  const handleInterrupt = () => {
+    console.log('🛑 Interruzione richiesta');
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    setIsAISpeaking(false);
+    setCurrentAudioUrl(null);
+    setInterruptRequested(true);
+
+    setTimeout(() => {
+      setInterruptRequested(false);
+    }, 2000);
+
+    toast({
+      title: "🛑 Interruzione",
+      description: "Audio interrotto. Puoi parlare ora.",
+    });
+  };
+
+  const handleSubmit = async (e?: React.FormEvent, transcribedText?: string) => {
+    if (e) e.preventDefault();
+    
+    const messageText = transcribedText || input.trim();
+    if (!messageText && uploadedFiles.length === 0 && generatedImages.length === 0) return;
+    if (!conversationId) return;
+
+    const activeParticipants = participants.filter(p => p.is_active);
+    if (activeParticipants.length === 0) {
+      toast({
+        title: "Nessun partecipante attivo",
+        description: "Seleziona almeno un agente per iniziare la conversazione",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setInput('');
+    setInterruptRequested(false);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const userMessage = {
+        conversation_id: conversationId,
+        content: messageText,
+        role: 'user' as const,
+        user_id: user.id,
+      };
+
+      const { error: messageError } = await supabase
+        .from('chat_laboratory_messages')
+        .insert([userMessage]);
+
+      if (messageError) throw messageError;
+
+      const fileUrls = uploadedFiles.map(f => f.url);
+      const allImageUrls = [...fileUrls, ...generatedImages];
+
+      const { data: orchestratorData, error: orchestratorError } = await supabase.functions.invoke(
+        'chat-laboratory-orchestrator',
+        {
+          body: {
+            conversationId,
+            userMessage: messageText,
+            imageUrls: allImageUrls.length > 0 ? allImageUrls : undefined,
+            isEconomyMode,
+          },
+        }
+      );
+
+      if (orchestratorError) throw orchestratorError;
+
+      console.log('✅ Orchestrator response:', orchestratorData);
+
+      setUploadedFiles([]);
+      setGeneratedImages([]);
+
+      await loadMessages();
+
+    } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile inviare il messaggio",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTranscriptionComplete = (text: string) => {
+    console.log('🎤 Trascrizione completata:', text);
+    handleSubmit(undefined, text);
+  };
+
+  const handleConversationSelect = (id: string) => {
+    setConversationId(id);
+    setIsSidebarOpen(false);
+  };
+
+  const handleNewConversation = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: newConversation, error } = await supabase
+        .from('chat_laboratory_conversations')
+        .insert([{ user_id: user.id, title: 'Nuova Conversazione' }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setConversationId(newConversation.id);
+      setMessages([]);
+      setIsSidebarOpen(false);
+      
+      toast({
+        title: "Nuova conversazione",
+        description: "Conversazione creata con successo",
+      });
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile creare una nuova conversazione",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!conversationId) return;
+    
+    setIsGeneratingSummary(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-conversation-summary', {
+        body: { conversationId }
+      });
+
+      if (error) throw error;
+
+      setConversationSummary(data.summary);
+      setShowSummaryPanel(true);
+      
+      toast({
+        title: "✨ Riepilogo Generato",
+        description: "Il riepilogo della conversazione è stato creato con successo",
+      });
+    } catch (error: any) {
+      console.error('Error generating summary:', error);
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile generare il riepilogo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const totalTokens = messages.reduce((sum, msg) => sum + (msg.total_tokens || 0), 0);
+  const totalCost = messages.reduce((sum, msg) => sum + (msg.cost || 0) + (msg.audio_generation_cost || 0), 0);
+
+  return (
+    <div className="flex h-screen bg-background">
+      <ConversationsSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        currentConversationId={conversationId}
+        onConversationSelect={handleConversationSelect}
+        onNewConversation={handleNewConversation}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="border-b border-border/40 bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/dashboard')}
+                className="hidden lg:flex"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <Brain className="h-6 w-6 text-primary" />
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Chat Laboratory
+                  </h1>
+                  {conversationTitle && (
+                    <p className="text-xs text-muted-foreground">{conversationTitle}</p>
+                  )}
+                </div>
+              </div>
+
+              <BarModeToggle 
+                isBarMode={isBarMode}
+                onToggle={setIsBarMode}
+              />
+            </div>
+
+            <LabHeaderControls
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onSettingsClick={() => setIsBarSettingsOpen(true)}
+              isBarMode={isBarMode}
+              showSummaryPanel={showSummaryPanel}
+              onToggleSummaryPanel={() => setShowSummaryPanel(!showSummaryPanel)}
+            />
+          </div>
+
+          <TokenWarningBanner totalTokens={totalTokens} />
+
+          <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
+            <TokenCounterBadge tokens={totalTokens} />
+            <ConversationCostBadge cost={totalCost} />
+            <ExportSummaryButton 
+              conversationId={conversationId}
+              conversationTitle={conversationTitle}
+            />
+            <SummaryGenerationButton
+              onGenerateSummary={handleGenerateSummary}
+              isGenerating={isGeneratingSummary}
+            />
+            {!isMobile && (
+              <EconomyModeToggle
+                isEconomyMode={isEconomyMode}
+                onToggle={setIsEconomyMode}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-hidden flex">
+          <div className={`flex-1 flex flex-col ${showSummaryPanel ? 'lg:mr-80' : ''}`}>
+            {isBarMode ? (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <CollapsibleBarSection />
+                
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessagesSquare className="h-5 w-5" />
+                      Conversazione Bar
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {messages.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Inizia una conversazione con gli agenti del bar</p>
+                      </div>
+                    ) : (
+                      messages.map((message) => (
+                        <MultiAgentMessage
+                          key={message.id}
+                          message={message}
+                          onPlayAudio={playAudio}
+                          isCurrentlyPlaying={currentAudioUrl === message.audio_url}
+                        />
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <>
+                <MessageNavigationBar messages={messages} />
+                
+                <div className="flex-1 overflow-y-auto">
+                  {viewMode === 'unified' && (
+                    <div className="p-4 space-y-4 max-w-4xl mx-auto">
+                      {messages.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>Nessun messaggio ancora. Inizia la conversazione!</p>
+                        </div>
+                      ) : (
+                        messages.map((message) => (
+                          <MultiAgentMessage
+                            key={message.id}
+                            message={message}
+                            onPlayAudio={playAudio}
+                            isCurrentlyPlaying={currentAudioUrl === message.audio_url}
+                          />
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
+
+                  {viewMode === 'tabs' && (
+                    <MessageTabsView
+                      messages={messages}
+                      participants={participants}
+                      onPlayAudio={playAudio}
+                      currentAudioUrl={currentAudioUrl}
+                    />
+                  )}
+
+                  {viewMode === 'columns' && (
+                    <div className="h-full p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
+                        {participants.filter(p => p.is_active).map((participant) => (
+                          <Card key={participant.id} className="flex flex-col overflow-hidden">
+                            <CardHeader className="pb-3" style={{ backgroundColor: `${participant.color}15` }}>
+                              <CardTitle className="flex items-center gap-2 text-sm">
+                                <span className="text-2xl">{participant.icon}</span>
+                                <span>{participant.name}</span>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-1 overflow-y-auto p-4 space-y-3">
+                              {messages
+                                .filter(m => m.agent_id === participant.id)
+                                .map((message) => (
+                                  <MultiAgentMessage
+                                    key={message.id}
+                                    message={message}
+                                    onPlayAudio={playAudio}
+                                    isCurrentlyPlaying={currentAudioUrl === message.audio_url}
+                                  />
+                                ))}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {isBarMode ? (
+              <BarChatAudioControls
+                conversationId={conversationId}
+                isAISpeaking={isAISpeaking}
+                onTranscriptionComplete={handleTranscriptionComplete}
+                onInterrupt={handleInterrupt}
+              />
+            ) : (
+              <LabMainControls
+                input={input}
+                setInput={setInput}
+                isLoading={isLoading}
+                handleSubmit={handleSubmit}
+                uploadedFiles={uploadedFiles}
+                setUploadedFiles={setUploadedFiles}
+                generatedImages={generatedImages}
+                setGeneratedImages={setGeneratedImages}
+                conversationId={conversationId}
+                voiceRecorderRef={voiceRecorderRef}
+                handleTranscriptionComplete={handleTranscriptionComplete}
+                isEconomyMode={isEconomyMode}
+                setIsEconomyMode={setIsEconomyMode}
+                isMobile={isMobile}
+              />
+            )}
+          </div>
+
+          {showSummaryPanel && (
+            <ConversationSummaryPanel
+              conversationId={conversationId}
+              summary={conversationSummary}
+              isLoading={isSummaryLoading}
+              onClose={() => setShowSummaryPanel(false)}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="hidden lg:block w-80 border-l border-border/40 bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-card/30 overflow-y-auto">
+        <div className="p-4 space-y-4">
+          <ParticipantSelector
+            participants={participants}
+            onParticipantsChange={loadParticipants}
+          />
+          
+          <LaboratoryPromptManager conversationId={conversationId} />
+          
+          <OnlineUsersList />
+
+          <TokenUsageChart messages={messages} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Statistiche Conversazione</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Messaggi totali:</span>
+                <span className="font-medium">{messages.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Agenti attivi:</span>
+                <span className="font-medium">{participants.filter(p => p.is_active).length}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <BarChatSettings
+        isOpen={isBarSettingsOpen}
+        onClose={() => setIsBarSettingsOpen(false)}
+        conversationId={conversationId}
+        autoPlayAudio={autoPlayAudio}
+        onAutoPlayChange={setAutoPlayAudio}
+        conversationPace={conversationPace}
+        onPaceChange={setConversationPace}
+        enableInterruptions={enableInterruptions}
+        onInterruptionsChange={setEnableInterruptions}
+        continuousMicEnabled={continuousMicEnabled}
+        onContinuousMicChange={setContinuousMicEnabled}
+        responseMode={responseMode}
+        onResponseModeChange={setResponseMode}
+      />
+    </div>
+  );
+};
+
+export default ChatLaboratory;

@@ -15,6 +15,7 @@ import { AccessRequestsPanel } from '@/components/intranet/AccessRequestsPanel';
 import { EconomyModeToggle } from '@/components/intranet/EconomyModeToggle';
 import { UserLanguageSettings } from '@/components/intranet/UserLanguageSettings';
 import { useIntranetPresence } from '@/hooks/useIntranetPresence';
+import { useGlobalIntranetPresence } from '@/hooks/useGlobalIntranetPresence';
 import { useIntranetNotifications } from '@/hooks/useIntranetNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TokenCounterBadge } from '@/components/chat/TokenCounterBadge';
@@ -39,7 +40,7 @@ const Intranet = () => {
   const [selectedVoice, setSelectedVoice] = useState('');
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{voice_id: string; name: string}>>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
-  const { onlineUsers } = useIntranetPresence(selectedRoomId || '');
+  const { onlineUsers } = useGlobalIntranetPresence();
   const { toast } = useToast();
   
   const { getUnreadCount, totalUnread } = useIntranetNotifications(

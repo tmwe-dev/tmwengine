@@ -5,6 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const DEBUG_MODE = Deno.env.get('DEBUG_MODE') === 'true';
 const API_BASE_URL = 'https://findair.it/erp/tmwe_json';
 
 // Valid endpoints according to OpenAPI spec
@@ -68,14 +69,10 @@ serve(async (req) => {
         'User-Agent': 'Deno/1.0',
       };
 
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📤 SOLICITUD AL API TMWE (GET)');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('⏰ Timestamp:', new Date().toISOString());
-      console.log('🔗 URL:', url);
-      console.log('📍 Endpoint:', endpoint);
-      console.log('🔑 Authorization:', `Bearer ${bearerToken.substring(0, 20)}...`);
-      console.log('═══════════════════════════════════════════════════════');
+      if (DEBUG_MODE) {
+        console.log('📤 GET REQUEST:', endpoint);
+        console.log('URL:', url);
+      }
 
       const response = await fetch(url, {
         method: 'GET',
@@ -84,12 +81,9 @@ serve(async (req) => {
 
       const responseText = await response.text();
 
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📥 RESPUESTA DEL API TMWE (GET)');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🔢 HTTP Status:', response.status);
-      console.log('📄 Response Body:', responseText);
-      console.log('═══════════════════════════════════════════════════════');
+      if (DEBUG_MODE) {
+        console.log('📥 GET RESPONSE:', response.status, responseText.substring(0, 200));
+      }
 
       if (!response.ok) {
         let errorData;
@@ -152,36 +146,11 @@ serve(async (req) => {
       'User-Agent': 'Deno/1.0',
     };
 
-    // 📤 LOG COMPLETO DE LA SOLICITUD
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📤 SOLICITUD AL API TMWE');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log('🔗 URL:', url);
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data.handler);
-    console.log('📋 Headers:', {
-      'Content-Type': requestHeaders['Content-Type'],
-      'Authorization': `Bearer ${bearerToken.substring(0, 20)}...`,
-      'Accept': requestHeaders['Accept'],
-      'User-Agent': requestHeaders['User-Agent']
-    });
-    
-    // Log del body completo (excluyendo contenido grande de adjuntos)
-    const dataForLog = { ...data };
-    if (dataForLog.attachments && Array.isArray(dataForLog.attachments)) {
-      dataForLog.attachments = dataForLog.attachments.map((att: any) => ({
-        filename: att.filename,
-        content_type: att.content_type,
-        content_length: att.content ? att.content.length : 0,
-        content_preview: att.content ? att.content.substring(0, 100) + '...' : null
-      }));
-      console.log('📎 ATTACHMENTS:', dataForLog.attachments);
+    if (DEBUG_MODE) {
+      console.log('📤 POST REQUEST:', endpoint, '/', data.handler);
+      console.log('URL:', url);
+      console.log('Body size:', JSON.stringify(data).length, 'bytes');
     }
-    
-    console.log('📦 Request Body:', JSON.stringify(dataForLog, null, 2));
-    console.log('📏 Body Size:', JSON.stringify(data).length, 'bytes');
-    console.log('═══════════════════════════════════════════════════════');
 
     // Retry mechanism for inconsistent API responses
     let response: Response | undefined;
@@ -192,7 +161,7 @@ serve(async (req) => {
     while (retryCount < maxRetries) {
       const requestStartTime = Date.now();
       
-      console.log(`🔄 Attempt ${retryCount + 1}/${maxRetries} - Starting request at ${new Date().toISOString()}`);
+      if (DEBUG_MODE) console.log(`🔄 Attempt ${retryCount + 1}/${maxRetries}`);
       
       try {
         response = await fetch(url, {
@@ -202,32 +171,17 @@ serve(async (req) => {
         });
 
         const requestDuration = Date.now() - requestStartTime;
-        console.log(`⏱️ Request completed in ${requestDuration}ms`);
+        if (DEBUG_MODE) console.log(`⏱️ Request: ${requestDuration}ms`);
 
         responseText = await response.text();
         
-        // Log empty response warning
-        if (responseText === '[]' || responseText === '') {
-          console.log('⚠️⚠️⚠️ EMPTY RESPONSE DETECTED ⚠️⚠️⚠️');
-          console.log('📊 Empty Response Details:');
-          console.log('  - Handler:', data.handler);
-          console.log('  - Endpoint:', endpoint);
-          console.log('  - Request Duration:', requestDuration, 'ms');
-          console.log('  - Response Status:', response.status);
-          console.log('  - Response Headers:', Object.fromEntries(response.headers.entries()));
-          console.log('  - Timestamp:', new Date().toISOString());
-          console.log('  - Request Body:', JSON.stringify(data, null, 2));
-          
-          // Check if this is a handler that should return data
-          const shouldHaveData = ['get_messages', 'get_folders', 'get_message'].includes(data.handler);
-          if (shouldHaveData) {
-            console.log('  ⚠️ This handler typically returns data - empty response is unexpected');
-          }
+        if (DEBUG_MODE && (responseText === '[]' || responseText === '')) {
+          console.log('⚠️ Empty response:', data.handler);
         }
         
         // If we got a valid structured response, break
         if (responseText && responseText !== '[]' && responseText.includes('{')) {
-          console.log('✅ Valid response received, breaking retry loop');
+          if (DEBUG_MODE) console.log('✅ Valid response received');
           break;
         }
         
@@ -237,29 +191,20 @@ serve(async (req) => {
           retryCount++;
           if (retryCount < maxRetries) {
             const backoffDelay = 500 * retryCount;
-            console.log(`⚠️ Empty response for ${data.handler}, retrying (${retryCount}/${maxRetries}) after ${backoffDelay}ms...`);
-            console.log(`  - Previous request took ${requestDuration}ms`);
+            if (DEBUG_MODE) console.log(`⚠️ Retry ${retryCount}/${maxRetries} after ${backoffDelay}ms`);
             await new Promise(resolve => setTimeout(resolve, backoffDelay));
             continue;
           } else {
-            console.log(`❌ Max retries reached (${maxRetries}), returning empty response`);
-            console.log(`  - Total attempts: ${retryCount + 1}`);
-            console.log(`  - Handler: ${data.handler}`);
-            console.log(`  - This may indicate an issue with the TMWE API or the request parameters`);
+            console.log(`Max retries (${maxRetries}) reached for ${data.handler}`);
           }
         }
         
       } catch (fetchError: any) {
-        const requestDuration = Date.now() - requestStartTime;
-        console.error('🔥 Fetch error during attempt', retryCount + 1);
-        console.error('  - Error message:', fetchError.message);
-        console.error('  - Request duration before error:', requestDuration, 'ms');
-        console.error('  - URL:', url);
-        console.error('  - Handler:', data.handler);
+        console.error('Fetch error:', fetchError.message);
         
         if (retryCount < maxRetries - 1) {
           const backoffDelay = 1000 * (retryCount + 1);
-          console.log(`  - Retrying after ${backoffDelay}ms...`);
+          if (DEBUG_MODE) console.log(`Retrying after ${backoffDelay}ms`);
           await new Promise(resolve => setTimeout(resolve, backoffDelay));
           retryCount++;
           continue;
@@ -275,25 +220,12 @@ serve(async (req) => {
       throw new Error('No response received from API');
     }
 
-    // 📥 LOG COMPLETO DE LA RESPUESTA
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 RESPUESTA DEL API TMWE');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log('🔗 URL:', url);
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data.handler);
-    console.log('🔢 HTTP Status Code:', response.status);
-    console.log('📝 HTTP Status Text:', response.statusText);
-    console.log('✅ Response OK:', response.ok);
-    console.log('📏 Response Size:', responseText.length, 'bytes');
-    console.log('🔄 Retries:', retryCount);
-    console.log('📦 Response Headers:', {
-      'content-type': response.headers.get('content-type'),
-      'content-length': response.headers.get('content-length'),
-    });
-    console.log('📄 Response Body (raw):', responseText);
-    console.log('═══════════════════════════════════════════════════════');
+    if (DEBUG_MODE) {
+      console.log('📥 RESPONSE:', endpoint, '/', data.handler);
+      console.log('Status:', response.status);
+      console.log('Size:', responseText.length, 'bytes');
+      console.log('Retries:', retryCount);
+    }
 
     // Handle different error status codes according to OpenAPI spec
     if (!response.ok) {
@@ -305,14 +237,9 @@ serve(async (req) => {
         errorData = { raw: responseText };
       }
 
-      console.log('═══════════════════════════════════════════════════════');
-      console.error('❌ ERROR EN RESPUESTA DEL API TMWE');
-      console.log('═══════════════════════════════════════════════════════');
-      console.error('🔢 HTTP Status:', response.status);
-      console.error('📝 Status Text:', response.statusText);
-      console.error('⚠️ Error Data:', errorData);
-      console.error('📄 Full Response:', responseText);
-      console.log('═══════════════════════════════════════════════════════');
+      if (DEBUG_MODE) {
+        console.error('❌ API ERROR:', response.status, errorData);
+      }
 
       // Map TMWE API errors to OpenAPI error responses
       switch (response.status) {
@@ -354,14 +281,9 @@ serve(async (req) => {
       responseData = { raw: responseText };
     }
     
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('✅ RESPUESTA EXITOSA DEL API TMWE');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data.handler);
-    console.log('🔢 HTTP Status:', response.status);
-    console.log('📦 Parsed Response:', JSON.stringify(responseData, null, 2));
-    console.log('═══════════════════════════════════════════════════════');
+    if (DEBUG_MODE) {
+      console.log('✅ SUCCESS:', endpoint, '/', data.handler, response.status);
+    }
 
     return new Response(
       JSON.stringify(responseData),

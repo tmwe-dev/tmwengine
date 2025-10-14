@@ -147,6 +147,32 @@ const EmailDashboard = () => {
 
   const totalEmailCount = folderInfo?.total || 0;
 
+  // Query per il totale globale di tutte le email in tutte le cartelle
+  const { data: globalEmailCount } = useQuery({
+    queryKey: ['global-email-count'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 0;
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) return 0;
+      
+      // Conta tutte le email nel database per questo utente
+      const { count } = await supabase
+        .from('email_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_email', profile.tmwe_email);
+      
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000, // Cache per 5 minuti
+  });
+
   // Email download hook - declare first (ora scarica da TUTTE le cartelle)
   const {
     isDownloading,
@@ -603,7 +629,9 @@ const EmailDashboard = () => {
         }}
         downloadProgressComponent={
           <EmailDownloadProgress
-            totalEmails={totalEmailCount}
+            totalEmails={globalEmailCount || 0}
+            currentFolder={currentFolder}
+            totalToDownload={totalToDownload}
             onDownloadComplete={() => {}}
             onStartDownload={startDownload}
             isDownloading={isDownloading}

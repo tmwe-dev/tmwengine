@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 interface EmailDownloadProgressProps {
   onDownloadComplete: (emails: any[]) => void;
   totalEmails: number;
+  currentFolder?: string;
+  totalToDownload?: number;
   onStartDownload: () => Promise<void>;
   isDownloading: boolean;
   downloadedCount: number;
@@ -22,13 +24,17 @@ interface EmailDownloadProgressProps {
 export const EmailDownloadProgress = ({
   onDownloadComplete,
   totalEmails,
+  currentFolder,
+  totalToDownload,
   onStartDownload,
   isDownloading,
   downloadedCount,
   downloadError,
 }: EmailDownloadProgressProps) => {
-  const progressPercentage = totalEmails > 0 ? (downloadedCount / totalEmails) * 100 : 0;
-  const isComplete = downloadedCount >= totalEmails && totalEmails > 0;
+  // Usa totalToDownload durante il download, altrimenti totalEmails
+  const displayTotal = isDownloading && totalToDownload && totalToDownload > 0 ? totalToDownload : totalEmails;
+  const progressPercentage = displayTotal > 0 ? (downloadedCount / displayTotal) * 100 : 0;
+  const isComplete = downloadedCount >= displayTotal && displayTotal > 0;
 
   return (
     <Popover>
@@ -52,10 +58,12 @@ export const EmailDownloadProgress = ({
           ) : (
             <Download className="h-4 w-4 mr-2 text-purple-500" />
           )}
-          {isDownloading || isComplete ? (
+          {isDownloading ? (
             <span className="text-xs">
-              {downloadedCount.toLocaleString()} / {totalEmails.toLocaleString()}
+              {currentFolder || 'In corso...'} - {downloadedCount.toLocaleString()} / {displayTotal.toLocaleString()}
             </span>
+          ) : isComplete ? (
+            <span className="text-xs">Completato</span>
           ) : (
             <span className="text-xs">Analizza</span>
           )}
@@ -77,12 +85,19 @@ export const EmailDownloadProgress = ({
               size="sm"
             >
               <Download className="h-4 w-4 mr-2" />
-              Inizia Download ({totalEmails.toLocaleString()} email)
+              Inizia Download ({totalEmails.toLocaleString()} email da tutte le cartelle)
             </Button>
           )}
 
           {(isDownloading || isComplete) && (
             <div className="space-y-2">
+              {/* Mostra cartella corrente durante il download */}
+              {isDownloading && currentFolder && (
+                <div className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                  📂 Elaborazione: {currentFolder}
+                </div>
+              )}
+              
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Progresso</span>
                 <span className="font-medium">
@@ -92,7 +107,7 @@ export const EmailDownloadProgress = ({
               <Progress value={progressPercentage} className="h-2" />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{downloadedCount.toLocaleString()} scaricate</span>
-                <span>{totalEmails.toLocaleString()} totali</span>
+                <span>{displayTotal.toLocaleString()} totali</span>
               </div>
             </div>
           )}

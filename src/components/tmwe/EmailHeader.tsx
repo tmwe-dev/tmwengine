@@ -83,7 +83,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
   return (
     <>
-      <header className="border-b bg-card-transparent px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 w-full">
+      <header className="border-b bg-card-transparent p-4 w-full">
         {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}
@@ -93,7 +93,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 variant="ghost" 
                 size="icon"
                 onClick={onCloseEmail}
-                className="h-8 w-8"
+                className="h-10 w-10"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -106,7 +106,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                     onClick={onMenuClick} 
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8"
+                    className="h-10 w-10"
                   >
                     <Menu className="h-5 w-5" />
                   </Button>
@@ -136,7 +136,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 size="icon" 
                 onClick={onPreviousEmail}
                 disabled={!hasPrevious}
-                className="h-8 w-8"
+                className="h-10 w-10"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -145,7 +145,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 size="icon" 
                 onClick={onNextEmail}
                 disabled={!hasNext}
-                className="h-8 w-8"
+                className="h-10 w-10"
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
@@ -155,7 +155,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
               <Button 
                 onClick={onCompose}
                 size="icon"
-                className="h-8 w-8 relative"
+                className="h-10 w-10 relative"
                 title="Compose new email"
               >
                 <Mail 
@@ -176,7 +176,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 variant="ghost" 
                 size="icon"
                 onClick={onToggleCollapse}
-                className="h-8 w-8"
+                className="h-10 w-10"
               >
                 {isHeaderCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
               </Button>
@@ -191,7 +191,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                     <Input
                       type="search"
                       placeholder="Search emails..."
-                      className="pl-8 sm:pl-10 text-xs sm:text-sm h-8 w-full"
+                      className="pl-10 text-sm h-10 w-full"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />

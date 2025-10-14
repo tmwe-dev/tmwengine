@@ -284,28 +284,28 @@ export const EmailDetail = ({
   return (
     <div className="flex h-full flex-col bg-card-transparent">
       {/* Color picker bar */}
-      <div className="flex items-center justify-center p-2 border-b bg-card-transparent">
+      <div className="flex items-center justify-center p-4 border-b bg-card-transparent">
         <div className="relative">
           <Paintbrush className="h-6 w-6 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" style={{ color: emailTextColor }} />
           <input
             type="color"
             value={emailTextColor}
             onChange={(e) => setEmailTextColor(e.target.value)}
-            className="h-10 w-12 cursor-pointer rounded border border-border opacity-0"
+            className="h-10 w-16 cursor-pointer rounded border border-border opacity-0"
           />
         </div>
       </div>
 
       {/* Top bar with navigation and close */}
       {!isHeaderCollapsed && (
-      <div className="grid grid-cols-3 items-center p-4 border-b bg-card-transparent">
+      <div className="grid grid-cols-3 items-center p-4 md:p-6 border-b bg-card-transparent">
         {/* Left: Management actions or empty */}
         {!isHeaderCollapsed ? (
           <div className="flex items-center gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-12 w-12">
-                  <FolderCog className="h-6 w-6" />
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <FolderCog className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-56">
@@ -363,13 +363,13 @@ export const EmailDetail = ({
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Button variant="ghost" size="icon" className="h-12 w-12">
-              <Star className="h-6 w-6" />
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Star className="h-5 w-5" />
             </Button>
             
             {onDelete && (
-              <Button variant="destructive" size="icon" onClick={onDelete} className="h-12 w-12">
-                <Trash2 className="h-6 w-6" />
+              <Button variant="destructive" size="icon" onClick={onDelete} className="h-10 w-10">
+                <Trash2 className="h-5 w-5" />
               </Button>
             )}
           </div>
@@ -386,9 +386,9 @@ export const EmailDetail = ({
               size="icon" 
               onClick={onPrevious}
               disabled={!hasPrevious}
-              className="h-12 w-12"
+              className="h-10 w-10"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
           {onNext && (
@@ -397,9 +397,9 @@ export const EmailDetail = ({
               size="icon" 
               onClick={onNext}
               disabled={!hasNext}
-              className="h-12 w-12"
+              className="h-10 w-10"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-5 w-5" />
             </Button>
           )}
         </div>
@@ -456,22 +456,22 @@ export const EmailDetail = ({
       
       {/* Action buttons bar - nascosta quando collapsed */}
       {!isHeaderCollapsed && (
-        <div className="flex items-center justify-center border-b p-6 md:p-8 gap-4 bg-card-transparent">
+        <div className="flex items-center justify-center border-b p-4 gap-2 bg-card-transparent">
           {/* Communication actions */}
           <div className="flex gap-3 items-center">
-            <Button variant="outline" size="icon" onClick={onReply} className="h-12 w-12">
+            <Button variant="outline" size="icon" onClick={onReply} className="h-10 w-10">
               <div className="flex items-center gap-1">
                 <Reply className="h-5 w-5" />
                 <User className="h-4 w-4" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-12 w-12">
+            <Button variant="outline" size="icon" onClick={onReplyAll} className="h-10 w-10">
               <div className="flex items-center gap-1">
                 <ReplyAll className="h-5 w-5" />
                 <Users className="h-4 w-4" />
               </div>
             </Button>
-            <Button variant="outline" size="icon" onClick={onForward} className="h-12 w-12">
+            <Button variant="outline" size="icon" onClick={onForward} className="h-10 w-10">
               <div className="flex items-center gap-1">
                 <Forward className="h-5 w-5" />
                 <Megaphone className="h-4 w-4" />
@@ -482,7 +482,7 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1 overflow-hidden">
-        <div className="p-6 space-y-4 w-full overflow-hidden">
+        <div className="p-4 md:p-6 space-y-4 w-full overflow-hidden">
           {/* Subject */}
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-foreground break-words">

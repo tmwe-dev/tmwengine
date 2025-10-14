@@ -192,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-    <div className="space-y-2 py-4 px-2 sm:px-3 w-full">
+    <div className="space-y-2 p-4 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -332,13 +332,13 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-1.5 sm:space-y-2 py-1.5 sm:py-2 px-2 sm:px-3 w-full">
+    <div className="space-y-2 p-4 w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
           ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
           className={cn(
-            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full sm:w-full h-auto',
+            'relative cursor-pointer border-l-4 p-0 overflow-hidden transition-colors transition-shadow transition-transform duration-200 w-full',
             'before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:h-[1px] before:z-10',
             'after:content-[""] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:z-10',
             email.read
@@ -363,25 +363,25 @@ export const EmailList = ({
                 />
               </div>
             )}
-            <div className="flex-1 p-1.5 sm:p-2 md:p-4 relative min-h-full">
+            <div className="flex-1 p-4 relative min-h-full">
               <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
                 {/* Icona maximize a sinistra */}
                 {!multiSelectMode && onOpenDetailPopup && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="hidden md:flex h-12 w-12 p-0 shrink-0 group transition-all duration-200 hover:bg-transparent"
+                    className="hidden md:flex h-10 w-10 p-0 shrink-0 group transition-all duration-200 hover:bg-transparent"
                     onClick={(e) => {
                       e.stopPropagation();
                       onEmailSelect(email.id);
                       onOpenDetailPopup();
                     }}
                   >
-                    <Maximize2 className="h-10 w-10 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                    <Maximize2 className="h-6 w-6 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
                   </Button>
                 )}
                 
-                <div className="w-full sm:flex-1 space-y-0.5 sm:space-y-1 sm:overflow-hidden sm:min-w-0">
+                <div className="w-full sm:flex-1 space-y-2 sm:overflow-hidden sm:min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',

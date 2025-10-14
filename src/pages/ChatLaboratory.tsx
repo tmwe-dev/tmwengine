@@ -1071,15 +1071,15 @@ const ChatLaboratory = () => {
                     iconOnly
                   />
                 )}
-                
+              </div>
+
+              {/* Right side - Participant, View Mode, Maximize and Settings */}
+              <div className="flex items-center gap-1">
                 <ParticipantSelector
                   participants={participants}
                   onToggle={toggleParticipant}
                 />
-              </div>
-
-              {/* Right side - View Mode, Maximize and Settings */}
-              <div className="flex items-center gap-1">
+                
                 <Button
                   onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
                   variant="ghost"

@@ -197,7 +197,7 @@ export const EmailList = ({
   
   const renderListView = () => {
     return (
-      <div className="space-y-2 sm:space-y-3 overflow-hidden">
+      <div className="space-y-2 sm:space-y-3 overflow-hidden px-2 sm:px-3">
         {filteredEmails.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-muted-foreground">
             <p className="text-sm">Nessuna email da visualizzare</p>

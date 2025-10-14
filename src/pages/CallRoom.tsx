@@ -42,18 +42,19 @@ const CallRoom = () => {
 
   // Auto-avvia chiamata se c'è un targetUserId nei query params
   useEffect(() => {
-    // Solo chi INIZIA la chiamata deve chiamare startCall()
-    // Chi riceve la chiamata ha acceptedCall=true nei searchParams
     const acceptedCall = searchParams.get('acceptedCall') === 'true';
     
-    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current && !acceptedCall) {
-      console.log('[CallRoom] Auto-starting call to:', targetUserId);
+    if (acceptedCall && targetUserId && userId) {
+      // Chi riceve la chiamata NON deve chiamare startCall()
+      // L'hook useAudioCall gestisce automaticamente l'incoming call
+      console.log('[CallRoom] Incoming call mode - waiting for user to answer:', targetUserId);
+    } else if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
+      // Chi INIZIA la chiamata
+      console.log('[CallRoom] Auto-starting outgoing call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
-    } else if (acceptedCall) {
-      console.log('[CallRoom] Accepted call - waiting for offer from:', targetUserId);
     }
-  }, [targetUserId, isInCall, userId, searchParams]);
+  }, [targetUserId, isInCall, userId, startCall, searchParams]);
 
   const qualityColors = {
     good: 'bg-green-500',

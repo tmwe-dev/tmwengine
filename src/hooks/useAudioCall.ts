@@ -231,13 +231,21 @@ export const useAudioCall = (roomId: string, userId: string) => {
   }, []);
 
   const answerCall = useCallback(async () => {
+    console.log('[answerCall] 🟢 STARTING');
+    console.log('[answerCall] pendingOffer:', pendingOfferRef.current);
+    
     if (!pendingOfferRef.current) {
-      console.error('[useAudioCall] No pending offer to answer');
+      console.error('[answerCall] ❌ No pending offer!');
+      toast({
+        title: 'Errore',
+        description: 'Nessuna chiamata in attesa',
+        variant: 'destructive'
+      });
       return;
     }
 
     const { from, offer } = pendingOfferRef.current;
-    console.log('[useAudioCall] Answering call from:', from);
+    console.log('[answerCall] Answering call from:', from);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -276,6 +284,8 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
       statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
 
+      console.log('[answerCall] ✅ COMPLETED - WebRTC connection established, isInCall=true');
+      
       toast({
         title: 'Chiamata accettata',
         description: 'Connessione in corso...'

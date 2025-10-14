@@ -6,11 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface TokenUsageChartProps {
   conversationId: string;
   compact?: boolean;
-  onClick?: () => void;
   onTotalTokensChange?: (total: number) => void;
 }
 
-export function TokenUsageChart({ conversationId, compact = false, onClick, onTotalTokensChange }: TokenUsageChartProps) {
+export function TokenUsageChart({ conversationId, compact = false, onTotalTokensChange }: TokenUsageChartProps) {
   const [tokenData, setTokenData] = useState<Array<{
     agent: string;
     tokensIn: number;
@@ -110,9 +109,8 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-4 md:gap-6 px-3 py-0.5 cursor-pointer"
-        onClick={onClick}
-        title="Clicca per espandere il grafico"
+        className="flex items-end gap-4 md:gap-6 px-3 py-0.5"
+        title="Utilizzo Token per Agente"
       >
         {tokenData.map((agent) => {
           const heightPercentIn = (agent.tokensIn / maxTokens) * 100;

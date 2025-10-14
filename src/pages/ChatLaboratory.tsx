@@ -94,7 +94,7 @@ const ChatLaboratory = () => {
   const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const [showNewMessages, setShowNewMessages] = useState(false);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
-  const [tokenChartExpanded, setTokenChartExpanded] = useState(false);
+  
   const [totalTokensUsed, setTotalTokensUsed] = useState(0);
   const [isTokenLimitReached, setIsTokenLimitReached] = useState(false);
   
@@ -1068,27 +1068,6 @@ const ChatLaboratory = () => {
 
               {/* Right side - Token Chart Icons, Maximize and Settings */}
               <div className="flex items-center gap-1">
-                {/* Token Usage Icons - Compatti senza funzioni */}
-                {currentConversationId && messages.length > 0 && (
-                  <div className="flex items-center gap-1 mr-2">
-                    <TokenUsageChart 
-                      conversationId={currentConversationId}
-                      compact
-                      onClick={() => setTokenChartExpanded(true)}
-                      onTotalTokensChange={setTotalTokensUsed}
-                    />
-                    {totalTokensUsed > 50000 && (
-                      <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        totalTokensUsed >= 100000 
-                          ? 'bg-red-500 text-white animate-pulse' 
-                          : 'bg-yellow-500 text-black'
-                      }`}>
-                        {totalTokensUsed >= 100000 ? '⛔' : '⚠️'}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
                   currentIndex={0}
@@ -1301,24 +1280,26 @@ const ChatLaboratory = () => {
                 <TokenWarningBanner conversationId={currentConversationId} />
               )}
 
-              {/* Token Usage Chart Espanso */}
-              {currentConversationId && messages.length > 0 && tokenChartExpanded && (
-                <Card className="mb-4">
-                  <CardContent className="p-4">
+              {/* Token Usage Chart Miniatura - Centrato sopra la sezione */}
+              {currentConversationId && messages.length > 0 && (
+                <div className="mb-4 flex justify-center">
+                  <div style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}>
                     <TokenUsageChart 
                       conversationId={currentConversationId}
-                      compact={false}
+                      compact
+                      onTotalTokensChange={setTotalTokensUsed}
                     />
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setTokenChartExpanded(false)}
-                      className="mt-2 w-full"
-                    >
-                      Chiudi grafico
-                    </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                  {totalTokensUsed > 50000 && (
+                    <div className={`ml-2 px-2 py-1 rounded-full text-xs font-bold self-start ${
+                      totalTokensUsed >= 100000 
+                        ? 'bg-red-500 text-white animate-pulse' 
+                        : 'bg-yellow-500 text-black'
+                    }`}>
+                      {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Convergence Indicator */}

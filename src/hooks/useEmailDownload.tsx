@@ -74,7 +74,7 @@ export const useEmailDownload = () => {
       // 2. Per ogni cartella, scarica le email
       for (const folderInfo of folders) {
         const folderName = folderInfo.name;
-        const folderTotalEmails = folderInfo.total_count || 0;
+        const folderTotalEmails = folderInfo.messages || 0;
         
         setCurrentFolder(folderName);
         globalTotalEmails += folderTotalEmails;

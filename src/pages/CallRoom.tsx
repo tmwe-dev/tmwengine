@@ -75,7 +75,15 @@ const CallRoom = () => {
         <div className="flex gap-2 mb-4">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              console.log('[CallRoom] Back button clicked, isInCall:', isInCall);
+              if (isInCall) {
+                endCall();
+              }
+              setTimeout(() => {
+                navigate('/contacts');
+              }, 100);
+            }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Indietro
@@ -87,7 +95,9 @@ const CallRoom = () => {
               onClick={() => {
                 console.log('[CallRoom] Emergency exit');
                 endCall();
-                navigate(-1);
+                setTimeout(() => {
+                  navigate('/contacts');
+                }, 100);
               }}
             >
               <PhoneOff className="h-4 w-4 mr-2" />

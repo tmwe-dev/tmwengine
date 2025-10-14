@@ -127,7 +127,10 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                 {/* Download button (Direct API) */}
                 {onOpenDirectDownload && (
                   <Button 
-                    onClick={onOpenDirectDownload}
+                    onClick={() => {
+                      console.log('📥 Scarica button clicked!');
+                      onOpenDirectDownload();
+                    }}
                     size="sm"
                     title="Scarica email via API"
                   >

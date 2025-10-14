@@ -459,7 +459,7 @@ const Intranet = () => {
           </div>
           
           {/* Contenuto sidebar */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <RoomSelector
               onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
               selectedRoomId={selectedRoomId}
@@ -476,7 +476,7 @@ const Intranet = () => {
                 />
 
                 {isCreatorOrAdmin && (
-                  <div className="mt-6">
+                  <div className="mt-auto pt-4">
                     <h3 className="text-sm font-semibold px-4 mb-3">Richieste Accesso</h3>
                     <div className="px-2">
                       <AccessRequestsPanel />
@@ -484,7 +484,7 @@ const Intranet = () => {
                   </div>
                 )}
 
-                <div className="mt-6">
+                <div className="mt-auto pt-4">
                   <h3 className="text-sm font-semibold px-4 mb-3">Impostazioni</h3>
                   <div className="px-2 pb-4">
                     <UserLanguageSettings />

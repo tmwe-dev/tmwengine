@@ -180,77 +180,79 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* 🧪 Test Panel: Switcher Audio Mode */}
-      <div className="mb-4 p-3 bg-secondary/50 rounded-lg border border-border">
-        <label className="text-xs font-medium text-muted-foreground mb-2 block">
-          🧪 Test Audio Mode (dev only)
-        </label>
-        <select
-          value={audioMode}
-          onChange={(e) => setAudioMode(e.target.value as any)}
-          className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
-        >
-          <option value="stable">✅ STABLE (BarVoiceRecorder - PTT 3s)</option>
-          <option value="v2_continuous">🔵 V2 Continuous (VAD 1.5s auto-send)</option>
-          <option value="v2_extended">🟢 V2 Extended (Press & Hold ChatGPT-style)</option>
-          <option value="v2_hybrid">🟡 V2 Hybrid (Always Listening multi-chunk)</option>
-        </select>
-      </div>
-
       {/* Riga 1: Controlli principali */}
-      <div className="flex justify-start items-center gap-4">
-        {/* Conditional Audio Recorder based on audioMode */}
-        {audioMode === 'stable' && (
-          <BarVoiceRecorder
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_continuous' && (
-          <BarVoiceRecorderV2_Continuous
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_extended' && (
-          <BarVoiceRecorderV2_Extended
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_hybrid' && (
-          <BarVoiceRecorderV2_Hybrid
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-
-        {/* Pause/Resume Button - senza bordo */}
-        <Button
-          variant={isPaused ? "default" : "ghost"}
-          size="icon"
-          onClick={togglePause}
-          className={cn(
-            "h-12 w-12 rounded-full transition-all",
-            isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          {/* Conditional Audio Recorder based on audioMode */}
+          {audioMode === 'stable' && (
+            <BarVoiceRecorder
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
           )}
-          title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
-        >
-          {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-        </Button>
+          
+          {audioMode === 'v2_continuous' && (
+            <BarVoiceRecorderV2_Continuous
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
+          )}
+          
+          {audioMode === 'v2_extended' && (
+            <BarVoiceRecorderV2_Extended
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
+          )}
+          
+          {audioMode === 'v2_hybrid' && (
+            <BarVoiceRecorderV2_Hybrid
+              conversationId={conversationId}
+              onTranscriptionComplete={onTranscriptionComplete}
+              isDisabled={isAISpeaking}
+            />
+          )}
 
-        {/* Interrupt Button - visibile solo quando AI parla */}
-        <InterruptButton
-          isAISpeaking={isAISpeaking}
-          onInterrupt={onInterrupt}
-        />
+          {/* Pause/Resume Button */}
+          <Button
+            variant={isPaused ? "default" : "ghost"}
+            size="icon"
+            onClick={togglePause}
+            className={cn(
+              "h-12 w-12 rounded-full transition-all",
+              isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
+            )}
+            title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
+          >
+            {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+          </Button>
+
+          {/* Interrupt Button - visibile solo quando AI parla */}
+          <InterruptButton
+            isAISpeaking={isAISpeaking}
+            onInterrupt={onInterrupt}
+          />
+        </div>
+
+        {/* 🧪 Test Switcher - Allineato a destra */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            🧪 Test Audio
+          </label>
+          <select
+            value={audioMode}
+            onChange={(e) => setAudioMode(e.target.value as any)}
+            className="px-3 py-2 bg-background border border-input rounded-md text-sm z-50"
+          >
+            <option value="stable">✅ STABLE (PTT 3s)</option>
+            <option value="v2_continuous">🔵 Continuous (1.5s)</option>
+            <option value="v2_extended">🟢 Extended (Hold)</option>
+            <option value="v2_hybrid">🟡 Hybrid (Listen)</option>
+          </select>
+        </div>
       </div>
 
       {/* Riga 2: Dynamic Turn-Taking Controls */}

@@ -192,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-      <div className="w-full">
+      <div className="max-w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -213,7 +213,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch">
+          <div className="flex items-stretch max-w-full">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3">
                 <Checkbox
@@ -225,7 +225,7 @@ export const EmailList = ({
             )}
             <div className="flex-1 relative">
               <div className="flex items-center">
-                <div>
+                <div className="min-w-0 flex-shrink">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -233,7 +233,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
@@ -332,7 +332,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="w-full">
+    <div className="max-w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -353,7 +353,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-start">
+          <div className="flex items-start max-w-full">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3 self-center">
                 <Checkbox

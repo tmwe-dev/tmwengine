@@ -641,7 +641,7 @@ const EmailDashboard = () => {
         }
       />
       
-      <div className="flex flex-1 w-full">
+      <div className="flex flex-1 max-w-full">
         {/* Desktop Sidebar */}
         {!isMobile && (
           <EmailSidebar
@@ -675,7 +675,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 flex flex-col max-w-full overflow-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}

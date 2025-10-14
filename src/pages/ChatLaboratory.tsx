@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone } from 'lucide-react';
+import { Send, MessageSquare, Bot, User, Settings, Brain, Cpu, Sparkles, ArrowLeft, LayoutList, Layers, Menu, X, Layout, ChevronDown, Phone, Columns, MessagesSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ParticipantSelector } from '@/components/chat-laboratory/ParticipantSelector';
@@ -1063,16 +1063,33 @@ const ChatLaboratory = () => {
               </div>
 
               {/* Center Controls */}
-              <LabMainControls
-                currentConversationId={currentConversationId}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                participants={participants}
-                toggleParticipant={toggleParticipant}
-              />
-
-              {/* Right side - Maximize and Settings */}
               <div className="flex items-center gap-1">
+                {currentConversationId && (
+                  <ExportSummaryButton
+                    labConversationId={currentConversationId}
+                    variant="laboratory"
+                    iconOnly
+                  />
+                )}
+                
+                <ParticipantSelector
+                  participants={participants}
+                  onToggle={toggleParticipant}
+                />
+              </div>
+
+              {/* Right side - View Mode, Maximize and Settings */}
+              <div className="flex items-center gap-1">
+                <Button
+                  onClick={() => setViewMode(viewMode === 'classic' ? 'tabs' : 'classic')}
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 h-8 w-8"
+                  title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
+                >
+                  {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
+                </Button>
+                
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
                   currentIndex={0}

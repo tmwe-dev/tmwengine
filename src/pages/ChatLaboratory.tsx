@@ -1440,12 +1440,6 @@ const ChatLaboratory = () => {
                 </div>
               ))}
 
-              {isLoading && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                  <span className="text-sm">Gli agenti stanno elaborando...</span>
-                </div>
-              )}
 
               <div ref={messagesEndRef} />
             </div>
@@ -1523,6 +1517,14 @@ const ChatLaboratory = () => {
                 </Button>
             </div>
           </form>
+
+          {/* AI Response Indicator - Sempre visibile sotto l'input */}
+          {isLoading && (
+            <div className="mt-2 flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-muted/50 backdrop-blur-sm border border-border/40 animate-fade-in">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+              <span className="text-sm text-muted-foreground">🤖 L'AI sta rispondendo...</span>
+            </div>
+          )}
 
           {/* Bar Mode Toggle - Desktop Quick Access */}
           {!isMobile && (

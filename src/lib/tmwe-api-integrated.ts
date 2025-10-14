@@ -16,9 +16,20 @@ const OAUTH_CLIENT_SECRET = '04d26799b3ec0a82dec492c2cb4a17a9ff20cabcde13166bd33
 
 // Load credentials from Supabase database
 export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
-  const userEmail = sessionStorage.getItem('tmwe_user_email');
+  // Get authenticated user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return null;
+
+  // Get tmwe_email from user profile
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('tmwe_email')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.tmwe_email) return null;
   
-  if (!userEmail) return null;
+  const userEmail = profile.tmwe_email;
 
   const { data, error } = await supabase
     .from('user_tmwe_credentials')
@@ -51,23 +62,26 @@ export const setApiConfigToDB = async (config: ApiConfig & { email: string }): P
     });
 
   if (error) throw error;
-  
-  sessionStorage.setItem('tmwe_user_email', config.email);
 };
 
 // Clear credentials from database
 export const clearApiConfigFromDB = async (): Promise<void> => {
-  const userEmail = sessionStorage.getItem('tmwe_user_email');
-  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('tmwe_email')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const userEmail = profile?.tmwe_email;
   if (!userEmail) return;
 
   await supabase
     .from('user_tmwe_credentials')
     .delete()
     .eq('email', userEmail);
-    
-  sessionStorage.removeItem('tmwe_user_email');
-  sessionStorage.removeItem('tmwe_access_token');
 };
 
 // OAuth2 Authorization Code Flow - Según OpenAPI spec 3.0.4
@@ -191,15 +205,29 @@ const generateClientJWT = (clientId: string, clientSecret: string): string => {
 export const authenticateWithJWT = async (): Promise<boolean> => {
   const clientId = OAUTH_CLIENT_ID;
   const clientSecret = OAUTH_CLIENT_SECRET;
-  const userEmail = sessionStorage.getItem('tmwe_user_email');
   
   if (!clientId || !clientSecret) {
     throw new Error('JWT credentials not configured');
   }
   
-  if (!userEmail) {
-    throw new Error('User email not found. Please login first.');
+  // Get authenticated user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error('User not authenticated');
   }
+
+  // Get tmwe_email from user profile
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('tmwe_email')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.tmwe_email) {
+    throw new Error('User email not found. Please configure your TMWE email in your profile.');
+  }
+  
+  const userEmail = profile.tmwe_email;
   
   try {
     console.log('═══════════════════════════════════════════════════════');
@@ -261,11 +289,24 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
 // Refresh access token (OAuth2)
 export const refreshAccessToken = async (): Promise<boolean> => {
   const config = await getApiConfigFromDB();
-  const userEmail = sessionStorage.getItem('tmwe_user_email');
   
-  if (!config?.refreshToken || !config?.clientId || !userEmail) {
+  if (!config?.refreshToken || !config?.clientId) {
     return false;
   }
+
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  // Get tmwe_email from user profile
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('tmwe_email')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const userEmail = profile?.tmwe_email;
+  if (!userEmail) return false;
 
   try {
     const formData = new URLSearchParams();

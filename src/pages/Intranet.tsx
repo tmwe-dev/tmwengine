@@ -446,7 +446,7 @@ const Intranet = () => {
   return (
     <div className="flex w-full h-full">
       {/* Sidebar Intranet */}
-      <div className={`border-r bg-card-transparent transition-all duration-300 relative flex flex-col ${sidebarCollapsed ? 'w-12' : 'w-56'}`}>
+      <div className={`border-r bg-card-transparent transition-all duration-300 relative flex flex-col ${sidebarCollapsed ? 'w-auto' : 'w-64'}`}>
           <div className="p-2 border-b flex items-center justify-between">
             <Button
               variant="ghost"

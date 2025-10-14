@@ -245,9 +245,9 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
         {!isCollapsed && (
-          <div className="flex items-center justify-between px-2 mb-2">
+          <div className="flex items-center justify-between px-2 mb-2 flex-shrink-0">
             <h3 className="text-sm font-semibold">Stanze Chat</h3>
             <Button 
               size="sm" 
@@ -261,7 +261,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
         )}
 
         {isCollapsed && (
-          <div className="flex justify-center px-2 mb-2">
+          <div className="flex justify-center px-2 mb-2 flex-shrink-0">
             <Button 
               size="icon" 
               variant="outline" 
@@ -273,7 +273,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="space-y-1 px-2">
             {rooms.map((room) => {
               const canAccess = room.access_type === 'public' || room.is_member;
@@ -310,7 +310,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
                     <span className="truncate text-left">{room.name}</span>
                   </div>
                   {unreadCount > 0 && (
-                    <Badge variant="destructive" className="ml-auto text-xs">
+                    <Badge variant="destructive" className="ml-auto text-xs flex-shrink-0">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </Badge>
                   )}

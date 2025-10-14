@@ -116,104 +116,102 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
 
   return (
     <TooltipProvider>
-      <div className="mt-8">
+      <div className="flex flex-col flex-shrink-0">
         <h3 className="text-xs font-semibold px-2 mb-2">
           Utenti Online
         </h3>
 
-        <div>
-          <div className="px-2">
-            <div className="space-y-2">
-                <div className="flex items-center justify-between mb-2">
-                  {currentUser && (
-                    <UserAvailabilitySelector
-                      currentStatus={currentUser.availability_status}
-                      currentEmoji={currentUser.status_emoji || undefined}
-                      currentColor={currentUser.status_color || undefined}
-                      currentMessage={currentUser.status_message || undefined}
-                    />
-                  )}
-                </div>
+        <div className="px-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              {currentUser && (
+                <UserAvailabilitySelector
+                  currentStatus={currentUser.availability_status}
+                  currentEmoji={currentUser.status_emoji || undefined}
+                  currentColor={currentUser.status_color || undefined}
+                  currentMessage={currentUser.status_message || undefined}
+                />
+              )}
+            </div>
 
-                <ScrollArea className="max-h-[120px]">
-                  <div className="space-y-1.5 pr-4">
-                     {uniqueUsers.map((user) => {
-                      const profile = userProfiles.get(user.user_id);
-                      return (
-                        <div
-                          key={user.user_id}
-                          className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="relative">
-                              <Avatar className="h-7 w-7">
-                                <AvatarFallback className="text-xs">
-                                  {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
-                                </AvatarFallback>
-                              </Avatar>
-                              {profile && (
-                                <div className="absolute -bottom-0.5 -right-0.5">
-                                  <UserAvailabilityBadge
-                                    status={profile.availability_status}
-                                    emoji={profile.status_emoji || undefined}
-                                    color={profile.status_color || undefined}
-                                    size="sm"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-medium truncate">
-                                {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
-                              </p>
-                              {profile?.status_message && (
-                                <p className="text-[9px] text-muted-foreground truncate">
-                                  {profile.status_message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-0.5 flex-shrink-0">
-                            {onOpenPrivateChat && (
-                              <IconButton
-                                icon={MessageSquare}
-                                onClick={() => onOpenPrivateChat(
-                                  user.user_id, 
-                                  profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
-                                )}
-                                tooltip="Apri chat privata"
-                                variant="ghost"
+            <ScrollArea className="max-h-32">
+              <div className="space-y-1.5 pr-4">
+                {uniqueUsers.map((user) => {
+                  const profile = userProfiles.get(user.user_id);
+                  return (
+                    <div
+                      key={user.user_id}
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="h-7 w-7">
+                            <AvatarFallback className="text-xs">
+                              {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {profile && (
+                            <div className="absolute -bottom-0.5 -right-0.5">
+                              <UserAvailabilityBadge
+                                status={profile.availability_status}
+                                emoji={profile.status_emoji || undefined}
+                                color={profile.status_color || undefined}
                                 size="sm"
-                                className="h-6 w-6"
                               />
-                            )}
-                            {onCallUser && (
-                              <IconButton
-                                icon={Phone}
-                                onClick={() => onCallUser(
-                                  user.user_id, 
-                                  profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
-                                )}
-                                tooltip="Chiama"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6"
-                              />
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                    {uniqueUsers.length === 0 && (
-                      <div className="text-center py-4 text-muted-foreground">
-                        <Users className="h-6 w-6 mx-auto mb-1 opacity-20" />
-                        <p className="text-[10px]">Nessuno online</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">
+                            {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
+                          </p>
+                          {profile?.status_message && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {profile.status_message}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    )}
+                      
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {onOpenPrivateChat && (
+                          <IconButton
+                            icon={MessageSquare}
+                            onClick={() => onOpenPrivateChat(
+                              user.user_id, 
+                              profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
+                            )}
+                            tooltip="Apri chat privata"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6"
+                          />
+                        )}
+                        {onCallUser && (
+                          <IconButton
+                            icon={Phone}
+                            onClick={() => onCallUser(
+                              user.user_id, 
+                              profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
+                            )}
+                            tooltip="Chiama"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {uniqueUsers.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Users className="h-6 w-6 mx-auto mb-1 opacity-20" />
+                    <p className="text-xs">Nessuno online</p>
                   </div>
-                </ScrollArea>
+                )}
               </div>
+            </ScrollArea>
           </div>
         </div>
       </div>

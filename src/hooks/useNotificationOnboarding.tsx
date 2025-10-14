@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useNotificationOnboarding = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
+  const [shouldShowModal, setShouldShowModal] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
@@ -33,9 +30,9 @@ export const useNotificationOnboarding = () => {
         return;
       }
 
-      // Se non esiste record O onboarding_completed = false, mostra l'onboarding
+      // Se non esiste record O onboarding_completed = false, mostra il modal
       const needsOnboarding = !data || !data.onboarding_completed;
-      setShouldShowOnboarding(needsOnboarding);
+      setShouldShowModal(needsOnboarding);
       
       setIsChecking(false);
     } catch (error) {
@@ -44,5 +41,9 @@ export const useNotificationOnboarding = () => {
     }
   };
 
-  return { shouldShowOnboarding, isChecking };
+  const markOnboardingCompleted = () => {
+    setShouldShowModal(false);
+  };
+
+  return { shouldShowModal, isChecking, markOnboardingCompleted };
 };

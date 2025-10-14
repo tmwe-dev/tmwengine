@@ -6,6 +6,8 @@ import { EmailSidebar } from '@/components/EmailSidebar';
 import { EmailList } from '@/components/EmailList';
 import { EmailDetail } from '@/components/EmailDetail';
 import { ComposeDialog } from '@/components/ComposeDialog';
+import { NotificationOnboardingModal } from '@/components/NotificationOnboardingModal';
+import { useNotificationOnboarding } from '@/hooks/useNotificationOnboarding';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -16,6 +18,9 @@ const EmailDashboard = () => {
   const [replyTo, setReplyTo] = useState<{ uid: string; to: string; subject: string; originalBody: string; originalFrom: string; originalDate: string; isForward?: boolean } | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
+  
+  // Onboarding notifiche
+  const { shouldShowModal, isChecking, markOnboardingCompleted } = useNotificationOnboarding();
 
   // Reset selected email when folder changes
   useEffect(() => {
@@ -285,6 +290,11 @@ const EmailDashboard = () => {
         onClose={handleComposeClose}
         onSent={() => queryClient.invalidateQueries({ queryKey: ['messages'] })}
         replyTo={replyTo}
+      />
+
+      <NotificationOnboardingModal
+        open={!isChecking && shouldShowModal}
+        onClose={markOnboardingCompleted}
       />
     </div>
   );

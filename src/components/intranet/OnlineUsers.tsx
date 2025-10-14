@@ -116,8 +116,8 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
 
   return (
     <TooltipProvider>
-      <div>
-        <h3 className="text-sm font-semibold px-2 mb-2">
+      <div className="mt-8">
+        <h3 className="text-xs font-semibold px-2 mb-2">
           Utenti Online
         </h3>
 
@@ -135,8 +135,8 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                   )}
                 </div>
 
-                <ScrollArea className="h-[250px]">
-                  <div className="space-y-2 pr-4">
+                <ScrollArea className="h-[180px]">
+                  <div className="space-y-1.5 pr-4">
                      {uniqueUsers.map((user) => {
                       const profile = userProfiles.get(user.user_id);
                       return (
@@ -146,7 +146,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div className="relative">
-                              <Avatar className="h-8 w-8">
+                              <Avatar className="h-7 w-7">
                                 <AvatarFallback className="text-xs">
                                   {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
                                 </AvatarFallback>
@@ -163,18 +163,18 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium truncate">
+                              <p className="text-[11px] font-medium truncate">
                                 {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
                               </p>
                               {profile?.status_message && (
-                                <p className="text-[10px] text-muted-foreground truncate">
+                                <p className="text-[9px] text-muted-foreground truncate">
                                   {profile.status_message}
                                 </p>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-center gap-0.5 flex-shrink-0">
                             {onOpenPrivateChat && (
                               <IconButton
                                 icon={MessageSquare}
@@ -185,7 +185,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                                 tooltip="Apri chat privata"
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7"
+                                className="h-6 w-6"
                               />
                             )}
                             {onCallUser && (
@@ -198,7 +198,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                                 tooltip="Chiama"
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7"
+                                className="h-6 w-6"
                               />
                             )}
                           </div>
@@ -206,9 +206,9 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                       );
                     })}
                     {uniqueUsers.length === 0 && (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                        <p className="text-xs">Nessuno online</p>
+                      <div className="text-center py-4 text-muted-foreground">
+                        <Users className="h-6 w-6 mx-auto mb-1 opacity-20" />
+                        <p className="text-[10px]">Nessuno online</p>
                       </div>
                     )}
                   </div>

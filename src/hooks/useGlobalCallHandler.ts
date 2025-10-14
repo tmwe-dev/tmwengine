@@ -59,7 +59,7 @@ export const useGlobalCallHandler = (currentUserId: string) => {
 
   const acceptCall = () => {
     if (!incomingCall) return;
-    navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}`);
+    navigate(`/call-room?targetUserId=${incomingCall.from}&roomId=${incomingCall.roomId}&acceptedCall=true`);
     setIncomingCall(null);
   };
 

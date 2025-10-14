@@ -17,33 +17,51 @@ export const IncomingCallDialog = ({
   onReject
 }: IncomingCallDialogProps) => {
   const [ringAudio] = useState(() => {
-    // Fallback usando Web Audio API (nessun file necessario)
     const audioContext = new AudioContext();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.frequency.value = 440; // La (A4)
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    gainNode.gain.value = 0.3;
-    
+    let intervalId: NodeJS.Timeout | null = null;
     let isPlaying = false;
+    
+    const playRingPattern = () => {
+      // Pattern: 2 "beep" da 400ms ciascuno, poi 4 secondi di pausa
+      const oscillator1 = audioContext.createOscillator();
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      // Frequenza tipica di una telefonata europea
+      oscillator1.frequency.value = 425;
+      oscillator2.frequency.value = 425;
+      
+      oscillator1.connect(gainNode);
+      oscillator2.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      gainNode.gain.value = 0.3;
+      
+      const now = audioContext.currentTime;
+      
+      // Primo "ring"
+      oscillator1.start(now);
+      oscillator1.stop(now + 0.4);
+      
+      // Secondo "ring" dopo una breve pausa
+      oscillator2.start(now + 0.6);
+      oscillator2.stop(now + 1.0);
+    };
     
     return {
       play: () => {
         if (!isPlaying) {
-          oscillator.start();
           isPlaying = true;
+          playRingPattern(); // Suona subito
+          intervalId = setInterval(playRingPattern, 5000); // Poi ogni 5 secondi
         }
       },
       pause: () => {
         if (isPlaying) {
-          try {
-            oscillator.stop();
-          } catch (e) {
-            // Oscillator già fermato
-          }
           isPlaying = false;
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
         }
       }
     };

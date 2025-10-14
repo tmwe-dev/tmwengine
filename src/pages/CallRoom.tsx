@@ -39,12 +39,18 @@ const CallRoom = () => {
 
   // Auto-avvia chiamata se c'è un targetUserId nei query params
   useEffect(() => {
-    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
+    // Solo chi INIZIA la chiamata deve chiamare startCall()
+    // Chi riceve la chiamata ha acceptedCall=true nei searchParams
+    const acceptedCall = searchParams.get('acceptedCall') === 'true';
+    
+    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current && !acceptedCall) {
       console.log('[CallRoom] Auto-starting call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
+    } else if (acceptedCall) {
+      console.log('[CallRoom] Accepted call - waiting for offer from:', targetUserId);
     }
-  }, [targetUserId, isInCall, userId]);
+  }, [targetUserId, isInCall, userId, searchParams]);
 
   const qualityColors = {
     good: 'bg-green-500',
@@ -81,7 +87,7 @@ const CallRoom = () => {
                 endCall();
               }
               setTimeout(() => {
-                navigate('/contacts');
+                navigate('/intranet');
               }, 100);
             }}
           >
@@ -96,7 +102,7 @@ const CallRoom = () => {
                 console.log('[CallRoom] Emergency exit');
                 endCall();
                 setTimeout(() => {
-                  navigate('/contacts');
+                  navigate('/intranet');
                 }, 100);
               }}
             >

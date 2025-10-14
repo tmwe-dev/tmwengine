@@ -9,7 +9,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
-import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import CRMLayout from "./components/layout/CRMLayout";
 
@@ -64,7 +63,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/settings" element={
               <ProtectedRoute>
                 <CRMLayout><Settings /></CRMLayout>

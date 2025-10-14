@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BarVoiceRecorder } from './BarVoiceRecorder';
-import { BarVoiceRecorderV2_Continuous } from './BarVoiceRecorderV2_Continuous';
-import { BarVoiceRecorderV2_Extended } from './BarVoiceRecorderV2_Extended';
-import { BarVoiceRecorderV2_Hybrid } from './BarVoiceRecorderV2_Hybrid';
 import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -34,9 +31,6 @@ export const BarChatAudioControls = ({
   const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
   const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
   const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
-  
-  // 🧪 Test Switcher: Scegli quale variante audio usare
-  const [audioMode, setAudioMode] = useState<'stable' | 'v2_continuous' | 'v2_extended' | 'v2_hybrid'>('stable');
 
   useEffect(() => {
     if (conversationId) {
@@ -180,57 +174,14 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* 🧪 Test Panel: Switcher Audio Mode */}
-      <div className="mb-4 p-3 bg-secondary/50 rounded-lg border border-border">
-        <label className="text-xs font-medium text-muted-foreground mb-2 block">
-          🧪 Test Audio Mode (dev only)
-        </label>
-        <select
-          value={audioMode}
-          onChange={(e) => setAudioMode(e.target.value as any)}
-          className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
-        >
-          <option value="stable">✅ STABLE (BarVoiceRecorder - PTT 3s)</option>
-          <option value="v2_continuous">🔵 V2 Continuous (VAD 1.5s auto-send)</option>
-          <option value="v2_extended">🟢 V2 Extended (Press & Hold ChatGPT-style)</option>
-          <option value="v2_hybrid">🟡 V2 Hybrid (Always Listening multi-chunk)</option>
-        </select>
-      </div>
-
       {/* Riga 1: Controlli principali */}
       <div className="flex justify-start items-center gap-4">
-        {/* Conditional Audio Recorder based on audioMode */}
-        {audioMode === 'stable' && (
-          <BarVoiceRecorder
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_continuous' && (
-          <BarVoiceRecorderV2_Continuous
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_extended' && (
-          <BarVoiceRecorderV2_Extended
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
-        
-        {audioMode === 'v2_hybrid' && (
-          <BarVoiceRecorderV2_Hybrid
-            conversationId={conversationId}
-            onTranscriptionComplete={onTranscriptionComplete}
-            isDisabled={isAISpeaking}
-          />
-        )}
+        {/* Push-to-Talk Recorder */}
+        <BarVoiceRecorder
+          conversationId={conversationId}
+          onTranscriptionComplete={onTranscriptionComplete}
+          isDisabled={isAISpeaking}
+        />
 
         {/* Pause/Resume Button - senza bordo */}
         <Button

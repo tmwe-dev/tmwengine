@@ -1066,29 +1066,6 @@ const ChatLaboratory = () => {
                   <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
                     Chat Laboratory
                   </h1>
-                  
-                  {/* Token Usage Miniatura */}
-                  {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
-                    <>
-                      <TokenUsageChart 
-                        conversationId={currentConversationId}
-                        compact
-                        onClick={() => setTokenChartExpanded(true)}
-                        onTotalTokensChange={setTotalTokensUsed}
-                      />
-                      
-                      {/* Warning Badge */}
-                      {totalTokensUsed > 50000 && (
-                        <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          totalTokensUsed >= 100000 
-                            ? 'bg-red-500 text-white animate-pulse' 
-                            : 'bg-yellow-500 text-black'
-                        }`}>
-                          {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
-                        </div>
-                      )}
-                    </>
-                  )}
                 </div>
               </div>
 
@@ -1139,6 +1116,29 @@ const ChatLaboratory = () => {
             </div>
           </div>
         </div>
+
+      {/* Token Usage Chart - Posizionato sotto le icone */}
+      {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
+        <div className="px-4 py-2 flex items-center gap-3">
+          <TokenUsageChart 
+            conversationId={currentConversationId}
+            compact
+            onClick={() => setTokenChartExpanded(true)}
+            onTotalTokensChange={setTotalTokensUsed}
+          />
+          
+          {/* Warning Badge */}
+          {totalTokensUsed > 50000 && (
+            <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+              totalTokensUsed >= 100000 
+                ? 'bg-red-500 text-white animate-pulse' 
+                : 'bg-yellow-500 text-black'
+            }`}>
+              {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Settings Drawer */}
       {settingsOpen && (

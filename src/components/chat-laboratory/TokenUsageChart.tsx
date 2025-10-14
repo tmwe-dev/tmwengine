@@ -103,7 +103,65 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     );
   };
 
-  // Modalità compatta rimossa - mostra sempre il grafico completo
+  // Modalità compatta per header
+  if (compact) {
+    return (
+      <div 
+        className="flex items-end gap-4 md:gap-6 px-3 py-2 cursor-pointer"
+        onClick={onClick}
+        title="Clicca per espandere il grafico"
+      >
+        {tokenData.map((agent) => {
+          const heightPercentIn = (agent.tokensIn / maxTokens) * 100;
+          const heightPercentOut = (agent.tokensOut / maxTokens) * 100;
+
+          return (
+            <div key={agent.agent} className="flex flex-col items-center gap-1.5">
+              {/* Coppia colonnine IN + OUT affiancate */}
+              <div className="flex gap-1 items-end h-16 md:h-20">
+                {/* Colonnina Token IN */}
+                <div 
+                  className="w-6 md:w-10 rounded-t"
+                  style={{ 
+                    height: `${Math.max(heightPercentIn, 30)}%`, 
+                    minHeight: '24px',
+                    background: `linear-gradient(to top, ${agent.colorIn}CC, ${agent.colorIn})`
+                  }}
+                  title={`${agent.agent} IN: ${formatTokens(agent.tokensIn)}`}
+                />
+                
+                {/* Colonnina Token OUT */}
+                <div 
+                  className="w-6 md:w-10 rounded-t"
+                  style={{ 
+                    height: `${Math.max(heightPercentOut, 30)}%`, 
+                    minHeight: '24px',
+                    background: `linear-gradient(to top, ${agent.colorOut}DD, ${agent.colorOut})`
+                  }}
+                  title={`${agent.agent} OUT: ${formatTokens(agent.tokensOut)}`}
+                />
+              </div>
+              
+              {/* Labels sotto le colonnine */}
+              <div className="flex gap-1 text-[10px] md:text-xs font-semibold">
+                <span className="w-6 md:w-10 text-center" style={{ color: agent.colorIn }}>
+                  {formatTokens(agent.tokensIn)}
+                </span>
+                <span className="w-6 md:w-10 text-center" style={{ color: agent.colorOut }}>
+                  {formatTokens(agent.tokensOut)}
+                </span>
+              </div>
+              
+              {/* Nome agente */}
+              <span className="text-[9px] md:text-[10px] text-muted-foreground font-medium">
+                {agent.agent}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   // Modalità espansa (normale)
   const chartData = tokenData.map(d => ({

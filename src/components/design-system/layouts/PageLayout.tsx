@@ -27,7 +27,6 @@ interface PageLayoutProps {
   contentClassName?: string;
   gradient?: boolean;
   animate?: boolean;
-  pageId?: string | number;
 }
 
 export function PageLayout({
@@ -39,8 +38,7 @@ export function PageLayout({
   headerClassName,
   contentClassName,
   gradient = false,
-  animate = true,
-  pageId
+  animate = true
 }: PageLayoutProps) {
   const content = (
     <div className={cn('min-h-screen w-full', className)}>
@@ -56,10 +54,7 @@ export function PageLayout({
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 {title && (
-                  <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                    {pageId && <span className="text-red-600 text-xs">{pageId}</span>}
-                    {title}
-                  </h1>
+                  <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
                 )}
                 {description && (
                   <p className="text-muted-foreground">{description}</p>

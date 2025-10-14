@@ -1066,8 +1066,29 @@ const ChatLaboratory = () => {
                 toggleParticipant={toggleParticipant}
               />
 
-              {/* Right side - Maximize and Settings */}
+              {/* Right side - Token Chart Icons, Maximize and Settings */}
               <div className="flex items-center gap-1">
+                {/* Token Usage Icons - Compatti senza funzioni */}
+                {currentConversationId && messages.length > 0 && (
+                  <div className="flex items-center gap-1 mr-2">
+                    <TokenUsageChart 
+                      conversationId={currentConversationId}
+                      compact
+                      onClick={() => setTokenChartExpanded(true)}
+                      onTotalTokensChange={setTotalTokensUsed}
+                    />
+                    {totalTokensUsed > 50000 && (
+                      <div className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        totalTokensUsed >= 100000 
+                          ? 'bg-red-500 text-white animate-pulse' 
+                          : 'bg-yellow-500 text-black'
+                      }`}>
+                        {totalTokensUsed >= 100000 ? '⛔' : '⚠️'}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
                   currentIndex={0}
@@ -1105,32 +1126,6 @@ const ChatLaboratory = () => {
           </div>
         </div>
 
-        {/* Token Usage Chart - Posizionato sotto l'header */}
-        {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
-          <div className="border-b border-border/40 bg-card/30 backdrop-blur-sm">
-            <div className="container mx-auto px-3 py-1">
-              <div className="flex items-center gap-2">
-                <TokenUsageChart 
-                  conversationId={currentConversationId}
-                  compact
-                  onClick={() => setTokenChartExpanded(true)}
-                  onTotalTokensChange={setTotalTokensUsed}
-                />
-                
-                {/* Warning Badge */}
-                {totalTokensUsed > 50000 && (
-                  <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                    totalTokensUsed >= 100000 
-                      ? 'bg-red-500 text-white animate-pulse' 
-                      : 'bg-yellow-500 text-black'
-                  }`}>
-                    {totalTokensUsed >= 100000 ? '⛔ BLOCCATO' : '⚠️ ' + Math.round((totalTokensUsed / 100000) * 100) + '%'}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
       {/* Settings Drawer */}
       {settingsOpen && (

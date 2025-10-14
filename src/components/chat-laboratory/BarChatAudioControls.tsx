@@ -5,7 +5,8 @@ import { InterruptButton } from './InterruptButton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Mic, Users, Pause, Play } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Mic, Users, Pause, Play, Brain, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -28,10 +29,16 @@ export const BarChatAudioControls = ({
   const [isDuplexMode, setIsDuplexMode] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [activeBarAgent, setActiveBarAgent] = useState<string | null>(null);
+  
+  // Dynamic Turn-Taking States
+  const [turnStrategy, setTurnStrategy] = useState<string>('RANDOM_30');
+  const [pauseBetweenTurns, setPauseBetweenTurns] = useState<number>(800);
+  const [enableDirectCall, setEnableDirectCall] = useState<boolean>(true);
 
   useEffect(() => {
     if (conversationId) {
       loadPauseState();
+      loadDynamicTurnSettings();
     }
   }, [conversationId]);
 
@@ -78,6 +85,84 @@ export const BarChatAudioControls = ({
     }
   };
 
+  const loadDynamicTurnSettings = async () => {
+    if (!conversationId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .select('turn_strategy, pause_between_turns_ms, enable_direct_call_detection')
+        .eq('conversation_id', conversationId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setTurnStrategy(data.turn_strategy || 'RANDOM_30');
+        setPauseBetweenTurns(data.pause_between_turns_ms || 800);
+        setEnableDirectCall(data.enable_direct_call_detection ?? true);
+      }
+    } catch (error) {
+      console.error('Error loading dynamic turn settings:', error);
+    }
+  };
+
+  const updateTurnStrategy = async (newStrategy: string) => {
+    if (!conversationId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ turn_strategy: newStrategy })
+        .eq('conversation_id', conversationId);
+      
+      if (error) throw error;
+      
+      setTurnStrategy(newStrategy);
+      toast.success("Strategia aggiornata", {
+        description: `Ora usando: ${newStrategy === 'RANDOM_30' ? 'Random' : 'Smart Turn-Taking'}`
+      });
+    } catch (error) {
+      console.error('Error updating turn strategy:', error);
+      toast.error("Errore aggiornamento strategia");
+    }
+  };
+
+  const updatePauseBetweenTurns = async (newPause: number) => {
+    if (!conversationId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ pause_between_turns_ms: newPause })
+        .eq('conversation_id', conversationId);
+      
+      if (error) throw error;
+      
+      setPauseBetweenTurns(newPause);
+    } catch (error) {
+      console.error('Error updating pause:', error);
+    }
+  };
+
+  const updateDirectCallDetection = async (enabled: boolean) => {
+    if (!conversationId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_laboratory_bar_mode')
+        .update({ enable_direct_call_detection: enabled })
+        .eq('conversation_id', conversationId);
+      
+      if (error) throw error;
+      
+      setEnableDirectCall(enabled);
+      toast.success(enabled ? "Chiamate dirette abilitate" : "Chiamate dirette disabilitate");
+    } catch (error) {
+      console.error('Error updating direct call detection:', error);
+    }
+  };
+
   const togglePause = async () => {
     if (!conversationId) return;
     
@@ -109,13 +194,15 @@ export const BarChatAudioControls = ({
     }
   };
 
+  const isSmartMode = turnStrategy !== 'RANDOM_30';
+
   return (
     <div className={cn(
       "border-t border-border/40 backdrop-blur-xl bg-background/80",
-      "p-6 rounded-lg shadow-lg",
+      "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
-      {/* Tutti i controlli sulla stessa linea */}
+      {/* Riga 1: Controlli principali */}
       <div className="flex justify-start items-center gap-4">
         {/* Switch modalità */}
         <div className="flex items-center gap-3">
@@ -191,6 +278,70 @@ export const BarChatAudioControls = ({
           isAISpeaking={isAISpeaking}
           onInterrupt={onInterrupt}
         />
+      </div>
+
+      {/* Riga 2: Dynamic Turn-Taking Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 border-t border-border/20">
+        {/* Turn Strategy Toggle */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-muted-foreground" />
+            <Label 
+              className={cn(
+                "text-sm font-medium cursor-pointer transition-colors",
+                !isSmartMode ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Random
+            </Label>
+          </div>
+          <Switch
+            checked={isSmartMode}
+            onCheckedChange={(checked) => 
+              updateTurnStrategy(checked ? 'SMART_PRIORITY' : 'RANDOM_30')
+            }
+            disabled={!conversationId}
+          />
+          <div className="flex items-center gap-2">
+            <Brain className="h-4 w-4 text-muted-foreground" />
+            <Label 
+              className={cn(
+                "text-sm font-medium cursor-pointer transition-colors",
+                isSmartMode ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              Smart Turn-Taking
+            </Label>
+          </div>
+        </div>
+
+        {/* Pause Between Turns Slider */}
+        <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+          <Label className="text-sm whitespace-nowrap">
+            Pausa: {pauseBetweenTurns}ms
+          </Label>
+          <Slider
+            value={[pauseBetweenTurns]}
+            onValueChange={(values) => updatePauseBetweenTurns(values[0])}
+            min={400}
+            max={2000}
+            step={100}
+            className="flex-1"
+            disabled={!conversationId}
+          />
+        </div>
+
+        {/* Direct Call Detection Switch */}
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={enableDirectCall}
+            onCheckedChange={updateDirectCallDetection}
+            disabled={!conversationId}
+          />
+          <Label className="text-sm cursor-pointer">
+            Chiamate dirette (@nome)
+          </Label>
+        </div>
       </div>
 
     </div>

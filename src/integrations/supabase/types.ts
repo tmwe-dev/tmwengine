@@ -367,17 +367,21 @@ export type Database = {
         Row: {
           active_kb_id: string | null
           auto_play_audio: boolean
+          cognitive_buffers: Json | null
           continuous_mic_enabled: boolean | null
           conversation_id: string
           conversation_pace: string
           created_at: string
+          enable_direct_call_detection: boolean | null
           enable_interruptions: boolean
           id: string
           interrupt_requested: boolean | null
           kb_navigation_history: Json | null
           mode: string
+          pause_between_turns_ms: number | null
           response_mode: string
           selected_topic: string | null
+          turn_strategy: string
           updated_at: string
           user_id: string | null
           voice_enabled: boolean
@@ -385,17 +389,21 @@ export type Database = {
         Insert: {
           active_kb_id?: string | null
           auto_play_audio?: boolean
+          cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
           conversation_id: string
           conversation_pace?: string
           created_at?: string
+          enable_direct_call_detection?: boolean | null
           enable_interruptions?: boolean
           id?: string
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          pause_between_turns_ms?: number | null
           response_mode?: string
           selected_topic?: string | null
+          turn_strategy?: string
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean
@@ -403,17 +411,21 @@ export type Database = {
         Update: {
           active_kb_id?: string | null
           auto_play_audio?: boolean
+          cognitive_buffers?: Json | null
           continuous_mic_enabled?: boolean | null
           conversation_id?: string
           conversation_pace?: string
           created_at?: string
+          enable_direct_call_detection?: boolean | null
           enable_interruptions?: boolean
           id?: string
           interrupt_requested?: boolean | null
           kb_navigation_history?: Json | null
           mode?: string
+          pause_between_turns_ms?: number | null
           response_mode?: string
           selected_topic?: string | null
+          turn_strategy?: string
           updated_at?: string
           user_id?: string | null
           voice_enabled?: boolean

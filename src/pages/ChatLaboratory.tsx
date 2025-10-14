@@ -1039,13 +1039,18 @@ const ChatLaboratory = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border/40">
-          <div className="container mx-auto px-3 py-1 md:py-1.5">
-            <div className="flex items-center justify-between gap-2">
-              {/* Left side - Title and Navigation */}
-              <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
-                <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                  ChatLab
-                </h1>
+          <div className="container mx-auto px-3">
+            {/* Title above - separated */}
+            <div className="pt-2 pb-1">
+              <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                ChatLab
+              </h1>
+            </div>
+            
+            {/* Icons row below */}
+            <div className="py-1 md:py-1.5 flex items-center justify-between gap-2">
+              {/* Left side - Navigation button */}
+              <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
                   variant="ghost"

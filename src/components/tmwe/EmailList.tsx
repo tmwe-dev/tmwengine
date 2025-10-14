@@ -208,7 +208,7 @@ export const EmailList = ({
               key={email.id}
               ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
               className={cn(
-                "w-full max-w-full overflow-hidden rounded-lg border p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-4 hover:scale-[1.01] bg-card/50 shadow-sm",
+                "w-full max-w-full overflow-hidden rounded-lg border p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-2 sm:border-l-4 sm:hover:scale-[1.01] bg-card/50 shadow-sm",
                 !email.read && "border-l-primary bg-primary/5",
                 selectedEmailId === email.id && "ring-2 ring-primary",
                 multiSelectMode && selectedEmailIds.has(email.id) && "ring-2 ring-yellow-400"
@@ -225,7 +225,7 @@ export const EmailList = ({
                     />
                   )}
                   <div className={cn(
-                    "font-medium text-sm sm:text-base truncate max-w-full",
+                    "font-medium text-sm sm:text-base truncate min-w-0",
                     !email.read && "font-bold"
                   )}>
                     {email.from}
@@ -275,7 +275,7 @@ export const EmailList = ({
               </div>
 
               <div className={cn(
-                "text-sm font-semibold truncate max-w-full mt-2",
+                "text-sm font-semibold truncate min-w-0 mt-2",
                 !email.read && "font-bold"
               )}>
                 {email.subject}
@@ -310,7 +310,7 @@ export const EmailList = ({
               key={email.id}
               ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
               className={cn(
-                "w-full max-w-full overflow-hidden min-h-[120px] rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-4 hover:scale-[1.01] bg-card/50 shadow-sm flex flex-col",
+                "w-full max-w-full overflow-hidden min-h-[120px] rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-2 sm:border-l-4 sm:hover:scale-[1.01] bg-card/50 shadow-sm flex flex-col",
                 !email.read && "border-l-primary bg-primary/5",
                 selectedEmailId === email.id && "ring-2 ring-primary",
                 multiSelectMode && selectedEmailIds.has(email.id) && "ring-2 ring-yellow-400"
@@ -327,7 +327,7 @@ export const EmailList = ({
                     />
                   )}
                   <div className={cn(
-                    "text-xs font-medium truncate max-w-full",
+                    "text-xs font-medium truncate min-w-0",
                     !email.read && "font-bold"
                   )}>
                     {email.from}
@@ -368,7 +368,7 @@ export const EmailList = ({
               </div>
 
               <div className={cn(
-                "text-sm font-semibold line-clamp-2 max-w-full mb-1",
+                "text-sm font-semibold line-clamp-2 min-w-0 mb-1",
                 !email.read && "font-bold"
               )}>
                 {email.subject}

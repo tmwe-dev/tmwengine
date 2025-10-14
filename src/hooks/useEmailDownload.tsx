@@ -46,11 +46,20 @@ export const useEmailDownload = () => {
     try {
       // 1. Ottieni la lista di tutte le cartelle
       toast.info('Caricamento cartelle...');
+      console.log('🔍 Chiamata a emailFolderApi.getFolders()...');
+      
       const foldersResponse = await emailFolderApi.getFolders();
+      console.log('📦 Risposta API cartelle:', foldersResponse);
+      console.log('📦 Tipo risposta:', typeof foldersResponse);
+      console.log('📦 Chiavi risposta:', foldersResponse ? Object.keys(foldersResponse) : 'null');
+      
       const folders = foldersResponse?.folders || [];
+      console.log(`📁 Cartelle estratte: ${folders.length}`, folders);
       
       if (folders.length === 0) {
-        toast.error('Nessuna cartella trovata');
+        console.error('❌ Nessuna cartella restituita dall\'API');
+        console.error('❌ foldersResponse completo:', JSON.stringify(foldersResponse, null, 2));
+        toast.error('Nessuna cartella trovata - controlla la console');
         setIsDownloading(false);
         return;
       }

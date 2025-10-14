@@ -48,6 +48,15 @@ export const EmailDownloadProgress = ({
             isComplete && 'text-green-600',
             downloadError && 'text-destructive'
           )}
+          onClick={(e) => {
+            // Se non sta scaricando e non ci sono errori, avvia subito il download
+            if (!isDownloading && !downloadError && !isComplete) {
+              e.preventDefault();
+              e.stopPropagation();
+              onStartDownload();
+            }
+            // Altrimenti apre il popover normalmente
+          }}
         >
           {isDownloading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

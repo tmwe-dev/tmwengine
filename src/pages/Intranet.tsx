@@ -469,30 +469,26 @@ const Intranet = () => {
             
             {!sidebarCollapsed && (
               <>
-                <div className="px-2">
-                  <OnlineUsers 
-                    users={onlineUsers}
-                    onCallUser={handleCallUser}
-                    onOpenPrivateChat={handleOpenPrivateChat}
-                  />
-                </div>
+                <OnlineUsers 
+                  users={onlineUsers}
+                  onCallUser={handleCallUser}
+                  onOpenPrivateChat={handleOpenPrivateChat}
+                />
 
                 {isCreatorOrAdmin && (
-                  <>
-                    <div className="px-4 pt-6 pb-3">
-                      <h3 className="text-sm font-semibold">Richieste Accesso</h3>
-                    </div>
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold px-4 mb-3">Richieste Accesso</h3>
                     <div className="px-2">
                       <AccessRequestsPanel />
                     </div>
-                  </>
+                  </div>
                 )}
 
-                <div className="px-4 pt-6 pb-3">
-                  <h3 className="text-sm font-semibold">Impostazioni</h3>
-                </div>
-                <div className="px-2">
-                  <UserLanguageSettings />
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold px-4 mb-3">Impostazioni</h3>
+                  <div className="px-2 pb-4">
+                    <UserLanguageSettings />
+                  </div>
                 </div>
               </>
             )}

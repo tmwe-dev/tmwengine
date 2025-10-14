@@ -247,26 +247,25 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
     <TooltipProvider>
       <div className="flex flex-col flex-1 overflow-hidden">
         {!isCollapsed && (
-          <div className="flex items-center justify-between px-2 mb-2 flex-shrink-0">
+          <div className="flex items-center justify-between px-2 mb-3 flex-shrink-0">
             <h3 className="text-sm font-semibold">Stanze Chat</h3>
             <Button 
               size="sm" 
               variant="outline" 
               onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Plus className="h-4 w-4" />
-              <span className="ml-2">Nuova</span>
+              <Plus className="h-4 w-4 mr-2" />
+              <span>Nuova</span>
             </Button>
           </div>
         )}
 
         {isCollapsed && (
-          <div className="flex justify-center px-2 mb-2 flex-shrink-0">
+          <div className="flex justify-center px-2 mb-3 flex-shrink-0">
             <Button 
               size="icon" 
               variant="outline" 
               onClick={() => setIsCreateDialogOpen(true)}
-              className="h-8 w-8"
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -274,7 +273,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="space-y-1 px-2">
+          <div className="space-y-1 px-2 pb-4">
             {rooms.map((room) => {
               const canAccess = room.access_type === 'public' || room.is_member;
               const unreadCount = getUnreadCount ? getUnreadCount(room.id) : 0;
@@ -285,13 +284,13 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
                   size="icon"
                   onClick={() => canAccess && onRoomSelect(room.id)}
                   disabled={!canAccess}
-                  className="w-10 h-10 p-0 justify-center items-center relative group"
+                  className="w-full aspect-square p-0 justify-center items-center relative group"
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 group-hover:scale-110 transition-all" />
                   {unreadCount > 0 && (
                     <Badge 
                       variant="destructive" 
-                      className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] font-bold rounded-full"
+                      className="absolute -top-1 -right-1 min-w-[1rem] h-4 px-1 flex items-center justify-center text-[10px] font-bold rounded-full"
                     >
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </Badge>
@@ -303,7 +302,7 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
                   size="sm"
                   onClick={() => canAccess && onRoomSelect(room.id)}
                   disabled={!canAccess}
-                  className="w-full justify-start group relative overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce hover:bg-accent/50 transition-all duration-200"
+                  className="w-full justify-start group relative overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-3/5 after:h-px after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce hover:bg-accent/50 transition-all duration-200"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <MessageSquare className="h-4 w-4 shrink-0 group-hover:scale-110 group-hover:animate-wiggle transition-all" />

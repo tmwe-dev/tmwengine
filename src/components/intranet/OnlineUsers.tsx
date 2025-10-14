@@ -116,14 +116,14 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col flex-shrink-0">
-        <h3 className="text-xs font-semibold px-2 mb-2">
+      <div className="flex flex-col flex-shrink-0 mt-6">
+        <h3 className="text-xs font-semibold px-2 mb-3">
           Utenti Online
         </h3>
 
         <div className="px-2">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-2">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               {currentUser && (
                 <UserAvailabilitySelector
                   currentStatus={currentUser.availability_status}
@@ -134,18 +134,18 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
               )}
             </div>
 
-            <ScrollArea className="max-h-32">
-              <div className="space-y-1.5 pr-4">
+            <ScrollArea className="max-h-40">
+              <div className="space-y-2 pr-3 pb-2">
                 {uniqueUsers.map((user) => {
                   const profile = userProfiles.get(user.user_id);
                   return (
                     <div
                       key={user.user_id}
-                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-3/5 after:h-px after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="relative flex-shrink-0">
-                          <Avatar className="h-7 w-7">
+                          <Avatar className="h-8 w-8">
                             <AvatarFallback className="text-xs">
                               {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
                             </AvatarFallback>
@@ -184,7 +184,6 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                             tooltip="Apri chat privata"
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6"
                           />
                         )}
                         {onCallUser && (
@@ -197,7 +196,6 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                             tooltip="Chiama"
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6"
                           />
                         )}
                       </div>
@@ -205,8 +203,8 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                   );
                 })}
                 {uniqueUsers.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Users className="h-6 w-6 mx-auto mb-1 opacity-20" />
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
                     <p className="text-xs">Nessuno online</p>
                   </div>
                 )}

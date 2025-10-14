@@ -37,10 +37,10 @@ export function IconButton({
     <Button
       variant={variant}
       size={size}
-      className={cn('h-9 w-9 group', className)}
+      className={cn('aspect-square group', className)}
       {...props}
     >
-      <Icon className="h-4 w-4 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
+      <Icon className="h-1/2 w-1/2 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
     </Button>
   );
 

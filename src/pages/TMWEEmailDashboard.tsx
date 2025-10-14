@@ -495,7 +495,7 @@ const EmailDashboard = () => {
             currentFolder={currentFolder}
             totalToDownload={totalToDownload}
             onDownloadComplete={() => {}}
-            onStartDownload={startDownload}
+            onStartDownload={() => startDownload(queryClient)}
             isDownloading={isDownloading}
             downloadedCount={downloadedCount}
             downloadError={downloadError}

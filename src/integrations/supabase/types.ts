@@ -453,6 +453,8 @@ export type Database = {
           last_summarized_at: string | null
           last_token_update: string | null
           memoria_completa: boolean | null
+          pause_between_agents_ms: number | null
+          reduce_user_messages: boolean | null
           response_mode: string | null
           riassunto_contesto: string | null
           show_summaries_only: boolean | null
@@ -483,6 +485,8 @@ export type Database = {
           last_summarized_at?: string | null
           last_token_update?: string | null
           memoria_completa?: boolean | null
+          pause_between_agents_ms?: number | null
+          reduce_user_messages?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null
@@ -513,6 +517,8 @@ export type Database = {
           last_summarized_at?: string | null
           last_token_update?: string | null
           memoria_completa?: boolean | null
+          pause_between_agents_ms?: number | null
+          reduce_user_messages?: boolean | null
           response_mode?: string | null
           riassunto_contesto?: string | null
           show_summaries_only?: boolean | null

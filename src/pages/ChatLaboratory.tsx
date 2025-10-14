@@ -692,40 +692,92 @@ const ChatLaboratory = () => {
           }
         }
       } else {
-        // ✅ MODALITÀ TESTUALE: Singola chiamata orchestrata parallela
-        console.log(`🤖 Invocando orchestrator per ${activeAIParticipants.length} agenti in parallelo...`);
+        // ✅ MODALITÀ TESTUALE: Sequential + Summarization Strategy
+        let processedMessage = currentPrompt;
+        
+        // Step 1: Reduce user message if enabled and message is long
+        const shouldReduce = messages.length === 0 || currentPrompt.length > 500;
+        if (shouldReduce) {
+          console.log('📝 Riducendo messaggio utente...');
+          const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
+            'summarize-user-message',
+            { body: { originalMessage: currentPrompt, mode: 'standard' } }
+          );
 
-        const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
-          body: { 
-            conversationId,
-            userMessage: currentPrompt,
-            participants: activeAIParticipants
+          if (!summaryError && summaryData?.summary) {
+            processedMessage = summaryData.summary;
+            console.log(`✅ Riduzione: ${summaryData.originalLength} → ${summaryData.summaryLength} chars (-${summaryData.tokenReduction}%)`);
+            
+            if (summaryData.tokenReduction > 50) {
+              toast({
+                title: "Messaggio ottimizzato",
+                description: `Riduzione token: -${summaryData.tokenReduction}%`,
+              });
+            }
           }
-        });
+        }
 
-        if (error) {
-          console.error('❌ Errore orchestrator:', error);
-          toast({
-            title: "Errore",
-            description: error.message || 'Impossibile ottenere risposte',
-            variant: "destructive",
+        // Step 2: Determine orchestration mode (first turn = parallel, subsequent = sequential)
+        const isFirstTurn = messages.length === 0;
+        
+        if (isFirstTurn) {
+          // Primo turno: parallelo (brainstorming iniziale)
+          console.log(`🚀 PRIMO TURNO: orchestrazione parallela per ${activeAIParticipants.length} agenti`);
+          
+          const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+            body: { 
+              conversationId,
+              userMessage: processedMessage,
+              participants: activeAIParticipants,
+              sequentialMode: false
+            }
           });
+
+          if (error) {
+            console.error('❌ Errore orchestrator:', error);
+            toast({
+              title: "Errore",
+              description: error.message || 'Impossibile ottenere risposte',
+              variant: "destructive",
+            });
+          } else {
+            console.log('✅ Orchestrator completato:', data);
+            setConvergenceRefreshKey(prev => prev + 1);
+          }
         } else {
-          console.log('✅ Orchestrator completato:', data);
-          console.log(`⏱️ Tempo totale: ${data.orchestrationTimeMs}ms`);
-          console.log(`📊 Token generati: ${data.totalTokensOut}`);
-          console.log(`✅ Risposte ricevute: ${data.responses?.length || 0}`);
+          // Turni successivi: sequenziale con contesto progressivo
+          console.log(`🔄 SEQUENTIAL MODE: ${activeAIParticipants.length} agenti con contesto progressivo`);
           
-          // ⚠️ Soft warning se risposta molto verbosa (solo console, non UI)
-          if (data.totalTokensOut > 4000) {
-            console.warn(`⚠️ Risposta complessiva molto lunga: ${data.totalTokensOut} token. Considera prompt più specifico.`);
+          const pauseMs = 800; // TODO: Load from conversation settings
+          let successCount = 0;
+          
+          for (let i = 0; i < activeAIParticipants.length; i++) {
+            const participant = activeAIParticipants[i];
+            console.log(`⏳ [${i + 1}/${activeAIParticipants.length}] Chiamata ${participant.name}...`);
+            
+            const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
+              body: { 
+                conversationId,
+                userMessage: processedMessage,
+                participants: [participant], // Solo questo AI
+                sequentialMode: true
+              }
+            });
+
+            if (error) {
+              console.error(`❌ Errore ${participant.name}:`, error);
+            } else {
+              successCount++;
+              console.log(`✅ ${participant.name} completato (${data.responses?.[0]?.tokenOutput || 0} token)`);
+            }
+
+            // Pausa tra chiamate (tranne l'ultima)
+            if (i < activeAIParticipants.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, pauseMs));
+            }
           }
-          
-          if (data.errors && data.errors.length > 0) {
-            console.warn('⚠️ Alcuni agenti hanno fallito:', data.errors);
-          }
-          
-          // Real-time listener aggiornerà automaticamente i messaggi
+
+          console.log(`🎯 Sequential orchestration completata: ${successCount}/${activeAIParticipants.length} successi`);
           setConvergenceRefreshKey(prev => prev + 1);
         }
       }

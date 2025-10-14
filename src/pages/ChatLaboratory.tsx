@@ -1108,8 +1108,8 @@ const ChatLaboratory = () => {
         {/* Token Usage Chart - Posizionato sotto l'header */}
         {currentConversationId && messages.length > 0 && !tokenChartExpanded && (
           <div className="border-b border-border/40 bg-card/30 backdrop-blur-sm">
-            <div className="container mx-auto px-3 py-3">
-              <div className="flex items-center gap-3">
+            <div className="container mx-auto px-3 py-1">
+              <div className="flex items-center gap-2">
                 <TokenUsageChart 
                   conversationId={currentConversationId}
                   compact

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ParticipantSelector } from './ParticipantSelector';
 import { ExportSummaryButton } from '@/components/chat/ExportSummaryButton';
+import { Columns, MessagesSquare } from 'lucide-react';
 
 interface LabMainControlsProps {
   currentConversationId: string | null;
@@ -31,7 +32,7 @@ export const LabMainControls = ({
         className="shrink-0 h-8 w-8"
         title={viewMode === 'classic' ? 'Vista Tabs' : 'Vista Classica'}
       >
-        {viewMode === 'classic' ? '📑' : '💬'}
+        {viewMode === 'classic' ? <Columns className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
       </Button>
       
       {currentConversationId && (

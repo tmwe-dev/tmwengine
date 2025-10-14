@@ -17,6 +17,7 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     tokensOut: number;
     colorIn: string;
     colorOut: string;
+    baseHue: number;
   }>>([]);
 
   useEffect(() => {
@@ -57,18 +58,20 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
         existing.tokensIn += msg.token_input || 0;
         existing.tokensOut += msg.token_output || 0;
       } else {
-        const baseColor = msg.sender_name === 'ChatGPT' ? '142, 76%' : 
-                         msg.sender_name === 'Claude' ? '262, 83%' : '221, 83%';
+        const baseHue = msg.sender_name === 'ChatGPT' ? 142 : 
+                        msg.sender_name === 'Claude' ? 262 : 221;
+        const saturation = msg.sender_name === 'ChatGPT' ? '76%' : '83%';
         acc.push({
           agent: msg.sender_name,
           tokensIn: msg.token_input || 0,
           tokensOut: msg.token_output || 0,
-          colorIn: `hsl(${baseColor}, 70%)`,
-          colorOut: `hsl(${baseColor}, 40%)`
+          colorIn: `hsl(${baseHue}, ${saturation}, 75%)`,
+          colorOut: `hsl(${baseHue}, ${saturation}, 50%)`,
+          baseHue
         });
       }
       return acc;
-    }, [] as Array<{ agent: string; tokensIn: number; tokensOut: number; colorIn: string; colorOut: string }>);
+    }, [] as Array<{ agent: string; tokensIn: number; tokensOut: number; colorIn: string; colorOut: string; baseHue: number }>);
 
     setTokenData(aggregated);
     
@@ -107,25 +110,26 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
   if (compact) {
     return (
       <div 
-        className="flex items-end gap-4 md:gap-6 px-3 py-2 cursor-pointer"
+        className="flex items-end gap-4 md:gap-6 px-3 py-0.5 cursor-pointer"
         onClick={onClick}
         title="Clicca per espandere il grafico"
       >
         {tokenData.map((agent) => {
           const heightPercentIn = (agent.tokensIn / maxTokens) * 100;
           const heightPercentOut = (agent.tokensOut / maxTokens) * 100;
+          const saturation = agent.agent === 'ChatGPT' ? '76%' : '83%';
 
           return (
-            <div key={agent.agent} className="flex flex-col items-center gap-1.5">
+            <div key={agent.agent} className="flex flex-col items-center gap-0.5">
               {/* Coppia colonnine IN + OUT affiancate */}
-              <div className="flex gap-1 items-end h-16 md:h-20">
+              <div className="flex gap-1 items-end h-24 md:h-28">
                 {/* Colonnina Token IN */}
                 <div 
                   className="w-6 md:w-10 rounded-t"
                   style={{ 
-                    height: `${Math.max(heightPercentIn, 30)}%`, 
-                    minHeight: '24px',
-                    background: `linear-gradient(to top, ${agent.colorIn}CC, ${agent.colorIn})`
+                    height: `${Math.max(heightPercentIn, 40)}%`, 
+                    minHeight: '40px',
+                    background: `linear-gradient(to top, hsl(${agent.baseHue}, ${saturation}, 75%), hsl(${agent.baseHue}, ${saturation}, 85%))`
                   }}
                   title={`${agent.agent} IN: ${formatTokens(agent.tokensIn)}`}
                 />
@@ -134,9 +138,9 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
                 <div 
                   className="w-6 md:w-10 rounded-t"
                   style={{ 
-                    height: `${Math.max(heightPercentOut, 30)}%`, 
-                    minHeight: '24px',
-                    background: `linear-gradient(to top, ${agent.colorOut}DD, ${agent.colorOut})`
+                    height: `${Math.max(heightPercentOut, 40)}%`, 
+                    minHeight: '40px',
+                    background: `linear-gradient(to top, hsl(${agent.baseHue}, ${saturation}, 50%), hsl(${agent.baseHue}, ${saturation}, 65%))`
                   }}
                   title={`${agent.agent} OUT: ${formatTokens(agent.tokensOut)}`}
                 />

@@ -307,6 +307,13 @@ const Intranet = () => {
                     getUnreadCount={getUnreadCount}
                   />
                 </div>
+
+                {isCreatorOrAdmin && (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 px-2">Richieste Accesso</h3>
+                    <AccessRequestsPanel />
+                  </div>
+                )}
                 
                 <div>
                   <h3 className="text-sm font-semibold mb-3 px-2">Utenti Online</h3>
@@ -316,13 +323,6 @@ const Intranet = () => {
                     onOpenPrivateChat={handleOpenPrivateChat}
                   />
                 </div>
-
-                {isCreatorOrAdmin && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3 px-2">Richieste Accesso</h3>
-                    <AccessRequestsPanel />
-                  </div>
-                )}
               </div>
             </SheetContent>
           </Sheet>

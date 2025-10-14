@@ -236,40 +236,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
     }
   };
 
-  const getAccessIcon = (accessType?: string) => {
-    switch (accessType) {
-      case 'public':
-        return Globe;
-      case 'request':
-        return Mail;
-      case 'private':
-        return Lock;
-      default:
-        return MessageSquare;
-    }
-  };
-
-  const getAccessBadge = (accessType?: string) => {
-    switch (accessType) {
-      case 'public':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-          <Globe className="w-3 h-3 mr-1" />
-          Pubblica
-        </Badge>;
-      case 'request':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-          <Mail className="w-3 h-3 mr-1" />
-          Su Richiesta
-        </Badge>;
-      case 'private':
-        return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
-          <Lock className="w-3 h-3 mr-1" />
-          Privata
-        </Badge>;
-      default:
-        return null;
-    }
-  };
 
   if (loading) {
     return null; // Non mostrare nulla durante il caricamento
@@ -296,7 +262,6 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
             {rooms.map((room) => {
               const canAccess = room.access_type === 'public' || room.is_member;
               const unreadCount = getUnreadCount ? getUnreadCount(room.id) : 0;
-              const AccessIcon = getAccessIcon(room.access_type);
               
               const button = (
                 <Button
@@ -304,22 +269,17 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
                   size="sm"
                   onClick={() => canAccess && onRoomSelect(room.id)}
                   disabled={!canAccess}
-                  className="w-full justify-between group relative overflow-hidden hover:bg-accent/50 transition-all duration-200"
+                  className="w-full justify-start group relative overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce hover:bg-accent/50 transition-all duration-200"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <MessageSquare className="h-4 w-4 shrink-0" />
+                    <MessageSquare className="h-4 w-4 shrink-0 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                     <span className="truncate text-left">{room.name}</span>
                   </div>
                   {unreadCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="ml-2 h-5 min-w-[20px] px-1.5 bg-destructive text-destructive-foreground animate-pulse"
-                    >
+                    <span className="ml-auto text-destructive font-semibold text-xs animate-pulse">
                       {unreadCount}
-                    </Badge>
+                    </span>
                   )}
-                  {/* Animated underline */}
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                 </Button>
               );
 

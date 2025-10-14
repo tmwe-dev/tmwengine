@@ -142,7 +142,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                       return (
                         <div
                           key={user.user_id}
-                          className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                          className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-white/65 after:via-black after:via-40% after:to-transparent hover:after:animate-line-bounce flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div className="relative">

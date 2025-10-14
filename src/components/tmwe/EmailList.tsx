@@ -197,22 +197,204 @@ export const EmailList = ({
   
   const renderListView = () => {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <div className="text-center space-y-2">
-          <p className="text-sm">Email cards rimossi temporaneamente</p>
-          <p className="text-xs">Backup salvato nel database</p>
-        </div>
+      <div className="space-y-2 sm:space-y-3 overflow-hidden">
+        {filteredEmails.length === 0 ? (
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
+            <p className="text-sm">Nessuna email da visualizzare</p>
+          </div>
+        ) : (
+          filteredEmails.map((email, index) => (
+            <Card
+              key={email.id}
+              ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
+              className={cn(
+                "w-full max-w-full overflow-hidden rounded-lg border p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-4 hover:scale-[1.01] bg-card/50 shadow-sm",
+                !email.read && "border-l-primary bg-primary/5",
+                selectedEmailId === email.id && "ring-2 ring-primary",
+                multiSelectMode && selectedEmailIds.has(email.id) && "ring-2 ring-yellow-400"
+              )}
+              onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
+            >
+              <div className="flex items-center justify-between gap-2 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                  {multiSelectMode && (
+                    <Checkbox
+                      checked={selectedEmailIds.has(email.id)}
+                      onClick={(e) => { e.stopPropagation(); handleToggleEmailSelection(email.id); }}
+                      className="shrink-0"
+                    />
+                  )}
+                  <div className={cn(
+                    "font-medium text-sm sm:text-base truncate max-w-full",
+                    !email.read && "font-bold"
+                  )}>
+                    {email.from}
+                  </div>
+                  {email.hasGroup && email.groupName && (
+                    <Badge className="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium">
+                      {email.groupName}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {email.hasAttachments && <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                  {email.starred && <Star className="h-4 w-4 shrink-0 fill-yellow-500 text-yellow-500" />}
+                  {email.hasRule && <Tag className="h-4 w-4 shrink-0 text-blue-500" />}
+                  <button
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      onEmailSelect(email.id);
+                      onOpenDetailPopup?.();
+                    }}
+                    className="p-1.5 rounded-md hover:bg-primary/10 transition-all shrink-0"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1.5 rounded-md hover:bg-primary/10">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-popover z-50">
+                      <DropdownMenuItem onClick={() => onEmailSelect(email.id)}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Apri
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Archive className="mr-2 h-4 w-4" />
+                        Archivia
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Elimina
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className={cn(
+                "text-sm font-semibold truncate max-w-full mt-2",
+                !email.read && "font-bold"
+              )}>
+                {email.subject}
+              </div>
+
+              <p className="text-xs text-muted-foreground line-clamp-2 max-w-full">
+                {email.preview}
+              </p>
+
+              <div className="flex items-center justify-between gap-2 mt-2 flex-wrap overflow-hidden">
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })}
+                </span>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     );
   };
 
   const renderGridView = () => {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        <div className="text-center space-y-2">
-          <p className="text-sm">Email cards rimossi temporaneamente</p>
-          <p className="text-xs">Backup salvato nel database</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 p-2 overflow-hidden">
+        {filteredEmails.length === 0 ? (
+          <div className="col-span-full flex items-center justify-center h-64 text-muted-foreground">
+            <p className="text-sm">Nessuna email da visualizzare</p>
+          </div>
+        ) : (
+          filteredEmails.map((email, index) => (
+            <Card
+              key={email.id}
+              ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
+              className={cn(
+                "w-full max-w-full overflow-hidden min-h-[120px] rounded-lg border p-3 cursor-pointer hover:shadow-lg transition-all duration-200 relative border-l-4 hover:scale-[1.01] bg-card/50 shadow-sm flex flex-col",
+                !email.read && "border-l-primary bg-primary/5",
+                selectedEmailId === email.id && "ring-2 ring-primary",
+                multiSelectMode && selectedEmailIds.has(email.id) && "ring-2 ring-yellow-400"
+              )}
+              onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
+            >
+              <div className="flex items-start justify-between gap-2 min-w-0 overflow-hidden mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                  {multiSelectMode && (
+                    <Checkbox
+                      checked={selectedEmailIds.has(email.id)}
+                      onClick={(e) => { e.stopPropagation(); handleToggleEmailSelection(email.id); }}
+                      className="shrink-0"
+                    />
+                  )}
+                  <div className={cn(
+                    "text-xs font-medium truncate max-w-full",
+                    !email.read && "font-bold"
+                  )}>
+                    {email.from}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      onEmailSelect(email.id);
+                      onOpenDetailPopup?.();
+                    }}
+                    className="p-1 rounded-md hover:bg-primary/10 transition-all shrink-0"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1 rounded-md hover:bg-primary/10">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-popover z-50">
+                      <DropdownMenuItem onClick={() => onEmailSelect(email.id)}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Apri
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Archive className="mr-2 h-4 w-4" />
+                        Archivia
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Elimina
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className={cn(
+                "text-sm font-semibold line-clamp-2 max-w-full mb-1",
+                !email.read && "font-bold"
+              )}>
+                {email.subject}
+              </div>
+
+              <p className="text-xs text-muted-foreground line-clamp-3 max-w-full flex-1">
+                {email.preview}
+              </p>
+
+              <div className="flex items-center justify-between gap-2 mt-2 overflow-hidden flex-wrap">
+                <div className="flex items-center gap-1 shrink-0">
+                  {email.hasAttachments && <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                  {email.starred && <Star className="h-3 w-3 shrink-0 fill-yellow-500 text-yellow-500" />}
+                  {email.hasGroup && email.groupName && (
+                    <Badge className="shrink-0 text-[10px] px-1 py-0">
+                      {email.groupName}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {format(new Date(email.date), 'dd/MM')}
+                </span>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     );
   };

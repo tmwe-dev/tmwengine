@@ -191,15 +191,31 @@ export const EmailList = ({
   }
 
 
-  // REMOVED: renderListView function
-  // Backup saved in database table: ui_component_backups
-  // Component: tmwe-email-cards, Version: v1.0.0-pre-deletion
-  const renderListView = () => <div>List view removed - backup in DB</div>;
+  // Email cards rendering functions removed
+  // ✅ Complete backup saved in DB: ui_component_backups
+  // Query to restore: SELECT * FROM ui_component_backups WHERE component_name = 'tmwe-email-cards'
+  
+  const renderListView = () => {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <div className="text-center space-y-2">
+          <p className="text-sm">Email cards rimossi temporaneamente</p>
+          <p className="text-xs">Backup salvato nel database</p>
+        </div>
+      </div>
+    );
+  };
 
-  // REMOVED: renderGridView function
-  // Backup saved in database table: ui_component_backups
-  // Component: tmwe-email-cards, Version: v1.0.0-pre-deletion
-  const renderGridView = () => <div>Grid view removed - backup in DB</div>;
+  const renderGridView = () => {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <div className="text-center space-y-2">
+          <p className="text-sm">Email cards rimossi temporaneamente</p>
+          <p className="text-xs">Backup salvato nel database</p>
+        </div>
+      </div>
+    );
+  };
 
 
   return (

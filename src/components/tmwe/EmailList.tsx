@@ -507,7 +507,7 @@ export const EmailList = ({
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-auto max-w-full">
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -561,7 +561,7 @@ export const EmailList = ({
 
                 {bulkAction === 'move' && (
                   <Select value={targetFolder} onValueChange={setTargetFolder}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-auto max-w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">

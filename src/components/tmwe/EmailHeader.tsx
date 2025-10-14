@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, RefreshCw, Mail, Menu, Database, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Search, Plus, Mail, Menu, Settings2, ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -117,91 +117,12 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
                 </h1>
               </div>
 
-              {/* Sync buttons allineati a destra */}
+              {/* Download button per sincronizzazione email */}
               <div className="flex items-center gap-1">
-                {isMobile ? (
-                  <Button 
-                    onClick={() => setSyncPopupOpen(true)}
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    title="Sync options"
-                  >
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      onClick={onSync} 
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Sync all emails"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    
-                    {onSyncSmart && (
-                      <Button 
-                        onClick={onSyncSmart}
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 relative"
-                        disabled={isSyncingSmart}
-                        title="Smart sync - only missing emails"
-                      >
-                        <Database className={`h-4 w-4 ${isSyncingSmart ? 'animate-pulse' : ''}`} />
-                        
-                        {missingEmailCount !== undefined && missingEmailCount > 0 && !isSyncingSmart && (
-                          <Badge 
-                            variant="destructive" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold"
-                          >
-                            {missingEmailCount > 999 ? '999+' : missingEmailCount}
-                          </Badge>
-                        )}
-                        
-                        {isSyncingSmart && syncSmartProgress && (
-                          <Badge 
-                            variant="default" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-bold bg-blue-500"
-                          >
-                            {syncSmartProgress.current}/{syncSmartProgress.missing}
-                          </Badge>
-                        )}
-                        
-                        {missingEmailCount === 0 && !isSyncingSmart && (
-                          <Badge 
-                            variant="secondary" 
-                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] bg-green-500 text-white"
-                          >
-                            ✓
-                          </Badge>
-                        )}
-                      </Button>
-                    )}
-
-                    {downloadProgressComponent && (
-                      <div className="ml-1">
-                        {downloadProgressComponent}
-                      </div>
-                    )}
-
-                    {onOpenSyncMonitor && (
-                      <Button 
-                        onClick={() => {
-                          console.log('🔥 DOWNLOAD BUTTON CLICKED!');
-                          onOpenSyncMonitor();
-                        }}
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        title="Download Email TMWE"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </>
+                {downloadProgressComponent && (
+                  <div>
+                    {downloadProgressComponent}
+                  </div>
                 )}
               </div>
             </div>
@@ -263,10 +184,6 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
 
             {!isHeaderCollapsed && (
               <div className="hidden md:flex items-center gap-1 sm:gap-2">
-                <Badge variant="secondary" className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 whitespace-nowrap shrink-0">
-                  <Database className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  <span className="font-semibold text-[10px] sm:text-xs">{emailCount.toLocaleString()}</span>
-                </Badge>
 
                 <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-md">
                   <div className="relative min-w-0">
@@ -295,78 +212,11 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncin
             <DialogTitle>Opzioni & Strumenti</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-4">
-            {/* DB Email Count */}
-            {dbEmailCount !== undefined && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Email nel Database</div>
-                  <div className="text-xs text-muted-foreground">
-                    {dbEmailCount.toLocaleString()} record
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Download Progress Component */}
             {downloadProgressComponent && (
               <div className="w-full">
                 {downloadProgressComponent}
               </div>
-            )}
-
-            {/* Download Email TMWE */}
-            {onOpenSyncMonitor && (
-              <Button 
-                onClick={() => {
-                  onOpenSyncMonitor();
-                  setSyncPopupOpen(false);
-                }}
-                variant="outline"
-                className="w-full justify-start gap-2"
-              >
-                <Download className="h-5 w-5" />
-                <span>Download Email TMWE</span>
-              </Button>
-            )}
-
-            {/* Sync All */}
-            <Button 
-              onClick={() => {
-                onSync();
-                setSyncPopupOpen(false);
-              }}
-              variant="outline"
-              className="w-full justify-start gap-2"
-            >
-              <RefreshCw className="h-5 w-5" />
-              <span>Sincronizza tutte le email</span>
-            </Button>
-            
-            {/* Smart Sync */}
-            {onSyncSmart && (
-              <Button 
-                onClick={() => {
-                  onSyncSmart();
-                  setSyncPopupOpen(false);
-                }}
-                variant="outline"
-                className="w-full justify-start gap-2 relative"
-                disabled={isSyncingSmart}
-              >
-                <Database className={`h-5 w-5 ${isSyncingSmart ? 'animate-pulse' : ''}`} />
-                <div className="flex-1 text-left">
-                  <div>Smart Sync - Solo email mancanti</div>
-                  {missingEmailCount !== undefined && (
-                    <div className="text-xs text-muted-foreground">
-                      {missingEmailCount > 0 
-                        ? `${missingEmailCount} email mancanti` 
-                        : 'Tutto sincronizzato ✓'
-                      }
-                    </div>
-                  )}
-                </div>
-              </Button>
             )}
           </div>
         </DialogContent>

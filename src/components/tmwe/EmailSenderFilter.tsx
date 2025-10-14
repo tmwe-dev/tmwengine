@@ -83,12 +83,13 @@ export const EmailSenderFilter = ({
           <Button
             variant={selectedSender ? 'secondary' : 'ghost'}
             size="sm"
-            className="relative"
+            className="relative h-9 px-3 gap-2"
           >
-            <Users className="h-4 w-4 mr-2" />
-            Mittenti
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Mittenti</span>
+            <span className="sm:hidden">Mitt.</span>
             {selectedSender && (
-              <Badge className="ml-2 h-5 px-1.5" variant="default">
+              <Badge className="h-5 px-1.5 shrink-0" variant="default">
                 1
               </Badge>
             )}

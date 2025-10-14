@@ -695,27 +695,30 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent flex items-center justify-between gap-1 sm:gap-2 min-w-0 overflow-hidden">
-            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0 overflow-hidden">
-              <EmailSenderFilter
-                emails={emailsToUse}
-                selectedSender={selectedSender}
-                onSenderSelect={setSelectedSender}
-                onOpenAIChat={(senderEmail) => {
-                  setSelectedAIChatSender(senderEmail);
-                  setAiChatOpen(true);
-                }}
-              />
-              {selectedSender && !isMobile && (
-                <div className="text-xs sm:text-sm text-muted-foreground truncate max-w-[120px] sm:max-w-[180px] md:max-w-[250px] lg:max-w-none shrink">
-                  Mostrando {emails.length} email da <strong>{selectedSender}</strong>
-                </div>
-              )}
-            </div>
-            
-            {/* Right aligned icons - visible on all devices */}
-            <div className="flex items-center gap-1 shrink-0">
-              <PagePromptManager pageRoute="/email-manager" />
+          <div className="border-b bg-card-transparent p-2 sm:p-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap min-w-0">
+              {/* LEFT SIDE: Filter + Info text */}
+              <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                <EmailSenderFilter
+                  emails={emailsToUse}
+                  selectedSender={selectedSender}
+                  onSenderSelect={setSelectedSender}
+                  onOpenAIChat={(senderEmail) => {
+                    setSelectedAIChatSender(senderEmail);
+                    setAiChatOpen(true);
+                  }}
+                />
+                {selectedSender && (
+                  <div className="text-xs sm:text-sm text-muted-foreground truncate max-w-full">
+                    Mostrando {emails.length} email da <strong>{selectedSender}</strong>
+                  </div>
+                )}
+              </div>
+              
+              {/* RIGHT SIDE: AI Icon */}
+              <div className="flex items-center shrink-0">
+                <PagePromptManager pageRoute="/email-manager" />
+              </div>
             </div>
           </div>
 

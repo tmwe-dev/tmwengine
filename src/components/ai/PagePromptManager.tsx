@@ -84,7 +84,7 @@ export function PagePromptManager({ pageRoute }: PagePromptManagerProps) {
       <Button
         size="icon"
         variant="ghost"
-        className="h-8 w-8 hover:bg-primary/10"
+        className="h-9 w-9 sm:h-8 sm:w-8 hover:bg-primary/10 shrink-0"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -93,7 +93,7 @@ export function PagePromptManager({ pageRoute }: PagePromptManagerProps) {
         }}
         title="Gestisci Prompt AI"
       >
-        <FileText className="h-4 w-4 text-primary" />
+        <FileText className="h-4 w-4 text-primary shrink-0" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

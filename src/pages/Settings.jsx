@@ -76,7 +76,8 @@ const Settings = () => {
     enableWhatsApp: true,
     whatsAppBusiness: false,
     phoneFormat: 'international',
-    autoDetectCountry: true
+    autoDetectCountry: true,
+    enableChatCallsMessages: false
   });
 
   const [voiceAgentConfig, setVoiceAgentConfig] = useState({
@@ -1308,6 +1309,19 @@ const Settings = () => {
                     <Switch
                       checked={phoneConfig.autoDetectCountry}
                       onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, autoDetectCountry: checked }))}
+                    />
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-0.5">
+                      <Label>Ricezione Chiamate e Messaggi dalla Chat</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Abilita la ricezione di chiamate e messaggi diretti dalla chat
+                      </div>
+                    </div>
+                    <Switch
+                      checked={phoneConfig.enableChatCallsMessages}
+                      onCheckedChange={(checked) => setPhoneConfig(prev => ({ ...prev, enableChatCallsMessages: checked }))}
                     />
                   </div>
                 </div>

@@ -20,13 +20,28 @@ export const useEmailDownload = ({ folder, totalEmails }: UseEmailDownloadProps)
     setDownloadError(null);
     setAllEmails([]);
 
-    // Get user email from session
-    const userEmail = sessionStorage.getItem('tmwe_user_email');
-    if (!userEmail) {
+    // Get authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       toast.error('Utente non autenticato');
       setIsDownloading(false);
       return;
     }
+
+    // Get user profile with tmwe_email
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('tmwe_email')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile?.tmwe_email) {
+      toast.error('Email TMWE non configurata nel profilo');
+      setIsDownloading(false);
+      return;
+    }
+
+    const userEmail = profile.tmwe_email;
 
     try {
       // 1. Recupera tutti gli ID delle email già presenti nel database per questo utente

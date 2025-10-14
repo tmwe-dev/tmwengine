@@ -310,8 +310,13 @@ const EmailDashboard = () => {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
+      console.log('📧 SYNC MUTATION STARTED');
+      console.log('📁 Folder:', selectedFolder);
+      
       // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 User:', user?.id);
+      
       if (!user) {
         throw new Error('Utente non autenticato');
       }
@@ -422,16 +427,20 @@ const EmailDashboard = () => {
       return { synced: syncedCount, total: totalEmails };
     },
     onSuccess: (data) => {
+      console.log('✅ SYNC COMPLETED:', data);
       if (data.synced > 0) {
         toast.success(`Sincronizzate ${data.synced} nuove email su ${data.total} totali`);
       } else {
         toast.success('Database già sincronizzato');
       }
       queryClient.invalidateQueries({ queryKey: ['messages'] });
+      queryClient.invalidateQueries({ queryKey: ['db-email-count'] });
+      queryClient.invalidateQueries({ queryKey: ['global-email-count'] });
     },
     onError: (error) => {
-      console.error('❌ Sync error:', error);
-      toast.error('Sync fallita');
+      console.error('❌ SYNC ERROR:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      toast.error(`Sync fallita: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
   });
 
@@ -501,6 +510,9 @@ const EmailDashboard = () => {
     : emailsToUse;
 
   const handleSync = () => {
+    console.log('🚀 handleSync called - starting sync mutation...');
+    console.log('📊 Current folder:', selectedFolder);
+    console.log('🔐 Auth status:', supabase.auth);
     toast.info('Starting sync...');
     syncMutation.mutate();
   };

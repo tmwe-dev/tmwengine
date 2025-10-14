@@ -655,7 +655,7 @@ const EmailDashboard = () => {
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-[280px] p-0">
+            <SheetContent side="left" className="w-80 p-0">
             <EmailSidebar 
               selectedFolder={selectedFolder}
               onFolderSelect={(folder) => {
@@ -680,13 +680,13 @@ const EmailDashboard = () => {
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
-            <div className="border-b bg-card-transparent px-2 py-2">
+            <div className="border-b bg-card-transparent p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search emails..."
-                  className="pl-10 text-sm h-9 w-full"
+                  className="pl-10 text-sm h-10 w-full"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -695,7 +695,7 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent px-2 sm:px-4 py-2 flex items-center justify-between gap-2">
+          <div className="border-b bg-card-transparent p-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <EmailSenderFilter
                 emails={emailsToUse}
@@ -769,7 +769,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col" style={{ background: 'var(--gradient-page)' }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
@@ -809,7 +809,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={syncMonitorOpen} onOpenChange={setSyncMonitorOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-screen overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Download Email TMWE</DialogTitle>
           </DialogHeader>

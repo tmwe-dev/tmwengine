@@ -135,7 +135,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                   )}
                 </div>
 
-                <ScrollArea className="max-h-[180px]">
+                <ScrollArea className="max-h-[120px]">
                   <div className="space-y-1.5 pr-4">
                      {uniqueUsers.map((user) => {
                       const profile = userProfiles.get(user.user_id);

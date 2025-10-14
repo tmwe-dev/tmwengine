@@ -296,7 +296,7 @@ const Intranet = () => {
           <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
             <SheetContent side="left" className="w-[90vw] max-w-sm p-4 bg-background">
               <div className="mt-8 space-y-6">
-                <div>
+                <div className="flex-1 overflow-hidden">
                   <h3 className="text-sm font-semibold mb-3 px-2">Stanze</h3>
                   <RoomSelector
                     onRoomSelect={(roomId) => {
@@ -464,6 +464,7 @@ const Intranet = () => {
               onRoomSelect={(roomId) => setSearchParams({ room: roomId })}
               selectedRoomId={selectedRoomId}
               getUnreadCount={getUnreadCount}
+              isCollapsed={sidebarCollapsed}
             />
             
             {!sidebarCollapsed && (

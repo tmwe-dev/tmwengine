@@ -28,9 +28,10 @@ interface RoomSelectorProps {
   onRoomSelect: (roomId: string) => void;
   selectedRoomId?: string;
   getUnreadCount?: (roomId: string) => number;
+  isCollapsed?: boolean;
 }
 
-export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: RoomSelectorProps) => {
+export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isCollapsed = false }: RoomSelectorProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -244,26 +245,59 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
 
   return (
     <TooltipProvider>
-      <div>
-        <div className="flex items-center justify-between px-2 mb-2">
-          <h3 className="text-sm font-semibold">Stanze Chat</h3>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="ml-2">Nuova</span>
-          </Button>
-        </div>
+      <div className="flex flex-col h-full overflow-hidden">
+        {!isCollapsed && (
+          <div className="flex items-center justify-between px-2 mb-2">
+            <h3 className="text-sm font-semibold">Stanze Chat</h3>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="ml-2">Nuova</span>
+            </Button>
+          </div>
+        )}
 
-        <div>
+        {isCollapsed && (
+          <div className="flex justify-center px-2 mb-2">
+            <Button 
+              size="icon" 
+              variant="outline" 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="h-8 w-8"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-1 px-2">
             {rooms.map((room) => {
               const canAccess = room.access_type === 'public' || room.is_member;
               const unreadCount = getUnreadCount ? getUnreadCount(room.id) : 0;
               
-              const button = (
+              const button = isCollapsed ? (
+                <Button
+                  variant={selectedRoomId === room.id ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => canAccess && onRoomSelect(room.id)}
+                  disabled={!canAccess}
+                  className="w-10 h-10 p-0 justify-center items-center relative group"
+                >
+                  <MessageSquare className="h-4 w-4 shrink-0 group-hover:scale-110 transition-all" />
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px] font-bold rounded-full"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              ) : (
                 <Button
                   variant={selectedRoomId === room.id ? "secondary" : "ghost"}
                   size="sm"
@@ -276,16 +310,32 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
                     <span className="truncate text-left">{room.name}</span>
                   </div>
                   {unreadCount > 0 && (
-                    <span className="ml-auto text-destructive font-semibold text-xs animate-pulse">
-                      {unreadCount}
-                    </span>
+                    <Badge variant="destructive" className="ml-auto text-xs">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
                   )}
                 </Button>
               );
 
               return (
                 <div key={room.id}>
-                  {button}
+                  {isCollapsed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {button}
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <div className="text-sm">
+                          <p className="font-semibold">{room.name}</p>
+                          {unreadCount > 0 && (
+                            <p className="text-destructive text-xs">{unreadCount} non letti</p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    button
+                  )}
                 </div>
               );
             })}

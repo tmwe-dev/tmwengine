@@ -225,7 +225,7 @@ export const EmailList = ({
             )}
             <div className="flex-1 relative">
               <div className="flex items-center max-w-full overflow-hidden">
-                <div className="min-w-0 flex-shrink max-w-[200px]">
+                <div className="min-w-0 flex-shrink-0 w-auto">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'

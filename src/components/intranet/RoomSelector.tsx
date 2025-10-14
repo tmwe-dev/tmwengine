@@ -299,18 +299,28 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount }: R
               const AccessIcon = getAccessIcon(room.access_type);
               
               const button = (
-                <div className="flex items-center gap-2 w-full">
-                  <Button
-                    variant={selectedRoomId === room.id ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => canAccess && onRoomSelect(room.id)}
-                    disabled={!canAccess}
-                    className="flex-1 justify-start"
-                  >
-                    <AccessIcon className="h-4 w-4 shrink-0" />
-                    <span className="truncate flex-1">{room.name}</span>
-                  </Button>
-                </div>
+                <Button
+                  variant={selectedRoomId === room.id ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => canAccess && onRoomSelect(room.id)}
+                  disabled={!canAccess}
+                  className="w-full justify-between group relative overflow-hidden hover:bg-accent/50 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <MessageSquare className="h-4 w-4 shrink-0" />
+                    <span className="truncate text-left">{room.name}</span>
+                  </div>
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 h-5 min-w-[20px] px-1.5 bg-destructive text-destructive-foreground animate-pulse"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
+                  {/* Animated underline */}
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                </Button>
               );
 
               return (

@@ -175,7 +175,7 @@ export const EmailList = ({
   if (loading && !isDownloading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -183,7 +183,7 @@ export const EmailList = ({
   if (!emails || emails.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-        <Mail className="mb-4 h-16 w-16 opacity-20" />
+        <Mail className="mb-4 opacity-20" />
         <p className="text-lg font-medium">No emails found</p>
         <p className="text-sm">Try syncing your mailbox</p>
       </div>
@@ -192,7 +192,7 @@ export const EmailList = ({
 
 
   const renderListView = () => (
-      <div className="space-y-2 w-full">
+      <div className="w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -246,26 +246,26 @@ export const EmailList = ({
                     {formatDistanceToNow(new Date(email.date), { addSuffix: true })}
                   </span>
                   {!email.read && (
-                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">New</Badge>
+                    <Badge variant="secondary">New</Badge>
                   )}
                   {email.starred && (
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <Star className="fill-yellow-400 text-yellow-400" />
                   )}
                   {email.hasAttachments && (
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <Paperclip className="text-muted-foreground" />
                   )}
                   {!multiSelectMode && onOpenDetailPopup && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="hidden md:flex h-7 w-7 p-0 group"
+                      className="hidden md:flex group"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEmailSelect(email.id);
                         onOpenDetailPopup();
                       }}
                     >
-                      <Maximize2 className="h-4 w-4 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
+                      <Maximize2 className="group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                     </Button>
                   )}
                   {!multiSelectMode && selectedEmailId === email.id && (
@@ -274,9 +274,9 @@ export const EmailList = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 w-7 p-0 group"
+                          className="group"
                         >
-                          <MoreHorizontal className="h-4 w-4 group-hover:scale-110 group-hover:animate-wiggle transition-all" />
+                          <MoreHorizontal className="group-hover:scale-110 group-hover:animate-wiggle transition-all" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover z-50">
@@ -285,16 +285,16 @@ export const EmailList = ({
                           setSelectedEmailForActions(email);
                           setShowActionsSheet(true);
                         }}>
-                          <Tag className="mr-2 h-4 w-4" />
+                  <Tag />
                           Gestisci Regole
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                          <Archive className="mr-2 h-4 w-4" />
+                  <Archive />
                           Archivia
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                          <FolderInput className="mr-2 h-4 w-4" />
+                  <FolderInput />
                           Sposta in...
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -302,7 +302,7 @@ export const EmailList = ({
                           onClick={(e) => e.stopPropagation()}
                           className="text-destructive"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 />
                           Elimina
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -314,7 +314,7 @@ export const EmailList = ({
               <div className="absolute bottom-1 left-3 flex items-center gap-2">
                 {email.hasGroup && (
                   <div className="flex items-center gap-1 text-xs text-blue-400">
-                    <Users className="h-3 w-3" />
+                    <Users />
                     <span className="font-medium">{email.groupName || 'Gruppo'}</span>
                   </div>
                 )}
@@ -332,7 +332,7 @@ export const EmailList = ({
   );
 
   const renderGridView = () => (
-    <div className="space-y-2 w-full">
+    <div className="w-full">
       {filteredEmails.map((email, index) => (
         <Card
           key={email.id}
@@ -390,7 +390,7 @@ export const EmailList = ({
                       {email.from}
                     </p>
                     {!email.read && (
-                      <Badge variant="secondary" className="h-4 px-1 text-[10px] sm:h-5 sm:px-1.5 sm:text-xs shrink-0">
+                      <Badge variant="secondary" className="shrink-0">
                         New
                       </Badge>
                     )}
@@ -409,12 +409,12 @@ export const EmailList = ({
                         <span className="whitespace-nowrap text-xs sm:text-base font-bold">
                           {format(new Date(email.date), 'HH:mm')}
                         </span>
-                        {email.starred && (
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        )}
-                        {email.hasAttachments && (
-                          <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        )}
+              {email.starred && (
+                <Star className="fill-yellow-400 text-yellow-400" />
+              )}
+              {email.hasAttachments && (
+                <Paperclip className="text-muted-foreground" />
+              )}
                       </div>
                       <span className="whitespace-nowrap text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
                         {format(new Date(email.date), 'EEEE dd/MM/yyyy', { locale: it })}
@@ -423,12 +423,11 @@ export const EmailList = ({
                     {!multiSelectMode && selectedEmailId === email.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button 
+                        <Button 
                             variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 p-0"
+                            size="sm"
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-popover z-50">
@@ -437,16 +436,16 @@ export const EmailList = ({
                             setSelectedEmailForActions(email);
                             setShowActionsSheet(true);
                           }}>
-                            <Tag className="mr-2 h-4 w-4" />
+                  <Tag />
                             Gestisci Regole
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <Archive className="mr-2 h-4 w-4" />
+                            <Archive />
                             Archivia
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                            <FolderInput className="mr-2 h-4 w-4" />
+                            <FolderInput />
                             Sposta in...
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -454,7 +453,7 @@ export const EmailList = ({
                             onClick={(e) => e.stopPropagation()}
                             className="text-destructive"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 />
                             Elimina
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -467,7 +466,7 @@ export const EmailList = ({
               <div className="absolute bottom-2 left-4 flex items-center gap-2">
                 {email.hasGroup && (
                   <div className="flex items-center gap-1 text-xs text-blue-400">
-                    <Users className="h-3 w-3" />
+                    <Users />
                     <span className="font-medium">{email.groupName || 'Gruppo'}</span>
                   </div>
                 )}
@@ -487,7 +486,7 @@ export const EmailList = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-2 px-4 border-b">
+      <div className="flex flex-col border-b">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex flex-col items-start gap-1.5">
             <div className="flex items-center gap-3">
@@ -508,7 +507,7 @@ export const EmailList = ({
             {multiSelectMode && (
               <div className="flex items-center gap-1 flex-wrap">
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
+                  <SelectTrigger>
                     <SelectValue placeholder="Azione" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
@@ -516,45 +515,45 @@ export const EmailList = ({
                       value="delete"
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Trash2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Elimina</span>
+                      <div className="flex items-center">
+                        <Trash2 className="transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="transition-transform duration-200 group-hover:scale-110">Elimina</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
                       value="archive"
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Archive className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Archivia</span>
+                      <div className="flex items-center">
+                        <Archive className="transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="transition-transform duration-200 group-hover:scale-110">Archivia</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
                       value="forward"
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Forward className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Inoltra</span>
+                      <div className="flex items-center">
+                        <Forward className="transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="transition-transform duration-200 group-hover:scale-110">Inoltra</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
                       value="mark-read"
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Letta</span>
+                      <div className="flex items-center">
+                        <CheckCircle2 className="transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="transition-transform duration-200 group-hover:scale-110">Letta</span>
                       </div>
                     </SelectItem>
                     <SelectItem 
                       value="move"
                       className="relative group overflow-hidden after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-[60%] after:h-[1px] after:origin-left after:bg-gradient-to-r after:from-purple-400/65 after:via-purple-600 after:via-40% after:to-transparent hover:bg-transparent hover:after:animate-line-bounce"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <FolderInput className="h-3 w-3 transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
-                        <span className="text-xs transition-transform duration-200 group-hover:scale-110">Sposta</span>
+                      <div className="flex items-center">
+                        <FolderInput className="transition-all duration-200 group-hover:scale-105 group-hover:animate-wiggle" />
+                        <span className="transition-transform duration-200 group-hover:scale-110">Sposta</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -562,7 +561,7 @@ export const EmailList = ({
 
                 {bulkAction === 'move' && (
                   <Select value={targetFolder} onValueChange={setTargetFolder}>
-                    <SelectTrigger className="w-20 sm:w-24 h-7 text-[11px]">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -799,7 +798,7 @@ export const EmailList = ({
                 }}
                 disabled={!selectedAction}
               >
-                <Tag className="mr-2 h-4 w-4" />
+                <Tag />
                 Crea Nuova Regola {multiSelectMode && selectedEmailIds.size > 0 && `(${selectedEmailIds.size})`}
               </Button>
             </div>

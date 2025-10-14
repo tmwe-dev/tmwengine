@@ -286,7 +286,7 @@ export const EmailDetail = ({
       {/* Color picker bar */}
       <div className="flex items-center justify-center border-b bg-card-transparent">
         <div className="relative">
-          <Paintbrush className="h-6 w-6 pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" style={{ color: emailTextColor }} />
+          <Paintbrush className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 z-10" style={{ color: emailTextColor }} />
           <input
             type="color"
             value={emailTextColor}
@@ -551,8 +551,6 @@ export const EmailDetail = ({
               sandbox="allow-same-origin"
               className="w-full border-0"
               style={{ 
-                minHeight: '600px',
-                maxHeight: '80vh',
                 overflow: 'auto'
               }}
             />

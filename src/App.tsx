@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TMWEAuthProvider } from "@/hooks/useTMWEAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { GlobalCallHandler } from "@/components/GlobalCallHandler";
 import '@/i18n/config';
 
 import Auth from "./pages/Auth";
@@ -45,46 +46,18 @@ import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
-import { useGlobalCallHandler } from "@/hooks/useGlobalCallHandler";
-import { IncomingCallDialog } from "@/components/call/IncomingCallDialog";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [currentUserId, setCurrentUserId] = useState<string>('');
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUserId(session?.user?.id || '');
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUserId(session?.user?.id || '');
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const { incomingCall, acceptCall, rejectCall } = useGlobalCallHandler(currentUserId);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TMWEAuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          
-          {/* Global Incoming Call Dialog */}
-          <IncomingCallDialog
-            isOpen={!!incomingCall}
-            callerName={incomingCall?.callerName || ''}
-            onAccept={acceptCall}
-            onReject={rejectCall}
-          />
-
           <BrowserRouter>
+            <GlobalCallHandler>
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>
@@ -251,6 +224,7 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+            </GlobalCallHandler>
         </BrowserRouter>
       </TooltipProvider>
     </TMWEAuthProvider>

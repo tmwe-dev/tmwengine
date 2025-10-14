@@ -1066,7 +1066,7 @@ const ChatLaboratory = () => {
                 toggleParticipant={toggleParticipant}
               />
 
-              {/* Right side - Token Chart Icons, Maximize and Settings */}
+              {/* Right side - Maximize and Settings */}
               <div className="flex items-center gap-1">
                 {/* Maximize Button - sempre visibile */}
                 <MessageNavigationBar
@@ -1078,17 +1078,6 @@ const ChatLaboratory = () => {
                   isFullScreenMode={isFullScreenMode}
                   onToggleFullScreen={() => setIsFullScreenMode(!isFullScreenMode)}
                 />
-                
-                {/* Call Room Icon */}
-                <Button
-                  onClick={() => navigate('/call-room')}
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 h-8 w-8"
-                  title="Call Room - Chiamate Audio"
-                >
-                  <Phone className="h-5 w-5" />
-                </Button>
 
                 {/* Settings Icon */}
                 <Button

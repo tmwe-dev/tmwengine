@@ -3,12 +3,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users, Phone, MessageSquare } from 'lucide-react';
 import { UserAvailabilityBadge } from './UserAvailabilityBadge';
 import { UserAvailabilitySelector } from './UserAvailabilitySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { IconButton } from '@/components/design-system/buttons/IconButton';
 
 interface UserPresence {
   user_id: string;
@@ -27,9 +28,11 @@ interface UserProfile {
 
 interface OnlineUsersProps {
   users: UserPresence[];
+  onCallUser?: (userId: string, userName: string) => void;
+  onOpenPrivateChat?: (userId: string, userName: string) => void;
 }
 
-export const OnlineUsers = ({ users }: OnlineUsersProps) => {
+export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUsersProps) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
   
@@ -126,38 +129,69 @@ export const OnlineUsers = ({ users }: OnlineUsersProps) => {
 
                 <ScrollArea className="h-[250px]">
                   <div className="space-y-2 pr-4">
-                    {users.map((user) => {
+                     {users.map((user) => {
                       const profile = userProfiles.get(user.user_id);
                       return (
                         <div
                           key={user.user_id}
-                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                          className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                         >
-                          <div className="relative">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
-                              </AvatarFallback>
-                            </Avatar>
-                            {profile && (
-                              <div className="absolute -bottom-0.5 -right-0.5">
-                                <UserAvailabilityBadge
-                                  status={profile.availability_status}
-                                  emoji={profile.status_emoji || undefined}
-                                  color={profile.status_color || undefined}
-                                  size="sm"
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">
-                              {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
-                            </p>
-                            {profile?.status_message && (
-                              <p className="text-[10px] text-muted-foreground truncate">
-                                {profile.status_message}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="relative">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="text-xs">
+                                  {profile?.display_name?.substring(0, 2).toUpperCase() || getUserInitials(user.user_id)}
+                                </AvatarFallback>
+                              </Avatar>
+                              {profile && (
+                                <div className="absolute -bottom-0.5 -right-0.5">
+                                  <UserAvailabilityBadge
+                                    status={profile.availability_status}
+                                    emoji={profile.status_emoji || undefined}
+                                    color={profile.status_color || undefined}
+                                    size="sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">
+                                {profile?.display_name || `Utente ${getUserInitials(user.user_id)}`}
                               </p>
+                              {profile?.status_message && (
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {profile.status_message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {onOpenPrivateChat && (
+                              <IconButton
+                                icon={MessageSquare}
+                                onClick={() => onOpenPrivateChat(
+                                  user.user_id, 
+                                  profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
+                                )}
+                                tooltip="Apri chat privata"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7"
+                              />
+                            )}
+                            {onCallUser && (
+                              <IconButton
+                                icon={Phone}
+                                onClick={() => onCallUser(
+                                  user.user_id, 
+                                  profile?.display_name || `Utente ${getUserInitials(user.user_id)}`
+                                )}
+                                tooltip="Chiama"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7"
+                              />
                             )}
                           </div>
                         </div>

@@ -200,6 +200,15 @@ const Intranet = () => {
     }
   };
 
+  const handleCallUser = (userId: string, userName: string) => {
+    navigate(`/call-room?targetUserId=${userId}`);
+    
+    toast({
+      title: "Avvio chiamata",
+      description: `Chiamata verso ${userName}...`,
+    });
+  };
+
   const checkCreatorOrAdmin = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -300,7 +309,11 @@ const Intranet = () => {
                 
                 <div>
                   <h3 className="text-sm font-semibold mb-3 px-2">Utenti Online</h3>
-                  <OnlineUsers users={onlineUsers} />
+                  <OnlineUsers 
+                    users={onlineUsers}
+                    onCallUser={handleCallUser}
+                    onOpenPrivateChat={handleOpenPrivateChat}
+                  />
                 </div>
 
                 {isCreatorOrAdmin && (
@@ -468,7 +481,11 @@ const Intranet = () => {
                   <h3 className="text-sm font-semibold">Utenti Online</h3>
                 </div>
                 <div className="px-2">
-                  <OnlineUsers users={onlineUsers} />
+                  <OnlineUsers 
+                    users={onlineUsers}
+                    onCallUser={handleCallUser}
+                    onOpenPrivateChat={handleOpenPrivateChat}
+                  />
                 </div>
 
                 {isCreatorOrAdmin && (

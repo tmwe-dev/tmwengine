@@ -285,16 +285,20 @@ serve(async (req) => {
       console.log(`📚 Sezioni KB_CONTEXT: ${kbContextSections.length}`);
     }
 
-    // Fetch conversation messages
-    const { data: messages } = await supabaseClient
-      .from('chat_laboratory_messages')
-      .select('sender_type, sender_name, content, content_summary, is_summary_available')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+  // Fetch conversation messages - 🎯 LIMIT agli ultimi 20 messaggi
+  const { data: messages } = await supabaseClient
+    .from('chat_laboratory_messages')
+    .select('sender_type, sender_name, content, content_summary, is_summary_available, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  // 🔄 Inverti array per ripristinare cronologia corretta
+  const recentMessages = (messages || []).reverse();
 
     // 🎯 Apply economy mode: usa content_summary per messaggi AI quando disponibile
     // CRITICO: i messaggi utente NON vengono MAI riassunti per preservare menzioni dirette
-    const historyMessages = (messages || []).map((msg: any) => {
+    const historyMessages = recentMessages.map((msg: any) => {
       let messageContent = msg.content;
       
       // ✅ Economy Mode: usa sempre summary per AI se disponibile (preserva brevità ultimi 20 msg)
@@ -471,6 +475,27 @@ serve(async (req) => {
       ...historyMessages,
       { role: 'user', content: userMessage }
     ];
+
+    // 📊 LOG DIMENSIONI CONTESTO (per monitoraggio)
+    const totalContextChars = conversationHistory
+      .map(m => m.content.length)
+      .reduce((sum, len) => sum + len, 0);
+
+    const estimatedTokens = Math.ceil(totalContextChars / 4);
+
+    console.log('📊 CONTEXT SIZE:', {
+      systemPromptChars: composedPrompt.length,
+      cumulativeSummaryChars: cumulativeSummary?.length || 0,
+      historyMessagesCount: historyMessages.length,
+      totalContextChars: totalContextChars,
+      estimatedTokens: estimatedTokens,
+      kbDocsIncluded: kbContext ? 'YES' : 'NO',
+      economyModeActive: useEconomyMode
+    });
+
+    if (estimatedTokens > 50000) {
+      console.warn('⚠️ CONTEXT SIZE ECCESSIVO!', estimatedTokens, 'tokens');
+    }
 
     let aiResponse = '';
     let tokenInput = 0;

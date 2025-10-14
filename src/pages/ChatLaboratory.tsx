@@ -450,7 +450,11 @@ const ChatLaboratory = () => {
         .from('chat_laboratory_conversations')
         .insert({
           titolo: `Discussione Multi-Agente ${new Date().toLocaleString()}`,
-          active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name }))
+          active_participants: participants.filter(p => p.is_active).map(p => ({ type: p.type, name: p.name })),
+          riassunto_contesto: null,
+          last_message_summarized: 0,
+          summary_chunks: [],
+          economy_mode: true
         })
         .select()
         .single();
@@ -467,6 +471,8 @@ const ChatLaboratory = () => {
             conversation_id: data.id,
             mode: 'bar',
             voice_enabled: true,
+            active_kb_id: null,
+            kb_navigation_history: [],
             user_id: (await supabase.auth.getUser()).data.user?.id,
             updated_at: new Date().toISOString()
           }, { onConflict: 'conversation_id' });

@@ -213,7 +213,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-stretch max-w-full">
+          <div className="flex items-stretch max-w-full overflow-hidden">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3">
                 <Checkbox
@@ -224,8 +224,8 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 relative">
-              <div className="flex items-center">
-                <div className="min-w-0 flex-shrink">
+              <div className="flex items-center max-w-full overflow-hidden">
+                <div className="min-w-0 flex-shrink max-w-[200px]">
                   <p className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold text-email-unread'
@@ -233,7 +233,7 @@ export const EmailList = ({
                     {email.from}
                   </p>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 max-w-full overflow-hidden">
                   <h3 className={cn(
                     'truncate text-xs sm:text-sm',
                     !email.read && 'font-semibold'
@@ -353,7 +353,7 @@ export const EmailList = ({
           )}
           onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
         >
-          <div className="flex items-start max-w-full">
+          <div className="flex items-start max-w-full overflow-hidden">
             {multiSelectMode && (
               <div className="flex items-center justify-center px-3 self-center">
                 <Checkbox
@@ -364,7 +364,7 @@ export const EmailList = ({
               </div>
             )}
             <div className="flex-1 relative">
-              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0">
+              <div className="flex flex-col sm:flex-row items-start sm:justify-start gap-2 sm:gap-3 md:gap-4 min-w-0 max-w-full overflow-hidden">
                 {/* Icona maximize a sinistra */}
                 {!multiSelectMode && onOpenDetailPopup && (
                   <Button
@@ -381,8 +381,8 @@ export const EmailList = ({
                   </Button>
                 )}
                 
-                <div className="sm:flex-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                <div className="sm:flex-1 min-w-0 max-w-full overflow-hidden">
+                  <div className="flex items-center gap-1.5 min-w-0 max-w-full overflow-hidden">
                     <p className={cn(
                       'text-xs sm:text-sm min-w-0 break-words sm:truncate',
                       !email.read && 'font-semibold text-email-unread'
@@ -402,7 +402,7 @@ export const EmailList = ({
                     {email.subject || '(No Subject)'}
                   </h3>
                 </div>
-                <div className="w-full sm:w-auto flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end sm:shrink-0">
+                <div className="flex flex-row sm:flex-col items-start sm:items-end justify-between sm:justify-end gap-1 sm:gap-2 sm:self-end shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="flex flex-col items-end">
                       <div className="flex items-center gap-2">

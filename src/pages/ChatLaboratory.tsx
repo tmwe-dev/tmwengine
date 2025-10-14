@@ -1049,7 +1049,7 @@ const ChatLaboratory = () => {
             
             {/* Icons row below */}
             <div className="py-1 md:py-1.5 flex items-center justify-between gap-2">
-              {/* Left side - Navigation button */}
+              {/* Left side - Navigation button and Export */}
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -1060,10 +1060,7 @@ const ChatLaboratory = () => {
                 >
                   <Layout className="h-4 w-4" />
                 </Button>
-              </div>
-
-              {/* Center Controls */}
-              <div className="flex items-center gap-1">
+                
                 {currentConversationId && (
                   <ExportSummaryButton
                     labConversationId={currentConversationId}
@@ -1072,6 +1069,9 @@ const ChatLaboratory = () => {
                   />
                 )}
               </div>
+
+              {/* Center - empty space */}
+              <div className="flex items-center gap-1"></div>
 
               {/* Right side - Participant, View Mode, Maximize and Settings */}
               <div className="flex items-center gap-1">

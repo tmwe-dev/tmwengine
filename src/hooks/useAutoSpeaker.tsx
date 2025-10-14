@@ -33,6 +33,7 @@ export const useAutoSpeaker = ({
 }: AutoSpeakerProps) => {
   const { profile } = useUserProfile();
   const lastMessageIdRef = useRef<string | null>(null);
+  const lastTranslatedMessageIdRef = useRef<string | null>(null); // Tracking separato per traduzioni
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
@@ -55,14 +56,8 @@ export const useAutoSpeaker = ({
     // Non leggere i propri messaggi
     if (latestMessage.user_id === currentUserId) return;
     
-    // Non leggere lo stesso messaggio due volte
-    if (latestMessage.id === lastMessageIdRef.current) return;
-    
     // Non leggere messaggi non testuali
     if (latestMessage.message_type !== 'text' || !latestMessage.content) return;
-
-    // Controlla se il messaggio è già stato letto
-    if (latestMessage.id === lastMessageIdRef.current) return;
 
     // Determina se serve traduzione
     const senderProfile = userProfiles[latestMessage.user_id];
@@ -72,18 +67,46 @@ export const useAutoSpeaker = ({
 
     const translatedText = translatedMessages[latestMessage.id];
 
-    // Se serve traduzione ma non è ancora pronta, aspetta il prossimo update
-    if (needsTranslation && !translatedText) {
-      console.log('⏳ useAutoSpeaker - Traduzione non ancora pronta, aspetto update:', {
-        messageId: latestMessage.id,
-        senderLanguage: senderProfile?.preferred_language,
-        targetLanguage: profile.readingLanguage
+    // === NUOVA LOGICA: TRACKING SEPARATO ===
+    if (needsTranslation) {
+      // Caso: traduzione richiesta
+      if (!translatedText) {
+        console.log('⏳ Traduzione non pronta, aspetto...', { 
+          messageId: latestMessage.id,
+          senderLanguage: senderProfile?.preferred_language,
+          targetLanguage: profile.readingLanguage
+        });
+        return; // Aspetta che arrivi la traduzione
+      }
+      
+      // Traduzione pronta: verifica se già letta
+      if (lastTranslatedMessageIdRef.current === latestMessage.id) {
+        console.log('⏭️ Traduzione già letta', { messageId: latestMessage.id });
+        return;
+      }
+      
+      // Marca come letto (tradotto)
+      lastTranslatedMessageIdRef.current = latestMessage.id;
+      console.log('🔊 Leggo traduzione:', { 
+        messageId: latestMessage.id, 
+        text: translatedText,
+        targetLanguage: profile.readingLanguage 
       });
-      return;
+      
+    } else {
+      // Caso: NO traduzione richiesta
+      if (lastMessageIdRef.current === latestMessage.id) {
+        console.log('⏭️ Messaggio originale già letto', { messageId: latestMessage.id });
+        return;
+      }
+      
+      // Marca come letto (originale)
+      lastMessageIdRef.current = latestMessage.id;
+      console.log('🔊 Leggo originale:', { 
+        messageId: latestMessage.id,
+        language: profile.readingLanguage || 'it'
+      });
     }
-
-    // Marca il messaggio come già letto
-    lastMessageIdRef.current = latestMessage.id;
 
     // Usa traduzione se disponibile, altrimenti originale
     const textToSpeak = translatedText || latestMessage.content;

@@ -647,13 +647,6 @@ const ChatLaboratory = () => {
 
       if (insertError) throw insertError;
 
-      // 🔐 Verifica sessione
-      const session = await supabase.auth.getSession();
-      console.log('🔐 SESSION CHECK:', {
-        hasSession: !!session.data.session,
-        accessToken: session.data.session?.access_token ? 'present' : 'missing'
-      });
-
       setUploadedFiles([]);
       setGeneratedImage(null);
 
@@ -692,32 +685,8 @@ const ChatLaboratory = () => {
           }
         }
       } else {
-        // ✅ MODALITÀ TESTUALE: Sequential + Summarization Strategy
-        let processedMessage = currentPrompt;
-        
-        // Step 1: Reduce user message if enabled and message is long
-        const shouldReduce = messages.length === 0 || currentPrompt.length > 500;
-        if (shouldReduce) {
-          console.log('📝 Riducendo messaggio utente...');
-          const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
-            'summarize-user-message',
-            { body: { originalMessage: currentPrompt, mode: 'standard' } }
-          );
-
-          if (!summaryError && summaryData?.summary) {
-            processedMessage = summaryData.summary;
-            console.log(`✅ Riduzione: ${summaryData.originalLength} → ${summaryData.summaryLength} chars (-${summaryData.tokenReduction}%)`);
-            
-            if (summaryData.tokenReduction > 50) {
-              toast({
-                title: "Messaggio ottimizzato",
-                description: `Riduzione token: -${summaryData.tokenReduction}%`,
-              });
-            }
-          }
-        }
-
-        // Step 2: Determine orchestration mode (first turn = parallel, subsequent = sequential)
+        // ✅ MODALITÀ TESTUALE: Sequential orchestration
+        // Step 1: Determine orchestration mode (first turn = parallel, subsequent = sequential)
         const isFirstTurn = messages.length === 0;
         
         if (isFirstTurn) {
@@ -727,7 +696,7 @@ const ChatLaboratory = () => {
           const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
             body: { 
               conversationId,
-              userMessage: processedMessage,
+              userMessage: currentPrompt,
               participants: activeAIParticipants,
               sequentialMode: false
             }
@@ -758,7 +727,7 @@ const ChatLaboratory = () => {
             const { data, error } = await supabase.functions.invoke('chat-laboratory-orchestrator', {
               body: { 
                 conversationId,
-                userMessage: processedMessage,
+                userMessage: currentPrompt,
                 participants: [participant], // Solo questo AI
                 sequentialMode: true
               }

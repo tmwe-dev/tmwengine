@@ -65,6 +65,7 @@ export type Database = {
       attivita: {
         Row: {
           assegnato_a: string | null
+          campagna_id: string | null
           created_at: string
           creato_da: string | null
           data_creazione: string
@@ -84,6 +85,7 @@ export type Database = {
         }
         Insert: {
           assegnato_a?: string | null
+          campagna_id?: string | null
           created_at?: string
           creato_da?: string | null
           data_creazione?: string
@@ -103,6 +105,7 @@ export type Database = {
         }
         Update: {
           assegnato_a?: string | null
+          campagna_id?: string | null
           created_at?: string
           creato_da?: string | null
           data_creazione?: string
@@ -120,7 +123,15 @@ export type Database = {
           tipo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attivita_campagna_id_fkey"
+            columns: ["campagna_id"]
+            isOneToOne: false
+            referencedRelation: "campagne"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attivita_archiviate: {
         Row: {
@@ -188,6 +199,63 @@ export type Database = {
           stato?: string
           tipo?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      campagne: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          fine: string | null
+          frequenza_tipo: string | null
+          frequenza_valore: number | null
+          id: string
+          inizio: string | null
+          max_email_giorno: number | null
+          max_email_ora: number | null
+          nome: string
+          obiettivo: string | null
+          ora_fine: string | null
+          ora_inizio: string | null
+          stato: string | null
+          stato_invio: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          fine?: string | null
+          frequenza_tipo?: string | null
+          frequenza_valore?: number | null
+          id?: string
+          inizio?: string | null
+          max_email_giorno?: number | null
+          max_email_ora?: number | null
+          nome: string
+          obiettivo?: string | null
+          ora_fine?: string | null
+          ora_inizio?: string | null
+          stato?: string | null
+          stato_invio?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          fine?: string | null
+          frequenza_tipo?: string | null
+          frequenza_valore?: number | null
+          id?: string
+          inizio?: string | null
+          max_email_giorno?: number | null
+          max_email_ora?: number | null
+          nome?: string
+          obiettivo?: string | null
+          ora_fine?: string | null
+          ora_inizio?: string | null
+          stato?: string | null
+          stato_invio?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

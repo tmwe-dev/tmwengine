@@ -48,12 +48,15 @@ interface Activity {
   cellulare?: string;
   telefono?: string;
   contact_source?: 'rubrica' | 'imported_contacts';
+  campagna_id?: string;
+  campagna_nome?: string;
 }
 
 interface AttivitaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   filterByContactId?: string | null;
+  filterByCampaignId?: string | null;
   showBackButton?: boolean;
   onBackToRecords?: () => void;
 }
@@ -78,8 +81,8 @@ const PRIORITA_LABELS = {
   bassa: 'Bassa'
 };
 
-export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBackButton, onBackToRecords }: AttivitaDialogProps) {
-  console.log('AttivitaDialog props:', { open, filterByContactId, showBackButton, hasOnBackToRecords: !!onBackToRecords });
+export function AttivitaDialog({ open, onOpenChange, filterByContactId, filterByCampaignId, showBackButton, onBackToRecords }: AttivitaDialogProps) {
+  console.log('AttivitaDialog props:', { open, filterByContactId, filterByCampaignId, showBackButton, hasOnBackToRecords: !!onBackToRecords });
   const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -107,15 +110,22 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
     if (open) {
       loadActivities();
     }
-  }, [open, filterByContactId]);
+  }, [open, filterByContactId, filterByCampaignId]);
 
   const loadActivities = async () => {
     try {
       setIsLoading(true);
       
-      const { data: attivitaData, error: attivitaError } = await supabase
+      let query = supabase
         .from('attivita')
-        .select('*')
+        .select('*');
+      
+      // Filtra per campagna se specificato
+      if (filterByCampaignId) {
+        query = query.eq('campagna_id', filterByCampaignId);
+      }
+      
+      const { data: attivitaData, error: attivitaError } = await query
         .order('data_creazione', { ascending: false });
 
       if (attivitaError) throw attivitaError;
@@ -189,7 +199,9 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
           ora_creazione: activity.ora_creazione,
           data_ultima_modifica: activity.data_ultima_modifica,
           modifiche_log: Array.isArray(activity.modifiche_log) ? activity.modifiche_log : [],
-          selezionata: activity.selezionata || false
+          selezionata: activity.selezionata || false,
+          campagna_id: activity.campagna_id,
+          campagna_nome: null
         };
       });
 
@@ -217,6 +229,7 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
       activity.rubrica_origine?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesContact = !filterByContactId || activity.rubrica_id === filterByContactId;
+    const matchesCampaign = !filterByCampaignId || activity.campagna_id === filterByCampaignId;
 
     const matchesStato = !filters.stato || filters.stato === 'all' || 
       filters.stato.split(',').includes(activity.stato);
@@ -227,7 +240,7 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
       (!filters.priorita || filters.priorita === 'all' || activity.priorita === filters.priorita) &&
       (!filters.hasNotes || (activity.note && activity.note.trim() !== ''));
 
-    return matchesSearch && matchesContact && matchesFilters;
+    return matchesSearch && matchesContact && matchesCampaign && matchesFilters;
   });
 
   const filteredActivities = baseFilteredActivities.filter(activity => {
@@ -301,7 +314,7 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
                 Indietro
               </Button>
             )}
-            <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'}</span>
+            <span>Gestione Attività {filterByContactId && '- Filtrato per contatto'} {filterByCampaignId && '- Filtrato per campagna'}</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             <X className="h-4 w-4" />
@@ -402,12 +415,13 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
                     <TableHead>Stato</TableHead>
                     <TableHead>Priorità</TableHead>
                     <TableHead>Scadenza</TableHead>
+                    <TableHead>Campagna</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedActivities.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                         Nessuna attività trovata
                       </TableCell>
                     </TableRow>
@@ -440,6 +454,13 @@ export function AttivitaDialog({ open, onOpenChange, filterByContactId, showBack
                         </TableCell>
                         <TableCell>
                           {activity.scadenza ? format(new Date(activity.scadenza), 'dd/MM/yyyy') : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {activity.campagna_id && (
+                            <Badge variant="secondary" className="gap-1">
+                              📧 C
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

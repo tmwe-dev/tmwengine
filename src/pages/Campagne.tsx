@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Calendar, DollarSign, Target, Play, Pause, CheckCircle, Edit, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Filter, Calendar, DollarSign, Target, Play, Pause, CheckCircle, Edit, Trash2, ChevronUp, ChevronDown, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,8 @@ import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { useNavigate } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AttivitaDialog } from '@/components/attivita/AttivitaDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Campaign {
   id: string;
@@ -23,7 +25,7 @@ interface Campaign {
   inizio?: string;
   fine?: string;
   budget?: number;
-  stato: 'attiva' | 'pausa' | 'completata';
+  stato: string;
   max_email_giorno: number;
   created_at: string;
 }
@@ -46,12 +48,72 @@ export default function Campagne() {
     periodo: '',
     hasNotes: false
   });
+  const [campaignContacts, setCampaignContacts] = useState<Record<string, number>>({});
+  const [isAttivitaDialogOpen, setIsAttivitaDialogOpen] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
+  // Carica campagne dal database
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campagne')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setCampaigns(data || []);
+      
+      // Carica conteggio contatti per ogni campagna
+      if (data && data.length > 0) {
+        await loadCampaignContacts(data.map(c => c.id));
+      }
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le campagne",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadCampaignContacts = async (campaignIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('attivita')
+        .select('campagna_id')
+        .in('campagna_id', campaignIds)
+        .not('campagna_id', 'is', null);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      data?.forEach(activity => {
+        if (activity.campagna_id) {
+          counts[activity.campagna_id] = (counts[activity.campagna_id] || 0) + 1;
+        }
+      });
+      
+      setCampaignContacts(counts);
+    } catch (error) {
+      console.error('Error loading campaign contacts:', error);
+    }
+  };
+
   const openAIChat = () => {
     navigate('/chat?page=/campagne');
+  };
+
+  const handleViewContacts = (campaignId: string) => {
+    setSelectedCampaignId(campaignId);
+    setIsAttivitaDialogOpen(true);
   };
 
   const filteredCampaigns = campaigns.filter(campaign => {
@@ -81,55 +143,110 @@ export default function Campagne() {
     }
   };
 
-  const handleAddCampaign = (campaignData: Omit<Campaign, 'id' | 'created_at'>) => {
-    const newCampaign: Campaign = {
-      ...campaignData,
-      id: Math.random().toString(36).substr(2, 9),
-      created_at: new Date().toISOString()
-    };
-    
-    setCampaigns(prev => [newCampaign, ...prev]);
-    setIsFormOpen(false);
-    toast({
-      title: "Campagna creata",
-      description: "La campagna è stata creata con successo."
-    });
+  const handleAddCampaign = async (campaignData: Omit<Campaign, 'id' | 'created_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('campagne')
+        .insert([campaignData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCampaigns(prev => [data, ...prev]);
+      setIsFormOpen(false);
+      toast({
+        title: "Campagna creata",
+        description: "La campagna è stata creata con successo."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile creare la campagna",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditCampaign = (campaignData: Omit<Campaign, 'id' | 'created_at'>) => {
+  const handleEditCampaign = async (campaignData: Omit<Campaign, 'id' | 'created_at'>) => {
     if (!selectedCampaign) return;
 
-    setCampaigns(prev => prev.map(campaign => 
-      campaign.id === selectedCampaign.id 
-        ? { ...campaign, ...campaignData }
-        : campaign
-    ));
-    setSelectedCampaign(null);
-    setIsFormOpen(false);
-    toast({
-      title: "Campagna modificata",
-      description: "Le modifiche sono state salvate con successo."
-    });
+    try {
+      const { error } = await supabase
+        .from('campagne')
+        .update(campaignData)
+        .eq('id', selectedCampaign.id);
+
+      if (error) throw error;
+
+      setCampaigns(prev => prev.map(campaign => 
+        campaign.id === selectedCampaign.id 
+          ? { ...campaign, ...campaignData }
+          : campaign
+      ));
+      setSelectedCampaign(null);
+      setIsFormOpen(false);
+      toast({
+        title: "Campagna modificata",
+        description: "Le modifiche sono state salvate con successo."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile modificare la campagna",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteCampaign = (campaignId: string) => {
-    setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignId));
-    toast({
-      title: "Campagna eliminata",
-      description: "La campagna è stata rimossa."
-    });
+  const handleDeleteCampaign = async (campaignId: string) => {
+    try {
+      const { error } = await supabase
+        .from('campagne')
+        .delete()
+        .eq('id', campaignId);
+
+      if (error) throw error;
+
+      setCampaigns(prev => prev.filter(campaign => campaign.id !== campaignId));
+      toast({
+        title: "Campagna eliminata",
+        description: "La campagna è stata rimossa."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile eliminare la campagna",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleStatusChange = (campaignId: string, newStatus: Campaign['stato']) => {
-    setCampaigns(prev => prev.map(campaign => 
-      campaign.id === campaignId 
-        ? { ...campaign, stato: newStatus }
-        : campaign
-    ));
-    toast({
-      title: "Stato aggiornato",
-      description: `La campagna è ora ${STATO_LABELS[newStatus].toLowerCase()}.`
-    });
+  const handleStatusChange = async (campaignId: string, newStatus: Campaign['stato']) => {
+    try {
+      const { error } = await supabase
+        .from('campagne')
+        .update({ stato: newStatus })
+        .eq('id', campaignId);
+
+      if (error) throw error;
+
+      setCampaigns(prev => prev.map(campaign => 
+        campaign.id === campaignId 
+          ? { ...campaign, stato: newStatus }
+          : campaign
+      ));
+      toast({
+        title: "Stato aggiornato",
+        description: `La campagna è ora ${STATO_LABELS[newStatus].toLowerCase()}.`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato",
+        variant: "destructive"
+      });
+    }
   };
 
   const openEditForm = (campaign: Campaign) => {
@@ -439,12 +556,28 @@ export default function Campagne() {
                   <div className="text-small text-text-secondary">
                     Max email/giorno: {campaign.max_email_giorno}
                   </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4 gap-2"
+                    onClick={() => handleViewContacts(campaign.id)}
+                  >
+                    <Users className="h-4 w-4" />
+                    Visualizza Contatti ({campaignContacts[campaign.id] || 0})
+                  </Button>
                 </CardContent>
               </Card>
             );
           })
         )}
       </div>
+
+      {/* Dialog Attività */}
+      <AttivitaDialog 
+        open={isAttivitaDialogOpen}
+        onOpenChange={setIsAttivitaDialogOpen}
+        filterByCampaignId={selectedCampaignId}
+      />
     </div>
   );
 }

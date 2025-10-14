@@ -23,7 +23,7 @@ const campaignSchema = z.object({
     .min(0, { message: "Il budget deve essere maggiore di 0" })
     .optional()
     .transform(val => val || undefined),
-  stato: z.enum(['attiva', 'pausa', 'completata']),
+  stato: z.string(),
   max_email_giorno: z.number()
     .min(1, { message: "Il limite deve essere almeno 1" })
     .max(10000, { message: "Il limite non può superare 10.000" })
@@ -46,7 +46,7 @@ interface Campaign {
   inizio?: string;
   fine?: string;
   budget?: number;
-  stato: 'attiva' | 'pausa' | 'completata';
+  stato: string;
   max_email_giorno: number;
   created_at: string;
 }

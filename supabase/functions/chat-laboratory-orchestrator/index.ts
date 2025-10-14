@@ -2,53 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-// Helper: Generate message summaries
-async function generateMessageSummary(
-  content: string,
-  type: 'user_friendly' | 'ultra_compressed',
-  lovableApiKey: string
-): Promise<string> {
-  const prompts = {
-    user_friendly: `Riassumi questo messaggio in max 60 parole, usando linguaggio naturale e NON tecnico. Focus su aspetti pratici e comprensibili:
-
-${content}
-
-Riassunto user-friendly:`,
-    ultra_compressed: `Estrai SOLO i concetti tecnici chiave essenziali da questo messaggio in max 25 parole. Formato: "Problema + Soluzione" o "Concetto chiave":
-
-${content}
-
-Riassunto ultra-compresso:`
-  };
-
-  try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'user', content: prompts[type] }
-        ],
-        temperature: 0.3,
-        max_tokens: type === 'user_friendly' ? 100 : 50
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Summary generation failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content?.trim() || content.substring(0, type === 'user_friendly' ? 200 : 100);
-  } catch (error) {
-    console.error(`Error generating ${type} summary:`, error);
-    return content.substring(0, type === 'user_friendly' ? 200 : 100) + '...';
-  }
-}
+// Helper: Generate message summaries rimosso - latenza inutile
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -455,6 +409,17 @@ REGOLE CRITICHE:
 
     console.log(`🎯 Orchestrazione completata in ${orchestrationDuration}ms`);
 
+    // 🎯 Calcola nextSequence UNA SOLA VOLTA prima del loop (cache)
+    const { data: maxSeq } = await supabaseClient
+      .from('chat_laboratory_messages')
+      .select('message_sequence')
+      .eq('conversation_id', conversationId)
+      .order('message_sequence', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    let nextSequence = (maxSeq?.message_sequence || 0) + 1;
+
     // Elabora risultati e salva nel database
     const successfulResponses: any[] = [];
     const failedResponses: any[] = [];
@@ -467,22 +432,13 @@ REGOLE CRITICHE:
         successfulResponses.push(value);
         totalTokensOut += value.tokensOut;
         
-        // Salva messaggio nel database
-        const { data: maxSeq } = await supabaseClient
-          .from('chat_laboratory_messages')
-          .select('message_sequence')
-          .eq('conversation_id', conversationId)
-          .order('message_sequence', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // Sequence number ottimizzato (calcolato una volta fuori dal loop)
         
-        const nextSequence = (maxSeq?.message_sequence || 0) + 1;
-        
-        const { data: savedMessage } = await supabaseClient
+        const { data: savedMessage, error: insertError } = await supabaseClient
           .from('chat_laboratory_messages')
           .insert({
             conversation_id: conversationId,
-            message_sequence: nextSequence,
+            message_sequence: nextSequence++, // ✅ Incrementa in cache
             sender_type: value.participant.type,
             sender_name: value.participant.name,
             content: value.content,

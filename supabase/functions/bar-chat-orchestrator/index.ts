@@ -290,10 +290,7 @@ serve(async (req) => {
     
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);
 
-    // 🎭 Pausa realistica prima di rispondere (simula "pensiero" naturale)
-    const thinkingDelay = Math.floor(Math.random() * 2000) + 500; // 500-2500ms
-    console.log(`⏱️ ${selectedParticipant.name} sta pensando... (${thinkingDelay}ms)`);
-    await delay(thinkingDelay);
+    // Thinking delay rimosso - risposta immediata
 
     // Fetch AGENT_PERSONALITY sections (filtrate per nome agente)
     const { data: agentPersonalitySections } = await supabaseClient
@@ -371,9 +368,8 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5',
-            max_tokens: 120, // 🔥 HARD LIMIT brevità (80-90 parole ~120 token)
-            temperature: 0.4, // 🔥 Più deterministico
-            stop_sequences: ['\n\n', '—', 'Fine.'], // 🔥 Stop anticipato
+            max_tokens: 800, // ✅ Risposte complete
+            temperature: 0.7, // ✅ Più creativo e naturale
             messages: userMessages,  // ✅ Solo user/assistant
             system: fullSystemPrompt // ✅ Prompt + Summary insieme
           })
@@ -435,16 +431,15 @@ serve(async (req) => {
         
         const body: any = {
           model: modelName,
-          stop: ['\n\n', '—'], // 🔥 Stop anticipato
           messages: messages  // ✅ Usa la conversationHistory completa!
         };
         
         // Parametri specifici per versione modello
         if (isNewerModel) {
-          body.max_completion_tokens = 100; // GPT-5+, O3, O4
+          body.max_completion_tokens = 600; // ✅ GPT-5+, O3, O4 - risposte complete
         } else {
-          body.max_tokens = 110; // gpt-4o, gpt-4o-mini legacy
-          body.temperature = 0.25; // Solo legacy models
+          body.max_tokens = 600; // ✅ gpt-4o, gpt-4o-mini legacy - risposte complete
+          body.temperature = 0.7; // Solo legacy models
         }
         
         const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {

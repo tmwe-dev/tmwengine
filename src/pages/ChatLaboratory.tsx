@@ -1036,9 +1036,9 @@ const ChatLaboratory = () => {
     )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 pt-0 mt-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full pt-0 mt-0">
         {/* Header */}
-        <div className="border-b border-border/40">
+        <div className="border-b border-border/40 shrink-0">
           <div className="container mx-auto px-3 pt-0">
             {/* Title above - separated */}
             <div className="pt-0 pb-0">
@@ -1254,7 +1254,7 @@ const ChatLaboratory = () => {
       )}
 
       {/* Messaggi */}
-      <div className="flex-1 overflow-hidden relative max-h-[calc(100vh-180px)]">
+      <div className="flex-1 overflow-hidden relative">
         {viewMode === 'classic' ? (
           <div 
             ref={messagesContainerRef}
@@ -1423,7 +1423,7 @@ const ChatLaboratory = () => {
 
       {/* Input Area - nascosta in full screen */}
       {!isFullScreenMode && (
-      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1">
+      <div className="border-t border-border/40 bg-card/40 backdrop-blur supports-[backdrop-filter]:bg-card/30 p-1 shrink-0">
         <div className="container mx-auto px-2 md:px-3">
           <form onSubmit={handleSubmit} className="space-y-0.5">
             {/* Textarea con icone a sinistra */}

@@ -1041,14 +1041,14 @@ const ChatLaboratory = () => {
         <div className="border-b border-border/40">
           <div className="container mx-auto px-3">
             {/* Title above - separated */}
-            <div className="pt-1 pb-0.5">
+            <div className="pt-0.5 pb-0">
               <h1 className="text-sm md:text-base font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
                 ChatLab
               </h1>
             </div>
             
             {/* Icons row below */}
-            <div className="py-0.5 md:py-1 flex items-center justify-between gap-2">
+            <div className="py-0 md:py-0.5 flex items-center justify-between gap-2">
               {/* Left side - Navigation button and Export */}
               <div className="flex items-center gap-2">
                 <Button

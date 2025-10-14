@@ -53,7 +53,7 @@ export const useEmailDownload = () => {
       console.log('📦 Tipo risposta:', typeof foldersResponse);
       console.log('📦 Chiavi risposta:', foldersResponse ? Object.keys(foldersResponse) : 'null');
       
-      const folders = foldersResponse?.folders || [];
+      const folders = foldersResponse?.data || [];
       console.log(`📁 Cartelle estratte: ${folders.length}`, folders);
       
       if (folders.length === 0) {

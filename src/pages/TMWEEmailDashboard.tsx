@@ -675,7 +675,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col min-w-0 overflow-hidden px-2 sm:px-4",
+          "flex-1 flex flex-col min-w-0 overflow-hidden px-1 sm:px-2 md:px-4",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}

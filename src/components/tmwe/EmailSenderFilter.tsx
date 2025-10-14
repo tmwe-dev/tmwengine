@@ -94,7 +94,7 @@ export const EmailSenderFilter = ({
             )}
           </Button>
         </SheetTrigger>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+      <SheetContent side="right" className="w-[90vw] max-w-[400px] sm:max-w-[540px]">
         <SheetHeader>
           <SheetTitle>Filtra per Mittente</SheetTitle>
           <SheetDescription>

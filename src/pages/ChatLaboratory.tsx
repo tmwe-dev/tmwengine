@@ -1271,7 +1271,7 @@ const ChatLaboratory = () => {
 
               {/* Token Usage Chart Miniatura - Centrato sopra la sezione */}
               {currentConversationId && messages.length > 0 && (
-                <div className="mb-4 flex justify-center">
+                <div className="flex justify-center">
                   <div style={{ transform: 'scale(0.6)', transformOrigin: 'top center' }}>
                     <TokenUsageChart 
                       conversationId={currentConversationId}

@@ -89,7 +89,7 @@ export const useEmailDownload = () => {
         }
 
         try {
-          // Recupera email già presenti per questa cartella (per evitare duplicati)
+          // Recupera email già presenti per questa cartella
           const { data: existingEmails } = await supabase
             .from('email_messages')
             .select('message_id')
@@ -97,8 +97,15 @@ export const useEmailDownload = () => {
             .eq('user_email', userEmail);
 
           const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
+          const alreadyInDb = existingIds.size;
           
-          console.log(`📊 ${folderName}: ${existingIds.size} email già presenti nel DB, inizio download completo...`);
+          console.log(`📊 ${folderName}: ${alreadyInDb} email già presenti nel DB`);
+
+          if (alreadyInDb >= folderTotalEmails) {
+            console.log(`✅ ${folderName}: tutte le email già scaricate`);
+            folderResults.push({ folder: folderName, downloaded: 0, errors: 0 });
+            continue;
+          }
 
           const batchSize = 50;
           const totalPages = Math.ceil(folderTotalEmails / batchSize);

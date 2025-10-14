@@ -34,6 +34,7 @@ interface OnlineUsersProps {
 
 export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUsersProps) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
   
 
@@ -50,6 +51,8 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    setCurrentUserId(user.id);
 
     const { data } = await supabase
       .from('user_profiles')
@@ -74,6 +77,11 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
       setUserProfiles(profilesMap);
     }
   };
+
+  // Filtra duplicati ed escludi l'utente corrente
+  const uniqueUsers = Array.from(
+    new Map(users.map(u => [u.user_id, u])).values()
+  ).filter(u => u.user_id !== currentUserId);
 
   const getStatusColor = (status: 'online' | 'away' | 'busy') => {
     switch (status) {
@@ -129,7 +137,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
 
                 <ScrollArea className="h-[250px]">
                   <div className="space-y-2 pr-4">
-                     {users.map((user) => {
+                     {uniqueUsers.map((user) => {
                       const profile = userProfiles.get(user.user_id);
                       return (
                         <div
@@ -197,7 +205,7 @@ export const OnlineUsers = ({ users, onCallUser, onOpenPrivateChat }: OnlineUser
                         </div>
                       );
                     })}
-                    {users.length === 0 && (
+                    {uniqueUsers.length === 0 && (
                       <div className="text-center py-6 text-muted-foreground">
                         <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
                         <p className="text-xs">Nessuno online</p>

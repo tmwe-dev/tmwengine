@@ -476,10 +476,6 @@ const Intranet = () => {
 
             {!sidebarCollapsed && (
               <>
-
-                <div className="px-4 pt-6 pb-3">
-                  <h3 className="text-sm font-semibold">Utenti Online</h3>
-                </div>
                 <div className="px-2">
                   <OnlineUsers 
                     users={onlineUsers}

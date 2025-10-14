@@ -1010,7 +1010,7 @@ const ChatLaboratory = () => {
   const canEnableFullScreen = isBarMode && (audioMode === 'continuous' || audioMode === 'full-duplex');
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20">
+    <div className="flex h-screen bg-gradient-to-br from-indigo-900/20 via-background to-violet-900/20 p-0 m-0">
     {/* Sidebar Conversazioni - Card Style Overlay */}
     {!isFullScreenMode && sidebarOpen && (
       <>
@@ -1036,7 +1036,7 @@ const ChatLaboratory = () => {
     )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pt-0 mt-0">
         {/* Header */}
         <div className="border-b border-border/40">
           <div className="container mx-auto px-3 pt-0">

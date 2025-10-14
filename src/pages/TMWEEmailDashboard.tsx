@@ -604,7 +604,7 @@ const EmailDashboard = () => {
   console.log('🔍 Current syncMonitorOpen state:', syncMonitorOpen);
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full overflow-hidden">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
@@ -655,7 +655,7 @@ const EmailDashboard = () => {
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="w-80 p-0">
+            <SheetContent side="left">
             <EmailSidebar 
               selectedFolder={selectedFolder}
               onFolderSelect={(folder) => {
@@ -675,18 +675,18 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col overflow-x-hidden",
+          "flex-1 flex flex-col",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}
           {isMobile && (
-            <div className="border-b bg-card-transparent p-4">
+            <div className="border-b bg-card-transparent">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search emails..."
-                  className="pl-10 text-sm h-10 w-full"
+                  className="text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -695,7 +695,7 @@ const EmailDashboard = () => {
           )}
           
           {/* Sender Filter */}
-          <div className="border-b bg-card-transparent p-4 flex items-center justify-between gap-2">
+          <div className="border-b bg-card-transparent flex items-center justify-between">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <EmailSenderFilter
                 emails={emailsToUse}
@@ -769,7 +769,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={detailPopupOpen} onOpenChange={setDetailPopupOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle>Email Detail</DialogTitle>
           </DialogHeader>
@@ -809,7 +809,7 @@ const EmailDashboard = () => {
       />
 
       <Dialog open={syncMonitorOpen} onOpenChange={setSyncMonitorOpen}>
-        <DialogContent className="max-w-6xl max-h-screen overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Download Email TMWE</DialogTitle>
           </DialogHeader>

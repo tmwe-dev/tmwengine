@@ -3523,6 +3523,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ui_component_backups: {
+        Row: {
+          animations: Json
+          backup_date: string | null
+          code_snippets: Json
+          component_name: string
+          component_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          interactive_elements: Json
+          layout_properties: Json
+          notes: string | null
+          tags: string[] | null
+          updated_at: string | null
+          version: string
+          visual_properties: Json
+        }
+        Insert: {
+          animations?: Json
+          backup_date?: string | null
+          code_snippets?: Json
+          component_name: string
+          component_type: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          interactive_elements?: Json
+          layout_properties?: Json
+          notes?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version: string
+          visual_properties?: Json
+        }
+        Update: {
+          animations?: Json
+          backup_date?: string | null
+          code_snippets?: Json
+          component_name?: string
+          component_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          interactive_elements?: Json
+          layout_properties?: Json
+          notes?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: string
+          visual_properties?: Json
+        }
+        Relationships: []
+      }
       ui_style_configs: {
         Row: {
           attivo: boolean

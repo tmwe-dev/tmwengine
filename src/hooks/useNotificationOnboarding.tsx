@@ -37,11 +37,6 @@ export const useNotificationOnboarding = () => {
       const needsOnboarding = !data || !data.onboarding_completed;
       setShouldShowOnboarding(needsOnboarding);
       
-      // Redirect solo se necessario e non già sulla pagina di onboarding
-      if (needsOnboarding && location.pathname !== '/notification-onboarding') {
-        navigate('/notification-onboarding', { replace: true });
-      }
-      
       setIsChecking(false);
     } catch (error) {
       console.error('Error in onboarding check:', error);

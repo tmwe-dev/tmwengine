@@ -10,7 +10,8 @@ import EmailDashboard from "./pages/EmailDashboard";
 import EmailSyncTest from "./pages/EmailSyncTest";
 import NotFound from "./pages/NotFound";
 import NotificationOnboarding from "./pages/NotificationOnboarding";
-import { AuthGuard } from "./components/AuthGuard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { SimpleAuthGuard } from "./components/SimpleAuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -23,9 +24,9 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/notification-onboarding" element={<AuthGuard><NotificationOnboarding /></AuthGuard>} />
-          <Route path="/" element={<AuthGuard><EmailDashboard /></AuthGuard>} />
-          <Route path="/email-sync-test" element={<AuthGuard><EmailSyncTest /></AuthGuard>} />
+          <Route path="/notification-onboarding" element={<SimpleAuthGuard><NotificationOnboarding /></SimpleAuthGuard>} />
+          <Route path="/" element={<ProtectedRoute><EmailDashboard /></ProtectedRoute>} />
+          <Route path="/email-sync-test" element={<ProtectedRoute><EmailSyncTest /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

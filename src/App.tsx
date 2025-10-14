@@ -43,6 +43,7 @@ import UserGuide from "./pages/UserGuide";
 import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
+import EmailRules from "./pages/EmailRules";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -206,6 +207,15 @@ const App = () => (
             <Route path="/call-room" element={
               <ProtectedRoute>
                 <CallRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/email-rules" element={
+              <ProtectedRoute>
+                <IntegratedAuthGuard>
+                  <CRMLayout>
+                    <EmailRules />
+                  </CRMLayout>
+                </IntegratedAuthGuard>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -158,6 +158,51 @@ serve(async (req) => {
     console.log('📌 Topic selezionato:', selectedTopic || 'Nessuno');
     console.log('📚 Knowledge Base attiva:', activeKbId || 'Nessuna');
     console.log('🎤 Voice enabled dal DB:', voiceEnabled);
+    
+    // ============ RAG KNOWLEDGE BASE INTEGRATION ============
+    let kbContext = '';
+    if (activeKbId) {
+      try {
+        console.log('📚 Generazione embedding per KB search...');
+        // Generate embedding for user message
+        const embeddingResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: userMessage
+          })
+        }, 5000);
+        
+        if (embeddingResponse.ok) {
+          const embData = await embeddingResponse.json();
+          const embedding = embData.data[0].embedding;
+          
+          // Search KB documents
+          const { data: kbDocs } = await supabaseClient.rpc('search_kb_documents', {
+            p_kb_id: activeKbId,
+            p_query_embedding: `[${embedding.join(',')}]`,
+            p_match_threshold: 0.7,
+            p_match_count: 3
+          });
+          
+          if (kbDocs && kbDocs.length > 0) {
+            kbContext = '\n=== 📚 KNOWLEDGE BASE (Documenti Rilevanti) ===\n';
+            kbContext += kbDocs.map((doc: any, idx: number) => 
+              `${idx + 1}. **${doc.title}** (similarità: ${(doc.similarity * 100).toFixed(1)}%)\n${doc.content.substring(0, 500)}...`
+            ).join('\n\n') + '\n\n';
+            console.log(`📚 KB: ${kbDocs.length} documenti trovati (top similarity: ${(kbDocs[0].similarity * 100).toFixed(1)}%)`);
+          } else {
+            console.log('📚 KB: nessun documento rilevante trovato');
+          }
+        }
+      } catch (kbError: any) {
+        console.error('⚠️ KB search failed:', kbError.message);
+      }
+    }
 
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
@@ -207,6 +252,20 @@ serve(async (req) => {
       
       topicSections = data || [];
       console.log(`📦 Sezioni TOPIC (${selectedTopic}): ${topicSections.length}`);
+    }
+    
+    // Fetch KB_CONTEXT sections (solo se KB attiva)
+    let kbContextSections: any[] = [];
+    if (activeKbId) {
+      const { data } = await supabaseClient
+        .from('chat_laboratory_prompt_sections')
+        .select('content')
+        .eq('section_type', 'KB_CONTEXT')
+        .eq('is_active', true)
+        .order('order_priority', { ascending: true });
+      
+      kbContextSections = data || [];
+      console.log(`📚 Sezioni KB_CONTEXT: ${kbContextSections.length}`);
     }
 
     // Fetch conversation messages
@@ -323,6 +382,17 @@ serve(async (req) => {
       composedPrompt += `=== FOCUS TOPIC: ${selectedTopic} ===\n`;
       composedPrompt += topicSections.map(s => s.content).join('\n\n') + '\n\n';
     }
+    
+    // Add KB_CONTEXT sections
+    if (kbContextSections.length > 0) {
+      composedPrompt += '=== 📚 ISTRUZIONI KNOWLEDGE BASE ===\n';
+      composedPrompt += kbContextSections.map(s => s.content).join('\n\n') + '\n\n';
+    }
+    
+    // Add KB context (RAG documents)
+    if (kbContext) {
+      composedPrompt += kbContext;
+    }
 
     console.log('📝 Prompt finale composto:', composedPrompt.substring(0, 200) + '...');
 
@@ -368,7 +438,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5',
-            max_tokens: 800, // ✅ Risposte complete
+            max_tokens: 2500, // ✅ Limite conversazionale esteso
             temperature: 0.7, // ✅ Più creativo e naturale
             messages: userMessages,  // ✅ Solo user/assistant
             system: fullSystemPrompt // ✅ Prompt + Summary insieme
@@ -436,9 +506,9 @@ serve(async (req) => {
         
         // Parametri specifici per versione modello
         if (isNewerModel) {
-          body.max_completion_tokens = 600; // ✅ GPT-5+, O3, O4 - risposte complete
+          body.max_completion_tokens = 2500; // ✅ GPT-5+, O3, O4 - limite conversazionale esteso
         } else {
-          body.max_tokens = 600; // ✅ gpt-4o, gpt-4o-mini legacy - risposte complete
+          body.max_tokens = 2500; // ✅ gpt-4o, gpt-4o-mini legacy - limite conversazionale esteso
           body.temperature = 0.7; // Solo legacy models
         }
         
@@ -486,9 +556,8 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
-            max_tokens: 110, // 🔥 HARD LIMIT brevità (70-80 parole ~110 token)
-            temperature: 0.35, // 🔥 Più deterministico
-            stop: ['\n\n'], // 🔥 Stop anticipato
+            max_tokens: 2500, // ✅ Allineato a Claude/GPT
+            temperature: 0.7, // ✅ Più creativo
             messages: conversationHistory
           })
         }, 43000);
@@ -521,20 +590,14 @@ serve(async (req) => {
       throw new Error(`No API key available for ${selectedParticipant.type}`);
     }
 
-    // 🔥 Server-side truncation safety net (>250 char)
-    if (aiResponse.length > 250) {
-      aiResponse = aiResponse.substring(0, 247) + '...';
-      console.log('✂️ Risposta troncata a 250 char (hard limit)');
+    // ⚠️ SAFETY: truncate se risposta supera 15k chars (fallback per modelli senza max_tokens)
+    if (aiResponse.length > 15000) {
+      console.warn(`⚠️ Risposta troppo lunga (${aiResponse.length} chars), troncamento a 15k...`);
+      aiResponse = aiResponse.substring(0, 15000) + '\n\n[... risposta troncata per lunghezza]';
     }
     
     const responseTime = Date.now() - startTime;
     console.log(`✅ Bar Chat risposta ricevuta in ${responseTime}ms`);
-    
-    // ✂️ Server-side truncation safety net (se LLM ignora max_tokens)
-    if (aiResponse.length > 250) {
-      aiResponse = aiResponse.substring(0, 247) + '...';
-      console.log('✂️ Risposta troncata a 250 char (safety net)');
-    }
     
     // ============ TELEMETRIA STRUTTURATA ============
     const telemetry = {

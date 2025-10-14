@@ -117,7 +117,7 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        max_tokens: 4096, // ✅ Massimo supportato da Claude (non limitante)
+        max_tokens: 2500, // ✅ Limite conversazionale (reports/code: nessun limite)
         messages: [{
           role: 'user',
           content: `${concisePrompt}\n\nConversazione:\n${config.visibleHistory}\n\nNuovo:\n${config.userMessage}`
@@ -131,8 +131,8 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        // ✅ GPT-5 usa temperature di default (1.0)
-        // temperature rimosso - non supportato da gpt-5-2025-08-07
+        max_completion_tokens: 2500, // ✅ Limite conversazionale per GPT-5+
+        // temperature usa default (1.0) - non supportato da gpt-5-2025-08-07
         messages: [
           { role: 'system', content: concisePrompt },
           { 
@@ -149,7 +149,7 @@ async function callAIProvider(
       };
       body = {
         model: config.model,
-        // ✅ NO max_tokens: Gemini decide autonomamente
+        max_tokens: 2500, // ✅ Limite conversazionale (Gemini allineato)
         temperature: 0.7,
         messages: [{
           role: 'user',

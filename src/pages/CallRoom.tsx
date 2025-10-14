@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, PhoneOff, ArrowLeft, User, Phone } from 'lucide-react';
 import { useAudioCall } from '@/hooks/useAudioCall';
+import { useWebRTCSignaling } from '@/hooks/useWebRTCSignaling';
 import { supabase } from '@/integrations/supabase/client';
 
 const CallRoom = () => {
@@ -30,6 +31,8 @@ const CallRoom = () => {
     rejectCall
   } = useAudioCall(roomId, userId);
 
+  const { sendSignal } = useWebRTCSignaling(roomId, userId);
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -45,16 +48,16 @@ const CallRoom = () => {
     const acceptedCall = searchParams.get('acceptedCall') === 'true';
     
     if (acceptedCall && targetUserId && userId) {
-      // Chi riceve la chiamata NON deve chiamare startCall()
-      // L'hook useAudioCall gestisce automaticamente l'incoming call
-      console.log('[CallRoom] Incoming call mode - waiting for user to answer:', targetUserId);
+      // Chi riceve la chiamata: invia segnale "ready" per dire ad Alice di inviare l'offer
+      console.log('[CallRoom] 🟢 Incoming call mode - sending READY signal to:', targetUserId);
+      sendSignal({ type: 'ready', to: targetUserId, payload: {} });
     } else if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
       // Chi INIZIA la chiamata
       console.log('[CallRoom] Auto-starting outgoing call to:', targetUserId);
       hasStartedCallRef.current = true;
       startCall(targetUserId);
     }
-  }, [targetUserId, isInCall, userId, startCall, searchParams]);
+  }, [targetUserId, isInCall, userId, startCall, searchParams, roomId, sendSignal]);
 
   const qualityColors = {
     good: 'bg-green-500',

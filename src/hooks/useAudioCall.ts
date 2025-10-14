@@ -11,6 +11,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
   const [networkQuality, setNetworkQuality] = useState<'good' | 'poor' | 'bad'>('good');
   const [incomingCallFrom, setIncomingCallFrom] = useState<string | null>(null);
+  const [waitingForRecipient, setWaitingForRecipient] = useState<string | null>(null);
 
   const peerConnectionRef = useRef<WebRTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -18,6 +19,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOfferRef = useRef<{ from: string; offer: RTCSessionDescriptionInit } | null>(null);
+  const pendingCallDataRef = useRef<{ targetUserId: string; stream: MediaStream; pc: WebRTCPeerConnection } | null>(null);
 
   const { toast } = useToast();
   const { sendSignal, setHandlers } = useWebRTCSignaling(roomId, userId);
@@ -48,6 +50,38 @@ export const useAudioCall = (roomId: string, userId: string) => {
       setNetworkQuality('good');
     }
   }, []);
+
+  const endCall = useCallback(() => {
+    if (remotePeerId) {
+      sendSignal({ type: 'call-end', to: remotePeerId, payload: {} });
+    }
+
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
+
+    localStreamRef.current?.getTracks().forEach(track => track.stop());
+    localStreamRef.current = null;
+    remoteStreamRef.current = null;
+
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+    }
+
+    if (statsIntervalRef.current) {
+      clearInterval(statsIntervalRef.current);
+      statsIntervalRef.current = null;
+    }
+
+    setIsInCall(false);
+    setIsMuted(false);
+    setRemotePeerId(null);
+    setConnectionState('new');
+    setNetworkQuality('good');
+    setIncomingCallFrom(null);
+    pendingOfferRef.current = null;
+    pendingCallDataRef.current = null;
+    setWaitingForRecipient(null);
+  }, [remotePeerId, sendSignal]);
 
   useEffect(() => {
     setHandlers({
@@ -81,9 +115,38 @@ export const useAudioCall = (roomId: string, userId: string) => {
       onCallEnd: (from) => {
         console.log('[useAudioCall] Call ended by:', from);
         endCall();
+      },
+      onCallRejected: (from) => {
+        console.log('[useAudioCall] Call rejected by:', from);
+        toast({
+          title: 'Chiamata rifiutata',
+          description: 'L\'utente ha rifiutato la chiamata',
+          variant: 'destructive'
+        });
+        endCall();
+      },
+      onReady: async (from) => {
+        console.log('[useAudioCall] 🟢 Recipient is READY:', from);
+        // Bob è pronto - Alice può inviare l'offer ora
+        if (pendingCallDataRef.current && pendingCallDataRef.current.targetUserId === from) {
+          const { targetUserId, stream, pc } = pendingCallDataRef.current;
+          console.log('[useAudioCall] Sending offer to ready recipient:', targetUserId);
+          
+          await pc.addLocalStream(stream);
+          const offer = await pc.createOffer();
+          await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
+          await sendSignal({ type: 'call-start', to: targetUserId, payload: {} });
+          
+          pendingCallDataRef.current = null;
+          
+          toast({
+            title: 'Chiamata in corso',
+            description: 'In attesa di risposta...'
+          });
+        }
       }
     });
-  }, [sendSignal, setHandlers, monitorNetworkQuality, toast]);
+  }, [sendSignal, setHandlers, monitorNetworkQuality, toast, endCall]);
 
   const startCall = useCallback(async (targetUserId?: string) => {
     try {
@@ -160,21 +223,20 @@ export const useAudioCall = (roomId: string, userId: string) => {
         }
       });
 
-      await pc.addLocalStream(stream);
-      const offer = await pc.createOffer();
-      console.log('[useAudioCall] Created offer, sending to:', targetUserId);
-      await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
-      await sendSignal({ type: 'call-start', to: targetUserId, payload: {} });
-
       peerConnectionRef.current = pc;
       if (targetUserId) setRemotePeerId(targetUserId);
       setIsInCall(true);
+
+      // Salva i dati della chiamata e aspetta il segnale "ready" da Bob
+      console.log('[useAudioCall] Waiting for recipient to be ready...');
+      pendingCallDataRef.current = { targetUserId, stream, pc };
+      setWaitingForRecipient(targetUserId);
 
       statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
 
       toast({
         title: 'Chiamata avviata',
-        description: 'Chiamata vocale in corso'
+        description: 'In attesa che l\'altro utente risponda...'
       });
     } catch (error: any) {
       console.error('[useAudioCall] Error starting call:', error);
@@ -186,39 +248,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
         variant: 'destructive'
       });
     }
-  }, [sendSignal, toast, monitorNetworkQuality]);
-
-  const endCall = useCallback(() => {
-    if (remotePeerId) {
-      sendSignal({ type: 'call-end', to: remotePeerId, payload: {} });
-    }
-
-    peerConnectionRef.current?.close();
-    peerConnectionRef.current = null;
-
-    localStreamRef.current?.getTracks().forEach(track => track.stop());
-    localStreamRef.current = null;
-    remoteStreamRef.current = null;
-
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.srcObject = null;
-    }
-
-    if (statsIntervalRef.current) {
-      clearInterval(statsIntervalRef.current);
-      statsIntervalRef.current = null;
-    }
-
-    setIsInCall(false);
-    setRemotePeerId(null);
-    setConnectionState('new');
-    setNetworkQuality('good');
-
-    toast({
-      title: 'Chiamata terminata',
-      description: 'La chiamata è stata chiusa'
-    });
-  }, [remotePeerId, sendSignal, toast]);
+  }, [sendSignal, toast, monitorNetworkQuality, waitingForRecipient]);
 
   const toggleMute = useCallback(() => {
     if (!localStreamRef.current) return;

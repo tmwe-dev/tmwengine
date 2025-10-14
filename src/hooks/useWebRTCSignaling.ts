@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SignalingMessage {
-  type: 'offer' | 'answer' | 'ice-candidate' | 'call-start' | 'call-end' | 'call-rejected';
+  type: 'offer' | 'answer' | 'ice-candidate' | 'call-start' | 'call-end' | 'call-rejected' | 'ready';
   from: string;
   to?: string;
   payload: any;
@@ -16,7 +16,8 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
     onIceCandidate?: (candidate: RTCIceCandidateInit) => void;
     onCallStart?: (from: string) => void;
     onCallEnd?: (from: string) => void;
-    onCallRejected?: (from: string) => void;
+  onCallRejected?: (from: string) => void;
+  onReady?: (from: string) => void;
   }>({});
 
   useEffect(() => {
@@ -64,6 +65,10 @@ export const useWebRTCSignaling = (roomId: string, userId: string) => {
           case 'call-rejected':
             console.log('[WebRTCSignaling] Processing call-rejected from:', message.from);
             handlersRef.current.onCallRejected?.(message.from);
+            break;
+          case 'ready':
+            console.log('[WebRTCSignaling] Processing ready signal from:', message.from);
+            handlersRef.current.onReady?.(message.from);
             break;
         }
       })

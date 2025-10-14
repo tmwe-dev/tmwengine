@@ -604,7 +604,7 @@ const EmailDashboard = () => {
   console.log('🔍 Current syncMonitorOpen state:', syncMonitorOpen);
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20 w-full overflow-hidden">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
@@ -675,7 +675,7 @@ const EmailDashboard = () => {
 
         {/* Email List - Hidden on mobile when email is selected */}
         <div className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 flex flex-col overflow-x-hidden",
           isMobile && !showEmailList && "hidden"
         )}>
           {/* Mobile Search Bar - Above cards on mobile */}

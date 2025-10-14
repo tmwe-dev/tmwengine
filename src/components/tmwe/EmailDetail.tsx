@@ -482,7 +482,7 @@ export const EmailDetail = ({
       )}
 
       <ScrollArea className="flex-1 overflow-hidden">
-        <div className="p-4 md:p-6 space-y-4 w-full overflow-hidden">
+        <div className="p-4 md:p-6 space-y-4 w-full max-w-full overflow-x-hidden">
           {/* Subject */}
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-foreground break-words">
@@ -491,7 +491,7 @@ export const EmailDetail = ({
           </div>
 
           {/* Body in sandboxed iframe */}
-          <div className="w-full">
+          <div className="w-full max-w-full overflow-x-hidden">
             <iframe
               ref={iframeRef}
               srcDoc={`

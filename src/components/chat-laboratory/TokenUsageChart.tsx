@@ -183,18 +183,6 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
     'Token OUT': d.tokensOut
   }));
 
-  // Funzione per ottenere i colori degli agenti (come nelle message cards)
-  const getAgentColors = (agentName: string) => {
-    if (agentName === 'ChatGPT') {
-      return { base: 'hsl(142, 76%, 50%)', light: 'hsl(142, 76%, 60%)', opacity: 0.15 };
-    } else if (agentName === 'Claude') {
-      return { base: 'hsl(262, 83%, 50%)', light: 'hsl(262, 83%, 60%)', opacity: 0.15 };
-    } else if (agentName === 'Gemini') {
-      return { base: 'hsl(187, 71%, 50%)', light: 'hsl(187, 71%, 60%)', opacity: 0.15 };
-    }
-    return { base: 'hsl(221, 83%, 50%)', light: 'hsl(221, 83%, 60%)', opacity: 0.15 };
-  };
-
   return (
     <Card className="mb-4 border border-white/10 bg-background/40 backdrop-blur-md">
       <CardHeader>
@@ -209,43 +197,29 @@ export function TokenUsageChart({ conversationId, compact = false, onClick, onTo
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={chartData}>
             <defs>
-              {/* Gradienti dinamici per ogni agente */}
-              {tokenData.map((agent) => {
-                const colors = getAgentColors(agent.agent);
-                return [
-                  <linearGradient key={`${agent.agent}-in`} id={`gradient-${agent.agent}-in`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={colors.light} stopOpacity={colors.opacity * 2} />
-                    <stop offset="100%" stopColor={colors.base} stopOpacity={colors.opacity} />
-                  </linearGradient>,
-                  <linearGradient key={`${agent.agent}-out`} id={`gradient-${agent.agent}-out`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={colors.base} stopOpacity={colors.opacity * 1.5} />
-                    <stop offset="100%" stopColor={colors.base} stopOpacity={colors.opacity * 0.7} />
-                  </linearGradient>
-                ];
-              })}
+              <linearGradient id="gradientIn" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 70%)" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 70%)" stopOpacity={0.3} />
+              </linearGradient>
+              <linearGradient id="gradientOut" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.4} />
+              </linearGradient>
             </defs>
             <XAxis dataKey="agent" />
             <YAxis />
             <Bar 
               dataKey="Token IN" 
+              fill="url(#gradientIn)" 
               radius={[8, 8, 0, 0]}
               label={<CustomBarLabel />}
-            >
-              {chartData.map((entry, index) => {
-                const agentName = entry.agent;
-                return <Cell key={`cell-in-${index}`} fill={`url(#gradient-${agentName}-in)`} stroke={getAgentColors(agentName).base} strokeWidth={1} strokeOpacity={0.3} />;
-              })}
-            </Bar>
+            />
             <Bar 
               dataKey="Token OUT" 
+              fill="url(#gradientOut)" 
               radius={[8, 8, 0, 0]}
               label={<CustomBarLabel />}
-            >
-              {chartData.map((entry, index) => {
-                const agentName = entry.agent;
-                return <Cell key={`cell-out-${index}`} fill={`url(#gradient-${agentName}-out)`} stroke={getAgentColors(agentName).base} strokeWidth={1} strokeOpacity={0.2} />;
-              })}
-            </Bar>
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

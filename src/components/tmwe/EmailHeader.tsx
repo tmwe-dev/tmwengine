@@ -23,9 +23,10 @@ interface EmailHeaderProps {
   hasPrevious?: boolean;
   hasNext?: boolean;
   onOpenSyncMonitor?: () => void;
+  onOpenDirectDownload?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor, onOpenDirectDownload }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);
@@ -108,8 +109,34 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                 </h1>
               </div>
 
-              {/* Download button per sincronizzazione email */}
+              {/* Sync buttons container */}
               <div className="flex items-center gap-1">
+                {/* Analizza button (EmailSyncMonitor) */}
+                {onOpenSyncMonitor && (
+                  <Button 
+                    onClick={onOpenSyncMonitor}
+                    variant="outline"
+                    size="sm"
+                    title="Analizza sincronizzazione"
+                  >
+                    <Settings2 className="h-4 w-4 mr-1" />
+                    {!isMobile && 'Analizza'}
+                  </Button>
+                )}
+
+                {/* Download button (Direct API) */}
+                {onOpenDirectDownload && (
+                  <Button 
+                    onClick={onOpenDirectDownload}
+                    size="sm"
+                    title="Scarica email via API"
+                  >
+                    <Mail className="h-4 w-4 mr-1" />
+                    {!isMobile && 'Scarica'}
+                  </Button>
+                )}
+
+                {/* Progress indicator */}
                 {downloadProgressComponent && (
                   <div>
                     {downloadProgressComponent}

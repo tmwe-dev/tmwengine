@@ -14,6 +14,7 @@ import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
+import { DirectAPIDownloadDialog } from '@/components/tmwe/DirectAPIDownloadDialog';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ const EmailDashboard = () => {
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
+  const [directDownloadOpen, setDirectDownloadOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -489,6 +491,10 @@ const EmailDashboard = () => {
           console.log('🚀 Opening sync monitor!');
           setSyncMonitorOpen(true);
         }}
+        onOpenDirectDownload={() => {
+          console.log('📥 Opening direct download!');
+          setDirectDownloadOpen(true);
+        }}
         downloadProgressComponent={
           <EmailDownloadProgress
             totalEmails={globalEmailCount || 0}
@@ -687,6 +693,11 @@ const EmailDashboard = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <DirectAPIDownloadDialog 
+        open={directDownloadOpen}
+        onOpenChange={setDirectDownloadOpen}
+      />
     </div>
   );
 };

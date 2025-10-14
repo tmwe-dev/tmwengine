@@ -26,7 +26,10 @@ export const useGlobalCallHandler = (currentUserId: string) => {
       .on('broadcast', { event: 'incoming-call' }, async ({ payload }) => {
         console.log('[GlobalCallHandler] Incoming call:', payload);
 
-        if (payload.to !== currentUserId) return;
+        if (payload.to !== currentUserId || payload.from === currentUserId) {
+          console.log('[GlobalCallHandler] ❌ Ignored: self-call or wrong recipient');
+          return;
+        }
 
         // Recupera nome chiamante
         const { data: callerProfile } = await supabase

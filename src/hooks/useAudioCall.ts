@@ -114,11 +114,30 @@ export const useAudioCall = (roomId: string, userId: string) => {
 
   const startCall = useCallback(async (targetUserId?: string) => {
     try {
-      console.log('[useAudioCall] Starting call to:', targetUserId || 'broadcast');
+      console.log('[useAudioCall] 🔵 START CALL INVOKED', { 
+        targetUserId, 
+        currentUserId: userId, 
+        isSelfCall: targetUserId === userId 
+      });
+      
+      // 🆕 Blocca auto-chiamate
+      if (targetUserId === userId) {
+        console.error('[useAudioCall] ❌ BLOCKED: Cannot call yourself!');
+        toast({
+          title: 'Errore',
+          description: 'Non puoi chiamare te stesso!',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       // 🆕 INVIA NOTIFICA GLOBALE PRIMA DI TUTTO
       if (targetUserId) {
         const channel = supabase.channel(`user-calls-${targetUserId}`);
+        
+        // Sottoscrivi prima di inviare
+        await channel.subscribe();
+        
         await channel.send({
           type: 'broadcast',
           event: 'incoming-call',
@@ -128,8 +147,13 @@ export const useAudioCall = (roomId: string, userId: string) => {
             roomId: roomId
           }
         });
+        
         console.log('[useAudioCall] ✅ Global call notification sent to:', targetUserId);
-        await channel.unsubscribe();
+        
+        // Lascia aperto il canale per 2 secondi prima di chiuderlo
+        setTimeout(() => {
+          channel.unsubscribe();
+        }, 2000);
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({

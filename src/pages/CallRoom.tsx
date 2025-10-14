@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ const CallRoom = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
+  const hasStartedCallRef = useRef(false);
   
   const targetUserId = searchParams.get('targetUserId');
   const roomId = 'global-call-room';
@@ -38,10 +39,12 @@ const CallRoom = () => {
 
   // Auto-avvia chiamata se c'è un targetUserId nei query params
   useEffect(() => {
-    if (targetUserId && !isInCall && userId) {
+    if (targetUserId && !isInCall && userId && !hasStartedCallRef.current) {
+      console.log('[CallRoom] Auto-starting call to:', targetUserId);
+      hasStartedCallRef.current = true;
       startCall(targetUserId);
     }
-  }, [targetUserId, isInCall, userId, startCall]);
+  }, [targetUserId, isInCall, userId]);
 
   const qualityColors = {
     good: 'bg-green-500',
@@ -69,14 +72,29 @@ const CallRoom = () => {
       <audio ref={remoteAudioRef} autoPlay />
       
       <div className="max-w-4xl mx-auto">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Indietro
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Indietro
+          </Button>
+          
+          {isInCall && (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                console.log('[CallRoom] Emergency exit');
+                endCall();
+                navigate(-1);
+              }}
+            >
+              <PhoneOff className="h-4 w-4 mr-2" />
+              Termina e Esci
+            </Button>
+          )}
+        </div>
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <div className="p-8">

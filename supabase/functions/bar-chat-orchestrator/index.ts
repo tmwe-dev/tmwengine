@@ -207,11 +207,28 @@ serve(async (req) => {
     // Fetch conversation data
     const { data: conversation, error: convError } = await supabaseClient
       .from('chat_laboratory_conversations')
-      .select('economy_mode, current_turn_index, last_speaker_index, riassunto_contesto')
+      .select('economy_mode, current_turn_index, last_speaker_index, riassunto_contesto, is_paused')
       .eq('id', conversationId)
       .single();
 
     if (convError) throw convError;
+
+    // 🆕 CONTROLLO PAUSA - Se in pausa, blocca tutto
+    if (conversation?.is_paused) {
+      console.log('⏸️ Conversazione in pausa, AI non risponde');
+      return new Response(
+        JSON.stringify({
+          error: 'conversation_paused',
+          message: 'La conversazione è in pausa. Ripremi Play per continuare.',
+          speaker: null,
+          tempResponse: null
+        }),
+        { 
+          status: 423, // 423 Locked
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     const useEconomyMode = conversation?.economy_mode ?? true;
     const cumulativeSummary = conversation?.riassunto_contesto || null;

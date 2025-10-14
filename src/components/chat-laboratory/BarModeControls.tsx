@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface BarModeControlsProps {
   conversationId: string | null;
@@ -212,48 +213,65 @@ export const BarModeControls = ({ conversationId, onSettingsChange }: BarModeCon
 
   return (
     <div className="space-y-4 p-4 bg-card rounded-lg border border-border">
-      {/* Preset Selector */}
-      <div className="space-y-3">
+      {/* Preset Selector - Radio con Icone */}
+      <div className="space-y-2">
         <Label className="text-sm font-semibold">Modalità Conversazione:</Label>
-        <div className="grid grid-cols-1 gap-2">
-          <Button
-            variant={preset === 'fast' ? 'default' : 'outline'}
-            className="justify-start h-auto py-3 px-4 text-left"
+        
+        {/* Radio Group Container */}
+        <div className="grid grid-cols-3 gap-2">
+          
+          {/* Preset 1: Veloce */}
+          <button
+            type="button"
             onClick={() => applyPreset('fast')}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
+              preset === 'fast' 
+                ? "border-primary bg-primary/10 text-primary" 
+                : "border-border hover:border-primary/50"
+            )}
           >
-            <div className="w-full">
-              <div className="font-semibold">⚡ Conversazione Veloce</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Premi 🎤 → Parla → Auto-stop silenzio 1.5s
-              </div>
-            </div>
-          </Button>
+            <span className="text-2xl">⚡</span>
+            <span className="text-xs font-medium text-center">Veloce</span>
+          </button>
 
-          <Button
-            variant={preset === 'professional' ? 'default' : 'outline'}
-            className="justify-start h-auto py-3 px-4 text-left"
+          {/* Preset 2: Professionale */}
+          <button
+            type="button"
             onClick={() => applyPreset('professional')}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
+              preset === 'professional' 
+                ? "border-primary bg-primary/10 text-primary" 
+                : "border-border hover:border-primary/50"
+            )}
           >
-            <div className="w-full">
-              <div className="font-semibold">💼 Conversazione Professionale</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Premi 🎤 → Registra → Ripremi per inviare
-              </div>
-            </div>
-          </Button>
+            <span className="text-2xl">💼</span>
+            <span className="text-xs font-medium text-center">Professionale</span>
+          </button>
 
-          <Button
-            variant={preset === 'deep' ? 'default' : 'outline'}
-            className="justify-start h-auto py-3 px-4 text-left"
+          {/* Preset 3: Profonda */}
+          <button
+            type="button"
             onClick={() => applyPreset('deep')}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
+              preset === 'deep' 
+                ? "border-primary bg-primary/10 text-primary" 
+                : "border-border hover:border-primary/50"
+            )}
           >
-            <div className="w-full">
-              <div className="font-semibold">🧠 Discussione Profonda</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                TIENI PREMUTO 🎤 per parlare → Rilascia → Auto-invio 1.5s
-              </div>
-            </div>
-          </Button>
+            <span className="text-2xl">🧠</span>
+            <span className="text-xs font-medium text-center">Profonda</span>
+          </button>
+        </div>
+
+        {/* Descrizione dinamica sotto i pulsanti */}
+        <div className="text-xs text-muted-foreground text-center p-2 bg-muted/30 rounded">
+          {preset === 'fast' && '⚡ Premi 🎤 → Auto-stop silenzio 1.5s'}
+          {preset === 'professional' && '💼 Premi 🎤 → Ripremi per inviare'}
+          {preset === 'deep' && '🧠 TIENI PREMUTO 🎤 → Rilascia → Auto-invio'}
+          {preset === 'custom' && '⚙️ Configurazione personalizzata'}
         </div>
       </div>
 

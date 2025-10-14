@@ -675,6 +675,16 @@ const ChatLaboratory = () => {
         });
         
         if (error) {
+          // 🆕 Gestione specifica per pausa
+          if (error.context?.status === 423) {
+            toast({
+              title: '⏸️ Conversazione in Pausa',
+              description: 'Ripremi il pulsante Play per continuare',
+              variant: 'default',
+            });
+            return; // Non mostrare errore generico
+          }
+          
           console.error('❌ ERRORE Bar Mode:', JSON.stringify(error, null, 2));
         } else {
           console.log('✅ Risposta completata:', data);

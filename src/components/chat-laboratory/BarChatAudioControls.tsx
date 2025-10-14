@@ -180,6 +180,36 @@ export const BarChatAudioControls = ({
       "p-6 rounded-lg shadow-lg space-y-4",
       className
     )}>
+      
+      {/* 🆕 PAUSA - Sezione separata SOPRA tutto */}
+      <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border border-border/40">
+        <div className="flex items-center gap-3">
+          <Button
+            variant={isPaused ? "default" : "ghost"}
+            size="icon"
+            onClick={togglePause}
+            className={cn(
+              "h-10 w-10 rounded-full transition-all",
+              isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
+            )}
+            title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
+          >
+            {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+          </Button>
+          
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              {isPaused ? '⏸️ Conversazione in Pausa' : '▶️ Conversazione Attiva'}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {isPaused 
+                ? 'Nessuno può inviare messaggi' 
+                : 'Gli AI possono rispondere'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Riga 1: Controlli principali */}
       <div className="flex justify-between items-center gap-4">
         <div className="flex items-center gap-4">
@@ -188,7 +218,7 @@ export const BarChatAudioControls = ({
             <BarVoiceRecorder
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
+              isDisabled={isAISpeaking || isPaused}
             />
           )}
           
@@ -196,7 +226,7 @@ export const BarChatAudioControls = ({
             <BarVoiceRecorderV2_Continuous
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
+              isDisabled={isAISpeaking || isPaused}
             />
           )}
           
@@ -204,7 +234,7 @@ export const BarChatAudioControls = ({
             <BarVoiceRecorderV2_Extended
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
+              isDisabled={isAISpeaking || isPaused}
             />
           )}
           
@@ -212,23 +242,9 @@ export const BarChatAudioControls = ({
             <BarVoiceRecorderV2_Hybrid
               conversationId={conversationId}
               onTranscriptionComplete={onTranscriptionComplete}
-              isDisabled={isAISpeaking}
+              isDisabled={isAISpeaking || isPaused}
             />
           )}
-
-          {/* Pause/Resume Button */}
-          <Button
-            variant={isPaused ? "default" : "ghost"}
-            size="icon"
-            onClick={togglePause}
-            className={cn(
-              "h-12 w-12 rounded-full transition-all",
-              isPaused && "bg-yellow-500 hover:bg-yellow-600 text-white"
-            )}
-            title={isPaused ? "Riprendi conversazione" : "Pausa conversazione"}
-          >
-            {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-          </Button>
 
           {/* Interrupt Button - visibile solo quando AI parla */}
           <InterruptButton

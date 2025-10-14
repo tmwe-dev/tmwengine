@@ -147,17 +147,16 @@ const EmailDashboard = () => {
 
   const totalEmailCount = folderInfo?.total || 0;
 
-  // Email download hook - declare first
+  // Email download hook - declare first (ora scarica da TUTTE le cartelle)
   const {
     isDownloading,
     downloadedCount,
     downloadError,
     allEmails: downloadedEmails,
     startDownload,
-  } = useEmailDownload({
-    folder: selectedFolder,
-    totalEmails: totalEmailCount,
-  });
+    currentFolder,
+    totalToDownload,
+  } = useEmailDownload();
 
   // Email Sync hook (usando Edge Function tmwe-email-sync-master)
   const {

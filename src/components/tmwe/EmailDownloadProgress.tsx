@@ -38,6 +38,7 @@ export const EmailDownloadProgress = ({
           size="sm"
           className={cn(
             'relative',
+            'hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/20',
             isComplete && 'text-green-600',
             downloadError && 'text-destructive'
           )}
@@ -49,7 +50,7 @@ export const EmailDownloadProgress = ({
           ) : downloadError ? (
             <XCircle className="h-4 w-4 mr-2" />
           ) : (
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-2 text-purple-500" />
           )}
           {isDownloading || isComplete ? (
             <span className="text-xs">

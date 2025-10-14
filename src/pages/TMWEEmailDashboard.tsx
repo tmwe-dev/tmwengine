@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, MessageSquare, Brain } from 'lucide-react';
+// Unused icons removed: Database, MessageSquare, Brain
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,13 +109,22 @@ const EmailDashboard = () => {
   
   useEffect(() => {
     const fetchCount = async () => {
-      const userEmail = sessionStorage.getItem('tmwe_user_email');
-      if (!userEmail) return;
+      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) return;
       
       const { count } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('user_email', userEmail);
+        .eq('user_email', profile.tmwe_email);
       if (count !== null) setEmailCount(count);
     };
     fetchCount();
@@ -164,14 +173,23 @@ const EmailDashboard = () => {
   const { data: dbEmailCount } = useQuery({
     queryKey: ['db-email-count', selectedFolder],
     queryFn: async () => {
-      const userEmail = sessionStorage.getItem('tmwe_user_email');
-      if (!userEmail) return 0;
+      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 0;
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) return 0;
       
       const { count } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
         .eq('cartella', selectedFolder)
-        .eq('user_email', userEmail);
+        .eq('user_email', profile.tmwe_email);
       return count || 0;
     },
   });
@@ -267,10 +285,23 @@ const EmailDashboard = () => {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
-      const userEmail = sessionStorage.getItem('tmwe_user_email');
-      if (!userEmail) {
+      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         throw new Error('Utente non autenticato');
       }
+      
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.tmwe_email) {
+        throw new Error('Email utente non trovata nel profilo');
+      }
+      
+      const userEmail = profile.tmwe_email;
       
       // 1. Ottieni il totale delle email dalla cartella
       const folderInfoResponse = await emailMessageApi.getMessages({ 
@@ -658,14 +689,6 @@ const EmailDashboard = () => {
             {/* Right aligned icons - visible on all devices */}
             <div className="flex items-center gap-2 shrink-0">
               <PagePromptManager pageRoute="/email-manager" />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 hover:bg-primary/10"
-                onClick={openAIChat}
-              >
-                <Brain className="h-4 w-4 text-primary" />
-              </Button>
             </div>
           </div>
 

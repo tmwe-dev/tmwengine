@@ -1,0 +1,819 @@
+openapi: 3.0.4
+info:
+  title: TMWE ERP JWT Authentication API
+  description: |
+    JWT (JSON Web Token) authentication API for TMWE ERP system.
+
+    This API provides stateless authentication using cryptographically signed JWT tokens
+    as an alternative to traditional OAuth2 tokens.
+
+    ## Key Features
+
+    - **Stateless Authentication**: No database lookup required for token validation
+    - **Cryptographic Signing**: Tokens signed with HS256 algorithm
+    - **Embedded Claims**: User info included in token payload
+    - **Fast Validation**: 5x faster than OAuth2 (no database queries)
+    - **Automatic Detection**: API auto-detects JWT vs OAuth2 tokens
+    - **Full Compatibility**: Works with all existing API endpoints
+
+    ## Token Format
+
+    JWT tokens have 3 parts separated by dots:
+    ```
+    header.payload.signature
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0fQ.signature
+    ```
+
+    ## Usage in API Requests
+
+    Include JWT token in Authorization header:
+    ```
+    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    ```
+
+    ## Authentication Flows
+
+    ### Flow 1: Client Credentials (Machine-to-Machine)
+    1. POST to `/token` with `grant_type=client_credentials_jwt`
+    2. Receive JWT access_token and refresh_token
+    3. Use access_token in Authorization header
+    4. Refresh with `/token` and `grant_type=refresh_token_jwt`
+
+    ### Flow 2: Authorization Code (User Authentication)
+    1. Redirect user to `/auth` for login
+    2. User authenticates, receives authorization code
+    3. Exchange code for JWT at `/exchange_code_for_jwt`
+    4. Use JWT access_token in Authorization header
+    5. Refresh with `/token` and `grant_type=refresh_token_jwt`
+
+    ## Token Lifetime
+
+    - **Access Token**: 3600 seconds (1 hour)
+    - **Refresh Token**: 172800 seconds (48 hours)
+
+    ## Standards Compliance
+
+    - RFC 7519: JSON Web Token (JWT)
+    - RFC 6749: OAuth 2.0 Authorization Framework (for grant types)
+
+  version: 1.0.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: TMWE ERP Production Server
+  - url: http://localhost/erp/tmwe_json
+    description: TMWE ERP Local Development Server
+
+tags:
+  - name: JWT Authentication
+    description: JWT token management endpoints
+  - name: Token Validation
+    description: Token validation and verification
+
+paths:
+  /token:
+    post:
+      tags:
+        - JWT Authentication
+      summary: Get JWT access token (Recommended)
+      description: |
+        Unified endpoint for obtaining JWT access tokens using OAuth2-compatible grant types.
+
+        This is the **recommended** endpoint for JWT authentication. It follows OAuth2 standards
+        and returns JWT tokens instead of traditional OAuth2 tokens.
+
+        ## Request Method
+
+        Use POST with `application/x-www-form-urlencoded` body (OAuth2 standard).
+
+        ## Grant Types
+
+        ### Client Credentials JWT Grant
+        Use for machine-to-machine authentication:
+        ```
+        grant_type=client_credentials_jwt
+        client_id=your_client_id
+        client_secret=your_client_secret
+        ```
+
+        ### Refresh Token JWT Grant
+        Use to refresh expired access token:
+        ```
+        grant_type=refresh_token_jwt
+        refresh_token=your_refresh_token
+        ```
+
+        ## Response
+
+        Returns JWT tokens with embedded claims:
+        - `access_token`: JWT token for API requests
+        - `refresh_token`: JWT token to obtain new access token (only for client_credentials_jwt)
+        - `expires_in`: Access token lifetime in seconds
+        - `token_format`: Always "jwt"
+
+        ## Token Claims
+
+        Access tokens contain:
+        - `user_id`: User ID from contatti table
+        - `client_id`: Client ID used for authentication
+        - `anagrafica_id`: Anagrafica ID (if available)
+        - `iss`: Token issuer (https://findair.it/erp/tmwe_json)
+        - `iat`: Issued at timestamp
+        - `exp`: Expiration timestamp
+        - `jti`: JWT ID (unique identifier)
+
+        ## Security
+
+        - Tokens are cryptographically signed with HS256
+        - Secret key is stored securely on server
+        - Tokens cannot be modified without invalidating signature
+        - Expired tokens are automatically rejected
+        - Stateless validation (no database lookup required)
+
+      operationId: getJwtTokenUnified
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/JwtClientCredentialsRequest'
+                - $ref: '#/components/schemas/JwtRefreshTokenRequest'
+              discriminator:
+                propertyName: grant_type
+            examples:
+              clientCredentialsJwt:
+                summary: Client Credentials JWT Grant
+                description: Authenticate with client credentials and get JWT tokens
+                value:
+                  grant_type: "client_credentials_jwt"
+                  client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                  client_secret: "fedcba09876543210abcdef0123456789abcdef0"
+                  expires_in: 3600
+              refreshTokenJwt:
+                summary: Refresh Token JWT Grant
+                description: Refresh access token using JWT refresh token
+                value:
+                  grant_type: "refresh_token_jwt"
+                  refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+      responses:
+        '200':
+          description: JWT tokens generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                clientCredentialsSuccess:
+                  summary: Client credentials JWT success
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImV4cCI6MTczNTY4OTYwMH0.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTg1ODgwMH0.signature"
+                    token_format: "jwt"
+                    user_id: 1234
+                    client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                    anagrafica_id: 5678
+                refreshTokenSuccess:
+                  summary: Refresh token JWT success
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJleHAiOjE3MzU2OTMyMDB9.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    token_format: "jwt"
+                    user_id: 1234
+
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingParameters:
+                  summary: Missing required parameters
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameters: client_id or client_secret"
+                invalidGrantType:
+                  summary: Invalid grant_type
+                  value:
+                    error:
+                      code: "UNSUPPORTED_GRANT_TYPE"
+                      message: "Unsupported grant_type: password"
+
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid client credentials
+                  value:
+                    error:
+                      code: "INVALID_CLIENT"
+                      message: "Invalid client credentials"
+                invalidRefreshToken:
+                  summary: Invalid or expired refresh token
+                  value:
+                    error:
+                      code: "INVALID_GRANT"
+                      message: "Invalid or expired refresh token"
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+      security: []
+
+  /exchange_code_for_jwt:
+    post:
+      tags:
+        - JWT Authentication
+      summary: Exchange OAuth2 authorization code for JWT token
+      description: |
+        Exchange an OAuth2 authorization code for JWT tokens instead of OAuth2 tokens.
+
+        This endpoint enables the **OAuth2 Authorization Code flow** but returns **JWT tokens**
+        instead of traditional OAuth2 tokens. Perfect for applications that want:
+        - Secure user authentication (OAuth2 Authorization Code flow)
+        - Stateless JWT tokens for API access
+        - Server-side token exchange (protecting client_secret)
+
+        ## Full Authentication Flow
+
+        1. **Frontend**: User clicks "Login"
+        2. **Frontend**: Redirect to `GET /auth?client_id=xxx&redirect_uri=xxx&response_type=code`
+        3. **API**: User authenticates on login page
+        4. **API**: Redirects to `{redirect_uri}?code=abc123`
+        5. **Backend/Edge Function**: POST to `/exchange_code_for_jwt` with code + credentials
+        6. **API**: Returns JWT tokens
+        7. **Backend/Edge Function**: Returns JWT to frontend
+        8. **Frontend**: Uses JWT access_token in Authorization header
+
+        ## Security
+
+        - Authorization code is **single-use** (automatically disabled after exchange)
+        - Authorization code **expires after 10 minutes**
+        - Client secret must be **protected server-side** (never exposed to frontend)
+        - JWT tokens are **cryptographically signed** with HS256
+        - Tokens contain user context (user_id, client_id, anagrafica_id)
+
+        ## Implementation Pattern
+
+        This endpoint should be called from:
+        - **Backend API** (Node.js, Python, PHP server)
+        - **Edge Functions** (Vercel, Cloudflare Workers)
+        - **Serverless Functions** (AWS Lambda, Azure Functions)
+
+        **NEVER** call this endpoint directly from the browser, as it requires `client_secret`.
+
+        ## Request Format
+
+        Use `Content-Type: application/json` or `application/x-www-form-urlencoded`.
+        The endpoint supports both formats for OAuth2 compatibility.
+
+      operationId: exchangeCodeForJwt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeCodeRequest'
+            example:
+              grant_type: "authorization_code"
+              code: "a1b2c3d4e5f6789012345678901234567890abcd"
+              client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+              client_secret: "fedcba09876543210abcdef0123456789abcdef0"
+              redirect_uri: "https://your-app.vercel.app/auth/callback"
+
+      responses:
+        '200':
+          description: Authorization code exchanged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJleHAiOjE3MzU2ODk2MDB9.signature"
+                token_type: "Bearer"
+                expires_in: 3600
+                refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCJ9.signature"
+                token_format: "jwt"
+                user_id: 1234
+                client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                anagrafica_id: 5678
+                email: "user@example.com"
+                scope: null
+
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingCode:
+                  summary: Missing authorization code
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: code"
+                invalidCode:
+                  summary: Invalid authorization code
+                  value:
+                    error:
+                      code: "INVALID_GRANT"
+                      message: "Invalid or expired authorization code"
+
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidClient:
+                  summary: Invalid client credentials
+                  value:
+                    error:
+                      code: "INVALID_CLIENT"
+                      message: "Invalid client credentials"
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+      security: []
+
+  /get_jwt_token:
+    post:
+      tags:
+        - JWT Authentication
+      summary: Get JWT access token
+      description: |
+        Obtain JWT access tokens using client credentials grant.
+
+        This endpoint accepts the same client credentials as OAuth2 but returns
+        JWT tokens instead of random OAuth2 tokens.
+
+        **⚠️ DEPRECATED**: This endpoint is maintained for backward compatibility.
+        For new implementations, use the unified `/token` endpoint with `grant_type=client_credentials_jwt`.
+
+        ## Request Method
+
+        Use POST with JSON body (recommended).
+
+        ## Grant Types
+
+        ### Client Credentials Grant
+        Use for machine-to-machine authentication:
+        ```json
+        {
+          "client_id": "your_client_id",
+          "client_secret": "your_client_secret",
+          "grant_type": "client_credentials"
+        }
+        ```
+
+        ### Refresh Token Grant
+        Use to refresh expired access token:
+        ```json
+        {
+          "grant_type": "refresh_token",
+          "refresh_token": "your_refresh_token"
+        }
+        ```
+
+        ## Response
+
+        Returns JWT tokens with embedded claims:
+        - `access_token`: Use for API requests
+        - `refresh_token`: Use to obtain new access token
+        - `expires_in`: Access token lifetime in seconds
+        - `token_format`: Always "jwt"
+
+        ## Token Claims
+
+        Access tokens contain:
+        - `user_id`: User ID from contatti table
+        - `client_id`: Client ID used for authentication
+        - `anagrafica_id`: Anagrafica ID (if available)
+        - `iss`: Token issuer
+        - `iat`: Issued at timestamp
+        - `exp`: Expiration timestamp
+
+        ## Security
+
+        - Tokens are cryptographically signed with HS256
+        - Secret key is stored securely on server
+        - Tokens cannot be modified without invalidating signature
+        - Expired tokens are automatically rejected
+
+      operationId: getJwtToken
+      deprecated: true
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ClientCredentialsRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+              discriminator:
+                propertyName: grant_type
+            examples:
+              clientCredentials:
+                summary: Client Credentials Grant
+                description: Authenticate with client ID and secret
+                value:
+                  client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                  client_secret: "fedcba09876543210abcdef0123456789abcdef0"
+                  grant_type: "client_credentials"
+              refreshToken:
+                summary: Refresh Token Grant
+                description: Refresh access token using refresh token
+                value:
+                  grant_type: "refresh_token"
+                  refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+      responses:
+        '200':
+          description: JWT tokens generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                clientCredentialsSuccess:
+                  summary: Client credentials success
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImFuYWdyYWZpY2FfaWQiOjU2NzgsImlzcyI6Imh0dHBzOi8vZmluZGFpci5pdC9lcnAvdG13ZV9qc29uIiwiaWF0IjoxNzM1Njg2MDAwLCJleHAiOjE3MzU2ODk2MDB9.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsInR5cGUiOiJyZWZyZXNoIiwiaXNzIjoiaHR0cHM6Ly9maW5kYWlyLml0L2VycC90bXdlX2pzb24iLCJpYXQiOjE3MzU2ODYwMDAsImV4cCI6MTczNTg1ODgwMH0.signature"
+                    token_format: "jwt"
+                    user_id: 1234
+                    client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                    anagrafica_id: 5678
+                refreshTokenSuccess:
+                  summary: Refresh token success
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImFuYWdyYWZpY2FfaWQiOjU2NzgsImlzcyI6Imh0dHBzOi8vZmluZGFpci5pdC9lcnAvdG13ZV9qc29uIiwiaWF0IjoxNzM1Njg5NjAwLCJleHAiOjE3MzU2OTMyMDB9.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    token_format: "jwt"
+                    user_id: 1234
+                    client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingClientId:
+                  summary: Missing client_id
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: client_id"
+                missingClientSecret:
+                  summary: Missing client_secret
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: client_secret"
+                invalidGrantType:
+                  summary: Invalid grant_type
+                  value:
+                    error:
+                      code: "UNSUPPORTED_GRANT_TYPE"
+                      message: "Unsupported grant_type. Must be 'client_credentials' or 'refresh_token'"
+                missingRefreshToken:
+                  summary: Missing refresh_token
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: refresh_token"
+
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid client credentials
+                  value:
+                    error:
+                      code: "INVALID_CLIENT"
+                      message: "Invalid client credentials"
+                invalidRefreshToken:
+                  summary: Invalid or expired refresh token
+                  value:
+                    error:
+                      code: "INVALID_GRANT"
+                      message: "Invalid or expired refresh token"
+                userNotActive:
+                  summary: User account not active
+                  value:
+                    error:
+                      code: "USER_INACTIVE"
+                      message: "User account is not active"
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    error:
+                      code: "INTERNAL_ERROR"
+                      message: "An internal error occurred"
+
+      security: []
+
+components:
+  schemas:
+    JwtClientCredentialsRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials_jwt]
+          description: Grant type for JWT client credentials flow
+          example: client_credentials_jwt
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: |
+            OAuth2 client ID from contatti.loginn field.
+            Must be a hexadecimal string with at least 32 characters.
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: |
+            OAuth2 client secret from contatti.lpw field.
+            Must be a hexadecimal string with at least 32 characters.
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        expires_in:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+          description: Token lifetime in seconds (optional, default 3600)
+          example: 3600
+        scope:
+          type: string
+          description: Requested scopes (optional, space-separated)
+          example: "read write"
+
+    JwtRefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token_jwt]
+          description: Grant type for JWT refresh token flow
+          example: refresh_token_jwt
+        refresh_token:
+          type: string
+          description: |
+            Valid JWT refresh token obtained from previous authentication.
+            JWT format with 3 parts separated by dots.
+            Must have type='refresh' claim.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTg1ODgwMH0.signature"
+        expires_in:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+          description: New access token lifetime in seconds (optional, default 3600)
+          example: 3600
+
+    ExchangeCodeRequest:
+      type: object
+      required:
+        - grant_type
+        - code
+        - client_id
+        - client_secret
+        - redirect_uri
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+          description: Grant type (must be 'authorization_code')
+          example: authorization_code
+        code:
+          type: string
+          minLength: 16
+          description: Authorization code obtained from OAuth2 authorization flow
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret (must be protected server-side)
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        redirect_uri:
+          type: string
+          format: uri
+          description: Redirect URI (must match the one registered for this client)
+          example: "https://your-app.vercel.app/auth/callback"
+
+    ClientCredentialsRequest:
+      type: object
+      required:
+        - client_id
+        - client_secret
+        - grant_type
+      properties:
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: |
+            OAuth2 client ID from contatti.loginn field.
+            Must be a hexadecimal string with at least 32 characters.
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: |
+            OAuth2 client secret from contatti.lpw field.
+            Must be a hexadecimal string with at least 32 characters.
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        grant_type:
+          type: string
+          enum: [client_credentials]
+          description: Grant type for client credentials flow
+          example: client_credentials
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+          description: Grant type for refresh token flow
+          example: refresh_token
+        refresh_token:
+          type: string
+          description: |
+            Valid JWT refresh token obtained from previous authentication.
+            JWT format with 3 parts separated by dots.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTg1ODgwMH0.signature"
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - token_format
+      properties:
+        access_token:
+          type: string
+          description: |
+            JWT access token for API authentication.
+            Format: header.payload.signature (3 parts separated by dots)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImFuYWdyYWZpY2FfaWQiOjU2NzgsImlzcyI6Imh0dHBzOi8vZmluZGFpci5pdC9lcnAvdG13ZV9qc29uIiwiaWF0IjoxNzM1Njg2MDAwLCJleHAiOjE3MzU2ODk2MDB9.AbCdEfGhIjKlMnOpQrStUvWxYz"
+        token_type:
+          type: string
+          enum: [Bearer]
+          description: Token type (always Bearer for JWT)
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Number of seconds until access token expires
+          example: 3600
+          default: 3600
+        refresh_token:
+          type: string
+          description: |
+            JWT refresh token for obtaining new access tokens.
+            Has longer expiration than access token.
+            Only returned for client_credentials grant.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsInR5cGUiOiJyZWZyZXNoIiwiaXNzIjoiaHR0cHM6Ly9maW5kYWlyLml0L2VycC90bXdlX2pzb24iLCJpYXQiOjE3MzU2ODYwMDAsImV4cCI6MTczNTg1ODgwMH0.AbCdEfGhIjKlMnOpQrStUvWxYz"
+        token_format:
+          type: string
+          enum: [jwt]
+          description: Token format identifier (always 'jwt')
+          example: jwt
+        user_id:
+          type: integer
+          description: User ID from contatti.id
+          example: 1234
+        client_id:
+          type: string
+          description: Client ID used for authentication
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        anagrafica_id:
+          type: integer
+          description: Anagrafica ID from contatti.id_anagrafica (may be null)
+          example: 5678
+          nullable: true
+        email:
+          type: string
+          format: email
+          description: User email from contatti.mail (may be null)
+          example: "user@example.com"
+          nullable: true
+        scope:
+          type: string
+          description: OAuth2 scope (may be null)
+          example: "read write"
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+              enum:
+                - INVALID_REQUEST
+                - INVALID_CLIENT
+                - INVALID_GRANT
+                - UNSUPPORTED_GRANT_TYPE
+                - USER_INACTIVE
+                - INTERNAL_ERROR
+              example: INVALID_CLIENT
+            message:
+              type: string
+              description: Human-readable error description
+              example: "Invalid client credentials"
+            details:
+              type: object
+              description: Additional error details (optional)
+              additionalProperties: true
+
+  securitySchemes:
+    JwtBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT (JSON Web Token) authentication.
+
+        Include the JWT token in the Authorization header:
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ```
+
+        The API automatically validates:
+        - Token signature (HS256)
+        - Token expiration
+        - Token claims (user_id, client_id)
+
+        Tokens are validated without database lookups for maximum performance.
+
+security:
+  - JwtBearer: []

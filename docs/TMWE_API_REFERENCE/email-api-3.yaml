@@ -1,0 +1,1269 @@
+openapi: 3.0.4
+info:
+  title: TMWE ERP Email API
+  description: |
+    Email Management API for TMWE ERP system.
+
+    This API provides comprehensive email management capabilities including:
+    - Email account configuration and testing
+    - Email synchronization (IMAP/POP3)
+    - Email folder management
+    - Email message operations (read, send, reply, forward, delete)
+    - Email search and filtering
+
+    ## Authentication
+    All endpoints require OAuth2 authentication via Bearer token in the Authorization header.
+    See the [OAuth2 API documentation](oauth2-api.yaml) for authentication details.
+
+    ## Email Account Configuration
+    Before using email features, you must configure an email account with IMAP/SMTP settings.
+
+  version: 1.0.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+    email: support@findair.it
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: TMWE ERP Production Server
+
+tags:
+  - name: Email Account
+    description: Email account configuration and management
+  - name: Email Sync
+    description: Email synchronization operations
+  - name: Email Messages
+    description: Email message operations (read, send, search, etc.)
+  - name: Email Folders
+    description: Email folder management
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============================================
+  # EMAIL ACCOUNT
+  # ============================================
+  /email_account:
+    post:
+      tags:
+        - Email Account
+      summary: Email account operations
+      description: |
+        Manage email account settings and perform account-related operations.
+
+        Available handlers:
+        - `test_connection`: Test IMAP/SMTP connection with provided credentials
+        - `get_account_info`: Get current account information
+        - `get_quota`: Get mailbox quota information
+        - `save_account`: Save or update account configuration
+        - `delete_account`: Delete email account configuration
+      operationId: manageEmailAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/TestConnectionRequest'
+                - $ref: '#/components/schemas/GetAccountInfoRequest'
+                - $ref: '#/components/schemas/GetQuotaRequest'
+                - $ref: '#/components/schemas/SaveAccountRequest'
+                - $ref: '#/components/schemas/DeleteAccountRequest'
+            examples:
+              test_connection:
+                summary: Test email connection
+                value:
+                  handler: test_connection
+                  imap_host: imap.gmail.com
+                  imap_port: 993
+                  imap_encryption: ssl
+                  smtp_host: smtp.gmail.com
+                  smtp_port: 587
+                  smtp_encryption: tls
+                  email: user@example.com
+                  password: "password123"
+              get_account_info:
+                summary: Get account information
+                value:
+                  handler: get_account_info
+              save_account:
+                summary: Save account configuration
+                value:
+                  handler: save_account
+                  account_name: "Work Email"
+                  imap_host: imap.gmail.com
+                  imap_port: 993
+                  imap_encryption: ssl
+                  smtp_host: smtp.gmail.com
+                  smtp_port: 587
+                  smtp_encryption: tls
+                  email: user@example.com
+                  password: "password123"
+                  default_account: true
+      responses:
+        '200':
+          description: Operation successful
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TestConnectionResponse'
+                  - $ref: '#/components/schemas/AccountInfoResponse'
+                  - $ref: '#/components/schemas/QuotaResponse'
+                  - $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ============================================
+  # EMAIL SYNC
+  # ============================================
+  /email_sync:
+    post:
+      tags:
+        - Email Sync
+      summary: Email synchronization operations
+      description: |
+        Synchronize emails from the mail server to local storage.
+
+        Available handlers:
+        - `full_sync`: Perform full mailbox synchronization
+        - `incremental_sync`: Sync only new emails since last sync
+        - `sync_folder`: Sync specific folder
+        - `get_sync_status`: Get current synchronization status
+        - `cancel_sync`: Cancel ongoing synchronization
+      operationId: syncEmails
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/FullSyncRequest'
+                - $ref: '#/components/schemas/IncrementalSyncRequest'
+                - $ref: '#/components/schemas/SyncFolderRequest'
+                - $ref: '#/components/schemas/GetSyncStatusRequest'
+                - $ref: '#/components/schemas/CancelSyncRequest'
+            examples:
+              full_sync:
+                summary: Full mailbox sync
+                value:
+                  handler: full_sync
+              incremental_sync:
+                summary: Incremental sync
+                value:
+                  handler: incremental_sync
+              sync_folder:
+                summary: Sync specific folder
+                value:
+                  handler: sync_folder
+                  folder_name: INBOX
+      responses:
+        '200':
+          description: Sync operation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # EMAIL MESSAGES
+  # ============================================
+  /email_message:
+    post:
+      tags:
+        - Email Messages
+      summary: Email message operations
+      description: |
+        Perform operations on email messages.
+
+        Available handlers:
+        - `get_messages`: Get list of messages with pagination and filtering
+        - `get_message`: Get specific message by ID
+        - `search_messages`: Search messages by criteria
+        - `send_message`: Send new email message
+        - `reply_message`: Reply to existing message
+        - `forward_message`: Forward existing message
+        - `delete_email`: Delete single email permanently
+        - `move_to_trash`: Move single email to trash folder
+        - `delete_messages`: Delete multiple messages permanently
+        - `move_messages_to_trash`: Move multiple messages to trash folder
+        - `move_messages`: Move messages to different folder
+        - `mark_messages`: Mark messages as read/unread/flagged
+      operationId: emailMessageOperations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GetMessagesRequest'
+                - $ref: '#/components/schemas/GetMessageRequest'
+                - $ref: '#/components/schemas/SearchMessagesRequest'
+                - $ref: '#/components/schemas/SendMessageRequest'
+                - $ref: '#/components/schemas/ReplyMessageRequest'
+                - $ref: '#/components/schemas/ForwardMessageRequest'
+                - $ref: '#/components/schemas/DeleteEmailRequest'
+                - $ref: '#/components/schemas/MoveToTrashRequest'
+                - $ref: '#/components/schemas/DeleteMessagesRequest'
+                - $ref: '#/components/schemas/MoveMessagesToTrashRequest'
+                - $ref: '#/components/schemas/MoveMessagesRequest'
+                - $ref: '#/components/schemas/MarkMessagesRequest'
+            examples:
+              get_messages:
+                summary: Get messages list with pagination
+                value:
+                  handler: get_messages
+                  folder: INBOX
+                  page: 1
+                  limit: 50
+                  sort: date
+                  order: DESC
+                  include_attachments: false
+                  format: text
+              get_messages_with_offset:
+                summary: Get messages with explicit offset
+                value:
+                  handler: get_messages
+                  folder: INBOX
+                  offset: 100
+                  limit: 50
+              get_message:
+                summary: Get specific message
+                value:
+                  handler: get_message
+                  uid: "12345"
+                  folder: INBOX
+                  include_attachments: true
+                  format: html
+                  mark_as_read: true
+              send_message:
+                summary: Send new email
+                value:
+                  handler: send_message
+                  to: ["recipient@example.com"]
+                  subject: "Test Email"
+                  body: "This is a test email"
+                  body_type: "html"
+                  cc: ["cc@example.com"]
+                  bcc: []
+                  attachments: []
+              reply_message:
+                summary: Reply to an email
+                value:
+                  handler: reply_message
+                  uid: "6633"
+                  body: "This is my reply"
+                  body_html: "<p>This is my reply</p>"
+                  reply_all: false
+                  attachments: []
+              forward_message:
+                summary: Forward an email
+                value:
+                  handler: forward_message
+                  uid: "6633"
+                  to: ["recipient@example.com"]
+                  body: "FYI - see forwarded message below"
+                  body_html: ""
+                  cc: []
+                  bcc: []
+                  attachments: []
+              search_messages:
+                summary: Search emails
+                value:
+                  handler: search_messages
+                  query: "invoice"
+                  folder: INBOX
+                  from_date: "2025-01-01"
+                  to_date: "2025-12-31"
+              delete_email:
+                summary: Delete single email permanently
+                value:
+                  handler: delete_email
+                  uid: 123
+              move_to_trash:
+                summary: Move single email to trash
+                value:
+                  handler: move_to_trash
+                  uid: 123
+              delete_messages:
+                summary: Delete multiple emails permanently
+                value:
+                  handler: delete_messages
+                  uids: [123, 456, 789]
+              move_messages_to_trash:
+                summary: Move multiple emails to trash
+                value:
+                  handler: move_messages_to_trash
+                  uids: [123, 456, 789]
+      responses:
+        '200':
+          description: Operation result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/MessagesListResponse'
+                  - $ref: '#/components/schemas/MessageDetailResponse'
+                  - $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # EMAIL FOLDERS
+  # ============================================
+  /email_folder:
+    post:
+      tags:
+        - Email Folders
+      summary: Email folder management
+      description: |
+        Manage email folders in the mailbox.
+
+        Available handlers:
+        - `get_folders`: Get list of all folders
+        - `get_folder_info`: Get information about specific folder
+        - `create_folder`: Create new folder
+        - `delete_folder`: Delete folder
+        - `rename_folder`: Rename folder
+      operationId: manageEmailFolders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GetFoldersRequest'
+                - $ref: '#/components/schemas/GetFolderInfoRequest'
+                - $ref: '#/components/schemas/CreateFolderRequest'
+                - $ref: '#/components/schemas/DeleteFolderRequest'
+                - $ref: '#/components/schemas/RenameFolderRequest'
+            examples:
+              get_folders:
+                summary: Get all folders
+                value:
+                  handler: get_folders
+              create_folder:
+                summary: Create new folder
+                value:
+                  handler: create_folder
+                  folder_name: "Archive 2025"
+                  parent_folder: "INBOX"
+              rename_folder:
+                summary: Rename folder
+                value:
+                  handler: rename_folder
+                  old_name: "Archive 2025"
+                  new_name: "Archive 2025 Q1"
+      responses:
+        '200':
+          description: Operation result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FoldersListResponse'
+                  - $ref: '#/components/schemas/FolderInfoResponse'
+                  - $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ============================================
+# COMPONENTS
+# ============================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuth2
+      description: |
+        OAuth2 Bearer token authentication.
+        Include the access token in the Authorization header as: Bearer {token}
+
+  # ============================================
+  # REQUEST SCHEMAS
+  # ============================================
+  schemas:
+    # Email Account Requests
+    TestConnectionRequest:
+      type: object
+      required:
+        - handler
+        - imap_host
+        - imap_port
+        - email
+        - password
+      properties:
+        handler:
+          type: string
+          enum: [test_connection]
+        imap_host:
+          type: string
+          example: imap.gmail.com
+        imap_port:
+          type: integer
+          example: 993
+        imap_encryption:
+          type: string
+          enum: [ssl, tls, none]
+          default: ssl
+        smtp_host:
+          type: string
+          example: smtp.gmail.com
+        smtp_port:
+          type: integer
+          example: 587
+        smtp_encryption:
+          type: string
+          enum: [ssl, tls, none]
+          default: tls
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    GetAccountInfoRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [get_account_info]
+
+    GetQuotaRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [get_quota]
+
+    SaveAccountRequest:
+      type: object
+      required:
+        - handler
+        - account_name
+        - imap_host
+        - imap_port
+        - smtp_host
+        - smtp_port
+        - email
+        - password
+      properties:
+        handler:
+          type: string
+          enum: [save_account]
+        account_name:
+          type: string
+        imap_host:
+          type: string
+        imap_port:
+          type: integer
+        imap_encryption:
+          type: string
+          enum: [ssl, tls, none]
+        smtp_host:
+          type: string
+        smtp_port:
+          type: integer
+        smtp_encryption:
+          type: string
+          enum: [ssl, tls, none]
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        default_account:
+          type: boolean
+          default: false
+
+    DeleteAccountRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [delete_account]
+
+    # Email Sync Requests
+    FullSyncRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [full_sync]
+
+    IncrementalSyncRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [incremental_sync]
+
+    SyncFolderRequest:
+      type: object
+      required:
+        - handler
+        - folder_name
+      properties:
+        handler:
+          type: string
+          enum: [sync_folder]
+        folder_name:
+          type: string
+          example: INBOX
+
+    GetSyncStatusRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [get_sync_status]
+
+    CancelSyncRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [cancel_sync]
+
+    # Email Message Requests
+    GetMessagesRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [get_messages]
+        folder:
+          type: string
+          default: INBOX
+          description: Folder to retrieve messages from
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: |
+            Page number for pagination (1-based).
+            When provided with 'limit', the offset is automatically calculated as: offset = (page - 1) * limit
+            If 'offset' is provided explicitly, it takes precedence over 'page'.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+          description: Number of messages per page. Required when using 'page' parameter.
+        offset:
+          type: integer
+          minimum: 0
+          description: |
+            Explicit offset for pagination (0-based).
+            Takes precedence over 'page' parameter if both are provided.
+            If not provided, offset is calculated from 'page' and 'limit'.
+        sort:
+          type: string
+          enum: [date, from, subject, size]
+          default: date
+        order:
+          type: string
+          enum: [ASC, DESC]
+          default: DESC
+        include_attachments:
+          type: boolean
+          default: false
+          description: Whether to include attachment information in the response
+        format:
+          type: string
+          enum: [text, html]
+          default: text
+          description: Preferred format for message body
+        filter:
+          type: object
+          properties:
+            unread_only:
+              type: boolean
+            flagged_only:
+              type: boolean
+            has_attachments:
+              type: boolean
+
+    GetMessageRequest:
+      type: object
+      required:
+        - handler
+        - uid
+      properties:
+        handler:
+          type: string
+          enum: [get_message]
+        uid:
+          type: string
+          description: Unique identifier of the message
+        folder:
+          type: string
+          default: INBOX
+          description: Folder where the message is located
+        include_attachments:
+          type: boolean
+          default: false
+          description: Whether to include attachment information in the response
+        format:
+          type: string
+          enum: [text, html]
+          default: text
+          description: Preferred format for message body
+        mark_as_read:
+          type: boolean
+          default: false
+          description: |
+            Optional parameter to automatically mark the message as read when retrieving it.
+            If set to true and the message is successfully retrieved, the message will be marked as read.
+            If not provided or set to false, the message read status will not be modified.
+
+    SearchMessagesRequest:
+      type: object
+      required:
+        - handler
+        - query
+      properties:
+        handler:
+          type: string
+          enum: [search_messages]
+        query:
+          type: string
+        folder:
+          type: string
+          default: INBOX
+        search_in:
+          type: array
+          items:
+            type: string
+            enum: [subject, body, from, to]
+          default: [subject, body, from]
+        from_date:
+          type: string
+          format: date
+        to_date:
+          type: string
+          format: date
+        page:
+          type: integer
+          default: 1
+        limit:
+          type: integer
+          default: 50
+
+    SendMessageRequest:
+      type: object
+      required:
+        - handler
+        - to
+        - subject
+        - body
+      properties:
+        handler:
+          type: string
+          enum: [send_message]
+        to:
+          type: array
+          items:
+            type: string
+            format: email
+        cc:
+          type: array
+          items:
+            type: string
+            format: email
+        bcc:
+          type: array
+          items:
+            type: string
+            format: email
+        subject:
+          type: string
+        body:
+          type: string
+        body_type:
+          type: string
+          enum: [html, text]
+          default: html
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAttachment'
+        priority:
+          type: string
+          enum: [high, normal, low]
+          default: normal
+
+    ReplyMessageRequest:
+      type: object
+      required:
+        - handler
+        - uid
+        - body
+      properties:
+        handler:
+          type: string
+          enum: [reply_message]
+        uid:
+          type: string
+        body:
+          type: string
+        body_type:
+          type: string
+          enum: [html, text]
+          default: html
+        reply_all:
+          type: boolean
+          default: false
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAttachment'
+
+    ForwardMessageRequest:
+      type: object
+      required:
+        - handler
+        - uid
+        - to
+        - body
+      properties:
+        handler:
+          type: string
+          enum: [forward_message]
+        uid:
+          type: string
+          description: UID of the message to forward
+        to:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Array of recipient email addresses
+        cc:
+          type: array
+          items:
+            type: string
+            format: email
+          description: CC recipients
+        bcc:
+          type: array
+          items:
+            type: string
+            format: email
+          description: BCC recipients
+        body:
+          type: string
+          description: Additional text to add to the forwarded message
+        body_html:
+          type: string
+          description: Additional HTML text to add to the forwarded message
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAttachment'
+          description: Additional attachments to include
+
+    DeleteEmailRequest:
+      type: object
+      required:
+        - handler
+        - uid
+      properties:
+        handler:
+          type: string
+          enum: [delete_email]
+        uid:
+          type: integer
+          description: Message UID to delete permanently
+
+    MoveToTrashRequest:
+      type: object
+      required:
+        - handler
+        - uid
+      properties:
+        handler:
+          type: string
+          enum: [move_to_trash]
+        uid:
+          type: integer
+          description: Message UID to move to trash
+
+    DeleteMessagesRequest:
+      type: object
+      required:
+        - handler
+        - uids
+      properties:
+        handler:
+          type: string
+          enum: [delete_messages]
+        uids:
+          type: array
+          items:
+            type: integer
+          description: Array of message UIDs to delete permanently
+
+    MoveMessagesToTrashRequest:
+      type: object
+      required:
+        - handler
+        - uids
+      properties:
+        handler:
+          type: string
+          enum: [move_messages_to_trash]
+        uids:
+          type: array
+          items:
+            type: integer
+          description: Array of message UIDs to move to trash
+
+    MoveMessagesRequest:
+      type: object
+      required:
+        - handler
+        - uids
+        - target_folder
+      properties:
+        handler:
+          type: string
+          enum: [move_messages]
+        uids:
+          type: array
+          items:
+            type: string
+        target_folder:
+          type: string
+
+    MarkMessagesRequest:
+      type: object
+      required:
+        - handler
+        - uids
+        - action
+      properties:
+        handler:
+          type: string
+          enum: [mark_messages]
+        uids:
+          type: array
+          items:
+            type: string
+        action:
+          type: string
+          enum: [read, unread, flagged, unflagged]
+
+    # Email Folder Requests
+    GetFoldersRequest:
+      type: object
+      required:
+        - handler
+      properties:
+        handler:
+          type: string
+          enum: [get_folders]
+
+    GetFolderInfoRequest:
+      type: object
+      required:
+        - handler
+        - folder_name
+      properties:
+        handler:
+          type: string
+          enum: [get_folder_info]
+        folder_name:
+          type: string
+
+    CreateFolderRequest:
+      type: object
+      required:
+        - handler
+        - folder_name
+      properties:
+        handler:
+          type: string
+          enum: [create_folder]
+        folder_name:
+          type: string
+        parent_folder:
+          type: string
+
+    DeleteFolderRequest:
+      type: object
+      required:
+        - handler
+        - folder_name
+      properties:
+        handler:
+          type: string
+          enum: [delete_folder]
+        folder_name:
+          type: string
+
+    RenameFolderRequest:
+      type: object
+      required:
+        - handler
+        - old_name
+        - new_name
+      properties:
+        handler:
+          type: string
+          enum: [rename_folder]
+        old_name:
+          type: string
+        new_name:
+          type: string
+
+    # ============================================
+    # RESPONSE SCHEMAS
+    # ============================================
+    TestConnectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        imap_status:
+          type: object
+          properties:
+            connected:
+              type: boolean
+            message:
+              type: string
+        smtp_status:
+          type: object
+          properties:
+            connected:
+              type: boolean
+            message:
+              type: string
+
+    AccountInfoResponse:
+      type: object
+      properties:
+        account_name:
+          type: string
+        email:
+          type: string
+        imap_host:
+          type: string
+        imap_port:
+          type: integer
+        smtp_host:
+          type: string
+        smtp_port:
+          type: integer
+        default_account:
+          type: boolean
+
+    QuotaResponse:
+      type: object
+      properties:
+        used:
+          type: integer
+          description: Used storage in bytes
+        total:
+          type: integer
+          description: Total storage in bytes
+        percentage:
+          type: number
+          format: float
+          description: Usage percentage
+
+    SyncResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [running, completed, failed, cancelled]
+        synced_messages:
+          type: integer
+        total_messages:
+          type: integer
+        progress_percentage:
+          type: number
+          format: float
+        last_sync_date:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            type: string
+
+    MessagesListResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailMessageSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    MessageDetailResponse:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/EmailMessageDetail'
+
+    EmailMessageSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        uid:
+          type: integer
+        subject:
+          type: string
+        from:
+          $ref: '#/components/schemas/EmailAddress'
+        to:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        date:
+          type: string
+          format: date-time
+        size:
+          type: integer
+        is_read:
+          type: boolean
+        is_flagged:
+          type: boolean
+        has_attachments:
+          type: boolean
+        folder:
+          type: string
+
+    EmailMessageDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        uid:
+          type: integer
+        subject:
+          type: string
+        from:
+          $ref: '#/components/schemas/EmailAddress'
+        to:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        cc:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        bcc:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAddress'
+        date:
+          type: string
+          format: date-time
+        body_html:
+          type: string
+        body_text:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailAttachmentInfo'
+        is_read:
+          type: boolean
+        is_flagged:
+          type: boolean
+        folder:
+          type: string
+        size:
+          type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+
+    EmailAddress:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    EmailAttachment:
+      type: object
+      required:
+        - filename
+        - content
+      properties:
+        filename:
+          type: string
+        content:
+          type: string
+          format: byte
+          description: Base64 encoded file content
+        content_type:
+          type: string
+          example: application/pdf
+
+    EmailAttachmentInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        size:
+          type: integer
+        content_type:
+          type: string
+        download_url:
+          type: string
+
+    FoldersListResponse:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmailFolder'
+
+    FolderInfoResponse:
+      type: object
+      properties:
+        folder:
+          $ref: '#/components/schemas/EmailFolder'
+
+    EmailFolder:
+      type: object
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+        parent:
+          type: string
+        total_messages:
+          type: integer
+        unread_messages:
+          type: integer
+        is_special:
+          type: boolean
+        special_use:
+          type: string
+          enum: [inbox, sent, drafts, trash, spam, archive]
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  # ============================================
+  # RESPONSES
+  # ============================================
+  responses:
+    BadRequest:
+      description: Bad request - Invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: bad_request
+            message: Invalid or missing required parameters
+
+    Unauthorized:
+      description: Unauthorized - Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: unauthorized
+            message: Authentication required. Please provide a valid access token.
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: not_found
+            message: The requested email message was not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: internal_error
+            message: An internal server error occurred

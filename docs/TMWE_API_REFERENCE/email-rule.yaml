@@ -1,0 +1,2070 @@
+openapi: 3.0.4
+info:
+  title: TMWE ERP Email Rules API
+  description: |
+    **Email Rules Management API for TMWE ERP**
+
+    This API provides comprehensive email rule management capabilities for automating
+    email processing and organization in the TMWE ERP system.
+
+    ## Features
+
+    - **Automated Email Processing**: Create rules to automatically process incoming emails
+    - **Flexible Conditions**: Define multiple conditions based on email fields (from, subject, body, etc.)
+    - **Multiple Actions**: Configure various actions (mark as read, add label, move to folder, etc.)
+    - **Rule Prioritization**: Set execution order with priority levels
+    - **User Isolation**: Rules are isolated per user and anagrafica
+    - **Match Types**: Support for "all" (AND) or "any" (OR) condition matching
+
+    ## Quick Start
+
+    ### 1. Create a Complete Rule (Recommended - Single Request)
+    ```bash
+    curl -X POST https://findair.it/erp/tmwe_json/email_rule_bulk \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "item": {
+          "name": "Auto-archive newsletters",
+          "description": "Move newsletter emails to archive",
+          "is_active": 1,
+          "priority": 10,
+          "match_type": "all",
+          "components": [
+            {
+              "field_name": "from",
+              "operator": "contains",
+              "value": "newsletter@",
+              "is_case_sensitive": 0
+            }
+          ],
+          "actions": [
+            {
+              "action_type": "move_to_folder",
+              "action_value": "Archive"
+            }
+          ]
+        }
+      }'
+    ```
+
+    **Note:** Use `/email_rule_bulk` for creating complete rules in a single atomic operation.
+    This endpoint ensures all components and actions are created together with the rule.
+
+    ### 2. Get All Rules
+    ```bash
+    curl -X GET "https://findair.it/erp/tmwe_json/email_rule" \
+      -H "Authorization: Bearer YOUR_TOKEN"
+    ```
+
+    ### 3. Get Active Rules with Full Dependencies
+    ```bash
+    curl -X GET "https://findair.it/erp/tmwe_json/email_rule?show_all=1" \
+      -H "Authorization: Bearer YOUR_TOKEN"
+    ```
+
+    This endpoint returns all active rules for the authenticated user with nested
+    components and actions arrays for each rule, providing a complete rule structure.
+
+    **Response structure:**
+    ```json
+    {
+      "success": true,
+      "message": "Success",
+      "data": [
+        {
+          "id": 1,
+          "name": "Auto-archive newsletters",
+          "description": "Move newsletter emails to archive",
+          "is_active": 1,
+          "priority": 10,
+          "match_type": "all",
+          "user_id": 123,
+          "anagrafica_id": 456,
+          "created_at": "2025-01-15 10:30:00",
+          "updated_at": "2025-01-15 10:30:00",
+          "components": [
+            {
+              "id": 1,
+              "email_rule_id": 1,
+              "field_name": "from",
+              "operator": "contains",
+              "value": "newsletter@",
+              "is_case_sensitive": 0,
+              "order_index": 0
+            }
+          ],
+          "actions": [
+            {
+              "id": 1,
+              "email_rule_id": 1,
+              "action_type": "move_to_folder",
+              "action_value": "Archive",
+              "action_config": "{}",
+              "order_index": 0
+            }
+          ]
+        }
+      ]
+    }
+    ```
+
+    ### 4. Update a Rule
+    ```bash
+    curl -X POST https://findair.it/erp/tmwe_json/email_rule \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "item": {
+          "id": 123,
+          "name": "Updated rule name",
+          "is_active": 0
+        }
+      }'
+    ```
+
+    ### 5. Delete a Rule
+    ```bash
+    curl -X POST https://findair.it/erp/tmwe_json/email_rule \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "action": "delete",
+        "item": {"id": 123}
+      }'
+    ```
+
+    ## Authentication
+
+    All endpoints require OAuth2 authentication via Bearer token in the Authorization header.
+
+    **Obtain a token:**
+    ```bash
+    curl -X POST https://findair.it/erp/tmwe_json/app.php?action=get_token \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=client_credentials&client_id=YOUR_ID&client_secret=YOUR_SECRET"
+    ```
+
+    See the [OAuth2 API documentation](oauth2-api.yaml) for complete authentication details.
+
+    ## Field Naming Conventions
+
+    **Important:** This API uses `id_rule` as the standard field name for referencing the parent rule ID
+    in components and actions. For backward compatibility, the legacy field name `email_rule_id` is also
+    accepted in request payloads, but responses will always use `id_rule`.
+
+    ## Rule Components Architecture
+
+    Email rules consist of three main entities that work together:
+
+    ### 1. Email Rule (Main Entity - tmwe_email_rule)
+    - Basic rule configuration (name, priority, active status)
+    - Match type: "all" (AND logic) or "any" (OR logic)
+    - User and anagrafica isolation for security
+    - Each rule is owned by a specific user_id and anagrafica_id
+
+    ### 2. Rule Components (Conditions - tmwe_email_rule_component)
+    - Define conditions that emails must meet
+    - Support various operators: contains, equals, starts_with, etc.
+    - Can check multiple email fields: from, to, subject, body, etc.
+    - Case-sensitive or case-insensitive matching
+    - Multiple components per rule (linked via id_rule)
+    - Ordered by order_index for evaluation
+
+    ### 3. Rule Actions (tmwe_email_rule_action)
+    - Define what happens when conditions are met
+    - Support multiple action types: mark_as_read, add_label, move_to_folder, etc.
+    - Execution order controlled by order_index
+    - Additional configuration via action_config JSON field
+    - Multiple actions per rule (linked via id_rule)
+
+    ### Nested Data Structure
+    When requesting rules with `id` parameter or `show_all=1`, the API returns
+    rules with nested components and actions arrays, providing the complete rule
+    configuration in a single response. This eliminates the need for multiple API
+    calls to retrieve related data.
+
+    ## Available Field Names
+
+    - `from` - Email sender address
+    - `to` - Email recipient address
+    - `cc` - CC recipients
+    - `bcc` - BCC recipients
+    - `subject` - Email subject line
+    - `body` - Email body content
+    - `has_attachment` - Whether email has attachments
+    - `attachment_name` - Attachment filename
+    - `date` - Email date
+    - `size` - Email size
+
+    ## Available Operators
+
+    - `contains` - Field contains value
+    - `not_contains` - Field does not contain value
+    - `equals` - Field equals value exactly
+    - `not_equals` - Field does not equal value
+    - `starts_with` - Field starts with value
+    - `ends_with` - Field ends with value
+    - `matches_regex` - Field matches regular expression
+    - `is_empty` - Field is empty
+    - `is_not_empty` - Field is not empty
+
+    ## Available Action Types
+
+    - `mark_as_read` - Mark email as read
+    - `mark_as_unread` - Mark email as unread
+    - `add_label` - Add label/tag to email
+    - `remove_label` - Remove label/tag from email
+    - `move_to_folder` - Move email to specified folder
+    - `copy_to_folder` - Copy email to specified folder
+    - `forward` - Forward email to address
+    - `delete` - Delete email permanently
+    - `mark_as_spam` - Mark email as spam
+    - `mark_as_important` - Mark email as important
+
+    ## Security & Data Isolation
+
+    - All rules are isolated by user_id and anagrafica_id
+    - Users can only view, edit, and delete their own rules
+    - Rule components and actions inherit ownership from parent rule
+    - 403 Forbidden returned when accessing other users' rules
+    - All models use singleton pattern (::get_instance()) for consistency
+    - User context automatically assigned on rule creation
+    - Ownership validation performed before all update/delete operations
+
+  version: 1.3.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+    email: support@findair.it
+  license:
+    name: Proprietary
+  x-last-updated: "2025-10-13"
+  x-changelog: |
+    ## Version 1.3.0 (2025-10-13)
+    - **NEW:** Added `/email_rule_action?metadata=true` endpoint for action metadata
+    - **NEW:** Email Rule Actions Metadata tag and comprehensive documentation
+    - **NEW:** Dynamic UI support: Clients can now build interfaces without hardcoding action definitions
+    - Added complete metadata schemas: ActionsMetadataResponse, CompleteMetadata, ActionMetadata, ActionParameterMetadata, CategoryMetadata, UIComponentMetadata, CategoryActionsMetadata
+    - Multi-language support: English and Spanish labels/descriptions for all actions
+    - Added 10 predefined actions across 4 categories with full parameter definitions
+    - Added UI component metadata for dynamic form generation
+    - Added validation rules and examples for all action parameters
+    - Supports querying by: complete metadata, specific action, category, categories only, UI components only
+
+    ## Version 1.2.0 (2025-10-12)
+    - **NEW:** Added `/email_rule_bulk` endpoint for atomic rule creation with components and actions
+    - Added comprehensive documentation for bulk endpoint with examples
+    - Added BulkCreateEmailRuleRequest schema
+    - Updated Quick Start guide to recommend bulk endpoint
+
+    ## Version 1.1.0 (2025-10-12)
+    - Fixed parameter name: Changed `active_only` to `show_all` to match actual controller implementation
+    - Standardized field naming: Changed `email_rule_id` to `id_rule` as the primary field name
+    - Added backward compatibility note: `email_rule_id` still accepted in requests for legacy support
+    - Updated all examples to use correct field names
+    - Added Field Naming Conventions section to clarify naming standards
+    - Updated component and action query parameters to reflect both field names
+    - Corrected response schemas to use `id_rule` instead of `email_rule_id`
+
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: TMWE ERP Production Server
+
+tags:
+  - name: Email Rules
+    description: Email rule management (CRUD operations)
+  - name: Email Rules Bulk
+    description: Create complete email rules with components and actions in one request
+  - name: Rule Components
+    description: Email rule component/condition management
+  - name: Rule Actions
+    description: Email rule action management
+  - name: Rule Actions Metadata
+    description: Get metadata information about available email rule actions for building dynamic UIs
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ============================================
+  # EMAIL RULES
+  # ============================================
+  /email_rule:
+    get:
+      tags:
+        - Email Rules
+      summary: Get email rules
+      description: |
+        Retrieve email rules for the authenticated user.
+
+        **Query Parameters:**
+        - `id`: Get specific rule by ID with full details (components and actions)
+        - `show_all=1`: Get all active rules with nested components and actions arrays
+        - `page` & `limit`: Paginated results
+        - `search`: Search in name and description
+
+        **Response Variations:**
+        - Single rule (`id` param): Returns rule with nested `components` and `actions` arrays
+        - Active rules (`show_all=1`): Returns array of active rules, each with nested dependencies
+        - Paginated results: Returns rules without nested dependencies (use `id` to get full details)
+        - General query: Returns rules without nested dependencies
+
+        **Security:**
+        - Only returns rules belonging to the authenticated user
+        - Filtered by user_id and anagrafica_id automatically
+      operationId: getEmailRules
+      parameters:
+        - name: id
+          in: query
+          description: Specific rule ID to retrieve
+          schema:
+            type: integer
+        - name: show_all
+          in: query
+          description: |
+            Return all active rules with complete nested dependencies.
+            When set to 1 or true, returns all active rules for the authenticated user
+            with their components and actions arrays fully populated for each rule.
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: search
+          in: query
+          description: Search term for name/description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rules retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetEmailRulesResponse'
+              examples:
+                single_rule_with_details:
+                  summary: Single rule with nested dependencies (id parameter)
+                  value:
+                    success: true
+                    message: "Success"
+                    data:
+                      id: 1
+                      name: "Auto-archive newsletters"
+                      description: "Move newsletter emails to archive"
+                      is_active: 1
+                      priority: 10
+                      match_type: "all"
+                      user_id: 123
+                      anagrafica_id: 456
+                      created_at: "2025-01-15 10:30:00"
+                      updated_at: "2025-01-15 10:30:00"
+                      components:
+                        - id: 1
+                          id_rule: 1
+                          field_name: "from"
+                          operator: "contains"
+                          value: "newsletter@"
+                          is_case_sensitive: 0
+                          order_index: 0
+                          created_at: "2025-01-15 10:30:00"
+                          updated_at: "2025-01-15 10:30:00"
+                      actions:
+                        - id: 1
+                          id_rule: 1
+                          action_type: "move_to_folder"
+                          action_value: "Archive"
+                          action_config: "{}"
+                          order_index: 0
+                          created_at: "2025-01-15 10:30:00"
+                          updated_at: "2025-01-15 10:30:00"
+                active_rules_with_dependencies:
+                  summary: Active rules with nested arrays (show_all=1)
+                  value:
+                    success: true
+                    message: "Success"
+                    data:
+                      - id: 1
+                        name: "Auto-archive newsletters"
+                        is_active: 1
+                        priority: 10
+                        match_type: "all"
+                        components:
+                          - id: 1
+                            field_name: "from"
+                            operator: "contains"
+                            value: "newsletter@"
+                        actions:
+                          - id: 1
+                            action_type: "move_to_folder"
+                            action_value: "Archive"
+                      - id: 2
+                        name: "Flag urgent emails"
+                        is_active: 1
+                        priority: 5
+                        match_type: "any"
+                        components:
+                          - id: 2
+                            field_name: "subject"
+                            operator: "contains"
+                            value: "URGENT"
+                        actions:
+                          - id: 2
+                            action_type: "mark_as_important"
+                list_rules:
+                  summary: List of rules without nested data
+                  value:
+                    success: true
+                    message: "Success"
+                    data:
+                      - id: 1
+                        name: "Auto-archive newsletters"
+                        is_active: 1
+                        priority: 10
+                      - id: 2
+                        name: "Flag urgent emails"
+                        is_active: 1
+                        priority: 5
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Email Rules
+      summary: Create, update, or delete email rule
+      description: |
+        Perform CRUD operations on email rules.
+
+        **Operations:**
+        - **Create**: POST without `id` in item
+        - **Update**: POST with `id` in item
+        - **Delete**: POST with `action=delete` and item `id`
+
+        **Security:**
+        - user_id and anagrafica_id automatically assigned on creation
+        - Only rule owner can update or delete
+        - Returns 403 if attempting to modify another user's rule
+      operationId: manageEmailRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateEmailRuleRequest'
+                - $ref: '#/components/schemas/UpdateEmailRuleRequest'
+                - $ref: '#/components/schemas/DeleteEmailRuleRequest'
+            examples:
+              create:
+                summary: Create new rule
+                value:
+                  item:
+                    name: "Auto-file invoices"
+                    description: "Move invoice emails to Invoices folder"
+                    is_active: 1
+                    priority: 5
+                    match_type: "all"
+                    components:
+                      - field_name: "subject"
+                        operator: "contains"
+                        value: "invoice"
+                        is_case_sensitive: 0
+                      - field_name: "has_attachment"
+                        operator: "equals"
+                        value: "true"
+                    actions:
+                      - action_type: "move_to_folder"
+                        action_value: "Invoices"
+                      - action_type: "mark_as_read"
+              update:
+                summary: Update existing rule
+                value:
+                  item:
+                    id: 123
+                    name: "Updated rule name"
+                    is_active: 0
+              delete:
+                summary: Delete rule
+                value:
+                  action: "delete"
+                  item:
+                    id: 123
+      responses:
+        '200':
+          description: Operation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailRuleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # EMAIL RULES BULK
+  # ============================================
+  /email_rule_bulk:
+    post:
+      tags:
+        - Email Rules Bulk
+      summary: Create complete email rule with components and actions
+      description: |
+        Create a complete email rule with all its components (conditions) and actions
+        in a single atomic operation. This is the recommended way to create email rules
+        as it ensures data consistency and reduces the number of API calls.
+
+        **Advantages over separate endpoints:**
+        - Single atomic operation ensures all-or-nothing creation
+        - Reduces network overhead (1 request instead of 3+)
+        - Automatic transaction-like behavior
+        - Simpler error handling
+        - Guaranteed referential integrity
+
+        **Requirements:**
+        - Rule name is required
+        - At least one component (condition) is required
+        - At least one action is required
+        - All standard validation rules apply
+
+        **Security:**
+        - user_id and anagrafica_id automatically assigned from authenticated user
+        - Only the rule owner can access it after creation
+
+        **Process:**
+        1. Validates complete rule structure
+        2. Creates the email rule
+        3. Creates all components with proper order_index
+        4. Creates all actions with proper order_index
+        5. Returns complete rule with all nested dependencies
+
+        **Response:**
+        Returns the complete rule object with nested components and actions arrays.
+      operationId: createCompleteEmailRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkCreateEmailRuleRequest'
+            examples:
+              simple_rule:
+                summary: Simple rule with one condition and one action
+                value:
+                  item:
+                    name: "Auto-archive newsletters"
+                    description: "Move newsletter emails to archive folder"
+                    is_active: 1
+                    priority: 10
+                    match_type: "all"
+                    components:
+                      - field_name: "from"
+                        operator: "contains"
+                        value: "newsletter@"
+                        is_case_sensitive: 0
+                    actions:
+                      - action_type: "move_to_folder"
+                        action_value: "Archive"
+              complex_rule:
+                summary: Complex rule with multiple conditions and actions
+                value:
+                  item:
+                    name: "Process urgent invoices"
+                    description: "Mark urgent invoices as important and forward to manager"
+                    is_active: 1
+                    priority: 5
+                    match_type: "all"
+                    components:
+                      - field_name: "subject"
+                        operator: "contains"
+                        value: "URGENT"
+                        is_case_sensitive: 0
+                        order_index: 0
+                      - field_name: "subject"
+                        operator: "contains"
+                        value: "invoice"
+                        is_case_sensitive: 0
+                        order_index: 1
+                      - field_name: "has_attachment"
+                        operator: "equals"
+                        value: "true"
+                        order_index: 2
+                    actions:
+                      - action_type: "mark_as_important"
+                        order_index: 0
+                      - action_type: "add_label"
+                        action_value: "Urgent Invoice"
+                        order_index: 1
+                      - action_type: "forward"
+                        action_value: "manager@company.com"
+                        action_config:
+                          include_attachments: true
+                          add_note: "Urgent invoice requires attention"
+                        order_index: 2
+      responses:
+        '200':
+          description: Complete rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailRuleResponse'
+              example:
+                success: true
+                message: "Email rule created successfully with all dependencies"
+                data:
+                  id: 123
+                  name: "Auto-archive newsletters"
+                  description: "Move newsletter emails to archive folder"
+                  is_active: 1
+                  priority: 10
+                  match_type: "all"
+                  user_id: 456
+                  anagrafica_id: 789
+                  created_at: "2025-10-12 14:30:00"
+                  updated_at: "2025-10-12 14:30:00"
+                  components:
+                    - id: 1001
+                      id_rule: 123
+                      field_name: "from"
+                      operator: "contains"
+                      value: "newsletter@"
+                      is_case_sensitive: 0
+                      order_index: 0
+                      created_at: "2025-10-12 14:30:00"
+                      updated_at: "2025-10-12 14:30:00"
+                  actions:
+                    - id: 2001
+                      id_rule: 123
+                      action_type: "move_to_folder"
+                      action_value: "Archive"
+                      action_config: "{}"
+                      order_index: 0
+                      created_at: "2025-10-12 14:30:00"
+                      updated_at: "2025-10-12 14:30:00"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Internal server error during rule creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Failed to create complete rule: Database error"
+
+  # ============================================
+  # RULE COMPONENTS
+  # ============================================
+  /email_rule_component:
+    get:
+      tags:
+        - Rule Components
+      summary: Get rule components
+      description: |
+        Retrieve components/conditions for email rules.
+
+        **Query Parameters:**
+        - `id`: Get specific component by ID
+        - `id_rule` or `email_rule_id`: Get all components for a rule
+        - `field_name`: Filter by field name
+
+        **Security:**
+        - Validates user owns the parent rule
+        - Returns 403 if accessing components of another user's rule
+      operationId: getEmailRuleComponents
+      parameters:
+        - name: id
+          in: query
+          description: Specific component ID
+          schema:
+            type: integer
+        - name: id_rule
+          in: query
+          description: Rule ID to get components for (also accepts 'email_rule_id')
+          schema:
+            type: integer
+        - name: field_name
+          in: query
+          description: Filter by field name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Components retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetComponentsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Rule Components
+      summary: Manage rule components
+      description: |
+        Create, update, delete, or reorder rule components.
+
+        **Actions:**
+        - `create`: Create new component
+        - `update`: Update existing component
+        - `delete`: Delete component
+        - `reorder`: Reorder components
+        - `evaluate`: Test component against email data
+        - `available_fields`: Get list of available fields
+        - `available_operators`: Get list of available operators
+
+        **Security:**
+        - Validates user owns the parent rule for all operations
+      operationId: manageEmailRuleComponent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateComponentRequest'
+                - $ref: '#/components/schemas/UpdateComponentRequest'
+                - $ref: '#/components/schemas/DeleteComponentRequest'
+                - $ref: '#/components/schemas/ReorderComponentsRequest'
+                - $ref: '#/components/schemas/EvaluateComponentRequest'
+            examples:
+              create:
+                summary: Create component
+                value:
+                  action: "create"
+                  item:
+                    id_rule: 123
+                    field_name: "from"
+                    operator: "contains"
+                    value: "@example.com"
+                    is_case_sensitive: 0
+              update:
+                summary: Update component
+                value:
+                  action: "update"
+                  item:
+                    id: 456
+                    value: "@newdomain.com"
+              delete:
+                summary: Delete component
+                value:
+                  action: "delete"
+                  id: 456
+              reorder:
+                summary: Reorder components
+                value:
+                  action: "reorder"
+                  components:
+                    "1": 0
+                    "2": 1
+                    "3": 2
+              evaluate:
+                summary: Test component
+                value:
+                  action: "evaluate"
+                  component:
+                    field_name: "subject"
+                    operator: "contains"
+                    value: "invoice"
+                    is_case_sensitive: 0
+                  email_data:
+                    subject: "Invoice #12345"
+                    from: "billing@example.com"
+              available_fields:
+                summary: Get available fields
+                value:
+                  action: "available_fields"
+              available_operators:
+                summary: Get available operators
+                value:
+                  action: "available_operators"
+      responses:
+        '200':
+          description: Operation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # RULE ACTIONS
+  # ============================================
+  /email_rule_action:
+    get:
+      tags:
+        - Rule Actions
+      summary: Get rule actions
+      description: |
+        Retrieve actions for email rules.
+
+        **Query Parameters:**
+        - `id`: Get specific action by ID
+        - `id_rule` or `email_rule_id`: Get all actions for a rule
+        - `action_type`: Filter by action type
+
+        **Security:**
+        - Validates user owns the parent rule
+        - Returns 403 if accessing actions of another user's rule
+      operationId: getEmailRuleActions
+      parameters:
+        - name: id
+          in: query
+          description: Specific action ID
+          schema:
+            type: integer
+        - name: id_rule
+          in: query
+          description: Rule ID to get actions for (also accepts 'email_rule_id')
+          schema:
+            type: integer
+        - name: action_type
+          in: query
+          description: Filter by action type
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Actions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetActionsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Rule Actions
+      summary: Manage rule actions
+      description: |
+        Create, update, delete, or reorder rule actions.
+
+        **Actions:**
+        - `create`: Create new action
+        - `update`: Update existing action
+        - `delete`: Delete action
+        - `reorder`: Reorder actions
+
+        **Security:**
+        - Validates user owns the parent rule for all operations
+      operationId: manageEmailRuleAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateActionRequest'
+                - $ref: '#/components/schemas/UpdateActionRequest'
+                - $ref: '#/components/schemas/DeleteActionRequest'
+                - $ref: '#/components/schemas/ReorderActionsRequest'
+            examples:
+              create:
+                summary: Create action
+                value:
+                  action: "create"
+                  item:
+                    id_rule: 123
+                    action_type: "move_to_folder"
+                    action_value: "Archive"
+              create_with_config:
+                summary: Create action with config
+                value:
+                  action: "create"
+                  item:
+                    id_rule: 123
+                    action_type: "forward"
+                    action_value: "manager@company.com"
+                    action_config:
+                      include_attachments: true
+                      add_note: "Auto-forwarded by rule"
+              update:
+                summary: Update action
+                value:
+                  action: "update"
+                  item:
+                    id: 456
+                    action_value: "NewFolder"
+              delete:
+                summary: Delete action
+                value:
+                  action: "delete"
+                  id: 456
+              reorder:
+                summary: Reorder actions
+                value:
+                  action: "reorder"
+                  actions:
+                    "1": 0
+                    "2": 1
+      responses:
+        '200':
+          description: Operation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # RULE ACTIONS METADATA
+  # ============================================
+  /email_rule_action?metadata=true:
+    get:
+      tags:
+        - Rule Actions Metadata
+      summary: Get available actions metadata
+      description: |
+        Get metadata information about all available email rule actions.
+        This endpoint provides schema information for UI clients to build dynamic forms
+        without hardcoding action definitions.
+
+        **Use Cases:**
+        - Build dynamic, self-configuring user interfaces
+        - Client-side parameter validation
+        - Multi-language support (English/Spanish)
+        - Auto-generated documentation
+        - Feature discovery
+
+        **Query Parameters:**
+        - `metadata=true` or `get_available_actions=true`: Required to access metadata endpoint
+        - `action_type={action}`: Get metadata for specific action (e.g., forward, move)
+        - `category={category_id}`: Get actions by category (folder_operations, flag_operations, etc.)
+        - `categories_only=true`: Get only the list of categories
+        - `ui_components_only=true`: Get only UI component definitions
+
+        **Response includes:**
+        - Complete action definitions with parameters
+        - Parameter types and validation rules
+        - UI component suggestions
+        - Multi-language labels and descriptions
+        - Action categories and organization
+        - Version information
+
+        **Advantages:**
+        - No hardcoding: Action definitions centralized on server
+        - Automatic updates: New actions appear in clients automatically
+        - Consistent validation: Same rules on client and server
+        - Self-documenting: Includes descriptions and examples
+        - Internationalization: Built-in multi-language support
+      operationId: getActionsMetadata
+      parameters:
+        - name: metadata
+          in: query
+          required: true
+          description: Must be set to true to access metadata endpoint
+          schema:
+            type: boolean
+            enum: [true, 1]
+        - name: action_type
+          in: query
+          description: Get metadata for a specific action type
+          schema:
+            type: string
+            example: forward
+        - name: category
+          in: query
+          description: Get actions belonging to a specific category
+          schema:
+            type: string
+            enum: [folder_operations, flag_operations, deletion_operations, email_routing]
+        - name: categories_only
+          in: query
+          description: Return only the list of categories
+          schema:
+            type: boolean
+        - name: ui_components_only
+          in: query
+          description: Return only UI component definitions
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionsMetadataResponse'
+              examples:
+                complete_metadata:
+                  summary: Complete metadata with all information
+                  value:
+                    success: true
+                    message: "Complete metadata retrieved successfully"
+                    data:
+                      actions:
+                        - action_type: "move"
+                          aliases: ["move", "move_to_folder"]
+                          label: "Move to folder"
+                          label_es: "Mover a carpeta"
+                          description: "Moves the email to a specific folder"
+                          description_es: "Mueve el email a una carpeta específica"
+                          category: "folder_operations"
+                          icon: "folder-move"
+                          parameters:
+                            - name: "target_folder"
+                              type: "string"
+                              required: true
+                              description: "Name of the target folder"
+                              description_es: "Nombre de la carpeta destino"
+                              ui_component: "folder_picker"
+                              validation:
+                                min_length: 1
+                                max_length: 255
+                              example: "Important/Work"
+                        - action_type: "forward"
+                          aliases: ["forward"]
+                          label: "Forward email"
+                          label_es: "Reenviar email"
+                          description: "Forwards the email to a recipient with optional message"
+                          description_es: "Reenvía el email a un destinatario con mensaje opcional"
+                          category: "email_routing"
+                          icon: "email-forward"
+                          parameters:
+                            - name: "to"
+                              type: "email"
+                              required: true
+                              description: "Recipient email address"
+                              ui_component: "email_input"
+                            - name: "message"
+                              type: "string"
+                              required: false
+                              description: "Optional message to include"
+                              ui_component: "textarea"
+                      categories:
+                        - id: "folder_operations"
+                          label: "Folder Operations"
+                          label_es: "Operaciones de Carpetas"
+                          description: "Actions related to moving or copying emails between folders"
+                          icon: "folder"
+                          order: 1
+                        - id: "flag_operations"
+                          label: "Flag Operations"
+                          label_es: "Operaciones de Marcado"
+                          description: "Actions to mark emails with flags or status"
+                          icon: "flag"
+                          order: 2
+                      ui_components:
+                        - component: "folder_picker"
+                          type: "select"
+                          description: "Dropdown to select an email folder"
+                          data_source: "api/email/email_folder"
+                          allow_custom: true
+                        - component: "email_input"
+                          type: "text"
+                          description: "Single email address input with validation"
+                          validation_pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+                      version: "1.0.0"
+                      generated_at: "2025-10-13 14:30:00"
+                single_action:
+                  summary: Single action metadata
+                  value:
+                    success: true
+                    message: "Action metadata retrieved successfully"
+                    data:
+                      action_type: "forward"
+                      aliases: ["forward"]
+                      label: "Forward email"
+                      description: "Forwards the email to a recipient with optional message"
+                      category: "email_routing"
+                      icon: "email-forward"
+                      parameters:
+                        - name: "to"
+                          type: "email"
+                          required: true
+                          ui_component: "email_input"
+                        - name: "message"
+                          type: "string"
+                          required: false
+                          ui_component: "textarea"
+                category_actions:
+                  summary: Actions by category
+                  value:
+                    success: true
+                    message: "Category actions retrieved successfully"
+                    data:
+                      category: "flag_operations"
+                      actions:
+                        - action_type: "mark_as_read"
+                          label: "Mark as read"
+                          parameters: []
+                        - action_type: "mark_as_unread"
+                          label: "Mark as unread"
+                          parameters: []
+        '404':
+          description: Action type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Action type 'invalid_action' not found"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ============================================
+# COMPONENTS
+# ============================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuth2
+      description: |
+        OAuth2 Bearer token authentication.
+        Include the access token in the Authorization header as: Bearer {token}
+
+  # ============================================
+  # REQUEST SCHEMAS
+  # ============================================
+  schemas:
+    # Email Rule Requests
+    BulkCreateEmailRuleRequest:
+      type: object
+      required:
+        - item
+      properties:
+        item:
+          type: object
+          required:
+            - name
+            - components
+            - actions
+          properties:
+            name:
+              type: string
+              description: Rule name
+              minLength: 1
+            description:
+              type: string
+              description: Rule description
+            is_active:
+              type: integer
+              enum: [0, 1]
+              default: 1
+              description: Whether rule is active (1) or inactive (0)
+            priority:
+              type: integer
+              minimum: 0
+              default: 10
+              description: Execution priority (lower number = higher priority)
+            match_type:
+              type: string
+              enum: [all, any]
+              default: all
+              description: "Match all conditions (AND) or any condition (OR)"
+            components:
+              type: array
+              description: Array of rule components/conditions (at least one required)
+              minItems: 1
+              items:
+                type: object
+                required:
+                  - field_name
+                  - operator
+                  - value
+                properties:
+                  field_name:
+                    type: string
+                    enum: [from, to, cc, bcc, subject, body, has_attachment, attachment_name, date, size]
+                  operator:
+                    type: string
+                    enum: [contains, not_contains, equals, not_equals, starts_with, ends_with, matches_regex, is_empty, is_not_empty]
+                  value:
+                    type: string
+                  is_case_sensitive:
+                    type: integer
+                    enum: [0, 1]
+                    default: 0
+                  order_index:
+                    type: integer
+                    description: Optional - will be auto-assigned if not provided
+            actions:
+              type: array
+              description: Array of rule actions (at least one required)
+              minItems: 1
+              items:
+                type: object
+                required:
+                  - action_type
+                properties:
+                  action_type:
+                    type: string
+                    enum: [mark_as_read, mark_as_unread, add_label, remove_label, move_to_folder, copy_to_folder, forward, delete, mark_as_spam, mark_as_important]
+                  action_value:
+                    type: string
+                    description: Required for some action types (move_to_folder, add_label, forward, etc.)
+                  action_config:
+                    type: object
+                    description: Additional configuration as JSON object
+                    additionalProperties: true
+                  order_index:
+                    type: integer
+                    description: Optional - will be auto-assigned if not provided
+
+    CreateEmailRuleRequest:
+      type: object
+      required:
+        - item
+      properties:
+        item:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: Rule name
+            description:
+              type: string
+              description: Rule description
+            is_active:
+              type: integer
+              enum: [0, 1]
+              default: 1
+              description: Whether rule is active (1) or inactive (0)
+            priority:
+              type: integer
+              minimum: 0
+              default: 10
+              description: Execution priority (lower number = higher priority)
+            match_type:
+              type: string
+              enum: [all, any]
+              default: all
+              description: "Match all conditions (AND) or any condition (OR)"
+            components:
+              type: array
+              description: Rule components/conditions to create
+              items:
+                $ref: '#/components/schemas/ComponentDefinition'
+            actions:
+              type: array
+              description: Rule actions to create
+              items:
+                $ref: '#/components/schemas/ActionDefinition'
+
+    UpdateEmailRuleRequest:
+      type: object
+      required:
+        - item
+      properties:
+        item:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              description: Rule ID to update
+            name:
+              type: string
+            description:
+              type: string
+            is_active:
+              type: integer
+              enum: [0, 1]
+            priority:
+              type: integer
+            match_type:
+              type: string
+              enum: [all, any]
+            components:
+              type: array
+              description: Replace all components with these
+              items:
+                $ref: '#/components/schemas/ComponentDefinition'
+            actions:
+              type: array
+              description: Replace all actions with these
+              items:
+                $ref: '#/components/schemas/ActionDefinition'
+
+    DeleteEmailRuleRequest:
+      type: object
+      required:
+        - action
+        - item
+      properties:
+        action:
+          type: string
+          enum: [delete]
+        item:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              description: Rule ID to delete
+
+    # Component Requests
+    CreateComponentRequest:
+      type: object
+      required:
+        - action
+        - item
+      properties:
+        action:
+          type: string
+          enum: [create]
+        item:
+          $ref: '#/components/schemas/ComponentDefinition'
+
+    UpdateComponentRequest:
+      type: object
+      required:
+        - action
+        - item
+      properties:
+        action:
+          type: string
+          enum: [update]
+        item:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+            field_name:
+              type: string
+            operator:
+              type: string
+            value:
+              type: string
+            is_case_sensitive:
+              type: integer
+              enum: [0, 1]
+
+    DeleteComponentRequest:
+      type: object
+      required:
+        - action
+        - id
+      properties:
+        action:
+          type: string
+          enum: [delete]
+        id:
+          type: integer
+          description: Component ID to delete
+
+    ReorderComponentsRequest:
+      type: object
+      required:
+        - action
+        - components
+      properties:
+        action:
+          type: string
+          enum: [reorder]
+        components:
+          type: object
+          description: Map of component_id to order_index
+          additionalProperties:
+            type: integer
+
+    EvaluateComponentRequest:
+      type: object
+      required:
+        - action
+        - component
+        - email_data
+      properties:
+        action:
+          type: string
+          enum: [evaluate]
+        component:
+          $ref: '#/components/schemas/ComponentDefinition'
+        email_data:
+          type: object
+          description: Email data to test against
+          additionalProperties: true
+
+    # Action Requests
+    CreateActionRequest:
+      type: object
+      required:
+        - action
+        - item
+      properties:
+        action:
+          type: string
+          enum: [create]
+        item:
+          $ref: '#/components/schemas/ActionDefinition'
+
+    UpdateActionRequest:
+      type: object
+      required:
+        - action
+        - item
+      properties:
+        action:
+          type: string
+          enum: [update]
+        item:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+            action_type:
+              type: string
+            action_value:
+              type: string
+            action_config:
+              type: object
+              additionalProperties: true
+
+    DeleteActionRequest:
+      type: object
+      required:
+        - action
+        - id
+      properties:
+        action:
+          type: string
+          enum: [delete]
+        id:
+          type: integer
+          description: Action ID to delete
+
+    ReorderActionsRequest:
+      type: object
+      required:
+        - action
+        - actions
+      properties:
+        action:
+          type: string
+          enum: [reorder]
+        actions:
+          type: object
+          description: Map of action_id to order_index
+          additionalProperties:
+            type: integer
+
+    # Common Definitions
+    ComponentDefinition:
+      type: object
+      required:
+        - id_rule
+        - field_name
+        - operator
+        - value
+      properties:
+        id_rule:
+          type: integer
+          description: Parent rule ID (also accepts legacy field name 'email_rule_id')
+        field_name:
+          type: string
+          enum: [from, to, cc, bcc, subject, body, has_attachment, attachment_name, date, size]
+          description: Email field to check
+        operator:
+          type: string
+          enum: [contains, not_contains, equals, not_equals, starts_with, ends_with, matches_regex, is_empty, is_not_empty]
+          description: Comparison operator
+        value:
+          type: string
+          description: Value to compare against
+        is_case_sensitive:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          description: Case-sensitive matching
+        order_index:
+          type: integer
+          default: 0
+          description: Display/execution order
+
+    ActionDefinition:
+      type: object
+      required:
+        - id_rule
+        - action_type
+      properties:
+        id_rule:
+          type: integer
+          description: Parent rule ID (also accepts legacy field name 'email_rule_id')
+        action_type:
+          type: string
+          enum: [mark_as_read, mark_as_unread, add_label, remove_label, move_to_folder, copy_to_folder, forward, delete, mark_as_spam, mark_as_important]
+          description: Type of action to perform
+        action_value:
+          type: string
+          description: Action-specific value (folder name, label, email address, etc.)
+        action_config:
+          type: object
+          description: Additional configuration as JSON
+          additionalProperties: true
+        order_index:
+          type: integer
+          default: 0
+          description: Execution order
+
+    # ============================================
+    # RESPONSE SCHEMAS
+    # ============================================
+    GetEmailRulesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          oneOf:
+            - type: object
+              description: Single rule with details
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+                description:
+                  type: string
+                is_active:
+                  type: integer
+                priority:
+                  type: integer
+                match_type:
+                  type: string
+                user_id:
+                  type: integer
+                anagrafica_id:
+                  type: integer
+                created_at:
+                  type: string
+                  format: date-time
+                updated_at:
+                  type: string
+                  format: date-time
+                components:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Component'
+                actions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Action'
+            - type: array
+              description: List of rules (returned by show_all=1 with nested dependencies)
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  is_active:
+                    type: integer
+                  priority:
+                    type: integer
+                  match_type:
+                    type: string
+                  user_id:
+                    type: integer
+                  anagrafica_id:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                  components:
+                    type: array
+                    description: Nested components array (when show_all=1)
+                    items:
+                      $ref: '#/components/schemas/Component'
+                  actions:
+                    type: array
+                    description: Nested actions array (when show_all=1)
+                    items:
+                      $ref: '#/components/schemas/Action'
+            - type: object
+              description: Paginated rules
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                total:
+                  type: integer
+                page:
+                  type: integer
+                limit:
+                  type: integer
+                pages:
+                  type: integer
+
+    EmailRuleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+            is_active:
+              type: integer
+            priority:
+              type: integer
+            match_type:
+              type: string
+            components:
+              type: array
+              items:
+                $ref: '#/components/schemas/Component'
+            actions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Action'
+
+    GetComponentsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/Component'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Component'
+            - type: object
+              description: Available fields or operators
+              additionalProperties:
+                type: string
+
+    ComponentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/Component'
+            - type: object
+              description: Evaluation result
+              properties:
+                matches:
+                  type: boolean
+                component:
+                  type: object
+                email_data:
+                  type: object
+
+    GetActionsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/Action'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Action'
+
+    ActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Action'
+
+    ActionsMetadataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Complete metadata retrieved successfully"
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/CompleteMetadata'
+            - $ref: '#/components/schemas/ActionMetadata'
+            - $ref: '#/components/schemas/CategoryActionsMetadata'
+            - type: array
+              description: List of categories or UI components
+              items:
+                type: object
+
+    CompleteMetadata:
+      type: object
+      description: Complete metadata package with all actions, categories, and UI components
+      properties:
+        actions:
+          type: array
+          description: Array of all available actions with full metadata
+          items:
+            $ref: '#/components/schemas/ActionMetadata'
+        categories:
+          type: array
+          description: Array of action categories
+          items:
+            $ref: '#/components/schemas/CategoryMetadata'
+        ui_components:
+          type: array
+          description: Array of UI component definitions
+          items:
+            $ref: '#/components/schemas/UIComponentMetadata'
+        version:
+          type: string
+          example: "1.0.0"
+          description: Metadata version
+        generated_at:
+          type: string
+          format: date-time
+          example: "2025-10-13 14:30:00"
+          description: Timestamp when metadata was generated
+
+    ActionMetadata:
+      type: object
+      description: Complete metadata for a single action
+      properties:
+        action_type:
+          type: string
+          description: Unique action identifier
+          example: "forward"
+        aliases:
+          type: array
+          description: Alternative names for the action
+          items:
+            type: string
+          example: ["forward"]
+        label:
+          type: string
+          description: Human-readable label (English)
+          example: "Forward email"
+        label_es:
+          type: string
+          description: Human-readable label (Spanish)
+          example: "Reenviar email"
+        description:
+          type: string
+          description: Action description (English)
+          example: "Forwards the email to a recipient with optional message"
+        description_es:
+          type: string
+          description: Action description (Spanish)
+          example: "Reenvía el email a un destinatario con mensaje opcional"
+        category:
+          type: string
+          description: Category this action belongs to
+          enum: [folder_operations, flag_operations, deletion_operations, email_routing]
+          example: "email_routing"
+        icon:
+          type: string
+          description: Suggested icon name (Material Design Icons)
+          example: "email-forward"
+        warning:
+          type: string
+          description: Optional warning message for destructive actions
+          example: "This action cannot be undone"
+        warning_es:
+          type: string
+          description: Optional warning message (Spanish)
+        parameters:
+          type: array
+          description: Array of parameter definitions
+          items:
+            $ref: '#/components/schemas/ActionParameterMetadata'
+
+    ActionParameterMetadata:
+      type: object
+      description: Metadata for a single action parameter
+      properties:
+        name:
+          type: string
+          description: Parameter name
+          example: "to"
+        type:
+          type: string
+          description: Parameter data type
+          enum: [string, email, email_list, boolean, integer]
+          example: "email"
+        required:
+          type: boolean
+          description: Whether parameter is required
+          example: true
+        description:
+          type: string
+          description: Parameter description (English)
+          example: "Recipient email address"
+        description_es:
+          type: string
+          description: Parameter description (Spanish)
+          example: "Dirección de email del destinatario"
+        ui_component:
+          type: string
+          description: Suggested UI component type
+          enum: [folder_picker, email_input, email_multi_input, text_input, textarea]
+          example: "email_input"
+        validation:
+          type: object
+          description: Validation rules
+          properties:
+            format:
+              type: string
+              example: "email"
+            min_length:
+              type: integer
+              example: 1
+            max_length:
+              type: integer
+              example: 255
+          additionalProperties: true
+        example:
+          type: string
+          description: Example value
+          example: "recipient@example.com"
+
+    CategoryMetadata:
+      type: object
+      description: Metadata for an action category
+      properties:
+        id:
+          type: string
+          description: Unique category identifier
+          example: "folder_operations"
+        label:
+          type: string
+          description: Category label (English)
+          example: "Folder Operations"
+        label_es:
+          type: string
+          description: Category label (Spanish)
+          example: "Operaciones de Carpetas"
+        description:
+          type: string
+          description: Category description (English)
+          example: "Actions related to moving or copying emails between folders"
+        description_es:
+          type: string
+          description: Category description (Spanish)
+          example: "Acciones relacionadas con mover o copiar emails entre carpetas"
+        icon:
+          type: string
+          description: Suggested icon for category
+          example: "folder"
+        order:
+          type: integer
+          description: Display order
+          example: 1
+
+    UIComponentMetadata:
+      type: object
+      description: Metadata for a UI component type
+      properties:
+        component:
+          type: string
+          description: Component identifier
+          example: "folder_picker"
+        type:
+          type: string
+          description: Component type
+          enum: [select, text, tags, textarea]
+          example: "select"
+        description:
+          type: string
+          description: Component description (English)
+          example: "Dropdown to select an email folder"
+        description_es:
+          type: string
+          description: Component description (Spanish)
+          example: "Selector para elegir una carpeta de email"
+        data_source:
+          type: string
+          description: API endpoint to fetch data for component
+          example: "api/email/email_folder"
+        allow_custom:
+          type: boolean
+          description: Whether custom values are allowed
+          example: true
+        validation_pattern:
+          type: string
+          description: Regex pattern for validation
+          example: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        separator:
+          type: string
+          description: Separator for multi-value inputs
+          example: ","
+        rows:
+          type: integer
+          description: Number of rows for textarea
+          example: 4
+
+    CategoryActionsMetadata:
+      type: object
+      description: Actions filtered by category
+      properties:
+        category:
+          type: string
+          description: Category ID
+          example: "flag_operations"
+        actions:
+          type: array
+          description: Actions in this category
+          items:
+            $ref: '#/components/schemas/ActionMetadata'
+
+    Component:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_rule:
+          type: integer
+          description: Parent rule ID
+        field_name:
+          type: string
+        operator:
+          type: string
+        value:
+          type: string
+        is_case_sensitive:
+          type: integer
+        order_index:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Action:
+      type: object
+      properties:
+        id:
+          type: integer
+        id_rule:
+          type: integer
+          description: Parent rule ID
+        action_type:
+          type: string
+        action_value:
+          type: string
+        action_config:
+          type: string
+          description: JSON-encoded configuration
+        order_index:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+
+  # ============================================
+  # RESPONSES
+  # ============================================
+  responses:
+    BadRequest:
+      description: Bad request - Invalid or missing required parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Invalid or missing required parameters"
+
+    Unauthorized:
+      description: Unauthorized - Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Authentication required. Please provide a valid access token."
+
+    Forbidden:
+      description: Forbidden - You don't have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "You do not have permission to access this rule"

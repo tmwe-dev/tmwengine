@@ -1,0 +1,1149 @@
+openapi: 3.0.4
+info:
+  title: TMWE ERP OAuth2 & JWT API
+  description: |
+    OAuth2 and JWT authentication API for TMWE ERP system.
+
+    Implements OAuth2 and JWT RFC standards including:
+    - RFC 6749: OAuth 2.0 Authorization Framework
+    - RFC 7009: OAuth 2.0 Token Revocation
+    - RFC 7662: OAuth 2.0 Token Introspection
+    - RFC 7519: JSON Web Token (JWT)
+
+    Supported authentication methods:
+    - **OAuth2 Tokens**: Traditional OAuth2 access tokens (160-character hex strings)
+    - **JWT Tokens**: Stateless JSON Web Tokens (3-part base64 strings)
+
+    Supported grant types:
+    - **OAuth2 Grant Types** (return OAuth2 tokens):
+      - client_credentials (machine-to-machine)
+      - authorization_code (user authorization)
+      - refresh_token (token renewal)
+      - authorization_from_google (Google SSO integration)
+    - **JWT Grant Types** (return JWT tokens):
+      - client_credentials_jwt (machine-to-machine with JWT)
+      - refresh_token_jwt (JWT token renewal)
+
+    Token type detection is automatic. The API accepts both OAuth2 and JWT tokens
+    in the Authorization header and validates them accordingly.
+  version: 4.0.0
+  contact:
+    name: TMWE API Support
+    url: https://findair.it
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://findair.it/erp/tmwe_json
+    description: TMWE ERP OAuth2 API Server
+
+tags:
+  - name: Token
+    description: Token management endpoints
+  - name: JWT
+    description: JWT token endpoints
+  - name: Authorization
+    description: User authorization endpoints
+  - name: Token Management
+    description: Token introspection and revocation
+
+paths:
+  /token:
+    post:
+      tags:
+        - Token
+      summary: Get access token (OAuth2 or JWT)
+      description: |
+        Unified endpoint for obtaining both OAuth2 and JWT access tokens.
+        The grant type is specified via the `grant_type` parameter.
+
+        **OAuth2 Grant Types** (return OAuth2 tokens):
+        - `client_credentials` - Machine-to-machine authentication
+        - `authorization_code` - User authorization flow
+        - `refresh_token` - Renew OAuth2 access token
+        - `authorization_from_google` - Google SSO integration
+
+        **JWT Grant Types** (return JWT tokens):
+        - `client_credentials_jwt` - Machine-to-machine with JWT tokens
+        - `refresh_token_jwt` - Renew JWT access token
+
+        The response format depends on the grant_type used.
+      operationId: getToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ClientCredentialsRequest'
+                - $ref: '#/components/schemas/AuthorizationCodeRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+                - $ref: '#/components/schemas/GoogleAuthorizationRequest'
+                - $ref: '#/components/schemas/JwtClientCredentialsTokenRequest'
+                - $ref: '#/components/schemas/JwtRefreshTokenTokenRequest'
+              discriminator:
+                propertyName: grant_type
+                mapping:
+                  client_credentials: '#/components/schemas/ClientCredentialsRequest'
+                  authorization_code: '#/components/schemas/AuthorizationCodeRequest'
+                  refresh_token: '#/components/schemas/RefreshTokenRequest'
+                  authorization_from_google: '#/components/schemas/GoogleAuthorizationRequest'
+                  client_credentials_jwt: '#/components/schemas/JwtClientCredentialsTokenRequest'
+                  refresh_token_jwt: '#/components/schemas/JwtRefreshTokenTokenRequest'
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TokenResponse'
+                  - $ref: '#/components/schemas/JwtTokenResponse'
+              examples:
+                oauth2Token:
+                  summary: OAuth2 Token Response
+                  value:
+                    access_token: "a1b2c3d4e5f6789012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef0"
+                    token_type: "Bearer"
+                    expires_in: 86400
+                jwtToken:
+                  summary: JWT Token Response
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImV4cCI6MTczNTY4OTYwMCwiaWF0IjoxNzM1Njg2MDAwfQ.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTc3MjQwMH0.signature"
+                    token_format: "jwt"
+                    user_id: 1234
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+      security: []
+
+  /authorization:
+    get:
+      tags:
+        - Authorization
+      summary: Authorization endpoint for OAuth2 Authorization Code flow
+      description: |
+        Initiates the Authorization Code flow to obtain an authorization code.
+        This endpoint redirects the user to /auth for login if not authenticated,
+        or directly generates the authorization code if already authenticated.
+      operationId: getAuthorizationCode
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: Registered redirect URI where the authorization code will be sent
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: Response type (always 'code' for Authorization Code flow)
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Value to prevent CSRF attacks (will be returned with the code)
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Requested scopes (space-separated)
+      responses:
+        '302':
+          description: Redirect to login page (/auth) or to redirect_uri with authorization code
+          headers:
+            Location:
+              schema:
+                type: string
+              examples:
+                toLogin:
+                  value: "/auth?client_id=abc&redirect_uri=https://example.com/callback&state=xyz"
+                  summary: Redirect to login page
+                toCallback:
+                  value: "https://example.com/callback?code=AUTH_CODE&state=xyz"
+                  summary: Redirect with authorization code
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security: []
+
+  /auth:
+    get:
+      tags:
+        - Authorization
+      summary: User login page
+      description: |
+        Displays the login form for user authentication.
+        This endpoint is used by /authorization when the user needs to authenticate.
+        After successful login, the user is redirected back to complete the authorization flow.
+      operationId: showLoginPage
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: Registered redirect URI
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+          description: Response type (always 'code')
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Value to prevent CSRF attacks
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Requested scopes
+      responses:
+        '200':
+          description: Login/authorization form
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+      security: []
+
+    post:
+      tags:
+        - Authorization
+      summary: Process user login
+      description: |
+        Processes user login credentials.
+        After successful authentication, redirects back to continue the authorization flow.
+        If the user cancels, redirects to redirect_uri with an error.
+      operationId: processLogin
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Username
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                cancel_submit:
+                  type: boolean
+                  description: Whether the user cancels the authorization
+      responses:
+        '302':
+          description: Redirect with authorization code
+          headers:
+            Location:
+              schema:
+                type: string
+                example: https://client-app.com/callback?code=abc123&state=xyz789
+        '401':
+          description: Invalid credentials
+          content:
+            text/html:
+              schema:
+                type: string
+      security: []
+
+  /revoke:
+    post:
+      tags:
+        - Token Management
+      summary: Revoke token
+      description: |
+        Revokes an access token or refresh token (RFC 7009).
+        Also revokes associated tokens in cascade.
+        Always returns 200 to prevent scanning attacks.
+      operationId: revokeToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - client_id
+                - client_secret
+                - token
+              properties:
+                client_id:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client ID
+                client_secret:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client secret
+                token:
+                  type: string
+                  description: Token to revoke (access_token or refresh_token)
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: Token type (optional, improves performance)
+      responses:
+        '200':
+          description: Token revoked successfully (or not found)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          description: Method not allowed (POST only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /introspect:
+    post:
+      tags:
+        - Token Management
+      summary: Token introspection
+      description: |
+        Validates a token and returns its metadata (RFC 7662).
+        Only allows introspection of tokens from the same client.
+      operationId: introspectToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - client_id
+                - client_secret
+                - token
+              properties:
+                client_id:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client ID
+                client_secret:
+                  type: string
+                  pattern: '^[a-f0-9]{32,}$'
+                  description: OAuth2 client secret
+                token:
+                  type: string
+                  description: Token to inspect
+                token_type_hint:
+                  type: string
+                  enum: [access_token, refresh_token]
+                  description: Token type (optional, improves performance)
+      responses:
+        '200':
+          description: Token information
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ActiveTokenIntrospection'
+                  - $ref: '#/components/schemas/InactiveTokenIntrospection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          description: Method not allowed (POST only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /app.php:
+    get:
+      tags:
+        - JWT
+      summary: Get JWT access token
+      description: |
+        Obtain JWT access tokens using OAuth2-compatible client credentials.
+
+        This endpoint accepts the same client credentials as the OAuth2 flow but returns
+        JWT tokens instead of random OAuth2 tokens.
+
+        **Key differences from OAuth2:**
+        - Returns **JWT tokens** (3-part base64 strings with header.payload.signature)
+        - Tokens are **stateless** (no database lookup needed for validation)
+        - Tokens are **cryptographically signed** (using HS256 algorithm)
+        - Tokens contain **embedded claims** (user_id, client_id, expiration, etc.)
+        - Validation is **5x faster** than OAuth2 (no database queries)
+
+        **Token format:**
+        - Access Token: JWT format (e.g., `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`)
+        - Refresh Token: JWT format (longer expiration)
+
+        **Usage in API requests:**
+        All authenticated endpoints accept JWT tokens in the Authorization header:
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ```
+
+        The API automatically detects whether the token is JWT or OAuth2 and validates accordingly.
+      operationId: getJwtToken
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [get_jwt_token]
+          description: API action (must be 'get_jwt_token')
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/JwtClientCredentialsRequest'
+                - $ref: '#/components/schemas/JwtRefreshTokenRequest'
+            examples:
+              clientCredentials:
+                summary: Client Credentials Grant
+                value:
+                  client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+                  client_secret: "fedcba09876543210abcdef0123456789abcdef0"
+                  grant_type: "client_credentials"
+              refreshToken:
+                summary: Refresh Token Grant
+                value:
+                  grant_type: "refresh_token"
+                  refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: JWT tokens generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtTokenResponse'
+              examples:
+                success:
+                  summary: Successful JWT token response
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImV4cCI6MTczNTY4OTYwMCwiaWF0IjoxNzM1Njg2MDAwfQ.signature"
+                    token_type: "Bearer"
+                    expires_in: 3600
+                    refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImV4cCI6MTczNTc3MjQwMCwiaWF0IjoxNzM1Njg2MDAwfQ.signature"
+                    token_format: "jwt"
+                    user_id: 1234
+                    client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingClientId:
+                  summary: Missing client_id
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: client_id"
+                missingClientSecret:
+                  summary: Missing client_secret
+                  value:
+                    error:
+                      code: "INVALID_REQUEST"
+                      message: "Missing required parameter: client_secret"
+                invalidGrantType:
+                  summary: Invalid grant_type
+                  value:
+                    error:
+                      code: "UNSUPPORTED_GRANT_TYPE"
+                      message: "Unsupported grant_type. Must be 'client_credentials' or 'refresh_token'"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid client credentials
+                  value:
+                    error:
+                      code: "INVALID_CLIENT"
+                      message: "Invalid client credentials"
+                invalidRefreshToken:
+                  summary: Invalid refresh token
+                  value:
+                    error:
+                      code: "INVALID_GRANT"
+                      message: "Invalid or expired refresh token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /app.php?action=exchange_code_for_jwt:
+    post:
+      tags:
+        - JWT
+      summary: Exchange OAuth2 authorization code for JWT token
+      description: |
+        Exchange an OAuth2 authorization code for JWT tokens instead of OAuth2 tokens.
+
+        This endpoint enables the **OAuth2 Authorization Code flow** but returns **JWT tokens**
+        instead of traditional OAuth2 tokens. This is useful for applications that want:
+        - Secure user authentication (OAuth2 Authorization Code flow)
+        - Stateless JWT tokens for API access
+        - Edge Function compatibility (protecting client_secret server-side)
+
+        **Flow:**
+        1. User clicks "Login" in frontend
+        2. Frontend redirects to `/authorization` endpoint with client_id, redirect_uri, state
+        3. User authenticates on API-managed login page (`/auth`)
+        4. API redirects back to redirect_uri with authorization code
+        5. Edge Function receives code and exchanges it for JWT token (this endpoint)
+        6. Edge Function returns JWT to frontend
+        7. Frontend uses JWT for API requests
+
+        **Security:**
+        - Authorization code is single-use (automatically disabled after exchange)
+        - Authorization code expires after 10 minutes
+        - Client secret is protected by Edge Function (never exposed to frontend)
+        - JWT tokens are cryptographically signed
+
+        **Reuses existing OAuth2 infrastructure:**
+        - Uses oauth_token table (type='permission_granted')
+        - Uses oauth_client table for client validation
+        - Uses oauth_url table for redirect_uri validation
+        - Zero new database tables required
+
+        **Example usage:** See OAUTH2_TO_JWT_EXCHANGE.md documentation
+      operationId: exchangeCodeForJwt
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [exchange_code_for_jwt]
+          description: API action (must be 'exchange_code_for_jwt')
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeCodeForJwtRequest'
+            example:
+              grant_type: "authorization_code"
+              code: "a1b2c3d4e5f6789012345678901234567890abcd"
+              client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+              client_secret: "fedcba09876543210abcdef0123456789abcdef0"
+              redirect_uri: "https://your-app.vercel.app/auth/callback"
+      responses:
+        '200':
+          description: Authorization code exchanged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtTokenResponse'
+              example:
+                access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImV4cCI6MTczNTY4OTYwMCwiaWF0IjoxNzM1Njg2MDAwfQ.signature"
+                token_type: "Bearer"
+                expires_in: 3600
+                refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTc3MjQwMH0.signature"
+                token_format: "jwt"
+                user_id: 1234
+                client_id: "a1b2c3d4e5f6789012345678901234567890abcd"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingCode:
+                  summary: Missing authorization code
+                  value:
+                    error: "invalid_request"
+                    error_description: "Missing required parameter: code"
+                invalidCode:
+                  summary: Invalid authorization code
+                  value:
+                    error: "invalid_grant"
+                    error_description: "Invalid or expired authorization code"
+                invalidRedirectUri:
+                  summary: Redirect URI mismatch
+                  value:
+                    error: "invalid_grant"
+                    error_description: "redirect_uri does not match"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidClient:
+                  summary: Invalid client credentials
+                  value:
+                    error: "invalid_client"
+                    error_description: "Invalid client credentials"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+components:
+  schemas:
+    ClientCredentialsRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID (hexadecimal, min 32 characters)
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret (hexadecimal, min 32 characters)
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+
+    AuthorizationCodeRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+        - code
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret
+        code:
+          type: string
+          minLength: 16
+          description: Authorization code obtained from authorization flow
+        redirect_uri:
+          type: string
+          format: uri
+          description: Redirect URI (must match the one from authorization)
+        scope:
+          type: string
+          description: Requested scopes
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+        refresh_token:
+          type: string
+          minLength: 32
+          pattern: '^[a-zA-Z0-9]+$'
+          description: Valid refresh token
+
+    GoogleAuthorizationRequest:
+      type: object
+      required:
+        - grant_type
+        - client_id
+        - client_secret
+        - google_code
+        - google_client_id
+        - google_client_secret
+        - google_redirect_url
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_from_google]
+          description: Grant type
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: TMWE OAuth2 client ID
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: TMWE OAuth2 client secret
+        google_code:
+          type: string
+          description: Google OAuth authorization code
+        google_client_id:
+          type: string
+          description: Google OAuth client ID
+        google_client_secret:
+          type: string
+          description: Google OAuth client secret
+        google_redirect_url:
+          type: string
+          format: uri
+          description: Google OAuth redirect URL
+        scope:
+          type: string
+          description: Requested scopes
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: OAuth2 access token (160-character hex string)
+          example: "a1b2c3d4e5f6789012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef012345678901234567890abcdef0"
+        token_type:
+          type: string
+          enum: [Bearer]
+          description: Token type (always Bearer)
+        expires_in:
+          type: integer
+          description: Seconds until token expiration
+          example: 3600
+        refresh_token:
+          type: string
+          description: Refresh token (only in authorization_code and authorization_from_google)
+          example: "def50200abc123..."
+        refresh_token_expires_in:
+          type: integer
+          description: Seconds until refresh token expiration
+          example: 2592000
+        scope:
+          type: string
+          description: Granted scopes
+          example: "read write"
+
+    JwtClientCredentialsTokenRequest:
+      type: object
+      required:
+        - client_id
+        - client_secret
+        - grant_type
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials_jwt]
+          description: Grant type (must be 'client_credentials_jwt')
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID from contatti.loginn
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret from contatti.lpw
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        expires_in:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+          description: Token lifetime in seconds (optional, default 3600)
+        scope:
+          type: string
+          description: Requested scopes (optional, space-separated)
+          example: "read write"
+
+    JwtClientCredentialsRequest:
+      type: object
+      required:
+        - client_id
+        - client_secret
+        - grant_type
+      properties:
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID from contatti.loginn
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret from contatti.lpw
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        grant_type:
+          type: string
+          enum: [client_credentials]
+          description: Grant type (must be 'client_credentials')
+
+    JwtRefreshTokenTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token_jwt]
+          description: Grant type (must be 'refresh_token_jwt')
+        refresh_token:
+          type: string
+          description: Valid JWT refresh token (3-part JWT format)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTczNTc3MjQwMH0.signature"
+        expires_in:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          default: 3600
+          description: New access token lifetime in seconds (optional, default 3600)
+        scope:
+          type: string
+          description: Requested scopes (optional, inherits from refresh token if not specified)
+          example: "read write"
+
+    JwtRefreshTokenRequest:
+      type: object
+      required:
+        - grant_type
+        - refresh_token
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+          description: Grant type (must be 'refresh_token')
+        refresh_token:
+          type: string
+          description: Valid JWT refresh token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    ExchangeCodeForJwtRequest:
+      type: object
+      required:
+        - grant_type
+        - code
+        - client_id
+        - client_secret
+        - redirect_uri
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+          description: Grant type (must be 'authorization_code')
+        code:
+          type: string
+          minLength: 16
+          description: Authorization code obtained from /authorization flow
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_id:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client ID
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        client_secret:
+          type: string
+          pattern: '^[a-f0-9]{32,}$'
+          description: OAuth2 client secret (must be protected, never send from frontend)
+          example: "fedcba09876543210abcdef0123456789abcdef0"
+        redirect_uri:
+          type: string
+          format: uri
+          description: Redirect URI (must match the one registered for this client)
+          example: "https://your-app.vercel.app/auth/callback"
+
+    JwtTokenResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - token_format
+      properties:
+        access_token:
+          type: string
+          description: JWT access token (3-part base64 string)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsImFuYWdyYWZpY2FfaWQiOjU2NzgsImlzcyI6Imh0dHBzOi8vZmluZGFpci5pdC9lcnAvdG13ZV9qc29uIiwiaWF0IjoxNzM1Njg2MDAwLCJleHAiOjE3MzU2ODk2MDB9.AbCdEfGhIjKlMnOpQrStUvWxYz"
+        token_type:
+          type: string
+          enum: [Bearer]
+          description: Token type (always Bearer)
+        expires_in:
+          type: integer
+          description: Seconds until access token expiration
+          example: 3600
+          default: 3600
+        refresh_token:
+          type: string
+          description: JWT refresh token (longer expiration than access token)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjM0LCJjbGllbnRfaWQiOiJhMWIyYzNkNCIsInR5cGUiOiJyZWZyZXNoIiwiaXNzIjoiaHR0cHM6Ly9maW5kYWlyLml0L2VycC90bXdlX2pzb24iLCJpYXQiOjE3MzU2ODYwMDAsImV4cCI6MTczNTg1ODgwMH0.AbCdEfGhIjKlMnOpQrStUvWxYz"
+        token_format:
+          type: string
+          enum: [jwt]
+          description: Token format identifier
+          example: "jwt"
+        user_id:
+          type: integer
+          description: User ID (from contatti.id)
+          example: 1234
+        client_id:
+          type: string
+          description: Client ID used for authentication
+          example: "a1b2c3d4e5f6789012345678901234567890abcd"
+        anagrafica_id:
+          type: integer
+          description: Anagrafica ID (from contatti.id_anagrafica)
+          example: 5678
+          nullable: true
+
+    ActiveTokenIntrospection:
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          type: boolean
+          enum: [true]
+          description: Indicates if the token is active
+        client_id:
+          type: string
+          description: Client ID that owns the token
+        token_type:
+          type: string
+          enum: [access_token, refresh_token]
+          description: Token type
+        exp:
+          type: integer
+          format: int64
+          description: Expiration timestamp (Unix epoch)
+          example: 1735689600
+        iat:
+          type: integer
+          format: int64
+          description: Creation timestamp (Unix epoch)
+          example: 1735603200
+        sub:
+          type: string
+          description: User ID (subject)
+          example: "12345"
+        username:
+          type: string
+          description: Username or email
+          example: "user@example.com"
+        scope:
+          type: string
+          description: Token scopes
+          example: "read write"
+        aud:
+          type: string
+          description: Token audience
+          example: "https://api.tmwe.com"
+
+    InactiveTokenIntrospection:
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          type: boolean
+          enum: [false]
+          description: Indicates that the token is not active or does not exist
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          enum:
+            - invalid_request
+            - invalid_client
+            - invalid_grant
+            - unauthorized_client
+            - unsupported_grant_type
+            - invalid_scope
+            - method_not_allowed
+          description: OAuth2 error code
+        error_description:
+          type: string
+          description: Human-readable error description
+          example: "Missing required parameter: client_id"
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingParameter:
+              value:
+                error: "invalid_request"
+                error_description: "Missing required parameter: grant_type"
+            invalidFormat:
+              value:
+                error: "invalid_request"
+                error_description: "Invalid parameter format"
+            unsupportedGrantType:
+              value:
+                error: "unsupported_grant_type"
+                error_description: "Unsupported grant_type: password"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidClient:
+              value:
+                error: "invalid_client"
+                error_description: "Client authentication failed"
+            invalidGrant:
+              value:
+                error: "invalid_grant"
+                error_description: "Invalid or expired authorization code"
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: |
+        OAuth2 authentication returning random access tokens.
+        Tokens are 160-character hexadecimal strings stored in the database.
+      flows:
+        clientCredentials:
+          tokenUrl: /token
+          scopes:
+            read: Read access
+            write: Write access
+        authorizationCode:
+          authorizationUrl: /authorization
+          tokenUrl: /token
+          scopes:
+            read: Read access
+            write: Write access
+
+    JwtBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT (JSON Web Token) authentication.
+
+        Obtain JWT tokens from `/app.php?action=get_jwt_token` endpoint with client credentials.
+
+        **Token format:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.signature`
+
+        **Usage in requests:**
+        ```
+        Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ```
+
+        **Key features:**
+        - Stateless (no database lookup for validation)
+        - Cryptographically signed (HS256 algorithm)
+        - Contains embedded claims (user_id, client_id, expiration)
+        - Automatically detected and validated by all API endpoints
+        - 5x faster validation than OAuth2 tokens
+
+        **Token claims:**
+        - `user_id`: User ID from contatti table
+        - `client_id`: Client ID used for authentication
+        - `anagrafica_id`: Anagrafica ID (if available)
+        - `iss`: Issuer (https://findair.it/erp/tmwe_json)
+        - `iat`: Issued at timestamp
+        - `exp`: Expiration timestamp
+
+        **Automatic detection:**
+        The API automatically detects token type:
+        - JWT: 3 parts separated by dots (header.payload.signature)
+        - OAuth2: 160-character hexadecimal string
+
+        Both token types are accepted in the same `Authorization: Bearer` header.
+
+security:
+  - OAuth2: []
+  - JwtBearer: []

@@ -10,14 +10,7 @@ interface EmailHeaderProps {
   onSearch: (query: string) => void;
   onCompose: () => void;
   onSync: () => void;
-  onSyncSmart?: () => void;
-  isSyncingSmart?: boolean;
-  syncSmartProgress?: {
-    current: number;
-    total: number;
-    missing: number;
-  };
-  missingEmailCount?: number;
+  isSyncing?: boolean;
   onMenuClick?: () => void;
   isMobile?: boolean;
   downloadProgressComponent?: React.ReactNode;
@@ -32,7 +25,7 @@ interface EmailHeaderProps {
   onOpenSyncMonitor?: () => void;
 }
 
-export const EmailHeader = ({ onSearch, onCompose, onSync, onSyncSmart, isSyncingSmart, syncSmartProgress, missingEmailCount, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor }: EmailHeaderProps) => {
+export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClick, isMobile, downloadProgressComponent, dbEmailCount, isHeaderCollapsed, onToggleCollapse, onCloseEmail, onPreviousEmail, onNextEmail, hasPrevious, hasNext, onOpenSyncMonitor }: EmailHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [emailCount, setEmailCount] = useState<number>(0);
   const [syncPopupOpen, setSyncPopupOpen] = useState(false);

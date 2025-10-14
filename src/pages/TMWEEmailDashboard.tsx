@@ -184,16 +184,6 @@ const EmailDashboard = () => {
     totalToDownload,
   } = useEmailDownload();
 
-  // Email Sync hook (usando Edge Function tmwe-email-sync-master)
-  const {
-    isSyncing: isSyncingSmart,
-    syncedCount,
-    startSync: startSyncSmart,
-  } = useEmailSync({
-    folder: selectedFolder,
-    totalEmails: totalEmailCount,
-  });
-
   // Conta le email nel DB per la cartella corrente e utente
   const { data: dbEmailCount } = useQuery({
     queryKey: ['db-email-count', selectedFolder],
@@ -217,6 +207,7 @@ const EmailDashboard = () => {
         .eq('user_email', profile.tmwe_email);
       return count || 0;
     },
+    refetchInterval: isDownloading ? 2000 : false,
   });
 
   const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
@@ -308,142 +299,6 @@ const EmailDashboard = () => {
     };
   })() : null;
 
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      console.log('📧 SYNC MUTATION STARTED');
-      console.log('📁 Folder:', selectedFolder);
-      
-      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 User:', user?.id);
-      
-      if (!user) {
-        throw new Error('Utente non autenticato');
-      }
-      
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile?.tmwe_email) {
-        throw new Error('Email utente non trovata nel profilo');
-      }
-      
-      const userEmail = profile.tmwe_email;
-      
-      // 1. Ottieni il totale delle email dalla cartella
-      const folderInfoResponse = await emailMessageApi.getMessages({ 
-        folder: selectedFolder, 
-        limit: 1, 
-        page: 1 
-      });
-      const totalEmails = folderInfoResponse.total || 0;
-      
-      // 2. Recupera gli ID esistenti nel database per questo utente
-      const { data: existingEmails } = await supabase
-        .from('email_messages')
-        .select('message_id')
-        .eq('cartella', selectedFolder)
-        .eq('user_email', userEmail);
-      
-      const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
-      
-      // 3. Download batch di email dalla API
-      const batchSize = 50;
-      const totalPages = Math.ceil(totalEmails / batchSize);
-      let syncedCount = 0;
-      
-      console.log(`📊 Sync: ${totalEmails} totali, ${existingIds.size} già nel DB`);
-      
-      for (let page = 1; page <= totalPages; page++) {
-        const response = await emailMessageApi.getMessages({
-          folder: selectedFolder,
-          limit: batchSize,
-          page,
-        });
-        
-        const pageEmails = response?.messages || [];
-        
-        // Filtra solo email mancanti
-        const missingEmails = pageEmails.filter((email: any) => 
-          !existingIds.has(email.message_id || email.uid?.toString())
-        );
-        
-        // Inserisci le email mancanti
-        if (missingEmails.length > 0) {
-          const emailsToInsert = missingEmails.map((email: any) => {
-            let isoDate = new Date().toISOString();
-            if (email.date) {
-              try {
-                isoDate = new Date(email.date).toISOString();
-              } catch (e) {
-                console.error('Error parsing date:', email.date);
-              }
-            }
-            
-            return {
-              message_id: String(email.uid || email.message_id),
-              provider_id: '00000000-0000-0000-0000-000000000000',
-              from_email: typeof email.from === 'object' ? email.from.email : email.from,
-              to_email: typeof email.to === 'object' ? email.to.email : email.to,
-              cc_email: email.cc ? (typeof email.cc === 'object' ? email.cc.email : email.cc) : null,
-              bcc_email: email.bcc ? (typeof email.bcc === 'object' ? email.bcc.email : email.bcc) : null,
-              subject: email.subject || '(No Subject)',
-              body_text: email.body_plain || email.body_text || null,
-              body_html: email.body_html || null,
-              data_ricezione: isoDate,
-              cartella: selectedFolder,
-              direzione: 'ricevuta',
-              stato: email.is_read || email.seen ? 'letto' : 'nuovo',
-              flags: email.flags || [],
-              attachments: email.attachments || [],
-              user_email: userEmail, // Associa email all'utente
-            };
-          });
-          
-          const { error } = await supabase
-            .from('email_messages')
-            .upsert(emailsToInsert, { 
-              onConflict: 'message_id',
-              ignoreDuplicates: false 
-            });
-          
-          if (error) {
-            console.error('❌ Errore inserimento batch:', error);
-          } else {
-            syncedCount += missingEmails.length;
-            console.log(`✅ Batch ${page}/${totalPages}: +${missingEmails.length} email`);
-          }
-        }
-        
-        // Piccolo delay per non sovraccaricare il server
-        if (page < totalPages) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
-      return { synced: syncedCount, total: totalEmails };
-    },
-    onSuccess: (data) => {
-      console.log('✅ SYNC COMPLETED:', data);
-      if (data.synced > 0) {
-        toast.success(`Sincronizzate ${data.synced} nuove email su ${data.total} totali`);
-      } else {
-        toast.success('Database già sincronizzato');
-      }
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-      queryClient.invalidateQueries({ queryKey: ['db-email-count'] });
-      queryClient.invalidateQueries({ queryKey: ['global-email-count'] });
-    },
-    onError: (error) => {
-      console.error('❌ SYNC ERROR:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
-      toast.error(`Sync fallita: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (messageIds: string[]) => emailMessageApi.deleteMessages(messageIds),
     onSuccess: () => {
@@ -510,11 +365,9 @@ const EmailDashboard = () => {
     : emailsToUse;
 
   const handleSync = () => {
-    console.log('🚀 handleSync called - starting sync mutation...');
-    console.log('📊 Current folder:', selectedFolder);
-    console.log('🔐 Auth status:', supabase.auth);
-    toast.info('Starting sync...');
-    syncMutation.mutate();
+    console.log('🚀 Starting REAL email download from API...');
+    toast.info('Avvio download email da tutte le cartelle...');
+    startDownload(queryClient);
   };
 
   const handleDelete = () => {
@@ -621,10 +474,7 @@ const EmailDashboard = () => {
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
         onSync={handleSync}
-        onSyncSmart={startSyncSmart}
-        isSyncingSmart={isSyncingSmart}
-        syncSmartProgress={{ current: syncedCount, total: totalEmailCount, missing: missingEmailCount }}
-        missingEmailCount={missingEmailCount}
+        isSyncing={isDownloading}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
         dbEmailCount={isMobile ? emailCount : undefined}

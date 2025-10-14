@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { emailMessageApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { QueryClient } from '@tanstack/react-query';
 
 export const useEmailDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -11,7 +12,7 @@ export const useEmailDownload = () => {
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [totalToDownload, setTotalToDownload] = useState(0);
 
-  const startDownload = useCallback(async (): Promise<void> => {
+  const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
     setIsDownloading(true);
     setDownloadedCount(0);
     setDownloadError(null);
@@ -231,6 +232,13 @@ export const useEmailDownload = () => {
 
       if (totalErrors > 0) {
         toast.warning(`Completato con ${totalErrors} errori. Controlla la console per dettagli.`);
+      }
+
+      // Invalida le query per refreshare la UI
+      if (queryClient) {
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+        queryClient.invalidateQueries({ queryKey: ['db-email-count'] });
+        queryClient.invalidateQueries({ queryKey: ['global-email-count'] });
       }
 
     } catch (error: any) {

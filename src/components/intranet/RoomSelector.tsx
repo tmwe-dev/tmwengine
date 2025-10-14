@@ -280,13 +280,13 @@ export const RoomSelector = ({ onRoomSelect, selectedRoomId, getUnreadCount, isC
               
               const button = isCollapsed ? (
                 <Button
-                  variant={selectedRoomId === room.id ? "secondary" : "ghost"}
+                  variant="ghost"
                   size="icon"
                   onClick={() => canAccess && onRoomSelect(room.id)}
                   disabled={!canAccess}
                   className="w-full aspect-square p-0 justify-center items-center relative group"
                 >
-                  <MessageSquare className="h-4 w-4 shrink-0 group-hover:scale-110 transition-all" />
+                  <MessageSquare className={`h-4 w-4 shrink-0 group-hover:scale-110 transition-all ${selectedRoomId === room.id ? 'text-destructive' : ''}`} />
                   {unreadCount > 0 && (
                     <Badge 
                       variant="destructive" 

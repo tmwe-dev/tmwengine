@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
+import { useNotificationOnboarding } from '@/hooks/useNotificationOnboarding';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Loader2 } from 'lucide-react';
 
@@ -11,14 +12,18 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useTMWEAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { shouldShowOnboarding, isChecking } = useNotificationOnboarding();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate('/auth');
+    } else if (!isLoading && isAuthenticated && !isChecking && shouldShowOnboarding && location.pathname !== '/notification-onboarding') {
+      navigate('/notification-onboarding');
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, shouldShowOnboarding, isChecking, location.pathname]);
 
-  if (isLoading) {
+  if (isLoading || isChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Card>

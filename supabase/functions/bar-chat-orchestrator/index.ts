@@ -280,7 +280,7 @@ serve(async (req) => {
     const historyMessages = (messages || []).map((msg: any) => {
       let messageContent = msg.content;
       
-      // Economy mode: usa riassunto SOLO per messaggi AI (preserva menzioni utente)
+      // ✅ Economy Mode: usa sempre summary per AI se disponibile (preserva brevità ultimi 20 msg)
       if (useEconomyMode && msg.sender_type !== 'user' && msg.is_summary_available && msg.content_summary) {
         messageContent = msg.content_summary;
         console.log(`📝 [Economy] ${msg.sender_name} summary: ${messageContent.substring(0, 50)}...`);
@@ -334,17 +334,64 @@ serve(async (req) => {
       }
     }
     
-    // 2. Se nessuna menzione, usa logica random/sequential
+    // 2. Se nessuna menzione, usa turn_strategy dal DB
     if (!selectedParticipant) {
-      // 30% chance of randomization
-      if (Math.random() < 0.3) {
-        currentTurnIndex = Math.floor(Math.random() * participants.length);
-        console.log('🎲 Turno randomizzato:', currentTurnIndex);
+      const turnStrategy = barModeSettings?.turn_strategy || 'RANDOM_30';
+      console.log(`🎯 Strategia turno: ${turnStrategy}`);
+      
+      if (turnStrategy === 'SMART_PRIORITY') {
+        // 🧠 Smart Priority: analizza keyword + expertise + bilanciamento
+        console.log('🧠 SMART_PRIORITY: analizzando expertise...');
+        
+        // Estrai keyword dal messaggio (semplice split per ora)
+        const userKeywords = userMessage.toLowerCase()
+          .split(/\s+/)
+          .filter(w => w.length > 4); // solo parole > 4 char
+        
+        // Calcola score per ogni partecipante
+        const participantScores = participants.map((p: any) => {
+          let score = 0;
+          const expertiseKeywords = p.expertise_keywords || [];
+          
+          // 1. Match expertise (peso 50)
+          const matchCount = userKeywords.filter(uk => 
+            expertiseKeywords.some((ek: string) => ek.toLowerCase().includes(uk) || uk.includes(ek.toLowerCase()))
+          ).length;
+          score += matchCount * 50;
+          
+          // 2. Bilanciamento response_count (peso 30)
+          const avgResponses = participants.reduce((sum: number, pp: any) => sum + (pp.response_count || 0), 0) / participants.length;
+          const responseGap = avgResponses - (p.response_count || 0);
+          score += responseGap * 30;
+          
+          // 3. Non ha ancora risposto questo turno (peso 20)
+          if (!p.has_responded_current_turn) {
+            score += 20;
+          }
+          
+          console.log(`  ${p.name}: score=${score.toFixed(1)} (expertise=${matchCount}, gap=${responseGap.toFixed(1)})`);
+          return { participant: p, score };
+        });
+        
+        // Seleziona il più adatto
+        participantScores.sort((a, b) => b.score - a.score);
+        selectedParticipant = participantScores[0].participant;
+        currentTurnIndex = participants.findIndex((x: any) => x.id === selectedParticipant.id);
+        console.log(`🧠 Selected: ${selectedParticipant.name} (score: ${participantScores[0].score.toFixed(1)})`);
+        
       } else {
-        currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
-        console.log('➡️ Turno sequenziale:', currentTurnIndex);
+        // 🎲 RANDOM_30: 30% random, 70% sequenziale
+        const isRandom = Math.random() < 0.3;
+        
+        if (isRandom) {
+          currentTurnIndex = Math.floor(Math.random() * participants.length);
+          console.log('🎲 Turno randomizzato:', currentTurnIndex);
+        } else {
+          currentTurnIndex = (lastSpeakerIndex + 1) % participants.length;
+          console.log('➡️ Turno sequenziale:', currentTurnIndex);
+        }
+        selectedParticipant = participants[currentTurnIndex];
       }
-      selectedParticipant = participants[currentTurnIndex];
     }
     
     console.log('🎯 Agente Bar Chat selezionato:', selectedParticipant.name);

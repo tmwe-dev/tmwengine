@@ -413,11 +413,10 @@ export const emailAccountApi = {
 };
 
 // Email Sync APIs
+// NOTA: fullSync, incrementalSync, syncFolder sono stati deprecati
+// Usare invece syncEmailsToDatabase() da src/lib/email-sync.ts
+// che utilizza l'Edge Function tmwe-email-sync-master
 export const emailSyncApi = {
-  fullSync: () => fetchApi('/email_sync', { handler: 'full_sync' }),
-  incrementalSync: () => fetchApi('/email_sync', { handler: 'incremental_sync' }),
-  syncFolder: (folderName: string) => 
-    fetchApi('/email_sync', { handler: 'sync_folder', folder_name: folderName }),
   getSyncStatus: () => fetchApi('/email_sync', { handler: 'get_sync_status' }),
   cancelSync: () => fetchApi('/email_sync', { handler: 'cancel_sync' }),
 };

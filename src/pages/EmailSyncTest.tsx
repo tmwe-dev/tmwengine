@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { emailSyncApi } from '@/lib/tmwe-api-integrated';
 
 interface TestResult {
   method: string;
@@ -36,45 +35,20 @@ export default function EmailSyncTest() {
   const testSyncFolder = async () => {
     setIsTestingSync(true);
     const result: TestResult = {
-      method: 'emailSyncApi.syncFolder("INBOX")',
+      method: 'Metodo deprecato - non più disponibile',
       startTime: Date.now(),
     };
 
     try {
-      // 1. Count emails BEFORE sync
-      result.emailsBeforeSync = await getEmailCount();
-      toast({
-        title: "📊 Test Started",
-        description: `Email in DB prima del sync: ${result.emailsBeforeSync}`,
-      });
-
-      // 2. Execute sync
-      const response = await emailSyncApi.syncFolder('INBOX');
-      result.response = response;
-
-      // 3. Count emails AFTER sync
-      result.emailsAfterSync = await getEmailCount();
-      result.emailsSaved = result.emailsAfterSync - result.emailsBeforeSync;
-
-      // 4. Calculate duration
+      result.error = 'emailSyncApi.syncFolder() è stato deprecato. Usare Edge Function invece.';
       result.endTime = Date.now();
       result.duration = result.endTime - result.startTime;
 
       setTestResult(result);
 
       toast({
-        title: "✅ Test Completato",
-        description: `Durata: ${(result.duration / 1000).toFixed(2)}s | Email salvate: ${result.emailsSaved}`,
-      });
-    } catch (error: any) {
-      result.error = error.message;
-      result.endTime = Date.now();
-      result.duration = result.endTime - result.startTime;
-      setTestResult(result);
-
-      toast({
-        title: "❌ Test Failed",
-        description: error.message,
+        title: "⚠️ Metodo Deprecato",
+        description: result.error,
         variant: "destructive",
       });
     } finally {
@@ -149,27 +123,24 @@ export default function EmailSyncTest() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Test emailSyncApi.syncFolder */}
-        <Card>
+        {/* Test emailSyncApi.syncFolder - DEPRECATO */}
+        <Card className="opacity-50">
           <CardHeader>
-            <CardTitle>Test A: API TMWE</CardTitle>
-            <CardDescription>emailSyncApi.syncFolder('INBOX')</CardDescription>
+            <CardTitle>Test A: API TMWE (Deprecato)</CardTitle>
+            <CardDescription>emailSyncApi.syncFolder() non più disponibile</CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
               onClick={testSyncFolder} 
-              disabled={isTestingSync}
+              disabled={true}
+              variant="outline"
               className="w-full"
             >
-              {isTestingSync ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                'Avvia Test API'
-              )}
+              Metodo Deprecato
             </Button>
+            <p className="text-sm text-muted-foreground mt-2">
+              Questo metodo non salvava nel DB Supabase. Usa Edge Function.
+            </p>
           </CardContent>
         </Card>
 

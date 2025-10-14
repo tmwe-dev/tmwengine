@@ -15,7 +15,7 @@ import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
-import { useSyncSmart } from '@/hooks/useSyncSmart';
+import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -150,12 +150,12 @@ const EmailDashboard = () => {
     totalEmails: totalEmailCount,
   });
 
-  // Sync Smart hook
+  // Email Sync hook (usando Edge Function tmwe-email-sync-master)
   const {
     isSyncing: isSyncingSmart,
     syncedCount,
     startSync: startSyncSmart,
-  } = useSyncSmart({
+  } = useEmailSync({
     folder: selectedFolder,
     totalEmails: totalEmailCount,
   });

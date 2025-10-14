@@ -49,8 +49,13 @@ export const useAudioCall = (roomId: string, userId: string) => {
   useEffect(() => {
     setHandlers({
       onOffer: async (offer, from) => {
-        console.log('Received offer from:', from);
+        console.log('[useAudioCall] Received offer from:', from);
         setRemotePeerId(from);
+        
+        toast({
+          title: 'Chiamata in arrivo',
+          description: 'Risposta automatica in corso...'
+        });
         
         const pc = new WebRTCPeerConnection({
           onIceCandidate: (candidate) => {
@@ -85,21 +90,31 @@ export const useAudioCall = (roomId: string, userId: string) => {
         statsIntervalRef.current = setInterval(monitorNetworkQuality, 5000);
       },
       onAnswer: async (answer) => {
-        console.log('Received answer');
+        console.log('[useAudioCall] Received answer');
         await peerConnectionRef.current?.setRemoteDescription(answer);
       },
       onIceCandidate: async (candidate) => {
+        console.log('[useAudioCall] Received ICE candidate');
         await peerConnectionRef.current?.addIceCandidate(candidate);
       },
+      onCallStart: (from) => {
+        console.log('[useAudioCall] Call started by:', from);
+        toast({
+          title: 'Chiamata in arrivo',
+          description: `Chiamata da utente ${from.substring(0, 8)}...`
+        });
+      },
       onCallEnd: (from) => {
-        console.log('Call ended by:', from);
+        console.log('[useAudioCall] Call ended by:', from);
         endCall();
       }
     });
-  }, [sendSignal, setHandlers, monitorNetworkQuality]);
+  }, [sendSignal, setHandlers, monitorNetworkQuality, toast]);
 
   const startCall = useCallback(async (targetUserId?: string) => {
     try {
+      console.log('[useAudioCall] Starting call to:', targetUserId || 'broadcast');
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -109,24 +124,31 @@ export const useAudioCall = (roomId: string, userId: string) => {
         }
       });
 
+      console.log('[useAudioCall] Got local media stream');
       localStreamRef.current = stream;
 
       const pc = new WebRTCPeerConnection({
         onIceCandidate: (candidate) => {
+          console.log('[useAudioCall] Sending ICE candidate to:', targetUserId);
           sendSignal({ type: 'ice-candidate', to: targetUserId, payload: candidate });
         },
         onRemoteStream: (stream) => {
+          console.log('[useAudioCall] Received remote stream');
           remoteStreamRef.current = stream;
           if (remoteAudioRef.current) {
             remoteAudioRef.current.srcObject = stream;
           }
           setIsInCall(true);
         },
-        onConnectionStateChange: setConnectionState
+        onConnectionStateChange: (state) => {
+          console.log('[useAudioCall] Connection state changed:', state);
+          setConnectionState(state);
+        }
       });
 
       await pc.addLocalStream(stream);
       const offer = await pc.createOffer();
+      console.log('[useAudioCall] Created offer, sending to:', targetUserId);
       await sendSignal({ type: 'offer', to: targetUserId, payload: offer });
       await sendSignal({ type: 'call-start', to: targetUserId, payload: {} });
 
@@ -141,7 +163,7 @@ export const useAudioCall = (roomId: string, userId: string) => {
         description: 'Chiamata vocale in corso'
       });
     } catch (error: any) {
-      console.error('Error starting call:', error);
+      console.error('[useAudioCall] Error starting call:', error);
       toast({
         title: 'Errore',
         description: error.name === 'NotAllowedError' 

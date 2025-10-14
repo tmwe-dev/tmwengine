@@ -12,9 +12,8 @@ const CallRoom = () => {
   const [searchParams] = useSearchParams();
   const [userId, setUserId] = useState<string>('');
   
-  const targetUserId = searchParams.get('userId');
-  const roomIdParam = searchParams.get('roomId');
-  const [roomId] = useState(roomIdParam || 'main-call-room');
+  const targetUserId = searchParams.get('targetUserId');
+  const roomId = 'global-call-room';
 
   const {
     isInCall,

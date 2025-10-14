@@ -11,6 +11,7 @@ export const useEmailDownload = () => {
   const [allEmails, setAllEmails] = useState<any[]>([]);
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [totalToDownload, setTotalToDownload] = useState(0);
+  const [shouldStop, setShouldStop] = useState(false);
 
   const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
     setIsDownloading(true);
@@ -19,6 +20,7 @@ export const useEmailDownload = () => {
     setAllEmails([]);
     setCurrentFolder('');
     setTotalToDownload(0);
+    setShouldStop(false);
 
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -73,6 +75,14 @@ export const useEmailDownload = () => {
 
       // 2. Per ogni cartella, scarica le email
       for (const folderInfo of folders) {
+        // Controlla se deve fermarsi
+        if (shouldStop) {
+          console.log('🛑 Download interrotto dall\'utente');
+          toast.info('Download interrotto');
+          setIsDownloading(false);
+          return;
+        }
+        
         const folderName = folderInfo.name;
         const folderTotalEmails = folderInfo.messages || 0;
         
@@ -298,6 +308,11 @@ export const useEmailDownload = () => {
       setIsDownloading(false);
       toast.error('Errore durante il download delle email');
     }
+  }, [shouldStop]);
+
+  const stopDownload = useCallback(() => {
+    setShouldStop(true);
+    toast.info('Interruzione download in corso...');
   }, []);
 
   const reset = useCallback(() => {
@@ -305,6 +320,7 @@ export const useEmailDownload = () => {
     setDownloadedCount(0);
     setDownloadError(null);
     setAllEmails([]);
+    setShouldStop(false);
   }, []);
 
   return {
@@ -313,6 +329,7 @@ export const useEmailDownload = () => {
     downloadError,
     allEmails,
     startDownload,
+    stopDownload,
     reset,
     currentFolder,
     totalToDownload,

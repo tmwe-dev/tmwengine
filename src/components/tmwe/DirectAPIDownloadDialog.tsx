@@ -21,6 +21,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     currentFolder,
     totalToDownload,
     startDownload,
+    stopDownload,
     reset
   } = useEmailDownload();
 
@@ -118,14 +119,22 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                 </Button>
               </>
             ) : (
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                disabled
-              >
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Download in corso...
-              </Button>
+              <>
+                <Button 
+                  variant="destructive" 
+                  onClick={stopDownload}
+                  className="flex-1"
+                >
+                  Ferma Download
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleClose}
+                  disabled
+                >
+                  Chiudi
+                </Button>
+              </>
             )}
           </div>
 

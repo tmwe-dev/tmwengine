@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { WebRTCPeerConnection } from '@/utils/webrtc/PeerConnection';
 import { useWebRTCSignaling } from './useWebRTCSignaling';
 import { useToast } from './use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAudioCall = (roomId: string, userId: string) => {
   const [isInCall, setIsInCall] = useState(false);
@@ -114,6 +115,22 @@ export const useAudioCall = (roomId: string, userId: string) => {
   const startCall = useCallback(async (targetUserId?: string) => {
     try {
       console.log('[useAudioCall] Starting call to:', targetUserId || 'broadcast');
+      
+      // 🆕 INVIA NOTIFICA GLOBALE PRIMA DI TUTTO
+      if (targetUserId) {
+        const channel = supabase.channel(`user-calls-${targetUserId}`);
+        await channel.send({
+          type: 'broadcast',
+          event: 'incoming-call',
+          payload: {
+            from: userId,
+            to: targetUserId,
+            roomId: roomId
+          }
+        });
+        console.log('[useAudioCall] ✅ Global call notification sent to:', targetUserId);
+        await channel.unsubscribe();
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {

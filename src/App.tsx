@@ -45,16 +45,46 @@ import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
+import { useGlobalCallHandler } from "@/hooks/useGlobalCallHandler";
+import { IncomingCallDialog } from "@/components/call/IncomingCallDialog";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TMWEAuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+const App = () => {
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user?.id || '');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id || '');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { incomingCall, acceptCall, rejectCall } = useGlobalCallHandler(currentUserId);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TMWEAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          
+          {/* Global Incoming Call Dialog */}
+          <IncomingCallDialog
+            isOpen={!!incomingCall}
+            callerName={incomingCall?.callerName || ''}
+            onAccept={acceptCall}
+            onReject={rejectCall}
+          />
+
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>
@@ -225,6 +255,7 @@ const App = () => (
       </TooltipProvider>
     </TMWEAuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

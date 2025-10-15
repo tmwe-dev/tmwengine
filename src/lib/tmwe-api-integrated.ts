@@ -1,6 +1,29 @@
 // TMWE Email API Client integrato con Supabase Auth
 import { supabase } from "@/integrations/supabase/client";
 
+// Debug mode: disabilita logging in produzione
+const DEBUG_MODE = import.meta.env.DEV;
+
+// Token cache in memoria per evitare query DB ripetute
+let tokenCache: {
+  accessToken: string | null;
+  expiresAt: number;
+  email: string | null;
+} = {
+  accessToken: null,
+  expiresAt: 0,
+  email: null
+};
+
+// Funzione per invalidare la cache (chiamata al logout)
+export function clearTokenCache() {
+  tokenCache = {
+    accessToken: null,
+    expiresAt: 0,
+    email: null
+  };
+}
+
 export interface ApiConfig {
   accessToken: string;
   refreshToken?: string;
@@ -348,27 +371,74 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   }
 };
 
-// Ensure valid token (supporta sia OAuth2 che JWT)
+// Ensure valid token (supporta sia OAuth2 che JWT) - CON CACHE
 const ensureValidToken = async (): Promise<string | null> => {
+  const now = Date.now();
+  
+  // 🚀 CACHE HIT: risparmio ~1s per chiamata (9s totali)
+  if (tokenCache.accessToken && tokenCache.expiresAt > now + 60000) { // 1 min buffer
+    if (DEBUG_MODE) {
+      console.log('⚡ Token cache HIT - risparmio query DB');
+    }
+    return tokenCache.accessToken;
+  }
+
+  if (DEBUG_MODE) {
+    console.log('🔄 Token cache MISS - fetch da DB');
+  }
+
+  // 🔄 CACHE MISS: Fetch da DB
   const config = await getApiConfigFromDB();
-  if (!config) return null;
+  if (!config) {
+    clearTokenCache();
+    return null;
+  }
 
   // Check if token is expired or about to expire (5 minutes buffer)
-  if (config.expiresAt && config.expiresAt < Date.now() + 300000) {
+  if (config.expiresAt && config.expiresAt < now + 300000) {
     // JWT: re-authenticate (no refresh token)
     if (config.authType === 'jwt') {
       const refreshed = await authenticateWithJWT();
-      if (!refreshed) return null;
+      if (!refreshed) {
+        clearTokenCache();
+        return null;
+      }
       const newConfig = await getApiConfigFromDB();
-      return newConfig?.accessToken || null;
+      if (!newConfig) return null;
+      
+      // Aggiorna cache
+      tokenCache = {
+        accessToken: newConfig.accessToken,
+        expiresAt: newConfig.expiresAt || 0,
+        email: null
+      };
+      return newConfig.accessToken;
     }
     
     // OAuth2: use refresh token
     const refreshed = await refreshAccessToken();
-    if (!refreshed) return null;
+    if (!refreshed) {
+      clearTokenCache();
+      return null;
+    }
     const newConfig = await getApiConfigFromDB();
-    return newConfig?.accessToken || null;
+    if (!newConfig) return null;
+    
+    // Aggiorna cache
+    tokenCache = {
+      accessToken: newConfig.accessToken,
+      expiresAt: newConfig.expiresAt || 0,
+      email: null
+    };
+    return newConfig.accessToken;
   }
+
+  // Aggiorna cache con token valido
+  tokenCache = {
+    accessToken: config.accessToken,
+    expiresAt: config.expiresAt || 0,
+    email: null
+  };
 
   return config.accessToken;
 };
@@ -387,51 +457,61 @@ const fetchApi = async (endpoint: string, data: any) => {
     bearerToken: accessToken
   };
 
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 SOLICITUD AL API TMWE');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('⏰ Timestamp:', new Date().toISOString());
-  console.log('📍 Endpoint:', endpoint);
-  console.log('🎯 Handler:', data.handler);
-  console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
-  console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
-  console.log('═══════════════════════════════════════════════════════');
+  if (DEBUG_MODE) {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📤 SOLICITUD AL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
+    console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
+    console.log('═══════════════════════════════════════════════════════');
+  }
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: requestBody
     });
 
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 RESPUESTA DEL API TMWE');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data.handler);
+    if (DEBUG_MODE) {
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📥 RESPUESTA DEL API TMWE');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      console.log('📍 Endpoint:', endpoint);
+      console.log('🎯 Handler:', data.handler);
+    }
     
     if (error) {
-      console.error('❌ ERROR en la respuesta');
-      console.error('⚠️ Error Object:', error);
-      console.error('📄 Error Message:', error.message);
-      console.log('═══════════════════════════════════════════════════════');
+      if (DEBUG_MODE) {
+        console.error('❌ ERROR en la respuesta');
+        console.error('⚠️ Error Object:', error);
+        console.error('📄 Error Message:', error.message);
+        console.log('═══════════════════════════════════════════════════════');
+      }
       throw new Error(error.message || 'API request failed');
     }
 
-    console.log('✅ RESPUESTA EXITOSA');
-    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
-    console.log('═══════════════════════════════════════════════════════');
+    if (DEBUG_MODE) {
+      console.log('✅ RESPUESTA EXITOSA');
+      console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
+      console.log('═══════════════════════════════════════════════════════');
+    }
 
     return responseData;
   } catch (error: any) {
-    console.log('═══════════════════════════════════════════════════════');
-    console.error('🔥 ERROR EN LA COMUNICACIÓN');
-    console.log('═══════════════════════════════════════════════════════');
-    console.error('📍 Endpoint:', endpoint);
-    console.error('🎯 Handler:', data.handler);
-    console.error('⚠️ Error:', error);
-    console.error('📄 Error Message:', error.message);
-    console.error('📚 Stack Trace:', error.stack);
-    console.log('═══════════════════════════════════════════════════════');
+    if (DEBUG_MODE) {
+      console.log('═══════════════════════════════════════════════════════');
+      console.error('🔥 ERROR EN LA COMUNICACIÓN');
+      console.log('═══════════════════════════════════════════════════════');
+      console.error('📍 Endpoint:', endpoint);
+      console.error('🎯 Handler:', data.handler);
+      console.error('⚠️ Error:', error);
+      console.error('📄 Error Message:', error.message);
+      console.error('📚 Stack Trace:', error.stack);
+      console.log('═══════════════════════════════════════════════════════');
+    }
     throw error;
   }
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clearTokenCache } from '@/lib/tmwe-api-integrated';
 
 interface UserProfile {
   email: string;
@@ -175,6 +176,7 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    clearTokenCache(); // 🔒 Invalida cache token
     setUserEmail(null);
     setUserProfile(null);
     setSupabaseUserId(null);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 // Unused icons removed: Database, MessageSquare, Brain
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -131,17 +131,18 @@ const EmailDashboard = () => {
 
   
 
-  // === GLOBAL EMAIL COUNT (DAL SERVER API) ===
-  const { data: globalEmailCount } = useQuery({
-    queryKey: ['global-folders-count'],
-    queryFn: async () => {
-      const foldersResponse = await emailFolderApi.getFolders();
-      const folders = foldersResponse?.data || [];
-      // Somma i messaggi di tutte le cartelle
-      return folders.reduce((sum: number, f: any) => sum + (f.messages || 0), 0);
-    },
+  // === FOLDERS QUERY - Condivisa con EmailSidebar ===
+  const { data: foldersData } = useQuery({
+    queryKey: ['folders'], // ✅ Stessa queryKey di EmailSidebar
+    queryFn: () => emailFolderApi.getFolders(),
     staleTime: 5 * 60 * 1000, // Cache 5 minuti
   });
+
+  // === GLOBAL EMAIL COUNT (calcolato dai folders cached) ===
+  const globalEmailCount = useMemo(() => {
+    if (!foldersData?.data) return 0;
+    return foldersData.data.reduce((sum: number, f: any) => sum + (f.messages || 0), 0);
+  }, [foldersData]);
 
   // Email download hook
   const {

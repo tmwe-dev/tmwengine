@@ -152,79 +152,28 @@ serve(async (req) => {
       console.log('Body size:', JSON.stringify(data).length, 'bytes');
     }
 
-    // Retry mechanism for inconsistent API responses
-    let response: Response | undefined;
-    let responseText: string = '';
-    const maxRetries = 3;
-    let retryCount = 0;
+    // 🚀 OTTIMIZZAZIONE: Rimuovo retry aggressivo su array vuoto
+    // [] è una risposta VALIDA (es. cartelle vuote, nessun messaggio)
+    const requestStartTime = Date.now();
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: requestHeaders,
+      body: JSON.stringify(data),
+    });
 
-    while (retryCount < maxRetries) {
-      const requestStartTime = Date.now();
-      
-      if (DEBUG_MODE) console.log(`🔄 Attempt ${retryCount + 1}/${maxRetries}`);
-      
-      try {
-        response = await fetch(url, {
-          method: 'POST',
-          headers: requestHeaders,
-          body: JSON.stringify(data),
-        });
+    const requestDuration = Date.now() - requestStartTime;
+    if (DEBUG_MODE) console.log(`⏱️ Request: ${requestDuration}ms`);
 
-        const requestDuration = Date.now() - requestStartTime;
-        if (DEBUG_MODE) console.log(`⏱️ Request: ${requestDuration}ms`);
-
-        responseText = await response.text();
-        
-        if (DEBUG_MODE && (responseText === '[]' || responseText === '')) {
-          console.log('⚠️ Empty response:', data.handler);
-        }
-        
-        // If we got a valid structured response, break
-        if (responseText && responseText !== '[]' && responseText.includes('{')) {
-          if (DEBUG_MODE) console.log('✅ Valid response received');
-          break;
-        }
-        
-        // If we got an empty array on handlers that should return data, retry
-        const handlersToRetry = ['get_folders', 'get_messages', 'get_message'];
-        if (handlersToRetry.includes(data.handler) && responseText === '[]') {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            const backoffDelay = 500 * retryCount;
-            if (DEBUG_MODE) console.log(`⚠️ Retry ${retryCount}/${maxRetries} after ${backoffDelay}ms`);
-            await new Promise(resolve => setTimeout(resolve, backoffDelay));
-            continue;
-          } else {
-            console.log(`Max retries (${maxRetries}) reached for ${data.handler}`);
-          }
-        }
-        
-      } catch (fetchError: any) {
-        console.error('Fetch error:', fetchError.message);
-        
-        if (retryCount < maxRetries - 1) {
-          const backoffDelay = 1000 * (retryCount + 1);
-          if (DEBUG_MODE) console.log(`Retrying after ${backoffDelay}ms`);
-          await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          retryCount++;
-          continue;
-        }
-        throw fetchError;
-      }
-      
-      break;
-    }
-
-    // Ensure we have a response
-    if (!response) {
-      throw new Error('No response received from API');
-    }
+    const responseText = await response.text();
 
     if (DEBUG_MODE) {
       console.log('📥 RESPONSE:', endpoint, '/', data.handler);
       console.log('Status:', response.status);
       console.log('Size:', responseText.length, 'bytes');
-      console.log('Retries:', retryCount);
+      if (responseText === '[]') {
+        console.log('ℹ️ Empty array response (valid)');
+      }
     }
 
     // Handle different error status codes according to OpenAPI spec

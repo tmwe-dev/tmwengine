@@ -113,8 +113,23 @@ const TMWEEmailBackup = () => {
     }
   });
 
+  // Fetch folders from TMWE API
+  const { data: apiFoldersData, isLoading: apiFoldersLoading } = useQuery({
+    queryKey: ["email-folders-api"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-folders', {
+        body: { user_email: userEmail }
+      });
+      
+      if (error) throw error;
+      
+      return data.folders || [];
+    },
+    enabled: !!userEmail,
+  });
+
   // Fetch folders from database
-  const { data: foldersData } = useQuery({
+  const { data: dbFoldersData } = useQuery({
     queryKey: ["email-folders-backup"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -145,6 +160,23 @@ const TMWEEmailBackup = () => {
       }));
     },
   });
+
+  // Combina dati API + DB
+  const foldersData = useMemo(() => {
+    if (!apiFoldersData) return [];
+    
+    const dbCounts = (dbFoldersData || []).reduce((acc, folder) => {
+      acc[folder.name] = folder.messages;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return apiFoldersData.map((folder: any) => ({
+      name: folder.name,
+      total_messages: folder.messages || 0, // Dal server API
+      messages: dbCounts[folder.name] || 0, // Dal database locale
+      unread: folder.unread || 0,
+    }));
+  }, [apiFoldersData, dbFoldersData]);
 
   // Fetch messages from database
   const { data: messagesData, isLoading: messagesLoading } = useQuery({
@@ -409,9 +441,18 @@ const TMWEEmailBackup = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2">
-              {foldersData?.map((folder: any) => {
+              {apiFoldersLoading ? (
+                // Skeleton loader
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                    <div className="w-4 h-4 bg-muted animate-pulse rounded" />
+                    <div className="flex-1 h-5 bg-muted animate-pulse rounded" />
+                  </div>
+                ))
+              ) : (
+                foldersData?.map((folder: any) => {
                 const apiCount = folder.total_messages || 0;
                 const dbCount = folder.messages || 0;
                 const status = syncProgress[folder.name];
@@ -476,7 +517,8 @@ const TMWEEmailBackup = () => {
                     )}
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
           </ScrollArea>
           

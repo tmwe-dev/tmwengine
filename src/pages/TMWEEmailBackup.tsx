@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EmailHeader } from "@/components/tmwe/EmailHeader";
 import { EmailSidebar } from "@/components/tmwe/EmailSidebar";
 import { EmailList } from "@/components/tmwe/EmailList";
@@ -235,18 +237,30 @@ const TMWEEmailBackup = () => {
         onSearch={setSearchQuery}
       />
 
-      <div className="px-4 py-2 border-b bg-background/50">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            📦 <strong>Email Backup (Database)</strong> - {messagesData?.total || 0} email in {selectedFolder}
+      <div className="px-4 py-3 border-b bg-blue-500/10 border-blue-500/20">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium text-foreground">
+              📦 Email Backup (Database)
+            </div>
+            <Badge variant="secondary">
+              {messagesData?.total || 0} email in {selectedFolder}
+            </Badge>
           </div>
-          <button
+          <Button
             onClick={() => navigate('/email-manager')}
-            className="text-xs text-blue-500 hover:text-blue-600 transition-colors"
+            variant="default"
+            size="sm"
+            className="gap-2 shrink-0"
           >
-            🌐 Vai al Server Live per sincronizzare →
-          </button>
+            🌐 Vai al Server Live
+          </Button>
         </div>
+        {(!messagesData?.total || messagesData.total === 0) && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            💡 Non ci sono email nel backup. Vai al Server Live per scaricare le email dal server.
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 min-w-0 overflow-hidden">

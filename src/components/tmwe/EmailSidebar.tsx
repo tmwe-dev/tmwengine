@@ -70,7 +70,12 @@ const folderNameSchema = z.string()
   .max(50, { message: "El nombre de la carpeta debe tener menos de 50 caracteres" })
   .regex(/^[a-zA-Z0-9_\-\s]+$/, { message: "El nombre solo puede contener letras, números, guiones, guiones bajos y espacios" });
 
-export const EmailSidebar = ({ 
+// Helper function to remove "INBOX/" prefix from displayed folder names
+const getDisplayName = (folderName: string): string => {
+  return folderName.replace(/^INBOX\//i, '');
+};
+
+export const EmailSidebar = ({
   selectedFolder, 
   onFolderSelect, 
   onCompose,
@@ -195,7 +200,7 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+        title={isCollapsed ? `${getDisplayName(folder.name)} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
@@ -210,7 +215,7 @@ export const EmailSidebar = ({
               "group-hover:scale-110",
               selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {folder.name}
+              {getDisplayName(folder.name)}
             </span>
           )}
         </div>

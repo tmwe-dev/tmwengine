@@ -78,7 +78,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
   return (
     <>
       <header className="border-b bg-card-transparent">
-        {/* Layout con 3 colonne di uguale larghezza per centrare perfettamente l'icona */}
+        {/* Layout con 3 colonne per organizzare gli elementi */}
         <div className="grid grid-cols-3 items-center gap-2">
           {/* LEFT: Title + Sync buttons OR X button when collapsed */}
           {isHeaderCollapsed ? (
@@ -92,64 +92,82 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
-              <div className="flex items-center gap-1 sm:gap-2">
-                {isMobile && onMenuClick && (
-                  <Button 
-                    onClick={onMenuClick} 
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <Menu />
-                  </Button>
-                )}
-                
-                <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
-                  {isMobile ? 'Email' : 'TMWE Email'}
-                </h1>
+            <div className="flex flex-col items-start gap-2 w-full">
+              <div className="flex items-center gap-1 sm:gap-2 justify-between w-full">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  {isMobile && onMenuClick && (
+                    <Button 
+                      onClick={onMenuClick} 
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Menu />
+                    </Button>
+                  )}
+                  
+                  <h1 className="text-sm sm:text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent whitespace-nowrap">
+                    {isMobile ? 'Email' : 'TMWE Email'}
+                  </h1>
+                </div>
+
+                {/* Sync buttons container */}
+                <div className="flex items-center gap-3">
+                  {/* Analizza button (EmailSyncMonitor) */}
+                  {onOpenSyncMonitor && (
+                    <Button 
+                      onClick={onOpenSyncMonitor}
+                      variant="outline"
+                      size="sm"
+                      title="Verifica stato sincronizzazione"
+                    >
+                      <Settings2 className="h-4 w-4 mr-1" />
+                      {!isMobile && 'Verifica Sync'}
+                    </Button>
+                  )}
+
+                  {/* Download button (Direct API) */}
+                  {onOpenDirectDownload && (
+                    <Button 
+                      onClick={() => {
+                        console.log('📥 Scarica button clicked!');
+                        onOpenDirectDownload();
+                      }}
+                      size="sm"
+                      title="Scarica email via API"
+                    >
+                      <Mail className="h-4 w-4 mr-1" />
+                      {!isMobile && 'Scarica Email'}
+                    </Button>
+                  )}
+
+                  {/* Progress indicator */}
+                  {downloadProgressComponent && (
+                    <div>
+                      {downloadProgressComponent}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Sync buttons container */}
-              <div className="flex items-center gap-3">
-                {/* Analizza button (EmailSyncMonitor) */}
-                {onOpenSyncMonitor && (
-                  <Button 
-                    onClick={onOpenSyncMonitor}
-                    variant="outline"
-                    size="sm"
-                    title="Verifica stato sincronizzazione"
-                  >
-                    <Settings2 className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Verifica Sync'}
-                  </Button>
-                )}
-
-                {/* Download button (Direct API) */}
-                {onOpenDirectDownload && (
-                  <Button 
-                    onClick={() => {
-                      console.log('📥 Scarica button clicked!');
-                      onOpenDirectDownload();
-                    }}
-                    size="sm"
-                    title="Scarica email via API"
-                  >
-                    <Mail className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Scarica Email'}
-                  </Button>
-                )}
-
-                {/* Progress indicator */}
-                {downloadProgressComponent && (
-                  <div>
-                    {downloadProgressComponent}
-                  </div>
-                )}
+              {/* Mail compose button - in fondo a sinistra */}
+              <div className="flex items-center justify-start">
+                <Button 
+                  onClick={onCompose}
+                  size="icon"
+                  title="Compose new email"
+                >
+                  <Mail
+                    style={{ 
+                      filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
+                      transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
+                    }} 
+                  />
+                </Button>
               </div>
             </div>
           )}
 
-          {/* CENTER: Mail icon OR email navigation when collapsed */}
+          {/* CENTER: email navigation when collapsed, vuoto altrimenti */}
           {isHeaderCollapsed ? (
             <div className="flex items-center gap-2 justify-center">
               <Button 
@@ -170,20 +188,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-center">
-              <Button 
-                onClick={onCompose}
-                size="icon"
-                title="Compose new email"
-              >
-                <Mail
-                  style={{ 
-                    filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.4)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.3))',
-                    transform: 'perspective(100px) rotateX(15deg) rotateY(-10deg)'
-                  }} 
-                />
-              </Button>
-            </div>
+            <div></div>
           )}
 
           {/* RIGHT: Toggle button (sempre visibile) + Desktop search (nascosto quando collapsed) */}

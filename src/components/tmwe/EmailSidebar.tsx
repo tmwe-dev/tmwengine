@@ -154,9 +154,24 @@ export const EmailSidebar = ({
   };
 
   // Usa folders da prop se disponibili (pagina Backup), altrimenti da query API
-  const folders = propFolders || (Array.isArray(foldersData) 
-    ? foldersData 
-    : (foldersData?.folders || foldersData?.data || []));
+  // Normalizza folders: accetta array diretto o oggetto con proprietà folders/data
+  let folders = propFolders;
+  
+  if (!folders) {
+    if (Array.isArray(foldersData)) {
+      folders = foldersData;
+    } else if (foldersData && typeof foldersData === 'object') {
+      folders = foldersData.folders || foldersData.data || [];
+    } else {
+      folders = [];
+    }
+  }
+  
+  // Assicura che folders sia sempre un array
+  if (!Array.isArray(folders)) {
+    console.warn('⚠️ folders non è un array:', folders);
+    folders = [];
+  }
   
   console.log('📂 Processed folders:', folders);
   console.log('📂 Folders count:', folders.length);

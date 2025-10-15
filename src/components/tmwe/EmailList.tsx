@@ -234,7 +234,7 @@ export const EmailList = ({
                     </div>
                     {email.group && (
                       <Badge className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium animate-fade-in",
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium animate-fade-in animate-scale-in",
                         email.group === 'blue' && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
                         email.group === 'green' && "bg-green-500/20 text-green-700 dark:text-green-300",
                         email.group === 'orange' && "bg-orange-500/20 text-orange-700 dark:text-orange-300",
@@ -246,6 +246,11 @@ export const EmailList = ({
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {email.hasRules && (
+                      <div title="Ha regole attive">
+                        <Zap className="h-4 w-4 text-blue-500" />
+                      </div>
+                    )}
                     {email.hasAttachments && (
                       <Paperclip className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -258,10 +263,10 @@ export const EmailList = ({
                         onEmailSelect(email.id);
                         onOpenDetailPopup?.();
                       }}
-                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:scale-110"
+                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:animate-wiggle group"
                       title="Visualizza corpo email"
                     >
-                      <Maximize2 className="h-4 w-4" />
+                      <Maximize2 className="h-4 w-4 group-hover:animate-wiggle" />
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1.5 rounded-md hover:bg-primary/10">
@@ -352,7 +357,7 @@ export const EmailList = ({
                     </div>
                     {email.group && (
                       <Badge className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 animate-scale-in",
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 animate-fade-in animate-scale-in",
                         email.group === 'blue' && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
                         email.group === 'green' && "bg-green-500/20 text-green-700 dark:text-green-300",
                         email.group === 'orange' && "bg-orange-500/20 text-orange-700 dark:text-orange-300",
@@ -364,6 +369,11 @@ export const EmailList = ({
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {email.hasRules && (
+                      <div title="Ha regole attive">
+                        <Zap className="h-3 w-3 text-blue-500" />
+                      </div>
+                    )}
                     {email.hasAttachments && (
                       <Paperclip className="h-3 w-3 text-muted-foreground" />
                     )}
@@ -376,10 +386,10 @@ export const EmailList = ({
                         onEmailSelect(email.id);
                         onOpenDetailPopup?.();
                       }}
-                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:scale-110"
+                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:animate-wiggle group"
                       title="Visualizza corpo email"
                     >
-                      <Maximize2 className="h-3 w-3" />
+                      <Maximize2 className="h-3 w-3 group-hover:animate-wiggle" />
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1 rounded-md hover:bg-primary/10">

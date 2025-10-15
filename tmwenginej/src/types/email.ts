@@ -33,6 +33,7 @@ export interface EmailMessage {
   starred?: boolean;
   flagged?: boolean;
   has_attachments?: boolean;
+  hasRules?: boolean;
   attachments?: EmailAttachment[];
 }
 

@@ -188,18 +188,30 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     try {
-      const { profileApi } = await import('@/lib/tmwe-api-integrated');
-      const response = await profileApi.getMyProfile();
+      // Usa emailAccountApi invece di profileApi deprecato
+      const { emailAccountApi } = await import('@/lib/tmwe-api-integrated');
+      const response = await emailAccountApi.getAccountInfo();
+      
       if (response.success && response.data) {
         const profile: UserProfile = {
           email: response.data.email || userEmail || '',
-          ...response.data
+          name: response.data.account_name || '',
+          account_info: response.data
         };
         setUserProfile(profile);
         sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
       }
     } catch (error) {
       console.error('Error refreshing profile:', error);
+      // Fallback: mantieni profilo esistente o creane uno vuoto
+      const storedProfile = sessionStorage.getItem('tmwe_user_profile');
+      if (storedProfile) {
+        try {
+          setUserProfile(JSON.parse(storedProfile));
+        } catch (e) {
+          console.error('Error parsing stored profile:', e);
+        }
+      }
     }
   };
 

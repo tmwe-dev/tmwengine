@@ -548,8 +548,16 @@ export const emailMessageApi = {
     folder?: string;
     page?: number;
     limit?: number;
+    offset?: number;
     sort?: string;
     order?: 'ASC' | 'DESC';
+    include_attachments?: boolean;
+    format?: 'text' | 'html';
+    filter?: {
+      unread_only?: boolean;
+      flagged_only?: boolean;
+      has_attachments?: boolean;
+    };
   } = {}) => {
     const requestData: any = {
       handler: 'get_messages',
@@ -558,20 +566,34 @@ export const emailMessageApi = {
     
     if (params.page !== undefined) requestData.page = params.page;
     if (params.limit !== undefined) requestData.limit = params.limit;
+    if (params.offset !== undefined) requestData.offset = params.offset;
     if (params.sort) requestData.sort = params.sort;
     if (params.order) requestData.order = params.order;
+    if (params.include_attachments !== undefined) requestData.include_attachments = params.include_attachments;
+    if (params.format) requestData.format = params.format;
+    if (params.filter) requestData.filter = params.filter;
     
     return fetchApi('/email_message', requestData);
   },
 
-  getMessage: (uid: string, markAsRead: boolean = true, fetchContent: boolean = true) => {
+  getMessage: (
+    uid: string, 
+    markAsRead: boolean = true, 
+    fetchContent: boolean = true,
+    folder: string = 'INBOX',
+    includeAttachments: boolean = false,
+    format: 'text' | 'html' = 'text'
+  ) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
     return fetchApi('/email_message', { 
       handler: 'get_message', 
-      uid: uidInt, 
+      uid: uidInt,
+      folder,
       mark_as_read: markAsRead,
-      fetch_content: fetchContent 
+      fetch_content: fetchContent,
+      include_attachments: includeAttachments,
+      format
     });
   },
 
@@ -742,7 +764,8 @@ export const emailFolderApi = {
   }
 };
 
-// Profile API
-export const profileApi = {
-  getMyProfile: () => fetchApi('/get_my_profile', {}),
-};
+// Profile API - DEPRECATED: L'endpoint /get_my_profile non esiste nelle API TMWE
+// Usare emailAccountApi.getAccountInfo() per ottenere informazioni account
+// export const profileApi = {
+//   getMyProfile: () => fetchApi('/get_my_profile', {}),
+// };

@@ -3,6 +3,7 @@ import { emailMessageApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { QueryClient } from '@tanstack/react-query';
+import { getSyncPreferences, filterFolders, getFilterStats } from '@/lib/email-sync-preferences';
 
 export const useEmailDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -62,10 +63,10 @@ export const useEmailDownload = () => {
       console.log('📦 Tipo risposta:', typeof foldersResponse);
       console.log('📦 Chiavi risposta:', foldersResponse ? Object.keys(foldersResponse) : 'null');
       
-      const folders = foldersResponse?.data || [];
-      console.log(`📁 Cartelle estratte: ${folders.length}`, folders);
+      const allFolders = foldersResponse?.data || [];
+      console.log(`📁 Cartelle estratte: ${allFolders.length}`, allFolders);
       
-      if (folders.length === 0) {
+      if (allFolders.length === 0) {
         console.error('❌ Nessuna cartella restituita dall\'API');
         console.error('❌ foldersResponse completo:', JSON.stringify(foldersResponse, null, 2));
         toast.error('Nessuna cartella trovata - controlla la console');
@@ -74,10 +75,29 @@ export const useEmailDownload = () => {
         return;
       }
 
-      console.log(`📁 Trovate ${folders.length} cartelle da sincronizzare`);
+      console.log(`📁 Trovate ${allFolders.length} cartelle totali`);
+
+      // 🔍 Applica filtri preferenze utente
+      const syncPreferences = await getSyncPreferences(userEmail);
+      const folders = filterFolders(allFolders, syncPreferences);
+      const stats = getFilterStats(allFolders.length, folders, syncPreferences);
+      
+      console.log(`🔍 Filtro cartelle applicato:`);
+      console.log(`   - Modalità: ${stats.mode === 'whitelist' ? 'Solo selezionate' : 'Tutte eccetto escluse'}`);
+      console.log(`   - Totali: ${stats.total}`);
+      console.log(`   - Da sincronizzare: ${stats.filtered}`);
+      console.log(`   - Escluse: ${stats.excluded}`);
+      if (syncPreferences.excluded_folders.length > 0) {
+        console.log(`   - Cartelle escluse: ${syncPreferences.excluded_folders.join(', ')}`);
+      }
+      if (syncPreferences.included_folders.length > 0) {
+        console.log(`   - Cartelle incluse: ${syncPreferences.included_folders.join(', ')}`);
+      }
+      
+      toast.info(`📂 ${stats.filtered} cartelle da sincronizzare (${stats.excluded} escluse)`);
 
       // Calcola il totale di email SUBITO all'inizio
-      const globalTotalEmails = folders.reduce((sum, f) => sum + (f.messages || 0), 0);
+      const globalTotalEmails = folders.reduce((sum, f) => sum + ((f as any).messages || 0), 0);
       setTotalToDownload(globalTotalEmails);
       console.log(`📊 Totale email da scaricare: ${globalTotalEmails}`);
 
@@ -98,7 +118,7 @@ export const useEmailDownload = () => {
         }
         
         const folderName = folderInfo.name;
-        const folderTotalEmails = folderInfo.messages || 0;
+        const folderTotalEmails = (folderInfo as any).messages || 0;
         
         setCurrentFolder(folderName);
         setCurrentFolderProgress({ current: 0, total: folderTotalEmails });

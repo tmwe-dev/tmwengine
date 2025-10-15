@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -32,6 +33,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
+import { EmailSyncPreferences } from './EmailSyncPreferences';
 
 interface EmailSidebarProps {
   selectedFolder: string;
@@ -76,11 +78,32 @@ export const EmailSidebar = ({
   dbEmailCount = 0
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isSyncPrefsOpen, setIsSyncPrefsOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Recupera email utente
+  useState(() => {
+    const fetchUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('tmwe_email')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.tmwe_email) {
+          setUserEmail(profile.tmwe_email);
+        }
+      }
+    };
+    fetchUserEmail();
+  });
 
   const { data: foldersData, isLoading } = useQuery({
     queryKey: ['folders'],
@@ -301,10 +324,11 @@ export const EmailSidebar = ({
           variant="ghost" 
           className={cn("w-full", isCollapsed ? "justify-center px-2" : "justify-start")} 
           size="sm"
-          title={isCollapsed ? "Settings" : undefined}
+          onClick={() => setIsSyncPrefsOpen(true)}
+          title={isCollapsed ? "Impostazioni Sync" : undefined}
         >
           <Settings className={cn("h-4 w-4", isCollapsed ? "" : "mr-3")} />
-          {!isCollapsed && "Settings"}
+          {!isCollapsed && "Impostazioni Sync"}
         </Button>
       </div>
 
@@ -357,6 +381,23 @@ export const EmailSidebar = ({
               {createFolderMutation.isPending ? 'Creando...' : 'Aceptar'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSyncPrefsOpen} onOpenChange={setIsSyncPrefsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Preferenze Sincronizzazione Email</DialogTitle>
+            <DialogDescription>
+              Configura quali cartelle scaricare durante la sincronizzazione
+            </DialogDescription>
+          </DialogHeader>
+          {userEmail && (
+            <EmailSyncPreferences 
+              userEmail={userEmail} 
+              onClose={() => setIsSyncPrefsOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -92,7 +92,6 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     }
   };
 
-
   const downloadState = {
     phase: isDownloading ? currentPhase : downloadError ? 'error' : downloadedCount > 0 ? 'completed' : 'idle',
     currentFolder,
@@ -100,67 +99,39 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     currentFolderTotal: currentFolderProgress.total,
     completedFolders: processedFolders.length,
     totalFolders: totalToDownload > 0 ? Math.ceil(totalToDownload / 100) : 0,
-    recentFolders: processedFolders.slice(-3).map((name, idx) => ({ name, count: 0 })),
+    recentFolders: processedFolders.slice(-3).map((name) => ({ name, count: 0 })),
     error: downloadError
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {step === 'config' ? 'Configura Download Email' : 'Download Email in Corso'}
           </DialogTitle>
         </DialogHeader>
 
-        <Separator className="bg-border/30" />
-
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 min-h-0">
           {step === 'config' ? (
-            <div className="space-y-3 px-1">
-            <EmailSyncPreferences
-              userEmail={userEmail || ''}
-              onClose={() => onOpenChange(false)}
-              showButtons={false}
-            />
+            <>
+              <EmailSyncPreferences
+                userEmail={userEmail || ''}
+                onClose={() => onOpenChange(false)}
+                showButtons={false}
+                compact={true}
+              />
 
-            <Separator className="bg-border/30" />
-
-            <div className="space-y-3 py-2">
-              <div className="flex items-center gap-4 text-sm">
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{filteredFolders.length} {filteredFolders.length === 1 ? 'cartella' : 'cartelle'}</span>
+              <div className="text-xs text-muted-foreground border-t pt-2 flex items-center gap-2">
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+                <span>
+                  {filteredFolders.length} {filteredFolders.length === 1 ? 'cartella' : 'cartelle'} da scaricare
+                  {excludedFoldersCount > 0 && ` • ${excludedFoldersCount} escluse`}
                 </span>
-                {excludedFoldersCount > 0 && (
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>{excludedFoldersCount} {excludedFoldersCount === 1 ? 'esclusa' : 'escluse'}</span>
-                  </span>
-                )}
               </div>
-              
-              {filteredFolders.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 animate-fade-in">
-                  {filteredFolders.slice(0, 8).map((folder: any) => (
-                    <Badge key={folder.name} variant="outline" className="text-xs font-normal">
-                      {folder.name}
-                    </Badge>
-                  ))}
-                  {filteredFolders.length > 8 && (
-                    <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
-                      +{filteredFolders.length - 8}
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <Separator className="bg-border/30" />
-            </div>
+            </>
           ) : (
-            <div className="space-y-3 px-1">
-            <div className="space-y-4 py-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {downloadState.phase === 'loading' && (
@@ -179,7 +150,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                     <AlertCircle className="h-5 w-5 text-destructive" />
                   )}
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium text-sm">
                       {downloadState.phase === 'loading' && 'Caricamento cartelle...'}
                       {downloadState.phase === 'downloading' && `Scaricamento ${downloadState.currentFolder}...`}
                       {downloadState.phase === 'saving' && 'Salvataggio messaggi...'}
@@ -187,7 +158,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                       {downloadState.phase === 'error' && 'Errore durante il download'}
                     </div>
                     {downloadState.currentFolder && downloadState.phase !== 'completed' && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         {downloadState.currentFolder}
                       </div>
                     )}
@@ -195,10 +166,8 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                 </div>
               </div>
 
-              <Separator className="bg-border/30" />
-
-              <div className="space-y-3">
-                <div className="space-y-1.5">
+              <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Cartella corrente</span>
                     <span className="font-medium">
@@ -210,11 +179,11 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                       ? (downloadState.currentFolderProcessed / downloadState.currentFolderTotal) * 100 
                       : 0
                     } 
-                    className="h-1.5"
+                    className="h-1"
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Progresso totale</span>
                     <span className="font-medium">
@@ -226,76 +195,61 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                       ? (downloadState.completedFolders / downloadState.totalFolders) * 100 
                       : 0
                     } 
-                    className="h-1.5"
+                    className="h-1"
                   />
                 </div>
               </div>
-            </div>
 
-            {downloadState.recentFolders.length > 0 && (
-              <>
-                <Separator className="bg-border/30" />
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-muted-foreground">Completate:</div>
-                  <div className="space-y-1">
+              {downloadState.recentFolders.length > 0 && (
+                <div className="space-y-1 pt-2 border-t">
+                  <div className="text-[10px] font-medium text-muted-foreground">Completate:</div>
+                  <div className="space-y-0.5">
                     {downloadState.recentFolders.map((folder, index) => (
                       <div 
                         key={index}
-                        className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
                       >
                         <CheckCircle2 className="h-3 w-3 text-green-600" />
                         <span>{folder.name}</span>
-                        <span className="text-[10px]">({folder.count})</span>
                       </div>
                     ))}
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            {downloadState.phase === 'completed' && (
-              <>
-                <Separator className="bg-border/30" />
-                <div className="flex items-start gap-3 text-sm animate-fade-in">
+              {downloadState.phase === 'completed' && (
+                <div className="flex items-start gap-2 text-sm pt-2 border-t">
                   <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
                   <div>
                     <div className="font-medium">Download completato</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
+                    <div className="text-xs text-muted-foreground">
                       Tutte le email sono state salvate nel database
                     </div>
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            {downloadState.phase === 'error' && downloadState.error && (
-              <>
-                <Separator className="bg-border/30" />
-                <div className="flex items-start gap-3 text-sm animate-fade-in">
+              {downloadState.phase === 'error' && downloadState.error && (
+                <div className="flex items-start gap-2 text-sm pt-2 border-t">
                   <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
                   <div>
                     <div className="font-medium text-destructive">Errore</div>
-                    <div className="text-xs text-destructive/90 mt-0.5">
+                    <div className="text-xs text-destructive/90">
                       {downloadState.error}
                     </div>
                   </div>
                 </div>
-              </>
-            )}
+              )}
 
-            <Separator className="bg-border/30" />
-
-            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-              <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-              <span>Le email già presenti verranno saltate automaticamente.</span>
+              <div className="flex items-start gap-2 text-[10px] text-muted-foreground pt-2 border-t">
+                <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                <span>Le email già presenti verranno saltate automaticamente.</span>
+              </div>
             </div>
-          </div>
           )}
         </div>
 
-        <Separator className="bg-border/30" />
-
-        <DialogFooter>
+        <DialogFooter className="border-t pt-3">
           {step === 'config' ? (
             <>
               <Button variant="outline" onClick={handleClose}>

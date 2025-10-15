@@ -18,6 +18,7 @@ interface EmailSyncPreferencesProps {
   onClose?: () => void;
   showButtons?: boolean;
   onSave?: () => void;
+  compact?: boolean;
 }
 
 type SyncMode = 'blacklist' | 'whitelist';
@@ -25,10 +26,11 @@ type SyncMode = 'blacklist' | 'whitelist';
 const RECOMMENDED_EXCLUDES = ["Trash", "Archives", "Junk", "Drafts"];
 
 export const EmailSyncPreferences = ({ 
-  userEmail, 
-  onClose, 
+  userEmail,
+  onClose,
   showButtons = true,
-  onSave 
+  onSave,
+  compact = false
 }: EmailSyncPreferencesProps) => {
   const { toast } = useToast();
   const [syncMode, setSyncMode] = useState<SyncMode>('blacklist');
@@ -99,6 +101,14 @@ export const EmailSyncPreferences = ({
     );
   };
 
+  const handleFolderToggle = (folderName: string) => {
+    if (syncMode === 'blacklist') {
+      toggleExclude(folderName);
+    } else {
+      toggleInclude(folderName);
+    }
+  };
+
   const isLoading = loadingFolders || loadingPrefs;
 
   if (isLoading) {
@@ -109,135 +119,117 @@ export const EmailSyncPreferences = ({
     );
   }
 
+  const filteredCount = syncMode === 'blacklist' 
+    ? folders.length - excludedFolders.length 
+    : includedFolders.length;
+
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      <div className={compact ? "space-y-1" : "space-y-2"}>
         <div>
-          <h3 className="font-medium mb-1">Modalità di Sincronizzazione</h3>
-          <p className="text-xs text-muted-foreground">
-            Scegli quali cartelle sincronizzare durante il download delle email.
-          </p>
+          <h3 className={compact ? "text-sm font-medium" : "font-medium mb-1"}>
+            Modalità di Sincronizzazione
+          </h3>
+          {!compact && (
+            <p className="text-xs text-muted-foreground">
+              Scegli come gestire le cartelle da sincronizzare
+            </p>
+          )}
         </div>
 
-        <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as SyncMode)} className="space-y-2">
-          <div className="flex items-start space-x-3">
-            <RadioGroupItem value="blacklist" id="mode-blacklist" className="mt-0.5" />
-            <div className="flex-1">
-              <Label htmlFor="mode-blacklist" className="font-medium cursor-pointer text-sm">
-                Tutte le cartelle (eccetto quelle escluse)
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Scarica tutte le cartelle tranne quelle che selezioni
-              </p>
-            </div>
+        <RadioGroup value={syncMode} onValueChange={(value: any) => setSyncMode(value)}>
+          <div className={compact ? "flex items-center space-x-2 py-0.5" : "flex items-center space-x-2 py-1.5"}>
+            <RadioGroupItem value="blacklist" id="blacklist" />
+            <Label htmlFor="blacklist" className={compact ? "cursor-pointer text-xs" : "cursor-pointer text-sm"}>
+              Tutte (eccetto escluse)
+            </Label>
           </div>
-
-          <div className="flex items-start space-x-3">
-            <RadioGroupItem value="whitelist" id="mode-whitelist" className="mt-0.5" />
-            <div className="flex-1">
-              <Label htmlFor="mode-whitelist" className="font-medium cursor-pointer text-sm">
-                Solo cartelle selezionate
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Scarica SOLO le cartelle che selezioni
-              </p>
-            </div>
+          <div className={compact ? "flex items-center space-x-2 py-0.5" : "flex items-center space-x-2 py-1.5"}>
+            <RadioGroupItem value="whitelist" id="whitelist" />
+            <Label htmlFor="whitelist" className={compact ? "cursor-pointer text-xs" : "cursor-pointer text-sm"}>
+              Solo selezionate
+            </Label>
           </div>
         </RadioGroup>
       </div>
 
       <Separator className="bg-border/30" />
 
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium">
+      <div className={compact ? "space-y-1" : "space-y-2"}>
+        <h4 className={compact ? "text-xs font-medium" : "text-sm font-medium"}>
           {syncMode === 'blacklist' ? 'Cartelle da Escludere' : 'Cartelle da Includere'}
         </h4>
         
-        <ScrollArea className="max-h-[40vh] rounded-lg p-1">
+        <ScrollArea className={compact ? "rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
           <div className="space-y-0.5">
             {folders.map((folder: any) => {
               const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);
-              const isChecked = syncMode === 'blacklist'
+              const isSelected = syncMode === 'blacklist'
                 ? excludedFolders.includes(folder.name)
                 : includedFolders.includes(folder.name);
 
               return (
-                <div
-                  key={folder.name}
-                  className="flex items-center justify-between py-2 px-1 hover:bg-muted/30 rounded transition-colors"
-                >
-                  <div className="flex items-center space-x-2 flex-1">
-                    <Checkbox
-                      id={`folder-${folder.name}`}
-                      checked={isChecked}
-                      onCheckedChange={() => {
-                        if (syncMode === 'blacklist') {
-                          toggleExclude(folder.name);
-                        } else {
-                          toggleInclude(folder.name);
-                        }
-                      }}
-                    />
-                    <Label
-                      htmlFor={`folder-${folder.name}`}
-                      className="flex-1 cursor-pointer font-normal text-sm"
-                    >
-                      {folder.name}
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {folder.total_messages > 0 && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {folder.total_messages}
-                      </Badge>
-                    )}
-                    {syncMode === 'blacklist' && isRecommendedExclude && !isChecked && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                <div key={folder.id} className={compact ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"}>
+                  <Checkbox
+                    id={`folder-${folder.id}`}
+                    checked={isSelected}
+                    onCheckedChange={() => handleFolderToggle(folder.name)}
+                    className="h-4 w-4"
+                  />
+                  <Label 
+                    htmlFor={`folder-${folder.id}`} 
+                    className={compact ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"}
+                  >
+                    <span>{folder.name}</span>
+                    {isRecommendedExclude && syncMode === 'blacklist' && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1">
                         Consigliato
                       </Badge>
                     )}
-                  </div>
+                  </Label>
+                  {folder.total_messages > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                      {folder.total_messages}
+                    </Badge>
+                  )}
                 </div>
               );
             })}
           </div>
         </ScrollArea>
 
-        <Separator className="bg-border/30" />
-
-        <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-          <Check className="h-3 w-3" />
-          {syncMode === 'blacklist' ? (
-            <span>
-              <strong>{folders.length - excludedFolders.length}</strong> cartelle ({excludedFolders.length} escluse)
-            </span>
-          ) : (
-            <span>
-              <strong>{includedFolders.length}</strong> cartelle selezionate
-            </span>
-          )}
-        </div>
+        {!compact && (
+          <div className="text-xs text-muted-foreground pt-1">
+            {syncMode === 'blacklist' 
+              ? `✓ ${filteredCount} cartelle saranno sincronizzate`
+              : `✓ ${filteredCount} cartelle selezionate`
+            }
+          </div>
+        )}
       </div>
 
       {showButtons && (
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Annulla
-          </Button>
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvataggio...
-              </>
-            ) : (
-              'Salva Preferenze'
-            )}
-          </Button>
-        </div>
+        <>
+          <Separator className="bg-border/30" />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={onClose}>
+              Annulla
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvataggio...
+                </>
+              ) : (
+                'Salva Preferenze'
+              )}
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );

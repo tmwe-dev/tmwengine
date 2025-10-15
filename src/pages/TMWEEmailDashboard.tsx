@@ -10,15 +10,10 @@ import { EmailList } from '@/components/tmwe/EmailList';
 import { EmailDetail } from '@/components/tmwe/EmailDetail';
 import { ComposeDialog } from '@/components/tmwe/ComposeDialog';
 import { EmailSenderFilter } from '@/components/tmwe/EmailSenderFilter';
-import { EmailDownloadProgress } from '@/components/tmwe/EmailDownloadProgress';
 import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
-import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
-import { DirectAPIDownloadDialog } from '@/components/tmwe/DirectAPIDownloadDialog';
-import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
-import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -42,8 +37,6 @@ const EmailDashboard = () => {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [selectedAIChatSender, setSelectedAIChatSender] = useState<string>('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
-  const [syncMonitorOpen, setSyncMonitorOpen] = useState(false);
-  const [directDownloadOpen, setDirectDownloadOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const openAIChat = () => {
@@ -140,15 +133,27 @@ const EmailDashboard = () => {
     return foldersData.data.reduce((sum: number, f: any) => sum + (f.messages || 0), 0);
   }, [foldersData]);
 
-  // Email download hook
-  const {
-    isDownloading,
-    downloadedCount,
-    downloadError,
-    startDownload,
-    currentFolder,
-    totalToDownload,
-  } = useEmailDownload();
+  // Sincronizzazione semplice con database
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+        body: {
+          mode: 'incremental',
+          folder_name: selectedFolder,
+        }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`✅ ${data.saved_count || 0} nuove email salvate nel database`);
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] });
+    },
+    onError: () => {
+      toast.error('❌ Errore durante la sincronizzazione');
+    }
+  });
 
   // === SYNC STATUS: confronto API vs DB ===
   const { data: syncStatus } = useQuery({
@@ -180,7 +185,7 @@ const EmailDashboard = () => {
 
       return { apiTotal, dbTotal: dbTotal || 0, missing };
     },
-    refetchInterval: isDownloading ? 3000 : false,
+    refetchInterval: syncMutation.isPending ? 3000 : false,
     staleTime: 1 * 60 * 1000, // Cache 1 minuto
   });
 
@@ -307,10 +312,9 @@ const EmailDashboard = () => {
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
 
-  const handleSync = () => {
-    console.log('🚀 Starting REAL email download from API...');
-    toast.info('Avvio download email da tutte le cartelle...');
-    startDownload(queryClient);
+  const handleSimpleSync = () => {
+    toast.info('🔄 Sincronizzazione in corso...');
+    syncMutation.mutate();
   };
 
   const handleDelete = () => {
@@ -409,15 +413,13 @@ const EmailDashboard = () => {
     setReplyTo(undefined);
   };
 
-  console.log('🔍 Current syncMonitorOpen state:', syncMonitorOpen);
-
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
       <EmailHeader
         onSearch={setSearchQuery} 
         onCompose={() => setComposeOpen(true)} 
-        onSync={handleSync}
-        isSyncing={isDownloading}
+        onSync={handleSimpleSync}
+        isSyncing={syncMutation.isPending}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
         dbEmailCount={isMobile ? (apiEmailCount || 0) : undefined}
@@ -428,35 +430,36 @@ const EmailDashboard = () => {
         onNextEmail={handleNextEmail}
         hasPrevious={hasPreviousEmail()}
         hasNext={hasNextEmail()}
-        onOpenSyncMonitor={() => {
-          console.log('🚀 Opening sync monitor!');
-          setSyncMonitorOpen(true);
-        }}
-        onOpenDirectDownload={() => {
-          console.log('📥 Opening direct download!');
-          setDirectDownloadOpen(true);
-        }}
-        downloadProgressComponent={
-          <EmailDownloadProgress
-            totalEmails={globalEmailCount || 0}
-            currentFolder={currentFolder}
-            totalToDownload={totalToDownload}
-            onDownloadComplete={() => {}}
-            onStartDownload={() => startDownload(queryClient)}
-            isDownloading={isDownloading}
-            downloadedCount={downloadedCount}
-            downloadError={downloadError}
-          />
-        }
       />
       
-      {/* Email Sync Status Bar */}
-      <div className="px-4 py-2 border-b bg-background/50">
-        <EmailSyncStatus 
-          selectedFolder={selectedFolder}
-          onStartSync={() => setDirectDownloadOpen(true)}
-          isDownloading={isDownloading}
-        />
+      {/* Sync Status Banner */}
+      <div className="px-4 py-3 border-b bg-purple-500/10 border-purple-500/20">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium text-foreground">
+              🌐 Email Server Live (API TMWE)
+            </div>
+            {syncStatus && (
+              <Badge variant="secondary">
+                {syncStatus.apiTotal || 0} email sul server • {syncStatus.dbTotal || 0} nel database
+              </Badge>
+            )}
+          </div>
+          <Button
+            onClick={handleSimpleSync}
+            variant="default"
+            size="sm"
+            disabled={syncMutation.isPending}
+            className="gap-2 shrink-0"
+          >
+            {syncMutation.isPending ? '⏳ Sincronizzazione...' : '📥 Sincronizza con Database'}
+          </Button>
+        </div>
+        {syncStatus && syncStatus.missing > 0 && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            💡 Ci sono {syncStatus.missing} email nuove da sincronizzare nel database
+          </div>
+        )}
       </div>
       
       <div className="flex flex-1 min-w-0 overflow-hidden">
@@ -466,7 +469,7 @@ const EmailDashboard = () => {
             selectedFolder={selectedFolder}
             onFolderSelect={setSelectedFolder}
             onCompose={() => setComposeOpen(true)}
-            onSync={handleSync}
+            onSync={handleSimpleSync}
           />
         )}
 
@@ -484,7 +487,7 @@ const EmailDashboard = () => {
                 setComposeOpen(true);
                 setSidebarOpen(false);
               }}
-              onSync={handleSync}
+              onSync={handleSimpleSync}
               dbEmailCount={dbEmailCount || 0}
             />
             </SheetContent>
@@ -556,7 +559,7 @@ const EmailDashboard = () => {
             onBulkForward={handleBulkForward}
             onBulkMarkAsRead={handleBulkMarkAsRead}
             onBulkMoveToFolder={handleBulkMoveToFolder}
-            isDownloading={isDownloading}
+            isDownloading={syncMutation.isPending}
           />
         </div>
 
@@ -627,26 +630,6 @@ const EmailDashboard = () => {
         senderEmail={selectedAIChatSender}
         open={aiChatOpen}
         onOpenChange={setAiChatOpen}
-      />
-
-      <Dialog open={syncMonitorOpen} onOpenChange={setSyncMonitorOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Download Email TMWE</DialogTitle>
-          </DialogHeader>
-          <EmailSyncMonitor 
-            onSyncComplete={() => {
-              queryClient.invalidateQueries({ queryKey: ['messages'] });
-              toast.success('Sincronizzazione completata');
-              setSyncMonitorOpen(false);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <DirectAPIDownloadDialog 
-        open={directDownloadOpen}
-        onOpenChange={setDirectDownloadOpen}
       />
     </div>
   );

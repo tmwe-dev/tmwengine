@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmailHeader } from "@/components/tmwe/EmailHeader";
 import { EmailSidebar } from "@/components/tmwe/EmailSidebar";
 import { EmailList } from "@/components/tmwe/EmailList";
@@ -23,7 +24,9 @@ const TMWEEmailBackup = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showEmailList, setShowEmailList] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [replyTo, setReplyTo] = useState<{ 
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
+  const [replyTo, setReplyTo] = useState<{
     uid: string; 
     to: string; 
     subject: string; 
@@ -45,6 +48,37 @@ const TMWEEmailBackup = () => {
     setSelectedEmailId(null);
     setShowEmailList(true);
   };
+
+  // Sincronizzazione con database
+  const syncMutation = useMutation({
+    mutationFn: async (folders: string[]) => {
+      const results = [];
+      
+      for (const folder of folders) {
+        const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+          body: {
+            mode: 'incremental',
+            folder_name: folder,
+          }
+        });
+        
+        if (error) throw error;
+        results.push(data);
+      }
+      
+      return results;
+    },
+    onSuccess: (results) => {
+      const totalSaved = results.reduce((sum, r) => sum + (r.saved_count || 0), 0);
+      toast.success(`✅ ${totalSaved} email scaricate e salvate nel database`);
+      queryClient.invalidateQueries({ queryKey: ['email-messages-backup'] });
+      queryClient.invalidateQueries({ queryKey: ['email-folders-backup'] });
+      setSyncDialogOpen(false);
+    },
+    onError: () => {
+      toast.error('❌ Errore durante il download');
+    }
+  });
 
   // Fetch folders from database
   const { data: foldersData } = useQuery({
@@ -247,14 +281,25 @@ const TMWEEmailBackup = () => {
               {messagesData?.total || 0} email in {selectedFolder}
             </Badge>
           </div>
-          <Button
-            onClick={() => navigate('/email-manager')}
-            variant="default"
-            size="sm"
-            className="gap-2 shrink-0"
-          >
-            🌐 Vai al Server Live
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => navigate('/email-manager')}
+              variant="outline"
+              size="sm"
+              className="gap-2 shrink-0"
+            >
+              🌐 Server Live
+            </Button>
+            <Button
+              onClick={() => setSyncDialogOpen(true)}
+              variant="default"
+              size="sm"
+              disabled={syncMutation.isPending}
+              className="gap-2 shrink-0"
+            >
+              {syncMutation.isPending ? '⏳ Download...' : '🔄 Aggiorna Database'}
+            </Button>
+          </div>
         </div>
         {(!messagesData?.total || messagesData.total === 0) && (
           <div className="mt-2 text-xs text-muted-foreground">
@@ -318,6 +363,57 @@ const TMWEEmailBackup = () => {
         }}
         replyTo={replyTo}
       />
+
+      {/* Dialogo di sincronizzazione cartelle */}
+      <Dialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🔄 Aggiorna Database Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Seleziona le cartelle da scaricare dall'API TMWE e salvare nel database:
+            </p>
+            
+            <div className="space-y-2">
+              {foldersData?.map((folder: any) => (
+                <label key={folder.name} className="flex items-center gap-2 p-2 rounded hover:bg-accent cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedFolders.includes(folder.name)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedFolders([...selectedFolders, folder.name]);
+                      } else {
+                        setSelectedFolders(selectedFolders.filter(f => f !== folder.name));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{folder.name}</span>
+                  <Badge variant="secondary" className="ml-auto">
+                    {folder.messages || 0} email
+                  </Badge>
+                </label>
+              ))}
+            </div>
+
+            {syncMutation.isPending && (
+              <div className="text-sm text-muted-foreground">
+                ⏳ Download in corso, attendere...
+              </div>
+            )}
+            
+            <Button
+              onClick={() => syncMutation.mutate(selectedFolders)}
+              disabled={syncMutation.isPending || selectedFolders.length === 0}
+              className="w-full"
+            >
+              {syncMutation.isPending ? '⏳ Download in corso...' : `📥 Scarica ${selectedFolders.length} ${selectedFolders.length === 1 ? 'cartella' : 'cartelle'}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

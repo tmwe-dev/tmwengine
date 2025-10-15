@@ -160,7 +160,7 @@ export const EmailSyncPreferences = ({
           {syncMode === 'blacklist' ? 'Cartelle da Escludere' : 'Cartelle da Includere'}
         </h4>
         
-        <ScrollArea className={compact ? "rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
+        <ScrollArea className={compact ? "max-h-[50vh] rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
           <div className="space-y-0.5">
             {folders.map((folder: any) => {
               const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);

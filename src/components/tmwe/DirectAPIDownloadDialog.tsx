@@ -105,7 +105,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl lg:h-[85vh] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {step === 'config' ? 'Configura Download Email' : 'Download Email in Corso'}

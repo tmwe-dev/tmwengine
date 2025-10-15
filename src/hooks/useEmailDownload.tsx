@@ -132,20 +132,30 @@ export const useEmailDownload = () => {
         }
 
         try {
-          // Recupera email già presenti per questa cartella
+          // Recupera email già presenti PER MESSAGE_ID (non UID, che può cambiare)
           const { data: existingEmails } = await supabase
             .from('email_messages')
-            .select('message_id')
+            .select('message_id, subject, from_email')
             .eq('cartella', folderName)
             .eq('user_email', userEmail);
 
+          // Crea Set di message_id MA ANCHE fallback su subject+from per dedup
           const existingIds = new Set(existingEmails?.map(e => e.message_id) || []);
-          const alreadyInDb = existingIds.size;
-          
-          console.log(`📊 ${folderName}: ${alreadyInDb} email già presenti nel DB`);
+          const existingFingerprints = new Set(
+            existingEmails?.map(e => `${e.subject}|${e.from_email}`) || []
+          );
 
-          if (alreadyInDb >= folderTotalEmails) {
-            console.log(`✅ ${folderName}: tutte le email già scaricate`);
+          const alreadyInDb = existingIds.size;
+
+          console.log(`📊 ${folderName}: ${alreadyInDb} email già presenti nel DB`);
+          console.log(`   - Message IDs univoci: ${existingIds.size}`);
+          console.log(`   - Fingerprint univoci: ${existingFingerprints.size}`);
+          console.log(`   - Total sul server: ${folderTotalEmails}`);
+          console.log(`   - Mancanti: ${folderTotalEmails - alreadyInDb}`);
+
+          // Skip se già tutto scaricato (tolleranza 2%)
+          if (alreadyInDb >= folderTotalEmails * 0.98) {
+            console.log(`✅ ${folderName}: cartella già sincronizzata al 98%+`);
             folderResults.push({ folder: folderName, downloaded: 0, errors: 0 });
             continue;
           }
@@ -184,9 +194,11 @@ export const useEmailDownload = () => {
                   batch.map(async (uidInfo: any) => {
                     const uid = String(uidInfo.uid);
                     const messageId = String(uidInfo.message_id || uid);
+                    const fingerprint = `${uidInfo.subject}|${uidInfo.from?.address || uidInfo.from}`;
                     
-                    // Skip se già presente
-                    if (existingIds.has(messageId)) {
+                    // Skip se già presente (check su ID O fingerprint)
+                    if (existingIds.has(messageId) || existingFingerprints.has(fingerprint)) {
+                      console.log(`⏭️  ${folderName}: email già presente (${messageId})`);
                       return null;
                     }
                     

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailMessageApi, emailSyncApi } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi, emailSyncApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -15,6 +15,7 @@ import { SenderAIChatDialog } from '@/components/email/SenderAIChatDialog';
 import { PagePromptManager } from '@/components/ai/PagePromptManager';
 import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { DirectAPIDownloadDialog } from '@/components/tmwe/DirectAPIDownloadDialog';
+import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useEmailSync } from '@/lib/email-sync';
 import { Button } from '@/components/ui/button';
@@ -106,38 +107,19 @@ const EmailDashboard = () => {
     }
   };
 
-  // Prima ottieni il conteggio totale delle email dell'utente
-  const [emailCount, setEmailCount] = useState<number>(0);
-  
-  useEffect(() => {
-    const fetchCount = async () => {
-      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile?.tmwe_email) return;
-      
-      const { count } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', profile.tmwe_email);
-      if (count !== null) setEmailCount(count);
-    };
-    fetchCount();
-    
-    const channel = supabase
-      .channel('email-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'email_messages' }, fetchCount)
-      .subscribe();
-    
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+  // === CONTEGGIO EMAIL DAL SERVER (API TMWE) ===
+  const { data: apiEmailCount } = useQuery({
+    queryKey: ['api-email-count', selectedFolder],
+    queryFn: async () => {
+      const result = await emailMessageApi.getMessages({ 
+        folder: selectedFolder, 
+        limit: 1, 
+        page: 1 
+      });
+      return result?.total || 0;
+    },
+    staleTime: 2 * 60 * 1000, // Cache 2 minuti
+  });
   
   const { data: folderInfo } = useQuery({
     queryKey: ['folder-info', selectedFolder],
@@ -147,72 +129,71 @@ const EmailDashboard = () => {
     },
   });
 
-  const totalEmailCount = folderInfo?.total || 0;
+  
 
-  // Query per il totale globale di tutte le email in tutte le cartelle
+  // === GLOBAL EMAIL COUNT (DAL SERVER API) ===
   const { data: globalEmailCount } = useQuery({
-    queryKey: ['global-email-count'],
+    queryKey: ['global-folders-count'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 0;
-      
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('tmwe_email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile?.tmwe_email) return 0;
-      
-      // Conta tutte le email nel database per questo utente
-      const { count } = await supabase
-        .from('email_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', profile.tmwe_email);
-      
-      return count || 0;
+      const foldersResponse = await emailFolderApi.getFolders();
+      const folders = foldersResponse?.data || [];
+      // Somma i messaggi di tutte le cartelle
+      return folders.reduce((sum: number, f: any) => sum + (f.messages || 0), 0);
     },
-    staleTime: 5 * 60 * 1000, // Cache per 5 minuti
+    staleTime: 5 * 60 * 1000, // Cache 5 minuti
   });
 
-  // Email download hook - declare first (ora scarica da TUTTE le cartelle)
+  // Email download hook
   const {
     isDownloading,
     downloadedCount,
     downloadError,
-    allEmails: downloadedEmails,
     startDownload,
     currentFolder,
     totalToDownload,
   } = useEmailDownload();
 
-  // Conta le email nel DB per la cartella corrente e utente
-  const { data: dbEmailCount } = useQuery({
-    queryKey: ['db-email-count', selectedFolder],
+  // === SYNC STATUS: confronto API vs DB ===
+  const { data: syncStatus } = useQuery({
+    queryKey: ['sync-status', selectedFolder],
     queryFn: async () => {
-      // 🔒 SECURITY FIX: Use authenticated user instead of sessionStorage
+      // 1. Conta email sul SERVER (API)
+      const apiResponse = await emailMessageApi.getMessages({ 
+        folder: selectedFolder, 
+        limit: 1, 
+        page: 1 
+      });
+      const apiTotal = apiResponse?.total || 0;
+
+      // 2. Conta email nel DB (solo per confronto sync)
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 0;
-      
+      if (!user) return { apiTotal: 0, dbTotal: 0, missing: 0 };
+
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('tmwe_email')
         .eq('user_id', user.id)
         .single();
-      
-      if (!profile?.tmwe_email) return 0;
-      
-      const { count } = await supabase
+
+      if (!profile?.tmwe_email) return { apiTotal, dbTotal: 0, missing: apiTotal };
+
+      const { count: dbTotal } = await supabase
         .from('email_messages')
         .select('*', { count: 'exact', head: true })
         .eq('cartella', selectedFolder)
         .eq('user_email', profile.tmwe_email);
-      return count || 0;
+
+      const missing = Math.max(0, apiTotal - (dbTotal || 0));
+
+      return { apiTotal, dbTotal: dbTotal || 0, missing };
     },
-    refetchInterval: isDownloading ? 2000 : false,
+    refetchInterval: isDownloading ? 3000 : false,
+    staleTime: 1 * 60 * 1000, // Cache 1 minuto
   });
 
-  const missingEmailCount = Math.max(0, totalEmailCount - (dbEmailCount || 0));
+  const totalEmailCount = syncStatus?.apiTotal || 0;
+  const dbEmailCount = syncStatus?.dbTotal || 0;
+  const missingEmailCount = syncStatus?.missing || 0;
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
@@ -222,30 +203,15 @@ const EmailDashboard = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['messages', selectedFolder, searchQuery, downloadedEmails.length],
+    queryKey: ['messages', selectedFolder, searchQuery],
     queryFn: async ({ pageParam = 0 }) => {
-      // Se abbiamo email scaricate in memoria, usale
-      if (downloadedEmails.length > 0) {
-        const start = pageParam;
-        const end = start + 30;
-        return {
-          messages: downloadedEmails.slice(start, end),
-          total: downloadedEmails.length,
-        };
-      }
-
-      // USA SEMPRE L'API TMWE (Supabase solo per backup con Sync Smart)
+      // USA SEMPRE L'API TMWE (Supabase solo per backup)
       const page = Math.floor(pageParam / 30) + 1;
       return searchQuery 
         ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
         : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
     },
     getNextPageParam: (lastPage, allPages) => {
-      if (downloadedEmails.length > 0) {
-        const nextOffset = allPages.length * 30;
-        return nextOffset < downloadedEmails.length ? nextOffset : undefined;
-      }
-      
       const messages = lastPage?.messages || [];
       if (messages.length === 0 || messages.length < 30) return undefined;
       return allPages.length * 30;
@@ -342,24 +308,8 @@ const EmailDashboard = () => {
     })
   );
 
-  // Use downloaded emails if available, otherwise use paginated emails
-  const emailsToUse = downloadedEmails.length > 0 ? downloadedEmails.map((msg: any) => ({
-    id: String(msg.uid || msg.id),
-    subject: msg.subject || '(No Subject)',
-    from: typeof msg.from === 'object' ? msg.from.email : msg.from,
-    preview: '',
-    date: msg.date,
-    read: msg.is_read === true || msg.seen === 1,
-    starred: msg.is_flagged === true || msg.flagged === 1,
-    hasAttachments: !!(
-      msg.has_attachments || 
-      msg.hasAttachments || 
-      msg.attachment_count > 0 ||
-      msg.attachmentCount > 0 ||
-      (msg.attachments && msg.attachments.length > 0) ||
-      (msg.size && parseInt(msg.size) > 50000)
-    ),
-  })) : emailsFromPages;
+  // Usa sempre emailsFromPages (dalle API)
+  const emailsToUse = emailsFromPages;
 
   // Filter emails by selected sender
   const emails = selectedSender 
@@ -479,7 +429,7 @@ const EmailDashboard = () => {
         isSyncing={isDownloading}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
-        dbEmailCount={isMobile ? emailCount : undefined}
+        dbEmailCount={isMobile ? (apiEmailCount || 0) : undefined}
         isHeaderCollapsed={isHeaderCollapsed}
         onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
         onCloseEmail={handleBackToList}
@@ -509,6 +459,15 @@ const EmailDashboard = () => {
         }
       />
       
+      {/* Email Sync Status Bar */}
+      <div className="px-4 py-2 border-b bg-background/50">
+        <EmailSyncStatus 
+          selectedFolder={selectedFolder}
+          onStartSync={() => setDirectDownloadOpen(true)}
+          isDownloading={isDownloading}
+        />
+      </div>
+      
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {/* Desktop Sidebar */}
         {!isMobile && (
@@ -535,7 +494,7 @@ const EmailDashboard = () => {
                 setSidebarOpen(false);
               }}
               onSync={handleSync}
-              dbEmailCount={downloadedEmails.length}
+              dbEmailCount={dbEmailCount || 0}
             />
             </SheetContent>
           </Sheet>

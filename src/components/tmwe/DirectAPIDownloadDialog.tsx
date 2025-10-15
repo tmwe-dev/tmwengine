@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
@@ -21,6 +21,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   const queryClient = useQueryClient();
   const [userEmail, setUserEmail] = useState<string>('');
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+  const hasInitialized = useRef(false);
   
   const {
     isDownloading,
@@ -71,9 +72,11 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
   // Inizializza selectedFolders basandosi sulle preferenze
   useEffect(() => {
-    if (syncPreferences && allFolders.length > 0 && selectedFolders.length === 0) {
+    if (syncPreferences && allFolders.length > 0 && !hasInitialized.current) {
       const filtered = filterFolders(allFolders, syncPreferences);
       setSelectedFolders(filtered.map(f => f.name));
+      hasInitialized.current = true;
+      console.log(`📂 Cartelle selezionate inizialmente:`, filtered.map(f => f.name));
     }
   }, [syncPreferences, allFolders]);
 
@@ -126,6 +129,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     if (!isDownloading) {
       reset();
       setSelectedFolders([]);
+      hasInitialized.current = false;
       onOpenChange(false);
     }
   };

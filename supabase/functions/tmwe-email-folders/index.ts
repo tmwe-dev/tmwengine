@@ -8,8 +8,6 @@ const corsHeaders = {
 
 interface FoldersRequest {
   user_email?: string;
-  include_counts?: boolean;
-  hierarchy?: boolean;
 }
 
 serve(async (req) => {
@@ -32,7 +30,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse request body
-    const { user_email, include_counts = true, hierarchy = true }: FoldersRequest = await req.json();
+    const { user_email }: FoldersRequest = await req.json();
     console.log('👤 User email:', user_email);
 
     // Get OAuth token
@@ -73,9 +71,7 @@ serve(async (req) => {
       body: {
         endpoint: '/email_folder',
         data: {
-          handler: 'get_folders',
-          include_counts,
-          hierarchy
+          handler: 'get_folders'
         },
         bearerToken: oauthToken
       }
@@ -86,25 +82,10 @@ serve(async (req) => {
       throw new Error(`API Proxy error: ${proxyError.message}`);
     }
 
-    // Debug response type
-    console.log('📊 TIPO RISPOSTA:', typeof apiResponse);
-    console.log('📊 È ARRAY?:', Array.isArray(apiResponse));
-    console.log('📊 CONTENUTO:', JSON.stringify(apiResponse, null, 2));
+    // API ritorna { folders: [ { name, total_messages, unread_messages } ] }
+    console.log('📊 RISPOSTA API:', JSON.stringify(apiResponse, null, 2));
 
-    // Handle different response formats
-    let folders = [];
-
-    if (Array.isArray(apiResponse)) {
-      // Response is directly an array: [] or [{ name: ... }]
-      folders = apiResponse;
-    } else if (apiResponse?.folders) {
-      // Response is an object: { folders: [...] }
-      folders = apiResponse.folders;
-    } else if (apiResponse) {
-      // Unknown format, log warning but don't fail
-      console.warn('⚠️ Formato risposta inaspettato:', apiResponse);
-    }
-
+    const folders = apiResponse?.folders || [];
     console.log(`✅ Recuperate ${folders.length} cartelle`);
 
     // Return folders

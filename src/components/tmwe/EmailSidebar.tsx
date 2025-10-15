@@ -39,7 +39,7 @@ interface EmailSidebarProps {
   selectedFolder: string;
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
-  onSync: () => void;
+  onSync?: () => void;
   dbEmailCount?: number;
 }
 

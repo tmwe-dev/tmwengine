@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ import { emailApi } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const TMWEEmailBackup = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
@@ -231,31 +233,19 @@ const TMWEEmailBackup = () => {
     <div className="flex h-screen flex-col bg-gradient-to-br from-purple-900/20 via-background to-blue-900/20">
       <EmailHeader
         onSearch={setSearchQuery}
-        onCompose={() => setComposeOpen(true)}
-        onSync={() => toast.info("Vai su 'Email Server' per sincronizzare")}
-        isSyncing={false}
-        onMenuClick={() => setSidebarOpen(true)}
-        isMobile={isMobile}
-        dbEmailCount={globalEmailCount}
-        isHeaderCollapsed={false}
-        onToggleCollapse={() => {}}
-        onCloseEmail={handleBackToList}
-        onPreviousEmail={() => {}}
-        onNextEmail={() => {}}
-        hasPrevious={false}
-        hasNext={false}
-        onOpenSyncMonitor={() => {}}
-        onOpenDirectDownload={() => {}}
-        downloadProgressComponent={
-          <div className="text-xs text-muted-foreground px-3 py-1 bg-muted/50 rounded">
-            📦 Database: {globalEmailCount} email
-          </div>
-        }
       />
 
       <div className="px-4 py-2 border-b bg-background/50">
-        <div className="text-sm text-muted-foreground">
-          📦 <strong>Email Backup (Database)</strong> - {messagesData?.total || 0} email in {selectedFolder}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            📦 <strong>Email Backup (Database)</strong> - {messagesData?.total || 0} email in {selectedFolder}
+          </div>
+          <button
+            onClick={() => navigate('/email-manager')}
+            className="text-xs text-blue-500 hover:text-blue-600 transition-colors"
+          >
+            🌐 Vai al Server Live per sincronizzare →
+          </button>
         </div>
       </div>
 
@@ -264,7 +254,6 @@ const TMWEEmailBackup = () => {
           selectedFolder={selectedFolder}
           onFolderSelect={setSelectedFolder}
           onCompose={() => setComposeOpen(true)}
-          onSync={() => toast.info("Vai su 'Email Server' per sincronizzare")}
         />
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">

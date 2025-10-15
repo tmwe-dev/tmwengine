@@ -455,6 +455,18 @@ const fetchApi = async (endpoint: string, data: any) => {
 
     console.log('✅ SUCCESS');
     console.log('📦 Response Data preview:', JSON.stringify(responseData).substring(0, 200));
+    
+    // Debug email messages structure
+    if (endpoint === '/email_message' && data.handler === 'get_messages') {
+      console.log('📧 EMAIL MESSAGES RESPONSE STRUCTURE:');
+      console.log('- Type:', typeof responseData);
+      console.log('- Keys:', Object.keys(responseData));
+      console.log('- Success:', responseData.success);
+      console.log('- Data type:', typeof responseData.data);
+      console.log('- Messages:', responseData.data?.messages || responseData.messages);
+      console.log('- Total:', responseData.data?.total || responseData.total);
+    }
+    
     console.log('═══════════════════════════════════════════════════════');
 
     return responseData;

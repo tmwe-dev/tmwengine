@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -316,6 +316,19 @@ const EmailDashboard = () => {
     ? emailsToUse.filter(email => email.from === selectedSender)
     : emailsToUse;
 
+  // DEBUG LOGGING
+  useEffect(() => {
+    console.log('📊 MESSAGES DATA DEBUG:');
+    console.log('- messagesData:', messagesData);
+    console.log('- pages count:', messagesData?.pages?.length);
+    console.log('- first page:', messagesData?.pages?.[0]);
+    console.log('- messages in first page:', messagesData?.pages?.[0]?.messages?.length);
+    console.log('- emailsFromPages length:', emailsFromPages.length);
+    console.log('- emails (after filter) length:', emails.length);
+    console.log('- selectedSender:', selectedSender);
+    console.log('- searchQuery:', searchQuery);
+  }, [messagesData, emailsFromPages, emails, selectedSender, searchQuery]);
+
   const handleSync = () => {
     console.log('🚀 Starting REAL email download from API...');
     toast.info('Avvio download email da tutte le cartelle...');
@@ -548,6 +561,35 @@ const EmailDashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Loading State */}
+          {messagesLoading && (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Caricamento email da API TMWE...</span>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!messagesLoading && emails.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4">
+              <AlertCircle className="h-12 w-12 text-muted-foreground" />
+              <h3 className="font-medium">Nessuna Email Trovata</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                {searchQuery 
+                  ? `Nessun risultato per "${searchQuery}"`
+                  : selectedSender
+                  ? `Nessuna email da ${selectedSender}`
+                  : 'La cartella è vuota o le email non sono state ancora scaricate'
+                }
+              </p>
+              {!searchQuery && !selectedSender && (
+                <Button onClick={() => setDirectDownloadOpen(true)}>
+                  Scarica Email
+                </Button>
+              )}
+            </div>
+          )}
 
           <EmailList
             emails={emails}

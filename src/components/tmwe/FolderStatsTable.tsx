@@ -11,7 +11,7 @@ interface FolderStatsTableProps {
   selectedFolders: string[];
   onToggle: (folderName: string) => void;
   isDownloading?: boolean;
-  downloadingFolder?: string;
+  folderProgress?: Map<string, any>;
 }
 
 export const FolderStatsTable = ({
@@ -20,7 +20,7 @@ export const FolderStatsTable = ({
   selectedFolders,
   onToggle,
   isDownloading = false,
-  downloadingFolder = '',
+  folderProgress,
 }: FolderStatsTableProps) => {
   const getDepth = (folderName: string) => {
     return (folderName.match(/\//g) || []).length;
@@ -31,11 +31,31 @@ export const FolderStatsTable = ({
   };
 
   const getStatusBadge = (stat: FolderStat | undefined, folderName: string) => {
-    if (isDownloading && downloadingFolder === folderName) {
+    const progress = folderProgress?.get(folderName);
+    
+    if (progress?.status === 'downloading') {
       return (
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          Scaricamento...
+          {progress.speed ? `${progress.speed.toFixed(1)}/s` : 'Download...'}
+        </Badge>
+      );
+    }
+    
+    if (progress?.status === 'completed') {
+      return (
+        <Badge variant="outline" className="bg-green-600/10 text-green-600 border-green-600/20">
+          <Check className="h-3 w-3 mr-1" />
+          Completata
+        </Badge>
+      );
+    }
+    
+    if (progress?.status === 'error') {
+      return (
+        <Badge variant="destructive">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Errore
         </Badge>
       );
     }
@@ -99,7 +119,8 @@ export const FolderStatsTable = ({
               const stat = getFolderStat(folder.name);
               const isSelected = selectedFolders.includes(folder.name);
               const depth = getDepth(folder.name);
-              const isCurrentlyDownloading = isDownloading && downloadingFolder === folder.name;
+              const progress = folderProgress?.get(folder.name);
+              const isCurrentlyDownloading = progress?.status === 'downloading';
 
               return (
                 <TableRow 

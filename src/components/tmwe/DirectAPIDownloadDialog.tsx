@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
-import { useEmailDownload } from '@/hooks/useEmailDownload';
+import { useEmailDownloadOptimized } from '@/hooks/useEmailDownloadOptimized';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,11 +24,14 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   
   const {
     isDownloading,
-    currentFolder,
     startDownload,
     stopDownload,
-    reset
-  } = useEmailDownload();
+    reset,
+    resumeDownload,
+    folderProgress,
+    downloadStats,
+    hasCache,
+  } = useEmailDownloadOptimized();
 
   // Fetch user email when dialog opens
   useEffect(() => {
@@ -137,8 +140,13 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-4xl lg:h-[85vh] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-xl">
-            {isDownloading ? 'Download Email in Corso' : 'Configura Download Email'}
+          <DialogTitle className="flex items-center justify-between text-xl">
+            <span>{isDownloading ? 'Download Email in Corso' : 'Configura Download Email'}</span>
+            {isDownloading && downloadStats.avgSpeed > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ⚡ {downloadStats.avgSpeed.toFixed(1)} email/sec
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -183,6 +191,14 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                       </span>
                     </div>
                   )}
+                  {isDownloading && downloadStats.totalEmails > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>
+                        {downloadStats.downloadedEmails}/{downloadStats.totalEmails} ({Math.round((downloadStats.downloadedEmails / downloadStats.totalEmails) * 100)}%)
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -192,7 +208,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                 selectedFolders={selectedFolders}
                 onToggle={handleToggle}
                 isDownloading={isDownloading}
-                downloadingFolder={currentFolder}
+                folderProgress={folderProgress}
               />
 
               <div className="flex items-start gap-2 text-xs text-muted-foreground pt-2 border-t">
@@ -206,7 +222,16 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
           )}
         </div>
 
-        <DialogFooter className="border-t pt-3">
+        <DialogFooter className="border-t pt-3 gap-2">
+          {hasCache && !isDownloading && (
+            <Button
+              variant="secondary"
+              onClick={() => resumeDownload(queryClient)}
+              className="mr-auto"
+            >
+              Riprendi Download
+            </Button>
+          )}
           {!isDownloading ? (
             <>
               <Button variant="outline" onClick={handleClose}>
@@ -217,7 +242,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
                 disabled={selectedFolders.length === 0 || totalMissing === 0}
               >
                 <Download className="mr-2 h-4 w-4" />
-                Scarica {totalMissing > 0 ? `${totalMissing.toLocaleString()} Email` : 'Email'}
+                Download Veloce ⚡ {totalMissing > 0 ? `(${totalMissing.toLocaleString()} email)` : ''}
               </Button>
             </>
           ) : (

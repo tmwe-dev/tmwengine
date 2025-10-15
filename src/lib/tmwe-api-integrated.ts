@@ -486,6 +486,7 @@ export const emailMessageApi = {
     to_date?: string;
     page?: number;
     limit?: number;
+    fetch_content?: boolean; // ⚡ OTTIMIZZAZIONE: ottieni body email in 1 chiamata
   }) => fetchApi('/email_message', { handler: 'search_messages', ...params }),
 
   sendMessage: (data: {

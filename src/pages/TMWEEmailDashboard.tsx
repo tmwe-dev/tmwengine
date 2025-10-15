@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { emailApi, emailSyncApi, emailFolderApi } from '@/lib/api';
+import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -25,6 +26,7 @@ import { cn } from '@/lib/utils';
 const EmailDashboard = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { userEmail } = useTMWEAuth();
   const [selectedFolder, setSelectedFolder] = useState('INBOX');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -141,6 +143,7 @@ const EmailDashboard = () => {
         body: {
           mode: 'incremental',
           folder_name: selectedFolder,
+          user_email: userEmail,
         }
       });
       

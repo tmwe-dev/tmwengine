@@ -11,6 +11,7 @@ interface SyncRequest {
   folder_name?: string;
   max_emails?: number;
   force_full?: boolean;
+  user_email?: string;
 }
 
 interface SyncResult {
@@ -35,18 +36,49 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false }: SyncRequest = await req.json();
+    const { mode = 'auto', folder_name = 'INBOX', max_emails = 0, force_full = false, user_email }: SyncRequest = await req.json();
 
     console.log('🚀 TMWE Email Sync Master - Modalità:', mode);
     console.log('🆔 Request ID:', crypto.randomUUID());
     console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('👤 User Email:', user_email);
 
-    // USA ESATTAMENTE IL METODO DI tmwe-email-messages CHE FUNZIONA!
+    // Prima opzione: cerco in environment
     console.log('🔍 Cerco token TMWE_OAUTH_TOKEN in environment...');
     let oauthToken = Deno.env.get('TMWE_OAUTH_TOKEN');
     
+    // Seconda opzione: cerco in user_tmwe_credentials
+    if (!oauthToken && user_email) {
+      console.log('🔍 Cerco token per utente:', user_email, 'in user_tmwe_credentials...');
+      const { data: credentials, error: credsError } = await supabase
+        .from('user_tmwe_credentials')
+        .select('access_token, refresh_token, expires_at')
+        .eq('email', user_email)
+        .maybeSingle();
+      
+      console.log('📊 Credenziali utente:', credentials ? 'TROVATE' : 'NON TROVATE');
+      console.log('📊 Errore credenziali:', credsError);
+      
+      if (credentials?.access_token) {
+        // Controlla se il token è scaduto
+        const now = Date.now();
+        const expiresAt = credentials.expires_at ? new Date(credentials.expires_at).getTime() : now + 3600000;
+        
+        if (expiresAt > now) {
+          oauthToken = credentials.access_token;
+          console.log('✅ Token OAuth recuperato da user_tmwe_credentials');
+        } else {
+          console.warn('⚠️ Token scaduto, necessario refresh');
+          // TODO: implementare refresh token usando credentials.refresh_token
+        }
+      } else {
+        console.log('❌ Nessuna credenziale valida trovata per utente:', user_email);
+      }
+    }
+    
+    // Terza opzione: cerco in email_provider_credenziali (fallback legacy)
     if (!oauthToken) {
-      console.log('❌ Token non in environment, cerco nel database...');
+      console.log('❌ Token non trovato, cerco in email_provider_credenziali (fallback)...');
       const { data: provider, error: provErr } = await supabase
         .from('email_provider')
         .select('email_provider_credenziali(*)')
@@ -57,7 +89,6 @@ serve(async (req) => {
       console.log('📊 Provider data:', provider);
       console.log('📊 Provider error:', provErr);
       
-      // email_provider_credenziali è un oggetto singolo (relazione 1:1), NON un array
       const creds = provider?.email_provider_credenziali;
       console.log('📊 Credenziale trovata:', creds);
       
@@ -71,7 +102,7 @@ serve(async (req) => {
     
     if (!oauthToken) {
       console.error('❌ NESSUN TOKEN TROVATO!');
-      throw new Error('TMWE OAuth token non configurato nel database o environment');
+      throw new Error('TMWE OAuth token non configurato. Assicurati di aver completato l\'autenticazione OAuth.');
     }
 
     console.log('✅ Token trovato, lunghezza:', oauthToken.length);

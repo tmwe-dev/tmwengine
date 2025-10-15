@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTMWEAuth } from "@/hooks/useTMWEAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -22,6 +23,7 @@ const TMWEEmailBackup = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+  const { userEmail } = useTMWEAuth();
   const [selectedFolder, setSelectedFolder] = useState("INBOX");
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -73,6 +75,7 @@ const TMWEEmailBackup = () => {
             body: {
               mode: 'incremental',
               folder_name: folder,
+              user_email: userEmail,
             }
           });
           

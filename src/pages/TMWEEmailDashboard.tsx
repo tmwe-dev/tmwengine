@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailMessageApi, emailSyncApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailApi, emailSyncApi, emailFolderApi } from '@/lib/api';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -100,7 +100,7 @@ const EmailDashboard = () => {
   // Mark email as read
   const handleMarkAsRead = async (emailId: string) => {
     try {
-      await emailMessageApi.getMessage(emailId, true);
+      await emailApi.getEmailDetail(emailId);
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     } catch (error) {
       console.error('Error marking email as read:', error);
@@ -111,11 +111,7 @@ const EmailDashboard = () => {
   const { data: apiEmailCount } = useQuery({
     queryKey: ['api-email-count', selectedFolder],
     queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ 
-        folder: selectedFolder, 
-        limit: 1, 
-        page: 1 
-      });
+      const result = await emailApi.getEmails(selectedFolder, 1, 1);
       return result?.total || 0;
     },
     staleTime: 2 * 60 * 1000, // Cache 2 minuti
@@ -124,7 +120,7 @@ const EmailDashboard = () => {
   const { data: folderInfo } = useQuery({
     queryKey: ['folder-info', selectedFolder],
     queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, page: 1 });
+      const result = await emailApi.getEmails(selectedFolder, 1, 1);
       return result;
     },
   });
@@ -159,11 +155,7 @@ const EmailDashboard = () => {
     queryKey: ['sync-status', selectedFolder],
     queryFn: async () => {
       // 1. Conta email sul SERVER (API)
-      const apiResponse = await emailMessageApi.getMessages({ 
-        folder: selectedFolder, 
-        limit: 1, 
-        page: 1 
-      });
+      const apiResponse = await emailApi.getEmails(selectedFolder, 1, 1);
       const apiTotal = apiResponse?.total || 0;
 
       // 2. Conta email nel DB (solo per confronto sync)
@@ -208,9 +200,7 @@ const EmailDashboard = () => {
     queryFn: async ({ pageParam = 0 }) => {
       // USA SEMPRE L'API TMWE (Supabase solo per backup)
       const page = Math.floor(pageParam / 30) + 1;
-      return searchQuery 
-        ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+      return emailApi.getEmails(selectedFolder, page, 30, searchQuery);
     },
     getNextPageParam: (lastPage, allPages) => {
       const messages = lastPage?.messages || [];
@@ -225,7 +215,7 @@ const EmailDashboard = () => {
     queryKey: ['message', selectedEmailId],
     queryFn: async () => {
       console.log('🔍 Fetching email with UID:', selectedEmailId);
-      const result = await emailMessageApi.getMessage(selectedEmailId!, true); // markAsRead = true
+      const result = await emailApi.getEmailDetail(selectedEmailId!);
       console.log('✅ Email detail received:', result);
       // Invalidate messages query to update the read status in the list
       queryClient.invalidateQueries({ queryKey: ['messages'] });
@@ -269,7 +259,7 @@ const EmailDashboard = () => {
   })() : null;
 
   const deleteMutation = useMutation({
-    mutationFn: (messageIds: string[]) => emailMessageApi.deleteMessages(messageIds),
+    mutationFn: (messageIds: string[]) => emailApi.deleteMessages(messageIds),
     onSuccess: () => {
       toast.success('Email deleted');
       setSelectedEmailId(null);
@@ -345,7 +335,7 @@ const EmailDashboard = () => {
 
   const handleBulkMarkAsRead = async (emailIds: string[]) => {
     try {
-      await Promise.all(emailIds.map(id => emailMessageApi.getMessage(id, true)));
+      await Promise.all(emailIds.map(id => emailApi.getEmailDetail(id)));
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       toast.success('Email segnate come lette');
     } catch (error) {

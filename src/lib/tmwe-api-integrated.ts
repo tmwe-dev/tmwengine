@@ -443,8 +443,8 @@ const ensureValidToken = async (): Promise<string | null> => {
   return config.accessToken;
 };
 
-// API request wrapper
-const fetchApi = async (endpoint: string, data: any) => {
+// API request wrapper - EXPORTED for use in api.ts
+export const fetchApi = async (endpoint: string, data: any) => {
   const accessToken = await ensureValidToken();
   
   if (!accessToken) {

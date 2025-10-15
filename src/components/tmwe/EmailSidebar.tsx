@@ -105,9 +105,16 @@ export const EmailSidebar = ({
     fetchUserEmail();
   });
 
-  const { data: foldersData, isLoading } = useQuery({
+  const { data: foldersData, isLoading, error: foldersError } = useQuery({
     queryKey: ['folders'],
-    queryFn: emailFolderApi.getFolders,
+    queryFn: async () => {
+      console.log('📂 Fetching folders from TMWE API...');
+      const response = await emailFolderApi.getFolders();
+      console.log('📂 Raw API response:', response);
+      console.log('📂 Response type:', typeof response);
+      console.log('📂 Is array?', Array.isArray(response));
+      return response;
+    },
   });
 
   const createFolderMutation = useMutation({
@@ -144,7 +151,16 @@ export const EmailSidebar = ({
     }
   };
 
-  const folders = foldersData?.data || [];
+  // Handle multiple response formats from TMWE API:
+  // - Direct array: []
+  // - Object with 'data': { data: [] }
+  // - Object with 'folders': { folders: [] } (per API spec)
+  const folders = Array.isArray(foldersData) 
+    ? foldersData 
+    : (foldersData?.folders || foldersData?.data || []);
+  
+  console.log('📂 Processed folders:', folders);
+  console.log('📂 Folders count:', folders.length);
   
   // Separate system folders from custom folders
   const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];
@@ -237,6 +253,16 @@ export const EmailSidebar = ({
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : foldersError ? (
+            <div className="px-3 py-8 text-center">
+              <p className="text-destructive text-sm mb-2">⚠️ Errore caricamento cartelle</p>
+              <p className="text-xs text-muted-foreground">{(foldersError as any)?.message || 'Errore sconosciuto'}</p>
+            </div>
+          ) : folders.length === 0 ? (
+            <div className="px-3 py-8 text-center">
+              <p className="text-muted-foreground text-sm mb-2">📭 Nessuna cartella trovata</p>
+              <p className="text-xs text-muted-foreground">Verifica la configurazione del tuo account email</p>
             </div>
           ) : (
             <>

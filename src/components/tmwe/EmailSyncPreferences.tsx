@@ -77,6 +77,7 @@ export const EmailSyncPreferences = ({
   const [syncMode, setSyncMode] = useState<SyncMode>('blacklist');
   const [excludedFolders, setExcludedFolders] = useState<string[]>(RECOMMENDED_EXCLUDES);
   const [includedFolders, setIncludedFolders] = useState<string[]>([]);
+  const [openFolders, setOpenFolders] = useState<string[]>([]); // Traccia accordion aperti
 
   // Carica le cartelle disponibili
   const { data: foldersData, isLoading: loadingFolders } = useQuery({
@@ -151,6 +152,21 @@ export const EmailSyncPreferences = ({
   const folders = foldersData?.data || [];
   const folderTree = buildFolderTree(folders);
 
+  // Apri tutti gli accordion all'inizio
+  useEffect(() => {
+    if (folderTree.length > 0 && openFolders.length === 0) {
+      const allFolderPaths = (tree: FolderNode[]): string[] => {
+        return tree.flatMap(node => {
+          if (node.children.length > 0) {
+            return [node.fullPath, ...allFolderPaths(node.children)];
+          }
+          return [];
+        });
+      };
+      setOpenFolders(allFolderPaths(folderTree));
+    }
+  }, [folderTree]);
+
   const toggleExclude = (folderName: string) => {
     setExcludedFolders(prev =>
       prev.includes(folderName)
@@ -179,14 +195,15 @@ export const EmailSyncPreferences = ({
     const hasChildren = node.children.length > 0;
     const isLeaf = node.data !== null;
     
-    // Calcola totale email per nodo (se ha figli, somma i loro)
-    const serverTotal = isLeaf 
-      ? (node.data.total_messages || 0)
-      : node.children.reduce((sum, c) => {
-          const childTotal = c.data?.total_messages || 0;
-          return sum + childTotal;
-        }, 0);
+    // Calcola totale email per nodo (inclusi figli)
+    const calculateServerTotal = (n: FolderNode): number => {
+      if (n.data) {
+        return n.data.total_messages || 0;
+      }
+      return n.children.reduce((sum, child) => sum + calculateServerTotal(child), 0);
+    };
     
+    const serverTotal = calculateServerTotal(node);
     const dbTotal = folderDbCounts?.[node.fullPath] || 0;
     const syncPercentage = serverTotal > 0 ? Math.round((dbTotal / serverTotal) * 100) : 100;
     const isSynced = dbTotal >= serverTotal;
@@ -279,9 +296,12 @@ export const EmailSyncPreferences = ({
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="font-medium">{node.name}</span>
+            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-muted">
+              {node.children.length} {node.children.length === 1 ? 'cartella' : 'cartelle'}
+            </Badge>
             {serverTotal > 0 && (
               <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-                {serverTotal}
+                {serverTotal} email
               </Badge>
             )}
           </div>
@@ -347,19 +367,27 @@ export const EmailSyncPreferences = ({
         </h4>
         
         <ScrollArea className={compact ? "max-h-[50vh] rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
-          <Accordion type="multiple" className="space-y-0.5">
+          <Accordion 
+            type="multiple" 
+            className="space-y-0.5"
+            value={openFolders}
+            onValueChange={setOpenFolders}
+          >
             {folderTree.map(node => renderFolderNode(node))}
           </Accordion>
         </ScrollArea>
 
-        {!compact && (
-          <div className="text-xs text-muted-foreground pt-1">
+        <div className="text-xs text-muted-foreground pt-1 flex items-center justify-between">
+          <span>
             {syncMode === 'blacklist' 
               ? `✓ ${filteredCount} cartelle saranno sincronizzate`
               : `✓ ${filteredCount} cartelle selezionate`
             }
-          </div>
-        )}
+          </span>
+          <span className="text-[10px]">
+            Totale: {folders.length} cartelle
+          </span>
+        </div>
       </div>
 
       {showButtons && (

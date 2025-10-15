@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Download, CheckCircle, AlertCircle, Loader2, Folder, Database, CloudDownload } from 'lucide-react';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -20,6 +20,9 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     downloadError,
     currentFolder,
     totalToDownload,
+    currentFolderProgress,
+    currentPhase,
+    processedFolders,
     startDownload,
     stopDownload,
     reset
@@ -43,10 +46,31 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   };
 
   const progress = totalToDownload > 0 ? (downloadedCount / totalToDownload) * 100 : 0;
+  const folderProgress = currentFolderProgress.total > 0 
+    ? (currentFolderProgress.current / currentFolderProgress.total) * 100 
+    : 0;
+
+  const getPhaseIcon = () => {
+    switch (currentPhase) {
+      case 'loading': return <CloudDownload className="h-5 w-5 text-blue-500" />;
+      case 'downloading': return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
+      case 'saving': return <Database className="h-5 w-5 text-green-500 animate-pulse" />;
+      default: return <Folder className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
+
+  const getPhaseText = () => {
+    switch (currentPhase) {
+      case 'loading': return 'Caricamento cartelle...';
+      case 'downloading': return 'Download in corso...';
+      case 'saving': return 'Salvataggio nel database...';
+      default: return 'In attesa...';
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Scarica Email TMWE (API Diretta)</DialogTitle>
         </DialogHeader>
@@ -59,21 +83,71 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
           {/* Status Display */}
           {isDownloading && (
-            <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="text-sm font-medium">
-                  {currentFolder ? `Cartella: ${currentFolder}` : 'Inizializzazione...'}
-                </span>
+            <div className="space-y-4 bg-gradient-to-br from-primary/5 to-primary/10 p-5 rounded-lg border border-primary/20">
+              {/* Fase corrente */}
+              <div className="flex items-center gap-3">
+                {getPhaseIcon()}
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-foreground">
+                    {getPhaseText()}
+                  </div>
+                  {currentFolder && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      📂 {currentFolder}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {totalToDownload > 0 && (
-                <>
-                  <Progress value={progress} className="h-2" />
-                  <div className="text-xs text-muted-foreground text-center">
-                    {downloadedCount} / {totalToDownload} email scaricate ({Math.round(progress)}%)
+              {/* Progresso cartella corrente */}
+              {currentFolderProgress.total > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-muted-foreground">Cartella corrente:</span>
+                    <span className="font-bold text-foreground">
+                      {currentFolderProgress.current} / {currentFolderProgress.total}
+                    </span>
                   </div>
-                </>
+                  <Progress value={folderProgress} className="h-2 bg-muted" />
+                </div>
+              )}
+
+              {/* Progresso totale */}
+              {totalToDownload > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-muted-foreground">Progresso totale:</span>
+                    <span className="font-bold text-primary">
+                      {downloadedCount.toLocaleString()} / {totalToDownload.toLocaleString()} ({Math.round(progress)}%)
+                    </span>
+                  </div>
+                  <Progress value={progress} className="h-3 bg-muted" />
+                </div>
+              )}
+
+              {/* Cartelle processate (ultime 3) */}
+              {processedFolders.length > 0 && (
+                <div className="pt-2 border-t border-primary/10">
+                  <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                    Cartelle completate:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {processedFolders.slice(-3).map((folder, idx) => (
+                      <span 
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 text-green-700 dark:text-green-400 rounded text-xs"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        {folder}
+                      </span>
+                    ))}
+                    {processedFolders.length > 3 && (
+                      <span className="inline-flex items-center px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">
+                        +{processedFolders.length - 3} altre
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}

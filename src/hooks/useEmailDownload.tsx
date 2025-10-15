@@ -12,6 +12,9 @@ export const useEmailDownload = () => {
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [totalToDownload, setTotalToDownload] = useState(0);
   const [shouldStop, setShouldStop] = useState(false);
+  const [currentFolderProgress, setCurrentFolderProgress] = useState({ current: 0, total: 0 });
+  const [currentPhase, setCurrentPhase] = useState<'loading' | 'downloading' | 'saving' | 'idle'>('idle');
+  const [processedFolders, setProcessedFolders] = useState<string[]>([]);
 
   const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
     setIsDownloading(true);
@@ -21,6 +24,9 @@ export const useEmailDownload = () => {
     setCurrentFolder('');
     setTotalToDownload(0);
     setShouldStop(false);
+    setCurrentFolderProgress({ current: 0, total: 0 });
+    setCurrentPhase('loading');
+    setProcessedFolders([]);
 
     // Get authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -47,6 +53,7 @@ export const useEmailDownload = () => {
 
     try {
       // 1. Ottieni la lista di tutte le cartelle
+      setCurrentPhase('loading');
       toast.info('Caricamento cartelle...');
       console.log('🔍 Chiamata a emailFolderApi.getFolders()...');
       
@@ -63,15 +70,22 @@ export const useEmailDownload = () => {
         console.error('❌ foldersResponse completo:', JSON.stringify(foldersResponse, null, 2));
         toast.error('Nessuna cartella trovata - controlla la console');
         setIsDownloading(false);
+        setCurrentPhase('idle');
         return;
       }
 
       console.log(`📁 Trovate ${folders.length} cartelle da sincronizzare`);
 
+      // Calcola il totale di email SUBITO all'inizio
+      const globalTotalEmails = folders.reduce((sum, f) => sum + (f.messages || 0), 0);
+      setTotalToDownload(globalTotalEmails);
+      console.log(`📊 Totale email da scaricare: ${globalTotalEmails}`);
+
       let globalDownloadedCount = 0;
-      let globalTotalEmails = 0;
       const allDownloadedEmails: any[] = [];
       const folderResults: { folder: string; downloaded: number; errors: number }[] = [];
+      
+      setCurrentPhase('downloading');
 
       // 2. Per ogni cartella, scarica le email
       for (const folderInfo of folders) {
@@ -87,11 +101,10 @@ export const useEmailDownload = () => {
         const folderTotalEmails = folderInfo.messages || 0;
         
         setCurrentFolder(folderName);
-        globalTotalEmails += folderTotalEmails;
-        setTotalToDownload(globalTotalEmails);
+        setCurrentFolderProgress({ current: 0, total: folderTotalEmails });
 
         console.log(`\n📂 Elaborazione cartella: ${folderName} (${folderTotalEmails} email)`);
-        toast.info(`Scaricamento da ${folderName}... (${folderTotalEmails} email)`);
+        toast.info(`📂 ${folderName} - ${folderTotalEmails} email`);
 
         if (folderTotalEmails === 0) {
           console.log(`⏭️  Cartella ${folderName} vuota, skip`);
@@ -160,6 +173,10 @@ export const useEmailDownload = () => {
                     try {
                       const emailIndex = i + batch.indexOf(uidInfo) + 1;
                       console.log(`⬇️  ${folderName}: scaricamento email ${emailIndex}/${uidList.length} (UID: ${uid})...`);
+                      
+                      // Aggiorna progresso cartella corrente
+                      setCurrentFolderProgress({ current: emailIndex, total: uidList.length });
+                      
                       const fullEmail = await emailMessageApi.getMessage(uid, false);
                       return fullEmail;
                     } catch (error) {
@@ -183,6 +200,7 @@ export const useEmailDownload = () => {
               // Step 3: Salva email complete in Supabase
               if (pageEmails.length > 0) {
                 try {
+                  setCurrentPhase('saving');
                   const emailsToInsert = pageEmails.map((email: any) => {
                     let isoDate = new Date().toISOString();
                     if (email.date) {
@@ -222,6 +240,7 @@ export const useEmailDownload = () => {
                   if (insertError) {
                     console.error(`❌ ${folderName}: errore salvataggio batch:`, insertError);
                     folderErrors++;
+                    setCurrentPhase('downloading');
                   } else {
                     folderNewEmailsCount += pageEmails.length;
                     globalDownloadedCount += pageEmails.length;
@@ -234,6 +253,7 @@ export const useEmailDownload = () => {
                     
                     setDownloadedCount(globalDownloadedCount);
                     setAllEmails([...allDownloadedEmails]);
+                    setCurrentPhase('downloading');
                     console.log(`✅ ${folderName}: salvate ${pageEmails.length} email complete (totale cartella: ${folderNewEmailsCount})`);
                   }
                 } catch (dbError) {
@@ -258,6 +278,9 @@ export const useEmailDownload = () => {
             errors: folderErrors 
           });
 
+          // Aggiungi alla lista delle cartelle processate
+          setProcessedFolders(prev => [...prev, folderName]);
+
           console.log(`✅ ${folderName}: completato - ${folderNewEmailsCount} nuove email scaricate`);
 
         } catch (error) {
@@ -271,6 +294,8 @@ export const useEmailDownload = () => {
 
       setIsDownloading(false);
       setCurrentFolder('');
+      setCurrentPhase('idle');
+      setCurrentFolderProgress({ current: 0, total: 0 });
       
       // Riepilogo finale
       const totalDownloaded = folderResults.reduce((sum, r) => sum + r.downloaded, 0);
@@ -306,6 +331,7 @@ export const useEmailDownload = () => {
       console.error('❌ Download error:', error);
       setDownloadError(error.message || 'Errore durante il download');
       setIsDownloading(false);
+      setCurrentPhase('idle');
       toast.error('Errore durante il download delle email');
     }
   }, [shouldStop]);
@@ -321,6 +347,9 @@ export const useEmailDownload = () => {
     setDownloadError(null);
     setAllEmails([]);
     setShouldStop(false);
+    setCurrentFolderProgress({ current: 0, total: 0 });
+    setCurrentPhase('idle');
+    setProcessedFolders([]);
   }, []);
 
   return {
@@ -333,5 +362,8 @@ export const useEmailDownload = () => {
     reset,
     currentFolder,
     totalToDownload,
+    currentFolderProgress,
+    currentPhase,
+    processedFolders,
   };
 };

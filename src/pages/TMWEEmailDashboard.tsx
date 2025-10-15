@@ -128,11 +128,49 @@ const EmailDashboard = () => {
   
 
   // === FOLDERS QUERY - Condivisa con EmailSidebar ===
-  const { data: foldersData } = useQuery({
+  const { data: apiFoldersData } = useQuery({
     queryKey: ['folders'], // ✅ Stessa queryKey di EmailSidebar
     queryFn: () => emailFolderApi.getFolders(),
     staleTime: 5 * 60 * 1000, // Cache 5 minuti
   });
+
+  // === DB FOLDERS FALLBACK ===
+  const { data: dbFoldersData } = useQuery({
+    queryKey: ['db-folders'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) return [];
+
+      const { data } = await supabase
+        .from('email_messages')
+        .select('cartella')
+        .eq('user_email', profile.tmwe_email);
+
+      const grouped = data?.reduce((acc, msg) => {
+        acc[msg.cartella] = (acc[msg.cartella] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(grouped || {}).map(([name, count]) => ({
+        name,
+        messages: count
+      }));
+    },
+    enabled: true,
+  });
+
+  // Usa API se disponibile, altrimenti DB
+  const foldersData = (apiFoldersData?.data?.length > 0) 
+    ? apiFoldersData 
+    : { data: dbFoldersData || [] };
 
   // === GLOBAL EMAIL COUNT (calcolato dai folders cached) ===
   const globalEmailCount = useMemo(() => {
@@ -190,7 +228,7 @@ const EmailDashboard = () => {
 
   // Query per le email - USA SEMPRE L'API TMWE (non Supabase)
   const { 
-    data: messagesData,
+    data: apiMessagesData,
     isLoading: messagesLoading,
     fetchNextPage,
     hasNextPage,
@@ -209,6 +247,80 @@ const EmailDashboard = () => {
     },
     initialPageParam: 0,
   });
+
+  // === DB MESSAGES FALLBACK ===
+  const { data: dbMessagesData } = useQuery({
+    queryKey: ['db-messages', selectedFolder, searchQuery],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { messages: [] };
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('tmwe_email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.tmwe_email) return { messages: [] };
+
+      let query = supabase
+        .from('email_messages')
+        .select('*')
+        .eq('cartella', selectedFolder)
+        .eq('user_email', profile.tmwe_email)
+        .order('data_ricezione', { ascending: false })
+        .limit(50);
+
+      if (searchQuery) {
+        query = query.or(`subject.ilike.%${searchQuery}%,from_email.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('❌ DB query error:', error);
+        return { messages: [] };
+      }
+
+      // Trasforma formato DB → formato API
+      return {
+        messages: data?.map(msg => ({
+          uid: msg.provider_id,
+          from: msg.from_email,
+          to: msg.to_email,
+          subject: msg.subject,
+          date: msg.data_ricezione,
+          flags: {
+            seen: msg.stato === 'letto',
+            flagged: msg.stato === 'importante'
+          },
+          is_read: msg.stato === 'letto',
+          is_flagged: msg.stato === 'importante',
+          size: 0
+        })) || []
+      };
+    },
+    enabled: true,
+  });
+
+  // Logica fallback intelligente
+  const apiMessages = apiMessagesData?.pages?.[0]?.messages || [];
+  const dbMessages = dbMessagesData?.messages || [];
+
+  console.log('📊 Dashboard Email Source:', {
+    selectedFolder,
+    apiCount: apiMessages.length,
+    dbCount: dbMessages.length,
+    usingSource: apiMessages.length > 0 ? 'API TMWE' : 'Supabase DB'
+  });
+
+  // Usa API se disponibile, altrimenti DB
+  const messagesData = apiMessages.length > 0 
+    ? apiMessagesData 
+    : {
+        pages: [dbMessagesData || { messages: [] }],
+        pageParams: [0]
+      };
 
 
   const { data: emailDetailResponse, isLoading: isLoadingDetail, error: detailError } = useQuery({

@@ -172,9 +172,13 @@ export const EmailSidebar = ({
   const systemFolders = folders.filter((f: any) => 
     systemFolderNames.includes(f.name)
   );
-  const customFolders = folders.filter((f: any) => 
-    !systemFolderNames.includes(f.name)
-  );
+    const customFolders = folders
+      .filter((f: any) => !systemFolderNames.includes(f.name))
+      .sort((a: any, b: any) => {
+        const nameA = getDisplayName(a.name).toLowerCase();
+        const nameB = getDisplayName(b.name).toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
 
   const renderFolder = (folder: any) => {
     const Icon = getFolderIcon(folder.name);
@@ -200,7 +204,7 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${getDisplayName(folder.name)} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+        title={isCollapsed ? `${getDisplayName(folder.name)} - ${totalMessages} email${unseenCount > 0 ? ` (${unseenCount} non lette)` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
@@ -219,14 +223,15 @@ export const EmailSidebar = ({
             </span>
           )}
         </div>
-        {!isCollapsed && unseenCount > 0 && (
+        {!isCollapsed && totalMessages > 0 && (
           <Badge variant="secondary" className={cn(
-            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
-            selectedFolder === folder.name 
-              ? "text-purple-300 border-purple-300" 
-              : "text-white border-white"
+            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 border",
+            unseenCount > 0 
+              ? "bg-purple-500/20 text-purple-300 border-purple-400 font-semibold" 
+              : "bg-transparent text-muted-foreground border-border",
+            selectedFolder === folder.name && "scale-110"
           )}>
-            {unseenCount}
+            {totalMessages}
           </Badge>
         )}
       </Button>

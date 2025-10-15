@@ -67,55 +67,44 @@ serve(async (req) => {
       throw new Error('TMWE OAuth token non configurato. Configurare TMWE_OAUTH_TOKEN o user_tmwe_credentials.');
     }
 
-    // Call TMWE API
-    const baseUrl = 'https://findair.it/erp/tmwe_json';
-    const folderUrl = `${baseUrl}/app.php?action=email_folder`;
-    
-    const requestBody = {
-      handler: 'get_folders',
-      include_counts,
-      hierarchy
-    };
-
-    console.log('📞 Chiamata API:', folderUrl);
-    console.log('📋 Payload:', JSON.stringify(requestBody, null, 2));
-
-    let response;
-    try {
-      response = await fetch(folderUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json'
+    // Call TMWE API via proxy
+    console.log('📞 Chiamata API via tmwe-api-proxy...');
+    const { data: apiResponse, error: proxyError } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: {
+        endpoint: '/email_folder',
+        data: {
+          handler: 'get_folders',
+          include_counts,
+          hierarchy
         },
-        body: JSON.stringify(requestBody)
-      });
-    } catch (httpsError) {
-      console.log('⚠️ HTTPS fallito, provo HTTP...');
-      const httpUrl = folderUrl.replace('https://', 'http://');
-      response = await fetch(httpUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${oauthToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+        bearerToken: oauthToken
+      }
+    });
+
+    if (proxyError) {
+      console.error('❌ Errore proxy:', proxyError);
+      throw new Error(`API Proxy error: ${proxyError.message}`);
     }
 
-    if (!response.ok) {
-      throw new Error(`TMWE API error: ${response.status} ${response.statusText}`);
+    // Debug response type
+    console.log('📊 TIPO RISPOSTA:', typeof apiResponse);
+    console.log('📊 È ARRAY?:', Array.isArray(apiResponse));
+    console.log('📊 CONTENUTO:', JSON.stringify(apiResponse, null, 2));
+
+    // Handle different response formats
+    let folders = [];
+
+    if (Array.isArray(apiResponse)) {
+      // Response is directly an array: [] or [{ name: ... }]
+      folders = apiResponse;
+    } else if (apiResponse?.folders) {
+      // Response is an object: { folders: [...] }
+      folders = apiResponse.folders;
+    } else if (apiResponse) {
+      // Unknown format, log warning but don't fail
+      console.warn('⚠️ Formato risposta inaspettato:', apiResponse);
     }
 
-    const data = await response.json();
-    console.log('📊 RISPOSTA API:', JSON.stringify(data, null, 2));
-
-    // Validate response
-    if (!data.success) {
-      throw new Error(data.message || 'Errore API TMWE');
-    }
-
-    const folders = data.folders || [];
     console.log(`✅ Recuperate ${folders.length} cartelle`);
 
     // Return folders

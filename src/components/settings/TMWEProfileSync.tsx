@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTMWEAuth } from '@/hooks/useTMWEAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { emailAccountApi } from '@/lib/tmwe-api-integrated';
+import { profileApi } from '@/lib/tmwe-api-integrated';
 import { 
   RefreshCw, 
   User, 
@@ -103,43 +103,19 @@ export const TMWEProfileSync = () => {
 
   const fetchTMWEProfile = async () => {
     try {
-      // Usar emailAccountApi en lugar de profileApi deprecado
-      const response = await emailAccountApi.getAccountInfo();
+      // Usar el API proxy en lugar de llamada directa
+      const profileData = await profileApi.getMyProfile();
       
-      if (response.success && response.data) {
-        // Mapear datos de account info a estructura TMWEProfile
-        const profileData: TMWEProfile = {
-          username: response.data.username || '',
-          name: response.data.account_name || '',
-          email: response.data.email || '',
-          telephone: '',
-          enterprise_name: '',
-          rubrica: {
-            address: '',
-            city: '',
-            prov: '',
-            country: '',
-            airport: '',
-            cap: '',
-            address_name: '',
-            telephone: '',
-            email: response.data.email || ''
-          }
-        };
-        
-        setTmweProfile(profileData);
-        setLastSync(new Date());
+      setTmweProfile(profileData);
+      setLastSync(new Date());
 
-        // Comparar perfiles
-        compareProfiles(profileData);
+      // Comparar perfiles
+      compareProfiles(profileData);
 
-        toast({
-          title: "✅ Perfil sincronizado",
-          description: "Datos obtenidos de la cuenta de email",
-        });
-      } else {
-        throw new Error('No se pudo obtener información de la cuenta');
-      }
+      toast({
+        title: "✅ Perfil sincronizado",
+        description: "Datos obtenidos del API TMWE",
+      });
 
     } catch (error: any) {
       console.error('Error fetching TMWE profile:', error);

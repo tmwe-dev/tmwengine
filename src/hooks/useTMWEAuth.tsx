@@ -1,6 +1,5 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { clearTokenCache } from '@/lib/tmwe-api-integrated';
 
 interface UserProfile {
   email: string;
@@ -176,7 +175,6 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    clearTokenCache(); // 🔒 Invalida cache token
     setUserEmail(null);
     setUserProfile(null);
     setSupabaseUserId(null);
@@ -188,30 +186,18 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     try {
-      // Usa emailAccountApi invece di profileApi deprecato
-      const { emailAccountApi } = await import('@/lib/tmwe-api-integrated');
-      const response = await emailAccountApi.getAccountInfo();
-      
+      const { profileApi } = await import('@/lib/tmwe-api-integrated');
+      const response = await profileApi.getMyProfile();
       if (response.success && response.data) {
         const profile: UserProfile = {
           email: response.data.email || userEmail || '',
-          name: response.data.account_name || '',
-          account_info: response.data
+          ...response.data
         };
         setUserProfile(profile);
         sessionStorage.setItem('tmwe_user_profile', JSON.stringify(profile));
       }
     } catch (error) {
       console.error('Error refreshing profile:', error);
-      // Fallback: mantieni profilo esistente o creane uno vuoto
-      const storedProfile = sessionStorage.getItem('tmwe_user_profile');
-      if (storedProfile) {
-        try {
-          setUserProfile(JSON.parse(storedProfile));
-        } catch (e) {
-          console.error('Error parsing stored profile:', e);
-        }
-      }
     }
   };
 

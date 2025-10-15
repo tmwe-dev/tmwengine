@@ -35,7 +35,7 @@ interface EmailSidebarProps {
   selectedFolder: string;
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
-  onSync?: () => void;
+  onSync: () => void;
 }
 
 const folderIcons: Record<string, any> = {
@@ -171,17 +171,15 @@ export const EmailSidebar = ({
           <Plus className="mr-2 h-5 w-5" />
           Compose
         </Button>
-        {onSync && (
-          <Button 
-            onClick={onSync} 
-            variant="outline" 
-            className="w-full"
-            size="sm"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Sync Now
-          </Button>
-        )}
+        <Button 
+          onClick={onSync} 
+          variant="outline" 
+          className="w-full"
+          size="sm"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Sync Now
+        </Button>
       </div>
 
       <Separator />

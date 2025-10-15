@@ -1,29 +1,6 @@
 // TMWE Email API Client integrato con Supabase Auth
 import { supabase } from "@/integrations/supabase/client";
 
-// Debug mode: disabilita logging in produzione
-const DEBUG_MODE = import.meta.env.DEV;
-
-// Token cache in memoria per evitare query DB ripetute
-let tokenCache: {
-  accessToken: string | null;
-  expiresAt: number;
-  email: string | null;
-} = {
-  accessToken: null,
-  expiresAt: 0,
-  email: null
-};
-
-// Funzione per invalidare la cache (chiamata al logout)
-export function clearTokenCache() {
-  tokenCache = {
-    accessToken: null,
-    expiresAt: 0,
-    email: null
-  };
-}
-
 export interface ApiConfig {
   accessToken: string;
   refreshToken?: string;
@@ -371,80 +348,33 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   }
 };
 
-// Ensure valid token (supporta sia OAuth2 che JWT) - CON CACHE
+// Ensure valid token (supporta sia OAuth2 che JWT)
 const ensureValidToken = async (): Promise<string | null> => {
-  const now = Date.now();
-  
-  // 🚀 CACHE HIT: risparmio ~1s per chiamata (9s totali)
-  if (tokenCache.accessToken && tokenCache.expiresAt > now + 60000) { // 1 min buffer
-    if (DEBUG_MODE) {
-      console.log('⚡ Token cache HIT - risparmio query DB');
-    }
-    return tokenCache.accessToken;
-  }
-
-  if (DEBUG_MODE) {
-    console.log('🔄 Token cache MISS - fetch da DB');
-  }
-
-  // 🔄 CACHE MISS: Fetch da DB
   const config = await getApiConfigFromDB();
-  if (!config) {
-    clearTokenCache();
-    return null;
-  }
+  if (!config) return null;
 
   // Check if token is expired or about to expire (5 minutes buffer)
-  if (config.expiresAt && config.expiresAt < now + 300000) {
+  if (config.expiresAt && config.expiresAt < Date.now() + 300000) {
     // JWT: re-authenticate (no refresh token)
     if (config.authType === 'jwt') {
       const refreshed = await authenticateWithJWT();
-      if (!refreshed) {
-        clearTokenCache();
-        return null;
-      }
+      if (!refreshed) return null;
       const newConfig = await getApiConfigFromDB();
-      if (!newConfig) return null;
-      
-      // Aggiorna cache
-      tokenCache = {
-        accessToken: newConfig.accessToken,
-        expiresAt: newConfig.expiresAt || 0,
-        email: null
-      };
-      return newConfig.accessToken;
+      return newConfig?.accessToken || null;
     }
     
     // OAuth2: use refresh token
     const refreshed = await refreshAccessToken();
-    if (!refreshed) {
-      clearTokenCache();
-      return null;
-    }
+    if (!refreshed) return null;
     const newConfig = await getApiConfigFromDB();
-    if (!newConfig) return null;
-    
-    // Aggiorna cache
-    tokenCache = {
-      accessToken: newConfig.accessToken,
-      expiresAt: newConfig.expiresAt || 0,
-      email: null
-    };
-    return newConfig.accessToken;
+    return newConfig?.accessToken || null;
   }
-
-  // Aggiorna cache con token valido
-  tokenCache = {
-    accessToken: config.accessToken,
-    expiresAt: config.expiresAt || 0,
-    email: null
-  };
 
   return config.accessToken;
 };
 
-// API request wrapper - EXPORTED for use in api.ts
-export const fetchApi = async (endpoint: string, data: any) => {
+// API request wrapper
+const fetchApi = async (endpoint: string, data: any) => {
   const accessToken = await ensureValidToken();
   
   if (!accessToken) {
@@ -457,61 +387,51 @@ export const fetchApi = async (endpoint: string, data: any) => {
     bearerToken: accessToken
   };
 
-  if (DEBUG_MODE) {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📤 SOLICITUD AL API TMWE');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data.handler);
-    console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
-    console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
-    console.log('═══════════════════════════════════════════════════════');
-  }
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📤 SOLICITUD AL API TMWE');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('⏰ Timestamp:', new Date().toISOString());
+  console.log('📍 Endpoint:', endpoint);
+  console.log('🎯 Handler:', data.handler);
+  console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
+  console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
+  console.log('═══════════════════════════════════════════════════════');
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: requestBody
     });
 
-    if (DEBUG_MODE) {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('📥 RESPUESTA DEL API TMWE');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('⏰ Timestamp:', new Date().toISOString());
-      console.log('📍 Endpoint:', endpoint);
-      console.log('🎯 Handler:', data.handler);
-    }
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📥 RESPUESTA DEL API TMWE');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📍 Endpoint:', endpoint);
+    console.log('🎯 Handler:', data.handler);
     
     if (error) {
-      if (DEBUG_MODE) {
-        console.error('❌ ERROR en la respuesta');
-        console.error('⚠️ Error Object:', error);
-        console.error('📄 Error Message:', error.message);
-        console.log('═══════════════════════════════════════════════════════');
-      }
+      console.error('❌ ERROR en la respuesta');
+      console.error('⚠️ Error Object:', error);
+      console.error('📄 Error Message:', error.message);
+      console.log('═══════════════════════════════════════════════════════');
       throw new Error(error.message || 'API request failed');
     }
 
-    if (DEBUG_MODE) {
-      console.log('✅ RESPUESTA EXITOSA');
-      console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
-      console.log('═══════════════════════════════════════════════════════');
-    }
+    console.log('✅ RESPUESTA EXITOSA');
+    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
+    console.log('═══════════════════════════════════════════════════════');
 
     return responseData;
   } catch (error: any) {
-    if (DEBUG_MODE) {
-      console.log('═══════════════════════════════════════════════════════');
-      console.error('🔥 ERROR EN LA COMUNICACIÓN');
-      console.log('═══════════════════════════════════════════════════════');
-      console.error('📍 Endpoint:', endpoint);
-      console.error('🎯 Handler:', data.handler);
-      console.error('⚠️ Error:', error);
-      console.error('📄 Error Message:', error.message);
-      console.error('📚 Stack Trace:', error.stack);
-      console.log('═══════════════════════════════════════════════════════');
-    }
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('🔥 ERROR EN LA COMUNICACIÓN');
+    console.log('═══════════════════════════════════════════════════════');
+    console.error('📍 Endpoint:', endpoint);
+    console.error('🎯 Handler:', data.handler);
+    console.error('⚠️ Error:', error);
+    console.error('📄 Error Message:', error.message);
+    console.error('📚 Stack Trace:', error.stack);
+    console.log('═══════════════════════════════════════════════════════');
     throw error;
   }
 };
@@ -548,53 +468,14 @@ export const emailMessageApi = {
     folder?: string;
     page?: number;
     limit?: number;
-    offset?: number;
     sort?: string;
     order?: 'ASC' | 'DESC';
-    include_attachments?: boolean;
-    format?: 'text' | 'html';
-    filter?: {
-      unread_only?: boolean;
-      flagged_only?: boolean;
-      has_attachments?: boolean;
-    };
-  } = {}) => {
-    const requestData: any = {
-      handler: 'get_messages',
-      folder: params.folder || 'INBOX',
-    };
-    
-    if (params.page !== undefined) requestData.page = params.page;
-    if (params.limit !== undefined) requestData.limit = params.limit;
-    if (params.offset !== undefined) requestData.offset = params.offset;
-    if (params.sort) requestData.sort = params.sort;
-    if (params.order) requestData.order = params.order;
-    if (params.include_attachments !== undefined) requestData.include_attachments = params.include_attachments;
-    if (params.format) requestData.format = params.format;
-    if (params.filter) requestData.filter = params.filter;
-    
-    return fetchApi('/email_message', requestData);
-  },
+  }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
 
-  getMessage: (
-    uid: string, 
-    markAsRead: boolean = true, 
-    fetchContent: boolean = true,
-    folder: string = 'INBOX',
-    includeAttachments: boolean = false,
-    format: 'text' | 'html' = 'text'
-  ) => {
+  getMessage: (uid: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    return fetchApi('/email_message', { 
-      handler: 'get_message', 
-      uid: uidInt,
-      folder,
-      mark_as_read: markAsRead,
-      fetch_content: fetchContent,
-      include_attachments: includeAttachments,
-      format
-    });
+    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
   },
 
   searchMessages: (params: {
@@ -605,23 +486,7 @@ export const emailMessageApi = {
     to_date?: string;
     page?: number;
     limit?: number;
-    fetch_content?: boolean;
-  }) => {
-    const requestData: any = {
-      handler: 'search_messages',
-      query: params.query,
-    };
-    
-    if (params.folder) requestData.folder = params.folder;
-    if (params.search_in) requestData.search_in = params.search_in;
-    if (params.from_date) requestData.from_date = params.from_date;
-    if (params.to_date) requestData.to_date = params.to_date;
-    if (params.page !== undefined) requestData.page = params.page;
-    if (params.limit !== undefined) requestData.limit = params.limit;
-    if (params.fetch_content !== undefined) requestData.fetch_content = params.fetch_content;
-    
-    return fetchApi('/email_message', requestData);
-  },
+  }) => fetchApi('/email_message', { handler: 'search_messages', ...params }),
 
   sendMessage: (data: {
     to: string[];
@@ -632,22 +497,7 @@ export const emailMessageApi = {
     bcc?: string[];
     attachments?: any[];
     priority?: 'high' | 'normal' | 'low';
-  }) => {
-    const requestData: any = {
-      handler: 'send_message',
-      to: data.to,
-      subject: data.subject,
-      body: data.body,
-    };
-    
-    if (data.body_type) requestData.body_type = data.body_type;
-    if (data.cc) requestData.cc = data.cc;
-    if (data.bcc) requestData.bcc = data.bcc;
-    if (data.attachments) requestData.attachments = data.attachments;
-    if (data.priority) requestData.priority = data.priority;
-    
-    return fetchApi('/email_message', requestData);
-  },
+  }) => fetchApi('/email_message', { handler: 'send_message', ...data }),
 
   replyMessage: (data: {
     uid: string;
@@ -716,12 +566,7 @@ export const emailMessageApi = {
 
 // Email Folder APIs
 export const emailFolderApi = {
-  getFolders: (hierarchy: boolean = true, includeCounts: boolean = true) => 
-    fetchApi('/email_folder', { 
-      handler: 'get_folders',
-      hierarchy,
-      include_counts: includeCounts
-    }),
+  getFolders: () => fetchApi('/email_folder', { handler: 'get_folders' }),
   
   getFolderInfo: (folderName: string) => 
     fetchApi('/email_folder', { handler: 'get_folder_info', folder_name: folderName }),
@@ -742,30 +587,9 @@ export const emailFolderApi = {
       old_name: oldName, 
       new_name: newName 
     }),
-  
-  // Get all folders recursively (main + subfolders)
-  getAllFoldersRecursive: async () => {
-    console.log('🔄 Recupero cartelle con gerarchia completa...');
-    
-    try {
-      const response = await fetchApi('/email_folder', { 
-        handler: 'get_folders',
-        hierarchy: true,
-        include_counts: true
-      });
-      
-      const folders = response?.data || [];
-      console.log(`✅ Totale cartelle recuperate: ${folders.length}`);
-      return { data: folders, success: true };
-    } catch (error) {
-      console.error('❌ Errore recupero cartelle:', error);
-      return { data: [], success: false };
-    }
-  }
 };
 
-// Profile API - DEPRECATED: L'endpoint /get_my_profile non esiste nelle API TMWE
-// Usare emailAccountApi.getAccountInfo() per ottenere informazioni account
-// export const profileApi = {
-//   getMyProfile: () => fetchApi('/get_my_profile', {}),
-// };
+// Profile API
+export const profileApi = {
+  getMyProfile: () => fetchApi('/get_my_profile', {}),
+};

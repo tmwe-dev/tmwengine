@@ -40,7 +40,7 @@ export const EmailSyncPreferences = ({
   // Carica le cartelle disponibili
   const { data: foldersData, isLoading: loadingFolders } = useQuery({
     queryKey: ['folders', userEmail],
-    queryFn: () => emailFolderApi.getFolders(),
+    queryFn: emailFolderApi.getFolders,
   });
 
   // Carica le preferenze esistenti

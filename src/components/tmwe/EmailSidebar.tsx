@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { emailFolderApi } from '@/lib/api';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,9 +39,8 @@ interface EmailSidebarProps {
   selectedFolder: string;
   onFolderSelect: (folder: string) => void;
   onCompose: () => void;
-  onSync?: () => void;
+  onSync: () => void;
   dbEmailCount?: number;
-  folders?: any[];
 }
 
 const folderIcons: Record<string, any> = {
@@ -71,18 +70,12 @@ const folderNameSchema = z.string()
   .max(50, { message: "El nombre de la carpeta debe tener menos de 50 caracteres" })
   .regex(/^[a-zA-Z0-9_\-\s]+$/, { message: "El nombre solo puede contener letras, números, guiones, guiones bajos y espacios" });
 
-// Helper function to remove "INBOX/" prefix from displayed folder names
-const getDisplayName = (folderName: string): string => {
-  return folderName.replace(/^INBOX\//i, '');
-};
-
-export const EmailSidebar = ({
+export const EmailSidebar = ({ 
   selectedFolder, 
   onFolderSelect, 
   onCompose,
   onSync,
-  dbEmailCount = 0,
-  folders: propFolders
+  dbEmailCount = 0
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSyncPrefsOpen, setIsSyncPrefsOpen] = useState(false);
@@ -94,7 +87,7 @@ export const EmailSidebar = ({
   const queryClient = useQueryClient();
 
   // Recupera email utente
-  useEffect(() => {
+  useState(() => {
     const fetchUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -110,14 +103,11 @@ export const EmailSidebar = ({
       }
     };
     fetchUserEmail();
-  }, []);
+  });
 
-  const { data: foldersData, isLoading, error: foldersError } = useQuery({
+  const { data: foldersData, isLoading } = useQuery({
     queryKey: ['folders'],
-    queryFn: () => emailFolderApi.getFolders(),
-    staleTime: 10 * 60 * 1000, // 🚀 Aumentato a 10 minuti per performance
-    gcTime: 15 * 60 * 1000,
-    enabled: !propFolders, // 🔥 Query disabilitata se folders arriva come prop
+    queryFn: emailFolderApi.getFolders,
   });
 
   const createFolderMutation = useMutation({
@@ -154,41 +144,16 @@ export const EmailSidebar = ({
     }
   };
 
-  // Usa folders da prop se disponibili (pagina Backup), altrimenti da query API
-  // Normalizza folders: accetta array diretto o oggetto con proprietà folders/data
-  let folders = propFolders;
-  
-  if (!folders) {
-    if (Array.isArray(foldersData)) {
-      folders = foldersData;
-    } else if (foldersData && typeof foldersData === 'object') {
-      folders = foldersData.folders || foldersData.data || [];
-    } else {
-      folders = [];
-    }
-  }
-  
-  // Assicura che folders sia sempre un array
-  if (!Array.isArray(folders)) {
-    console.warn('⚠️ folders non è un array:', folders);
-    folders = [];
-  }
-  
-  console.log('📂 Processed folders:', folders);
-  console.log('📂 Folders count:', folders.length);
+  const folders = foldersData?.data || [];
   
   // Separate system folders from custom folders
   const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];
   const systemFolders = folders.filter((f: any) => 
     systemFolderNames.includes(f.name)
   );
-    const customFolders = folders
-      .filter((f: any) => !systemFolderNames.includes(f.name))
-      .sort((a: any, b: any) => {
-        const nameA = getDisplayName(a.name).toLowerCase();
-        const nameB = getDisplayName(b.name).toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
+  const customFolders = folders.filter((f: any) => 
+    !systemFolderNames.includes(f.name)
+  );
 
   const renderFolder = (folder: any) => {
     const Icon = getFolderIcon(folder.name);
@@ -214,7 +179,7 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${getDisplayName(folder.name)} - ${totalMessages} email${unseenCount > 0 ? ` (${unseenCount} non lette)` : ''}` : undefined}
+        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
       >
         <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
           <Icon className={cn(
@@ -229,24 +194,19 @@ export const EmailSidebar = ({
               "group-hover:scale-110",
               selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {getDisplayName(folder.name)}
+              {folder.name}
             </span>
           )}
         </div>
-        {!isCollapsed && (
-          isLoading ? (
-            <div className="ml-2 h-5 w-8 bg-muted/50 animate-pulse rounded" />
-          ) : totalMessages > 0 ? (
-            <Badge variant="secondary" className={cn(
-              "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 border",
-              unseenCount > 0 
-                ? "bg-purple-500/20 text-purple-300 border-purple-400 font-semibold" 
-                : "bg-transparent text-muted-foreground border-border",
-              selectedFolder === folder.name && "scale-110"
-            )}>
-              {totalMessages}
-            </Badge>
-          ) : null
+        {!isCollapsed && unseenCount > 0 && (
+          <Badge variant="secondary" className={cn(
+            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
+            selectedFolder === folder.name 
+              ? "text-purple-300 border-purple-300" 
+              : "text-white border-white"
+          )}>
+            {unseenCount}
+          </Badge>
         )}
       </Button>
     );
@@ -277,16 +237,6 @@ export const EmailSidebar = ({
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : foldersError ? (
-            <div className="px-3 py-8 text-center">
-              <p className="text-destructive text-sm mb-2">⚠️ Errore caricamento cartelle</p>
-              <p className="text-xs text-muted-foreground">{(foldersError as any)?.message || 'Errore sconosciuto'}</p>
-            </div>
-          ) : folders.length === 0 ? (
-            <div className="px-3 py-8 text-center">
-              <p className="text-muted-foreground text-sm mb-2">📭 Nessuna cartella trovata</p>
-              <p className="text-xs text-muted-foreground">Verifica la configurazione del tuo account email</p>
             </div>
           ) : (
             <>

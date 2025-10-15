@@ -183,58 +183,46 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session using OTP verification [v2.0 - Fixed token extraction]
-    console.log('🔐 Creating Supabase session with OTP verification [v2.0]...');
+    // 6. Generate Supabase session for the authenticated user
+    console.log('🔐 Generating Supabase session...');
 
-    // Update user metadata to mark last login
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      supabaseUser.id,
-      {
-        user_metadata: {
-          ...supabaseUser.user_metadata,
-          tmwe_authenticated: true,
-          last_login: new Date().toISOString(),
-        }
-      }
-    );
-
-    if (updateError) {
-      console.error('Error updating user metadata:', updateError);
-    }
-
-    // Generate magic link with OTP
+    // Use generateLink with type 'recovery' to get proper session tokens
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
     });
 
-    if (linkError || !linkData?.properties?.hashed_token) {
-      console.error('Error generating magic link:', linkError);
-      throw new Error('Failed to generate session link');
+    if (linkError || !linkData?.properties) {
+      console.error('Error generating recovery link:', linkError);
+      throw new Error('Failed to generate session');
     }
 
-    console.log('🔐 Magic link generated, verifying OTP...');
+    // Extract hashed_token from the recovery link
+    const hashedToken = linkData.properties.hashed_token;
 
-    // Verify the OTP to get actual session tokens
-    const { data: verifyData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
-      token_hash: linkData.properties.hashed_token,
-      type: 'magiclink'
+    // Verify the recovery token to get actual session tokens
+    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
+      token_hash: hashedToken,
+      type: 'recovery',
     });
 
-    if (verifyError || !verifyData?.session) {
-      console.error('❌ OTP verification failed:', verifyError);
-      throw new Error('Failed to verify OTP and create session');
+    console.log('🔍 verifyOtp response:', { 
+      hasError: !!verifyError, 
+      hasSession: !!sessionData?.session,
+      dataKeys: sessionData ? Object.keys(sessionData) : null
+    });
+
+    if (verifyError) {
+      console.error('Error verifying recovery token:', verifyError);
+      throw new Error(`Failed to verify token: ${verifyError.message}`);
     }
 
-    const accessToken = verifyData.session.access_token;
-    const refreshToken = verifyData.session.refresh_token;
-
-    if (!accessToken || !refreshToken) {
-      console.error('❌ Missing tokens in session:', verifyData.session);
-      throw new Error('Missing session tokens after OTP verification');
+    if (!sessionData?.session) {
+      console.error('No session in verifyOtp response:', sessionData);
+      throw new Error('No session returned from verifyOtp');
     }
 
-    console.log('✅ Supabase session tokens generated successfully');
+    console.log('✅ Supabase session created successfully');
     console.log('✅ OAuth2 flow completed successfully');
 
     return new Response(
@@ -248,8 +236,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: accessToken,
-        refresh_token: refreshToken,
+        access_token: sessionData.session.access_token,
+        refresh_token: sessionData.session.refresh_token,
       }),
       {
         status: 200,

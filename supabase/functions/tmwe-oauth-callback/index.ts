@@ -183,46 +183,49 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session for the authenticated user
-    console.log('🔐 Generating Supabase session...');
+    // 6. Generate Supabase session with magiclink method (more reliable)
+    console.log('🔐 Creating Supabase session with magiclink...');
 
-    // Use generateLink with type 'recovery' to get proper session tokens
+    // Update user metadata to mark last login
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      supabaseUser.id,
+      {
+        user_metadata: {
+          ...supabaseUser.user_metadata,
+          tmwe_authenticated: true,
+          last_login: new Date().toISOString(),
+        }
+      }
+    );
+
+    if (updateError) {
+      console.error('Error updating user metadata:', updateError);
+    }
+
+    // Generate session tokens using magiclink (more reliable than recovery)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
+      type: 'magiclink',
       email: email,
+      options: {
+        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/callback`
+      }
     });
 
     if (linkError || !linkData?.properties) {
-      console.error('Error generating recovery link:', linkError);
-      throw new Error('Failed to generate session');
+      console.error('Error generating magic link:', linkError);
+      throw new Error('Failed to generate session link');
     }
 
-    // Extract hashed_token from the recovery link
-    const hashedToken = linkData.properties.hashed_token;
+    // Extract tokens directly from the magic link properties
+    const accessToken = linkData.properties.access_token;
+    const refreshToken = linkData.properties.refresh_token;
 
-    // Verify the recovery token to get actual session tokens
-    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
-      token_hash: hashedToken,
-      type: 'recovery',
-    });
-
-    console.log('🔍 verifyOtp response:', { 
-      hasError: !!verifyError, 
-      hasSession: !!sessionData?.session,
-      dataKeys: sessionData ? Object.keys(sessionData) : null
-    });
-
-    if (verifyError) {
-      console.error('Error verifying recovery token:', verifyError);
-      throw new Error(`Failed to verify token: ${verifyError.message}`);
+    if (!accessToken || !refreshToken) {
+      console.error('Missing tokens in link response:', linkData.properties);
+      throw new Error('Missing session tokens from magic link');
     }
 
-    if (!sessionData?.session) {
-      console.error('No session in verifyOtp response:', sessionData);
-      throw new Error('No session returned from verifyOtp');
-    }
-
-    console.log('✅ Supabase session created successfully');
+    console.log('✅ Supabase session tokens generated successfully');
     console.log('✅ OAuth2 flow completed successfully');
 
     return new Response(
@@ -236,8 +239,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: sessionData.session.access_token,
-        refresh_token: sessionData.session.refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
       }),
       {
         status: 200,

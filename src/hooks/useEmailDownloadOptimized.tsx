@@ -21,10 +21,11 @@ interface DownloadStats {
   avgSpeed: number; // email/sec
 }
 
-const PARALLEL_WORKERS = 50; // 10x più di prima
+const PARALLEL_WORKERS = 20; // ✅ Bilanciato per non sovraccaricare il server
 const BATCH_INSERT_SIZE = 200; // 4x più di prima
 const MIN_API_DELAY = 50; // Delay minimo solo se API risponde troppo veloce
 const CACHE_KEY = 'email_download_progress';
+const MAX_CONCURRENT_FOLDERS = 5; // ✅ Max cartelle in parallelo
 
 export const useEmailDownloadOptimized = () => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -164,12 +165,9 @@ export const useEmailDownloadOptimized = () => {
 
       console.log(`📊 Email totali da scaricare: ${totalEmailsToDownload}`);
 
-      // 4. Download emails per folder
-      for (const folder of selectedFolders) {
-        if (shouldStop) {
-          console.log('⏹️ Download fermato dall\'utente');
-          break;
-        }
+      // 4. Download emails con parallelismo cartelle (MAX 5 concurrent)
+      const downloadFolder = async (folder: string) => {
+        if (shouldStop) return;
 
         const progress = progressMap.get(folder)!;
         const missing = progress.serverTotal - progress.dbCount;
@@ -177,13 +175,15 @@ export const useEmailDownloadOptimized = () => {
         if (missing <= 0) {
           updateFolderProgress(folder, { status: 'completed' });
           console.log(`✅ ${folder} già sincronizzata`);
-          continue;
+          return;
         }
 
         console.log(`📥 Download da ${folder}: ${missing} email mancanti`);
         updateFolderProgress(folder, { status: 'downloading' });
 
         try {
+          const folderStartTime = Date.now();
+
           // Get existing message_ids to avoid duplicates
           const { data: existingEmails } = await supabase
             .from('email_messages')
@@ -193,37 +193,75 @@ export const useEmailDownloadOptimized = () => {
 
           const existingMessageIds = new Set(existingEmails?.map(e => e.message_id) || []);
 
-          // 5. OTTIMIZZAZIONE: searchMessages con query vuota per ottenere TUTTE le email
-          // NOTA: searchMessages ritorna metadata + body in 1 chiamata (vs getMessages + getMessage)
-          const response = await emailMessageApi.searchMessages({
-            query: '*', // Wildcard per tutte le email
-            folder,
-            limit: progress.serverTotal,
-            page: 1
-          });
+          // FASE 2: Get UIDs first (metadata only - veloce)
+          const totalPages = Math.ceil(progress.serverTotal / 1000);
+          const allUIDs: string[] = [];
 
-          const allEmails = response?.data?.messages || [];
-          console.log(`📨 Recuperate ${allEmails.length} email da ${folder}`);
+          for (let page = 1; page <= totalPages; page++) {
+            const response = await emailMessageApi.getMessages({
+              folder,
+              page,
+              limit: 1000
+            });
+            
+            const pageUIDs = response?.data?.messages?.map((m: any) => m.uid) || [];
+            allUIDs.push(...pageUIDs);
+          }
 
-          // Filter out already saved emails
-          const newEmails = allEmails.filter((email: any) => {
-            const msgId = email.message_id || email.uid || `${folder}_${email.subject}_${email.date}`;
+          // Filter out existing UIDs
+          const newUIDs = allUIDs.filter(uid => {
+            const msgId = `${folder}_${uid}`;
             return !existingMessageIds.has(msgId);
           });
-          console.log(`🆕 ${newEmails.length} email nuove da salvare`);
 
-          if (newEmails.length === 0) {
+          console.log(`📨 ${newUIDs.length} nuove email da scaricare da ${folder}`);
+
+          if (newUIDs.length === 0) {
             updateFolderProgress(folder, { 
               status: 'completed',
               downloaded: 0 
             });
-            continue;
+            return;
           }
 
-          // 6. OTTIMIZZAZIONE: Batch insert con chunks più grandi
+          // Fetch full emails in parallel (20 workers)
+          const fullEmails: any[] = [];
+
+          for (let i = 0; i < newUIDs.length; i += PARALLEL_WORKERS) {
+            if (shouldStop) break;
+            
+            const chunk = newUIDs.slice(i, i + PARALLEL_WORKERS);
+            const promises = chunk.map(uid => 
+              emailMessageApi.getMessage(uid.toString(), false)
+            );
+            
+            const results = await Promise.allSettled(promises);
+            
+            results.forEach(result => {
+              if (result.status === 'fulfilled' && result.value?.data) {
+                fullEmails.push(result.value.data);
+              }
+            });
+            
+            // Update progress in real-time
+            const elapsed = (Date.now() - folderStartTime) / 1000;
+            const speed = fullEmails.length / elapsed;
+            
+            updateFolderProgress(folder, {
+              downloaded: fullEmails.length,
+              speed
+            });
+            
+            // Delay fisso semplice
+            await new Promise(resolve => setTimeout(resolve, MIN_API_DELAY));
+          }
+
+          console.log(`📦 ${fullEmails.length} email complete recuperate da ${folder}`);
+
+          // FASE 4: Batch insert con UPSERT
           const emailBatches: any[] = [];
-          for (let i = 0; i < newEmails.length; i += BATCH_INSERT_SIZE) {
-            emailBatches.push(newEmails.slice(i, i + BATCH_INSERT_SIZE));
+          for (let i = 0; i < fullEmails.length; i += BATCH_INSERT_SIZE) {
+            emailBatches.push(fullEmails.slice(i, i + BATCH_INSERT_SIZE));
           }
 
           console.log(`📦 ${emailBatches.length} batch da salvare (${BATCH_INSERT_SIZE} email/batch)`);
@@ -232,40 +270,42 @@ export const useEmailDownloadOptimized = () => {
           for (const batch of emailBatches) {
             if (shouldStop) break;
 
-            const batchStartTime = Date.now();
-
             const emailsToInsert = batch.map((email: any) => {
-              const msgId = email.message_id || email.uid || `${folder}_${email.subject}_${email.date}`;
+              const msgId = email.message_id || email.uid || `${folder}_${email.uid}`;
               return {
                 user_email: userEmail,
                 message_id: msgId,
+                provider_id: email.uid || msgId,
                 cartella: folder,
-                mittente: email.from || '',
-                destinatari: email.to || '',
-                cc: email.cc || '',
-                oggetto: email.subject || '',
-                corpo: email.body || email.body_text || '',
-                corpo_html: email.body_html || '',
+                from_email: email.from?.email || email.from || '',
+                to_email: email.to?.map((t: any) => t.email || t).join(', ') || '',
+                cc_email: email.cc?.map((c: any) => c.email || c).join(', ') || '',
+                subject: email.subject || '',
+                body_text: email.body_text || email.body || '',
+                body_html: email.body_html || '',
                 data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-                letta: email.seen || false,
-                allegati: email.attachments ? JSON.stringify(email.attachments) : null,
+                flags: email.flags ? JSON.stringify(email.flags) : JSON.stringify([]),
+                attachments: email.attachments ? JSON.stringify(email.attachments) : JSON.stringify([]),
+                direzione: 'inbound',
+                stato: email.seen ? 'letto' : 'nuovo'
               };
             });
 
+            // ✅ UPSERT invece di INSERT per evitare duplicati
             const { error: insertError } = await supabase
               .from('email_messages')
-              .insert(emailsToInsert);
+              .upsert(emailsToInsert, { onConflict: 'message_id' });
 
             if (insertError) {
-              console.error(`❌ Errore batch insert ${folder}:`, insertError);
+              console.error(`❌ Errore batch upsert ${folder}:`, insertError);
               throw insertError;
             }
 
             savedCount += batch.length;
 
             // Update progress
-            const elapsed = Date.now() - batchStartTime;
-            const speed = (batch.length / elapsed) * 1000; // email/sec
+            const elapsed = (Date.now() - folderStartTime) / 1000;
+            const speed = savedCount / elapsed;
 
             updateFolderProgress(folder, { 
               downloaded: savedCount,
@@ -279,12 +319,7 @@ export const useEmailDownloadOptimized = () => {
               avgSpeed: (prev.downloadedEmails + batch.length) / ((Date.now() - startTime) / 1000)
             }));
 
-            // Dynamic delay: only if API responds too fast
-            if (elapsed < MIN_API_DELAY) {
-              await new Promise(resolve => setTimeout(resolve, MIN_API_DELAY - elapsed));
-            }
-
-            console.log(`✅ Salvate ${savedCount}/${newEmails.length} email da ${folder} (${speed.toFixed(1)} email/sec)`);
+            console.log(`✅ Salvate ${savedCount}/${fullEmails.length} email da ${folder} (${speed.toFixed(1)} email/sec)`);
           }
 
           updateFolderProgress(folder, { 
@@ -306,6 +341,29 @@ export const useEmailDownloadOptimized = () => {
             status: 'error',
             error: err.message 
           });
+        }
+      };
+
+      // FASE 3: Process folders con max 5 concurrent
+      const downloadQueue = [...selectedFolders];
+      const activeDownloads: Set<Promise<void>> = new Set();
+
+      while (downloadQueue.length > 0 || activeDownloads.size > 0) {
+        // Fill up to MAX_CONCURRENT_FOLDERS
+        while (activeDownloads.size < MAX_CONCURRENT_FOLDERS && downloadQueue.length > 0) {
+          const folder = downloadQueue.shift()!;
+          const downloadPromise = downloadFolder(folder);
+          activeDownloads.add(downloadPromise);
+          
+          // Remove from active when done
+          downloadPromise.finally(() => {
+            activeDownloads.delete(downloadPromise);
+          });
+        }
+        
+        // Wait for at least one to complete
+        if (activeDownloads.size > 0) {
+          await Promise.race(activeDownloads);
         }
       }
 

@@ -183,8 +183,8 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session with magiclink method (more reliable)
-    console.log('🔐 Creating Supabase session with magiclink...');
+    // 6. Generate Supabase session using OTP verification
+    console.log('🔐 Creating Supabase session...');
 
     // Update user metadata to mark last login
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -202,27 +202,36 @@ serve(async (req) => {
       console.error('Error updating user metadata:', updateError);
     }
 
-    // Generate session tokens using magiclink (more reliable than recovery)
+    // Generate magic link with OTP
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/callback`
-      }
     });
 
-    if (linkError || !linkData?.properties) {
+    if (linkError || !linkData?.properties?.hashed_token) {
       console.error('Error generating magic link:', linkError);
       throw new Error('Failed to generate session link');
     }
 
-    // Extract tokens directly from the magic link properties
-    const accessToken = linkData.properties.access_token;
-    const refreshToken = linkData.properties.refresh_token;
+    console.log('🔐 Magic link generated, verifying OTP...');
+
+    // Verify the OTP to get actual session tokens
+    const { data: verifyData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
+      token_hash: linkData.properties.hashed_token,
+      type: 'magiclink'
+    });
+
+    if (verifyError || !verifyData?.session) {
+      console.error('❌ OTP verification failed:', verifyError);
+      throw new Error('Failed to verify OTP and create session');
+    }
+
+    const accessToken = verifyData.session.access_token;
+    const refreshToken = verifyData.session.refresh_token;
 
     if (!accessToken || !refreshToken) {
-      console.error('Missing tokens in link response:', linkData.properties);
-      throw new Error('Missing session tokens from magic link');
+      console.error('❌ Missing tokens in session:', verifyData.session);
+      throw new Error('Missing session tokens after OTP verification');
     }
 
     console.log('✅ Supabase session tokens generated successfully');

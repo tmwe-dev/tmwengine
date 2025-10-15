@@ -287,7 +287,9 @@ export const EmailList = ({
 
               <div className="flex items-center justify-between gap-2 mt-2 flex-wrap overflow-hidden">
                 <span className="text-xs text-muted-foreground shrink-0">
-                  {formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })}
+                  {email.date && !isNaN(new Date(email.date).getTime()) 
+                    ? formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })
+                    : 'Data non disponibile'}
                 </span>
               </div>
             </Card>

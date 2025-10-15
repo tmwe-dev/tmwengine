@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,7 +92,7 @@ export const EmailSidebar = ({
   const queryClient = useQueryClient();
 
   // Recupera email utente
-  useState(() => {
+  useEffect(() => {
     const fetchUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -108,10 +108,10 @@ export const EmailSidebar = ({
       }
     };
     fetchUserEmail();
-  });
+  }, []);
 
   const { data: foldersData, isLoading, error: foldersError } = useQuery({
-    queryKey: ['folders'],
+    queryKey: ['folders', userEmail],
     queryFn: async () => {
       console.log('📂 Fetching folders from TMWE API...');
       const response = await emailFolderApi.getFolders();
@@ -120,6 +120,7 @@ export const EmailSidebar = ({
       console.log('📂 Is array?', Array.isArray(response));
       return response;
     },
+    enabled: !!userEmail,
   });
 
   const createFolderMutation = useMutation({

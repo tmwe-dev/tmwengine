@@ -45,6 +45,7 @@ import EdgeFunctionVersions from "./pages/EdgeFunctionVersions";
 import DatabaseSettings from "./pages/DatabaseSettings";
 import CallRoom from "./pages/CallRoom";
 import EmailRules from "./pages/EmailRules";
+import TMWEApiTester from "./pages/TMWEApiTester";
 import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
@@ -217,6 +218,15 @@ const App = () => {
                 <IntegratedAuthGuard>
                   <CRMLayout>
                     <EmailRules />
+                  </CRMLayout>
+                </IntegratedAuthGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/tmwe-api-tester" element={
+              <ProtectedRoute>
+                <IntegratedAuthGuard>
+                  <CRMLayout>
+                    <TMWEApiTester />
                   </CRMLayout>
                 </IntegratedAuthGuard>
               </ProtectedRoute>

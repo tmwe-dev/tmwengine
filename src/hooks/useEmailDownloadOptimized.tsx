@@ -198,30 +198,36 @@ export const useEmailDownloadOptimized = () => {
 
           const existingMessageIds = new Set(existingEmails?.map(e => e.message_id) || []);
 
-          // FASE 2: Get UIDs first (metadata only - veloce)
+          // FASE 2: Get METADATA ONLY (NO body download - veloce!)
           const totalPages = Math.ceil(progress.serverTotal / 1000);
-          const allUIDs: string[] = [];
+          const allMessages: any[] = [];
+
+          console.log(`📊 Scaricando SOLO metadati da ${folder} (${totalPages} pagine)`);
 
           for (let page = 1; page <= totalPages; page++) {
+            if (shouldStop) break;
+            
             const response = await emailMessageApi.getMessages({
               folder,
               page,
               limit: 1000
             });
             
-            const pageUIDs = response?.data?.messages?.map((m: any) => m.uid) || [];
-            allUIDs.push(...pageUIDs);
+            const messages = response?.data?.messages || [];
+            allMessages.push(...messages);
+            
+            console.log(`📄 Pagina ${page}/${totalPages}: ${messages.length} metadati`);
           }
 
-          // Filter out existing UIDs
-          const newUIDs = allUIDs.filter(uid => {
-            const msgId = `${folder}_${uid}`;
+          // Filter out existing messages
+          const newMessages = allMessages.filter(msg => {
+            const msgId = `${folder}_${msg.uid}`;
             return !existingMessageIds.has(msgId);
           });
 
-          console.log(`📨 ${newUIDs.length} nuove email da scaricare da ${folder}`);
+          console.log(`📨 ${newMessages.length} nuove email da salvare (SOLO METADATI)`);
 
-          if (newUIDs.length === 0) {
+          if (newMessages.length === 0) {
             updateFolderProgress(folder, { 
               status: 'completed',
               downloaded: 0 
@@ -229,77 +235,45 @@ export const useEmailDownloadOptimized = () => {
             return;
           }
 
-          // Fetch full emails in parallel (20 workers)
-          const fullEmails: any[] = [];
-
-          for (let i = 0; i < newUIDs.length; i += PARALLEL_WORKERS) {
-            if (shouldStop) break;
-            
-            const chunk = newUIDs.slice(i, i + PARALLEL_WORKERS);
-            const promises = chunk.map(uid => 
-              emailMessageApi.getMessage(uid.toString(), false)
-            );
-            
-            const results = await Promise.allSettled(promises);
-            
-            results.forEach(result => {
-              if (result.status === 'fulfilled' && result.value?.data) {
-                fullEmails.push(result.value.data);
-              }
-            });
-            
-            // Update progress in real-time
-            const elapsed = (Date.now() - folderStartTime) / 1000;
-            const speed = fullEmails.length / elapsed;
-            
-            updateFolderProgress(folder, {
-              downloaded: fullEmails.length,
-              speed
-            });
-            
-            // Delay fisso semplice
-            await new Promise(resolve => setTimeout(resolve, MIN_API_DELAY));
-          }
-
-          console.log(`📦 ${fullEmails.length} email complete recuperate da ${folder}`);
-
-          // FASE 4: Batch insert con UPSERT
+          // FASE 3: Batch insert SOLO METADATI (NO body!)
           const emailBatches: any[] = [];
-          for (let i = 0; i < fullEmails.length; i += BATCH_INSERT_SIZE) {
-            emailBatches.push(fullEmails.slice(i, i + BATCH_INSERT_SIZE));
+          for (let i = 0; i < newMessages.length; i += BATCH_INSERT_SIZE) {
+            emailBatches.push(newMessages.slice(i, i + BATCH_INSERT_SIZE));
           }
 
-          console.log(`📦 ${emailBatches.length} batch da salvare (${BATCH_INSERT_SIZE} email/batch)`);
+          console.log(`📦 ${emailBatches.length} batch da salvare (${BATCH_INSERT_SIZE} email/batch) - SOLO METADATI`);
 
           let savedCount = 0;
           for (const batch of emailBatches) {
             if (shouldStop) break;
 
-            const emailsToInsert = batch.map((email: any) => {
-              const msgId = email.message_id || email.uid || `${folder}_${email.uid}`;
+            const emailsToInsert = batch.map((msg: any) => {
+              const msgId = `${folder}_${msg.uid}`;
               return {
                 user_email: userEmail,
                 message_id: msgId,
-                provider_id: email.uid || msgId,
+                provider_id: msg.uid || msgId,
                 cartella: folder,
-                from_email: email.from?.email || email.from || '',
-                to_email: email.to?.map((t: any) => t.email || t).join(', ') || '',
-                cc_email: email.cc?.map((c: any) => c.email || c).join(', ') || '',
-                subject: email.subject || '',
-                body_text: email.body_text || email.body || '',
-                body_html: email.body_html || '',
-                data_ricezione: email.date ? new Date(email.date).toISOString() : new Date().toISOString(),
-                flags: email.flags ? JSON.stringify(email.flags) : JSON.stringify([]),
-                attachments: email.attachments ? JSON.stringify(email.attachments) : JSON.stringify([]),
+                from_email: msg.from?.email || msg.from || '',
+                to_email: Array.isArray(msg.to) ? msg.to.map((t: any) => t.email || t).join(', ') : (msg.to || ''),
+                cc_email: Array.isArray(msg.cc) ? msg.cc.map((c: any) => c.email || c).join(', ') : '',
+                subject: msg.subject || '',
+                // ⚠️ NO body_html, NO body_text - saranno scaricati on-demand
+                data_ricezione: msg.date ? new Date(msg.date).toISOString() : new Date().toISOString(),
+                flags: msg.flags ? JSON.stringify(msg.flags) : JSON.stringify([]),
+                attachments: msg.has_attachments ? JSON.stringify([]) : JSON.stringify([]),
                 direzione: 'inbound',
-                stato: email.seen ? 'letto' : 'nuovo'
+                stato: msg.seen ? 'letto' : 'nuovo'
               };
             });
 
-            // ✅ UPSERT invece di INSERT per evitare duplicati
+            // ✅ UPSERT metadati
             const { error: insertError } = await supabase
               .from('email_messages')
-              .upsert(emailsToInsert, { onConflict: 'message_id' });
+              .upsert(emailsToInsert, { 
+                onConflict: 'message_id',
+                ignoreDuplicates: false
+              });
 
             if (insertError) {
               console.error(`❌ Errore batch upsert ${folder}:`, insertError);
@@ -324,7 +298,7 @@ export const useEmailDownloadOptimized = () => {
               avgSpeed: (prev.downloadedEmails + batch.length) / ((Date.now() - startTime) / 1000)
             }));
 
-            console.log(`✅ Salvate ${savedCount}/${fullEmails.length} email da ${folder} (${speed.toFixed(1)} email/sec)`);
+            console.log(`✅ Salvati ${savedCount}/${newMessages.length} metadati da ${folder} (${speed.toFixed(1)} email/sec)`);
           }
 
           updateFolderProgress(folder, { 

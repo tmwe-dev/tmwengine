@@ -27,7 +27,8 @@ import {
   Megaphone,
   X,
   Settings,
-  Paintbrush
+  Paintbrush,
+  Loader2
 } from 'lucide-react';
 import { formatFileSize, downloadBase64File } from '@/lib/tmwe-fileUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,16 +40,20 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useEmailBody } from '@/hooks/useEmailBody';
 
 interface EmailDetailProps {
   email: {
     id: string;
+    message_id?: string;
+    uid?: string;
+    cartella?: string;
     subject: string;
     from: string;
     to: string[];
     cc?: string[];
     date: string;
-    body: string;
+    body?: string;
     attachments?: any[];
   };
   onReply: () => void;
@@ -90,6 +95,13 @@ export const EmailDetail = ({
   const [selectedAction, setSelectedAction] = useState<'move_to_folder' | 'mark_as_read' | 'archive' | 'delete' | 'forward' | null>(null);
   const [destinationFolder, setDestinationFolder] = useState<string>('INBOX');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // 🚀 Lazy loading del body email
+  const { body: lazyLoadedBody, loading: bodyLoading, error: bodyError } = useEmailBody(
+    email.message_id || email.id,
+    email.uid || email.id,
+    email.cartella || 'INBOX'
+  );
   // FORZA SEMPRE IL LILLA COME DEFAULT - RESET COMPLETO
   const LILLA_DEFAULT = '#c084fc';
   const [emailTextColor, setEmailTextColor] = useState(() => {
@@ -489,71 +501,82 @@ export const EmailDetail = ({
 
           {/* Body in sandboxed iframe */}
           <div>
-            <iframe
-              ref={iframeRef}
-              srcDoc={`
-                <!DOCTYPE html>
-                <html>
-                  <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <style>
-                      html, body {
-                        margin: 0;
-                        padding: 0;
-                        height: 100%;
-                      }
-                      body {
-                        padding: 16px;
-                        font-family: system-ui, -apple-system, sans-serif;
-                        font-size: 16px;
-                        line-height: 1.5;
-                        color: ${emailTextColor} !important;
-                        word-wrap: break-word;
-                        overflow-wrap: break-word;
-                        background-color: black !important;
-                      }
-                      body * {
-                        color: ${emailTextColor} !important;
-                      }
-                      /* Escludi immagini e file dal colore */
-                      img, svg, canvas, video, iframe {
-                        color: initial !important;
-                      }
-                      * {
-                        max-width: 100% !important;
-                        box-sizing: border-box !important;
-                      }
-                      img {
-                        max-width: 100% !important;
-                        height: auto !important;
-                        display: block;
-                      }
-                      table {
-                        max-width: 100% !important;
-                        width: 100% !important;
-                        border-collapse: collapse;
-                      }
-                      td, th {
-                        max-width: 100% !important;
-                        word-wrap: break-word;
-                      }
-                      a {
-                        word-break: break-all;
-                      }
-                    </style>
-                  </head>
-                  <body>
-                    ${email.body || '<p>No content available</p>'}
-                  </body>
-                </html>
-              `}
-              sandbox="allow-same-origin"
-              className="w-full border-0"
-              style={{ 
-                overflow: 'auto'
-              }}
-            />
+            {bodyLoading ? (
+              <div className="flex items-center justify-center p-8 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-muted-foreground">Caricamento contenuto email...</span>
+              </div>
+            ) : bodyError ? (
+              <div className="p-4 border border-destructive rounded-lg bg-destructive/10">
+                <p className="text-destructive">⚠️ {bodyError}</p>
+              </div>
+            ) : (
+              <iframe
+                ref={iframeRef}
+                srcDoc={`
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <meta charset="utf-8">
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                      <style>
+                        html, body {
+                          margin: 0;
+                          padding: 0;
+                          height: 100%;
+                        }
+                        body {
+                          padding: 16px;
+                          font-family: system-ui, -apple-system, sans-serif;
+                          font-size: 16px;
+                          line-height: 1.5;
+                          color: ${emailTextColor} !important;
+                          word-wrap: break-word;
+                          overflow-wrap: break-word;
+                          background-color: black !important;
+                        }
+                        body * {
+                          color: ${emailTextColor} !important;
+                        }
+                        /* Escludi immagini e file dal colore */
+                        img, svg, canvas, video, iframe {
+                          color: initial !important;
+                        }
+                        * {
+                          max-width: 100% !important;
+                          box-sizing: border-box !important;
+                        }
+                        img {
+                          max-width: 100% !important;
+                          height: auto !important;
+                          display: block;
+                        }
+                        table {
+                          max-width: 100% !important;
+                          width: 100% !important;
+                          border-collapse: collapse;
+                        }
+                        td, th {
+                          max-width: 100% !important;
+                          word-wrap: break-word;
+                        }
+                        a {
+                          word-break: break-all;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      ${lazyLoadedBody || email.body || '<p>No content available</p>'}
+                    </body>
+                  </html>
+                `}
+                sandbox="allow-same-origin"
+                className="w-full border-0"
+                style={{ 
+                  overflow: 'auto'
+                }}
+              />
+            )}
           </div>
         </div>
       </ScrollArea>

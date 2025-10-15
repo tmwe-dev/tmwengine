@@ -199,7 +199,7 @@ export const EmailList = ({
   
   const renderListView = () => {
     return (
-      <div className="space-y-2 sm:space-y-3 p-2 overflow-hidden">
+      <div className="space-y-2 sm:space-y-3 p-2">
         {filteredEmails.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-muted-foreground">
             <p className="text-sm">Nessuna email da visualizzare</p>
@@ -219,77 +219,91 @@ export const EmailList = ({
               )}
               onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
             >
-              <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {multiSelectMode && (
-                    <Checkbox
-                      checked={selectedEmailIds.has(email.id)}
-                      onClick={(e) => { e.stopPropagation(); handleToggleEmailSelection(email.id); }}
-                      className="shrink-0"
-                    />
-                  )}
-                  <div className="font-medium text-sm sm:text-base truncate">
-                    {email.from}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {multiSelectMode && (
+                      <Checkbox
+                        checked={selectedEmailIds.has(email.id)}
+                        onClick={(e) => { e.stopPropagation(); handleToggleEmailSelection(email.id); }}
+                        className="shrink-0"
+                      />
+                    )}
+                    <div className="font-medium text-sm sm:text-base truncate">
+                      {email.from}
+                    </div>
+                    {email.group && (
+                      <Badge className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium animate-fade-in",
+                        email.group === 'blue' && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+                        email.group === 'green' && "bg-green-500/20 text-green-700 dark:text-green-300",
+                        email.group === 'orange' && "bg-orange-500/20 text-orange-700 dark:text-orange-300",
+                        email.group === 'purple' && "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+                        !email.group && "bg-gray-500/20 text-gray-700 dark:text-gray-300"
+                      )}>
+                        {email.group}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {email.hasAttachments && (
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    {email.starred && (
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                    <button
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onEmailSelect(email.id);
+                        onOpenDetailPopup?.();
+                      }}
+                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:scale-110"
+                      title="Visualizza corpo email"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1.5 rounded-md hover:bg-primary/10">
+                        <MoreVertical className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-popover z-50">
+                        <DropdownMenuItem onClick={() => onEmailSelect(email.id)}>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Apri
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archivia
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Elimina
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                  {email.hasAttachments && (
-                    <Paperclip className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  {email.starred && (
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                  )}
-                  <button
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      onEmailSelect(email.id);
-                      onOpenDetailPopup?.();
-                    }}
-                    className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:scale-110"
-                    title="Visualizza corpo email"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1.5 rounded-md hover:bg-primary/10">
-                      <MoreVertical className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-popover z-50">
-                      <DropdownMenuItem onClick={() => onEmailSelect(email.id)}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Apri
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Archive className="mr-2 h-4 w-4" />
-                        Archivia
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Elimina
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+
+                <div className={cn(
+                  "text-sm font-semibold truncate",
+                  !email.read && "font-bold"
+                )}>
+                  {email.subject}
                 </div>
-              </div>
 
-              <div className={cn(
-                "text-sm font-semibold truncate mb-1",
-                !email.read && "font-bold"
-              )}>
-                {email.subject}
-              </div>
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {email.preview}
+                </p>
 
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {email.preview}
-              </p>
-
-              <div className="flex items-center justify-between gap-2 mt-2 flex-wrap overflow-hidden">
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {email.date && !isNaN(new Date(email.date).getTime()) 
-                    ? formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })
-                    : 'Data non disponibile'}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {email.date && !isNaN(new Date(email.date).getTime()) 
+                      ? formatDistanceToNow(new Date(email.date), { addSuffix: true, locale: it })
+                      : 'Data non disponibile'}
+                  </span>
+                </div>
               </div>
             </Card>
           ))
@@ -300,7 +314,121 @@ export const EmailList = ({
 
   const renderGridView = () => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2">
+        {filteredEmails.length === 0 ? (
+          <div className="col-span-full flex items-center justify-center h-64 text-muted-foreground">
+            <p className="text-sm">Nessuna email da visualizzare</p>
+          </div>
+        ) : (
+          filteredEmails.map((email, index) => (
+            <Card
+              key={email.id}
+              ref={index === filteredEmails.length - 1 ? lastEmailRef : null}
+              className={cn(
+                "min-h-[120px] rounded-lg border p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-200 relative overflow-hidden",
+                email.read 
+                  ? "border-l-2 border-l-muted hover:scale-[1.01] bg-card/50 shadow-sm" 
+                  : "bg-gradient-to-r from-primary/5 via-transparent to-transparent border-l-4 border-l-primary/60 hover:scale-[1.01] bg-card shadow-sm before:absolute before:left-1 before:top-1/2 before:-translate-y-1/2 before:w-2 before:h-2 before:bg-primary before:rounded-full before:animate-pulse",
+                selectedEmailId === email.id && "ring-2 ring-primary bg-primary/5",
+                multiSelectMode && selectedEmailIds.has(email.id) && "ring-2 ring-yellow-400"
+              )}
+              onClick={() => multiSelectMode ? handleToggleEmailSelection(email.id) : onEmailSelect(email.id)}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                    {multiSelectMode && (
+                      <Checkbox
+                        checked={selectedEmailIds.has(email.id)}
+                        onClick={(e) => { e.stopPropagation(); handleToggleEmailSelection(email.id); }}
+                        className="shrink-0"
+                      />
+                    )}
+                    <div className={cn(
+                      "text-xs font-medium truncate",
+                      !email.read && "font-bold"
+                    )}>
+                      {email.from}
+                    </div>
+                    {email.group && (
+                      <Badge className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 animate-scale-in",
+                        email.group === 'blue' && "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+                        email.group === 'green' && "bg-green-500/20 text-green-700 dark:text-green-300",
+                        email.group === 'orange' && "bg-orange-500/20 text-orange-700 dark:text-orange-300",
+                        email.group === 'purple' && "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+                        !email.group && "bg-gray-500/20 text-gray-700 dark:text-gray-300"
+                      )}>
+                        {email.group}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {email.hasAttachments && (
+                      <Paperclip className="h-3 w-3 text-muted-foreground" />
+                    )}
+                    {email.starred && (
+                      <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                    )}
+                    <button
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onEmailSelect(email.id);
+                        onOpenDetailPopup?.();
+                      }}
+                      className="p-1.5 rounded-md hover:bg-primary/10 transition-all duration-200 hover:scale-110"
+                      title="Visualizza corpo email"
+                    >
+                      <Maximize2 className="h-3 w-3" />
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} className="shrink-0 p-1 rounded-md hover:bg-primary/10">
+                        <MoreHorizontal className="h-3 w-3" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-popover z-50">
+                        <DropdownMenuItem onClick={() => onEmailSelect(email.id)}>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Apri
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Archive className="mr-2 h-4 w-4" />
+                          Archivia
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Elimina
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                <div className={cn(
+                  "text-sm font-semibold truncate",
+                  !email.read && "font-bold"
+                )}>
+                  {email.subject}
+                </div>
+
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {email.preview}
+                </p>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {email.date && !isNaN(new Date(email.date).getTime()) 
+                      ? format(new Date(email.date), 'dd MMM', { locale: it })
+                      : 'Data non disponibile'}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+    );
+  };
         {filteredEmails.length === 0 ? (
           <div className="col-span-full flex items-center justify-center h-64 text-muted-foreground">
             <p className="text-sm">Nessuna email da visualizzare</p>

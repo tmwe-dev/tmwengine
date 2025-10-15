@@ -113,17 +113,12 @@ const TMWEEmailBackup = () => {
     }
   });
 
-  // Fetch folders from TMWE API
+  // 📦 Fetch folders from TMWE API (solo per conteggi server)
   const { data: apiFoldersData, isLoading: apiFoldersLoading } = useQuery({
     queryKey: ["email-folders-api"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('tmwe-email-folders', {
-        body: { user_email: userEmail }
-      });
-      
-      if (error) throw error;
-      
-      return data.folders || [];
+      const folders = await emailApi.getFolders();
+      return folders;
     },
     enabled: !!userEmail,
   });

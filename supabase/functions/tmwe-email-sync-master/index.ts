@@ -190,10 +190,10 @@ serve(async (req) => {
     try {
       const baseUrl = 'https://findair.it/erp/tmwe_json';
 
-      // STEP 1: TEST con offset=40 e limit=50
+      // STEP 1: Recupera tutti gli UID con paginazione corretta
       const allUIDs: Array<{uid: string, subject: string, from: string, date: string}> = [];
-      const listBatchSize = 50; // TEST: limit=50
-      let listOffset = 40; // TEST: offset=40
+      const listBatchSize = 50;
+      let listOffset = 0; // ✅ FIXATO: Inizia sempre da 0
       let hasMore = true;
       
       while (hasMore) {

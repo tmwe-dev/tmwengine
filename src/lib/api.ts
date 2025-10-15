@@ -111,6 +111,15 @@ export const emailApi = {
       to,
       body
     });
+  },
+
+  /**
+   * Get folders
+   */
+  getFolders: async () => {
+    return fetchApi('/email_folder', {
+      handler: 'get_folders'
+    });
   }
 };
 

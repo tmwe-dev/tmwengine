@@ -91,29 +91,27 @@ export const EmailSidebar = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Recupera email utente solo quando serve (per sync preferences)
+  // Recupera email utente
   useEffect(() => {
-    if (isSyncPrefsOpen && !userEmail) {
-      const fetchUserEmail = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('tmwe_email')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (profile?.tmwe_email) {
-            setUserEmail(profile.tmwe_email);
-          }
+    const fetchUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('tmwe_email')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.tmwe_email) {
+          setUserEmail(profile.tmwe_email);
         }
-      };
-      fetchUserEmail();
-    }
-  }, [isSyncPrefsOpen, userEmail]);
+      }
+    };
+    fetchUserEmail();
+  }, []);
 
   const { data: foldersData, isLoading, error: foldersError } = useQuery({
-    queryKey: ['folders'],
+    queryKey: ['folders', userEmail],
     queryFn: async () => {
       console.log('📂 Fetching folders from TMWE API...');
       const response = await emailFolderApi.getFolders();
@@ -122,6 +120,7 @@ export const EmailSidebar = ({
       console.log('📂 Is array?', Array.isArray(response));
       return response;
     },
+    enabled: !!userEmail,
   });
 
   const createFolderMutation = useMutation({

@@ -84,7 +84,10 @@ export const useEmailDownloadOptimized = () => {
     localStorage.removeItem(CACHE_KEY);
   }, []);
 
-  const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
+  const startDownload = useCallback(async (
+    selectedFolders: string[],
+    queryClient?: QueryClient
+  ): Promise<void> => {
     setIsDownloading(true);
     setShouldStop(false);
     setError(null);
@@ -124,13 +127,15 @@ export const useEmailDownloadOptimized = () => {
         return;
       }
 
-      // For now, download all non-system folders (escludi Trash, Junk, Spam)
-      const excludedFolders = ['Trash', 'Junk', 'Spam', 'Deleted Messages'];
-      const selectedFolders = allFolders
-        .filter((f: any) => !excludedFolders.includes(f.name))
-        .map((f: any) => f.name);
+      // Validate selected folders
+      if (!selectedFolders || selectedFolders.length === 0) {
+        toast.error('Nessuna cartella selezionata');
+        setIsDownloading(false);
+        return;
+      }
 
-      console.log(`📂 Cartelle selezionate: ${selectedFolders.length}`);
+      console.log(`📂 Cartelle da scaricare:`, selectedFolders);
+      console.log(`📂 Total folders to download: ${selectedFolders.length}`);
 
       // 3. Initialize folder progress
       const progressMap = new Map<string, FolderProgress>();
@@ -412,13 +417,16 @@ export const useEmailDownloadOptimized = () => {
     clearProgress();
   }, [clearProgress]);
 
-  const resumeDownload = useCallback(async (queryClient?: QueryClient) => {
+  const resumeDownload = useCallback(async (
+    selectedFolders: string[],
+    queryClient?: QueryClient
+  ) => {
     const cachedProgress = loadProgress();
     if (cachedProgress) {
       setFolderProgress(cachedProgress);
       toast.info('Ripresa download da dove era stato interrotto');
     }
-    await startDownload(queryClient);
+    await startDownload(selectedFolders, queryClient);
   }, [loadProgress, startDownload]);
 
   return {

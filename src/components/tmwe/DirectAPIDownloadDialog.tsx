@@ -113,8 +113,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     }
 
     try {
-      // TODO: Modificare startDownload per accettare selectedFolders
-      await startDownload(queryClient);
+      await startDownload(selectedFolders, queryClient);
       toast.success('Download completato');
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       refetchStats();
@@ -226,7 +225,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
           {hasCache && !isDownloading && (
             <Button
               variant="secondary"
-              onClick={() => resumeDownload(queryClient)}
+              onClick={() => resumeDownload(selectedFolders, queryClient)}
               className="mr-auto"
             >
               Riprendi Download

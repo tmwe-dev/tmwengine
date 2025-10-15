@@ -32,6 +32,7 @@ import GeneralConfig from "./pages/GeneralConfig";
 import RecordImportati from "./pages/RecordImportati";
 import Tables from "./pages/Tables";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
+import TMWEEmailBackup from "./pages/TMWEEmailBackup";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
 import EmailSenders from "./pages/EmailSenders";
@@ -166,6 +167,15 @@ const App = () => {
                 <IntegratedAuthGuard>
                   <CRMLayout>
                     <TMWEEmailDashboard />
+                  </CRMLayout>
+                </IntegratedAuthGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/email-backup" element={
+              <ProtectedRoute>
+                <IntegratedAuthGuard>
+                  <CRMLayout>
+                    <TMWEEmailBackup />
                   </CRMLayout>
                 </IntegratedAuthGuard>
               </ProtectedRoute>

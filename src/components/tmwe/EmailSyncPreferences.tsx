@@ -15,13 +15,20 @@ import { Loader2, Check, AlertCircle } from 'lucide-react';
 interface EmailSyncPreferencesProps {
   userEmail: string;
   onClose?: () => void;
+  showButtons?: boolean;
+  onSave?: () => void;
 }
 
 type SyncMode = 'blacklist' | 'whitelist';
 
 const RECOMMENDED_EXCLUDES = ["Trash", "Archives", "Junk", "Drafts"];
 
-export const EmailSyncPreferences = ({ userEmail, onClose }: EmailSyncPreferencesProps) => {
+export const EmailSyncPreferences = ({ 
+  userEmail, 
+  onClose, 
+  showButtons = true,
+  onSave 
+}: EmailSyncPreferencesProps) => {
   const { toast } = useToast();
   const [syncMode, setSyncMode] = useState<SyncMode>('blacklist');
   const [excludedFolders, setExcludedFolders] = useState<string[]>(RECOMMENDED_EXCLUDES);
@@ -61,6 +68,7 @@ export const EmailSyncPreferences = ({ userEmail, onClose }: EmailSyncPreference
         title: "✅ Preferenze salvate",
         description: "Le tue preferenze di sincronizzazione sono state aggiornate.",
       });
+      onSave?.();
       onClose?.();
     },
     onError: (error: any) => {
@@ -208,24 +216,26 @@ export const EmailSyncPreferences = ({ userEmail, onClose }: EmailSyncPreference
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button variant="outline" onClick={onClose}>
-          Annulla
-        </Button>
-        <Button
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-        >
-          {saveMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvataggio...
-            </>
-          ) : (
-            'Salva Preferenze'
-          )}
-        </Button>
-      </div>
+      {showButtons && (
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Annulla
+          </Button>
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvataggio...
+              </>
+            ) : (
+              'Salva Preferenze'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Download, CheckCircle, AlertCircle, Loader2, Folder, Database, CloudDownload } from 'lucide-react';
+import { Download, CheckCircle, AlertCircle, Loader2, Folder, Database, CloudDownload, ArrowRight } from 'lucide-react';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { EmailSyncPreferences } from './EmailSyncPreferences';
+import { supabase } from '@/integrations/supabase/client';
+import { getSyncPreferences, filterFolders, getFilterStats } from '@/lib/email-sync-preferences';
+import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 
 interface DirectAPIDownloadDialogProps {
   open: boolean;
@@ -14,6 +18,8 @@ interface DirectAPIDownloadDialogProps {
 
 export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloadDialogProps) => {
   const queryClient = useQueryClient();
+  const [step, setStep] = useState<'config' | 'download'>('config');
+  const [userEmail, setUserEmail] = useState<string>('');
   const {
     isDownloading,
     downloadedCount,
@@ -28,7 +34,45 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     reset
   } = useEmailDownload();
 
-  const handleDownload = async () => {
+  // Fetch user email when dialog opens
+  useEffect(() => {
+    if (open) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase
+            .from('user_profiles')
+            .select('tmwe_email')
+            .eq('user_id', user.id)
+            .single()
+            .then(({ data }) => {
+              if (data?.tmwe_email) {
+                setUserEmail(data.tmwe_email);
+              }
+            });
+        }
+      });
+    }
+  }, [open]);
+
+  // Fetch folders and preferences for preview
+  const { data: foldersData } = useQuery({
+    queryKey: ['folders', userEmail],
+    queryFn: emailFolderApi.getFolders,
+    enabled: !!userEmail && step === 'config',
+  });
+
+  const { data: syncPreferences } = useQuery({
+    queryKey: ['sync-preferences', userEmail],
+    queryFn: () => getSyncPreferences(userEmail),
+    enabled: !!userEmail && step === 'config',
+  });
+
+  const allFolders = foldersData?.data || [];
+  const filteredFolders = syncPreferences ? filterFolders(allFolders, syncPreferences) : [];
+  const filterStats = syncPreferences ? getFilterStats(allFolders.length, filteredFolders, syncPreferences) : null;
+
+  const handleStartDownload = async () => {
+    setStep('download');
     try {
       await startDownload(queryClient);
       toast.success('Download completato');
@@ -41,6 +85,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   const handleClose = () => {
     if (!isDownloading) {
       reset();
+      setStep('config');
       onOpenChange(false);
     }
   };
@@ -70,16 +115,93 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Scarica Email TMWE (API Diretta)</DialogTitle>
+          <DialogTitle>
+            {step === 'config' ? 'Configura Download Email' : 'Download Email TMWE'}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Questo strumento scarica le email direttamente dal server TMWE usando l'API client-side. 
-            Tutte le email verranno salvate nel database locale con body completo e allegati.
+        {step === 'config' ? (
+          /* CONFIG STEP */
+          <div className="space-y-6">
+            {userEmail ? (
+              <>
+                <EmailSyncPreferences 
+                  userEmail={userEmail} 
+                  showButtons={false}
+                />
+
+                {/* Preview cartelle */}
+                {filterStats && (
+                  <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+                    <div className="font-medium text-sm">📊 Riepilogo Download</div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span>
+                          <strong>{filterStats.filtered}</strong> cartelle da scaricare
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-orange-500" />
+                        <span>
+                          <strong>{filterStats.excluded}</strong> cartelle escluse
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {filteredFolders.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <div className="text-xs font-medium text-muted-foreground mb-2">
+                          Cartelle che verranno scaricate:
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {filteredFolders.slice(0, 5).map((folder: any) => (
+                            <span 
+                              key={folder.name}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs"
+                            >
+                              <Folder className="h-3 w-3" />
+                              {folder.name}
+                              {folder.messages > 0 && (
+                                <span className="text-muted-foreground">({folder.messages})</span>
+                              )}
+                            </span>
+                          ))}
+                          {filteredFolders.length > 5 && (
+                            <span className="inline-flex items-center px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
+                              +{filteredFolders.length - 5} altre
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={handleClose}>
+                    Annulla
+                  </Button>
+                  <Button onClick={handleStartDownload} disabled={filteredFolders.length === 0}>
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Avvia Download
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
           </div>
+        ) : (
+          /* DOWNLOAD STEP */
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Download in corso dal server TMWE. Le email verranno salvate nel database locale.
+            </div>
 
           {/* Status Display */}
           {isDownloading && (
@@ -173,52 +295,43 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {!isDownloading ? (
-              <>
-                <Button 
-                  onClick={handleDownload}
-                  className="flex-1"
-                  disabled={isDownloading}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Scarica Email
-                </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {!isDownloading ? (
                 <Button 
                   variant="outline" 
                   onClick={handleClose}
-                >
-                  Chiudi
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="destructive" 
-                  onClick={stopDownload}
                   className="flex-1"
                 >
-                  Ferma Download
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleClose}
-                  disabled
-                >
                   Chiudi
                 </Button>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={stopDownload}
+                    className="flex-1"
+                  >
+                    Ferma Download
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleClose}
+                    disabled
+                  >
+                    Chiudi
+                  </Button>
+                </>
+              )}
+            </div>
 
-          {/* Info Footer */}
-          <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
-            <strong>Nota:</strong> Questo metodo scarica tutte le email da tutte le cartelle usando l'API TMWE. 
-            Le email già presenti nel database verranno saltate automaticamente. 
-            Il processo può richiedere alcuni minuti per account con molte email.
+            {/* Info Footer */}
+            <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
+              <strong>Nota:</strong> Le email già presenti nel database verranno saltate automaticamente. 
+              Il processo può richiedere alcuni minuti per account con molte email.
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

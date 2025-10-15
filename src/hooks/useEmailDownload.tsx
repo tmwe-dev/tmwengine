@@ -5,6 +5,15 @@ import { toast } from 'sonner';
 import { QueryClient } from '@tanstack/react-query';
 import { getSyncPreferences, filterFolders, getFilterStats } from '@/lib/email-sync-preferences';
 
+export type FolderProgress = {
+  folder: string;
+  dbCount: number;
+  serverTotal: number;
+  downloaded: number;
+  status: 'idle' | 'downloading' | 'completed' | 'error';
+  error?: string;
+};
+
 export const useEmailDownload = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadedCount, setDownloadedCount] = useState(0);
@@ -16,6 +25,7 @@ export const useEmailDownload = () => {
   const [currentFolderProgress, setCurrentFolderProgress] = useState({ current: 0, total: 0 });
   const [currentPhase, setCurrentPhase] = useState<'loading' | 'downloading' | 'saving' | 'idle'>('idle');
   const [processedFolders, setProcessedFolders] = useState<string[]>([]);
+  const [folderProgress, setFolderProgress] = useState<Map<string, FolderProgress>>(new Map());
 
   const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
     setIsDownloading(true);
@@ -397,5 +407,6 @@ export const useEmailDownload = () => {
     currentFolderProgress,
     currentPhase,
     processedFolders,
+    folderProgress,
   };
 };

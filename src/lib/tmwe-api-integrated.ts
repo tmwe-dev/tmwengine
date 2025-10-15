@@ -587,6 +587,59 @@ export const emailFolderApi = {
       old_name: oldName, 
       new_name: newName 
     }),
+  
+  // Get all folders recursively (main + subfolders)
+  getAllFoldersRecursive: async () => {
+    const allFolders: any[] = [];
+    const queue: string[] = [''];
+    const seen = new Set<string>();
+    
+    console.log('🔄 Inizio recupero ricorsivo cartelle...');
+    
+    while (queue.length > 0) {
+      const parentPath = queue.shift()!;
+      
+      // Evita loop infiniti
+      if (seen.has(parentPath)) {
+        console.warn(`⚠️ Cartella già visitata: ${parentPath}`);
+        continue;
+      }
+      seen.add(parentPath);
+      
+      try {
+        const response = await fetchApi('/email_folder', { 
+          handler: 'get_folders',
+          parent: parentPath || undefined
+        });
+        
+        const folders = response?.data || [];
+        console.log(`📂 Trovate ${folders.length} cartelle in ${parentPath || 'root'}`);
+        
+        allFolders.push(...folders);
+        
+        // Aggiungi sottocartelle alla queue
+        folders.forEach((f: any) => {
+          if (f.has_children || f.subfolders || (f.attributes && f.attributes.includes('\\HasChildren'))) {
+            const fullPath = parentPath ? `${parentPath}/${f.name}` : f.name;
+            if (!seen.has(fullPath)) {
+              queue.push(fullPath);
+            }
+          }
+        });
+      } catch (error) {
+        console.error(`❌ Errore recupero sottocartelle di ${parentPath}:`, error);
+      }
+      
+      // Safety: max 1000 cartelle
+      if (allFolders.length > 1000) {
+        console.warn('⚠️ Limite di sicurezza raggiunto (1000 cartelle)');
+        break;
+      }
+    }
+    
+    console.log(`✅ Totale cartelle recuperate ricorsivamente: ${allFolders.length}`);
+    return { data: allFolders, success: true };
+  }
 };
 
 // Profile API

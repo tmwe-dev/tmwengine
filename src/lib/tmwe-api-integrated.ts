@@ -373,7 +373,7 @@ const ensureValidToken = async (): Promise<string | null> => {
   return config.accessToken;
 };
 
-// API request wrapper - DIRECT API CALLS (NO EDGE FUNCTION)
+// API request wrapper
 const fetchApi = async (endpoint: string, data: any) => {
   const accessToken = await ensureValidToken();
   
@@ -381,98 +381,50 @@ const fetchApi = async (endpoint: string, data: any) => {
     throw new Error('No valid token. Please login to TMWE first.');
   }
 
-  const API_BASE_URL = 'https://findair.it/erp/tmwe_json';
-  const url = `${API_BASE_URL}${endpoint}`;
+  const requestBody = {
+    endpoint,
+    data,
+    bearerToken: accessToken
+  };
 
   console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 DIRECT API CALL TO TMWE');
+  console.log('📤 SOLICITUD AL API TMWE');
   console.log('═══════════════════════════════════════════════════════');
   console.log('⏰ Timestamp:', new Date().toISOString());
   console.log('📍 Endpoint:', endpoint);
   console.log('🎯 Handler:', data.handler);
-  console.log('🌐 URL:', url);
-  console.log('🔑 Token (first 20 chars):', accessToken.substring(0, 20) + '...');
+  console.log('📦 Request Body:', JSON.stringify(requestBody, null, 2));
+  console.log('🔑 Token (primeros 20 chars):', accessToken.substring(0, 20) + '...');
   console.log('═══════════════════════════════════════════════════════');
 
   try {
-    // Special handling for /get_my_profile (GET method)
-    if (endpoint === '/get_my_profile') {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error:', response.status, errorText);
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      console.log('✅ GET Response received');
-      return responseData;
-    }
-
-    // POST requests for all other endpoints
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(data),
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: requestBody
     });
 
-    const responseText = await response.text();
-
     console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 DIRECT API RESPONSE');
+    console.log('📥 RESPUESTA DEL API TMWE');
     console.log('═══════════════════════════════════════════════════════');
     console.log('⏰ Timestamp:', new Date().toISOString());
     console.log('📍 Endpoint:', endpoint);
     console.log('🎯 Handler:', data.handler);
-    console.log('📊 Status:', response.status);
-    console.log('📏 Size:', responseText.length, 'bytes');
-
-    if (!response.ok) {
-      console.error('❌ API Error:', response.status);
-      console.error('📄 Error Response:', responseText);
+    
+    if (error) {
+      console.error('❌ ERROR en la respuesta');
+      console.error('⚠️ Error Object:', error);
+      console.error('📄 Error Message:', error.message);
       console.log('═══════════════════════════════════════════════════════');
-      throw new Error(`API request failed: ${response.status} - ${responseText}`);
+      throw new Error(error.message || 'API request failed');
     }
 
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('⚠️ Failed to parse JSON response:', parseError);
-      responseData = { raw: responseText };
-    }
-
-    console.log('✅ SUCCESS');
-    console.log('📦 Response Data preview:', JSON.stringify(responseData).substring(0, 200));
-    
-    // Debug email messages structure
-    if (endpoint === '/email_message' && data.handler === 'get_messages') {
-      console.log('📧 EMAIL MESSAGES RESPONSE STRUCTURE:');
-      console.log('- Type:', typeof responseData);
-      console.log('- Keys:', Object.keys(responseData));
-      console.log('- Success:', responseData.success);
-      console.log('- Data type:', typeof responseData.data);
-      console.log('- Messages:', responseData.data?.messages || responseData.messages);
-      console.log('- Total:', responseData.data?.total || responseData.total);
-    }
-    
+    console.log('✅ RESPUESTA EXITOSA');
+    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
     console.log('═══════════════════════════════════════════════════════');
 
     return responseData;
   } catch (error: any) {
     console.log('═══════════════════════════════════════════════════════');
-    console.error('🔥 DIRECT API CALL ERROR');
+    console.error('🔥 ERROR EN LA COMUNICACIÓN');
     console.log('═══════════════════════════════════════════════════════');
     console.error('📍 Endpoint:', endpoint);
     console.error('🎯 Handler:', data.handler);

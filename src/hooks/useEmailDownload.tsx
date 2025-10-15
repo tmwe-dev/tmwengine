@@ -16,11 +16,6 @@ export const useEmailDownload = () => {
   const [currentFolderProgress, setCurrentFolderProgress] = useState({ current: 0, total: 0 });
   const [currentPhase, setCurrentPhase] = useState<'loading' | 'downloading' | 'saving' | 'idle'>('idle');
   const [processedFolders, setProcessedFolders] = useState<string[]>([]);
-  
-  // 3D Animation states
-  const [serverEmailCount, setServerEmailCount] = useState(0);
-  const [dbEmailCount, setDbEmailCount] = useState(0);
-  const [flyingEmailCount, setFlyingEmailCount] = useState(0);
 
   const startDownload = useCallback(async (queryClient?: QueryClient): Promise<void> => {
     setIsDownloading(true);
@@ -125,12 +120,7 @@ export const useEmailDownload = () => {
         const folderName = folderInfo.name;
         const folderTotalEmails = (folderInfo as any).messages || 0;
         
-        // Pulizia nome cartella (rimuovi INBOX/)
-        const displayFolder = folderName.startsWith('INBOX/') 
-          ? folderName.replace('INBOX/', '') 
-          : folderName;
-        
-        setCurrentFolder(displayFolder);
+        setCurrentFolder(folderName);
         setCurrentFolderProgress({ current: 0, total: folderTotalEmails });
 
         console.log(`\n📂 Elaborazione cartella: ${folderName} (${folderTotalEmails} email)`);
@@ -156,11 +146,6 @@ export const useEmailDownload = () => {
           );
 
           const alreadyInDb = existingIds.size;
-          
-          // Inizializza contatori 3D per questa cartella
-          setServerEmailCount(folderTotalEmails - alreadyInDb);
-          setDbEmailCount(alreadyInDb);
-          setFlyingEmailCount(0);
 
           console.log(`📊 ${folderName}: ${alreadyInDb} email già presenti nel DB`);
           console.log(`   - Message IDs univoci: ${existingIds.size}`);
@@ -248,10 +233,6 @@ export const useEmailDownload = () => {
               if (pageEmails.length > 0) {
                 try {
                   setCurrentPhase('saving');
-                  
-                  // Trigger animazione 3D
-                  setFlyingEmailCount(pageEmails.length);
-                  await new Promise(resolve => setTimeout(resolve, 1800)); // Aspetta animazione
                   const emailsToInsert = pageEmails.map((email: any) => {
                     let isoDate = new Date().toISOString();
                     if (email.date) {
@@ -304,12 +285,6 @@ export const useEmailDownload = () => {
                     
                     setDownloadedCount(globalDownloadedCount);
                     setAllEmails([...allDownloadedEmails]);
-                    
-                    // Aggiorna contatori 3D
-                    setServerEmailCount(prev => Math.max(0, prev - pageEmails.length));
-                    setDbEmailCount(prev => prev + pageEmails.length);
-                    setFlyingEmailCount(0);
-                    
                     setCurrentPhase('downloading');
                     console.log(`✅ ${folderName}: salvate ${pageEmails.length} email complete (totale cartella: ${folderNewEmailsCount})`);
                   }
@@ -422,9 +397,5 @@ export const useEmailDownload = () => {
     currentFolderProgress,
     currentPhase,
     processedFolders,
-    // 3D Animation states
-    serverEmailCount,
-    dbEmailCount,
-    flyingEmailCount,
   };
 };

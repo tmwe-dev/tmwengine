@@ -8,11 +8,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, ChevronRight } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface EmailSyncPreferencesProps {
   userEmail: string;
@@ -26,46 +25,6 @@ type SyncMode = 'blacklist' | 'whitelist';
 
 const RECOMMENDED_EXCLUDES = ["Trash", "Archives", "Junk", "Drafts"];
 
-interface FolderNode {
-  name: string;
-  fullPath: string;
-  children: FolderNode[];
-  data: any | null;
-  level: number;
-}
-
-const buildFolderTree = (folders: any[]): FolderNode[] => {
-  const tree: Record<string, FolderNode> = {};
-  
-  folders.forEach(folder => {
-    const parts = folder.name.split('/');
-    let currentPath = '';
-    
-    parts.forEach((part, index) => {
-      const parentPath = currentPath;
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
-      
-      if (!tree[currentPath]) {
-        tree[currentPath] = {
-          name: part,
-          fullPath: currentPath,
-          children: [],
-          data: index === parts.length - 1 ? folder : null,
-          level: index
-        };
-      }
-      
-      if (parentPath && tree[parentPath]) {
-        if (!tree[parentPath].children.find(c => c.fullPath === currentPath)) {
-          tree[parentPath].children.push(tree[currentPath]);
-        }
-      }
-    });
-  });
-  
-  return Object.values(tree).filter(node => node.level === 0);
-};
-
 export const EmailSyncPreferences = ({ 
   userEmail,
   onClose,
@@ -77,7 +36,6 @@ export const EmailSyncPreferences = ({
   const [syncMode, setSyncMode] = useState<SyncMode>('blacklist');
   const [excludedFolders, setExcludedFolders] = useState<string[]>(RECOMMENDED_EXCLUDES);
   const [includedFolders, setIncludedFolders] = useState<string[]>([]);
-  const [openFolders, setOpenFolders] = useState<string[]>([]); // Traccia accordion aperti
 
   // Carica le cartelle disponibili
   const { data: foldersData, isLoading: loadingFolders } = useQuery({
@@ -89,30 +47,6 @@ export const EmailSyncPreferences = ({
   const { data: preferences, isLoading: loadingPrefs } = useQuery({
     queryKey: ['sync-preferences', userEmail],
     queryFn: () => getSyncPreferences(userEmail),
-  });
-
-  // Query per contare email nel DB per cartella
-  const { data: folderDbCounts } = useQuery({
-    queryKey: ['folder-db-counts', userEmail],
-    queryFn: async () => {
-      if (!userEmail) return {};
-      
-      const { data: counts } = await supabase
-        .from('email_messages')
-        .select('cartella')
-        .eq('user_email', userEmail);
-
-      if (!counts) return {};
-
-      const countMap: Record<string, number> = {};
-      counts.forEach((row: any) => {
-        countMap[row.cartella] = (countMap[row.cartella] || 0) + 1;
-      });
-
-      return countMap;
-    },
-    enabled: !!userEmail,
-    staleTime: 10 * 1000,
   });
 
   // Inizializza lo stato quando le preferenze sono caricate
@@ -150,29 +84,6 @@ export const EmailSyncPreferences = ({
   });
 
   const folders = foldersData?.data || [];
-  const folderTree = buildFolderTree(folders);
-
-  // Funzione ricorsiva per ottenere TUTTI i path degli accordion
-  const getAllAccordionPaths = (nodes: FolderNode[]): string[] => {
-    const paths: string[] = [];
-    const traverse = (node: FolderNode) => {
-      if (node.children.length > 0) {
-        paths.push(node.fullPath);
-        node.children.forEach(traverse);
-      }
-    };
-    nodes.forEach(traverse);
-    return paths;
-  };
-
-  // Apri TUTTI gli accordion automaticamente
-  useEffect(() => {
-    if (folderTree.length > 0) {
-      const allPaths = getAllAccordionPaths(folderTree);
-      console.log('📂 Apertura automatica accordion:', allPaths);
-      setOpenFolders(allPaths);
-    }
-  }, [folders.length]); // Triggera quando cambia il numero di cartelle
 
   const toggleExclude = (folderName: string) => {
     setExcludedFolders(prev =>
@@ -196,143 +107,6 @@ export const EmailSyncPreferences = ({
     } else {
       toggleInclude(folderName);
     }
-  };
-
-  const renderFolderNode = (node: FolderNode): JSX.Element => {
-    const hasChildren = node.children.length > 0;
-    const isLeaf = node.data !== null;
-    
-    // Calcola totale email per nodo (inclusi figli)
-    const calculateServerTotal = (n: FolderNode): number => {
-      if (n.data) {
-        return n.data.total_messages || 0;
-      }
-      return n.children.reduce((sum, child) => sum + calculateServerTotal(child), 0);
-    };
-    
-    const serverTotal = calculateServerTotal(node);
-    const dbTotal = folderDbCounts?.[node.fullPath] || 0;
-    const syncPercentage = serverTotal > 0 ? Math.round((dbTotal / serverTotal) * 100) : 100;
-    const isSynced = dbTotal >= serverTotal;
-    
-    const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(node.fullPath);
-    const isSelected = syncMode === 'blacklist'
-      ? excludedFolders.includes(node.fullPath)
-      : includedFolders.includes(node.fullPath);
-    
-    if (!hasChildren) {
-      // Foglia: checkbox normale
-      return (
-        <div 
-          key={node.fullPath} 
-          className={compact 
-            ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" 
-            : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"
-          }
-        >
-          <Checkbox
-            id={`folder-${node.fullPath}`}
-            checked={isSelected}
-            onCheckedChange={() => handleFolderToggle(node.fullPath)}
-            className="h-4 w-4"
-          />
-          <Label 
-            htmlFor={`folder-${node.fullPath}`} 
-            className={compact 
-              ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" 
-              : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"
-            }
-          >
-            <span>{node.name}</span>
-            {isRecommendedExclude && syncMode === 'blacklist' && (
-              <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                Consigliato
-              </Badge>
-            )}
-          </Label>
-          
-          {/* Server/DB counts - SEMPRE VISIBILI */}
-          <div className="flex items-center gap-1 ml-auto">
-            {serverTotal > 0 && (
-              <>
-                <Badge 
-                  variant="outline" 
-                  className="text-[9px] h-4 px-1.5 bg-blue-500/10 border-blue-500/30"
-                  title={`${serverTotal} email sul server`}
-                >
-                  📨 {serverTotal}
-                </Badge>
-                
-                {dbTotal > 0 && (
-                  <>
-                    <span className="text-[8px] text-muted-foreground">→</span>
-                    <Badge 
-                      variant="secondary" 
-                      className="text-[9px] h-4 px-1.5 bg-green-500/10 border-green-500/30"
-                      title={`${dbTotal} email nel DB locale`}
-                    >
-                      💾 {dbTotal}
-                    </Badge>
-                  </>
-                )}
-                
-                {dbTotal === 0 && serverTotal > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="text-[9px] h-4 px-1.5"
-                    title="Da scaricare"
-                  >
-                    ⬇️ {serverTotal}
-                  </Badge>
-                )}
-                
-                {dbTotal >= serverTotal && serverTotal > 0 && (
-                  <div className="flex items-center" title="Sincronizzato">
-                    <Check className="h-3 w-3 text-green-600 ml-0.5" />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      );
-    }
-    
-    // Nodo con figli: Accordion
-    return (
-      <AccordionItem key={node.fullPath} value={node.fullPath} className="border-none">
-        <AccordionTrigger 
-          className={compact 
-            ? "py-1.5 px-2 hover:bg-accent/50 text-xs hover:no-underline rounded-sm transition-colors" 
-            : "py-1.5 px-2 hover:bg-accent/50 text-sm hover:no-underline rounded-sm transition-colors"
-          }
-        >
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="font-semibold">{node.name}</span>
-            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-muted/50">
-              {node.children.length}
-            </Badge>
-            {serverTotal > 0 && (
-              <>
-                <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-blue-500/20 border-blue-500/30">
-                  📨 {serverTotal}
-                </Badge>
-                {dbTotal > 0 && (
-                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-green-500/20 border-green-500/30">
-                    💾 {dbTotal}
-                  </Badge>
-                )}
-              </>
-            )}
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="pl-4 pb-0 pt-1">
-          <div className="space-y-0.5 border-l-2 border-muted pl-2 ml-1">
-            {node.children.map(child => renderFolderNode(child))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    );
   };
 
   const isLoading = loadingFolders || loadingPrefs;
@@ -387,27 +161,51 @@ export const EmailSyncPreferences = ({
         </h4>
         
         <ScrollArea className={compact ? "max-h-[50vh] rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
-          <Accordion 
-            type="multiple" 
-            className="space-y-0.5"
-            value={openFolders}
-            onValueChange={setOpenFolders}
-          >
-            {folderTree.map(node => renderFolderNode(node))}
-          </Accordion>
+          <div className="space-y-0.5">
+            {folders.map((folder: any) => {
+              const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);
+              const isSelected = syncMode === 'blacklist'
+                ? excludedFolders.includes(folder.name)
+                : includedFolders.includes(folder.name);
+
+              return (
+                <div key={folder.id} className={compact ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"}>
+                  <Checkbox
+                    id={`folder-${folder.id}`}
+                    checked={isSelected}
+                    onCheckedChange={() => handleFolderToggle(folder.name)}
+                    className="h-4 w-4"
+                  />
+                  <Label 
+                    htmlFor={`folder-${folder.id}`} 
+                    className={compact ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"}
+                  >
+                    <span>{folder.name}</span>
+                    {isRecommendedExclude && syncMode === 'blacklist' && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                        Consigliato
+                      </Badge>
+                    )}
+                  </Label>
+                  {folder.total_messages > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                      {folder.total_messages}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </ScrollArea>
 
-        <div className="text-xs text-muted-foreground pt-1 flex items-center justify-between">
-          <span>
+        {!compact && (
+          <div className="text-xs text-muted-foreground pt-1">
             {syncMode === 'blacklist' 
               ? `✓ ${filteredCount} cartelle saranno sincronizzate`
               : `✓ ${filteredCount} cartelle selezionate`
             }
-          </span>
-          <span className="text-[10px]">
-            Totale: {folders.length} cartelle
-          </span>
-        </div>
+          </div>
+        )}
       </div>
 
       {showButtons && (

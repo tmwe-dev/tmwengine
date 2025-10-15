@@ -2,7 +2,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Loader2, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { FolderStat } from '@/hooks/useEmailStats';
 
 interface FolderStatsTableProps {
@@ -12,6 +12,9 @@ interface FolderStatsTableProps {
   onToggle: (folderName: string) => void;
   isDownloading?: boolean;
   folderProgress?: Map<string, any>;
+  sortColumn?: 'name' | 'dbCount' | 'serverTotal' | 'missing' | 'syncPercentage';
+  sortDirection?: 'asc' | 'desc';
+  onSort?: (column: 'name' | 'dbCount' | 'serverTotal' | 'missing' | 'syncPercentage') => void;
 }
 
 export const FolderStatsTable = ({
@@ -21,7 +24,37 @@ export const FolderStatsTable = ({
   onToggle,
   isDownloading = false,
   folderProgress,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: FolderStatsTableProps) => {
+  const SortableHeader = ({ 
+    column, 
+    children, 
+    className = '' 
+  }: { 
+    column: 'name' | 'dbCount' | 'serverTotal' | 'missing' | 'syncPercentage';
+    children: React.ReactNode;
+    className?: string;
+  }) => {
+    const isActive = sortColumn === column;
+    const Icon = isActive 
+      ? (sortDirection === 'asc' ? ArrowUp : ArrowDown)
+      : ArrowUpDown;
+    
+    return (
+      <TableHead 
+        className={`cursor-pointer hover:bg-muted/70 transition-colors select-none ${className}`}
+        onClick={() => onSort?.(column)}
+      >
+        <div className="flex items-center gap-1.5">
+          {children}
+          <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-muted-foreground/50'}`} />
+        </div>
+      </TableHead>
+    );
+  };
+
   const getDepth = (folderName: string) => {
     return (folderName.match(/\//g) || []).length;
   };
@@ -99,11 +132,11 @@ export const FolderStatsTable = ({
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-10"></TableHead>
-            <TableHead>Cartella</TableHead>
-            <TableHead className="text-right w-20">DB</TableHead>
-            <TableHead className="text-right w-20">Server</TableHead>
-            <TableHead className="text-right w-24">Mancanti</TableHead>
-            <TableHead className="w-[200px]">Sincronizzazione</TableHead>
+            <SortableHeader column="name">Cartella</SortableHeader>
+            <SortableHeader column="dbCount" className="text-right w-20">DB</SortableHeader>
+            <SortableHeader column="serverTotal" className="text-right w-20">Server</SortableHeader>
+            <SortableHeader column="missing" className="text-right w-24">Mancanti</SortableHeader>
+            <SortableHeader column="syncPercentage" className="w-[200px]">Sincronizzazione</SortableHeader>
             <TableHead className="w-[140px]">Stato</TableHead>
           </TableRow>
         </TableHeader>

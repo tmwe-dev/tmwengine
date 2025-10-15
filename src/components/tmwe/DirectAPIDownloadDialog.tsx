@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
@@ -21,6 +21,8 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   const queryClient = useQueryClient();
   const [userEmail, setUserEmail] = useState<string>('');
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+  const [sortColumn, setSortColumn] = useState<'name' | 'dbCount' | 'serverTotal' | 'missing' | 'syncPercentage'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const hasInitialized = useRef(false);
   
   const {
@@ -92,6 +94,46 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
       return () => clearInterval(interval);
     }
   }, [isDownloading, refetchStats]);
+
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedFolders = useMemo(() => {
+    const foldersWithStats = allFolders.map(folder => {
+      const stat = stats.find(s => s.folder === folder.name);
+      return { ...folder, stat };
+    });
+
+    return foldersWithStats.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortColumn) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'dbCount':
+          comparison = (a.stat?.dbCount || 0) - (b.stat?.dbCount || 0);
+          break;
+        case 'serverTotal':
+          comparison = (a.stat?.serverTotal || 0) - (b.stat?.serverTotal || 0);
+          break;
+        case 'missing':
+          comparison = (a.stat?.missing || 0) - (b.stat?.missing || 0);
+          break;
+        case 'syncPercentage':
+          comparison = (a.stat?.syncPercentage || 0) - (b.stat?.syncPercentage || 0);
+          break;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [allFolders, stats, sortColumn, sortDirection]);
 
   const handleToggle = (folderName: string) => {
     setSelectedFolders(prev => 
@@ -206,12 +248,15 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
               </div>
 
               <FolderStatsTable
-                folders={allFolders}
+                folders={sortedFolders}
                 stats={stats}
                 selectedFolders={selectedFolders}
                 onToggle={handleToggle}
                 isDownloading={isDownloading}
                 folderProgress={folderProgress}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSort}
               />
 
               <div className="flex items-start gap-2 text-xs text-muted-foreground pt-2 border-t">

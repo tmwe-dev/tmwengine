@@ -117,6 +117,7 @@ export const EmailSidebar = ({
     queryFn: () => emailFolderApi.getFolders(),
     staleTime: 10 * 60 * 1000, // 🚀 Aumentato a 10 minuti per performance
     gcTime: 15 * 60 * 1000,
+    enabled: !propFolders, // 🔥 Query disabilitata se folders arriva come prop
   });
 
   const createFolderMutation = useMutation({

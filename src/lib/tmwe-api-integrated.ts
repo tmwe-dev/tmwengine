@@ -550,7 +550,14 @@ export const emailMessageApi = {
     limit?: number;
     sort?: string;
     order?: 'ASC' | 'DESC';
-  }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
+  } = {}) => fetchApi('/email_message', { 
+    handler: 'get_messages', 
+    folder: params.folder || 'INBOX',  // ✅ Default INBOX se non specificato
+    ...(params.page !== undefined && { page: params.page }),
+    ...(params.limit !== undefined && { limit: params.limit }),
+    ...(params.sort && { sort: params.sort }),
+    ...(params.order && { order: params.order })
+  }),
 
   getMessage: (uid: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);

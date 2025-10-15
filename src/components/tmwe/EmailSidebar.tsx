@@ -41,6 +41,7 @@ interface EmailSidebarProps {
   onCompose: () => void;
   onSync?: () => void;
   dbEmailCount?: number;
+  folders?: any[];
 }
 
 const folderIcons: Record<string, any> = {
@@ -80,7 +81,8 @@ export const EmailSidebar = ({
   onFolderSelect, 
   onCompose,
   onSync,
-  dbEmailCount = 0
+  dbEmailCount = 0,
+  folders: propFolders
 }: EmailSidebarProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSyncPrefsOpen, setIsSyncPrefsOpen] = useState(false);
@@ -113,7 +115,8 @@ export const EmailSidebar = ({
   const { data: foldersData, isLoading, error: foldersError } = useQuery({
     queryKey: ['folders'],
     queryFn: () => emailFolderApi.getFolders(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 🚀 Aumentato a 10 minuti per performance
+    gcTime: 15 * 60 * 1000,
   });
 
   const createFolderMutation = useMutation({
@@ -150,13 +153,10 @@ export const EmailSidebar = ({
     }
   };
 
-  // Handle multiple response formats from TMWE API:
-  // - Direct array: []
-  // - Object with 'data': { data: [] }
-  // - Object with 'folders': { folders: [] } (per API spec)
-  const folders = Array.isArray(foldersData) 
+  // Usa folders da prop se disponibili (pagina Backup), altrimenti da query API
+  const folders = propFolders || (Array.isArray(foldersData) 
     ? foldersData 
-    : (foldersData?.folders || foldersData?.data || []);
+    : (foldersData?.folders || foldersData?.data || []));
   
   console.log('📂 Processed folders:', folders);
   console.log('📂 Folders count:', folders.length);
@@ -217,16 +217,20 @@ export const EmailSidebar = ({
             </span>
           )}
         </div>
-        {!isCollapsed && totalMessages > 0 && (
-          <Badge variant="secondary" className={cn(
-            "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 border",
-            unseenCount > 0 
-              ? "bg-purple-500/20 text-purple-300 border-purple-400 font-semibold" 
-              : "bg-transparent text-muted-foreground border-border",
-            selectedFolder === folder.name && "scale-110"
-          )}>
-            {totalMessages}
-          </Badge>
+        {!isCollapsed && (
+          isLoading ? (
+            <div className="ml-2 h-5 w-8 bg-muted/50 animate-pulse rounded" />
+          ) : totalMessages > 0 ? (
+            <Badge variant="secondary" className={cn(
+              "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 border",
+              unseenCount > 0 
+                ? "bg-purple-500/20 text-purple-300 border-purple-400 font-semibold" 
+                : "bg-transparent text-muted-foreground border-border",
+              selectedFolder === folder.name && "scale-110"
+            )}>
+              {totalMessages}
+            </Badge>
+          ) : null
         )}
       </Button>
     );

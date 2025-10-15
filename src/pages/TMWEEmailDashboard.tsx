@@ -124,7 +124,8 @@ const EmailDashboard = () => {
   const { data: foldersData } = useQuery({
     queryKey: ['folders'], // ✅ Stessa queryKey di EmailSidebar
     queryFn: () => emailFolderApi.getFolders(),
-    staleTime: 5 * 60 * 1000, // Cache 5 minuti
+    staleTime: 10 * 60 * 1000, // 🚀 Aumentato a 10 minuti per performance
+    gcTime: 15 * 60 * 1000,
   });
 
   // === GLOBAL EMAIL COUNT (calcolato dai folders cached) ===
@@ -440,8 +441,14 @@ const EmailDashboard = () => {
               🌐 Email Server Live (API TMWE)
             </div>
             {syncStatus && (
-              <Badge variant="secondary">
-                {syncStatus.apiTotal || 0} email sul server • {syncStatus.dbTotal || 0} nel database
+              <Badge 
+                variant={syncMutation.isPending ? "default" : "secondary"}
+                className={cn(syncMutation.isPending && "animate-pulse")}
+              >
+                {syncMutation.isPending 
+                  ? "⏳ Sincronizzazione in corso..." 
+                  : `${syncStatus.apiTotal || 0} email sul server • ${syncStatus.dbTotal || 0} nel database`
+                }
               </Badge>
             )}
           </div>

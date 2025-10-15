@@ -111,16 +111,9 @@ export const EmailSidebar = ({
   }, []);
 
   const { data: foldersData, isLoading, error: foldersError } = useQuery({
-    queryKey: ['folders', userEmail],
-    queryFn: async () => {
-      console.log('📂 Fetching folders from TMWE API...');
-      const response = await emailFolderApi.getFolders();
-      console.log('📂 Raw API response:', response);
-      console.log('📂 Response type:', typeof response);
-      console.log('📂 Is array?', Array.isArray(response));
-      return response;
-    },
-    enabled: !!userEmail,
+    queryKey: ['folders'],
+    queryFn: () => emailFolderApi.getFolders(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const createFolderMutation = useMutation({

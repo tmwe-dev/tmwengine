@@ -550,14 +550,19 @@ export const emailMessageApi = {
     limit?: number;
     sort?: string;
     order?: 'ASC' | 'DESC';
-  } = {}) => fetchApi('/email_message', { 
-    handler: 'get_messages', 
-    folder: params.folder || 'INBOX',  // ✅ Default INBOX se non specificato
-    ...(params.page !== undefined && { page: params.page }),
-    ...(params.limit !== undefined && { limit: params.limit }),
-    ...(params.sort && { sort: params.sort }),
-    ...(params.order && { order: params.order })
-  }),
+  } = {}) => {
+    const requestData: any = {
+      handler: 'get_messages',
+      folder: params.folder || 'INBOX',
+    };
+    
+    if (params.page !== undefined) requestData.page = params.page;
+    if (params.limit !== undefined) requestData.limit = params.limit;
+    if (params.sort) requestData.sort = params.sort;
+    if (params.order) requestData.order = params.order;
+    
+    return fetchApi('/email_message', requestData);
+  },
 
   getMessage: (uid: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
@@ -573,8 +578,23 @@ export const emailMessageApi = {
     to_date?: string;
     page?: number;
     limit?: number;
-    fetch_content?: boolean; // ⚡ OTTIMIZZAZIONE: ottieni body email in 1 chiamata
-  }) => fetchApi('/email_message', { handler: 'search_messages', ...params }),
+    fetch_content?: boolean;
+  }) => {
+    const requestData: any = {
+      handler: 'search_messages',
+      query: params.query,
+    };
+    
+    if (params.folder) requestData.folder = params.folder;
+    if (params.search_in) requestData.search_in = params.search_in;
+    if (params.from_date) requestData.from_date = params.from_date;
+    if (params.to_date) requestData.to_date = params.to_date;
+    if (params.page !== undefined) requestData.page = params.page;
+    if (params.limit !== undefined) requestData.limit = params.limit;
+    if (params.fetch_content !== undefined) requestData.fetch_content = params.fetch_content;
+    
+    return fetchApi('/email_message', requestData);
+  },
 
   sendMessage: (data: {
     to: string[];
@@ -585,7 +605,22 @@ export const emailMessageApi = {
     bcc?: string[];
     attachments?: any[];
     priority?: 'high' | 'normal' | 'low';
-  }) => fetchApi('/email_message', { handler: 'send_message', ...data }),
+  }) => {
+    const requestData: any = {
+      handler: 'send_message',
+      to: data.to,
+      subject: data.subject,
+      body: data.body,
+    };
+    
+    if (data.body_type) requestData.body_type = data.body_type;
+    if (data.cc) requestData.cc = data.cc;
+    if (data.bcc) requestData.bcc = data.bcc;
+    if (data.attachments) requestData.attachments = data.attachments;
+    if (data.priority) requestData.priority = data.priority;
+    
+    return fetchApi('/email_message', requestData);
+  },
 
   replyMessage: (data: {
     uid: string;

@@ -119,6 +119,37 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 min-h-0">
           {step === 'config' ? (
             <>
+              {/* Animazione 3D compatta sopra la configurazione */}
+              {isDownloading && (
+                <div className="mb-4">
+                  <div className="h-[180px] bg-gradient-to-br from-background to-muted rounded-lg overflow-hidden border">
+                    <EmailTransferAnimation3D
+                      serverCount={serverEmailCount}
+                      dbCount={dbEmailCount}
+                      flyingCount={flyingEmailCount}
+                      currentFolder={currentFolder}
+                      isAnimating={isDownloading}
+                    />
+                  </div>
+                  
+                  {/* Stats compatti sotto animazione */}
+                  <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                    <div className="space-y-0.5 p-2 bg-destructive/10 rounded border border-destructive/20">
+                      <div className="text-[9px] text-muted-foreground uppercase">Server</div>
+                      <div className="text-lg font-bold text-destructive">{serverEmailCount}</div>
+                    </div>
+                    <div className="space-y-0.5 p-2 bg-primary/10 rounded border border-primary/20">
+                      <div className="text-[9px] text-muted-foreground uppercase">Transito</div>
+                      <div className="text-lg font-bold text-primary">{flyingEmailCount}</div>
+                    </div>
+                    <div className="space-y-0.5 p-2 bg-green-500/10 rounded border border-green-500/20">
+                      <div className="text-[9px] text-muted-foreground uppercase">Database</div>
+                      <div className="text-lg font-bold text-green-600">{dbEmailCount}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <EmailSyncPreferences
                 userEmail={userEmail || ''}
                 onClose={() => onOpenChange(false)}

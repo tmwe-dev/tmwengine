@@ -152,20 +152,27 @@ export const EmailSyncPreferences = ({
   const folders = foldersData?.data || [];
   const folderTree = buildFolderTree(folders);
 
-  // Apri tutti gli accordion all'inizio
+  // Funzione ricorsiva per ottenere TUTTI i path degli accordion
+  const getAllAccordionPaths = (nodes: FolderNode[]): string[] => {
+    const paths: string[] = [];
+    const traverse = (node: FolderNode) => {
+      if (node.children.length > 0) {
+        paths.push(node.fullPath);
+        node.children.forEach(traverse);
+      }
+    };
+    nodes.forEach(traverse);
+    return paths;
+  };
+
+  // Apri TUTTI gli accordion automaticamente
   useEffect(() => {
-    if (folderTree.length > 0 && openFolders.length === 0) {
-      const allFolderPaths = (tree: FolderNode[]): string[] => {
-        return tree.flatMap(node => {
-          if (node.children.length > 0) {
-            return [node.fullPath, ...allFolderPaths(node.children)];
-          }
-          return [];
-        });
-      };
-      setOpenFolders(allFolderPaths(folderTree));
+    if (folderTree.length > 0) {
+      const allPaths = getAllAccordionPaths(folderTree);
+      console.log('📂 Apertura automatica accordion:', allPaths);
+      setOpenFolders(allPaths);
     }
-  }, [folderTree]);
+  }, [folders.length]); // Triggera quando cambia il numero di cartelle
 
   const toggleExclude = (folderName: string) => {
     setExcludedFolders(prev =>
@@ -244,39 +251,45 @@ export const EmailSyncPreferences = ({
             )}
           </Label>
           
-          {/* Server/DB counts */}
-          <div className="flex items-center gap-1">
+          {/* Server/DB counts - SEMPRE VISIBILI */}
+          <div className="flex items-center gap-1 ml-auto">
             {serverTotal > 0 && (
               <>
                 <Badge 
                   variant="outline" 
-                  className="text-[9px] h-4 px-1.5"
-                  title="Email sul server"
+                  className="text-[9px] h-4 px-1.5 bg-blue-500/10 border-blue-500/30"
+                  title={`${serverTotal} email sul server`}
                 >
-                  {serverTotal}
+                  📨 {serverTotal}
                 </Badge>
                 
-                {!isSynced && (
+                {dbTotal > 0 && (
                   <>
-                    <span className="text-[8px] text-muted-foreground">•</span>
+                    <span className="text-[8px] text-muted-foreground">→</span>
                     <Badge 
                       variant="secondary" 
-                      className="text-[9px] h-4 px-1.5"
-                      title="Email nel DB locale"
+                      className="text-[9px] h-4 px-1.5 bg-green-500/10 border-green-500/30"
+                      title={`${dbTotal} email nel DB locale`}
                     >
-                      {dbTotal}
+                      💾 {dbTotal}
                     </Badge>
-                    <span 
-                      className="text-[8px] text-muted-foreground"
-                      title={`Sincronizzato al ${syncPercentage}%`}
-                    >
-                      ({syncPercentage}%)
-                    </span>
                   </>
                 )}
                 
-                {isSynced && (
-                  <Check className="h-3 w-3 text-green-600 ml-0.5" />
+                {dbTotal === 0 && serverTotal > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="text-[9px] h-4 px-1.5"
+                    title="Da scaricare"
+                  >
+                    ⬇️ {serverTotal}
+                  </Badge>
+                )}
+                
+                {dbTotal >= serverTotal && serverTotal > 0 && (
+                  <div className="flex items-center" title="Sincronizzato">
+                    <Check className="h-3 w-3 text-green-600 ml-0.5" />
+                  </div>
                 )}
               </>
             )}
@@ -290,24 +303,31 @@ export const EmailSyncPreferences = ({
       <AccordionItem key={node.fullPath} value={node.fullPath} className="border-none">
         <AccordionTrigger 
           className={compact 
-            ? "py-1 px-1 hover:bg-accent/50 text-xs hover:no-underline rounded-sm transition-colors" 
-            : "py-1 px-1 hover:bg-accent/50 text-sm hover:no-underline rounded-sm transition-colors"
+            ? "py-1.5 px-2 hover:bg-accent/50 text-xs hover:no-underline rounded-sm transition-colors" 
+            : "py-1.5 px-2 hover:bg-accent/50 text-sm hover:no-underline rounded-sm transition-colors"
           }
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="font-medium">{node.name}</span>
-            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-muted">
-              {node.children.length} {node.children.length === 1 ? 'cartella' : 'cartelle'}
+            <span className="font-semibold">{node.name}</span>
+            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-muted/50">
+              {node.children.length}
             </Badge>
             {serverTotal > 0 && (
-              <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-                {serverTotal} email
-              </Badge>
+              <>
+                <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-blue-500/20 border-blue-500/30">
+                  📨 {serverTotal}
+                </Badge>
+                {dbTotal > 0 && (
+                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-green-500/20 border-green-500/30">
+                    💾 {dbTotal}
+                  </Badge>
+                )}
+              </>
             )}
           </div>
         </AccordionTrigger>
-        <AccordionContent className="pl-4 pb-0">
-          <div className="space-y-0.5">
+        <AccordionContent className="pl-4 pb-0 pt-1">
+          <div className="space-y-0.5 border-l-2 border-muted pl-2 ml-1">
             {node.children.map(child => renderFolderNode(child))}
           </div>
         </AccordionContent>

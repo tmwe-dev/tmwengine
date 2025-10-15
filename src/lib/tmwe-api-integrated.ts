@@ -564,10 +564,15 @@ export const emailMessageApi = {
     return fetchApi('/email_message', requestData);
   },
 
-  getMessage: (uid: string, markAsRead: boolean = true) => {
+  getMessage: (uid: string, markAsRead: boolean = true, fetchContent: boolean = true) => {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
-    return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
+    return fetchApi('/email_message', { 
+      handler: 'get_message', 
+      uid: uidInt, 
+      mark_as_read: markAsRead,
+      fetch_content: fetchContent 
+    });
   },
 
   searchMessages: (params: {
@@ -689,7 +694,12 @@ export const emailMessageApi = {
 
 // Email Folder APIs
 export const emailFolderApi = {
-  getFolders: () => fetchApi('/email_folder', { handler: 'get_folders' }),
+  getFolders: (hierarchy: boolean = true, includeCounts: boolean = true) => 
+    fetchApi('/email_folder', { 
+      handler: 'get_folders',
+      hierarchy,
+      include_counts: includeCounts
+    }),
   
   getFolderInfo: (folderName: string) => 
     fetchApi('/email_folder', { handler: 'get_folder_info', folder_name: folderName }),
@@ -713,55 +723,22 @@ export const emailFolderApi = {
   
   // Get all folders recursively (main + subfolders)
   getAllFoldersRecursive: async () => {
-    const allFolders: any[] = [];
-    const queue: string[] = [''];
-    const seen = new Set<string>();
+    console.log('🔄 Recupero cartelle con gerarchia completa...');
     
-    console.log('🔄 Inizio recupero ricorsivo cartelle...');
-    
-    while (queue.length > 0) {
-      const parentPath = queue.shift()!;
+    try {
+      const response = await fetchApi('/email_folder', { 
+        handler: 'get_folders',
+        hierarchy: true,
+        include_counts: true
+      });
       
-      // Evita loop infiniti
-      if (seen.has(parentPath)) {
-        console.warn(`⚠️ Cartella già visitata: ${parentPath}`);
-        continue;
-      }
-      seen.add(parentPath);
-      
-      try {
-        const response = await fetchApi('/email_folder', { 
-          handler: 'get_folders',
-          parent: parentPath || undefined
-        });
-        
-        const folders = response?.data || [];
-        console.log(`📂 Trovate ${folders.length} cartelle in ${parentPath || 'root'}`);
-        
-        allFolders.push(...folders);
-        
-        // Aggiungi sottocartelle alla queue
-        folders.forEach((f: any) => {
-          if (f.has_children || f.subfolders || (f.attributes && f.attributes.includes('\\HasChildren'))) {
-            const fullPath = parentPath ? `${parentPath}/${f.name}` : f.name;
-            if (!seen.has(fullPath)) {
-              queue.push(fullPath);
-            }
-          }
-        });
-      } catch (error) {
-        console.error(`❌ Errore recupero sottocartelle di ${parentPath}:`, error);
-      }
-      
-      // Safety: max 1000 cartelle
-      if (allFolders.length > 1000) {
-        console.warn('⚠️ Limite di sicurezza raggiunto (1000 cartelle)');
-        break;
-      }
+      const folders = response?.data || [];
+      console.log(`✅ Totale cartelle recuperate: ${folders.length}`);
+      return { data: folders, success: true };
+    } catch (error) {
+      console.error('❌ Errore recupero cartelle:', error);
+      return { data: [], success: false };
     }
-    
-    console.log(`✅ Totale cartelle recuperate ricorsivamente: ${allFolders.length}`);
-    return { data: allFolders, success: true };
   }
 };
 

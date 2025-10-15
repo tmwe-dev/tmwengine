@@ -163,32 +163,7 @@ vector_port = 54328
 backend = "postgres"
 
 # Edge Functions Configuration
-[functions.tmwe-email-webhook]
-verify_jwt = false
-
-[functions.tmwe-email-sync]
-verify_jwt = true
-
-[functions.tmwe-email-send]
-verify_jwt = true
-
-[functions.tmwe-email-messages]
-verify_jwt = true
-
-[functions.tmwe-email-folders]
-verify_jwt = true
-
-[functions.tmwe-email-account]
-verify_jwt = true
-
-[functions.tmwe-email-list]
-verify_jwt = true
-
-[functions.tmwe-test-folder-info]
-verify_jwt = true
-
-[functions.tmwe-email-sync-master]
-verify_jwt = true
+# TMWE Email functions REMOVED - using direct API calls instead
 
 [functions.process-ai-import]
 verify_jwt = true
@@ -206,8 +181,6 @@ import_map = """
 }
 """
 
-[functions.tmwe-api-proxy]
-verify_jwt = false
 
 [functions.chat-with-ai]
 verify_jwt = true

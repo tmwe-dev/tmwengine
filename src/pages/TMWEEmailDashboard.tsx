@@ -17,7 +17,7 @@ import { EmailSyncMonitor } from '@/components/email/EmailSyncMonitor';
 import { DirectAPIDownloadDialog } from '@/components/tmwe/DirectAPIDownloadDialog';
 import { EmailSyncStatus } from '@/components/tmwe/EmailSyncStatus';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
-import { useEmailSync } from '@/lib/email-sync';
+import { downloadEmailsToDatabase } from '@/lib/email-download';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { emailMessageApi } from '@/lib/tmwe-api-integrated';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,22 +109,25 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   const onSubmit = async (data: EmailFormData) => {
     try {
-      console.log('Invio email tramite TMWE...', {
+      console.log('📤 Invio email via API TMWE diretta...', {
         to: data.to,
         subject: data.subject,
         body_text: data.body
       });
 
-      const { data: result, error } = await supabase.functions.invoke('tmwe-email-send', {
-        body: {
-          to: data.to,
-          subject: data.subject,
-          body: data.body
-        }
+      // ✅ CHIAMATA DIRETTA API (NO EDGE FUNCTION)
+      const bodyHtml = `<p>${data.body.replace(/\n/g, '<br>')}</p>`;
+      const result = await emailMessageApi.sendMessage({
+        to: [data.to],
+        subject: data.subject,
+        body: bodyHtml,
+        body_type: 'html',
+        cc: data.cc ? [data.cc] : undefined,
+        bcc: data.bcc ? [data.bcc] : undefined
       });
 
-      if (error) {
-        throw error;
+      if (!result?.success) {
+        throw new Error('Invio email fallito');
       }
 
       toast({
@@ -134,7 +137,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       
       onClose();
     } catch (error) {
-      console.error('Errore invio email:', error);
+      console.error('❌ Errore invio email:', error);
       toast({
         title: "Errore",
         description: "Impossibile inviare l'email tramite TMWE",

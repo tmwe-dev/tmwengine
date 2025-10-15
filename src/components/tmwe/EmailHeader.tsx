@@ -110,17 +110,17 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
               </div>
 
               {/* Sync buttons container */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-3">
                 {/* Analizza button (EmailSyncMonitor) */}
                 {onOpenSyncMonitor && (
                   <Button 
                     onClick={onOpenSyncMonitor}
                     variant="outline"
                     size="sm"
-                    title="Analizza sincronizzazione"
+                    title="Verifica stato sincronizzazione"
                   >
                     <Settings2 className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Analizza'}
+                    {!isMobile && 'Verifica Sync'}
                   </Button>
                 )}
 
@@ -135,7 +135,7 @@ export const EmailHeader = ({ onSearch, onCompose, onSync, isSyncing, onMenuClic
                     title="Scarica email via API"
                   >
                     <Mail className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Scarica'}
+                    {!isMobile && 'Scarica Email'}
                   </Button>
                 )}
 

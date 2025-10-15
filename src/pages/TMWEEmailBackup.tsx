@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { EmailHeader } from "@/components/tmwe/EmailHeader";
 import { EmailSidebar } from "@/components/tmwe/EmailSidebar";
 import { EmailList } from "@/components/tmwe/EmailList";
@@ -26,6 +30,7 @@ const TMWEEmailBackup = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [selectedFolders, setSelectedFolders] = useState<string[]>(['INBOX']);
+  const [syncProgress, setSyncProgress] = useState<Record<string, 'pending' | 'downloading' | 'done' | 'error'>>({});
   const [replyTo, setReplyTo] = useState<{
     uid: string; 
     to: string; 
@@ -54,16 +59,35 @@ const TMWEEmailBackup = () => {
     mutationFn: async (folders: string[]) => {
       const results = [];
       
+      // Inizializza tutti come pending
+      const initialProgress: Record<string, any> = {};
+      folders.forEach(f => initialProgress[f] = 'pending');
+      setSyncProgress(initialProgress);
+      
       for (const folder of folders) {
-        const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
-          body: {
-            mode: 'incremental',
-            folder_name: folder,
-          }
-        });
-        
-        if (error) throw error;
-        results.push(data);
+        try {
+          // Segna come downloading
+          setSyncProgress(prev => ({ ...prev, [folder]: 'downloading' }));
+          
+          const { data, error } = await supabase.functions.invoke('tmwe-email-sync-master', {
+            body: {
+              mode: 'incremental',
+              folder_name: folder,
+            }
+          });
+          
+          if (error) throw error;
+          
+          // Segna come done
+          setSyncProgress(prev => ({ ...prev, [folder]: 'done' }));
+          results.push({ folder, ...data });
+          
+        } catch (err) {
+          // Segna come error
+          setSyncProgress(prev => ({ ...prev, [folder]: 'error' }));
+          console.error(`Errore sync ${folder}:`, err);
+          results.push({ folder, error: err });
+        }
       }
       
       return results;
@@ -73,10 +97,16 @@ const TMWEEmailBackup = () => {
       toast.success(`✅ ${totalSaved} email scaricate e salvate nel database`);
       queryClient.invalidateQueries({ queryKey: ['email-messages-backup'] });
       queryClient.invalidateQueries({ queryKey: ['email-folders-backup'] });
-      setSyncDialogOpen(false);
+      
+      // Reset dopo 2 secondi
+      setTimeout(() => {
+        setSyncDialogOpen(false);
+        setSyncProgress({});
+      }, 2000);
     },
     onError: () => {
       toast.error('❌ Errore durante il download');
+      setSyncProgress({});
     }
   });
 
@@ -368,52 +398,103 @@ const TMWEEmailBackup = () => {
 
       {/* Dialogo di sincronizzazione cartelle */}
       <Dialog open={syncDialogOpen} onOpenChange={setSyncDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>🔄 Aggiorna Database Email</DialogTitle>
+            <DialogDescription>
+              Seleziona le cartelle da scaricare dall'API TMWE e salvare nel database
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Seleziona le cartelle da scaricare dall'API TMWE e salvare nel database:
-            </p>
-            
+          
+          <ScrollArea className="flex-1 pr-4">
             <div className="space-y-2">
-              {foldersData?.map((folder: any) => (
-                <label key={folder.name} className="flex items-center gap-2 p-2 rounded hover:bg-accent cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedFolders.includes(folder.name)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedFolders([...selectedFolders, folder.name]);
-                      } else {
-                        setSelectedFolders(selectedFolders.filter(f => f !== folder.name));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm">{folder.name}</span>
-                  <Badge variant="secondary" className="ml-auto">
-                    {folder.messages || 0} email
-                  </Badge>
-                </label>
-              ))}
+              {foldersData?.map((folder: any) => {
+                const apiCount = folder.total_messages || 0;
+                const dbCount = folder.messages || 0;
+                const status = syncProgress[folder.name];
+                
+                return (
+                  <div 
+                    key={folder.name} 
+                    className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id={`sync-${folder.name}`}
+                        checked={selectedFolders.includes(folder.name)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedFolders([...selectedFolders, folder.name]);
+                          } else {
+                            setSelectedFolders(selectedFolders.filter(f => f !== folder.name));
+                          }
+                        }}
+                        disabled={syncMutation.isPending}
+                      />
+                      
+                      <Label 
+                        htmlFor={`sync-${folder.name}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{folder.name}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="gap-1 text-xs">
+                              🌐 {apiCount}
+                            </Badge>
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              📦 {dbCount}
+                            </Badge>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                    
+                    {status && (
+                      <div className="ml-7">
+                        {status === 'pending' && (
+                          <Badge variant="secondary" className="text-xs">⏳ In attesa...</Badge>
+                        )}
+                        {status === 'downloading' && (
+                          <div className="space-y-1">
+                            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                              <div className="h-full bg-primary animate-pulse w-full" />
+                            </div>
+                            <p className="text-xs text-muted-foreground">📥 Download in corso...</p>
+                          </div>
+                        )}
+                        {status === 'done' && (
+                          <Badge variant="default" className="text-xs bg-green-500">✅ Completato</Badge>
+                        )}
+                        {status === 'error' && (
+                          <Badge variant="destructive" className="text-xs">❌ Errore</Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-
-            {syncMutation.isPending && (
-              <div className="text-sm text-muted-foreground">
-                ⏳ Download in corso, attendere...
-              </div>
-            )}
-            
+          </ScrollArea>
+          
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSyncDialogOpen(false)}
+              disabled={syncMutation.isPending}
+            >
+              Annulla
+            </Button>
             <Button
               onClick={() => syncMutation.mutate(selectedFolders)}
               disabled={syncMutation.isPending || selectedFolders.length === 0}
-              className="w-full"
             >
-              {syncMutation.isPending ? '⏳ Download in corso...' : `📥 Scarica ${selectedFolders.length} ${selectedFolders.length === 1 ? 'cartella' : 'cartelle'}`}
+              {syncMutation.isPending 
+                ? `⏳ Download ${selectedFolders.length} ${selectedFolders.length === 1 ? 'cartella' : 'cartelle'}...` 
+                : `📥 Scarica ${selectedFolders.length} ${selectedFolders.length === 1 ? 'cartella' : 'cartelle'}`
+              }
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -429,7 +429,7 @@ const EmailDashboard = () => {
         isSyncing={isDownloading}
         onMenuClick={() => setSidebarOpen(true)}
         isMobile={isMobile}
-        dbEmailCount={isMobile ? (apiEmailCount || 0) : undefined}
+        dbEmailCount={globalEmailCount || 0}
         isHeaderCollapsed={isHeaderCollapsed}
         onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
         onCloseEmail={handleBackToList}

@@ -162,6 +162,11 @@ export const EmailSidebar = ({
     const totalMessages = folder.total_messages || folder.messages || 0;
     const indent = folder.name.split('/').length - 1;
     
+    // Rimuovi "INBOX/" dal nome visualizzato
+    const displayName = folder.name.startsWith('INBOX/') 
+      ? folder.name.replace('INBOX/', '') 
+      : folder.name;
+    
     return (
       <Button
         key={folder.name}
@@ -179,9 +184,9 @@ export const EmailSidebar = ({
         )}
         style={{ paddingLeft: isCollapsed ? undefined : `${12 + indent * 16}px` }}
         onClick={() => onFolderSelect(folder.name)}
-        title={isCollapsed ? `${folder.name} ${unseenCount > 0 ? `(${unseenCount})` : ''}` : undefined}
+        title={isCollapsed ? `${displayName} (${totalMessages})` : undefined}
       >
-        <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0")}>
+        <div className={cn("flex items-center", isCollapsed ? "" : "min-w-0 flex-1")}>
           <Icon className={cn(
             "h-4 w-4 flex-shrink-0 transition-all duration-200",
             "group-hover:scale-105 group-hover:animate-wiggle",
@@ -194,18 +199,18 @@ export const EmailSidebar = ({
               "group-hover:scale-110",
               selectedFolder === folder.name ? "text-purple-300 font-semibold scale-110" : "scale-100"
             )}>
-              {folder.name}
+              {displayName}
             </span>
           )}
         </div>
-        {!isCollapsed && unseenCount > 0 && (
+        {!isCollapsed && totalMessages > 0 && (
           <Badge variant="secondary" className={cn(
             "ml-2 h-5 min-w-5 px-1.5 flex-shrink-0 bg-transparent border",
             selectedFolder === folder.name 
               ? "text-purple-300 border-purple-300" 
               : "text-white border-white"
           )}>
-            {unseenCount}
+            {totalMessages}
           </Badge>
         )}
       </Button>

@@ -8,11 +8,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, ChevronRight } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface EmailSyncPreferencesProps {
   userEmail: string;
@@ -25,46 +24,6 @@ interface EmailSyncPreferencesProps {
 type SyncMode = 'blacklist' | 'whitelist';
 
 const RECOMMENDED_EXCLUDES = ["Trash", "Archives", "Junk", "Drafts"];
-
-interface FolderNode {
-  name: string;
-  fullPath: string;
-  children: FolderNode[];
-  data: any | null;
-  level: number;
-}
-
-const buildFolderTree = (folders: any[]): FolderNode[] => {
-  const tree: Record<string, FolderNode> = {};
-  
-  folders.forEach(folder => {
-    const parts = folder.name.split('/');
-    let currentPath = '';
-    
-    parts.forEach((part, index) => {
-      const parentPath = currentPath;
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
-      
-      if (!tree[currentPath]) {
-        tree[currentPath] = {
-          name: part,
-          fullPath: currentPath,
-          children: [],
-          data: index === parts.length - 1 ? folder : null,
-          level: index
-        };
-      }
-      
-      if (parentPath && tree[parentPath]) {
-        if (!tree[parentPath].children.find(c => c.fullPath === currentPath)) {
-          tree[parentPath].children.push(tree[currentPath]);
-        }
-      }
-    });
-  });
-  
-  return Object.values(tree).filter(node => node.level === 0);
-};
 
 export const EmailSyncPreferences = ({ 
   userEmail,
@@ -88,30 +47,6 @@ export const EmailSyncPreferences = ({
   const { data: preferences, isLoading: loadingPrefs } = useQuery({
     queryKey: ['sync-preferences', userEmail],
     queryFn: () => getSyncPreferences(userEmail),
-  });
-
-  // Query per contare email nel DB per cartella
-  const { data: folderDbCounts } = useQuery({
-    queryKey: ['folder-db-counts', userEmail],
-    queryFn: async () => {
-      if (!userEmail) return {};
-      
-      const { data: counts } = await supabase
-        .from('email_messages')
-        .select('cartella')
-        .eq('user_email', userEmail);
-
-      if (!counts) return {};
-
-      const countMap: Record<string, number> = {};
-      counts.forEach((row: any) => {
-        countMap[row.cartella] = (countMap[row.cartella] || 0) + 1;
-      });
-
-      return countMap;
-    },
-    enabled: !!userEmail,
-    staleTime: 10 * 1000,
   });
 
   // Inizializza lo stato quando le preferenze sono caricate
@@ -149,7 +84,6 @@ export const EmailSyncPreferences = ({
   });
 
   const folders = foldersData?.data || [];
-  const folderTree = buildFolderTree(folders);
 
   const toggleExclude = (folderName: string) => {
     setExcludedFolders(prev =>
@@ -173,126 +107,6 @@ export const EmailSyncPreferences = ({
     } else {
       toggleInclude(folderName);
     }
-  };
-
-  const renderFolderNode = (node: FolderNode): JSX.Element => {
-    const hasChildren = node.children.length > 0;
-    const isLeaf = node.data !== null;
-    
-    // Calcola totale email per nodo (se ha figli, somma i loro)
-    const serverTotal = isLeaf 
-      ? (node.data.total_messages || 0)
-      : node.children.reduce((sum, c) => {
-          const childTotal = c.data?.total_messages || 0;
-          return sum + childTotal;
-        }, 0);
-    
-    const dbTotal = folderDbCounts?.[node.fullPath] || 0;
-    const syncPercentage = serverTotal > 0 ? Math.round((dbTotal / serverTotal) * 100) : 100;
-    const isSynced = dbTotal >= serverTotal;
-    
-    const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(node.fullPath);
-    const isSelected = syncMode === 'blacklist'
-      ? excludedFolders.includes(node.fullPath)
-      : includedFolders.includes(node.fullPath);
-    
-    if (!hasChildren) {
-      // Foglia: checkbox normale
-      return (
-        <div 
-          key={node.fullPath} 
-          className={compact 
-            ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" 
-            : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"
-          }
-        >
-          <Checkbox
-            id={`folder-${node.fullPath}`}
-            checked={isSelected}
-            onCheckedChange={() => handleFolderToggle(node.fullPath)}
-            className="h-4 w-4"
-          />
-          <Label 
-            htmlFor={`folder-${node.fullPath}`} 
-            className={compact 
-              ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" 
-              : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"
-            }
-          >
-            <span>{node.name}</span>
-            {isRecommendedExclude && syncMode === 'blacklist' && (
-              <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                Consigliato
-              </Badge>
-            )}
-          </Label>
-          
-          {/* Server/DB counts */}
-          <div className="flex items-center gap-1">
-            {serverTotal > 0 && (
-              <>
-                <Badge 
-                  variant="outline" 
-                  className="text-[9px] h-4 px-1.5"
-                  title="Email sul server"
-                >
-                  {serverTotal}
-                </Badge>
-                
-                {!isSynced && (
-                  <>
-                    <span className="text-[8px] text-muted-foreground">•</span>
-                    <Badge 
-                      variant="secondary" 
-                      className="text-[9px] h-4 px-1.5"
-                      title="Email nel DB locale"
-                    >
-                      {dbTotal}
-                    </Badge>
-                    <span 
-                      className="text-[8px] text-muted-foreground"
-                      title={`Sincronizzato al ${syncPercentage}%`}
-                    >
-                      ({syncPercentage}%)
-                    </span>
-                  </>
-                )}
-                
-                {isSynced && (
-                  <Check className="h-3 w-3 text-green-600 ml-0.5" />
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      );
-    }
-    
-    // Nodo con figli: Accordion
-    return (
-      <AccordionItem key={node.fullPath} value={node.fullPath} className="border-none">
-        <AccordionTrigger 
-          className={compact 
-            ? "py-1 px-1 hover:bg-accent/50 text-xs hover:no-underline rounded-sm transition-colors" 
-            : "py-1 px-1 hover:bg-accent/50 text-sm hover:no-underline rounded-sm transition-colors"
-          }
-        >
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="font-medium">{node.name}</span>
-            {serverTotal > 0 && (
-              <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-                {serverTotal}
-              </Badge>
-            )}
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="pl-4 pb-0">
-          <div className="space-y-0.5">
-            {node.children.map(child => renderFolderNode(child))}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    );
   };
 
   const isLoading = loadingFolders || loadingPrefs;
@@ -347,9 +161,41 @@ export const EmailSyncPreferences = ({
         </h4>
         
         <ScrollArea className={compact ? "max-h-[50vh] rounded-lg p-1" : "h-[400px] rounded-lg p-1"}>
-          <Accordion type="multiple" className="space-y-0.5">
-            {folderTree.map(node => renderFolderNode(node))}
-          </Accordion>
+          <div className="space-y-0.5">
+            {folders.map((folder: any) => {
+              const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);
+              const isSelected = syncMode === 'blacklist'
+                ? excludedFolders.includes(folder.name)
+                : includedFolders.includes(folder.name);
+
+              return (
+                <div key={folder.id} className={compact ? "flex items-center gap-2 py-0.5 px-1 hover:bg-accent/50 rounded-sm transition-colors" : "flex items-center gap-2 py-1 px-1 hover:bg-accent/50 rounded-sm transition-colors"}>
+                  <Checkbox
+                    id={`folder-${folder.id}`}
+                    checked={isSelected}
+                    onCheckedChange={() => handleFolderToggle(folder.name)}
+                    className="h-4 w-4"
+                  />
+                  <Label 
+                    htmlFor={`folder-${folder.id}`} 
+                    className={compact ? "flex-1 cursor-pointer text-xs flex items-center gap-1.5" : "flex-1 cursor-pointer text-sm flex items-center gap-1.5"}
+                  >
+                    <span>{folder.name}</span>
+                    {isRecommendedExclude && syncMode === 'blacklist' && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                        Consigliato
+                      </Badge>
+                    )}
+                  </Label>
+                  {folder.total_messages > 0 && (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                      {folder.total_messages}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </ScrollArea>
 
         {!compact && (

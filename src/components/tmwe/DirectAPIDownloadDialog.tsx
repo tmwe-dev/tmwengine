@@ -9,6 +9,7 @@ import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EmailSyncPreferences } from './EmailSyncPreferences';
+import { EmailTransferAnimation3D } from './EmailTransferAnimation3D';
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
@@ -33,7 +34,10 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     processedFolders,
     startDownload,
     stopDownload,
-    reset
+    reset,
+    serverEmailCount,
+    dbEmailCount,
+    flyingEmailCount,
   } = useEmailDownload();
 
   // Fetch user email when dialog opens
@@ -131,37 +135,58 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
               </div>
             </>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {downloadState.phase === 'loading' && (
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  )}
-                  {downloadState.phase === 'downloading' && (
-                    <Download className="h-5 w-5 text-primary" />
-                  )}
-                  {downloadState.phase === 'saving' && (
-                    <Database className="h-5 w-5 text-primary" />
-                  )}
-                  {downloadState.phase === 'completed' && (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  )}
-                  {downloadState.phase === 'error' && (
-                    <AlertCircle className="h-5 w-5 text-destructive" />
-                  )}
-                  <div>
-                    <div className="font-medium text-sm">
-                      {downloadState.phase === 'loading' && 'Caricamento cartelle...'}
-                      {downloadState.phase === 'downloading' && `Scaricamento ${downloadState.currentFolder}...`}
-                      {downloadState.phase === 'saving' && 'Salvataggio messaggi...'}
-                      {downloadState.phase === 'completed' && 'Download completato!'}
-                      {downloadState.phase === 'error' && 'Errore durante il download'}
-                    </div>
-                    {downloadState.currentFolder && downloadState.phase !== 'completed' && (
-                      <div className="text-xs text-muted-foreground">
-                        {downloadState.currentFolder}
-                      </div>
-                    )}
+            <div className="space-y-4">
+              {/* Animazione 3D */}
+              <div className="h-[300px] bg-gradient-to-br from-background to-muted rounded-lg overflow-hidden border">
+                <EmailTransferAnimation3D
+                  serverCount={serverEmailCount}
+                  dbCount={dbEmailCount}
+                  flyingCount={flyingEmailCount}
+                  currentFolder={currentFolder}
+                  isAnimating={isDownloading}
+                />
+              </div>
+
+              {/* Stats testuali sotto animazione */}
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="space-y-1 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Server</div>
+                  <div className="text-2xl font-bold text-destructive">{serverEmailCount}</div>
+                </div>
+                <div className="space-y-1 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">In transito</div>
+                  <div className="text-2xl font-bold text-primary">{flyingEmailCount}</div>
+                </div>
+                <div className="space-y-1 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Database</div>
+                  <div className="text-2xl font-bold text-green-600">{dbEmailCount}</div>
+                </div>
+              </div>
+
+              {/* Status phase */}
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                {downloadState.phase === 'loading' && (
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                )}
+                {downloadState.phase === 'downloading' && (
+                  <Download className="h-5 w-5 text-primary" />
+                )}
+                {downloadState.phase === 'saving' && (
+                  <Database className="h-5 w-5 text-primary" />
+                )}
+                {downloadState.phase === 'completed' && (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                )}
+                {downloadState.phase === 'error' && (
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                )}
+                <div className="flex-1">
+                  <div className="font-medium text-sm">
+                    {downloadState.phase === 'loading' && 'Caricamento cartelle...'}
+                    {downloadState.phase === 'downloading' && 'Download in corso...'}
+                    {downloadState.phase === 'saving' && 'Salvataggio nel database...'}
+                    {downloadState.phase === 'completed' && 'Download completato!'}
+                    {downloadState.phase === 'error' && 'Errore durante il download'}
                   </div>
                 </div>
               </div>

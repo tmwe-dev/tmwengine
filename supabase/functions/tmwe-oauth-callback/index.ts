@@ -183,8 +183,8 @@ serve(async (req) => {
 
     console.log('✅ TMWE credentials saved');
 
-    // 6. Generate Supabase session using OTP verification
-    console.log('🔐 Creating Supabase session...');
+    // 6. Generate Supabase session using OTP verification [v2.0 - Fixed token extraction]
+    console.log('🔐 Creating Supabase session with OTP verification [v2.0]...');
 
     // Update user metadata to mark last login
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(

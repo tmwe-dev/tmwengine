@@ -106,7 +106,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {step === 'config' ? 'Configura Download Email' : 'Download Email in Corso'}
@@ -115,8 +115,9 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
         <Separator className="bg-border/30" />
 
-        {step === 'config' ? (
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {step === 'config' ? (
+            <div className="space-y-3 px-1">
             <EmailSyncPreferences
               userEmail={userEmail || ''}
               onClose={() => onOpenChange(false)}
@@ -156,22 +157,9 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
             </div>
 
             <Separator className="bg-border/30" />
-
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose}>
-                Annulla
-              </Button>
-              <Button 
-                onClick={handleStartDownload}
-                disabled={filteredFolders.length === 0}
-              >
-                Avvia Download
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </DialogFooter>
-          </div>
-        ) : (
-          <div className="space-y-4">
+            </div>
+          ) : (
+            <div className="space-y-3 px-1">
             <div className="space-y-4 py-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -301,23 +289,39 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
               <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <span>Le email già presenti verranno saltate automaticamente.</span>
             </div>
-
-            <DialogFooter>
-              {downloadState.phase !== 'completed' && downloadState.phase !== 'error' ? (
-                <Button 
-                  variant="destructive" 
-                  onClick={stopDownload}
-                >
-                  Ferma Download
-                </Button>
-              ) : (
-                <Button onClick={handleClose}>
-                  Chiudi
-                </Button>
-              )}
-            </DialogFooter>
           </div>
-        )}
+          )}
+        </div>
+
+        <Separator className="bg-border/30" />
+
+        <DialogFooter>
+          {step === 'config' ? (
+            <>
+              <Button variant="outline" onClick={handleClose}>
+                Annulla
+              </Button>
+              <Button 
+                onClick={handleStartDownload}
+                disabled={filteredFolders.length === 0}
+              >
+                Avvia Download
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </>
+          ) : downloadState.phase !== 'completed' && downloadState.phase !== 'error' ? (
+            <Button 
+              variant="destructive" 
+              onClick={stopDownload}
+            >
+              Ferma Download
+            </Button>
+          ) : (
+            <Button onClick={handleClose}>
+              Chiudi
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

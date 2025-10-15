@@ -110,8 +110,8 @@ export const EmailSyncPreferences = ({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3">
+    <div className="space-y-3">
+      <div className="space-y-2">
         <div>
           <h3 className="font-medium mb-1">Modalità di Sincronizzazione</h3>
           <p className="text-xs text-muted-foreground">
@@ -153,7 +153,7 @@ export const EmailSyncPreferences = ({
           {syncMode === 'blacklist' ? 'Cartelle da Escludere' : 'Cartelle da Includere'}
         </h4>
         
-        <ScrollArea className="h-[300px] rounded-lg p-1">
+        <ScrollArea className="max-h-[40vh] rounded-lg p-1">
           <div className="space-y-0.5">
             {folders.map((folder: any) => {
               const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Download, CheckCircle, AlertCircle, Loader2, Folder, Database, CloudDownload, ArrowRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Download, CheckCircle2, AlertCircle, Loader2, Database, ArrowRight, Info } from 'lucide-react';
 import { useEmailDownload } from '@/hooks/useEmailDownload';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EmailSyncPreferences } from './EmailSyncPreferences';
 import { supabase } from '@/integrations/supabase/client';
-import { getSyncPreferences, filterFolders, getFilterStats } from '@/lib/email-sync-preferences';
+import { getSyncPreferences, filterFolders } from '@/lib/email-sync-preferences';
 import { emailFolderApi } from '@/lib/tmwe-api-integrated';
 
 interface DirectAPIDownloadDialogProps {
@@ -69,7 +71,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
 
   const allFolders = foldersData?.data || [];
   const filteredFolders = syncPreferences ? filterFolders(allFolders, syncPreferences) : [];
-  const filterStats = syncPreferences ? getFilterStats(allFolders.length, filteredFolders, syncPreferences) : null;
+  const excludedFoldersCount = allFolders.length - filteredFolders.length;
 
   const handleStartDownload = async () => {
     setStep('download');
@@ -90,246 +92,230 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
     }
   };
 
-  const progress = totalToDownload > 0 ? (downloadedCount / totalToDownload) * 100 : 0;
-  const folderProgress = currentFolderProgress.total > 0 
-    ? (currentFolderProgress.current / currentFolderProgress.total) * 100 
-    : 0;
 
-  const getPhaseIcon = () => {
-    switch (currentPhase) {
-      case 'loading': return <CloudDownload className="h-5 w-5 text-blue-500" />;
-      case 'downloading': return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
-      case 'saving': return <Database className="h-5 w-5 text-green-500 animate-pulse" />;
-      default: return <Folder className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
-
-  const getPhaseText = () => {
-    switch (currentPhase) {
-      case 'loading': return 'Caricamento cartelle...';
-      case 'downloading': return 'Download in corso...';
-      case 'saving': return 'Salvataggio nel database...';
-      default: return 'In attesa...';
-    }
+  const downloadState = {
+    phase: isDownloading ? currentPhase : downloadError ? 'error' : downloadedCount > 0 ? 'completed' : 'idle',
+    currentFolder,
+    currentFolderProcessed: currentFolderProgress.current,
+    currentFolderTotal: currentFolderProgress.total,
+    completedFolders: processedFolders.length,
+    totalFolders: totalToDownload > 0 ? Math.ceil(totalToDownload / 100) : 0,
+    recentFolders: processedFolders.slice(-3).map((name, idx) => ({ name, count: 0 })),
+    error: downloadError
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {step === 'config' ? 'Configura Download Email' : 'Download Email TMWE'}
+          <DialogTitle className="text-xl">
+            {step === 'config' ? 'Configura Download Email' : 'Download Email in Corso'}
           </DialogTitle>
         </DialogHeader>
 
+        <Separator className="bg-border/30" />
+
         {step === 'config' ? (
-          /* CONFIG STEP */
-          <div className="space-y-6">
-            {userEmail ? (
-              <>
-                <EmailSyncPreferences 
-                  userEmail={userEmail} 
-                  showButtons={false}
-                />
-
-                {/* Preview cartelle */}
-                {filterStats && (
-                  <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
-                    <div className="font-medium text-sm">📊 Riepilogo Download</div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span>
-                          <strong>{filterStats.filtered}</strong> cartelle da scaricare
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-orange-500" />
-                        <span>
-                          <strong>{filterStats.excluded}</strong> cartelle escluse
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {filteredFolders.length > 0 && (
-                      <div className="pt-2 border-t">
-                        <div className="text-xs font-medium text-muted-foreground mb-2">
-                          Cartelle che verranno scaricate:
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {filteredFolders.slice(0, 5).map((folder: any) => (
-                            <span 
-                              key={folder.name}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs"
-                            >
-                              <Folder className="h-3 w-3" />
-                              {folder.name}
-                              {folder.messages > 0 && (
-                                <span className="text-muted-foreground">({folder.messages})</span>
-                              )}
-                            </span>
-                          ))}
-                          {filteredFolders.length > 5 && (
-                            <span className="inline-flex items-center px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
-                              +{filteredFolders.length - 5} altre
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button variant="outline" onClick={handleClose}>
-                    Annulla
-                  </Button>
-                  <Button onClick={handleStartDownload} disabled={filteredFolders.length === 0}>
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    Avvia Download
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-          </div>
-        ) : (
-          /* DOWNLOAD STEP */
           <div className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              Download in corso dal server TMWE. Le email verranno salvate nel database locale.
-            </div>
+            <EmailSyncPreferences
+              userEmail={userEmail || ''}
+              onClose={() => onOpenChange(false)}
+              showButtons={false}
+            />
 
-          {/* Status Display */}
-          {isDownloading && (
-            <div className="space-y-4 bg-gradient-to-br from-primary/5 to-primary/10 p-5 rounded-lg border border-primary/20">
-              {/* Fase corrente */}
-              <div className="flex items-center gap-3">
-                {getPhaseIcon()}
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-foreground">
-                    {getPhaseText()}
-                  </div>
-                  {currentFolder && (
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      📂 {currentFolder}
-                    </div>
+            <Separator className="bg-border/30" />
+
+            <div className="space-y-3 py-2">
+              <div className="flex items-center gap-4 text-sm">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="font-medium">{filteredFolders.length} {filteredFolders.length === 1 ? 'cartella' : 'cartelle'}</span>
+                </span>
+                {excludedFoldersCount > 0 && (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{excludedFoldersCount} {excludedFoldersCount === 1 ? 'esclusa' : 'escluse'}</span>
+                  </span>
+                )}
+              </div>
+              
+              {filteredFolders.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 animate-fade-in">
+                  {filteredFolders.slice(0, 8).map((folder: any) => (
+                    <Badge key={folder.name} variant="outline" className="text-xs font-normal">
+                      {folder.name}
+                    </Badge>
+                  ))}
+                  {filteredFolders.length > 8 && (
+                    <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                      +{filteredFolders.length - 8}
+                    </Badge>
                   )}
                 </div>
-              </div>
-
-              {/* Progresso cartella corrente */}
-              {currentFolderProgress.total > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground">Cartella corrente:</span>
-                    <span className="font-bold text-foreground">
-                      {currentFolderProgress.current} / {currentFolderProgress.total}
-                    </span>
-                  </div>
-                  <Progress value={folderProgress} className="h-2 bg-muted" />
-                </div>
               )}
+            </div>
 
-              {/* Progresso totale */}
-              {totalToDownload > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground">Progresso totale:</span>
-                    <span className="font-bold text-primary">
-                      {downloadedCount.toLocaleString()} / {totalToDownload.toLocaleString()} ({Math.round(progress)}%)
-                    </span>
-                  </div>
-                  <Progress value={progress} className="h-3 bg-muted" />
-                </div>
-              )}
+            <Separator className="bg-border/30" />
 
-              {/* Cartelle processate (ultime 3) */}
-              {processedFolders.length > 0 && (
-                <div className="pt-2 border-t border-primary/10">
-                  <div className="text-xs font-medium text-muted-foreground mb-1.5">
-                    Cartelle completate:
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {processedFolders.slice(-3).map((folder, idx) => (
-                      <span 
-                        key={idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 text-green-700 dark:text-green-400 rounded text-xs"
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                        {folder}
-                      </span>
-                    ))}
-                    {processedFolders.length > 3 && (
-                      <span className="inline-flex items-center px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs">
-                        +{processedFolders.length - 3} altre
-                      </span>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleClose}>
+                Annulla
+              </Button>
+              <Button 
+                onClick={handleStartDownload}
+                disabled={filteredFolders.length === 0}
+              >
+                Avvia Download
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-4 py-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {downloadState.phase === 'loading' && (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  )}
+                  {downloadState.phase === 'downloading' && (
+                    <Download className="h-5 w-5 text-primary" />
+                  )}
+                  {downloadState.phase === 'saving' && (
+                    <Database className="h-5 w-5 text-primary" />
+                  )}
+                  {downloadState.phase === 'completed' && (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  )}
+                  {downloadState.phase === 'error' && (
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      {downloadState.phase === 'loading' && 'Caricamento cartelle...'}
+                      {downloadState.phase === 'downloading' && `Scaricamento ${downloadState.currentFolder}...`}
+                      {downloadState.phase === 'saving' && 'Salvataggio messaggi...'}
+                      {downloadState.phase === 'completed' && 'Download completato!'}
+                      {downloadState.phase === 'error' && 'Errore durante il download'}
+                    </div>
+                    {downloadState.currentFolder && downloadState.phase !== 'completed' && (
+                      <div className="text-sm text-muted-foreground">
+                        {downloadState.currentFolder}
+                      </div>
                     )}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
 
-          {/* Success Message */}
-          {!isDownloading && downloadedCount > 0 && !downloadError && (
-            <div className="flex items-center gap-2 p-4 bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                Download completato: {downloadedCount} email salvate
-              </span>
-            </div>
-          )}
+              <Separator className="bg-border/30" />
 
-          {/* Error Message */}
-          {downloadError && (
-            <div className="flex items-start gap-2 p-4 bg-destructive/10 text-destructive rounded-lg">
-              <AlertCircle className="h-5 w-5 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-medium">Errore durante il download</div>
-                <div className="text-xs mt-1">{downloadError}</div>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Cartella corrente</span>
+                    <span className="font-medium">
+                      {downloadState.currentFolderProcessed}/{downloadState.currentFolderTotal}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={downloadState.currentFolderTotal > 0 
+                      ? (downloadState.currentFolderProcessed / downloadState.currentFolderTotal) * 100 
+                      : 0
+                    } 
+                    className="h-1.5"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Progresso totale</span>
+                    <span className="font-medium">
+                      {downloadState.completedFolders}/{downloadState.totalFolders} cartelle
+                    </span>
+                  </div>
+                  <Progress 
+                    value={downloadState.totalFolders > 0 
+                      ? (downloadState.completedFolders / downloadState.totalFolders) * 100 
+                      : 0
+                    } 
+                    className="h-1.5"
+                  />
+                </div>
               </div>
             </div>
-          )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              {!isDownloading ? (
+            {downloadState.recentFolders.length > 0 && (
+              <>
+                <Separator className="bg-border/30" />
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">Completate:</div>
+                  <div className="space-y-1">
+                    {downloadState.recentFolders.map((folder, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in"
+                      >
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        <span>{folder.name}</span>
+                        <span className="text-[10px]">({folder.count})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {downloadState.phase === 'completed' && (
+              <>
+                <Separator className="bg-border/30" />
+                <div className="flex items-start gap-3 text-sm animate-fade-in">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                  <div>
+                    <div className="font-medium">Download completato</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Tutte le email sono state salvate nel database
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {downloadState.phase === 'error' && downloadState.error && (
+              <>
+                <Separator className="bg-border/30" />
+                <div className="flex items-start gap-3 text-sm animate-fade-in">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                  <div>
+                    <div className="font-medium text-destructive">Errore</div>
+                    <div className="text-xs text-destructive/90 mt-0.5">
+                      {downloadState.error}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <Separator className="bg-border/30" />
+
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>Le email già presenti verranno saltate automaticamente.</span>
+            </div>
+
+            <DialogFooter>
+              {downloadState.phase !== 'completed' && downloadState.phase !== 'error' ? (
                 <Button 
-                  variant="outline" 
-                  onClick={handleClose}
-                  className="flex-1"
+                  variant="destructive" 
+                  onClick={stopDownload}
                 >
-                  Chiudi
+                  Ferma Download
                 </Button>
               ) : (
-                <>
-                  <Button 
-                    variant="destructive" 
-                    onClick={stopDownload}
-                    className="flex-1"
-                  >
-                    Ferma Download
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleClose}
-                    disabled
-                  >
-                    Chiudi
-                  </Button>
-                </>
+                <Button onClick={handleClose}>
+                  Chiudi
+                </Button>
               )}
-            </div>
-
-            {/* Info Footer */}
-            <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
-              <strong>Nota:</strong> Le email già presenti nel database verranno saltate automaticamente. 
-              Il processo può richiedere alcuni minuti per account con molte email.
-            </div>
+            </DialogFooter>
           </div>
         )}
       </DialogContent>

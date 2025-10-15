@@ -9,8 +9,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface EmailSyncPreferencesProps {
   userEmail: string;
@@ -109,49 +110,51 @@ export const EmailSyncPreferences = ({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <h3 className="text-lg font-semibold mb-2">Modalità di Sincronizzazione</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <h3 className="font-medium mb-1">Modalità di Sincronizzazione</h3>
+          <p className="text-xs text-muted-foreground">
             Scegli quali cartelle sincronizzare durante il download delle email.
           </p>
         </div>
 
-        <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as SyncMode)}>
-          <div className="flex items-start space-x-3 p-3 rounded-lg border bg-card">
-            <RadioGroupItem value="blacklist" id="mode-blacklist" />
+        <RadioGroup value={syncMode} onValueChange={(v) => setSyncMode(v as SyncMode)} className="space-y-2">
+          <div className="flex items-start space-x-3">
+            <RadioGroupItem value="blacklist" id="mode-blacklist" className="mt-0.5" />
             <div className="flex-1">
-              <Label htmlFor="mode-blacklist" className="font-medium cursor-pointer">
+              <Label htmlFor="mode-blacklist" className="font-medium cursor-pointer text-sm">
                 Tutte le cartelle (eccetto quelle escluse)
               </Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Scarica tutte le cartelle tranne quelle che selezioni sotto
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scarica tutte le cartelle tranne quelle che selezioni
               </p>
             </div>
           </div>
 
-          <div className="flex items-start space-x-3 p-3 rounded-lg border bg-card">
-            <RadioGroupItem value="whitelist" id="mode-whitelist" />
+          <div className="flex items-start space-x-3">
+            <RadioGroupItem value="whitelist" id="mode-whitelist" className="mt-0.5" />
             <div className="flex-1">
-              <Label htmlFor="mode-whitelist" className="font-medium cursor-pointer">
+              <Label htmlFor="mode-whitelist" className="font-medium cursor-pointer text-sm">
                 Solo cartelle selezionate
               </Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Scarica SOLO le cartelle che selezioni sotto
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scarica SOLO le cartelle che selezioni
               </p>
             </div>
           </div>
         </RadioGroup>
       </div>
 
-      <div className="space-y-3">
-        <h4 className="font-medium">
+      <Separator className="bg-border/30" />
+
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium">
           {syncMode === 'blacklist' ? 'Cartelle da Escludere' : 'Cartelle da Includere'}
         </h4>
         
-        <ScrollArea className="h-[300px] border rounded-lg p-3">
-          <div className="space-y-2">
+        <ScrollArea className="h-[300px] rounded-lg p-1">
+          <div className="space-y-0.5">
             {folders.map((folder: any) => {
               const isRecommendedExclude = RECOMMENDED_EXCLUDES.includes(folder.name);
               const isChecked = syncMode === 'blacklist'
@@ -161,9 +164,9 @@ export const EmailSyncPreferences = ({
               return (
                 <div
                   key={folder.name}
-                  className="flex items-center justify-between p-2 rounded hover:bg-muted/50"
+                  className="flex items-center justify-between py-2 px-1 hover:bg-muted/30 rounded transition-colors"
                 >
-                  <div className="flex items-center space-x-3 flex-1">
+                  <div className="flex items-center space-x-2 flex-1">
                     <Checkbox
                       id={`folder-${folder.name}`}
                       checked={isChecked}
@@ -177,21 +180,20 @@ export const EmailSyncPreferences = ({
                     />
                     <Label
                       htmlFor={`folder-${folder.name}`}
-                      className="flex-1 cursor-pointer font-normal"
+                      className="flex-1 cursor-pointer font-normal text-sm"
                     >
                       {folder.name}
                     </Label>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {folder.total_messages > 0 && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                         {folder.total_messages}
                       </Badge>
                     )}
                     {syncMode === 'blacklist' && isRecommendedExclude && !isChecked && (
-                      <Badge variant="secondary" className="text-xs bg-orange-500/20 text-orange-700">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Consigliato escludere
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        Consigliato
                       </Badge>
                     )}
                   </div>
@@ -201,16 +203,17 @@ export const EmailSyncPreferences = ({
           </div>
         </ScrollArea>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Check className="h-4 w-4" />
+        <Separator className="bg-border/30" />
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+          <Check className="h-3 w-3" />
           {syncMode === 'blacklist' ? (
             <span>
-              Verranno scaricate <strong>{folders.length - excludedFolders.length}</strong> cartelle
-              ({excludedFolders.length} escluse)
+              <strong>{folders.length - excludedFolders.length}</strong> cartelle ({excludedFolders.length} escluse)
             </span>
           ) : (
             <span>
-              Verranno scaricate <strong>{includedFolders.length}</strong> cartelle
+              <strong>{includedFolders.length}</strong> cartelle selezionate
             </span>
           )}
         </div>

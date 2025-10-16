@@ -59,6 +59,11 @@ const TMWEAuthCallbackIntegrated = () => {
       }
 
       addDetail('🔐 Enviando código a servidor para intercambio...');
+      
+      console.log('🔐 Calling tmwe-jwt-auth edge function with:', {
+        code: code.substring(0, 20) + '...',
+        redirectUri: redirectUri
+      });
 
       // 4. Llamar a la edge function JWT para completar el flujo OAuth2 con JWT
       const { data, error: functionError } = await supabase.functions.invoke('tmwe-jwt-auth', {
@@ -68,14 +73,21 @@ const TMWEAuthCallbackIntegrated = () => {
         }
       });
 
+      console.log('📥 Edge function response:', { data, error: functionError });
+
       if (functionError) {
-        console.error('Edge function error:', functionError);
+        console.error('❌ Edge function error:', functionError);
+        addDetail(`❌ Error en edge function: ${functionError.message}`);
         throw new Error(functionError.message || 'OAuth callback failed');
       }
 
       if (!data || !data.success) {
+        console.error('❌ Invalid response from edge function:', data);
+        addDetail(`❌ Respuesta inválida: ${data?.error || 'Sin datos'}`);
         throw new Error(data?.error || 'OAuth callback failed');
       }
+      
+      console.log('✅ Edge function success:', data);
 
       addDetail(`✅ Autenticación completada (email: ${data.email})`);
       addDetail(`👤 Perfil: ${data.profile?.name || data.profile?.username}`);
@@ -86,33 +98,49 @@ const TMWEAuthCallbackIntegrated = () => {
       if (data.access_token && data.refresh_token) {
         addDetail('🔐 Estableciendo sesión de Supabase...');
         
+        console.log('🔐 Setting Supabase session with tokens:', {
+          access_token: data.access_token.substring(0, 20) + '...',
+          refresh_token: data.refresh_token.substring(0, 20) + '...'
+        });
+        
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: data.access_token,
           refresh_token: data.refresh_token,
         });
 
         if (sessionError) {
-          console.error('Error estableciendo sesión:', sessionError);
-          addDetail(`❌ Error: ${sessionError.message}`);
+          console.error('❌ Error estableciendo sesión:', sessionError);
+          addDetail(`❌ Error sesión: ${sessionError.message}`);
           throw sessionError;
         }
         
+        console.log('✅ Supabase session established successfully');
         addDetail('✅ Sesión de Supabase establecida correctamente');
+      } else {
+        console.error('❌ Missing Supabase tokens in response:', {
+          has_access_token: !!data.access_token,
+          has_refresh_token: !!data.refresh_token
+        });
+        throw new Error('Missing Supabase tokens in response');
       }
 
       // 6. Actualizar contexto local de autenticación
+      console.log('👤 Updating auth context with:', { email: data.email, profile: data.profile });
       await login(data.email, data.profile);
+      console.log('✅ Auth context updated');
 
       // 7. Limpiar sessionStorage
       sessionStorage.removeItem('oauth_state');
       sessionStorage.removeItem('oauth_client_id');
       sessionStorage.removeItem('oauth_client_secret');
       sessionStorage.removeItem('oauth_redirect_uri');
+      console.log('🧹 Session storage cleaned');
 
       addDetail('✅ Proceso completado exitosamente');
       setStatus('success');
 
       // Redirigir al dashboard después de 2 segundos
+      console.log('🔄 Redirecting to home in 2 seconds...');
       setTimeout(() => {
         navigate('/');
       }, 2000);

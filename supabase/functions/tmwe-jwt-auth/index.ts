@@ -38,10 +38,16 @@ serve(async (req) => {
 
   try {
     console.log('🔐 Iniciando JWT authentication flow...');
+    console.log('📍 Request URL:', req.url);
+    console.log('📍 Request method:', req.method);
     
-    const { code, redirectUri }: JwtAuthRequest = await req.json();
+    const requestBody = await req.json();
+    console.log('📦 Request body received:', JSON.stringify(requestBody, null, 2));
+    
+    const { code, redirectUri }: JwtAuthRequest = requestBody;
     
     if (!code || !redirectUri) {
+      console.error('❌ Missing required parameters:', { code: !!code, redirectUri: !!redirectUri });
       return new Response(
         JSON.stringify({ error: 'Missing code or redirectUri' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -52,11 +58,27 @@ serve(async (req) => {
     const clientId = Deno.env.get('TMWE_CLIENT_ID') || '30eb3689ecfe890adfda0578d61ad858cf9f98999a919e0cd7bb798df17b006f';
     const clientSecret = Deno.env.get('TMWE_CLIENT_SECRET');
     
+    console.log('🔑 Client ID:', clientId);
+    console.log('🔑 Client Secret present:', !!clientSecret);
+    console.log('🔑 Code length:', code.length);
+    console.log('🔑 Redirect URI:', redirectUri);
+    
     if (!clientSecret) {
+      console.error('❌ TMWE_CLIENT_SECRET not configured');
       throw new Error('TMWE_CLIENT_SECRET not configured');
     }
 
     console.log('📤 Exchanging authorization code for JWT tokens...');
+    
+    const tokenRequestBody = {
+      grant_type: 'authorization_code',
+      code: code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+    };
+    
+    console.log('📤 Token request body:', JSON.stringify(tokenRequestBody, null, 2));
 
     // 1. Exchange authorization code for JWT tokens using /exchange_code_for_jwt endpoint
     const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/exchange_code_for_jwt', {
@@ -64,40 +86,70 @@ serve(async (req) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        grant_type: 'authorization_code',
-        code: code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-      }),
+      body: JSON.stringify(tokenRequestBody),
     });
 
+    console.log('📥 Token response status:', tokenResponse.status);
+    console.log('📥 Token response headers:', JSON.stringify(Object.fromEntries(tokenResponse.headers.entries()), null, 2));
+    
+    const responseText = await tokenResponse.text();
+    console.log('📥 Token response body (raw):', responseText);
+
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error('❌ JWT token exchange failed:', errorData);
+      console.error('❌ JWT token exchange failed with status:', tokenResponse.status);
+      console.error('❌ Response text:', responseText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+        console.error('❌ Parsed error data:', JSON.stringify(errorData, null, 2));
+      } catch (e) {
+        console.error('❌ Could not parse error response as JSON');
+        errorData = { error: responseText || 'Unknown error' };
+      }
+      
       throw new Error(`JWT token exchange failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
+    
+    let tokenData;
+    try {
+      tokenData = JSON.parse(responseText);
+      console.log('✅ Parsed token data:', JSON.stringify(tokenData, null, 2));
+    } catch (e) {
+      console.error('❌ Could not parse success response as JSON');
+      throw new Error('Invalid JSON response from token endpoint');
+    }
 
-    const tokenData = await tokenResponse.json();
     console.log('✅ JWT tokens obtained');
     console.log('📧 User email:', tokenData.email);
     console.log('🆔 User ID:', tokenData.user_id);
     console.log('🏢 Anagrafica ID:', tokenData.anagrafica_id);
+    console.log('🔑 Access token present:', !!tokenData.access_token);
+    console.log('🔑 Refresh token present:', !!tokenData.refresh_token);
+    console.log('⏱️ Expires in:', tokenData.expires_in);
 
     const { access_token, refresh_token, expires_in, email, user_id, anagrafica_id } = tokenData;
 
     if (!access_token || !email) {
+      console.error('❌ Invalid token response:', { 
+        has_access_token: !!access_token, 
+        has_email: !!email,
+        email_value: email 
+      });
       throw new Error('Invalid token response: missing access_token or email');
     }
 
     // Decode JWT to extract claims
+    console.log('🔓 Decoding JWT token...');
     const jwtPayload = decodeJwtPayload(access_token);
     if (!jwtPayload) {
+      console.error('❌ Failed to decode JWT token');
       throw new Error('Failed to decode JWT token');
     }
+    console.log('✅ JWT payload decoded:', JSON.stringify(jwtPayload, null, 2));
 
     console.log('👤 Fetching user profile from TMWE API...');
+    console.log('👤 User ID for profile fetch:', user_id);
 
     // 2. Get user profile using the JWT access token
     const profileResponse = await fetch('https://findair.it/erp/tmwe_json/contatti', {
@@ -119,7 +171,7 @@ serve(async (req) => {
     }
 
     const profileData = await profileResponse.json();
-    console.log('✅ Profile obtained:', profileData.name || profileData.username);
+    console.log('✅ Profile obtained:', JSON.stringify(profileData, null, 2));
 
     // Initialize Supabase Admin Client
     const supabaseAdmin = createClient(
@@ -257,26 +309,30 @@ serve(async (req) => {
 
     console.log('✅ Supabase session tokens generated successfully');
     console.log('✅ JWT authentication flow completed successfully');
+    
+    const finalResponse = {
+      success: true,
+      email: email,
+      profile: {
+        name: profileData.name,
+        username: profileData.username,
+        enterprise_name: profileData.enterprise_name,
+        rubrica: profileData.rubrica,
+      },
+      supabaseUserId: supabaseUser.id,
+      // ✅ Return Supabase JWT tokens (not TMWE tokens)
+      access_token: supabaseAccessToken,
+      refresh_token: supabaseRefreshToken,
+      // Include TMWE JWT info for reference
+      tmwe_user_id: user_id,
+      tmwe_anagrafica_id: anagrafica_id,
+      token_format: 'jwt',
+    };
+    
+    console.log('📤 Returning final response:', JSON.stringify(finalResponse, null, 2));
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        email: email,
-        profile: {
-          name: profileData.name,
-          username: profileData.username,
-          enterprise_name: profileData.enterprise_name,
-          rubrica: profileData.rubrica,
-        },
-        supabaseUserId: supabaseUser.id,
-        // ✅ Return Supabase JWT tokens (not TMWE tokens)
-        access_token: supabaseAccessToken,
-        refresh_token: supabaseRefreshToken,
-        // Include TMWE JWT info for reference
-        tmwe_user_id: user_id,
-        tmwe_anagrafica_id: anagrafica_id,
-        token_format: 'jwt',
-      }),
+      JSON.stringify(finalResponse),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

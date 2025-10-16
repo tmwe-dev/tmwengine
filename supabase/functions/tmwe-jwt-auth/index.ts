@@ -102,46 +102,53 @@ serve(async (req) => {
       throw new Error('Invalid JSON response from token endpoint');
     }
 
-    console.log('✅ OAuth2 tokens obtained');
+    console.log('✅ JWT tokens obtained');
     console.log('🔑 Access token present:', !!tokenData.access_token);
     console.log('⏱️ Expires in:', tokenData.expires_in);
+    console.log('📧 Email from token response:', tokenData.email);
 
-    const { access_token, expires_in } = tokenData;
+    const { access_token, expires_in, email } = tokenData;
 
-    if (!access_token) {
-      console.error('❌ Invalid token response - missing access_token');
-      throw new Error('Invalid token response: missing access_token');
-    }
-
-    console.log('👤 Fetching user info from TMWE API using access token...');
-
-    // 2. Get user info using the OAuth2 access token
-    const userInfoResponse = await fetch('https://findair.it/erp/tmwe_json/user_info', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-      },
-    });
-
-    console.log('📥 User info response status:', userInfoResponse.status);
-    
-    if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text();
-      console.error('❌ User info fetch failed:', errorText);
-      throw new Error(`Failed to fetch user info: ${userInfoResponse.statusText}`);
-    }
-
-    const userInfo = await userInfoResponse.json();
-    console.log('✅ User info obtained:', JSON.stringify(userInfo, null, 2));
-    
-    const { email, user_id, anagrafica_id } = userInfo;
-    
-    if (!email || !user_id) {
-      console.error('❌ Invalid user info response:', { 
-        has_email: !!email, 
-        has_user_id: !!user_id 
+    if (!access_token || !email) {
+      console.error('❌ Invalid token response:', { 
+        has_access_token: !!access_token, 
+        has_email: !!email 
       });
-      throw new Error('Invalid user info response: missing email or user_id');
+      throw new Error('Invalid token response: missing access_token or email');
+    }
+
+    // 2. Decode JWT to get user_id and anagrafica_id
+    console.log('🔓 Decoding JWT token payload...');
+    
+    function decodeJwtPayload(token: string): any {
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('Invalid JWT format');
+        }
+        
+        // Decode base64url
+        const payload = parts[1]
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        
+        const decoded = atob(payload);
+        return JSON.parse(decoded);
+      } catch (error) {
+        console.error('Error decoding JWT:', error);
+        throw new Error('Failed to decode JWT token');
+      }
+    }
+
+    const jwtPayload = decodeJwtPayload(access_token);
+    console.log('✅ JWT payload decoded:', JSON.stringify(jwtPayload, null, 2));
+    
+    const user_id = jwtPayload.user_id || jwtPayload.sub;
+    const anagrafica_id = jwtPayload.anagrafica_id;
+    
+    if (!user_id) {
+      console.error('❌ user_id not found in JWT payload');
+      throw new Error('user_id not found in JWT token');
     }
 
     // 3. Get user profile from contatti endpoint

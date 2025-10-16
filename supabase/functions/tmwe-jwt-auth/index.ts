@@ -81,23 +81,13 @@ serve(async (req) => {
     console.log('📤 Token request body:', JSON.stringify(tokenRequestBody, null, 2));
 
     // 1. Exchange authorization code for JWT tokens using /exchange_code_for_jwt endpoint
-    // Try application/x-www-form-urlencoded as per OAuth2 spec
-    const formBody = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-    }).toString();
-    
-    console.log('📤 Form-encoded body:', formBody);
-    
+    // Using application/json as documented in jwt-api-3.yaml
     const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/exchange_code_for_jwt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: formBody,
+      body: JSON.stringify(tokenRequestBody),
     });
 
     console.log('📥 Token response status:', tokenResponse.status);

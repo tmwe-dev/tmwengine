@@ -371,15 +371,16 @@ serve(async (req) => {
       // ✅ Ottieni risposta JSON
       const rawResponse = await tmweResponse.json();
       
-      // ✅ WRAP risposta in struttura standard { data: ... } se necessario
-      if (Array.isArray(rawResponse) || (rawResponse && !rawResponse.data && !rawResponse.success)) {
+      // ✅ WRAP risposta in struttura standard { data: ... } SOLO per array diretti
+      if (Array.isArray(rawResponse)) {
+        // Solo gli array diretti vengono wrappati (es. get_folders)
         responseData = {
           success: true,
-          data: Array.isArray(rawResponse) ? rawResponse : rawResponse,
+          data: rawResponse,
           message: "Success"
         };
       } else {
-        // Risposta già in formato corretto
+        // TUTTO IL RESTO passa inalterato (OAuth, profilo, token, ecc.)
         responseData = rawResponse;
       }
       

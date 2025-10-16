@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface ApiConfig {
   accessToken: string;
   refreshToken?: string;
-  expiresAt?: number;
+  expiresAt?: string; // Changed to string to match database timestamp
   clientId?: string;
   clientSecret?: string;
   authType?: 'oauth2' | 'jwt'; // Tipo di autenticazione utilizzata
@@ -52,14 +52,14 @@ export const getApiConfigFromDB = async (): Promise<ApiConfig | null> => {
 export const setApiConfigToDB = async (config: ApiConfig & { email: string }): Promise<void> => {
   const { error } = await supabase
     .from('user_tmwe_credentials')
-    .upsert({
+    .upsert([{
       email: config.email,
       access_token: config.accessToken,
       refresh_token: config.refreshToken || null,
       expires_at: config.expiresAt || null,
       client_id: config.clientId || OAUTH_CLIENT_ID,
       client_secret: config.clientSecret || OAUTH_CLIENT_SECRET,
-    });
+    }]);
 
   if (error) throw error;
 };
@@ -261,7 +261,7 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
     }
     
     const data = await response.json();
-    const expiresAt = Date.now() + (data.expires_in * 1000);
+    const expiresAt = new Date(Date.now() + (data.expires_in * 1000)).toISOString();
     
     console.log('✅ JWT Token Received');
     console.log('  - access_token:', data.access_token.substring(0, 20) + '...');
@@ -337,7 +337,7 @@ const ensureValidToken = async (): Promise<string | null> => {
   if (!config) return null;
 
   // Check if token is expired or about to expire (5 minutes buffer)
-  if (config.expiresAt && config.expiresAt < Date.now() + 300000) {
+  if (config.expiresAt && new Date(config.expiresAt).getTime() < Date.now() + 300000) {
     // JWT: re-authenticate (no refresh token)
     if (config.authType === 'jwt') {
       const refreshed = await authenticateWithJWT();

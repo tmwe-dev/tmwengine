@@ -275,30 +275,21 @@ serve(async (req) => {
 
     console.log('✅ TMWE OAuth credentials saved');
 
-    // 7. Generate Supabase session using generateLink (magic link flow)
+    // 7. Generate Supabase session tokens directly
     console.log('🔐 Generating Supabase session tokens...');
 
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`,
-      }
+    // Use the user's ID to create a session directly
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: supabaseUser.id
     });
 
-    if (linkError || !linkData) {
-      console.error('Error generating magic link:', linkError);
-      throw new Error(`Failed to generate session: ${linkError?.message || 'No link generated'}`);
+    if (sessionError || !sessionData?.session) {
+      console.error('Error creating session:', sessionError);
+      throw new Error(`Failed to create session: ${sessionError?.message || 'No session created'}`);
     }
 
-    // Extract access and refresh tokens from the magic link
-    const url = new URL(linkData.properties.action_link);
-    const supabaseAccessToken = url.searchParams.get('access_token');
-    const supabaseRefreshToken = url.searchParams.get('refresh_token');
-
-    if (!supabaseAccessToken || !supabaseRefreshToken) {
-      throw new Error('Failed to extract Supabase tokens from magic link');
-    }
+    const supabaseAccessToken = sessionData.session.access_token;
+    const supabaseRefreshToken = sessionData.session.refresh_token;
 
     console.log('✅ Supabase session tokens generated successfully');
     console.log('✅ OAuth authentication flow completed successfully');

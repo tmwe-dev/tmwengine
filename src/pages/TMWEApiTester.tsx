@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, Download, FileSpreadsheet, StopCircle, AlertTriangle, Eye, Database } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, Download, FileSpreadsheet, StopCircle, AlertTriangle, Eye, Database, FlaskConical } from "lucide-react";
+import { OptimizationControls, OptimizationFlags } from "@/components/testing/OptimizationControls";
+import { OptimizationTestResults } from "@/components/testing/OptimizationTestResults";
+import { OptimizationTestRunner } from "@/components/testing/OptimizationTestRunner";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -313,6 +316,16 @@ const TMWEApiTester = () => {
   const [benchmarkDelay, setBenchmarkDelay] = useState(500);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [benchmarkHistory, setBenchmarkHistory] = useState<any[]>([]);
+  
+  // 🚀 Optimization Testing States (PARALLELI - non toccano il codice esistente)
+  const [optimizationFlags, setOptimizationFlags] = useState<OptimizationFlags>({
+    enableLogging: true,
+    useDoubleSerializat: true,
+    useSequentialExecution: true,
+    useTextResponse: true,
+    benchmarkDelay: 500
+  });
+  const [optimizationResults, setOptimizationResults] = useState<any[]>([]);
 
   // Carica storico da Supabase
   const { data: historicalBenchmarks, refetch: refetchHistory } = useQuery({
@@ -963,7 +976,7 @@ const TMWEApiTester = () => {
       </div>
 
       <Tabs defaultValue="standard" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="standard">
             <Settings2 className="mr-2 h-4 w-4" />
             Standard Testing
@@ -971,6 +984,10 @@ const TMWEApiTester = () => {
           <TabsTrigger value="benchmark">
             <BarChart3 className="mr-2 h-4 w-4" />
             Advanced Benchmark
+          </TabsTrigger>
+          <TabsTrigger value="optimization">
+            <FlaskConical className="mr-2 h-4 w-4" />
+            🚀 Optimization A/B
           </TabsTrigger>
         </TabsList>
 
@@ -1799,6 +1816,85 @@ const TMWEApiTester = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* 🚀 NUOVA TAB OPTIMIZATION A/B TESTING (PARALLELA) */}
+        <TabsContent value="optimization" className="space-y-6">
+          <Alert className="border-primary/30 bg-primary/5">
+            <FlaskConical className="h-5 w-5 text-primary" />
+            <AlertTitle>Sistema di A/B Testing Ottimizzazioni</AlertTitle>
+            <AlertDescription>
+              Questo sistema è completamente parallelo al codice esistente. Testa singolarmente ogni ottimizzazione
+              e confronta l'impatto reale sulle performance. Il codice originale rimane intatto.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Optimization Controls */}
+            <div>
+              <OptimizationControls 
+                flags={optimizationFlags}
+                onFlagsChange={setOptimizationFlags}
+              />
+            </div>
+
+            {/* Test Runner */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Run Tests</CardTitle>
+                  <CardDescription>
+                    Esegui test con 6 configurazioni diverse per vedere l'impatto
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OptimizationTestRunner
+                    flags={optimizationFlags}
+                    onResultsUpdate={setOptimizationResults}
+                  />
+                </CardContent>
+              </Card>
+
+              {optimizationResults.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Stats</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground mb-1">Baseline</p>
+                        <p className="text-2xl font-bold">
+                          {optimizationResults.find(r => r.isBaseline)?.responseTime.toFixed(0)}ms
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <p className="text-xs text-muted-foreground mb-1">Best Optimization</p>
+                        <p className="text-2xl font-bold text-green-500">
+                          {Math.min(...optimizationResults.map(r => r.responseTime)).toFixed(0)}ms
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-primary/10 col-span-2">
+                        <p className="text-xs text-muted-foreground mb-1">Miglioramento Massimo</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {(() => {
+                            const baseline = optimizationResults.find(r => r.isBaseline)?.responseTime || 1000;
+                            const best = Math.min(...optimizationResults.map(r => r.responseTime));
+                            return ((baseline - best) / baseline * 100).toFixed(1);
+                          })()}%
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Results Display */}
+          {optimizationResults.length > 0 && (
+            <OptimizationTestResults results={optimizationResults} />
           )}
         </TabsContent>
       </Tabs>

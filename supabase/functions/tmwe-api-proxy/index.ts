@@ -13,15 +13,22 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, data } = await req.json();
+    const { endpoint, data, optimizationFlags } = await req.json();
     
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔄 TMWE API PROXY - Richiesta ricevuta');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('⏰ Timestamp:', new Date().toISOString());
-    console.log('📍 Endpoint:', endpoint);
-    console.log('🎯 Handler:', data?.handler);
-    console.log('═══════════════════════════════════════════════════════');
+    // Flags di ottimizzazione (opzionali, retrocompatibili)
+    const enableLogging = optimizationFlags?.enableLogging ?? true;
+    const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? true;
+    const useTextResponse = optimizationFlags?.useTextResponse ?? true;
+    
+    if (enableLogging) {
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🔄 TMWE API PROXY - Richiesta ricevuta');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('⏰ Timestamp:', new Date().toISOString());
+      console.log('📍 Endpoint:', endpoint);
+      console.log('🎯 Handler:', data?.handler);
+      console.log('═══════════════════════════════════════════════════════');
+    }
 
     // Get auth header from request
     const authHeader = req.headers.get('Authorization');
@@ -46,7 +53,9 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    console.log('✅ User authenticated:', user.email);
+    if (enableLogging) {
+      console.log('✅ User authenticated:', user.email);
+    }
 
     // Get TMWE access token from request body or database
     let tmweAccessToken = data.bearerToken;
@@ -66,13 +75,22 @@ serve(async (req) => {
 
       tmweAccessToken = configData.access_token;
     }
-    console.log('🔑 TMWE Token retrieved (primi 20 chars):', tmweAccessToken.substring(0, 20) + '...');
+    
+    if (enableLogging) {
+      console.log('🔑 TMWE Token retrieved (primi 20 chars):', tmweAccessToken.substring(0, 20) + '...');
+    }
 
     // Make request to TMWE API
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
-    console.log('📤 Chiamata a TMWE API:', tmweUrl);
-    console.log('📦 Request body:', JSON.stringify(data, null, 2));
+    if (enableLogging) {
+      console.log('📤 Chiamata a TMWE API:', tmweUrl);
+      if (!useDoubleSerializat) {
+        console.log('📦 Request body:', data);
+      } else {
+        console.log('📦 Request body:', JSON.stringify(data, null, 2));
+      }
+    }
 
     const tmweResponse = await fetch(tmweUrl, {
       method: 'POST',
@@ -84,24 +102,45 @@ serve(async (req) => {
       body: JSON.stringify(data),
     });
 
-    const responseText = await tmweResponse.text();
-
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 RISPOSTA TMWE API');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
-    console.log('📦 Response (primi 500 chars):', responseText.substring(0, 500));
-    console.log('═══════════════════════════════════════════════════════');
+    // Response processing ottimizzato o tradizionale
+    let responseData: any;
+    if (useTextResponse) {
+      const responseText = await tmweResponse.text();
+      responseData = responseText;
+      
+      if (enableLogging) {
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📥 RISPOSTA TMWE API');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+        console.log('📦 Response (primi 500 chars):', responseText.substring(0, 500));
+        console.log('═══════════════════════════════════════════════════════');
+      }
+    } else {
+      // Ottimizzazione: usa .json() diretto
+      const responseJson = await tmweResponse.json();
+      responseData = JSON.stringify(responseJson);
+      
+      if (enableLogging) {
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📥 RISPOSTA TMWE API (JSON direct)');
+        console.log('═══════════════════════════════════════════════════════');
+        console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+        console.log('═══════════════════════════════════════════════════════');
+      }
+    }
 
     if (!tmweResponse.ok) {
-      console.error('❌ ERRORE HTTP dalla TMWE API');
-      console.error('📊 Status:', tmweResponse.status);
-      console.error('📄 Response:', responseText);
+      if (enableLogging) {
+        console.error('❌ ERRORE HTTP dalla TMWE API');
+        console.error('📊 Status:', tmweResponse.status);
+        console.error('📄 Response:', responseData);
+      }
       
       return new Response(
         JSON.stringify({ 
           error: `TMWE API Error: ${tmweResponse.status}`,
-          details: responseText 
+          details: responseData 
         }),
         {
           status: tmweResponse.status,
@@ -110,9 +149,11 @@ serve(async (req) => {
       );
     }
 
-    console.log('✅ Risposta TMWE API riuscita');
+    if (enableLogging) {
+      console.log('✅ Risposta TMWE API riuscita');
+    }
 
-    return new Response(responseText, {
+    return new Response(responseData, {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

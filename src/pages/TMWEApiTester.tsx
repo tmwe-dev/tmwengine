@@ -8,9 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, Copy, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2 } from "lucide-react";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 
 // Configurazioni endpoint con handlers
 const API_ENDPOINTS = {
@@ -78,6 +82,110 @@ interface TestResult {
   error?: string;
 }
 
+interface BenchmarkConfig {
+  name: string;
+  endpoint: string;
+  handler: string;
+  variations: Record<string, any>[];
+  description: string;
+  category: string;
+}
+
+interface BenchmarkResult extends TestResult {
+  variantName: string;
+  variantConfig: Record<string, any>;
+}
+
+// Suite di benchmark predefinite
+const BENCHMARK_SUITES: BenchmarkConfig[] = [
+  {
+    name: "📧 Get Messages - Limit Test",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_messages",
+    description: "Test performance con diversi limiti di email recuperate",
+    variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 10, offset: 0 },
+      { handler: "get_messages", folder: "INBOX", limit: 25, offset: 0 },
+      { handler: "get_messages", folder: "INBOX", limit: 50, offset: 0 },
+      { handler: "get_messages", folder: "INBOX", limit: 100, offset: 0 },
+    ]
+  },
+  {
+    name: "📎 Get Messages - Attachments Impact",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_messages",
+    description: "Impatto degli attachments sulla velocità di risposta",
+    variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 50, include_attachments: false },
+      { handler: "get_messages", folder: "INBOX", limit: 50, include_attachments: true },
+    ]
+  },
+  {
+    name: "📄 Get Messages - Format Test",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_messages",
+    description: "Confronto performance tra formati text, html e both",
+    variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 50, format: "text" },
+      { handler: "get_messages", folder: "INBOX", limit: 50, format: "html" },
+      { handler: "get_messages", folder: "INBOX", limit: 50, format: "both" },
+    ]
+  },
+  {
+    name: "🔢 Get Messages - Pagination Strategy",
+    category: "Optimization",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_messages",
+    description: "Confronto tra offset e page per la paginazione",
+    variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 50, offset: 0 },
+      { handler: "get_messages", folder: "INBOX", limit: 50, page: 1 },
+      { handler: "get_messages", folder: "INBOX", limit: 50, offset: 50 },
+      { handler: "get_messages", folder: "INBOX", limit: 50, page: 2 },
+    ]
+  },
+  {
+    name: "🔽 Get Messages - Sort & Order",
+    category: "Optimization",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_messages",
+    description: "Impatto di sort e order sulla velocità",
+    variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 50, sort: "date", order: "DESC" },
+      { handler: "get_messages", folder: "INBOX", limit: 50, sort: "date", order: "ASC" },
+      { handler: "get_messages", folder: "INBOX", limit: 50, sort: "subject", order: "ASC" },
+    ]
+  },
+  {
+    name: "📁 Get Folders - Optimization",
+    category: "Performance",
+    endpoint: "/app.php?action=email_folder",
+    handler: "get_folders",
+    description: "Impatto di counts e hierarchy sulla performance",
+    variations: [
+      { handler: "get_folders", include_counts: false, hierarchy: false },
+      { handler: "get_folders", include_counts: true, hierarchy: false },
+      { handler: "get_folders", include_counts: false, hierarchy: true },
+      { handler: "get_folders", include_counts: true, hierarchy: true },
+    ]
+  },
+  {
+    name: "⚡ Account Operations - Baseline",
+    category: "Baseline",
+    endpoint: "/app.php?action=email_account",
+    handler: "test_connection",
+    description: "Baseline performance per operazioni account",
+    variations: [
+      { handler: "test_connection" },
+      { handler: "get_account_info" },
+      { handler: "get_quota" },
+    ]
+  }
+];
+
 const TMWEApiTester = () => {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>("email_folder");
   const [selectedHandler, setSelectedHandler] = useState<string>("get_folders");
@@ -87,6 +195,14 @@ const TMWEApiTester = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [history, setHistory] = useState<TestResult[]>([]);
+  
+  // Benchmark state
+  const [selectedSuite, setSelectedSuite] = useState<string>(BENCHMARK_SUITES[0].name);
+  const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
+  const [isBenchmarking, setIsBenchmarking] = useState(false);
+  const [benchmarkProgress, setBenchmarkProgress] = useState(0);
+  const [benchmarkDelay, setBenchmarkDelay] = useState(500);
+  
   const { toast } = useToast();
 
   const handleEndpointChange = (endpoint: string) => {
@@ -199,6 +315,117 @@ const TMWEApiTester = () => {
     return "bg-destructive";
   };
 
+  const runBenchmarkSuite = async () => {
+    const suite = BENCHMARK_SUITES.find(s => s.name === selectedSuite);
+    if (!suite) return;
+
+    setIsBenchmarking(true);
+    setBenchmarkResults([]);
+    setBenchmarkProgress(0);
+
+    const results: BenchmarkResult[] = [];
+    const accessToken = await getAccessToken();
+
+    for (let i = 0; i < suite.variations.length; i++) {
+      const variation = suite.variations[i];
+      const startTime = performance.now();
+
+      try {
+        const { data: responseData, error: invokeError } = await supabase.functions.invoke('tmwe-api-proxy', {
+          body: {
+            endpoint: suite.endpoint,
+            data: variation,
+            bearerToken: accessToken
+          }
+        });
+
+        const responseTime = performance.now() - startTime;
+
+        const result: BenchmarkResult = {
+          timestamp: new Date().toISOString(),
+          endpoint: suite.endpoint,
+          handler: suite.handler,
+          status: invokeError ? 0 : 200,
+          statusText: invokeError ? "Error" : "OK",
+          headers: { 'content-type': 'application/json' },
+          body: responseData,
+          responseTime: Math.round(responseTime),
+          error: invokeError?.message,
+          variantName: Object.entries(variation)
+            .filter(([key]) => key !== 'handler')
+            .map(([key, val]) => `${key}:${val}`)
+            .join(', '),
+          variantConfig: variation
+        };
+
+        results.push(result);
+        setBenchmarkResults([...results]);
+      } catch (error: any) {
+        const responseTime = performance.now() - startTime;
+        results.push({
+          timestamp: new Date().toISOString(),
+          endpoint: suite.endpoint,
+          handler: suite.handler,
+          status: 0,
+          statusText: "Error",
+          headers: {},
+          body: { error: error.message },
+          responseTime: Math.round(responseTime),
+          error: error.message,
+          variantName: JSON.stringify(variation),
+          variantConfig: variation
+        });
+      }
+
+      setBenchmarkProgress(((i + 1) / suite.variations.length) * 100);
+
+      if (i < suite.variations.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, benchmarkDelay));
+      }
+    }
+
+    setIsBenchmarking(false);
+    toast({
+      title: "✅ Benchmark completato",
+      description: `${results.length} test eseguiti`,
+    });
+  };
+
+  const exportBenchmarkReport = () => {
+    const suite = BENCHMARK_SUITES.find(s => s.name === selectedSuite);
+    const winner = benchmarkResults
+      .filter(r => r.status === 200)
+      .sort((a, b) => a.responseTime - b.responseTime)[0];
+
+    const report = {
+      suite: suite?.name,
+      timestamp: new Date().toISOString(),
+      results: benchmarkResults,
+      winner: winner ? {
+        variant: winner.variantName,
+        responseTime: winner.responseTime,
+        config: winner.variantConfig
+      } : null,
+      recommendations: winner ? [
+        `✅ Configurazione più veloce: ${winner.variantName}`,
+        `⚡ Tempo di risposta: ${winner.responseTime}ms`,
+        `📊 Miglioramento rispetto alla più lenta: ${Math.round(((Math.max(...benchmarkResults.map(r => r.responseTime)) - winner.responseTime) / Math.max(...benchmarkResults.map(r => r.responseTime))) * 100)}%`
+      ] : []
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `benchmark-${suite?.name.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.json`;
+    a.click();
+
+    toast({
+      title: "📊 Report esportato",
+      description: "Report salvato come JSON",
+    });
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-6">
@@ -208,7 +435,20 @@ const TMWEApiTester = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Tabs defaultValue="standard" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="standard">
+            <Settings2 className="mr-2 h-4 w-4" />
+            Standard Testing
+          </TabsTrigger>
+          <TabsTrigger value="benchmark">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Advanced Benchmark
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="standard" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pannello di configurazione */}
         <Card>
           <CardHeader>
@@ -378,44 +618,263 @@ const TMWEApiTester = () => {
         </Card>
       </div>
 
-      {/* History */}
-      {history.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Cronologia Test</CardTitle>
-            <CardDescription>Ultimi 10 test eseguiti</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {history.map((result, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
-                  onClick={() => setTestResult(result)}
-                >
-                  {result.error ? (
-                    <XCircle className="h-5 w-5 text-destructive" />
-                  ) : (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold">{result.handler}</span>
-                      <Badge variant="outline" className={getStatusColor(result.status)}>
-                        {result.status}
-                      </Badge>
-                      <Badge variant="outline">{result.responseTime}ms</Badge>
+          {/* History */}
+          {history.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Cronologia Test</CardTitle>
+                <CardDescription>Ultimi 10 test eseguiti</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {history.map((result, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                      onClick={() => setTestResult(result)}
+                    >
+                      {result.error ? (
+                        <XCircle className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold">{result.handler}</span>
+                          <Badge variant="outline" className={getStatusColor(result.status)}>
+                            {result.status}
+                          </Badge>
+                          <Badge variant="outline">{result.responseTime}ms</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(result.timestamp).toLocaleString('it-IT')}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(result.timestamp).toLocaleString('it-IT')}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="benchmark" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Benchmark Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Benchmark Suite</CardTitle>
+                <CardDescription>Seleziona suite di test automatici</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Suite di Test</Label>
+                  <Select value={selectedSuite} onValueChange={setSelectedSuite}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BENCHMARK_SUITES.map((suite) => (
+                        <SelectItem key={suite.name} value={suite.name}>
+                          {suite.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(() => {
+                    const suite = BENCHMARK_SUITES.find(s => s.name === selectedSuite);
+                    return suite ? (
+                      <>
+                        <p className="text-xs text-muted-foreground">{suite.description}</p>
+                        <Badge variant="outline">{suite.variations.length} varianti</Badge>
+                        <Badge variant="outline">{suite.category}</Badge>
+                      </>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Delay tra test (ms): {benchmarkDelay}</Label>
+                  <Slider
+                    value={[benchmarkDelay]}
+                    onValueChange={(value) => setBenchmarkDelay(value[0])}
+                    min={100}
+                    max={2000}
+                    step={100}
+                    disabled={isBenchmarking}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tempo di attesa tra test per non sovraccaricare il server
+                  </p>
+                </div>
+
+                {isBenchmarking && (
+                  <div className="space-y-2">
+                    <Label>Progresso</Label>
+                    <Progress value={benchmarkProgress} />
+                    <p className="text-xs text-muted-foreground text-center">
+                      {Math.round(benchmarkProgress)}%
                     </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                )}
+
+                <Button
+                  onClick={runBenchmarkSuite}
+                  disabled={isBenchmarking}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isBenchmarking ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Test in corso...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      Esegui Benchmark
+                    </>
+                  )}
+                </Button>
+
+                {benchmarkResults.length > 0 && (
+                  <Button
+                    onClick={exportBenchmarkReport}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Esporta Report
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Results Table */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Risultati Comparativi</CardTitle>
+                <CardDescription>Confronto performance tra varianti</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {benchmarkResults.length > 0 ? (
+                  <>
+                    <div className="rounded-md border mb-4">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="p-3 text-left text-sm font-semibold">Variante</th>
+                              <th className="p-3 text-left text-sm font-semibold">Tempo</th>
+                              <th className="p-3 text-left text-sm font-semibold">Status</th>
+                              <th className="p-3 text-left text-sm font-semibold">Vincitore</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {benchmarkResults
+                              .sort((a, b) => a.responseTime - b.responseTime)
+                              .map((result, index) => (
+                                <tr key={index} className="border-t hover:bg-accent">
+                                  <td className="p-3 text-sm font-mono">{result.variantName}</td>
+                                  <td className="p-3">
+                                    <Badge variant="outline">{result.responseTime}ms</Badge>
+                                  </td>
+                                  <td className="p-3">
+                                    <Badge className={getStatusColor(result.status)}>
+                                      {result.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="p-3">
+                                    {index === 0 && result.status === 200 && (
+                                      <span className="text-2xl">🏆</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Performance Chart */}
+                    <div className="h-[300px] mt-6">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={benchmarkResults.map((r, i) => ({ 
+                          name: `Var ${i + 1}`, 
+                          time: r.responseTime,
+                          fullName: r.variantName 
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis label={{ value: 'Response Time (ms)', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip 
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="bg-background border rounded-lg p-3 shadow-lg">
+                                    <p className="font-semibold">{payload[0].payload.fullName}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {payload[0].value}ms
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar dataKey="time">
+                            {benchmarkResults.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={index === 0 ? "hsl(var(--chart-1))" : "hsl(var(--chart-2))"} 
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Recommendations */}
+                    {(() => {
+                      const winner = benchmarkResults
+                        .filter(r => r.status === 200)
+                        .sort((a, b) => a.responseTime - b.responseTime)[0];
+                      const slowest = benchmarkResults
+                        .filter(r => r.status === 200)
+                        .sort((a, b) => b.responseTime - a.responseTime)[0];
+                      
+                      if (winner && slowest && winner !== slowest) {
+                        const improvement = Math.round(((slowest.responseTime - winner.responseTime) / slowest.responseTime) * 100);
+                        return (
+                          <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">
+                              💡 Raccomandazioni
+                            </h4>
+                            <ul className="space-y-1 text-sm">
+                              <li>✅ Configurazione più veloce: <span className="font-mono">{winner.variantName}</span></li>
+                              <li>⚡ Tempo di risposta: {winner.responseTime}ms</li>
+                              <li>📊 Miglioramento: {improvement}% più veloce della configurazione più lenta</li>
+                            </ul>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </>
+                ) : (
+                  <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nessun benchmark eseguito</p>
+                      <p className="text-sm">Seleziona una suite e clicca "Esegui Benchmark"</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

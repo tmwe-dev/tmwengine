@@ -28,16 +28,17 @@ const API_ENDPOINTS = {
     path: "/app.php?action=email_message",
     handlers: {
       get_messages: { handler: "get_messages", folder: "INBOX", limit: 10, offset: 0 },
-      get_message: { handler: "get_message", uid: "123", folder: "INBOX" },
-      search_messages: { handler: "search_messages", query: "test", folder: "INBOX", limit: 10 },
+      get_message: { handler: "get_message", uid: 123, mark_as_read: true },
+      search_messages: { handler: "search_messages", query: "test", folder: "INBOX" },
       send_message: { 
         handler: "send_message", 
-        to: "test@example.com", 
+        to: ["test@example.com"], 
         subject: "Test", 
-        body_text: "Test message",
-        body_html: "<p>Test message</p>"
+        body: "Test message"
       },
-      delete_message: { handler: "delete_message", uid: "123", folder: "INBOX" }
+      delete_email: { handler: "delete_email", uid: 123 },
+      move_to_trash: { handler: "move_to_trash", uid: 123 },
+      delete_messages: { handler: "delete_messages", uids: [123, 456] }
     }
   },
   email_account: {

@@ -186,19 +186,6 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
       { handler: "get_messages", folder: "INBOX", limit: 50, sort: "subject", order: "ASC" },
     ]
   },
-  {
-    name: "📁 Get Folders - Optimization",
-    category: "Performance",
-    endpoint: "/app.php?action=email_folder",
-    handler: "get_folders",
-    description: "Impatto di counts e hierarchy sulla performance",
-    variations: [
-      { handler: "get_folders", include_counts: false, hierarchy: false }, // OTTIMIZZATO - PIÙ VELOCE
-      { handler: "get_folders", include_counts: true, hierarchy: false },
-      { handler: "get_folders", include_counts: false, hierarchy: true },
-      { handler: "get_folders", include_counts: true, hierarchy: true },  // PIÙ LENTO
-    ]
-  },
   // ========== SINGLE MESSAGE OPERATIONS (4 nuove suite) ==========
   {
     name: "📩 Get Single Message - Format Impact",
@@ -1395,6 +1382,33 @@ const TMWEApiTester = () => {
                       Esporta Tutto (CSV)
                     </Button>
                   </div>
+                )}
+                
+                {allBenchmarkResults.length > 0 && !isRunningAll && (
+                  <Button
+                    onClick={async () => {
+                      const duration = allBenchmarkResults.reduce((sum, s) => {
+                        return sum + s.results.reduce((t, r) => t + r.responseTime, 0);
+                      }, 0);
+                      
+                      await saveBenchmarkResultsToSupabase(
+                        allBenchmarkResults,
+                        selectedCategory,
+                        duration
+                      );
+                      
+                      toast({
+                        title: "✅ Risultati salvati",
+                        description: `${allBenchmarkResults.length} suite salvate su Supabase`
+                      });
+                    }}
+                    variant="default"
+                    className="w-full mt-2"
+                    size="lg"
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    💾 Save All Results to Database
+                  </Button>
                 )}
               </CardContent>
             </Card>

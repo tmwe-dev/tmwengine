@@ -186,40 +186,31 @@ serve(async (req) => {
     // 6. Generate Supabase session for the authenticated user
     console.log('🔐 Generating Supabase session...');
 
-    // Use generateLink with type 'recovery' to get proper session tokens
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
+    // Generate a temporary secure password
+    const tempPassword = crypto.randomUUID();
+
+    // Update user with temporary password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      supabaseUser.id,
+      { password: tempPassword }
+    );
+
+    if (updateError) {
+      console.error('Error setting temporary password:', updateError);
+      throw new Error(`Failed to set password: ${updateError.message}`);
+    }
+
+    console.log('✅ Temporary password set');
+
+    // Sign in with the temporary password to get session tokens
+    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email: email,
+      password: tempPassword,
     });
 
-    if (linkError || !linkData?.properties) {
-      console.error('Error generating recovery link:', linkError);
-      throw new Error('Failed to generate session');
-    }
-
-    // Extract hashed_token from the recovery link
-    const hashedToken = linkData.properties.hashed_token;
-
-    // Verify the recovery token to get actual session tokens
-    const { data: sessionData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
-      token_hash: hashedToken,
-      type: 'recovery',
-    });
-
-    console.log('🔍 verifyOtp response:', { 
-      hasError: !!verifyError, 
-      hasSession: !!sessionData?.session,
-      dataKeys: sessionData ? Object.keys(sessionData) : null
-    });
-
-    if (verifyError) {
-      console.error('Error verifying recovery token:', verifyError);
-      throw new Error(`Failed to verify token: ${verifyError.message}`);
-    }
-
-    if (!sessionData?.session) {
-      console.error('No session in verifyOtp response:', sessionData);
-      throw new Error('No session returned from verifyOtp');
+    if (signInError || !signInData?.session) {
+      console.error('Error signing in:', signInError);
+      throw new Error(`Failed to create session: ${signInError?.message || 'No session returned'}`);
     }
 
     console.log('✅ Supabase session created successfully');
@@ -236,8 +227,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: sessionData.session.access_token,
-        refresh_token: sessionData.session.refresh_token,
+        access_token: signInData.session.access_token,
+        refresh_token: signInData.session.refresh_token,
       }),
       {
         status: 200,

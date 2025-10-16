@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import EmailDashboard from "./pages/EmailDashboard";
 import EmailSyncTest from "./pages/EmailSyncTest";
+import TMWEApiComparison from "./pages/TMWEApiComparison";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<ProtectedRoute><EmailDashboard /></ProtectedRoute>} />
           <Route path="/email-sync-test" element={<ProtectedRoute><EmailSyncTest /></ProtectedRoute>} />
+          <Route path="/api-comparison" element={<ProtectedRoute><TMWEApiComparison /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

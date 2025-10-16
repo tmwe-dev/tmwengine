@@ -216,12 +216,12 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     name: "✅ Mark as Read - Batch Performance",
     category: "Optimization",
     endpoint: "/app.php?action=email_message",
-    handler: "mark_as_read",
+    handler: "mark_messages",
     description: "Performance batch vs singolo",
     variations: [
-      { handler: "mark_as_read", uids: [parseInt(realUIDs[0]) || 1] },
-      { handler: "mark_as_read", uids: realUIDs.slice(0, 5).map(uid => parseInt(uid)) },
-      { handler: "mark_as_read", uids: realUIDs.slice(0, 20).map(uid => parseInt(uid)) },
+      { handler: "mark_messages", uids: [realUIDs[0] || "1"], action: "read" },
+      { handler: "mark_messages", uids: realUIDs.slice(0, 5).length ? realUIDs.slice(0, 5) : ["1", "2", "3", "4", "5"], action: "read" },
+      { handler: "mark_messages", uids: realUIDs.slice(0, 20).length ? realUIDs.slice(0, 20) : Array.from({length: 20}, (_, i) => String(i + 1)), action: "read" },
     ]
   },
   {
@@ -240,11 +240,11 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     name: "📁 Move Messages - Folder Operations",
     category: "Performance",
     endpoint: "/app.php?action=email_message",
-    handler: "move_to_folder",
+    handler: "move_messages",
     description: "Performance spostamento tra cartelle",
     variations: [
-      { handler: "move_to_folder", uids: [parseInt(realUIDs[0]) || 1], destination_folder: "Archive" },
-      { handler: "move_to_folder", uids: realUIDs.slice(0, 3).map(uid => parseInt(uid)), destination_folder: "Archive" },
+      { handler: "move_messages", uids: [realUIDs[0] || "1"], target_folder: "Archive" },
+      { handler: "move_messages", uids: realUIDs.slice(0, 3).length ? realUIDs.slice(0, 3) : ["1", "2", "3"], target_folder: "Archive" },
     ]
   },
   

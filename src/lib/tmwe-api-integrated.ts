@@ -468,12 +468,8 @@ export const emailMessageApi = {
   
   // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read
   markAsRead: async (messageIds: string[]) => {
-    // Converti in UIDs numerici
-    const uids = messageIds.map(id => {
-      const uid = parseInt(id, 10);
-      if (isNaN(uid)) throw new Error(`Invalid UID: ${id}`);
-      return uid;
-    });
+    // Mantieni UIDs come stringhe (secondo documentazione TMWE API)
+    const uids = messageIds;
     
     // Se più di 50 messaggi, splitta in batch
     if (uids.length > 50) {
@@ -481,8 +477,9 @@ export const emailMessageApi = {
       const results = await Promise.all(
         batches.map(batch => 
           fetchApi('/email_message', {
-            handler: 'mark_as_read',
-            uids: batch
+            handler: 'mark_messages',
+            uids: batch,
+            action: 'read'
           })
         )
       );
@@ -490,8 +487,35 @@ export const emailMessageApi = {
     }
     
     return fetchApi('/email_message', {
-      handler: 'mark_as_read',
-      uids: uids
+      handler: 'mark_messages',
+      uids: uids,
+      action: 'read'
+    });
+  },
+
+  // Move messages to folder
+  moveMessages: async (messageIds: string[], targetFolder: string) => {
+    // Mantieni UIDs come stringhe (secondo documentazione TMWE API)
+    const uids = messageIds;
+    
+    if (uids.length > 50) {
+      const batches = chunkArray(uids, 50);
+      const results = await Promise.all(
+        batches.map(batch => 
+          fetchApi('/email_message', {
+            handler: 'move_messages',
+            uids: batch,
+            target_folder: targetFolder
+          })
+        )
+      );
+      return results.flat();
+    }
+    
+    return fetchApi('/email_message', {
+      handler: 'move_messages',
+      uids: uids,
+      target_folder: targetFolder
     });
   },
 

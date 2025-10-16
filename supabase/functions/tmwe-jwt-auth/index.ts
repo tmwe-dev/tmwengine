@@ -6,28 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface JwtAuthRequest {
+interface OAuthAuthRequest {
   code: string;
   redirectUri: string;
-}
-
-// Helper function to decode JWT payload (without verification)
-function decodeJwtPayload(token: string): any {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      throw new Error('Invalid JWT format');
-    }
-    
-    // Decode base64url payload
-    const payload = parts[1];
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = atob(base64);
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error decoding JWT:', error);
-    return null;
-  }
 }
 
 serve(async (req) => {
@@ -37,14 +18,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔐 Iniciando JWT authentication flow...');
+    console.log('🔐 Iniciando OAuth2 authentication flow...');
     console.log('📍 Request URL:', req.url);
     console.log('📍 Request method:', req.method);
     
     const requestBody = await req.json();
     console.log('📦 Request body received:', JSON.stringify(requestBody, null, 2));
     
-    const { code, redirectUri }: JwtAuthRequest = requestBody;
+    const { code, redirectUri }: OAuthAuthRequest = requestBody;
     
     if (!code || !redirectUri) {
       console.error('❌ Missing required parameters:', { code: !!code, redirectUri: !!redirectUri });
@@ -68,26 +49,27 @@ serve(async (req) => {
       throw new Error('TMWE_CLIENT_SECRET not configured');
     }
 
-    console.log('📤 Exchanging authorization code for JWT tokens...');
+    console.log('📤 Exchanging authorization code for OAuth2 tokens...');
     
-    const tokenRequestBody = {
+    // Prepare form data for OAuth2 token endpoint
+    const formData = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
       client_id: clientId,
       client_secret: clientSecret,
       redirect_uri: redirectUri,
-    };
+    });
     
-    console.log('📤 Token request body:', JSON.stringify(tokenRequestBody, null, 2));
+    console.log('📤 Token request (form-urlencoded):', formData.toString());
 
-    // 1. Exchange authorization code for JWT tokens using /exchange_code_for_jwt endpoint
-    // Using application/json as documented in jwt-api-3.yaml
-    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/exchange_code_for_jwt', {
+    // 1. Exchange authorization code for OAuth2 tokens using /token endpoint
+    // Using application/x-www-form-urlencoded as per OAuth2 spec
+    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(tokenRequestBody),
+      body: formData.toString(),
     });
 
     console.log('📥 Token response status:', tokenResponse.status);
@@ -97,7 +79,7 @@ serve(async (req) => {
     console.log('📥 Token response body (raw):', responseText);
 
     if (!tokenResponse.ok) {
-      console.error('❌ JWT token exchange failed with status:', tokenResponse.status);
+      console.error('❌ OAuth2 token exchange failed with status:', tokenResponse.status);
       console.error('❌ Response text:', responseText);
       
       let errorData;
@@ -109,7 +91,7 @@ serve(async (req) => {
         errorData = { error: responseText || 'Unknown error' };
       }
       
-      throw new Error(`JWT token exchange failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
+      throw new Error(`OAuth2 token exchange failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
     
     let tokenData;
@@ -121,38 +103,50 @@ serve(async (req) => {
       throw new Error('Invalid JSON response from token endpoint');
     }
 
-    console.log('✅ JWT tokens obtained');
-    console.log('📧 User email:', tokenData.email);
-    console.log('🆔 User ID:', tokenData.user_id);
-    console.log('🏢 Anagrafica ID:', tokenData.anagrafica_id);
+    console.log('✅ OAuth2 tokens obtained');
     console.log('🔑 Access token present:', !!tokenData.access_token);
-    console.log('🔑 Refresh token present:', !!tokenData.refresh_token);
     console.log('⏱️ Expires in:', tokenData.expires_in);
 
-    const { access_token, refresh_token, expires_in, email, user_id, anagrafica_id } = tokenData;
+    const { access_token, expires_in } = tokenData;
 
-    if (!access_token || !email) {
-      console.error('❌ Invalid token response:', { 
-        has_access_token: !!access_token, 
-        has_email: !!email,
-        email_value: email 
+    if (!access_token) {
+      console.error('❌ Invalid token response - missing access_token');
+      throw new Error('Invalid token response: missing access_token');
+    }
+
+    console.log('👤 Fetching user info from TMWE API using access token...');
+
+    // 2. Get user info using the OAuth2 access token
+    const userInfoResponse = await fetch('https://findair.it/erp/tmwe_json/user_info', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+      },
+    });
+
+    console.log('📥 User info response status:', userInfoResponse.status);
+    
+    if (!userInfoResponse.ok) {
+      const errorText = await userInfoResponse.text();
+      console.error('❌ User info fetch failed:', errorText);
+      throw new Error(`Failed to fetch user info: ${userInfoResponse.statusText}`);
+    }
+
+    const userInfo = await userInfoResponse.json();
+    console.log('✅ User info obtained:', JSON.stringify(userInfo, null, 2));
+    
+    const { email, user_id, anagrafica_id } = userInfo;
+    
+    if (!email || !user_id) {
+      console.error('❌ Invalid user info response:', { 
+        has_email: !!email, 
+        has_user_id: !!user_id 
       });
-      throw new Error('Invalid token response: missing access_token or email');
+      throw new Error('Invalid user info response: missing email or user_id');
     }
 
-    // Decode JWT to extract claims
-    console.log('🔓 Decoding JWT token...');
-    const jwtPayload = decodeJwtPayload(access_token);
-    if (!jwtPayload) {
-      console.error('❌ Failed to decode JWT token');
-      throw new Error('Failed to decode JWT token');
-    }
-    console.log('✅ JWT payload decoded:', JSON.stringify(jwtPayload, null, 2));
-
-    console.log('👤 Fetching user profile from TMWE API...');
-    console.log('👤 User ID for profile fetch:', user_id);
-
-    // 2. Get user profile using the JWT access token
+    // 3. Get user profile from contatti endpoint
+    console.log('👤 Fetching detailed profile from TMWE contatti API...');
     const profileResponse = await fetch('https://findair.it/erp/tmwe_json/contatti', {
       method: 'POST',
       headers: {
@@ -188,7 +182,7 @@ serve(async (req) => {
 
     console.log('🔄 Syncing with Supabase...');
 
-    // 3. Find or create Supabase user
+    // 4. Find or create Supabase user
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
@@ -206,7 +200,7 @@ serve(async (req) => {
         email: email,
         email_confirm: true,
         user_metadata: {
-          tmwe_jwt: true,
+          tmwe_oauth: true,
           tmwe_user_id: user_id,
           tmwe_anagrafica_id: anagrafica_id,
           name: profileData.name || profileData.username,
@@ -224,12 +218,12 @@ serve(async (req) => {
     } else {
       console.log(`✅ Existing Supabase user found: ${supabaseUser.id}`);
       
-      // Update user metadata with JWT info
+      // Update user metadata with OAuth info
       const { error: updateMetaError } = await supabaseAdmin.auth.admin.updateUserById(
         supabaseUser.id,
         {
           user_metadata: {
-            tmwe_jwt: true,
+            tmwe_oauth: true,
             tmwe_user_id: user_id,
             tmwe_anagrafica_id: anagrafica_id,
           }
@@ -241,7 +235,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Update/create user profile
+    // 5. Update/create user profile
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .upsert({
@@ -259,7 +253,7 @@ serve(async (req) => {
 
     console.log(`✅ Profile synced for user_id: ${supabaseUser.id}`);
 
-    // 5. Save TMWE JWT credentials in database with token_type = 'jwt'
+    // 6. Save TMWE OAuth2 credentials in database with token_type = 'oauth2'
     const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
     
     const { error: credsError } = await supabaseAdmin
@@ -267,23 +261,23 @@ serve(async (req) => {
       .upsert({
         email: email,
         access_token: access_token,
-        refresh_token: refresh_token,
+        refresh_token: tokenData.refresh_token || null,
         expires_at: expiresAt,
         client_id: clientId,
         client_secret: clientSecret,
-        token_type: 'jwt', // ✅ CRITICAL: Mark as JWT token
+        token_type: 'oauth2', // ✅ CRITICAL: Mark as OAuth2 token
       }, {
         onConflict: 'email'
       });
 
     if (credsError) {
-      console.error('Error saving JWT credentials:', credsError);
+      console.error('Error saving OAuth2 credentials:', credsError);
       throw credsError;
     }
 
-    console.log('✅ TMWE JWT credentials saved');
+    console.log('✅ TMWE OAuth2 credentials saved');
 
-    // 6. Generate Supabase session using generateLink (magic link flow)
+    // 7. Generate Supabase session using generateLink (magic link flow)
     console.log('🔐 Generating Supabase session tokens...');
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -309,7 +303,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Supabase session tokens generated successfully');
-    console.log('✅ JWT authentication flow completed successfully');
+    console.log('✅ OAuth2 authentication flow completed successfully');
     
     const finalResponse = {
       success: true,
@@ -321,13 +315,13 @@ serve(async (req) => {
         rubrica: profileData.rubrica,
       },
       supabaseUserId: supabaseUser.id,
-      // ✅ Return Supabase JWT tokens (not TMWE tokens)
+      // ✅ Return Supabase JWT tokens (not TMWE OAuth2 tokens)
       access_token: supabaseAccessToken,
       refresh_token: supabaseRefreshToken,
-      // Include TMWE JWT info for reference
+      // Include TMWE OAuth2 info for reference
       tmwe_user_id: user_id,
       tmwe_anagrafica_id: anagrafica_id,
-      token_format: 'jwt',
+      token_format: 'oauth2',
     };
     
     console.log('📤 Returning final response:', JSON.stringify(finalResponse, null, 2));
@@ -341,10 +335,10 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('❌ JWT authentication error:', error);
+    console.error('❌ OAuth2 authentication error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'JWT authentication failed',
+        error: error.message || 'OAuth2 authentication failed',
         details: error.toString()
       }),
       {

@@ -373,21 +373,27 @@ const ensureValidToken = async (): Promise<string | null> => {
   return config.accessToken;
 };
 
+// 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE
+const OPTIMAL_CONFIG = {
+  enableLogging: false,
+  useDoubleSerializat: false,
+  useSequentialExecution: false,
+  useTextResponse: false,
+  useBatchParallelization: true,
+  batchChunkSize: 10,
+};
+
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  await ensureValidToken(); // Assicura che il token sia valido prima di chiamare
-
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 CHIAMATA API TMWE (via Edge Function Proxy)');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('⏰ Timestamp:', new Date().toISOString());
-  console.log('📍 Endpoint:', endpoint);
-  console.log('🎯 Handler:', data.handler);
-  console.log('═══════════════════════════════════════════════════════');
+  await ensureValidToken();
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
-      body: { endpoint, data },
+      body: { 
+        endpoint, 
+        data,
+        optimizationFlags: OPTIMAL_CONFIG
+      },
     });
 
     console.log('═══════════════════════════════════════════════════════');
@@ -605,13 +611,14 @@ export const emailMessageApi = {
     });
   },
 
+  // ✅ OTTIMIZZATO: Edge function gestisce automaticamente chunking e parallelization
   deleteMessages: (uids: string[]) => {
     const uidInts = uids.map(uid => {
       const uidInt = parseInt(uid, 10);
       if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
       return uidInt;
     });
-    return fetchApi('/email_message', { handler: 'delete_messages', uids: uidInts });
+    return fetchApi('/email_message', { handler: 'delete_messages', message_ids: uidInts });
   },
 };
 

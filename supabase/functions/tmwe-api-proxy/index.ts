@@ -15,12 +15,12 @@ serve(async (req) => {
   try {
     const { endpoint, data, optimizationFlags } = await req.json();
     
-    // Flags di ottimizzazione (opzionali, retrocompatibili)
-    const enableLogging = optimizationFlags?.enableLogging ?? true;
-    const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? true;
-    const useTextResponse = optimizationFlags?.useTextResponse ?? true;
-    const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? true;
-    const useBatchParallelization = optimizationFlags?.useBatchParallelization ?? false;
+    // 🚀 CONFIGURAZIONE OTTIMALE DI PRODUZIONE (basata su benchmark)
+    const enableLogging = optimizationFlags?.enableLogging ?? false;
+    const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? false;
+    const useTextResponse = optimizationFlags?.useTextResponse ?? false;
+    const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? false;
+    const useBatchParallelization = optimizationFlags?.useBatchParallelization ?? true;
     const batchChunkSize = optimizationFlags?.batchChunkSize ?? 10;
     
     if (enableLogging) {

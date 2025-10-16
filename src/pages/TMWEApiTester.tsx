@@ -793,6 +793,7 @@ const TMWEApiTester = () => {
       const { data, error } = await supabase
         .from('tmwe_api_benchmark_results')
         .insert({
+          user_id: user.id,  // ✅ CRITICAL: Required for RLS policy
           category,
           total_suites: results.length,
           total_tests: totalTests,

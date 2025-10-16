@@ -283,8 +283,8 @@ const CRMLayout = ({ children }) => {
               
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => {
-                  logout();
+                onClick={async () => {
+                  await logout();
                   navigate('/auth');
                 }}
                 className="flex items-center gap-2 text-destructive focus:text-destructive"

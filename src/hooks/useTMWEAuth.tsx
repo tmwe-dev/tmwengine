@@ -32,7 +32,7 @@ interface TMWEAuthContextType {
   isLoading: boolean;
   supabaseUserId: string | null;
   login: (email: string, profile?: UserProfile) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -174,14 +174,35 @@ export function TMWEAuthProvider({ children }: { children: ReactNode }) {
     await syncWithSupabase(email, profile);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    console.log('🚪 Iniciando logout completo...');
+    
+    // 1. Cerrar sesión de Supabase
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('❌ Error al cerrar sesión de Supabase:', error);
+    } else {
+      console.log('✅ Sesión de Supabase cerrada correctamente');
+    }
+    
+    // 2. Limpiar estado local
     setUserEmail(null);
     setUserProfile(null);
     setSupabaseUserId(null);
+    
+    // 3. Limpiar sessionStorage
     sessionStorage.removeItem('tmwe_user_email');
     sessionStorage.removeItem('tmwe_access_token');
     sessionStorage.removeItem('tmwe_user_profile');
     sessionStorage.removeItem('tmwe_supabase_user_id');
+    
+    // 4. Limpiar cualquier estado de OAuth
+    sessionStorage.removeItem('oauth_state');
+    sessionStorage.removeItem('oauth_client_id');
+    sessionStorage.removeItem('oauth_client_secret');
+    sessionStorage.removeItem('oauth_redirect_uri');
+    
+    console.log('✅ Logout completado');
   };
 
   const refreshProfile = async () => {

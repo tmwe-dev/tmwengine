@@ -368,15 +368,28 @@ serve(async (req) => {
         console.log('═══════════════════════════════════════════════════════');
       }
     } else {
-      // ✅ IDENTICO AL TESTER - restituisce oggetto JSON diretto, non stringify
-      responseData = await tmweResponse.json();
+      // ✅ Ottieni risposta JSON
+      const rawResponse = await tmweResponse.json();
+      
+      // ✅ WRAP risposta in struttura standard { data: ... } se necessario
+      if (Array.isArray(rawResponse) || (rawResponse && !rawResponse.data && !rawResponse.success)) {
+        responseData = {
+          success: true,
+          data: Array.isArray(rawResponse) ? rawResponse : rawResponse,
+          message: "Success"
+        };
+      } else {
+        // Risposta già in formato corretto
+        responseData = rawResponse;
+      }
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');
-        console.log('📥 RISPOSTA TMWE API (JSON direct)');
+        console.log('📥 RISPOSTA TMWE API (JSON wrapped)');
         console.log('═══════════════════════════════════════════════════════');
         console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
-        console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
+        console.log('📦 Raw Response:', JSON.stringify(rawResponse, null, 2));
+        console.log('📦 Wrapped Response:', JSON.stringify(responseData, null, 2));
         console.log('═══════════════════════════════════════════════════════');
       }
     }

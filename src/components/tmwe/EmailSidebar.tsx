@@ -144,7 +144,10 @@ export const EmailSidebar = ({
     }
   };
 
-  const folders = foldersData?.data || [];
+  // ✅ Supporta sia { data: [] } che [] diretto per retrocompatibilità
+  const folders = Array.isArray(foldersData) 
+    ? foldersData 
+    : (foldersData?.data || []);
   
   // Separate system folders from custom folders
   const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];

@@ -428,6 +428,19 @@ Tutti i colori DEVONO essere HSL.
     font-size: var(--font-size-base);
     line-height: var(--line-height-normal);
     touch-action: manipulation;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* === BLOCCO NAVIGAZIONE TRACKPAD GLOBALE === */
+  * {
+    overscroll-behavior-x: none;
+  }
+
+  html {
+    overscroll-behavior-x: none;
+    overflow-x: hidden;
   }
 
   /* === TIPOGRAFIA GLOBALE === */

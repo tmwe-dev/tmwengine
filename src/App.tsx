@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -50,7 +50,39 @@ import { IntegratedAuthGuard } from "./components/tmwe/IntegratedAuthGuard";
 
 const queryClient = new QueryClient();
 
+// Blocca navigazione trackpad a livello browser
+const usePreventTrackpadNavigation = () => {
+  useEffect(() => {
+    const preventNavigation = (e: WheelEvent) => {
+      // Rileva swipe orizzontale (trackpad o mouse wheel)
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+      }
+    };
+
+    const preventTouchNavigation = (e: TouchEvent) => {
+      // Se ci sono 2+ tocchi (gesto trackpad), blocca
+      if (e.touches.length >= 2) {
+        e.preventDefault();
+      }
+    };
+
+    // Attach listeners con {passive: false} per permettere preventDefault
+    window.addEventListener('wheel', preventNavigation, { passive: false });
+    window.addEventListener('touchmove', preventTouchNavigation, { passive: false });
+
+    console.log('✅ Navigazione trackpad disabilitata globalmente');
+
+    return () => {
+      window.removeEventListener('wheel', preventNavigation);
+      window.removeEventListener('touchmove', preventTouchNavigation);
+      console.log('🔴 Listener navigazione trackpad rimossi');
+    };
+  }, []);
+};
+
 const App = () => {
+  usePreventTrackpadNavigation();
   return (
     <QueryClientProvider client={queryClient}>
       <TMWEAuthProvider>

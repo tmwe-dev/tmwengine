@@ -29,7 +29,7 @@ const API_ENDPOINTS = {
     handlers: {
       get_messages: { handler: "get_messages", folder: "INBOX", limit: 10, offset: 0 },
       get_message: { handler: "get_message", uid: 123, mark_as_read: true },
-      search_messages: { handler: "search_messages", query: "test", search_in: ["subject", "body"] },
+      search_messages: { handler: "search_messages", query: "test", folder: "INBOX", search_in: ["subject", "body"], page: 1, limit: 10 },
       send_message: { 
         handler: "send_message", 
         to: ["test@example.com"], 

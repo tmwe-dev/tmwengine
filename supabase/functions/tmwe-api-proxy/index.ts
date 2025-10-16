@@ -48,19 +48,24 @@ serve(async (req) => {
 
     console.log('✅ User authenticated:', user.email);
 
-    // Get TMWE access token from database
-    const { data: configData, error: configError } = await supabaseClient
-      .from('tmwe_api_config')
-      .select('access_token')
-      .eq('user_id', user.id)
-      .single();
+    // Get TMWE access token from request body or database
+    let tmweAccessToken = data.bearerToken;
+    
+    if (!tmweAccessToken) {
+      // Try to get from database as fallback
+      const { data: configData, error: configError } = await supabaseClient
+        .from('user_tmwe_credentials')
+        .select('access_token')
+        .eq('email', user.email)
+        .single();
 
-    if (configError || !configData?.access_token) {
-      console.error('❌ No TMWE access token found for user');
-      throw new Error('TMWE access token not found. Please login to TMWE first.');
+      if (configError || !configData?.access_token) {
+        console.error('❌ No TMWE access token found for user');
+        throw new Error('TMWE access token not found. Please login to TMWE first.');
+      }
+
+      tmweAccessToken = configData.access_token;
     }
-
-    const tmweAccessToken = configData.access_token;
     console.log('🔑 TMWE Token retrieved (primi 20 chars):', tmweAccessToken.substring(0, 20) + '...');
 
     // Make request to TMWE API

@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play, Copy, CheckCircle2, XCircle } from "lucide-react";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
+import { supabase } from "@/integrations/supabase/client";
 
 // Configurazioni endpoint con handlers
 const API_ENDPOINTS = {
@@ -103,60 +104,43 @@ const TMWEApiTester = () => {
     try {
       const body = JSON.parse(requestBody);
       const endpoint = API_ENDPOINTS[selectedEndpoint as keyof typeof API_ENDPOINTS].path;
+      const accessToken = await getAccessToken();
 
-      console.log('🧪 API TEST - Starting', { endpoint, body });
+      console.log('🧪 API TEST - Starting via Edge Function', { endpoint, body });
 
-      const response = await fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify(body)
+      // Use edge function as proxy
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke('tmwe-api-proxy', {
+        body: {
+          endpoint,
+          data: body,
+          bearerToken: accessToken
+        }
       });
 
       const responseTime = performance.now() - startTime;
-      const responseText = await response.text();
-      
-      let responseBody;
-      try {
-        responseBody = JSON.parse(responseText);
-      } catch {
-        responseBody = { raw: responseText };
-      }
 
-      const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Edge function invocation failed');
+      }
 
       const result: TestResult = {
         timestamp: new Date().toISOString(),
         endpoint,
         handler: selectedHandler,
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-        body: responseBody,
+        status: 200,
+        statusText: "OK",
+        headers: { 'content-type': 'application/json' },
+        body: responseData,
         responseTime: Math.round(responseTime),
-        error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`
       };
 
       setTestResult(result);
       setHistory([result, ...history].slice(0, 10));
 
-      if (response.ok) {
-        toast({
-          title: "✅ Test completato",
-          description: `Status ${response.status} - ${Math.round(responseTime)}ms`,
-        });
-      } else {
-        toast({
-          title: "❌ Errore nel test",
-          description: `Status ${response.status}: ${response.statusText}`,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "✅ Test completato",
+        description: `${Math.round(responseTime)}ms`,
+      });
 
     } catch (error: any) {
       const responseTime = performance.now() - startTime;
@@ -165,9 +149,9 @@ const TMWEApiTester = () => {
         endpoint: API_ENDPOINTS[selectedEndpoint as keyof typeof API_ENDPOINTS].path,
         handler: selectedHandler,
         status: 0,
-        statusText: "Network Error",
+        statusText: "Error",
         headers: {},
-        body: null,
+        body: { error: error.message },
         responseTime: Math.round(responseTime),
         error: error.message
       };
@@ -176,7 +160,7 @@ const TMWEApiTester = () => {
       setHistory([result, ...history].slice(0, 10));
 
       toast({
-        title: "❌ Errore di rete",
+        title: "❌ Errore nel test",
         description: error.message,
         variant: "destructive",
       });

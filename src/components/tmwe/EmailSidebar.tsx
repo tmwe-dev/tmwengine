@@ -144,7 +144,7 @@ export const EmailSidebar = ({
     }
   };
 
-  const folders = foldersData?.data || [];
+  const folders = foldersData || [];  // ✅ Non più foldersData?.data
   
   // Separate system folders from custom folders
   const systemFolderNames = ['INBOX', 'Sent', 'Drafts', 'Trash', 'Junk'];

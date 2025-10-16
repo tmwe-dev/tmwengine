@@ -666,10 +666,13 @@ export const emailFolderApi = {
       ...config
     });
     
-    // ✅ Salva in cache
-    folderCache.set(result, config);
+    // ✅ Estrai l'array data dalla risposta PRIMA di salvare in cache
+    const folders = result?.data || [];
     
-    return result;
+    // ✅ Salva in cache l'array pulito
+    folderCache.set(folders, config);
+    
+    return folders;  // ✅ Restituisci direttamente l'array!
   },
   
   getFolderInfo: (folderName: string) => 

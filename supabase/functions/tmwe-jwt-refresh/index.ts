@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface OAuthRefreshRequest {
+interface JwtRefreshRequest {
   email: string;
 }
 
@@ -17,9 +17,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Refreshing OAuth2 token...');
+    console.log('🔄 Refreshing JWT token...');
     
-    const { email }: OAuthRefreshRequest = await req.json();
+    const { email }: JwtRefreshRequest = await req.json();
     
     if (!email) {
       return new Response(
@@ -40,54 +40,52 @@ serve(async (req) => {
       }
     );
 
-    console.log('📋 Fetching stored OAuth2 credentials...');
+    console.log('📋 Fetching stored JWT credentials...');
 
-    // 1. Get stored OAuth2 credentials from database
+    // 1. Get stored JWT credentials from database
     const { data: credentials, error: credsError } = await supabaseAdmin
       .from('user_tmwe_credentials')
       .select('*')
       .eq('email', email)
-      .eq('token_type', 'oauth2')
+      .eq('token_type', 'jwt')
       .single();
 
     if (credsError || !credentials) {
-      console.error('❌ OAuth2 credentials not found:', credsError);
-      throw new Error('OAuth2 credentials not found for user');
+      console.error('❌ JWT credentials not found:', credsError);
+      throw new Error('JWT credentials not found for user');
     }
 
     if (!credentials.refresh_token) {
       throw new Error('No refresh token available');
     }
 
-    console.log('🔑 Refreshing OAuth2 token with TMWE API...');
+    console.log('🔑 Refreshing JWT token with TMWE API...');
 
-    // 2. Refresh OAuth2 token using refresh_token grant type
+    // 2. Refresh JWT token using refresh_token_jwt grant type
     const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        grant_type: 'refresh_token',
+        grant_type: 'refresh_token_jwt',
         refresh_token: credentials.refresh_token,
-        client_id: credentials.client_id,
-        client_secret: credentials.client_secret,
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error('❌ OAuth2 refresh failed:', errorData);
-      throw new Error(`OAuth2 refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
+      console.error('❌ JWT refresh failed:', errorData);
+      throw new Error(`JWT refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ New OAuth2 tokens obtained');
+    console.log('✅ New JWT tokens obtained');
 
     const { access_token, expires_in } = tokenData;
 
     if (!access_token) {
-      throw new Error('Invalid OAuth2 token response');
+      throw new Error('Invalid JWT token response');
     }
 
     // 3. Update stored credentials with new tokens
@@ -107,21 +105,21 @@ serve(async (req) => {
       .from('user_tmwe_credentials')
       .update(updateData)
       .eq('email', email)
-      .eq('token_type', 'oauth2');
+      .eq('token_type', 'jwt');
 
     if (updateError) {
-      console.error('Error updating OAuth2 credentials:', updateError);
+      console.error('Error updating JWT credentials:', updateError);
       throw updateError;
     }
 
-    console.log('✅ OAuth2 credentials updated successfully');
+    console.log('✅ JWT credentials updated successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
         access_token: access_token,
         expires_in: expires_in,
-        token_format: 'oauth2',
+        token_format: 'jwt',
       }),
       {
         status: 200,
@@ -130,10 +128,10 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('❌ OAuth2 refresh error:', error);
+    console.error('❌ JWT refresh error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'OAuth2 refresh failed',
+        error: error.message || 'JWT refresh failed',
         details: error.toString()
       }),
       {

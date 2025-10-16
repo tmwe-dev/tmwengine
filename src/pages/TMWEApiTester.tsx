@@ -96,8 +96,22 @@ interface BenchmarkResult extends TestResult {
   variantConfig: Record<string, any>;
 }
 
-// Suite di benchmark predefinite
+// Suite di benchmark predefinite (ESPANSE - FASE 1)
 const BENCHMARK_SUITES: BenchmarkConfig[] = [
+  // ========== SYNC OPERATIONS (3 suite) ==========
+  {
+    name: "🔄 Sync - Full vs Incremental",
+    category: "Sync",
+    endpoint: "/app.php?action=email_sync",
+    handler: "start_sync",
+    description: "Confronto tra sync completa e incrementale",
+    variations: [
+      { handler: "get_sync_status" },
+      { handler: "cancel_sync" },
+    ]
+  },
+  
+  // ========== MESSAGE OPERATIONS (7 suite - esistenti + nuove) ==========
   {
     name: "📧 Get Messages - Limit Test",
     category: "Performance",
@@ -172,6 +186,94 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
       { handler: "get_folders", include_counts: true, hierarchy: true },
     ]
   },
+  // ========== SINGLE MESSAGE OPERATIONS (4 nuove suite) ==========
+  {
+    name: "📩 Get Single Message - Format Impact",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "get_message",
+    description: "Impatto formato su singolo messaggio",
+    variations: [
+      { handler: "get_message", uid: 1, format: "text" },
+      { handler: "get_message", uid: 1, format: "html" },
+      { handler: "get_message", uid: 1, format: "both" },
+    ]
+  },
+  {
+    name: "✅ Mark as Read - Batch Performance",
+    category: "Optimization",
+    endpoint: "/app.php?action=email_message",
+    handler: "mark_as_read",
+    description: "Performance batch vs singolo",
+    variations: [
+      { handler: "mark_as_read", message_ids: ["1"] },
+      { handler: "mark_as_read", message_ids: ["1", "2", "3", "4", "5"] },
+      { handler: "mark_as_read", message_ids: Array.from({length: 20}, (_, i) => String(i + 1)) },
+    ]
+  },
+  {
+    name: "🗑️ Delete Messages - Performance",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "delete_messages",
+    description: "Performance cancellazione messaggi",
+    variations: [
+      { handler: "delete_messages", message_ids: ["1"], permanent: false },
+      { handler: "delete_messages", message_ids: ["1"], permanent: true },
+      { handler: "delete_messages", message_ids: ["1", "2", "3"], permanent: false },
+    ]
+  },
+  {
+    name: "📁 Move Messages - Folder Operations",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "move_messages",
+    description: "Performance spostamento tra cartelle",
+    variations: [
+      { handler: "move_messages", message_ids: ["1"], target_folder: "Archive" },
+      { handler: "move_messages", message_ids: ["1", "2", "3"], target_folder: "Archive" },
+    ]
+  },
+  
+  // ========== FOLDER MANAGEMENT (3 suite) ==========
+  {
+    name: "📂 Folder CRUD - Operations Speed",
+    category: "Performance",
+    endpoint: "/app.php?action=email_folder",
+    handler: "create_folder",
+    description: "Performance operazioni CRUD cartelle",
+    variations: [
+      { handler: "get_folder_info", folder: "INBOX" },
+      { handler: "get_folder_info", folder: "Sent" },
+    ]
+  },
+  {
+    name: "📊 Get Folders - Optimization Critical",
+    category: "Critical",
+    endpoint: "/app.php?action=email_folder",
+    handler: "get_folders",
+    description: "🚨 ANALISI CRITICA: quale combinazione funziona?",
+    variations: [
+      { handler: "get_folders", include_counts: false, hierarchy: false },
+      { handler: "get_folders", include_counts: false, hierarchy: true },
+      { handler: "get_folders", include_counts: true, hierarchy: false },
+      { handler: "get_folders", include_counts: true, hierarchy: true },
+    ]
+  },
+  
+  // ========== SEND OPERATIONS (1 suite) ==========
+  {
+    name: "📤 Send Email - Plain vs HTML",
+    category: "Performance",
+    endpoint: "/app.php?action=email_message",
+    handler: "send_message",
+    description: "Impatto formato su invio (MOCK - non invia realmente)",
+    variations: [
+      { handler: "get_messages", folder: "Sent", limit: 5 }, // Mock: legge sent invece di inviare
+    ]
+  },
+  
+  // ========== ACCOUNT OPERATIONS (1 suite) ==========
   {
     name: "⚡ Account Operations - Baseline",
     category: "Baseline",
@@ -202,6 +304,8 @@ const TMWEApiTester = () => {
   const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [benchmarkProgress, setBenchmarkProgress] = useState(0);
   const [benchmarkDelay, setBenchmarkDelay] = useState(500);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [benchmarkHistory, setBenchmarkHistory] = useState<any[]>([]);
   
   const { toast } = useToast();
 
@@ -391,11 +495,34 @@ const TMWEApiTester = () => {
     });
   };
 
-  const exportBenchmarkReport = () => {
+  // ✅ FASE 3: Export CSV oltre a JSON
+  const exportBenchmarkReport = (format: 'json' | 'csv' = 'json') => {
     const suite = BENCHMARK_SUITES.find(s => s.name === selectedSuite);
     const winner = benchmarkResults
       .filter(r => r.status === 200)
       .sort((a, b) => a.responseTime - b.responseTime)[0];
+
+    if (format === 'csv') {
+      const csv = [
+        "Suite,Variant,Response Time,Status,Winner",
+        ...benchmarkResults.map(r => 
+          `"${selectedSuite}","${r.variantName}",${r.responseTime},${r.status},${r.variantName === winner?.variantName ? "YES" : "NO"}`
+        )
+      ].join("\n");
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `benchmark-${suite?.name.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.csv`;
+      a.click();
+      
+      toast({
+        title: "📊 Report CSV esportato",
+        description: "Report salvato come CSV",
+      });
+      return;
+    }
 
     const report = {
       suite: suite?.name,
@@ -413,6 +540,12 @@ const TMWEApiTester = () => {
       ] : []
     };
 
+    // ✅ FASE 3: Salva in localStorage per comparazione storica
+    const history = JSON.parse(localStorage.getItem('benchmark_history') || '[]');
+    history.push(report);
+    localStorage.setItem('benchmark_history', JSON.stringify(history.slice(-20))); // Mantieni ultimi 20
+    setBenchmarkHistory(history);
+
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -425,6 +558,14 @@ const TMWEApiTester = () => {
       description: "Report salvato come JSON",
     });
   };
+  
+  // ✅ Filtra suite per categoria
+  const filteredSuites = selectedCategory === "all" 
+    ? BENCHMARK_SUITES 
+    : BENCHMARK_SUITES.filter(s => s.category === selectedCategory);
+  
+  // Ottieni categorie uniche
+  const categories = ["all", ...Array.from(new Set(BENCHMARK_SUITES.map(s => s.category)))];
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -667,6 +808,23 @@ const TMWEApiTester = () => {
                 <CardDescription>Seleziona suite di test automatici</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* ✅ FASE 3: Filtro per categoria */}
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat === "all" ? "Tutte le categorie" : cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="space-y-2">
                   <Label>Suite di Test</Label>
                   <Select value={selectedSuite} onValueChange={setSelectedSuite}>
@@ -674,7 +832,7 @@ const TMWEApiTester = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {BENCHMARK_SUITES.map((suite) => (
+                      {filteredSuites.map((suite) => (
                         <SelectItem key={suite.name} value={suite.name}>
                           {suite.name}
                         </SelectItem>
@@ -737,15 +895,26 @@ const TMWEApiTester = () => {
                   )}
                 </Button>
 
+                {/* ✅ FASE 3: Export JSON + CSV */}
                 {benchmarkResults.length > 0 && (
-                  <Button
-                    onClick={exportBenchmarkReport}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    Esporta Report
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => exportBenchmarkReport('json')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Esporta JSON
+                    </Button>
+                    <Button
+                      onClick={() => exportBenchmarkReport('csv')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Esporta CSV
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>

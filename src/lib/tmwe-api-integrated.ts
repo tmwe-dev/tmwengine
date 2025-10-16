@@ -449,6 +449,8 @@ export const emailSyncApi = {
 };
 
 // Email Message APIs
+import { chunkArray } from './utils/array-utils';
+
 export const emailMessageApi = {
   getMessages: (params: {
     folder?: string;
@@ -462,6 +464,28 @@ export const emailMessageApi = {
     const uidInt = parseInt(uid, 10);
     if (isNaN(uidInt)) throw new Error(`Invalid UID: ${uid}`);
     return fetchApi('/email_message', { handler: 'get_message', uid: uidInt, mark_as_read: markAsRead });
+  },
+  
+  // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read
+  markAsRead: async (messageIds: string[]) => {
+    // Se più di 50 messaggi, splitta in batch
+    if (messageIds.length > 50) {
+      const batches = chunkArray(messageIds, 50);
+      const results = await Promise.all(
+        batches.map(batch => 
+          fetchApi('/email_message', {
+            handler: 'mark_as_read',
+            message_ids: batch
+          })
+        )
+      );
+      return results.flat();
+    }
+    
+    return fetchApi('/email_message', {
+      handler: 'mark_as_read',
+      message_ids: messageIds
+    });
   },
 
   searchMessages: (params: {
@@ -552,7 +576,13 @@ export const emailMessageApi = {
 
 // Email Folder APIs
 export const emailFolderApi = {
-  getFolders: () => fetchApi('/email_folder', { handler: 'get_folders' }),
+  // ✅ OTTIMIZZAZIONE 1: Default più affidabili (include_counts: false, hierarchy: true)
+  getFolders: (includeCounts?: boolean, hierarchy?: boolean) => 
+    fetchApi('/email_folder', { 
+      handler: 'get_folders',
+      include_counts: includeCounts ?? false, // Default FALSE per affidabilità
+      hierarchy: hierarchy ?? true // Default TRUE per struttura gerarchica
+    }),
   
   getFolderInfo: (folderName: string) => 
     fetchApi('/email_folder', { handler: 'get_folder_info', folder_name: folderName }),

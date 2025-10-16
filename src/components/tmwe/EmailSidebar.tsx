@@ -107,7 +107,7 @@ export const EmailSidebar = ({
 
   const { data: foldersData, isLoading } = useQuery({
     queryKey: ['folders'],
-    queryFn: emailFolderApi.getFolders,
+    queryFn: () => emailFolderApi.getFolders(),
   });
 
   const createFolderMutation = useMutation({

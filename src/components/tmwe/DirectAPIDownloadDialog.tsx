@@ -59,7 +59,7 @@ export const DirectAPIDownloadDialog = ({ open, onOpenChange }: DirectAPIDownloa
   // Fetch folders and preferences for preview
   const { data: foldersData } = useQuery({
     queryKey: ['folders', userEmail],
-    queryFn: emailFolderApi.getFolders,
+    queryFn: () => emailFolderApi.getFolders(),
     enabled: !!userEmail && step === 'config',
   });
 

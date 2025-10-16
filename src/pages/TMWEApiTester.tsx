@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, 
 import { OptimizationControls, OptimizationFlags } from "@/components/testing/OptimizationControls";
 import { OptimizationTestResults } from "@/components/testing/OptimizationTestResults";
 import { OptimizationTestRunner } from "@/components/testing/OptimizationTestRunner";
+import { OptimizationDashboard } from "@/components/testing/OptimizationDashboard";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -327,6 +328,17 @@ const TMWEApiTester = () => {
   });
   const [optimizationResults, setOptimizationResults] = useState<any[]>([]);
 
+  // 🚀 Optimal Config for Advanced Mode
+  const OPTIMAL_CONFIG: OptimizationFlags = {
+    enableLogging: false,
+    useDoubleSerializat: false,
+    useSequentialExecution: false,
+    useTextResponse: false,
+    useBatchParallelization: true,
+    batchChunkSize: 10,
+    benchmarkDelay: 100
+  };
+
   // Carica storico da Supabase
   const { data: historicalBenchmarks, refetch: refetchHistory } = useQuery({
     queryKey: ['benchmark-history'],
@@ -354,6 +366,13 @@ const TMWEApiTester = () => {
   });
   
   const { toast } = useToast();
+
+  // Listen for export config event from OptimizationDashboard
+  useEffect(() => {
+    const handleExport = () => exportProductionConfig();
+    window.addEventListener('exportProductionConfig', handleExport);
+    return () => window.removeEventListener('exportProductionConfig', handleExport);
+  }, [allBenchmarkResults]);
 
   const handleEndpointChange = (endpoint: string) => {
     setSelectedEndpoint(endpoint);
@@ -555,7 +574,8 @@ const TMWEApiTester = () => {
           body: {
             endpoint: suite.endpoint,
             data: variation,
-            bearerToken: accessToken
+            bearerToken: accessToken,
+            optimizationFlags: optimizationFlags
           }
         });
 
@@ -674,7 +694,8 @@ const TMWEApiTester = () => {
             body: {
               endpoint: suite.endpoint,
               data: variation,
-              bearerToken: accessToken
+              bearerToken: accessToken,
+              optimizationFlags: optimizationFlags
             }
           });
 
@@ -772,6 +793,61 @@ const TMWEApiTester = () => {
       setIsRunningAll(false);
       setShouldStopAllBenchmarks(false);
     }
+  };
+
+  const runAllBenchmarksWithOptimalConfig = async () => {
+    const previousFlags = { ...optimizationFlags };
+    setOptimizationFlags(OPTIMAL_CONFIG);
+    
+    toast({
+      title: "🚀 Advanced Mode Attivato",
+      description: "Esecuzione con configurazione ottimizzata per produzione",
+    });
+    
+    await runAllBenchmarks();
+    setOptimizationFlags(previousFlags);
+  };
+
+  const exportProductionConfig = () => {
+    if (allBenchmarkResults.length === 0) {
+      toast({
+        title: "⚠️ Nessun dato disponibile",
+        description: "Esegui prima i test Advanced",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const avgBaseline = allBenchmarkResults
+      .reduce((sum, suite) => sum + suite.avgResponseTime, 0) / allBenchmarkResults.length;
+
+    const configJson = {
+      production_config: {
+        optimization_flags: OPTIMAL_CONFIG,
+        api_best_practices: {
+          get_folders: { include_counts: false, hierarchy: false },
+          get_messages: { limit: 50, format: "html" },
+          batch_operations: { max_batch_size: 20, use_chunking: true }
+        },
+        performance_summary: {
+          avg_response_time_ms: Math.round(avgBaseline),
+          total_tests_executed: allBenchmarkResults.reduce((sum, s) => sum + s.totalVariants, 0),
+          test_date: new Date().toISOString()
+        }
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(configJson, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tmwe-production-config-${Date.now()}.json`;
+    a.click();
+
+    toast({
+      title: "✅ Configurazione esportata",
+      description: "File JSON scaricato con successo"
+    });
   };
 
   const saveBenchmarkResultsToSupabase = async (
@@ -976,7 +1052,7 @@ const TMWEApiTester = () => {
       </div>
 
       <Tabs defaultValue="standard" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="standard">
             <Settings2 className="mr-2 h-4 w-4" />
             Standard Testing
@@ -988,6 +1064,10 @@ const TMWEApiTester = () => {
           <TabsTrigger value="optimization">
             <FlaskConical className="mr-2 h-4 w-4" />
             🚀 Optimization A/B
+          </TabsTrigger>
+          <TabsTrigger value="dashboard">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            📊 Dashboard
           </TabsTrigger>
         </TabsList>
 
@@ -1339,6 +1419,17 @@ const TMWEApiTester = () => {
                       }
                     </>
                   )}
+                </Button>
+
+                <Button
+                  onClick={runAllBenchmarksWithOptimalConfig}
+                  disabled={isBenchmarking || isRunningAll}
+                  variant="default"
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  size="lg"
+                >
+                  <Zap className="mr-2 h-5 w-5" />
+                  🚀 Run All ADVANCED (Optimal Config)
                 </Button>
 
                 {isRunningAll && (
@@ -1896,6 +1987,11 @@ const TMWEApiTester = () => {
           {optimizationResults.length > 0 && (
             <OptimizationTestResults results={optimizationResults} />
           )}
+        </TabsContent>
+
+        {/* 📊 DASHBOARD TAB */}
+        <TabsContent value="dashboard" className="space-y-6">
+          <OptimizationDashboard />
         </TabsContent>
       </Tabs>
     </div>

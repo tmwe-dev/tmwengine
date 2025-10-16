@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, TrendingDown, CheckCircle2, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, TrendingDown, CheckCircle2, Loader2, Download } from 'lucide-react';
 
 interface BenchmarkData {
   id: string;
@@ -119,6 +120,30 @@ export const OptimizationDashboard = () => {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Export Production Config */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Esporta Configurazione Produzione</CardTitle>
+          <CardDescription>
+            Scarica la configurazione ottimale per l'uso in produzione
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={() => {
+              // Trigger export from parent component
+              const event = new CustomEvent('exportProductionConfig');
+              window.dispatchEvent(event);
+            }} 
+            className="w-full"
+            size="lg"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Esporta Configurazione Produzione
+          </Button>
         </CardContent>
       </Card>
     </div>

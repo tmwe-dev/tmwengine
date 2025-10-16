@@ -386,10 +386,7 @@ const OPTIMAL_CONFIG = {
 // Helper function to get access token - SAME AS API TESTER
 export const getAccessToken = async (): Promise<string> => {
   const config = await getApiConfigFromDB();
-  if (!config?.accessToken) {
-    throw new Error('❌ Token non disponibile. Effettua il login.');
-  }
-  return config.accessToken;
+  return config?.accessToken || '';  // ✅ Identico al Tester - restituisce '' se manca
 };
 
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
@@ -666,13 +663,10 @@ export const emailFolderApi = {
       ...config
     });
     
-    // ✅ Estrai l'array data dalla risposta PRIMA di salvare in cache
-    const folders = result?.data || [];
+    // ✅ Salva in cache la risposta completa
+    folderCache.set(result, config);
     
-    // ✅ Salva in cache l'array pulito
-    folderCache.set(folders, config);
-    
-    return folders;  // ✅ Restituisci direttamente l'array!
+    return result;  // ✅ Restituisce { data: [...] } come tutte le altre API
   },
   
   getFolderInfo: (folderName: string) => 

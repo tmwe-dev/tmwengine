@@ -64,8 +64,8 @@ const EmailDashboard = () => {
         console.log('✅ Token presente, verifico validità...');
         // Test API call to verify token is valid
         try {
-          const folders = await emailFolderApi.getFolders();
-          console.log('✅ Token valido, API funzionante - Folders:', folders.length);
+          await emailFolderApi.getFolders();
+          console.log('✅ Token valido, API funzionante');
         } catch (error) {
           console.warn('⚠️ Token potrebbe essere scaduto o invalido:', error);
           toast.error('Token scaduto. Rieffettua il login.');

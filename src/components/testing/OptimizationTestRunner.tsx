@@ -183,101 +183,19 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
         benchmarkDelay: flags.benchmarkDelay
       }
     },
-      {
-        name: '📁 Batch Move - Chunked 🧩',
-        testType: 'batch_move',
-        flags: {
-          enableLogging: false,
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          useBatchParallelization: true,
-          batchChunkSize: 10,
-          benchmarkDelay: flags.benchmarkDelay
-        }
-      },
-
-      // === FOLDER CACHE TESTS (Critical) ===
-      {
-        name: '🗂️ Get Folders - No Cache (Baseline)',
-        testType: 'get_folders',
-        flags: {
-          enableLogging: true,
-          useDoubleSerializat: true,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          useFolderCache: false,
-          benchmarkDelay: flags.benchmarkDelay
-        },
-        isBaseline: true
-      },
-      {
-        name: '🗂️ Get Folders - With Cache 🚀',
-        testType: 'get_folders_cached',
-        flags: {
-          enableLogging: false,
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          useFolderCache: true,
-          folderCacheTTL: 60,
-          benchmarkDelay: flags.benchmarkDelay
-        }
-      },
-      {
-        name: '🗂️ Get Folders - Cache Hit Test',
-        testType: 'get_folders_cached',
-        flags: {
-          enableLogging: false,
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          useFolderCache: true,
-          folderCacheTTL: 60,
-          benchmarkDelay: flags.benchmarkDelay
-        }
-      },
-
-      // === PAGINATION CACHE TESTS (Optimization) ===
-      {
-        name: '📄 Get Messages Page 1 - No Cache (Baseline)',
-        testType: 'get_messages_page',
-        flags: {
-          enableLogging: true,
-          useDoubleSerializat: true,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          usePaginationCache: false,
-          benchmarkDelay: flags.benchmarkDelay
-        },
-        isBaseline: true
-      },
-      {
-        name: '📄 Get Messages Page 1 - With Cache 🚀',
-        testType: 'get_messages_page_cached',
-        flags: {
-          enableLogging: false,
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          usePaginationCache: true,
-          paginationCacheTTL: 60,
-          benchmarkDelay: flags.benchmarkDelay
-        }
-      },
-      {
-        name: '📄 Get Messages Page 1 - Cache Hit Test',
-        testType: 'get_messages_page_cached',
-        flags: {
-          enableLogging: false,
-          useDoubleSerializat: false,
-          useSequentialExecution: false,
-          useTextResponse: false,
-          usePaginationCache: true,
-          paginationCacheTTL: 60,
-          benchmarkDelay: flags.benchmarkDelay
-        }
-      },
+    {
+      name: '📁 Batch Move - Chunked 🧩',
+      testType: 'batch_move',
+      flags: {
+        enableLogging: false,
+        useDoubleSerializat: false,
+        useSequentialExecution: false,
+        useTextResponse: false,
+        useBatchParallelization: true,
+        batchChunkSize: 10,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
   ];
 
   const runOptimizationTests = async () => {
@@ -358,42 +276,7 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
                 data: {
                   handler: 'get_folders',
                   include_counts: true,
-                  include_hierarchy: true
-                },
-                accessToken: config.accessToken,
-                optimizationFlags: testConfig.flags
-              },
-              headers: {
-                Authorization: `Bearer ${session.access_token}`
-              }
-            });
-          } else if (testConfig.testType === 'get_folders' || testConfig.testType === 'get_folders_cached') {
-            // Get Folders with/without cache
-            response = await supabase.functions.invoke('tmwe-api-proxy', {
-              body: {
-                endpoint: '/app.php?action=email_folder',
-                data: {
-                  handler: 'get_folders',
-                  include_counts: true,
-                  include_hierarchy: true
-                },
-                accessToken: config.accessToken,
-                optimizationFlags: testConfig.flags
-              },
-              headers: {
-                Authorization: `Bearer ${session.access_token}`
-              }
-            });
-          } else if (testConfig.testType === 'get_messages_page' || testConfig.testType === 'get_messages_page_cached') {
-            // Get Messages paginated with/without cache
-            response = await supabase.functions.invoke('tmwe-api-proxy', {
-              body: {
-                endpoint: '/app.php?action=email_message',
-                data: {
-                  handler: 'get_messages',
-                  folder: 'INBOX',
-                  page: 1,
-                  per_page: 50
+                  hierarchy: true
                 },
                 accessToken: config.accessToken,
                 optimizationFlags: testConfig.flags

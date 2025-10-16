@@ -12,10 +12,6 @@ export interface OptimizationFlags {
   benchmarkDelay: number;
   useBatchParallelization?: boolean;
   batchChunkSize?: number;
-  useFolderCache?: boolean;
-  folderCacheTTL?: number;
-  usePaginationCache?: boolean;
-  paginationCacheTTL?: number;
 }
 
 interface OptimizationControlsProps {
@@ -189,96 +185,6 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
           />
         </div>
 
-        {/* Folder Cache - HIGH PRIORITY */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-3">
-            <Zap className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <div>
-              <Label htmlFor="folderCache" className="text-sm font-semibold">
-                🗂️ Folder Cache (Critical -90-95%)
-              </Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cache aggressiva per get_folders con counts/hierarchy
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="folderCache"
-            checked={flags.useFolderCache || false}
-            onCheckedChange={(checked) => updateFlag('useFolderCache', checked)}
-          />
-        </div>
-
-        {flags.useFolderCache && (
-          <div className="p-4 rounded-lg bg-background/50 border space-y-3 ml-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <div className="flex-1">
-                <Label htmlFor="folderCacheTTL" className="text-sm font-semibold">
-                  ⏱️ Folder Cache TTL: {flags.folderCacheTTL || 60}s
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Durata cache cartelle (30-300s)
-                </p>
-              </div>
-            </div>
-            <Slider
-              id="folderCacheTTL"
-              min={30}
-              max={300}
-              step={30}
-              value={[flags.folderCacheTTL || 60]}
-              onValueChange={([value]) => updateFlag('folderCacheTTL', value)}
-              className="w-full"
-            />
-          </div>
-        )}
-
-        {/* Pagination Cache - HIGH PRIORITY */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center gap-3">
-            <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <div>
-              <Label htmlFor="paginationCache" className="text-sm font-semibold">
-                📄 Pagination Cache (Optimization -80-95%)
-              </Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cache risultati paginati per get_messages
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="paginationCache"
-            checked={flags.usePaginationCache || false}
-            onCheckedChange={(checked) => updateFlag('usePaginationCache', checked)}
-          />
-        </div>
-
-        {flags.usePaginationCache && (
-          <div className="p-4 rounded-lg bg-background/50 border space-y-3 ml-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <div className="flex-1">
-                <Label htmlFor="paginationCacheTTL" className="text-sm font-semibold">
-                  ⏱️ Pagination Cache TTL: {flags.paginationCacheTTL || 60}s
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Durata cache paginazione (30-180s)
-                </p>
-              </div>
-            </div>
-            <Slider
-              id="paginationCacheTTL"
-              min={30}
-              max={180}
-              step={30}
-              value={[flags.paginationCacheTTL || 60]}
-              onValueChange={([value]) => updateFlag('paginationCacheTTL', value)}
-              className="w-full"
-            />
-          </div>
-        )}
-
         {/* Impact Summary */}
         <div className="p-4 rounded-lg bg-primary/10 border-primary/30 border">
           <p className="text-xs font-semibold mb-2">📊 Impatto Stimato Totale:</p>
@@ -288,9 +194,7 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
             {flags.useTextResponse && '⏱️ +30ms '}
             {!flags.useSequentialExecution && '⚡ -30% '}
             {flags.useBatchParallelization && '🧩 Chunking '}
-            {flags.useFolderCache && '🗂️ -90% (Folder) '}
-            {flags.usePaginationCache && '📄 -80% (Pagination) '}
-            {!flags.enableLogging && !flags.useDoubleSerializat && !flags.useTextResponse && flags.useFolderCache && flags.usePaginationCache && '🚀 MAXIMUM OPTIMIZATION'}
+            {!flags.enableLogging && !flags.useDoubleSerializat && !flags.useTextResponse && '✅ Fully Optimized'}
           </p>
         </div>
       </CardContent>

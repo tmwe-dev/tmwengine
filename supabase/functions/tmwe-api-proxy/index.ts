@@ -7,37 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ===== CACHE SYSTEM =====
-interface CacheEntry {
-  data: any;
-  timestamp: number;
-  ttl: number;
-}
-
-const folderCache = new Map<string, CacheEntry>();
-const paginationCache = new Map<string, CacheEntry>();
-
-function getCached(cache: Map<string, CacheEntry>, key: string): any | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  
-  const now = Date.now();
-  if ((now - entry.timestamp) > entry.ttl) {
-    cache.delete(key);
-    return null;
-  }
-  
-  return entry.data;
-}
-
-function setCache(cache: Map<string, CacheEntry>, key: string, data: any, ttl: number): void {
-  cache.set(key, {
-    data,
-    timestamp: Date.now(),
-    ttl: ttl * 1000 // converti secondi in millisecondi
-  });
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -53,51 +22,7 @@ serve(async (req) => {
     const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? true;
     const useBatchParallelization = optimizationFlags?.useBatchParallelization ?? false;
     const batchChunkSize = optimizationFlags?.batchChunkSize ?? 10;
-    const useFolderCache = optimizationFlags?.useFolderCache ?? false;
-    const folderCacheTTL = optimizationFlags?.folderCacheTTL ?? 60;
-    const usePaginationCache = optimizationFlags?.usePaginationCache ?? false;
-    const paginationCacheTTL = optimizationFlags?.paginationCacheTTL ?? 60;
     
-    // ===== FOLDER CACHE CHECK =====
-    if (useFolderCache && data?.handler === 'get_folders') {
-      const cacheKey = `folders_${data.include_counts}_${data.include_hierarchy}`;
-      const cached = getCached(folderCache, cacheKey);
-      
-      if (cached) {
-        if (enableLogging) {
-          console.log(`✅ Folder Cache HIT (${cacheKey}) - Saved ~10s API call`);
-        }
-        return new Response(JSON.stringify(cached), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
-        });
-      }
-      
-      if (enableLogging) {
-        console.log(`❌ Folder Cache MISS (${cacheKey})`);
-      }
-    }
-
-    // ===== PAGINATION CACHE CHECK =====
-    if (usePaginationCache && data?.handler === 'get_messages') {
-      const cacheKey = `messages_${data.folder}_${data.page}_${data.per_page}`;
-      const cached = getCached(paginationCache, cacheKey);
-      
-      if (cached) {
-        if (enableLogging) {
-          console.log(`✅ Pagination Cache HIT (${cacheKey}) - Saved API call`);
-        }
-        return new Response(JSON.stringify(cached), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
-        });
-      }
-      
-      if (enableLogging) {
-        console.log(`❌ Pagination Cache MISS (${cacheKey})`);
-      }
-    }
-
     if (enableLogging) {
       console.log('═══════════════════════════════════════════════════════');
       console.log('🔄 TMWE API PROXY - Richiesta ricevuta');
@@ -446,19 +371,6 @@ serve(async (req) => {
       // Ottimizzazione: usa .json() diretto
       const responseJson = await tmweResponse.json();
       responseData = JSON.stringify(responseJson);
-      
-      // ===== SAVE TO CACHE =====
-      if (useFolderCache && data?.handler === 'get_folders') {
-        const cacheKey = `folders_${data.include_counts}_${data.include_hierarchy}`;
-        setCache(folderCache, cacheKey, responseJson, folderCacheTTL);
-        if (enableLogging) console.log(`💾 Folder Cache SET (${cacheKey}, TTL: ${folderCacheTTL}s)`);
-      }
-      
-      if (usePaginationCache && data?.handler === 'get_messages') {
-        const cacheKey = `messages_${data.folder}_${data.page}_${data.per_page}`;
-        setCache(paginationCache, cacheKey, responseJson, paginationCacheTTL);
-        if (enableLogging) console.log(`💾 Pagination Cache SET (${cacheKey}, TTL: ${paginationCacheTTL}s)`);
-      }
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');

@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔐 Iniciando JWT authentication flow...');
+    console.log('🔐 Iniciando OAuth + JWT authentication flow...');
     console.log('📍 Request URL:', req.url);
     console.log('📍 Request method:', req.method);
     
@@ -49,27 +49,26 @@ serve(async (req) => {
       throw new Error('TMWE_CLIENT_SECRET not configured');
     }
 
-    console.log('📤 Exchanging authorization code for JWT tokens...');
+    console.log('📤 Exchanging authorization code for JWT tokens via /token endpoint...');
     
-    // Prepare request body for JWT exchange endpoint
-    const tokenRequestBody = {
+    // 1. Exchange authorization code for JWT tokens using /token endpoint
+    // Using application/x-www-form-urlencoded as per OAuth2 standard
+    const formData = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
       client_id: clientId,
       client_secret: clientSecret,
       redirect_uri: redirectUri,
-    };
+    });
     
-    console.log('📤 Token request body:', JSON.stringify(tokenRequestBody, null, 2));
+    console.log('📤 Token request (form-urlencoded):', formData.toString());
 
-    // 1. Exchange authorization code for JWT tokens using /exchange_code_for_jwt endpoint
-    // This endpoint accepts both JSON and form-urlencoded
-    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/exchange_code_for_jwt', {
+    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(tokenRequestBody),
+      body: formData.toString(),
     });
 
     console.log('📥 Token response status:', tokenResponse.status);
@@ -303,7 +302,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Supabase session tokens generated successfully');
-    console.log('✅ JWT authentication flow completed successfully');
+    console.log('✅ OAuth + JWT authentication flow completed successfully');
     
     const finalResponse = {
       success: true,
@@ -315,12 +314,13 @@ serve(async (req) => {
         rubrica: profileData.rubrica,
       },
       supabaseUserId: supabaseUser.id,
-      // ✅ Return Supabase JWT tokens (not TMWE JWT tokens)
+      // ✅ Return Supabase session tokens for authentication
       access_token: supabaseAccessToken,
       refresh_token: supabaseRefreshToken,
       // Include TMWE JWT info for reference
       tmwe_user_id: user_id,
       tmwe_anagrafica_id: anagrafica_id,
+      tmwe_access_token: access_token, // TMWE JWT token stored in credentials
       token_format: 'jwt',
     };
     
@@ -335,10 +335,10 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('❌ JWT authentication error:', error);
+    console.error('❌ OAuth + JWT authentication error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'JWT authentication failed',
+        error: error.message || 'OAuth + JWT authentication failed',
         details: error.toString()
       }),
       {

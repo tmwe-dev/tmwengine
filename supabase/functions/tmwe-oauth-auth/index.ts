@@ -119,21 +119,56 @@ serve(async (req) => {
     console.log('🔑 Access token present:', !!tokenData.access_token);
     console.log('⏱️ Expires in:', tokenData.expires_in);
     console.log('📧 Email from token response:', tokenData.email);
-    console.log('👤 User ID from token response:', tokenData.user_id);
-    console.log('🏢 Anagrafica ID from token response:', tokenData.anagrafica_id);
 
-    const { access_token, expires_in, email, user_id, anagrafica_id } = tokenData;
+    const { access_token, expires_in, email } = tokenData;
 
-    if (!access_token || !email || !user_id) {
+    if (!access_token || !email) {
       console.error('❌ Invalid token response:', { 
         has_access_token: !!access_token, 
-        has_email: !!email,
-        has_user_id: !!user_id
+        has_email: !!email
       });
-      throw new Error('Invalid token response: missing access_token, email or user_id');
+      throw new Error('Invalid token response: missing access_token or email');
     }
 
-    // 2. Get user profile from contatti endpoint
+    // 2. Get user_id and anagrafica_id from get_my_profile endpoint
+    console.log('👤 Fetching user profile from get_my_profile endpoint...');
+    const myProfileEndpoint = 'https://findair.it/erp/tmwe_json/get_my_profile';
+    
+    console.log('🌐 API Call Details:');
+    console.log('  📍 Endpoint:', myProfileEndpoint);
+    console.log('  📋 Method: GET');
+    console.log('  🔑 Authorization: Bearer [OAuth token]');
+    
+    const myProfileResponse = await fetch(myProfileEndpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('📥 API Response:');
+    console.log('  📊 Status Code:', myProfileResponse.status);
+    console.log('  📊 Status Text:', myProfileResponse.statusText);
+    
+    if (!myProfileResponse.ok) {
+      const errorText = await myProfileResponse.text();
+      console.error('❌ get_my_profile failed - Response body:', errorText);
+      throw new Error(`Failed to fetch my profile: ${myProfileResponse.statusText}`);
+    }
+
+    const myProfileData = await myProfileResponse.json();
+    console.log('✅ My profile obtained:', JSON.stringify(myProfileData, null, 2));
+    
+    const user_id = myProfileData.user_id || myProfileData.id;
+    const anagrafica_id = myProfileData.anagrafica_id;
+    
+    if (!user_id) {
+      console.error('❌ user_id not found in profile response');
+      throw new Error('user_id not found in profile');
+    }
+
+    // 3. Get detailed user profile from contatti endpoint
     console.log('👤 Fetching detailed profile from TMWE contatti API...');
     const contattiEndpoint = 'https://findair.it/erp/tmwe_json/contatti';
     const profileRequestBody = {
@@ -145,7 +180,7 @@ serve(async (req) => {
     console.log('  📍 Endpoint:', contattiEndpoint);
     console.log('  📋 Method: POST');
     console.log('  📦 Content-Type: application/json');
-    console.log('  🔑 Authorization: Bearer [JWT token]');
+    console.log('  🔑 Authorization: Bearer [OAuth token]');
     console.log('  📝 Body:', JSON.stringify(profileRequestBody, null, 2));
     
     const profileResponse = await fetch(contattiEndpoint, {
@@ -170,7 +205,7 @@ serve(async (req) => {
     const profileData = await profileResponse.json();
     console.log('✅ Profile obtained:', JSON.stringify(profileData, null, 2));
 
-    // Initialize Supabase Admin Client
+    // 4. Initialize Supabase Admin Client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -184,7 +219,7 @@ serve(async (req) => {
 
     console.log('🔄 Syncing with Supabase...');
 
-    // 4. Find or create Supabase user
+    // 5. Find or create Supabase user
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
@@ -237,7 +272,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Update/create user profile
+    // 6. Update/create user profile
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .upsert({
@@ -255,7 +290,7 @@ serve(async (req) => {
 
     console.log(`✅ Profile synced for user_id: ${supabaseUser.id}`);
 
-    // 6. Save TMWE OAuth credentials in database with token_type = 'oauth'
+    // 7. Save TMWE OAuth credentials in database with token_type = 'oauth'
     const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
     
     const { error: credsError } = await supabaseAdmin
@@ -279,7 +314,7 @@ serve(async (req) => {
 
     console.log('✅ TMWE OAuth credentials saved');
 
-    // 7. Generate Supabase session using generateLink (magic link flow)
+    // 8. Generate Supabase session using generateLink (magic link flow)
     console.log('🔐 Generating Supabase session tokens...');
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({

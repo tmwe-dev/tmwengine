@@ -321,6 +321,7 @@ const TMWEApiTester = () => {
   // Run All Benchmarks state
   const [allBenchmarkResults, setAllBenchmarkResults] = useState<AllBenchmarkResults[]>([]);
   const [isRunningAll, setIsRunningAll] = useState(false);
+  const [shouldStopAllBenchmarks, setShouldStopAllBenchmarks] = useState(false);
   const [allBenchmarksProgress, setAllBenchmarksProgress] = useState({
     currentSuite: 0,
     totalSuites: 0,
@@ -519,6 +520,7 @@ const TMWEApiTester = () => {
   const runAllBenchmarks = async () => {
     const suitesToRun = filteredSuites;
     setIsRunningAll(true);
+    setShouldStopAllBenchmarks(false);
     setAllBenchmarkResults([]);
     setAllBenchmarksProgress({
       currentSuite: 0,
@@ -530,20 +532,35 @@ const TMWEApiTester = () => {
     const allResults: AllBenchmarkResults[] = [];
     const accessToken = await getAccessToken();
 
-    for (let suiteIndex = 0; suiteIndex < suitesToRun.length; suiteIndex++) {
-      if (!isRunningAll) break; // Allow interruption
+    try {
+      for (let suiteIndex = 0; suiteIndex < suitesToRun.length; suiteIndex++) {
+        if (shouldStopAllBenchmarks) {
+          toast({
+            title: "⚠️ Test interrotti",
+            description: `${allResults.length} suite completate prima dell'interruzione`,
+            variant: "destructive"
+          });
+          break;
+        }
 
-      const suite = suitesToRun[suiteIndex];
-      setAllBenchmarksProgress(prev => ({
-        ...prev,
-        currentSuite: suiteIndex + 1,
-        suiteName: suite.name
-      }));
+        const suite = suitesToRun[suiteIndex];
+        setAllBenchmarksProgress(prev => ({
+          ...prev,
+          currentSuite: suiteIndex + 1,
+          suiteName: suite.name
+        }));
 
-      const suiteResults: BenchmarkResult[] = [];
+        const suiteResults: BenchmarkResult[] = [];
 
-      for (let i = 0; i < suite.variations.length; i++) {
-        if (!isRunningAll) break;
+        for (let i = 0; i < suite.variations.length; i++) {
+          if (shouldStopAllBenchmarks) {
+            toast({
+              title: "⚠️ Test interrotti",
+              description: `${allResults.length} suite completate prima dell'interruzione`,
+              variant: "destructive"
+            });
+            break;
+          }
 
         const variation = suite.variations[i];
         const startTime = performance.now();
@@ -620,24 +637,28 @@ const TMWEApiTester = () => {
         successRate: (successfulResults.length / suiteResults.length) * 100
       });
 
-      setAllBenchmarkResults([...allResults]);
+        setAllBenchmarkResults([...allResults]);
+      }
+
+      if (!shouldStopAllBenchmarks) {
+        // Save to history
+        const newHistory = [...benchmarkHistory, {
+          timestamp: Date.now(),
+          category: selectedCategory,
+          results: allResults
+        }].slice(-20);
+        setBenchmarkHistory(newHistory);
+        localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
+
+        toast({
+          title: "🎉 Tutti i benchmark completati!",
+          description: `${allResults.length} suite eseguite con successo`,
+        });
+      }
+    } finally {
+      setIsRunningAll(false);
+      setShouldStopAllBenchmarks(false);
     }
-
-    setIsRunningAll(false);
-
-    // Save to history
-    const newHistory = [...benchmarkHistory, {
-      timestamp: Date.now(),
-      category: selectedCategory,
-      results: allResults
-    }].slice(-20);
-    setBenchmarkHistory(newHistory);
-    localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
-
-    toast({
-      title: "🎉 Tutti i benchmark completati!",
-      description: `${allResults.length} suite eseguite con successo`,
-    });
   };
 
   const exportAllBenchmarks = (format: 'json' | 'csv') => {
@@ -1150,7 +1171,10 @@ const TMWEApiTester = () => {
 
                 {isRunningAll && (
                   <Button
-                    onClick={() => setIsRunningAll(false)}
+                    onClick={() => {
+                      setShouldStopAllBenchmarks(true);
+                      setIsRunningAll(false);
+                    }}
                     variant="destructive"
                     size="sm"
                     className="w-full"

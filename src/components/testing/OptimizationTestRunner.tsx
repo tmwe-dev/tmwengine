@@ -410,12 +410,12 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="grid grid-cols-1 gap-3">
         <Button
           onClick={runOptimizationTests}
           disabled={isRunning}
           size="lg"
-          className="gap-2"
+          className="gap-2 w-full"
         >
           {isRunning ? (
             <>
@@ -425,13 +425,13 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
           ) : (
             <>
               <Play className="h-5 w-5" />
-              Run Optimization Tests
+              🧪 Run Complete A/B Test ({testConfigurations.length} varianti)
             </>
           )}
         </Button>
-        <div className="text-sm text-muted-foreground">
-          {testConfigurations.length} configurazioni da testare
-        </div>
+        <p className="text-xs text-muted-foreground text-center">
+          Testa tutte le configurazioni e salva i risultati nel database
+        </p>
       </div>
 
       {isRunning && (

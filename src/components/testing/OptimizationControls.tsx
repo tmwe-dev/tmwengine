@@ -2,6 +2,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Zap, FileText, GitBranch, Clock, Timer } from 'lucide-react';
 
 export interface OptimizationFlags {
@@ -24,15 +25,26 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
     onFlagsChange({ ...flags, [key]: value });
   };
 
+  // Calcola impatto performance stimato
+  const calculateImpact = () => {
+    let impact = 0;
+    if (!flags.enableLogging) impact += 15; // -100-150ms su ~1000ms baseline = ~15%
+    if (!flags.useDoubleSerializat) impact += 5; // -20-50ms
+    if (!flags.useSequentialExecution) impact += 35; // -30-40% su batch
+    if (!flags.useTextResponse) impact += 3; // -15-30ms
+    if (flags.useBatchParallelization) impact += 10; // -30-50% su batch grandi
+    return Math.min(impact, 70); // Cap al 70%
+  };
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-primary" />
-          Optimization A/B Testing Controls
+          ⚙️ Optimization Lab - Flag Controls
         </CardTitle>
         <CardDescription>
-          Toggle ottimizzazioni individuali per vedere l'impatto sulle performance
+          Configurazione ottimale già impostata ✅ - Modifica per testare varianti
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -40,10 +52,17 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
         <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border">
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <Label htmlFor="logging" className="text-sm font-semibold">
-                🪵 Edge Function Logging
-              </Label>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="logging" className="text-sm font-semibold">
+                  🪵 Edge Function Logging
+                </Label>
+                {!flags.enableLogging && (
+                  <Badge variant="default" className="bg-green-500 text-white">
+                    ✅ FASTEST (-100-150ms)
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 ON: Full logging (+100-150ms) | OFF: Errors only
               </p>
@@ -80,10 +99,17 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
         <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border">
           <div className="flex items-center gap-3">
             <GitBranch className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <Label htmlFor="execution" className="text-sm font-semibold">
-                ⚡ Sequential Execution
-              </Label>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="execution" className="text-sm font-semibold">
+                  ⚡ Sequential Execution
+                </Label>
+                {!flags.useSequentialExecution && (
+                  <Badge variant="default" className="bg-green-500 text-white">
+                    ✅ FASTEST (-30-40%)
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 ON: Sequential await | OFF: Promise.all() parallel (-30-40%)
               </p>
@@ -185,18 +211,25 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
           />
         </div>
 
-        {/* Impact Summary */}
-        <div className="p-4 rounded-lg bg-primary/10 border-primary/30 border">
-          <p className="text-xs font-semibold mb-2">📊 Impatto Stimato Totale:</p>
-          <p className="text-sm text-muted-foreground">
-            {flags.enableLogging && '🪵 +100ms '}
-            {flags.useDoubleSerializat && '📦 +50ms '}
-            {flags.useTextResponse && '⏱️ +30ms '}
-            {!flags.useSequentialExecution && '⚡ -30% '}
-            {flags.useBatchParallelization && '🧩 Chunking '}
-            {!flags.enableLogging && !flags.useDoubleSerializat && !flags.useTextResponse && '✅ Fully Optimized'}
-          </p>
-        </div>
+        {/* Live Impact Calculator */}
+        <Card className={`${calculateImpact() > 50 ? 'bg-green-500/10 border-green-500/20' : 'bg-yellow-500/10 border-yellow-500/20'}`}>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-2">📊 Impatto Performance Stimato</p>
+              <p className={`text-4xl font-bold ${calculateImpact() > 50 ? 'text-green-500' : 'text-yellow-500'}`}>
+                -{calculateImpact()}%
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                rispetto alla baseline (tutti flag ON)
+              </p>
+              <div className="mt-3 text-xs space-y-1">
+                {!flags.enableLogging && <p className="text-green-600">✅ Logging disabled: -15%</p>}
+                {!flags.useSequentialExecution && <p className="text-green-600">✅ Parallel execution: -35%</p>}
+                {flags.useBatchParallelization && <p className="text-green-600">✅ Batch chunking: -10%</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );

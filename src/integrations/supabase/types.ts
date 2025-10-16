@@ -3523,6 +3523,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tmwe_api_benchmark_results: {
+        Row: {
+          avg_response_time_ms: number | null
+          browser_info: string | null
+          category: string
+          created_at: string | null
+          execution_timestamp: string
+          id: string
+          overall_success_rate: number | null
+          results: Json
+          total_duration_seconds: number | null
+          total_suites: number
+          total_tests: number
+          user_id: string | null
+        }
+        Insert: {
+          avg_response_time_ms?: number | null
+          browser_info?: string | null
+          category: string
+          created_at?: string | null
+          execution_timestamp?: string
+          id?: string
+          overall_success_rate?: number | null
+          results: Json
+          total_duration_seconds?: number | null
+          total_suites: number
+          total_tests: number
+          user_id?: string | null
+        }
+        Update: {
+          avg_response_time_ms?: number | null
+          browser_info?: string | null
+          category?: string
+          created_at?: string | null
+          execution_timestamp?: string
+          id?: string
+          overall_success_rate?: number | null
+          results?: Json
+          total_duration_seconds?: number | null
+          total_suites?: number
+          total_tests?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ui_component_backups: {
         Row: {
           animations: Json

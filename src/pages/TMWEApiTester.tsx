@@ -8,14 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, Download, FileSpreadsheet, StopCircle, AlertTriangle } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, Download, FileSpreadsheet, StopCircle, AlertTriangle, Eye, Database } from "lucide-react";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Configurazioni endpoint con handlers
 const API_ENDPOINTS = {
@@ -317,6 +319,21 @@ const TMWEApiTester = () => {
   const [benchmarkDelay, setBenchmarkDelay] = useState(500);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [benchmarkHistory, setBenchmarkHistory] = useState<any[]>([]);
+
+  // Carica storico da Supabase
+  const { data: historicalBenchmarks, refetch: refetchHistory } = useQuery({
+    queryKey: ['benchmark-history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tmwe_api_benchmark_results')
+        .select('*')
+        .order('execution_timestamp', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
   
   // Run All Benchmarks state
   const [allBenchmarkResults, setAllBenchmarkResults] = useState<AllBenchmarkResults[]>([]);
@@ -519,6 +536,7 @@ const TMWEApiTester = () => {
 
   const runAllBenchmarks = async () => {
     const suitesToRun = filteredSuites;
+    const executionStartTime = performance.now();
     setIsRunningAll(true);
     setShouldStopAllBenchmarks(false);
     setAllBenchmarkResults([]);
@@ -641,7 +659,16 @@ const TMWEApiTester = () => {
       }
 
       if (!shouldStopAllBenchmarks) {
-        // Save to history
+        const executionDuration = performance.now() - executionStartTime;
+        
+        // 1. Salva su Supabase
+        await saveBenchmarkResultsToSupabase(
+          allResults,
+          selectedCategory,
+          executionDuration
+        );
+        
+        // 2. Salva anche in localStorage come backup
         const newHistory = [...benchmarkHistory, {
           timestamp: Date.now(),
           category: selectedCategory,
@@ -658,6 +685,60 @@ const TMWEApiTester = () => {
     } finally {
       setIsRunningAll(false);
       setShouldStopAllBenchmarks(false);
+    }
+  };
+
+  const saveBenchmarkResultsToSupabase = async (
+    results: AllBenchmarkResults[],
+    category: string,
+    totalDurationMs: number
+  ) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn('Utente non autenticato, skip salvataggio Supabase');
+        return null;
+      }
+
+      // Calcola statistiche globali
+      const totalTests = results.reduce((sum, suite) => sum + suite.totalVariants, 0);
+      const avgResponseTime = Math.round(
+        results.reduce((sum, suite) => sum + suite.avgResponseTime, 0) / results.length
+      );
+      const overallSuccessRate = 
+        results.reduce((sum, suite) => sum + suite.successRate, 0) / results.length;
+
+      const { data, error } = await supabase
+        .from('tmwe_api_benchmark_results')
+        .insert({
+          category,
+          total_suites: results.length,
+          total_tests: totalTests,
+          results: results as any,
+          avg_response_time_ms: avgResponseTime,
+          overall_success_rate: overallSuccessRate,
+          total_duration_seconds: Math.round(totalDurationMs / 1000),
+          browser_info: navigator.userAgent
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "💾 Risultati salvati su Supabase",
+        description: `${totalTests} test salvati permanentemente (ID: ${data.id.slice(0, 8)})`,
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Errore salvataggio benchmark:', error);
+      toast({
+        title: "⚠️ Errore salvataggio",
+        description: "I risultati sono comunque visibili in questa sessione",
+        variant: "destructive"
+      });
+      return null;
     }
   };
 
@@ -1536,6 +1617,87 @@ const TMWEApiTester = () => {
                 return null;
               })()}
             </div>
+          )}
+
+          {/* Storico Benchmark da Supabase */}
+          {historicalBenchmarks && historicalBenchmarks.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  📊 Storico Benchmark (Ultimi 50)
+                </CardTitle>
+                <CardDescription>
+                  Risultati salvati permanentemente in database
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead>Suite</TableHead>
+                        <TableHead>Test</TableHead>
+                        <TableHead>Tempo Medio</TableHead>
+                        <TableHead>Success Rate</TableHead>
+                        <TableHead>Durata</TableHead>
+                        <TableHead>Azioni</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {historicalBenchmarks.map(benchmark => (
+                        <TableRow key={benchmark.id}>
+                          <TableCell className="text-sm">
+                            {new Date(benchmark.execution_timestamp).toLocaleString('it-IT', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{benchmark.category}</Badge>
+                          </TableCell>
+                          <TableCell>{benchmark.total_suites}</TableCell>
+                          <TableCell>{benchmark.total_tests}</TableCell>
+                          <TableCell>
+                            <span className="font-mono">
+                              {benchmark.avg_response_time_ms}ms
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={benchmark.overall_success_rate === 100 ? "default" : "destructive"}
+                            >
+                              {benchmark.overall_success_rate.toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{benchmark.total_duration_seconds}s</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setAllBenchmarkResults(benchmark.results as any as AllBenchmarkResults[]);
+                                toast({ 
+                                  title: "📂 Risultati caricati",
+                                  description: `${benchmark.total_tests} test caricati dallo storico`
+                                });
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

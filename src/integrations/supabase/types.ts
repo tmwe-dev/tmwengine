@@ -3815,7 +3815,7 @@ export type Database = {
           client_secret: string
           created_at: string | null
           email: string
-          expires_at: number | null
+          expires_at: string | null
           id: string
           refresh_token: string | null
           token_type: string | null
@@ -3827,7 +3827,7 @@ export type Database = {
           client_secret: string
           created_at?: string | null
           email: string
-          expires_at?: number | null
+          expires_at?: string | null
           id?: string
           refresh_token?: string | null
           token_type?: string | null
@@ -3839,7 +3839,7 @@ export type Database = {
           client_secret?: string
           created_at?: string | null
           email?: string
-          expires_at?: number | null
+          expires_at?: string | null
           id?: string
           refresh_token?: string | null
           token_type?: string | null

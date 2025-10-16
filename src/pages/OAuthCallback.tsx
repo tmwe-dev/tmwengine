@@ -52,27 +52,42 @@ const OAuthCallback = () => {
 
         console.log('✅ Edge function response:', data);
 
-        // ✅ CORRECCIÓN: Extraer tokens de Supabase del magic link
-        const { access_token, refresh_token, email, profile, tmwe_access_token } = data;
+        // ✅ CORRECCIÓN: Extraer token_hash del magic link
+        const { magicLink, email, profile, tmwe_access_token } = data;
 
-        if (!access_token || !refresh_token) {
-          throw new Error('Supabase tokens not received');
+        if (!magicLink) {
+          throw new Error('Magic link not received');
         }
 
-        console.log('🔑 Setting Supabase session...');
+        console.log('🔗 Magic link received:', magicLink);
 
-        // Establecer la sesión de Supabase
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
+        // Extraer token_hash del magic link
+        const magicLinkUrl = new URL(magicLink);
+        const token_hash = magicLinkUrl.hash.split('token_hash=')[1]?.split('&')[0];
+        const type = magicLinkUrl.hash.split('type=')[1]?.split('&')[0] || 'magiclink';
+
+        if (!token_hash) {
+          console.error('❌ Failed to extract token_hash from magic link');
+          console.error('   Magic link:', magicLink);
+          throw new Error('Failed to extract token_hash from magic link');
+        }
+
+        console.log('🔑 Extracted token_hash:', token_hash.substring(0, 20) + '...');
+        console.log('🔑 Type:', type);
+        console.log('🔑 Verifying OTP with Supabase...');
+
+        // ✅ Verificar el OTP con Supabase (como en el proyecto de Luca)
+        const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
+          token_hash,
+          type: type as any,
         });
 
         if (sessionError) {
-          console.error('❌ Session error:', sessionError);
+          console.error('❌ OTP verification error:', sessionError);
           throw sessionError;
         }
 
-        console.log('✅ Supabase session established');
+        console.log('✅ OTP verified, session established:', sessionData);
 
         // ✅ MEJORA OPCIONAL: Guardar TMWE access token en localStorage
         if (tmwe_access_token) {

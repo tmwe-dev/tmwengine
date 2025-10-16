@@ -282,8 +282,8 @@ serve(async (req) => {
 
     console.log('✅ TMWE OAuth credentials saved');
 
-    // 7. Generate Supabase session tokens using recovery link method
-    console.log('🔐 Generating Supabase session tokens...');
+    // 7. Generate Supabase magic link (según proyecto Luca)
+    console.log('🔐 Generating Supabase magic link...');
 
     // ✅ CORRECCIÓN CRÍTICA: Usar 'magiclink' en lugar de 'recovery' (según proyecto Luca)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -292,31 +292,19 @@ serve(async (req) => {
     });
 
     if (linkError || !linkData) {
-      console.error('❌ Error generating recovery link:', linkError);
+      console.error('❌ Error generating magic link:', linkError);
       console.error('   Stack:', linkError?.stack);
-      throw new Error(`Failed to generate recovery link: ${linkError?.message || 'No link generated'}`);
+      throw new Error(`Failed to generate magic link: ${linkError?.message || 'No link generated'}`);
     }
 
-    console.log('✅ Recovery link generated successfully');
-    console.log('   Action link URL:', linkData.properties.action_link);
+    console.log('✅ Magic link generated successfully');
+    console.log('   Properties:', linkData.properties);
 
-    // Extract tokens from the recovery link URL parameters
-    const actionUrl = new URL(linkData.properties.action_link);
-    const supabaseAccessToken = actionUrl.searchParams.get('access_token');
-    const supabaseRefreshToken = actionUrl.searchParams.get('refresh_token');
-
-    if (!supabaseAccessToken || !supabaseRefreshToken) {
-      console.error('❌ Failed to extract tokens from recovery link');
-      console.error('   Access token present:', !!supabaseAccessToken);
-      console.error('   Refresh token present:', !!supabaseRefreshToken);
-      throw new Error('Failed to extract Supabase tokens from recovery link');
-    }
-
-    console.log('✅ Tokens extracted successfully');
-    console.log('   Access token length:', supabaseAccessToken.length);
-    console.log('   Refresh token length:', supabaseRefreshToken.length);
-
-    console.log('✅ Supabase session tokens generated successfully');
+    // ✅ CORRECCIÓN: Con 'magiclink', el link tiene formato diferente
+    // Devolver el magic link completo al cliente para que lo procese
+    const magicLinkUrl = linkData.properties.action_link;
+    
+    console.log('✅ Magic link URL:', magicLinkUrl);
     console.log('✅ OAuth authentication flow completed successfully');
     
     const finalResponse = {
@@ -329,9 +317,8 @@ serve(async (req) => {
         rubrica: profileData.rubrica,
       },
       supabaseUserId: supabaseUser.id,
-      // ✅ Return Supabase session tokens for authentication
-      access_token: supabaseAccessToken,
-      refresh_token: supabaseRefreshToken,
+      // ✅ Return magic link URL for client-side verification
+      magicLink: magicLinkUrl,
       // Include TMWE OAuth info for reference
       tmwe_user_id: user_id, // email
       tmwe_anagrafica_id: anagrafica_id,
@@ -339,7 +326,15 @@ serve(async (req) => {
       token_format: 'oauth',
     };
     
-    console.log('📤 Returning final response:', JSON.stringify(finalResponse, null, 2));
+    console.log('📤 Returning final response with magic link');
+
+    return new Response(
+      JSON.stringify(finalResponse),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
 
     return new Response(
       JSON.stringify(finalResponse),

@@ -12,6 +12,7 @@ import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, 
 import { OptimizationControls, OptimizationFlags } from "@/components/testing/OptimizationControls";
 import { OptimizationTestResults } from "@/components/testing/OptimizationTestResults";
 import { OptimizationTestRunner } from "@/components/testing/OptimizationTestRunner";
+import { EmailImportTester } from "@/components/testing/EmailImportTester";
 import { OptimizationDashboard } from "@/components/testing/OptimizationDashboard";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
@@ -1067,7 +1068,7 @@ const TMWEApiTester = () => {
       </Alert>
 
       <Tabs defaultValue="standard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="standard">
               <Settings2 className="mr-2 h-4 w-4" />
               🧪 Quick Test
@@ -1083,6 +1084,9 @@ const TMWEApiTester = () => {
             <TabsTrigger value="dashboard">
               <BarChart3 className="mr-2 h-4 w-4" />
               📈 Dashboard & Export
+            </TabsTrigger>
+            <TabsTrigger value="email-import">
+              📧 Email Import Test
             </TabsTrigger>
           </TabsList>
 
@@ -2049,6 +2053,11 @@ const TMWEApiTester = () => {
         {/* 📊 DASHBOARD TAB */}
         <TabsContent value="dashboard" className="space-y-6">
           <OptimizationDashboard />
+        </TabsContent>
+
+        {/* 📧 EMAIL IMPORT TEST TAB */}
+        <TabsContent value="email-import" className="space-y-6">
+          <EmailImportTester />
         </TabsContent>
       </Tabs>
     </div>

@@ -409,8 +409,8 @@ const fetchApi = async (endpoint: string, data: any) => {
       body: { 
         endpoint, 
         data,
-        bearerToken,
-        optimizationFlags: OPTIMAL_CONFIG
+        bearerToken
+        // ✅ IDENTICO AL TESTER - senza optimizationFlags
       },
     });
 

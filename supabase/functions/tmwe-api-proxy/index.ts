@@ -368,15 +368,15 @@ serve(async (req) => {
         console.log('═══════════════════════════════════════════════════════');
       }
     } else {
-      // Ottimizzazione: usa .json() diretto
-      const responseJson = await tmweResponse.json();
-      responseData = JSON.stringify(responseJson);
+      // ✅ IDENTICO AL TESTER - restituisce oggetto JSON diretto, non stringify
+      responseData = await tmweResponse.json();
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');
         console.log('📥 RISPOSTA TMWE API (JSON direct)');
         console.log('═══════════════════════════════════════════════════════');
         console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
+        console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
         console.log('═══════════════════════════════════════════════════════');
       }
     }

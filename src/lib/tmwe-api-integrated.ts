@@ -387,6 +387,14 @@ const OPTIMAL_CONFIG = {
 const fetchApi = async (endpoint: string, data: any) => {
   await ensureValidToken();
 
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📤 CHIAMATA API TMWE (via Edge Function Proxy)');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('⏰ Timestamp:', new Date().toISOString());
+  console.log('📍 Endpoint:', endpoint);
+  console.log('🎯 Handler:', data.handler);
+  console.log('═══════════════════════════════════════════════════════');
+
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: { 

@@ -160,20 +160,24 @@ serve(async (req) => {
     const myProfileData = await myProfileResponse.json();
     console.log('✅ My profile obtained:', JSON.stringify(myProfileData, null, 2));
     
-    const user_id = myProfileData.user_id || myProfileData.id;
+    // Use username as the user identifier since get_my_profile doesn't return user_id
+    const username = myProfileData.username;
+    const user_id = username; // We'll use username as user_id
     const anagrafica_id = myProfileData.anagrafica_id;
     
-    if (!user_id) {
-      console.error('❌ user_id not found in profile response');
-      throw new Error('user_id not found in profile');
+    if (!username) {
+      console.error('❌ username not found in profile response');
+      throw new Error('username not found in profile');
     }
 
-    // 3. Get detailed user profile from contatti endpoint
+    console.log('✅ Using username as user_id:', username);
+
+    // 3. Get detailed user profile from contatti endpoint using username
     console.log('👤 Fetching detailed profile from TMWE contatti API...');
     const contattiEndpoint = 'https://findair.it/erp/tmwe_json/contatti';
     const profileRequestBody = {
       handler: 'get',
-      id: user_id,
+      username: username, // Use username instead of id
     };
     
     console.log('🌐 API Call Details:');

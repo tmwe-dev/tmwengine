@@ -141,7 +141,13 @@ export const initiateAuthorizationCodeFlow = (): void => {
   console.log('  - redirect_uri debe contener %3A y %2F:', authUrl.includes('%3A') && authUrl.includes('%2F'));
   console.log('═══════════════════════════════════════════════════════');
   
-  window.location.href = authUrl;
+  // CRITICAL FIX: Use window.top.location.href to avoid X-Frame-Options issues
+  // This ensures the redirect happens in the top-level window, not in an iframe
+  if (window.top) {
+    window.top.location.href = authUrl;
+  } else {
+    window.location.href = authUrl;
+  }
 };
 
 // ============================================================================

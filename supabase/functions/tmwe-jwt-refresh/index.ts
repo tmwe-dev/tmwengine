@@ -62,25 +62,44 @@ serve(async (req) => {
     console.log('🔑 Refreshing JWT token with TMWE API...');
 
     // 2. Refresh JWT token using refresh_token_jwt grant type
-    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
+    const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
+    const formData = new URLSearchParams({
+      grant_type: 'refresh_token_jwt',
+      refresh_token: credentials.refresh_token,
+    });
+    
+    console.log('🌐 API Call Details:');
+    console.log('  📍 Endpoint:', tokenEndpoint);
+    console.log('  📋 Method: POST');
+    console.log('  📦 Content-Type: application/x-www-form-urlencoded');
+    console.log('  📝 Parameters:', {
+      grant_type: 'refresh_token_jwt',
+      refresh_token_length: credentials.refresh_token.length
+    });
+    
+    const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token_jwt',
-        refresh_token: credentials.refresh_token,
-      }),
+      body: formData.toString(),
     });
 
+    console.log('📥 API Response:');
+    console.log('  📊 Status Code:', tokenResponse.status);
+    console.log('  📊 Status Text:', tokenResponse.statusText);
+    
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error('❌ JWT refresh failed:', errorData);
+      console.error('❌ JWT refresh failed - Response:', errorData);
       throw new Error(`JWT refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ New JWT tokens obtained');
+    console.log('✅ New JWT tokens obtained:', {
+      has_access_token: !!tokenData.access_token,
+      expires_in: tokenData.expires_in
+    });
 
     const { access_token, expires_in } = tokenData;
 

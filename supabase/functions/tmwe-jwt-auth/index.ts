@@ -21,6 +21,7 @@ serve(async (req) => {
     console.log('🔐 Iniciando OAuth + JWT authentication flow...');
     console.log('📍 Request URL:', req.url);
     console.log('📍 Request method:', req.method);
+    console.log('📍 Timestamp:', new Date().toISOString());
     
     const requestBody = await req.json();
     console.log('📦 Request body received:', JSON.stringify(requestBody, null, 2));
@@ -53,6 +54,7 @@ serve(async (req) => {
     
     // 1. Exchange authorization code for JWT tokens using /token endpoint
     // Using application/x-www-form-urlencoded as per OAuth2 standard
+    const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
     const formData = new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
@@ -61,9 +63,18 @@ serve(async (req) => {
       redirect_uri: redirectUri,
     });
     
-    console.log('📤 Token request (form-urlencoded):', formData.toString());
+    console.log('🌐 API Call Details:');
+    console.log('  📍 Endpoint:', tokenEndpoint);
+    console.log('  📋 Method: POST');
+    console.log('  📦 Content-Type: application/x-www-form-urlencoded');
+    console.log('  📝 Parameters:', {
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      code_length: code.length
+    });
 
-    const tokenResponse = await fetch('https://findair.it/erp/tmwe_json/token', {
+    const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -71,8 +82,10 @@ serve(async (req) => {
       body: formData.toString(),
     });
 
-    console.log('📥 Token response status:', tokenResponse.status);
-    console.log('📥 Token response headers:', JSON.stringify(Object.fromEntries(tokenResponse.headers.entries()), null, 2));
+    console.log('📥 API Response:');
+    console.log('  📊 Status Code:', tokenResponse.status);
+    console.log('  📊 Status Text:', tokenResponse.statusText);
+    console.log('  📋 Response Headers:', JSON.stringify(Object.fromEntries(tokenResponse.headers.entries()), null, 2));
     
     const responseText = await tokenResponse.text();
     console.log('📥 Token response body (raw):', responseText);
@@ -153,21 +166,35 @@ serve(async (req) => {
 
     // 3. Get user profile from contatti endpoint
     console.log('👤 Fetching detailed profile from TMWE contatti API...');
-    const profileResponse = await fetch('https://findair.it/erp/tmwe_json/contatti', {
+    const contattiEndpoint = 'https://findair.it/erp/tmwe_json/contatti';
+    const profileRequestBody = {
+      handler: 'get',
+      id: user_id,
+    };
+    
+    console.log('🌐 API Call Details:');
+    console.log('  📍 Endpoint:', contattiEndpoint);
+    console.log('  📋 Method: POST');
+    console.log('  📦 Content-Type: application/json');
+    console.log('  🔑 Authorization: Bearer [JWT token]');
+    console.log('  📝 Body:', JSON.stringify(profileRequestBody, null, 2));
+    
+    const profileResponse = await fetch(contattiEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        handler: 'get',
-        id: user_id,
-      }),
+      body: JSON.stringify(profileRequestBody),
     });
 
+    console.log('📥 API Response:');
+    console.log('  📊 Status Code:', profileResponse.status);
+    console.log('  📊 Status Text:', profileResponse.statusText);
+    
     if (!profileResponse.ok) {
       const errorText = await profileResponse.text();
-      console.error('❌ Profile fetch failed:', errorText);
+      console.error('❌ Profile fetch failed - Response body:', errorText);
       throw new Error(`Failed to fetch profile: ${profileResponse.statusText}`);
     }
 

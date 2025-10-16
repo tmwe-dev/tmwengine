@@ -309,40 +309,23 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   if (!userEmail) return false;
 
   try {
-    const formData = new URLSearchParams();
-    formData.append('grant_type', 'refresh_token');
-    formData.append('client_id', config.clientId);
-    formData.append('refresh_token', config.refreshToken);
-
-    const response = await fetch('https://findair.it/erp/tmwe_json/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
+    console.log('🔄 Refreshing JWT token via Supabase Edge Function...');
+    
+    // Llamar a la edge function para refresh (servidor maneja todo el flujo JWT)
+    const { data, error } = await supabase.functions.invoke('tmwe-jwt-refresh', {
+      body: { email: userEmail }
     });
 
-    if (!response.ok) {
+    if (error || !data?.success) {
+      console.error('❌ Token refresh failed:', error || data?.error);
       await clearApiConfigFromDB();
       return false;
     }
 
-    const data = await response.json();
-    const expiresAt = Date.now() + (data.expires_in * 1000);
-    
-    await setApiConfigToDB({
-      email: userEmail,
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token || config.refreshToken,
-      expiresAt,
-      clientId: config.clientId,
-      clientSecret: config.clientSecret || OAUTH_CLIENT_SECRET,
-      authType: 'oauth2',
-    });
-
+    console.log('✅ Token refreshed successfully via edge function');
     return true;
   } catch (error) {
-    console.error('Token refresh error:', error);
+    console.error('Error refreshing TMWE token:', error);
     await clearApiConfigFromDB();
     return false;
   }

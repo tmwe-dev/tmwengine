@@ -61,12 +61,7 @@ export function EmailImportTester() {
     }
   }, []);
 
-  // Recupera lista cartelle all'avvio
-  useEffect(() => {
-    if (accessToken) {
-      loadFolders();
-    }
-  }, [accessToken]);
+  // Caricamento cartelle rimosso - ora viene fatto solo quando il Select viene aperto
 
   const loadFolders = async () => {
     setLoadingFolders(true);
@@ -265,13 +260,24 @@ export function EmailImportTester() {
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>📁 Cartella</Label>
-              <Select value={selectedFolder} onValueChange={setSelectedFolder} disabled={isRunning}>
+              <Select 
+                value={selectedFolder} 
+                onValueChange={setSelectedFolder} 
+                disabled={isRunning}
+                onOpenChange={(open) => {
+                  if (open && folders.length === 0 && accessToken && !loadingFolders) {
+                    loadFolders();
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {loadingFolders ? (
                     <SelectItem value="loading" disabled>Caricamento...</SelectItem>
+                  ) : folders.length === 0 ? (
+                    <SelectItem value="INBOX">INBOX</SelectItem>
                   ) : (
                     folders.map(folder => (
                       <SelectItem key={folder.folder_name} value={folder.folder_name}>

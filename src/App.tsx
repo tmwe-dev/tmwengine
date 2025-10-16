@@ -53,29 +53,72 @@ const queryClient = new QueryClient();
 // Blocca navigazione trackpad a livello browser
 const usePreventTrackpadNavigation = () => {
   useEffect(() => {
+    // 🔒 BLOCCO 1: Eventi wheel (trackpad swipe)
     const preventNavigation = (e: WheelEvent) => {
-      // Rileva swipe orizzontale (trackpad o mouse wheel)
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      // Blocca QUALSIASI movimento orizzontale (anche minimo)
+      if (e.deltaX !== 0) {
         e.preventDefault();
+        e.stopPropagation();
+        console.log('🚫 Wheel navigation blocked:', e.deltaX);
       }
     };
 
+    // 🔒 BLOCCO 2: Eventi touch (gesti multi-touch)
     const preventTouchNavigation = (e: TouchEvent) => {
-      // Se ci sono 2+ tocchi (gesto trackpad), blocca
       if (e.touches.length >= 2) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 
-    // Attach listeners con {passive: false} per permettere preventDefault
-    window.addEventListener('wheel', preventNavigation, { passive: false });
-    window.addEventListener('touchmove', preventTouchNavigation, { passive: false });
+    // 🔒 BLOCCO 3: Eventi gesti (Safari specifico)
+    const preventGesture = (e: Event) => {
+      e.preventDefault();
+      console.log('🚫 Gesture navigation blocked');
+    };
 
-    console.log('✅ Navigazione trackpad disabilitata globalmente');
+    // 🔒 BLOCCO 4: Popstate (back/forward browser)
+    const preventPopState = (e: PopStateEvent) => {
+      console.log('⚠️ PopState intercepted, preventing...');
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // Attach ALL listeners con {passive: false} e capture: true
+    window.addEventListener('wheel', preventNavigation, { passive: false, capture: true });
+    window.addEventListener('touchmove', preventTouchNavigation, { passive: false, capture: true });
+    window.addEventListener('touchstart', preventTouchNavigation, { passive: false, capture: true });
+    
+    // Safari gesture events
+    window.addEventListener('gesturestart', preventGesture, { passive: false, capture: true });
+    window.addEventListener('gesturechange', preventGesture, { passive: false, capture: true });
+    window.addEventListener('gestureend', preventGesture, { passive: false, capture: true });
+    
+    // Browser navigation
+    window.addEventListener('popstate', preventPopState);
+
+    // Override browser navigation
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    
+    window.history.pushState = function(...args) {
+      console.log('📍 History push intercepted');
+      return originalPushState.apply(window.history, args);
+    };
+
+    console.log('✅ 🔐 NAVIGAZIONE TRACKPAD COMPLETAMENTE BLOCCATA 🔐');
 
     return () => {
       window.removeEventListener('wheel', preventNavigation);
       window.removeEventListener('touchmove', preventTouchNavigation);
+      window.removeEventListener('touchstart', preventTouchNavigation);
+      window.removeEventListener('gesturestart', preventGesture);
+      window.removeEventListener('gesturechange', preventGesture);
+      window.removeEventListener('gestureend', preventGesture);
+      window.removeEventListener('popstate', preventPopState);
+      
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+      
       console.log('🔴 Listener navigazione trackpad rimossi');
     };
   }, []);

@@ -443,6 +443,24 @@ Tutti i colori DEVONO essere HSL.
     overflow-x: hidden;
   }
 
+  /* === BLOCCO WEBKIT SPECIFICO (Safari/Chrome) === */
+  html, body {
+    -webkit-overflow-scrolling: touch;
+    -webkit-overscroll-behavior-x: none;
+  }
+
+  /* Blocca swipe-to-navigate su Safari */
+  body {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Forza blocco su tutti gli elementi scrollabili */
+  * {
+    -webkit-overscroll-behavior-x: none;
+  }
+
   /* === TIPOGRAFIA GLOBALE === */
   h1 {
     @apply text-3xl font-bold tracking-tight;

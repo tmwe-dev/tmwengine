@@ -114,7 +114,7 @@ const EmailDashboard = () => {
       const result = await emailMessageApi.getMessages({ 
         folder: selectedFolder, 
         limit: 1, 
-        page: 1 
+        offset: 0  // ✅ Usa offset invece di page
       });
       return result?.total || 0;
     },
@@ -124,7 +124,7 @@ const EmailDashboard = () => {
   const { data: folderInfo } = useQuery({
     queryKey: ['folder-info', selectedFolder],
     queryFn: async () => {
-      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, page: 1 });
+      const result = await emailMessageApi.getMessages({ folder: selectedFolder, limit: 1, offset: 0 });
       return result;
     },
   });
@@ -161,7 +161,7 @@ const EmailDashboard = () => {
       const apiResponse = await emailMessageApi.getMessages({ 
         folder: selectedFolder, 
         limit: 1, 
-        page: 1 
+        offset: 0  // ✅ Usa offset invece di page
       });
       const apiTotal = apiResponse?.total || 0;
 
@@ -206,10 +206,9 @@ const EmailDashboard = () => {
     queryKey: ['messages', selectedFolder, searchQuery],
     queryFn: async ({ pageParam = 0 }) => {
       // USA SEMPRE L'API TMWE (Supabase solo per backup)
-      const page = Math.floor(pageParam / 30) + 1;
       return searchQuery 
         ? emailMessageApi.searchMessages({ query: searchQuery, folder: selectedFolder })
-        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, page });
+        : emailMessageApi.getMessages({ folder: selectedFolder, limit: 30, offset: pageParam });  // ✅ Usa offset
     },
     getNextPageParam: (lastPage, allPages) => {
       const messages = lastPage?.messages || [];

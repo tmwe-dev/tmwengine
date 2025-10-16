@@ -168,11 +168,12 @@ export const useEmailDownload = () => {
           // Scarica batch per batch
           for (let page = 1; page <= totalPages; page++) {
             try {
-              // Step 1: Ottieni lista UIDs
+              // Step 1: Ottieni lista UIDs (✅ usa offset invece di page)
+              const offset = (page - 1) * batchSize;
               const uidListResponse = await emailMessageApi.getMessages({
                 folder: folderName,
                 limit: batchSize,
-                page,
+                offset,
               });
 
               const uidList = uidListResponse?.messages || [];

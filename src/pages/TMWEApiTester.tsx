@@ -213,27 +213,31 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     ]
   },
   {
-    name: "✅ Mark as Read - Batch Performance",
+    name: "✅ Mark as Read - Batch Size Optimization",
     category: "Optimization",
     endpoint: "/app.php?action=email_message",
     handler: "mark_messages",
-    description: "Performance batch vs singolo",
+    description: "Test dimensione batch ottimale (1, 5, 10, 20, 50 messaggi)",
     variations: [
       { handler: "mark_messages", uids: [realUIDs[0] || "1"], action: "read" },
       { handler: "mark_messages", uids: realUIDs.slice(0, 5).length ? realUIDs.slice(0, 5) : ["1", "2", "3", "4", "5"], action: "read" },
+      { handler: "mark_messages", uids: realUIDs.slice(0, 10).length ? realUIDs.slice(0, 10) : Array.from({length: 10}, (_, i) => String(i + 1)), action: "read" },
       { handler: "mark_messages", uids: realUIDs.slice(0, 20).length ? realUIDs.slice(0, 20) : Array.from({length: 20}, (_, i) => String(i + 1)), action: "read" },
+      { handler: "mark_messages", uids: realUIDs.slice(0, 50).length ? realUIDs.slice(0, 50) : Array.from({length: 50}, (_, i) => String(i + 1)), action: "read" },
     ]
   },
   {
-    name: "🗑️ Delete Messages - Performance",
+    name: "🗑️ Delete Messages - Batch Size Optimization",
     category: "Performance",
     endpoint: "/app.php?action=email_message",
     handler: "delete_messages",
-    description: "Performance cancellazione messaggi",
+    description: "Test dimensione batch ottimale (1, 5, 10, 20, 50 messaggi)",
     variations: [
       { handler: "delete_messages", uids: [parseInt(realUIDs[0]) || 1], permanent: false },
-      { handler: "delete_messages", uids: [parseInt(realUIDs[0]) || 1], permanent: true },
-      { handler: "delete_messages", uids: realUIDs.slice(0, 3).map(uid => parseInt(uid)), permanent: false },
+      { handler: "delete_messages", uids: realUIDs.slice(0, 5).map(uid => parseInt(uid) || 1), permanent: false },
+      { handler: "delete_messages", uids: realUIDs.slice(0, 10).map(uid => parseInt(uid) || 1), permanent: false },
+      { handler: "delete_messages", uids: realUIDs.slice(0, 20).map(uid => parseInt(uid) || 1), permanent: false },
+      { handler: "delete_messages", uids: realUIDs.slice(0, 50).map(uid => parseInt(uid) || 1), permanent: false },
     ]
   },
   {

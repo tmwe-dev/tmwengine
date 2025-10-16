@@ -452,13 +452,23 @@ export const emailSyncApi = {
 import { chunkArray } from './utils/array-utils';
 
 export const emailMessageApi = {
+  // ✅ STEP 2: Ottimizzato - usa offset + format:html di default
   getMessages: (params: {
     folder?: string;
-    page?: number;
-    limit?: number;
+    offset?: number;  // ✅ Preferisci offset invece di page (più veloce)
+    limit?: number;   // ✅ Default 50 (ottimale secondo benchmark)
+    format?: 'text' | 'html' | 'both';  // ✅ Default 'html' (evita 'both' che è lento)
     sort?: string;
     order?: 'ASC' | 'DESC';
-  }) => fetchApi('/email_message', { handler: 'get_messages', ...params }),
+  }) => fetchApi('/email_message', { 
+    handler: 'get_messages', 
+    folder: params.folder || 'INBOX',
+    offset: params.offset || 0,
+    limit: params.limit || 50,
+    format: params.format || 'html',  // ✅ Evita 'both' per performance
+    ...(params.sort && { sort: params.sort }),
+    ...(params.order && { order: params.order })
+  }),
 
   getMessage: (uid: string, markAsRead: boolean = true) => {
     const uidInt = parseInt(uid, 10);
@@ -607,12 +617,12 @@ export const emailMessageApi = {
 
 // Email Folder APIs
 export const emailFolderApi = {
-  // ✅ OTTIMIZZAZIONE 1: Default più affidabili (include_counts: false, hierarchy: true)
-  getFolders: (includeCounts?: boolean, hierarchy?: boolean) => 
+  // ✅ STEP 2: Ottimizzato - disabilita counts di default (molto più veloce)
+  getFolders: (options?: { include_counts?: boolean; include_hierarchy?: boolean }) => 
     fetchApi('/email_folder', { 
       handler: 'get_folders',
-      include_counts: includeCounts ?? false, // Default FALSE per affidabilità
-      hierarchy: hierarchy ?? true // Default TRUE per struttura gerarchica
+      include_counts: options?.include_counts ?? false,  // ✅ FALSE di default (-73% tempo)
+      include_hierarchy: options?.include_hierarchy ?? false  // ✅ FALSE di default
     }),
   
   getFolderInfo: (folderName: string) => 

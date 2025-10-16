@@ -3818,6 +3818,7 @@ export type Database = {
           expires_at: number | null
           id: string
           refresh_token: string | null
+          token_type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3829,6 +3830,7 @@ export type Database = {
           expires_at?: number | null
           id?: string
           refresh_token?: string | null
+          token_type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3840,6 +3842,7 @@ export type Database = {
           expires_at?: number | null
           id?: string
           refresh_token?: string | null
+          token_type?: string | null
           updated_at?: string | null
         }
         Relationships: []

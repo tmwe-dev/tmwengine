@@ -257,3 +257,9 @@ verify_jwt = true
 [functions.summarize-user-message]
 verify_jwt = true
 
+[functions.tmwe-jwt-auth]
+verify_jwt = false
+
+[functions.tmwe-jwt-refresh]
+verify_jwt = true
+

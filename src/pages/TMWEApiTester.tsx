@@ -266,16 +266,16 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     ]
   },
   {
-    name: "📊 Get Folders - Optimization Critical",
+    name: "📊 Get Folders - Performance Optimization Test",
     category: "Critical",
     endpoint: "/app.php?action=email_folder",
     handler: "get_folders",
-    description: "🚨 ANALISI CRITICA: quale combinazione funziona?",
+    description: "🎯 STEP 4: Test configurazione ottimale (counts/hierarchy impact)",
     variations: [
-      { handler: "get_folders", include_counts: false, hierarchy: false },
-      { handler: "get_folders", include_counts: false, hierarchy: true },
-      { handler: "get_folders", include_counts: true, hierarchy: false },
-      { handler: "get_folders", include_counts: true, hierarchy: true },
+      { handler: "get_folders", include_counts: false, include_hierarchy: false },  // ⚡ Più veloce
+      { handler: "get_folders", include_counts: false, include_hierarchy: true },   // 🏗️ Struttura
+      { handler: "get_folders", include_counts: true, include_hierarchy: false },   // 📊 Conteggi
+      { handler: "get_folders", include_counts: true, include_hierarchy: true },    // 🐌 Più lento
     ]
   },
   

@@ -616,34 +616,62 @@ export const emailMessageApi = {
 };
 
 // Email Folder APIs
+import { folderCache } from './cache/folder-cache';
+
 export const emailFolderApi = {
-  // ✅ STEP 2: Ottimizzato - disabilita counts di default (molto più veloce)
-  getFolders: (options?: { include_counts?: boolean; include_hierarchy?: boolean }) => 
-    fetchApi('/email_folder', { 
-      handler: 'get_folders',
+  // ✅ STEP 4: Ottimizzato con cache locale (risparmio ~10s per hit)
+  getFolders: async (options?: { include_counts?: boolean; include_hierarchy?: boolean; skipCache?: boolean }) => {
+    const config = {
       include_counts: options?.include_counts ?? false,  // ✅ FALSE di default (-73% tempo)
       include_hierarchy: options?.include_hierarchy ?? false  // ✅ FALSE di default
-    }),
+    };
+    
+    // ✅ Controlla cache prima
+    if (!options?.skipCache) {
+      const cached = folderCache.get(config);
+      if (cached) return cached;
+    }
+    
+    // ✅ Chiamata API
+    const result = await fetchApi('/email_folder', { 
+      handler: 'get_folders',
+      ...config
+    });
+    
+    // ✅ Salva in cache
+    folderCache.set(result, config);
+    
+    return result;
+  },
   
   getFolderInfo: (folderName: string) => 
     fetchApi('/email_folder', { handler: 'get_folder_info', folder_name: folderName }),
 
-  createFolder: (folderName: string, parentFolder?: string) => 
-    fetchApi('/email_folder', { 
+  createFolder: async (folderName: string, parentFolder?: string) => {
+    const result = await fetchApi('/email_folder', { 
       handler: 'create_folder', 
       folder_name: folderName,
       parent_folder: parentFolder 
-    }),
+    });
+    folderCache.invalidate();  // ✅ Invalida cache dopo modifica
+    return result;
+  },
 
-  deleteFolder: (folderName: string) => 
-    fetchApi('/email_folder', { handler: 'delete_folder', folder_name: folderName }),
+  deleteFolder: async (folderName: string) => {
+    const result = await fetchApi('/email_folder', { handler: 'delete_folder', folder_name: folderName });
+    folderCache.invalidate();  // ✅ Invalida cache dopo eliminazione
+    return result;
+  },
 
-  renameFolder: (oldName: string, newName: string) => 
-    fetchApi('/email_folder', { 
+  renameFolder: async (oldName: string, newName: string) => {
+    const result = await fetchApi('/email_folder', { 
       handler: 'rename_folder', 
       old_name: oldName, 
       new_name: newName 
-    }),
+    });
+    folderCache.invalidate();  // ✅ Invalida cache dopo rinomina
+    return result;
+  },
 };
 
 // Profile API

@@ -239,15 +239,49 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
       onResultsUpdate(results);
       
       // 🔥 AUTO-SAVE AL DATABASE
-      console.log('💾 Salvataggio automatico risultati:', {
-        totalTests: results.length,
-        avgTime: results.reduce((sum, r) => sum + r.responseTime, 0) / results.length,
-        results: results.map(r => ({
-          name: r.configName,
-          time: r.responseTime,
-          flags: r.flags
-        }))
-      });
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const baselineTime = results.find(r => r.isBaseline)?.responseTime || 0;
+        
+        if (user) {
+          const { error: dbError } = await supabase.from('tmwe_api_benchmark_results').insert([{
+            user_id: user.id,
+            category: 'optimization_ab_test',
+            total_suites: 1,
+            total_tests: results.length,
+            results: JSON.parse(JSON.stringify(results.map(r => ({
+              variant_name: r.configName,
+              response_time_ms: r.responseTime,
+              success: true,
+              optimization_flags: {
+                enableLogging: r.flags.enableLogging,
+                useDoubleSerializat: r.flags.useDoubleSerializat,
+                useSequentialExecution: r.flags.useSequentialExecution,
+                useTextResponse: r.flags.useTextResponse,
+                benchmarkDelay: r.flags.benchmarkDelay
+              },
+              improvement_percentage: baselineTime && !r.isBaseline
+                ? parseFloat(((baselineTime - r.responseTime) / baselineTime * 100).toFixed(2))
+                : 0
+            })))),
+            avg_response_time_ms: results.reduce((sum, r) => sum + r.responseTime, 0) / results.length,
+            overall_success_rate: 100
+          }]);
+          
+          if (dbError) {
+            console.error('❌ Errore salvataggio DB:', dbError);
+            toast({
+              title: "Errore salvataggio",
+              description: "Impossibile salvare i risultati al database",
+              variant: "destructive"
+            });
+          } else {
+            console.log('✅ Risultati salvati al database');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Errore salvataggio DB:', error);
+      }
       
       toast({
         title: "Test Completati e Salvati",

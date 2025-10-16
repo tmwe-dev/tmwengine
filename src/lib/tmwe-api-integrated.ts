@@ -141,23 +141,9 @@ export const initiateAuthorizationCodeFlow = (): void => {
   console.log('  - redirect_uri debe contener %3A y %2F:', authUrl.includes('%3A') && authUrl.includes('%2F'));
   console.log('═══════════════════════════════════════════════════════');
   
-  // CRITICAL FIX: Safe redirect that works in both iframe and normal windows
-  try {
-    // Detect if we're in an iframe
-    if (window.self !== window.top) {
-      // If in iframe, open in new window to avoid security errors
-      console.log('🪟 Detected iframe, opening in new window');
-      window.open(authUrl, '_blank');
-    } else {
-      // If not in iframe, redirect normally
-      console.log('↗️ Redirecting in current window');
-      window.location.assign(authUrl);
-    }
-  } catch (e) {
-    // Fallback if iframe detection fails due to security
-    console.log('⚠️ Fallback: using window.location.assign');
-    window.location.assign(authUrl);
-  }
+  // Simple and direct OAuth2 redirect - compatible with all browsers
+  console.log('↗️ Redirigiendo a página de autorización TMWE');
+  window.location.href = authUrl;
 };
 
 // ============================================================================

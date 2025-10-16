@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Pause, Square, Download, Save, Loader2 } from "lucide-react";
+import { Play, Pause, Square, Download, Save, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmailImportResults } from "./EmailImportResults";
 import { EmailImportChart } from "./EmailImportChart";
@@ -30,6 +31,7 @@ interface FolderInfo {
 
 export function EmailImportTester() {
   const { toast } = useToast();
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [folders, setFolders] = useState<FolderInfo[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>("INBOX");
@@ -45,10 +47,26 @@ export function EmailImportTester() {
   const [totalEmails, setTotalEmails] = useState(0);
   const [startTime, setStartTime] = useState<number>(0);
 
+  // Recupera token TMWE da sessionStorage
+  useEffect(() => {
+    const token = sessionStorage.getItem('tmwe_access_token');
+    setAccessToken(token);
+    
+    if (!token) {
+      toast({
+        title: "Token mancante",
+        description: "Effettua il login OAuth2 prima di usare questo tool",
+        variant: "destructive"
+      });
+    }
+  }, []);
+
   // Recupera lista cartelle all'avvio
   useEffect(() => {
-    loadFolders();
-  }, []);
+    if (accessToken) {
+      loadFolders();
+    }
+  }, [accessToken]);
 
   const loadFolders = async () => {
     setLoadingFolders(true);
@@ -56,7 +74,8 @@ export function EmailImportTester() {
       const { data, error } = await supabase.functions.invoke('tmwe-api-proxy', {
         body: {
           endpoint: '/app.php?action=email_message',
-          data: { handler: 'get_folders' }
+          data: { handler: 'get_folders' },
+          bearerToken: accessToken
         }
       });
 
@@ -105,7 +124,8 @@ export function EmailImportTester() {
               limit,
               offset,
               format
-            }
+            },
+            bearerToken: accessToken
           }
         });
 
@@ -128,7 +148,8 @@ export function EmailImportTester() {
                   uid: msg.uid,
                   include_attachments: includeAttachments,
                   format
-                }
+                },
+                bearerToken: accessToken
               }
             });
 
@@ -222,6 +243,16 @@ export function EmailImportTester() {
 
   return (
     <div className="space-y-6">
+      {!accessToken && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Token TMWE mancante</AlertTitle>
+          <AlertDescription>
+            Effettua il login OAuth2 dalla pagina di autenticazione prima di usare questo tool.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>📧 Email Import Performance Tester</CardTitle>
@@ -313,7 +344,7 @@ export function EmailImportTester() {
           <div className="flex gap-2">
             <Button 
               onClick={startTest} 
-              disabled={isRunning || loadingFolders}
+              disabled={isRunning || loadingFolders || !accessToken}
               className="gap-2"
             >
               {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}

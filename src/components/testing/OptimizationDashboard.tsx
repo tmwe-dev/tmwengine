@@ -10,7 +10,7 @@ interface BenchmarkData {
   category: string;
   suite_name?: string;
   avg_response_time_ms: number;
-  results: any[];
+  results: unknown;
   created_at: string;
 }
 
@@ -42,8 +42,8 @@ export const OptimizationDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      setOptimizationData(optData || []);
-      setPerformanceData(perfData || []);
+      setOptimizationData((optData || []) as BenchmarkData[]);
+      setPerformanceData((perfData || []) as BenchmarkData[]);
       setLoading(false);
     };
 
@@ -105,7 +105,7 @@ export const OptimizationDashboard = () => {
               <div key={idx} className="flex items-start gap-3 p-4 border rounded-lg">
                 {rec.impact === 'high' && <TrendingDown className="h-5 w-5 text-green-500 mt-0.5" />}
                 {rec.impact === 'medium' && <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5" />}
-                {rec.impact === 'low' && <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />}
+                {rec.impact !== 'high' && rec.impact !== 'medium' && <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />}
                 <div className="flex-1">
                   <h4 className="font-semibold">{rec.title}</h4>
                   <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
@@ -128,7 +128,7 @@ export const OptimizationDashboard = () => {
 function generateRecommendations(optData: BenchmarkData | undefined, perfData: BenchmarkData[]) {
   const chartData: any[] = [];
   
-  if (optData?.results && Array.isArray(optData.results)) {
+  if (optData?.results && typeof optData.results === 'object' && Array.isArray(optData.results)) {
     // Prendi baseline e migliore ottimizzazione
     const results = optData.results as any[];
     const baseline = results.find(r => r.variant_name?.includes('Baseline'));

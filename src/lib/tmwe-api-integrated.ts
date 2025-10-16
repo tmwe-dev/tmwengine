@@ -468,14 +468,21 @@ export const emailMessageApi = {
   
   // ✅ OTTIMIZZAZIONE 4: Batch intelligente per mark as read
   markAsRead: async (messageIds: string[]) => {
+    // Converti in UIDs numerici
+    const uids = messageIds.map(id => {
+      const uid = parseInt(id, 10);
+      if (isNaN(uid)) throw new Error(`Invalid UID: ${id}`);
+      return uid;
+    });
+    
     // Se più di 50 messaggi, splitta in batch
-    if (messageIds.length > 50) {
-      const batches = chunkArray(messageIds, 50);
+    if (uids.length > 50) {
+      const batches = chunkArray(uids, 50);
       const results = await Promise.all(
         batches.map(batch => 
           fetchApi('/email_message', {
             handler: 'mark_as_read',
-            message_ids: batch
+            uids: batch
           })
         )
       );
@@ -484,7 +491,7 @@ export const emailMessageApi = {
     
     return fetchApi('/email_message', {
       handler: 'mark_as_read',
-      message_ids: messageIds
+      uids: uids
     });
   },
 

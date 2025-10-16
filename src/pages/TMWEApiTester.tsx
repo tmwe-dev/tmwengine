@@ -219,9 +219,9 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     handler: "mark_as_read",
     description: "Performance batch vs singolo",
     variations: [
-      { handler: "mark_as_read", message_ids: [realUIDs[0] || "1"] },
-      { handler: "mark_as_read", message_ids: realUIDs.slice(0, 5).length ? realUIDs.slice(0, 5) : ["1", "2", "3", "4", "5"] },
-      { handler: "mark_as_read", message_ids: realUIDs.slice(0, 20).length ? realUIDs.slice(0, 20) : Array.from({length: 20}, (_, i) => String(i + 1)) },
+      { handler: "mark_as_read", uids: [parseInt(realUIDs[0]) || 1] },
+      { handler: "mark_as_read", uids: realUIDs.slice(0, 5).map(uid => parseInt(uid)) },
+      { handler: "mark_as_read", uids: realUIDs.slice(0, 20).map(uid => parseInt(uid)) },
     ]
   },
   {
@@ -231,9 +231,9 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     handler: "delete_messages",
     description: "Performance cancellazione messaggi",
     variations: [
-      { handler: "delete_messages", message_ids: [realUIDs[0] || "1"], permanent: false },
-      { handler: "delete_messages", message_ids: [realUIDs[0] || "1"], permanent: true },
-      { handler: "delete_messages", message_ids: realUIDs.slice(0, 3).length ? realUIDs.slice(0, 3) : ["1", "2", "3"], permanent: false },
+      { handler: "delete_messages", uids: [parseInt(realUIDs[0]) || 1], permanent: false },
+      { handler: "delete_messages", uids: [parseInt(realUIDs[0]) || 1], permanent: true },
+      { handler: "delete_messages", uids: realUIDs.slice(0, 3).map(uid => parseInt(uid)), permanent: false },
     ]
   },
   {
@@ -243,8 +243,8 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     handler: "move_to_folder",
     description: "Performance spostamento tra cartelle",
     variations: [
-      { handler: "move_to_folder", message_ids: [realUIDs[0] || "1"], folder: "Archive" },
-      { handler: "move_to_folder", message_ids: realUIDs.slice(0, 3).length ? realUIDs.slice(0, 3) : ["1", "2", "3"], folder: "Archive" },
+      { handler: "move_to_folder", uids: [parseInt(realUIDs[0]) || 1], destination_folder: "Archive" },
+      { handler: "move_to_folder", uids: realUIDs.slice(0, 3).map(uid => parseInt(uid)), destination_folder: "Archive" },
     ]
   },
   
@@ -256,8 +256,9 @@ const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
     handler: "create_folder",
     description: "Performance operazioni CRUD cartelle",
     variations: [
-      { handler: "get_folder_info", folder: "INBOX" },
-      { handler: "get_folder_info", folder: "Sent" },
+      { handler: "create_folder", folder_name: "Test_Benchmark_" + Date.now() },
+      { handler: "get_folder_info", folder_name: "INBOX" },
+      { handler: "delete_folder", folder_name: "Test_Benchmark_Old" },
     ]
   },
   {

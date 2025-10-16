@@ -368,29 +368,15 @@ serve(async (req) => {
         console.log('═══════════════════════════════════════════════════════');
       }
     } else {
-      // ✅ Ottieni risposta JSON
-      const rawResponse = await tmweResponse.json();
-      
-      // ✅ WRAP risposta in struttura standard { data: ... } SOLO per array diretti
-      if (Array.isArray(rawResponse)) {
-        // Solo gli array diretti vengono wrappati (es. get_folders)
-        responseData = {
-          success: true,
-          data: rawResponse,
-          message: "Success"
-        };
-      } else {
-        // TUTTO IL RESTO passa inalterato (OAuth, profilo, token, ecc.)
-        responseData = rawResponse;
-      }
+      // Ottimizzazione: usa .json() diretto
+      const responseJson = await tmweResponse.json();
+      responseData = JSON.stringify(responseJson);
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');
-        console.log('📥 RISPOSTA TMWE API (JSON wrapped)');
+        console.log('📥 RISPOSTA TMWE API (JSON direct)');
         console.log('═══════════════════════════════════════════════════════');
         console.log('📊 Status:', tmweResponse.status, tmweResponse.statusText);
-        console.log('📦 Raw Response:', JSON.stringify(rawResponse, null, 2));
-        console.log('📦 Wrapped Response:', JSON.stringify(responseData, null, 2));
         console.log('═══════════════════════════════════════════════════════');
       }
     }

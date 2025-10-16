@@ -383,34 +383,16 @@ const OPTIMAL_CONFIG = {
   batchChunkSize: 10,
 };
 
-// Helper function to get access token - SAME AS API TESTER
-export const getAccessToken = async (): Promise<string> => {
-  const config = await getApiConfigFromDB();
-  return config?.accessToken || '';  // ✅ Identico al Tester - restituisce '' se manca
-};
-
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  // 🔐 USA LA STESSA LOGICA DEL TESTER CHE FUNZIONA
-  const bearerToken = await getAccessToken();
-  
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 CHIAMATA API TMWE (via Edge Function Proxy)');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('⏰ Timestamp:', new Date().toISOString());
-  console.log('📍 Endpoint:', endpoint);
-  console.log('🎯 Handler:', data.handler);
-  console.log('🔐 Token presente:', !!bearerToken);
-  console.log('🔑 Token (primi 20 char):', bearerToken.substring(0, 20) + '...');
-  console.log('═══════════════════════════════════════════════════════');
+  await ensureValidToken();
 
   try {
     const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
       body: { 
         endpoint, 
         data,
-        bearerToken
-        // ✅ IDENTICO AL TESTER - senza optimizationFlags
+        optimizationFlags: OPTIMAL_CONFIG
       },
     });
 
@@ -663,10 +645,10 @@ export const emailFolderApi = {
       ...config
     });
     
-    // ✅ Salva in cache la risposta completa
+    // ✅ Salva in cache
     folderCache.set(result, config);
     
-    return result;  // ✅ Restituisce { data: [...] } come tutte le altre API
+    return result;
   },
   
   getFolderInfo: (folderName: string) => 

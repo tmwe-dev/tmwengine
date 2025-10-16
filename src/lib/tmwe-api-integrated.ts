@@ -309,10 +309,10 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   if (!userEmail) return false;
 
   try {
-    console.log('🔄 Refreshing JWT token via Supabase Edge Function...');
+    console.log('🔄 Refreshing OAuth token via Supabase Edge Function...');
     
-    // Llamar a la edge function para refresh (servidor maneja todo el flujo JWT)
-    const { data, error } = await supabase.functions.invoke('tmwe-jwt-refresh', {
+    // Llamar a la edge function para refresh (servidor maneja todo el flujo OAuth)
+    const { data, error } = await supabase.functions.invoke('tmwe-oauth-refresh', {
       body: { email: userEmail }
     });
 

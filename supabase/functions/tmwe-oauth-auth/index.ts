@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface JwtAuthRequest {
+interface OAuthAuthRequest {
   code: string;
   redirectUri: string;
 }
@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔐 Iniciando OAuth + JWT authentication flow...');
+    console.log('🔐 Iniciando OAuth authentication flow...');
     console.log('📍 Request URL:', req.url);
     console.log('📍 Request method:', req.method);
     console.log('📍 Timestamp:', new Date().toISOString());
@@ -26,7 +26,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('📦 Request body received:', JSON.stringify(requestBody, null, 2));
     
-    const { code, redirectUri }: JwtAuthRequest = requestBody;
+    const { code, redirectUri }: OAuthAuthRequest = requestBody;
     
     if (!code || !redirectUri) {
       console.error('❌ Missing required parameters:', { code: !!code, redirectUri: !!redirectUri });
@@ -37,7 +37,7 @@ serve(async (req) => {
     }
 
     // Get OAuth credentials from Supabase secrets
-    const clientId = Deno.env.get('TMWE_CLIENT_ID') || '30eb3689ecfe890adfda0578d61ad858cf9f98999a919e0cd7bb798df17b006f';
+    const clientId = Deno.env.get('TMWE_CLIENT_ID');
     const clientSecret = Deno.env.get('TMWE_CLIENT_SECRET');
     
     console.log('🔑 Client ID:', clientId);
@@ -50,9 +50,9 @@ serve(async (req) => {
       throw new Error('TMWE_CLIENT_SECRET not configured');
     }
 
-    console.log('📤 Exchanging authorization code for JWT tokens via /token endpoint...');
+    console.log('📤 Exchanging authorization code for OAuth tokens via /token endpoint...');
     
-    // 1. Exchange authorization code for JWT tokens using /token endpoint
+    // 1. Exchange authorization code for OAuth tokens using /token endpoint
     // Using application/x-www-form-urlencoded as per OAuth2 standard
     const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
     const formData = new URLSearchParams({
@@ -115,56 +115,25 @@ serve(async (req) => {
       throw new Error('Invalid JSON response from token endpoint');
     }
 
-    console.log('✅ JWT tokens obtained');
+    console.log('✅ OAuth tokens obtained');
     console.log('🔑 Access token present:', !!tokenData.access_token);
     console.log('⏱️ Expires in:', tokenData.expires_in);
     console.log('📧 Email from token response:', tokenData.email);
+    console.log('👤 User ID from token response:', tokenData.user_id);
+    console.log('🏢 Anagrafica ID from token response:', tokenData.anagrafica_id);
 
-    const { access_token, expires_in, email } = tokenData;
+    const { access_token, expires_in, email, user_id, anagrafica_id } = tokenData;
 
-    if (!access_token || !email) {
+    if (!access_token || !email || !user_id) {
       console.error('❌ Invalid token response:', { 
         has_access_token: !!access_token, 
-        has_email: !!email 
+        has_email: !!email,
+        has_user_id: !!user_id
       });
-      throw new Error('Invalid token response: missing access_token or email');
+      throw new Error('Invalid token response: missing access_token, email or user_id');
     }
 
-    // 2. Decode JWT to get user_id and anagrafica_id
-    console.log('🔓 Decoding JWT token payload...');
-    
-    function decodeJwtPayload(token: string): any {
-      try {
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-          throw new Error('Invalid JWT format');
-        }
-        
-        // Decode base64url
-        const payload = parts[1]
-          .replace(/-/g, '+')
-          .replace(/_/g, '/');
-        
-        const decoded = atob(payload);
-        return JSON.parse(decoded);
-      } catch (error) {
-        console.error('Error decoding JWT:', error);
-        throw new Error('Failed to decode JWT token');
-      }
-    }
-
-    const jwtPayload = decodeJwtPayload(access_token);
-    console.log('✅ JWT payload decoded:', JSON.stringify(jwtPayload, null, 2));
-    
-    const user_id = jwtPayload.user_id || jwtPayload.sub;
-    const anagrafica_id = jwtPayload.anagrafica_id;
-    
-    if (!user_id) {
-      console.error('❌ user_id not found in JWT payload');
-      throw new Error('user_id not found in JWT token');
-    }
-
-    // 3. Get user profile from contatti endpoint
+    // 2. Get user profile from contatti endpoint
     console.log('👤 Fetching detailed profile from TMWE contatti API...');
     const contattiEndpoint = 'https://findair.it/erp/tmwe_json/contatti';
     const profileRequestBody = {
@@ -251,12 +220,12 @@ serve(async (req) => {
     } else {
       console.log(`✅ Existing Supabase user found: ${supabaseUser.id}`);
       
-      // Update user metadata with JWT info
+      // Update user metadata with OAuth info
       const { error: updateMetaError } = await supabaseAdmin.auth.admin.updateUserById(
         supabaseUser.id,
         {
           user_metadata: {
-            tmwe_jwt: true,
+            tmwe_oauth: true,
             tmwe_user_id: user_id,
             tmwe_anagrafica_id: anagrafica_id,
           }
@@ -286,7 +255,7 @@ serve(async (req) => {
 
     console.log(`✅ Profile synced for user_id: ${supabaseUser.id}`);
 
-    // 6. Save TMWE JWT credentials in database with token_type = 'jwt'
+    // 6. Save TMWE OAuth credentials in database with token_type = 'oauth'
     const expiresAt = expires_in ? new Date(Date.now() + (expires_in * 1000)).toISOString() : null;
     
     const { error: credsError } = await supabaseAdmin
@@ -298,17 +267,17 @@ serve(async (req) => {
         expires_at: expiresAt,
         client_id: clientId,
         client_secret: clientSecret,
-        token_type: 'jwt', // ✅ CRITICAL: Mark as JWT token
+        token_type: 'oauth', // ✅ CRITICAL: Mark as OAuth token
       }, {
         onConflict: 'email'
       });
 
     if (credsError) {
-      console.error('Error saving JWT credentials:', credsError);
+      console.error('Error saving OAuth credentials:', credsError);
       throw credsError;
     }
 
-    console.log('✅ TMWE JWT credentials saved');
+    console.log('✅ TMWE OAuth credentials saved');
 
     // 7. Generate Supabase session using generateLink (magic link flow)
     console.log('🔐 Generating Supabase session tokens...');
@@ -336,7 +305,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Supabase session tokens generated successfully');
-    console.log('✅ OAuth + JWT authentication flow completed successfully');
+    console.log('✅ OAuth authentication flow completed successfully');
     
     const finalResponse = {
       success: true,
@@ -351,11 +320,11 @@ serve(async (req) => {
       // ✅ Return Supabase session tokens for authentication
       access_token: supabaseAccessToken,
       refresh_token: supabaseRefreshToken,
-      // Include TMWE JWT info for reference
+      // Include TMWE OAuth info for reference
       tmwe_user_id: user_id,
       tmwe_anagrafica_id: anagrafica_id,
-      tmwe_access_token: access_token, // TMWE JWT token stored in credentials
-      token_format: 'jwt',
+      tmwe_access_token: access_token, // TMWE OAuth token stored in credentials
+      token_format: 'oauth',
     };
     
     console.log('📤 Returning final response:', JSON.stringify(finalResponse, null, 2));
@@ -369,10 +338,10 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('❌ OAuth + JWT authentication error:', error);
+    console.error('❌ OAuth authentication error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'OAuth + JWT authentication failed',
+        error: error.message || 'OAuth authentication failed',
         details: error.toString()
       }),
       {

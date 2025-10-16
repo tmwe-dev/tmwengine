@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface JwtRefreshRequest {
+interface OAuthRefreshRequest {
   email: string;
 }
 
@@ -17,9 +17,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Refreshing JWT token...');
+    console.log('🔄 Refreshing OAuth token...');
     
-    const { email }: JwtRefreshRequest = await req.json();
+    const { email }: OAuthRefreshRequest = await req.json();
     
     if (!email) {
       return new Response(
@@ -40,31 +40,31 @@ serve(async (req) => {
       }
     );
 
-    console.log('📋 Fetching stored JWT credentials...');
+    console.log('📋 Fetching stored OAuth credentials...');
 
-    // 1. Get stored JWT credentials from database
+    // 1. Get stored OAuth credentials from database
     const { data: credentials, error: credsError } = await supabaseAdmin
       .from('user_tmwe_credentials')
       .select('*')
       .eq('email', email)
-      .eq('token_type', 'jwt')
+      .eq('token_type', 'oauth')
       .single();
 
     if (credsError || !credentials) {
-      console.error('❌ JWT credentials not found:', credsError);
-      throw new Error('JWT credentials not found for user');
+      console.error('❌ OAuth credentials not found:', credsError);
+      throw new Error('OAuth credentials not found for user');
     }
 
     if (!credentials.refresh_token) {
       throw new Error('No refresh token available');
     }
 
-    console.log('🔑 Refreshing JWT token with TMWE API...');
+    console.log('🔑 Refreshing OAuth token with TMWE API...');
 
-    // 2. Refresh JWT token using refresh_token_jwt grant type
+    // 2. Refresh OAuth token using refresh_token grant type
     const tokenEndpoint = 'https://findair.it/erp/tmwe_json/token';
     const formData = new URLSearchParams({
-      grant_type: 'refresh_token_jwt',
+      grant_type: 'refresh_token',
       refresh_token: credentials.refresh_token,
     });
     
@@ -73,7 +73,7 @@ serve(async (req) => {
     console.log('  📋 Method: POST');
     console.log('  📦 Content-Type: application/x-www-form-urlencoded');
     console.log('  📝 Parameters:', {
-      grant_type: 'refresh_token_jwt',
+      grant_type: 'refresh_token',
       refresh_token_length: credentials.refresh_token.length
     });
     
@@ -91,12 +91,12 @@ serve(async (req) => {
     
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error('❌ JWT refresh failed - Response:', errorData);
-      throw new Error(`JWT refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
+      console.error('❌ OAuth refresh failed - Response:', errorData);
+      throw new Error(`OAuth refresh failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ New JWT tokens obtained:', {
+    console.log('✅ New OAuth tokens obtained:', {
       has_access_token: !!tokenData.access_token,
       expires_in: tokenData.expires_in
     });
@@ -104,7 +104,7 @@ serve(async (req) => {
     const { access_token, expires_in } = tokenData;
 
     if (!access_token) {
-      throw new Error('Invalid JWT token response');
+      throw new Error('Invalid OAuth token response');
     }
 
     // 3. Update stored credentials with new tokens
@@ -124,21 +124,21 @@ serve(async (req) => {
       .from('user_tmwe_credentials')
       .update(updateData)
       .eq('email', email)
-      .eq('token_type', 'jwt');
+      .eq('token_type', 'oauth');
 
     if (updateError) {
-      console.error('Error updating JWT credentials:', updateError);
+      console.error('Error updating OAuth credentials:', updateError);
       throw updateError;
     }
 
-    console.log('✅ JWT credentials updated successfully');
+    console.log('✅ OAuth credentials updated successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
         access_token: access_token,
         expires_in: expires_in,
-        token_format: 'jwt',
+        token_format: 'oauth',
       }),
       {
         status: 200,
@@ -147,10 +147,10 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('❌ JWT refresh error:', error);
+    console.error('❌ OAuth refresh error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'JWT refresh failed',
+        error: error.message || 'OAuth refresh failed',
         details: error.toString()
       }),
       {

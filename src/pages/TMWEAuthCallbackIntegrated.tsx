@@ -60,13 +60,13 @@ const TMWEAuthCallbackIntegrated = () => {
 
       addDetail('🔐 Enviando código a servidor para intercambio...');
       
-      console.log('🔐 Calling tmwe-jwt-auth edge function with:', {
+      console.log('🔐 Calling tmwe-oauth-auth edge function with:', {
         code: code.substring(0, 20) + '...',
         redirectUri: redirectUri
       });
 
-      // 4. Llamar a la edge function JWT para completar el flujo OAuth2 con JWT
-      const { data, error: functionError } = await supabase.functions.invoke('tmwe-jwt-auth', {
+      // 4. Llamar a la edge function OAuth para completar el flujo OAuth2
+      const { data, error: functionError } = await supabase.functions.invoke('tmwe-oauth-auth', {
         body: {
           code: code,
           redirectUri: redirectUri,

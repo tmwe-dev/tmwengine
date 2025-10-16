@@ -1463,7 +1463,7 @@ const TMWEApiTester = () => {
                     <div className="h-[300px] mt-6">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={benchmarkResults.map((r, i) => ({ 
-                          name: `Var ${i + 1}`, 
+                          name: r.variantName.substring(0, 30) + (r.variantName.length > 30 ? '...' : ''), 
                           time: r.responseTime,
                           fullName: r.variantName 
                         }))}>

@@ -119,7 +119,83 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
         useTextResponse: false,
         benchmarkDelay: flags.benchmarkDelay
       }
-    }
+    },
+    
+    // === BATCH DELETE MESSAGES ===
+    {
+      name: '🗑️ Batch Delete - Baseline',
+      testType: 'batch_delete',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: true,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      },
+      isBaseline: true
+    },
+    {
+      name: '🗑️ Batch Delete - Parallel ⚡',
+      testType: 'batch_delete',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: false,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    {
+      name: '🗑️ Batch Delete - Chunked 🧩',
+      testType: 'batch_delete',
+      flags: {
+        enableLogging: false,
+        useDoubleSerializat: false,
+        useSequentialExecution: false,
+        useTextResponse: false,
+        useBatchParallelization: true,
+        batchChunkSize: 10,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+
+    // === BATCH MOVE MESSAGES ===
+    {
+      name: '📁 Batch Move - Baseline',
+      testType: 'batch_move',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: true,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      },
+      isBaseline: true
+    },
+    {
+      name: '📁 Batch Move - Parallel ⚡',
+      testType: 'batch_move',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: false,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    {
+      name: '📁 Batch Move - Chunked 🧩',
+      testType: 'batch_move',
+      flags: {
+        enableLogging: false,
+        useDoubleSerializat: false,
+        useSequentialExecution: false,
+        useTextResponse: false,
+        useBatchParallelization: true,
+        batchChunkSize: 10,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
   ];
 
   const runOptimizationTests = async () => {
@@ -192,7 +268,7 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
                 Authorization: `Bearer ${session.access_token}`
               }
             });
-          } else {
+          } else if (testConfig.testType === 'heavy_folders') {
             // Heavy folders (test originale)
             response = await supabase.functions.invoke('tmwe-api-proxy', {
               body: {
@@ -201,6 +277,37 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
                   handler: 'get_folders',
                   include_counts: true,
                   hierarchy: true
+                },
+                accessToken: config.accessToken,
+                optimizationFlags: testConfig.flags
+              },
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            });
+          } else if (testConfig.testType === 'batch_delete') {
+            response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/app.php?action=email_message',
+                data: {
+                  handler: 'delete_messages',
+                  message_ids: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
+                },
+                accessToken: config.accessToken,
+                optimizationFlags: testConfig.flags
+              },
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            });
+          } else if (testConfig.testType === 'batch_move') {
+            response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/app.php?action=email_message',
+                data: {
+                  handler: 'move_messages',
+                  message_ids: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'],
+                  target_folder: 'Archive'
                 },
                 accessToken: config.accessToken,
                 optimizationFlags: testConfig.flags

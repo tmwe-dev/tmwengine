@@ -20,6 +20,8 @@ serve(async (req) => {
     const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? true;
     const useTextResponse = optimizationFlags?.useTextResponse ?? true;
     const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? true;
+    const useBatchParallelization = optimizationFlags?.useBatchParallelization ?? false;
+    const batchChunkSize = optimizationFlags?.batchChunkSize ?? 10;
     
     if (enableLogging) {
       console.log('═══════════════════════════════════════════════════════');
@@ -29,6 +31,15 @@ serve(async (req) => {
       console.log('📍 Endpoint:', endpoint);
       console.log('🎯 Handler:', data?.handler);
       console.log('═══════════════════════════════════════════════════════');
+    }
+
+    // Helper function per chunking array
+    function chunkArray<T>(array: T[], size: number): T[][] {
+      const chunks: T[][] = [];
+      for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+      }
+      return chunks;
     }
 
     // Get auth header from request
@@ -87,13 +98,33 @@ serve(async (req) => {
       
       if (enableLogging) {
         console.log(`📧 Batch Mark as Read: ${messageIds.length} messaggi`);
-        console.log(`⚡ Modalità: ${useSequentialExecution ? 'SEQUENTIAL' : 'PARALLEL'}`);
+        console.log(`⚡ Modalità: ${useSequentialExecution ? 'SEQUENTIAL' : useBatchParallelization ? 'CHUNKED_PARALLEL' : 'PARALLEL'}`);
       }
       
       let batchResults: any[];
       const batchStartTime = Date.now();
       
-      if (useSequentialExecution) {
+      if (useBatchParallelization && messageIds.length > batchChunkSize) {
+        // CHUNKED PARALLEL (ottimale per batch grandi) 🧩
+        const chunks = chunkArray(messageIds, batchChunkSize);
+        if (enableLogging) console.log(`🧩 Chunking: ${chunks.length} chunks di ${batchChunkSize} messaggi`);
+        
+        const chunkPromises = chunks.map(chunk => 
+          Promise.all(chunk.map(msgId => 
+            fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tmweAccessToken}`,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ handler: 'mark_as_read', message_id: msgId }),
+            }).then(r => r.json())
+          ))
+        );
+        const chunkResults = await Promise.all(chunkPromises);
+        batchResults = chunkResults.flat();
+      } else if (useSequentialExecution) {
         // SEQUENZIALE (lento)
         batchResults = [];
         for (const msgId of messageIds) {
@@ -110,7 +141,7 @@ serve(async (req) => {
           batchResults.push(singleData);
         }
       } else {
-        // PARALLELO (veloce) 🚀
+        // PARALLELO (veloce per batch piccoli) 🚀
         const promises = messageIds.map(msgId => 
           fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
             method: 'POST',
@@ -133,8 +164,167 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({ 
         success: true, 
-        results: batchResults,
-        executionTime: batchEndTime - batchStartTime
+        marked: batchResults.filter((r: any) => r.success).length,
+        total: messageIds.length,
+        mark_type: 'read',
+        errors: batchResults.filter((r: any) => !r.success),
+        duration: batchEndTime - batchStartTime
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // BATCH DELETE MESSAGES
+    if (data.handler === 'delete_messages' && Array.isArray(data.message_ids)) {
+      const messageIds = data.message_ids;
+      
+      if (enableLogging) {
+        console.log(`🗑️ Batch Delete Messages: ${messageIds.length} messaggi`);
+        console.log(`⚡ Modalità: ${useSequentialExecution ? 'SEQUENTIAL' : useBatchParallelization ? 'CHUNKED_PARALLEL' : 'PARALLEL'}`);
+      }
+      
+      let batchResults: any[];
+      const batchStartTime = Date.now();
+      
+      if (useBatchParallelization && messageIds.length > batchChunkSize) {
+        const chunks = chunkArray(messageIds, batchChunkSize);
+        const chunkPromises = chunks.map(chunk => 
+          Promise.all(chunk.map(msgId => 
+            fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tmweAccessToken}`,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ handler: 'delete_email', uid: msgId }),
+            }).then(r => r.json())
+          ))
+        );
+        const chunkResults = await Promise.all(chunkPromises);
+        batchResults = chunkResults.flat();
+      } else if (useSequentialExecution) {
+        batchResults = [];
+        for (const msgId of messageIds) {
+          const singleResponse = await fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'delete_email', uid: msgId }),
+          });
+          const singleData = await singleResponse.json();
+          batchResults.push(singleData);
+        }
+      } else {
+        const promises = messageIds.map(msgId => 
+          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'delete_email', uid: msgId }),
+          }).then(r => r.json())
+        );
+        batchResults = await Promise.all(promises);
+      }
+      
+      const batchEndTime = Date.now();
+      
+      if (enableLogging) {
+        console.log(`✅ Batch Delete completato in ${batchEndTime - batchStartTime}ms`);
+      }
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        deleted: batchResults.filter((r: any) => r.success).length,
+        total: messageIds.length,
+        errors: batchResults.filter((r: any) => !r.success),
+        duration: batchEndTime - batchStartTime
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // BATCH MOVE MESSAGES
+    if (data.handler === 'move_messages' && Array.isArray(data.message_ids) && data.target_folder) {
+      const messageIds = data.message_ids;
+      const targetFolder = data.target_folder;
+      
+      if (enableLogging) {
+        console.log(`📁 Batch Move Messages: ${messageIds.length} messaggi -> ${targetFolder}`);
+        console.log(`⚡ Modalità: ${useSequentialExecution ? 'SEQUENTIAL' : useBatchParallelization ? 'CHUNKED_PARALLEL' : 'PARALLEL'}`);
+      }
+      
+      let batchResults: any[];
+      const batchStartTime = Date.now();
+      
+      if (useBatchParallelization && messageIds.length > batchChunkSize) {
+        const chunks = chunkArray(messageIds, batchChunkSize);
+        const chunkPromises = chunks.map(chunk => 
+          Promise.all(chunk.map(msgId => 
+            fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tmweAccessToken}`,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({ handler: 'move_email', uid: msgId, target_folder: targetFolder }),
+            }).then(r => r.json())
+          ))
+        );
+        const chunkResults = await Promise.all(chunkPromises);
+        batchResults = chunkResults.flat();
+      } else if (useSequentialExecution) {
+        batchResults = [];
+        for (const msgId of messageIds) {
+          const singleResponse = await fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'move_email', uid: msgId, target_folder: targetFolder }),
+          });
+          const singleData = await singleResponse.json();
+          batchResults.push(singleData);
+        }
+      } else {
+        const promises = messageIds.map(msgId => 
+          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'move_email', uid: msgId, target_folder: targetFolder }),
+          }).then(r => r.json())
+        );
+        batchResults = await Promise.all(promises);
+      }
+      
+      const batchEndTime = Date.now();
+      
+      if (enableLogging) {
+        console.log(`✅ Batch Move completato in ${batchEndTime - batchStartTime}ms`);
+      }
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        moved: batchResults.filter((r: any) => r.success).length,
+        total: messageIds.length,
+        target_folder: targetFolder,
+        errors: batchResults.filter((r: any) => !r.success),
+        duration: batchEndTime - batchStartTime
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -10,6 +10,8 @@ export interface OptimizationFlags {
   useSequentialExecution: boolean;
   useTextResponse: boolean;
   benchmarkDelay: number;
+  useBatchParallelization?: boolean;
+  batchChunkSize?: number;
 }
 
 interface OptimizationControlsProps {
@@ -114,6 +116,51 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
           />
         </div>
 
+        {/* Batch Parallelization */}
+        <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border">
+          <div className="flex items-center gap-3">
+            <Zap className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <Label htmlFor="batchParallel" className="text-sm font-semibold">
+                🧩 Batch Parallelization
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Chunking per batch grandi (oltre 10 msg) - Impatto: -30 a -50%
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="batchParallel"
+            checked={flags.useBatchParallelization || false}
+            onCheckedChange={(checked) => updateFlag('useBatchParallelization', checked)}
+          />
+        </div>
+
+        {/* Batch Chunk Size */}
+        <div className="p-4 rounded-lg bg-background/50 border space-y-3">
+          <div className="flex items-center gap-3">
+            <GitBranch className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <Label htmlFor="chunkSize" className="text-sm font-semibold">
+                📦 Chunk Size: {flags.batchChunkSize || 10} msgs
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Numero di messaggi per chunk (5-20)
+              </p>
+            </div>
+          </div>
+          <Slider
+            id="chunkSize"
+            min={5}
+            max={20}
+            step={5}
+            value={[flags.batchChunkSize || 10]}
+            onValueChange={([value]) => updateFlag('batchChunkSize', value)}
+            disabled={!flags.useBatchParallelization}
+            className="w-full"
+          />
+        </div>
+
         {/* Benchmark Delay */}
         <div className="p-4 rounded-lg bg-background/50 border space-y-3">
           <div className="flex items-center gap-3">
@@ -136,10 +183,6 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
             onValueChange={([value]) => updateFlag('benchmarkDelay', value)}
             className="w-full"
           />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>50ms (veloce)</span>
-            <span>2000ms (sicuro)</span>
-          </div>
         </div>
 
         {/* Impact Summary */}
@@ -150,6 +193,7 @@ export const OptimizationControls = ({ flags, onFlagsChange }: OptimizationContr
             {flags.useDoubleSerializat && '📦 +50ms '}
             {flags.useTextResponse && '⏱️ +30ms '}
             {!flags.useSequentialExecution && '⚡ -30% '}
+            {flags.useBatchParallelization && '🧩 Chunking '}
             {!flags.enableLogging && !flags.useDoubleSerializat && !flags.useTextResponse && '✅ Fully Optimized'}
           </p>
         </div>

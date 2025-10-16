@@ -370,7 +370,7 @@ serve(async (req) => {
     } else {
       // Ottimizzazione: usa .json() diretto
       const responseJson = await tmweResponse.json();
-      responseData = JSON.stringify(responseJson);
+      responseData = responseJson;
       
       if (enableLogging) {
         console.log('═══════════════════════════════════════════════════════');
@@ -404,7 +404,7 @@ serve(async (req) => {
       console.log('✅ Risposta TMWE API riuscita');
     }
 
-    return new Response(responseData, {
+    return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

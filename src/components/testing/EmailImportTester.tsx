@@ -76,7 +76,7 @@ export function EmailImportTester() {
 
       if (error) throw error;
       
-      const folderList = data?.data || data || [];
+      const folderList = data?.folders || [];
       setFolders(folderList);
       
       if (folderList.length > 0) {

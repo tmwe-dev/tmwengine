@@ -34,6 +34,7 @@ import Tables from "./pages/Tables";
 import TMWEEmailDashboard from "./pages/TMWEEmailDashboard";
 import TMWEAuthCallbackIntegrated from "./pages/TMWEAuthCallbackIntegrated";
 import TMWEAuthTest from "./pages/TMWEAuthTest";
+import OAuthCallback from "./pages/OAuthCallback";
 import EmailSenders from "./pages/EmailSenders";
 import Intranet from "./pages/Intranet";
 import IntranetAdmin from "./pages/IntranetAdmin";
@@ -236,7 +237,7 @@ const App = () => {
                 <TMWEAuthTest />
               </ProtectedRoute>
             } />
-            <Route path="/tmwe/callback" element={<TMWEAuthCallbackIntegrated />} />
+            <Route path="/tmwe/callback" element={<OAuthCallback />} />
             <Route path="/email-manager" element={
               <ProtectedRoute>
                 <IntegratedAuthGuard>

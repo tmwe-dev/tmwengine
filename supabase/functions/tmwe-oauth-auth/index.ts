@@ -115,18 +115,9 @@ serve(async (req) => {
       throw new Error('Invalid JSON response from token endpoint');
     }
     
-    // Validate TMWE API response format according to oauth2-api-3.yaml spec
-    if (!tokenData.access_token || typeof tokenData.access_token !== 'string') {
-      throw new Error('Invalid TMWE API response: access_token missing or invalid');
-    }
-    if (!tokenData.token_type || tokenData.token_type !== 'Bearer') {
-      throw new Error('Invalid TMWE API response: token_type must be "Bearer"');
-    }
-    if (!tokenData.expires_in || typeof tokenData.expires_in !== 'number') {
-      throw new Error('Invalid TMWE API response: expires_in missing or invalid');
-    }
-    if (!tokenData.email || typeof tokenData.email !== 'string') {
-      throw new Error('Invalid TMWE API response: email missing or invalid');
+    // ✅ CORRECCIÓN: Validación simplificada según proyecto Luca
+    if (!tokenData.access_token || !tokenData.expires_in) {
+      throw new Error('Invalid TMWE API response: missing required fields');
     }
     
     console.log('✅ Parsed token data (validated):', {
@@ -294,8 +285,9 @@ serve(async (req) => {
     // 7. Generate Supabase session tokens using recovery link method
     console.log('🔐 Generating Supabase session tokens...');
 
+    // ✅ CORRECCIÓN CRÍTICA: Usar 'magiclink' en lugar de 'recovery' (según proyecto Luca)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
+      type: 'magiclink',
       email: email,
     });
 

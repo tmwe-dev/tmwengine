@@ -87,63 +87,22 @@ export const clearApiConfigFromDB = async (): Promise<void> => {
 // OAuth2 Authorization Code Flow - Según OpenAPI spec 3.0.4
 export const initiateAuthorizationCodeFlow = (): void => {
   const clientId = OAUTH_CLIENT_ID;
-  const clientSecret = OAUTH_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('OAuth credentials not configured');
-  }
-
-  // Validar que client_id cumple con el patrón requerido (^[a-f0-9]{32,}$)
-  if (!/^[a-f0-9]{32,}$/.test(clientId)) {
-    console.error('Invalid client_id format. Must be hexadecimal with minimum 32 characters');
-    throw new Error('Invalid OAuth client ID format');
-  }
-
-  const state = Math.random().toString(36).substring(7) + Date.now().toString(36);
+  const state = Math.random().toString(36).substring(7);
   const redirectUri = `${window.location.origin}/tmwe/callback`;
   
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('🚀 INICIANDO FLUJO OAUTH2 AUTHORIZATION CODE');
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('📋 Parámetros OAuth2:');
-  console.log('  - client_id:', clientId.substring(0, 20) + '...');
-  console.log('  - redirect_uri (original):', redirectUri);
-  console.log('  - redirect_uri (encoded):', encodeURIComponent(redirectUri));
-  console.log('  - response_type:', 'code');
-  console.log('  - state:', state);
-  console.log('  - scope:', 'read write');
-  
-  // Store OAuth config in session storage for callback
   sessionStorage.setItem('oauth_state', state);
-  sessionStorage.setItem('oauth_client_id', clientId);
-  sessionStorage.setItem('oauth_client_secret', clientSecret);
   sessionStorage.setItem('oauth_redirect_uri', redirectUri);
   
-  console.log('💾 Datos guardados en sessionStorage');
+  // ✅ CORRECCIÓN CRÍTICA: Endpoint correcto según proyecto Luca
+  const authUrl = new URL('https://findair.it/erp/tmwe_json/auth'); // NO /authorization
+  authUrl.searchParams.append('client_id', clientId);
+  authUrl.searchParams.append('redirect_uri', redirectUri);
+  authUrl.searchParams.append('response_type', 'code');
+  authUrl.searchParams.append('state', state);
+  authUrl.searchParams.append('scope', 'read write');
   
-  // Build authorization URL according to oauth2-api-3.yaml
-  // CRITICAL FIX: Use /authorization endpoint (NOT /auth)
-  // Endpoint: GET /authorization
-  // IMPORTANTE: Construir URL manualmente para asegurar encoding correcto
-  const baseUrl = 'https://findair.it/erp/tmwe_json/authorization';
-  const params = [
-    `client_id=${encodeURIComponent(clientId)}`,
-    `redirect_uri=${encodeURIComponent(redirectUri)}`,
-    `response_type=${encodeURIComponent('code')}`,
-    `state=${encodeURIComponent(state)}`,
-    `scope=${encodeURIComponent('read write')}`
-  ];
-  
-  const authUrl = `${baseUrl}?${params.join('&')}`;
-  
-  console.log('🔗 Authorization URL completa:', authUrl);
-  console.log('📋 Verificación de encoding:');
-  console.log('  - redirect_uri debe contener %3A y %2F:', authUrl.includes('%3A') && authUrl.includes('%2F'));
-  console.log('═══════════════════════════════════════════════════════');
-  
-  // Simple and direct OAuth2 redirect - compatible with all browsers
-  console.log('↗️ Redirigiendo a página de autorización TMWE');
-  window.location.href = authUrl;
+  console.log('🚀 Redirecting to TMWE authorization:', authUrl.toString());
+  window.location.href = authUrl.toString();
 };
 
 // ============================================================================

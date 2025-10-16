@@ -106,29 +106,45 @@ serve(async (req) => {
       throw new Error(`OAuth2 token exchange failed: ${errorData.error?.message || errorData.error || 'Unknown error'}`);
     }
     
+    // Parse and validate token response according to oauth2-api-3.yaml
     let tokenData;
     try {
       tokenData = JSON.parse(responseText);
-      console.log('✅ Parsed token data:', JSON.stringify(tokenData, null, 2));
     } catch (e) {
       console.error('❌ Could not parse success response as JSON');
       throw new Error('Invalid JSON response from token endpoint');
     }
+    
+    // Validate TMWE API response format according to oauth2-api-3.yaml spec
+    if (!tokenData.access_token || typeof tokenData.access_token !== 'string') {
+      throw new Error('Invalid TMWE API response: access_token missing or invalid');
+    }
+    if (!tokenData.token_type || tokenData.token_type !== 'Bearer') {
+      throw new Error('Invalid TMWE API response: token_type must be "Bearer"');
+    }
+    if (!tokenData.expires_in || typeof tokenData.expires_in !== 'number') {
+      throw new Error('Invalid TMWE API response: expires_in missing or invalid');
+    }
+    if (!tokenData.email || typeof tokenData.email !== 'string') {
+      throw new Error('Invalid TMWE API response: email missing or invalid');
+    }
+    
+    console.log('✅ Parsed token data (validated):', {
+      access_token: tokenData.access_token.substring(0, 20) + '...',
+      token_type: tokenData.token_type,
+      expires_in: tokenData.expires_in,
+      refresh_token: tokenData.refresh_token ? tokenData.refresh_token.substring(0, 20) + '...' : null,
+      refresh_token_expires_in: tokenData.refresh_token_expires_in,
+      scope: tokenData.scope,
+      email: tokenData.email,
+    });
 
     console.log('✅ OAuth tokens obtained');
-    console.log('🔑 Access token present:', !!tokenData.access_token);
+    console.log('🔑 Access token length:', tokenData.access_token.length);
     console.log('⏱️ Expires in:', tokenData.expires_in);
     console.log('📧 Email from token response:', tokenData.email);
 
     const { access_token, expires_in, email } = tokenData;
-
-    if (!access_token || !email) {
-      console.error('❌ Invalid token response:', { 
-        has_access_token: !!access_token, 
-        has_email: !!email
-      });
-      throw new Error('Invalid token response: missing access_token or email');
-    }
 
     // 2. Get user profile from get_my_profile endpoint
     console.log('👤 Fetching user profile from get_my_profile endpoint...');
@@ -275,21 +291,38 @@ serve(async (req) => {
 
     console.log('✅ TMWE OAuth credentials saved');
 
-    // 7. Generate Supabase session tokens directly
+    // 7. Generate Supabase session tokens using recovery link method
     console.log('🔐 Generating Supabase session tokens...');
 
-    // Use the user's ID to create a session directly
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: supabaseUser.id
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
     });
 
-    if (sessionError || !sessionData?.session) {
-      console.error('Error creating session:', sessionError);
-      throw new Error(`Failed to create session: ${sessionError?.message || 'No session created'}`);
+    if (linkError || !linkData) {
+      console.error('❌ Error generating recovery link:', linkError);
+      console.error('   Stack:', linkError?.stack);
+      throw new Error(`Failed to generate recovery link: ${linkError?.message || 'No link generated'}`);
     }
 
-    const supabaseAccessToken = sessionData.session.access_token;
-    const supabaseRefreshToken = sessionData.session.refresh_token;
+    console.log('✅ Recovery link generated successfully');
+    console.log('   Action link URL:', linkData.properties.action_link);
+
+    // Extract tokens from the recovery link URL parameters
+    const actionUrl = new URL(linkData.properties.action_link);
+    const supabaseAccessToken = actionUrl.searchParams.get('access_token');
+    const supabaseRefreshToken = actionUrl.searchParams.get('refresh_token');
+
+    if (!supabaseAccessToken || !supabaseRefreshToken) {
+      console.error('❌ Failed to extract tokens from recovery link');
+      console.error('   Access token present:', !!supabaseAccessToken);
+      console.error('   Refresh token present:', !!supabaseRefreshToken);
+      throw new Error('Failed to extract Supabase tokens from recovery link');
+    }
+
+    console.log('✅ Tokens extracted successfully');
+    console.log('   Access token length:', supabaseAccessToken.length);
+    console.log('   Refresh token length:', supabaseRefreshToken.length);
 
     console.log('✅ Supabase session tokens generated successfully');
     console.log('✅ OAuth authentication flow completed successfully');
@@ -326,10 +359,14 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ OAuth authentication error:', error);
+    console.error('   Error message:', error?.message || String(error));
+    console.error('   Stack trace:', error?.stack || 'No stack trace available');
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || 'OAuth authentication failed',
-        details: error.toString()
+        details: error.toString(),
+        stack: error.stack || 'No stack trace'
       }),
       {
         status: 500,

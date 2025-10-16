@@ -121,10 +121,11 @@ export const initiateAuthorizationCodeFlow = (): void => {
   
   console.log('💾 Datos guardados en sessionStorage');
   
-  // Build authorization URL según OpenAPI spec
-  // Endpoint: GET /auth
+  // Build authorization URL according to oauth2-api-3.yaml
+  // CRITICAL FIX: Use /authorization endpoint (NOT /auth)
+  // Endpoint: GET /authorization
   // IMPORTANTE: Construir URL manualmente para asegurar encoding correcto
-  const baseUrl = 'https://findair.it/erp/tmwe_json/auth';
+  const baseUrl = 'https://findair.it/erp/tmwe_json/authorization';
   const params = [
     `client_id=${encodeURIComponent(clientId)}`,
     `redirect_uri=${encodeURIComponent(redirectUri)}`,
@@ -231,20 +232,38 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
   
   try {
     console.log('═══════════════════════════════════════════════════════');
-    console.log('🔐 JWT AUTHENTICATION');
+    console.log('🔐 JWT AUTHENTICATION (Server-Side Signing)');
     console.log('═══════════════════════════════════════════════════════');
     
-    // Generate JWT assertion
-    const clientAssertion = generateClientJWT(clientId, clientSecret);
+    // CRITICAL FIX: Call Edge Function to sign JWT server-side with HS256
+    console.log('📤 Requesting signed JWT from Edge Function...');
+    
+    const { data: jwtData, error: jwtError } = await supabase.functions.invoke('tmwe-jwt-sign', {
+      body: {
+        clientId,
+        clientSecret,
+      }
+    });
+
+    if (jwtError || !jwtData?.jwt) {
+      console.error('❌ JWT signing failed:', jwtError);
+      throw new Error(`Failed to generate signed JWT: ${jwtError?.message || 'No JWT returned'}`);
+    }
+
+    const signedJWT = jwtData.jwt;
+    console.log('✅ Signed JWT received from Edge Function');
+    console.log('   JWT preview:', signedJWT.substring(0, 50) + '...');
+    console.log('   JWT length:', signedJWT.length);
     
     const formData = new URLSearchParams();
     formData.append('grant_type', 'client_credentials_jwt');
     formData.append('client_assertion_type', 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
-    formData.append('client_assertion', clientAssertion);
+    formData.append('client_assertion', signedJWT);
     
-    console.log('📤 JWT Token Request:');
+    console.log('📤 JWT Token Request to TMWE API:');
     console.log('  - grant_type: client_credentials_jwt');
-    console.log('  - client_assertion: ', clientAssertion.substring(0, 50) + '...');
+    console.log('  - client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
+    console.log('  - client_assertion:', signedJWT.substring(0, 50) + '...');
     
     const response = await fetch('https://findair.it/erp/tmwe_json/token', {
       method: 'POST',
@@ -257,40 +276,52 @@ export const authenticateWithJWT = async (): Promise<boolean> => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ JWT Authentication Failed:', errorText);
+      console.error('   Status:', response.status);
+      console.error('   Status Text:', response.statusText);
       return false;
     }
     
     const data = await response.json();
+    
+    // Validate response according to jwt-api.yaml
+    if (!data.access_token || !data.expires_in) {
+      console.error('❌ Invalid TMWE JWT response:', data);
+      throw new Error('Invalid TMWE JWT response: missing access_token or expires_in');
+    }
+    
     const expiresAt = new Date(Date.now() + (data.expires_in * 1000)).toISOString();
     
-    console.log('✅ JWT Token Received');
+    console.log('✅ JWT Token Received from TMWE API');
     console.log('  - access_token:', data.access_token.substring(0, 20) + '...');
     console.log('  - expires_in:', data.expires_in, 'seconds');
+    console.log('  - refresh_token:', data.refresh_token ? data.refresh_token.substring(0, 20) + '...' : 'none');
     
     await setApiConfigToDB({
       email: userEmail,
       accessToken: data.access_token,
-      refreshToken: undefined, // JWT non usa refresh token
+      refreshToken: data.refresh_token || undefined,
       expiresAt,
       clientId,
       clientSecret,
       authType: 'jwt',
     });
     
+    console.log('✅ JWT credentials saved to database');
     console.log('═══════════════════════════════════════════════════════');
     
     return true;
   } catch (error) {
-    console.error('JWT authentication error:', error);
+    console.error('❌ JWT authentication error:', error);
+    console.error('   Stack:', error instanceof Error ? error.stack : 'No stack trace');
     return false;
   }
 };
 
-// Refresh access token (OAuth2)
+// Refresh access token (supports both OAuth2 and JWT)
 export const refreshAccessToken = async (): Promise<boolean> => {
   const config = await getApiConfigFromDB();
   
-  if (!config?.refreshToken || !config?.clientId) {
+  if (!config?.clientId) {
     return false;
   }
 
@@ -308,24 +339,37 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   const userEmail = profile?.tmwe_email;
   if (!userEmail) return false;
 
+  const authType = config.authType || 'oauth2';
+
   try {
-    console.log('🔄 Refreshing OAuth token via Supabase Edge Function...');
+    console.log('🔄 Refreshing access token...');
+    console.log('   Auth type:', authType);
+    console.log('   User email:', userEmail);
     
-    // Llamar a la edge function para refresh (servidor maneja todo el flujo OAuth)
-    const { data, error } = await supabase.functions.invoke('tmwe-oauth-refresh', {
+    // CRITICAL FIX: Use different Edge Functions based on auth type
+    const functionName = authType === 'jwt' ? 'tmwe-jwt-refresh' : 'tmwe-oauth-refresh';
+    console.log('   Using Edge Function:', functionName);
+    
+    const { data, error } = await supabase.functions.invoke(functionName, {
       body: { email: userEmail }
     });
 
-    if (error || !data?.success) {
-      console.error('❌ Token refresh failed:', error || data?.error);
+    if (error || !data?.access_token) {
+      console.error('❌ Token refresh failed:', error);
+      console.error('   Error details:', error);
+      console.error('   Response data:', data);
       await clearApiConfigFromDB();
       return false;
     }
 
-    console.log('✅ Token refreshed successfully via edge function');
+    console.log('✅ New access token received');
+    console.log('   Token preview:', data.access_token.substring(0, 20) + '...');
+    console.log('   Expires in:', data.expires_in);
+    console.log('✅ Token refreshed successfully via', functionName);
     return true;
   } catch (error) {
-    console.error('Error refreshing TMWE token:', error);
+    console.error('❌ Error refreshing TMWE token:', error);
+    console.error('   Stack:', error instanceof Error ? error.stack : 'No stack trace');
     await clearApiConfigFromDB();
     return false;
   }

@@ -1069,24 +1069,25 @@ const TMWEApiTester = () => {
 
       <Tabs defaultValue="standard" className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="standard">
-              <Settings2 className="mr-2 h-4 w-4" />
-              🧪 Quick Test
+            <TabsTrigger value="standard" className="flex-col h-auto py-2">
+              <Settings2 className="h-4 w-4 mb-1" />
+              <span className="text-xs">🧪 Quick Test</span>
             </TabsTrigger>
-            <TabsTrigger value="benchmark">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              📊 Performance Benchmark
+            <TabsTrigger value="benchmark" className="flex-col h-auto py-2">
+              <BarChart3 className="h-4 w-4 mb-1" />
+              <span className="text-xs">📊 Performance Benchmark</span>
             </TabsTrigger>
-            <TabsTrigger value="optimization">
-              <FlaskConical className="mr-2 h-4 w-4" />
-              ⚙️ Optimization Lab
+            <TabsTrigger value="optimization" className="flex-col h-auto py-2">
+              <FlaskConical className="h-4 w-4 mb-1" />
+              <span className="text-xs">⚙️ Optimization Lab</span>
             </TabsTrigger>
-            <TabsTrigger value="dashboard">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              📈 Dashboard & Export
+            <TabsTrigger value="dashboard" className="flex-col h-auto py-2">
+              <BarChart3 className="h-4 w-4 mb-1" />
+              <span className="text-xs">📈 Dashboard & Export</span>
             </TabsTrigger>
-            <TabsTrigger value="email-import">
-              📧 Email Import Test
+            <TabsTrigger value="email-import" className="flex-col h-auto py-2">
+              <span className="text-2xl mb-1">📧</span>
+              <span className="text-xs">Email Import Test</span>
             </TabsTrigger>
           </TabsList>
 

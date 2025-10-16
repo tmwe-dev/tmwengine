@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2 } from "lucide-react";
+import { Loader2, Play, Copy, CheckCircle2, XCircle, BarChart3, Zap, Settings2, Download, FileSpreadsheet, StopCircle, AlertTriangle } from "lucide-react";
 import { getApiConfigFromDB } from "@/lib/tmwe-api-integrated";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Configurazioni endpoint con handlers
 const API_ENDPOINTS = {
@@ -94,6 +95,16 @@ interface BenchmarkConfig {
 interface BenchmarkResult extends TestResult {
   variantName: string;
   variantConfig: Record<string, any>;
+}
+
+interface AllBenchmarkResults {
+  suiteName: string;
+  category: string;
+  totalVariants: number;
+  results: BenchmarkResult[];
+  winner: BenchmarkResult | null;
+  avgResponseTime: number;
+  successRate: number;
 }
 
 // Suite di benchmark predefinite (ESPANSE - FASE 1)
@@ -307,6 +318,16 @@ const TMWEApiTester = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [benchmarkHistory, setBenchmarkHistory] = useState<any[]>([]);
   
+  // Run All Benchmarks state
+  const [allBenchmarkResults, setAllBenchmarkResults] = useState<AllBenchmarkResults[]>([]);
+  const [isRunningAll, setIsRunningAll] = useState(false);
+  const [allBenchmarksProgress, setAllBenchmarksProgress] = useState({
+    currentSuite: 0,
+    totalSuites: 0,
+    currentSuiteProgress: 0,
+    suiteName: ''
+  });
+  
   const { toast } = useToast();
 
   const handleEndpointChange = (endpoint: string) => {
@@ -492,6 +513,195 @@ const TMWEApiTester = () => {
     toast({
       title: "✅ Benchmark completato",
       description: `${results.length} test eseguiti`,
+    });
+  };
+
+  const runAllBenchmarks = async () => {
+    const suitesToRun = filteredSuites;
+    setIsRunningAll(true);
+    setAllBenchmarkResults([]);
+    setAllBenchmarksProgress({
+      currentSuite: 0,
+      totalSuites: suitesToRun.length,
+      currentSuiteProgress: 0,
+      suiteName: ''
+    });
+
+    const allResults: AllBenchmarkResults[] = [];
+    const accessToken = await getAccessToken();
+
+    for (let suiteIndex = 0; suiteIndex < suitesToRun.length; suiteIndex++) {
+      if (!isRunningAll) break; // Allow interruption
+
+      const suite = suitesToRun[suiteIndex];
+      setAllBenchmarksProgress(prev => ({
+        ...prev,
+        currentSuite: suiteIndex + 1,
+        suiteName: suite.name
+      }));
+
+      const suiteResults: BenchmarkResult[] = [];
+
+      for (let i = 0; i < suite.variations.length; i++) {
+        if (!isRunningAll) break;
+
+        const variation = suite.variations[i];
+        const startTime = performance.now();
+
+        try {
+          const { data: responseData, error: invokeError } = await supabase.functions.invoke('tmwe-api-proxy', {
+            body: {
+              endpoint: suite.endpoint,
+              data: variation,
+              bearerToken: accessToken
+            }
+          });
+
+          const responseTime = performance.now() - startTime;
+
+          const result: BenchmarkResult = {
+            timestamp: new Date().toISOString(),
+            endpoint: suite.endpoint,
+            handler: suite.handler,
+            status: invokeError ? 0 : 200,
+            statusText: invokeError ? "Error" : "OK",
+            headers: { 'content-type': 'application/json' },
+            body: responseData,
+            responseTime: Math.round(responseTime),
+            error: invokeError?.message,
+            variantName: Object.entries(variation)
+              .filter(([key]) => key !== 'handler')
+              .map(([key, val]) => `${key}:${val}`)
+              .join(', '),
+            variantConfig: variation
+          };
+
+          suiteResults.push(result);
+        } catch (error: any) {
+          const responseTime = performance.now() - startTime;
+          suiteResults.push({
+            timestamp: new Date().toISOString(),
+            endpoint: suite.endpoint,
+            handler: suite.handler,
+            status: 0,
+            statusText: "Error",
+            headers: {},
+            body: { error: error.message },
+            responseTime: Math.round(responseTime),
+            error: error.message,
+            variantName: JSON.stringify(variation),
+            variantConfig: variation
+          });
+        }
+
+        setAllBenchmarksProgress(prev => ({
+          ...prev,
+          currentSuiteProgress: ((i + 1) / suite.variations.length) * 100
+        }));
+
+        if (i < suite.variations.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, benchmarkDelay));
+        }
+      }
+
+      const successfulResults = suiteResults.filter(r => r.status === 200);
+      const winner = successfulResults.sort((a, b) => a.responseTime - b.responseTime)[0] || null;
+      const avgResponseTime = successfulResults.length > 0
+        ? Math.round(successfulResults.reduce((sum, r) => sum + r.responseTime, 0) / successfulResults.length)
+        : 0;
+
+      allResults.push({
+        suiteName: suite.name,
+        category: suite.category,
+        totalVariants: suite.variations.length,
+        results: suiteResults,
+        winner,
+        avgResponseTime,
+        successRate: (successfulResults.length / suiteResults.length) * 100
+      });
+
+      setAllBenchmarkResults([...allResults]);
+    }
+
+    setIsRunningAll(false);
+
+    // Save to history
+    const newHistory = [...benchmarkHistory, {
+      timestamp: Date.now(),
+      category: selectedCategory,
+      results: allResults
+    }].slice(-20);
+    setBenchmarkHistory(newHistory);
+    localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
+
+    toast({
+      title: "🎉 Tutti i benchmark completati!",
+      description: `${allResults.length} suite eseguite con successo`,
+    });
+  };
+
+  const exportAllBenchmarks = (format: 'json' | 'csv') => {
+    if (format === 'json') {
+      const report = {
+        timestamp: new Date().toISOString(),
+        category: selectedCategory,
+        totalSuites: allBenchmarkResults.length,
+        suites: allBenchmarkResults.map(suite => ({
+          name: suite.suiteName,
+          category: suite.category,
+          variants: suite.totalVariants,
+          avgResponseTime: suite.avgResponseTime,
+          successRate: suite.successRate,
+          winner: suite.winner?.variantName || 'N/A',
+          results: suite.results
+        })),
+        summary: {
+          totalTests: allBenchmarkResults.reduce((sum, s) => sum + s.totalVariants, 0),
+          avgSuccessRate: (allBenchmarkResults.reduce((sum, s) => sum + s.successRate, 0) / allBenchmarkResults.length).toFixed(2),
+          fastestConfig: allBenchmarkResults
+            .flatMap(s => s.results)
+            .filter(r => r.status === 200)
+            .sort((a, b) => a.responseTime - b.responseTime)[0]
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tmwe-all-benchmarks-${Date.now()}.json`;
+      a.click();
+    } else {
+      const rows = [
+        ['Suite', 'Category', 'Variant', 'Response Time (ms)', 'Status', 'Is Winner', 'Success Rate (%)']
+      ];
+
+      allBenchmarkResults.forEach(suite => {
+        suite.results.forEach(result => {
+          rows.push([
+            suite.suiteName,
+            suite.category,
+            result.variantName,
+            result.responseTime.toString(),
+            result.status.toString(),
+            result === suite.winner ? 'YES' : 'NO',
+            suite.successRate.toFixed(2)
+          ]);
+        });
+      });
+
+      const csv = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tmwe-all-benchmarks-${Date.now()}.csv`;
+      a.click();
+    }
+
+    toast({
+      title: "📥 Export completato",
+      description: `Report salvato in formato ${format.toUpperCase()}`,
     });
   };
 
@@ -866,44 +1076,100 @@ const TMWEApiTester = () => {
                   </p>
                 </div>
 
-                {isBenchmarking && (
+                {(isBenchmarking || isRunningAll) && (
                   <div className="space-y-2">
                     <Label>Progresso</Label>
-                    <Progress value={benchmarkProgress} />
-                    <p className="text-xs text-muted-foreground text-center">
-                      {Math.round(benchmarkProgress)}%
-                    </p>
+                    {isRunningAll ? (
+                      <>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Suite {allBenchmarksProgress.currentSuite}/{allBenchmarksProgress.totalSuites}</span>
+                          <span className="font-mono">{allBenchmarksProgress.suiteName.substring(0, 30)}...</span>
+                        </div>
+                        <Progress value={
+                          ((allBenchmarksProgress.currentSuite - 1) / allBenchmarksProgress.totalSuites * 100) +
+                          (allBenchmarksProgress.currentSuiteProgress / allBenchmarksProgress.totalSuites)
+                        } />
+                        <p className="text-xs text-muted-foreground text-center">
+                          Variante {Math.round(allBenchmarksProgress.currentSuiteProgress)}% completata
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Progress value={benchmarkProgress} />
+                        <p className="text-xs text-muted-foreground text-center">
+                          {Math.round(benchmarkProgress)}%
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 
+                <div className="flex gap-2">
+                  <Button
+                    onClick={runBenchmarkSuite}
+                    disabled={isBenchmarking || isRunningAll}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    {isBenchmarking ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Test...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-4 w-4" />
+                        Suite Singola
+                      </>
+                    )}
+                  </Button>
+                </div>
+
                 <Button
-                  onClick={runBenchmarkSuite}
-                  disabled={isBenchmarking}
+                  onClick={runAllBenchmarks}
+                  disabled={isBenchmarking || isRunningAll}
+                  variant="default"
                   className="w-full"
                   size="lg"
                 >
-                  {isBenchmarking ? (
+                  {isRunningAll ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Test in corso...
+                      Esecuzione {allBenchmarksProgress.currentSuite}/{allBenchmarksProgress.totalSuites}...
                     </>
                   ) : (
                     <>
                       <Zap className="mr-2 h-4 w-4" />
-                      Esegui Benchmark
+                      {selectedCategory === "all" 
+                        ? `Esegui Tutte le Suite (${filteredSuites.length})`
+                        : `Esegui Suite "${selectedCategory}" (${filteredSuites.length})`
+                      }
                     </>
                   )}
                 </Button>
 
+                {isRunningAll && (
+                  <Button
+                    onClick={() => setIsRunningAll(false)}
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <StopCircle className="mr-2 h-4 w-4" />
+                    Interrompi Test
+                  </Button>
+                )}
+
                 {/* ✅ FASE 3: Export JSON + CSV */}
                 {benchmarkResults.length > 0 && (
                   <div className="space-y-2">
+                    <Label className="text-xs">Export Suite Singola</Label>
                     <Button
                       onClick={() => exportBenchmarkReport('json')}
                       variant="outline"
                       className="w-full"
                     >
-                      <Copy className="mr-2 h-4 w-4" />
+                      <Download className="mr-2 h-4 w-4" />
                       Esporta JSON
                     </Button>
                     <Button
@@ -911,8 +1177,30 @@ const TMWEApiTester = () => {
                       variant="outline"
                       className="w-full"
                     >
-                      <Copy className="mr-2 h-4 w-4" />
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Esporta CSV
+                    </Button>
+                  </div>
+                )}
+
+                {allBenchmarkResults.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <Label className="text-xs">Export Completo ({allBenchmarkResults.length} suite)</Label>
+                    <Button
+                      onClick={() => exportAllBenchmarks('json')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Esporta Tutto (JSON)
+                    </Button>
+                    <Button
+                      onClick={() => exportAllBenchmarks('csv')}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Esporta Tutto (CSV)
                     </Button>
                   </div>
                 )}
@@ -1042,6 +1330,189 @@ const TMWEApiTester = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* ✅ ALL BENCHMARKS RESULTS SECTION */}
+          {allBenchmarkResults.length > 0 && (
+            <div className="mt-6 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>📊 Riepilogo Globale - Tutte le Suite</CardTitle>
+                  <CardDescription>
+                    Risultati comparativi di {allBenchmarkResults.length} suite eseguite ({allBenchmarkResults.reduce((sum, s) => sum + s.totalVariants, 0)} test totali)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Suite Eseguite</p>
+                      <p className="text-2xl font-bold">{allBenchmarkResults.length}</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Test Totali</p>
+                      <p className="text-2xl font-bold">{allBenchmarkResults.reduce((sum, s) => sum + s.totalVariants, 0)}</p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Success Rate Medio</p>
+                      <p className="text-2xl font-bold">
+                        {(allBenchmarkResults.reduce((sum, s) => sum + s.successRate, 0) / allBenchmarkResults.length).toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Tempo Medio</p>
+                      <p className="text-2xl font-bold">
+                        {Math.round(allBenchmarkResults.reduce((sum, s) => sum + s.avgResponseTime, 0) / allBenchmarkResults.length)}ms
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Comparative Table */}
+                  <div className="rounded-md border mb-6">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-muted">
+                          <tr>
+                            <th className="p-3 text-left text-sm font-semibold">Suite</th>
+                            <th className="p-3 text-left text-sm font-semibold">Categoria</th>
+                            <th className="p-3 text-left text-sm font-semibold">Varianti</th>
+                            <th className="p-3 text-left text-sm font-semibold">Tempo Medio</th>
+                            <th className="p-3 text-left text-sm font-semibold">Success Rate</th>
+                            <th className="p-3 text-left text-sm font-semibold">Vincitore</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allBenchmarkResults
+                            .sort((a, b) => a.avgResponseTime - b.avgResponseTime)
+                            .map((suite, index) => (
+                              <tr key={index} className="border-t hover:bg-accent">
+                                <td className="p-3 text-sm">{suite.suiteName}</td>
+                                <td className="p-3">
+                                  <Badge variant="outline">{suite.category}</Badge>
+                                </td>
+                                <td className="p-3 text-sm text-center">{suite.totalVariants}</td>
+                                <td className="p-3">
+                                  <Badge variant="outline">{suite.avgResponseTime}ms</Badge>
+                                </td>
+                                <td className="p-3">
+                                  <Badge className={suite.successRate === 100 ? "bg-green-500" : suite.successRate > 50 ? "bg-yellow-500" : "bg-destructive"}>
+                                    {suite.successRate.toFixed(0)}%
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-sm font-mono text-xs max-w-[200px] truncate">
+                                  {suite.winner?.variantName || 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Multi-Suite Bar Chart */}
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={allBenchmarkResults.map(s => ({
+                        name: s.suiteName.substring(0, 25),
+                        fullName: s.suiteName,
+                        avgTime: s.avgResponseTime,
+                        category: s.category
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                        <YAxis label={{ value: 'Avg Response Time (ms)', angle: -90, position: 'insideLeft' }} />
+                        <Tooltip 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-background border rounded-lg p-3 shadow-lg max-w-xs">
+                                  <p className="font-semibold text-sm">{payload[0].payload.fullName}</p>
+                                  <p className="text-sm text-muted-foreground">Avg: {payload[0].value}ms</p>
+                                  <Badge variant="outline" className="mt-1">{payload[0].payload.category}</Badge>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="avgTime">
+                          {allBenchmarkResults.map((entry, index) => {
+                            const colors = {
+                              'Performance': "hsl(var(--chart-1))",
+                              'Optimization': "hsl(var(--chart-2))",
+                              'Critical': "hsl(var(--destructive))",
+                              'Sync': "hsl(var(--chart-3))",
+                              'Baseline': "hsl(var(--chart-4))"
+                            };
+                            return (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={colors[entry.category as keyof typeof colors] || "hsl(var(--chart-5))"} 
+                              />
+                            );
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top 5 Fastest Configs */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>🏆 Top 5 Configurazioni Più Veloci</CardTitle>
+                  <CardDescription>Le configurazioni con il miglior tempo di risposta</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {allBenchmarkResults
+                      .flatMap(s => s.results)
+                      .filter(r => r.status === 200)
+                      .sort((a, b) => a.responseTime - b.responseTime)
+                      .slice(0, 5)
+                      .map((result, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <div className="text-2xl">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index]}</div>
+                          <div className="flex-1">
+                            <p className="font-mono text-sm font-semibold">{result.variantName}</p>
+                            <p className="text-xs text-muted-foreground">{result.endpoint}</p>
+                          </div>
+                          <Badge variant="outline" className="font-bold">{result.responseTime}ms</Badge>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Critical Issues Alert */}
+              {(() => {
+                const criticalIssues = allBenchmarkResults.filter(s => s.successRate < 100);
+                if (criticalIssues.length > 0) {
+                  return (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>⚠️ Problemi Rilevati ({criticalIssues.length} suite)</AlertTitle>
+                      <AlertDescription>
+                        <ul className="mt-2 space-y-1 text-sm">
+                          {criticalIssues.map((suite, i) => (
+                            <li key={i}>
+                              🚨 <strong>{suite.suiteName}</strong>: {suite.successRate.toFixed(0)}% success rate
+                              {suite.results.filter(r => r.status !== 200).length > 0 && (
+                                <span className="ml-2 text-xs">
+                                  ({suite.results.filter(r => r.status !== 200).length} fallimenti)
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

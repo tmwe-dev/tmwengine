@@ -19,6 +19,7 @@ serve(async (req) => {
     const enableLogging = optimizationFlags?.enableLogging ?? true;
     const useDoubleSerializat = optimizationFlags?.useDoubleSerializat ?? true;
     const useTextResponse = optimizationFlags?.useTextResponse ?? true;
+    const useSequentialExecution = optimizationFlags?.useSequentialExecution ?? true;
     
     if (enableLogging) {
       console.log('═══════════════════════════════════════════════════════');
@@ -80,7 +81,67 @@ serve(async (req) => {
       console.log('🔑 TMWE Token retrieved (primi 20 chars):', tmweAccessToken.substring(0, 20) + '...');
     }
 
-    // Make request to TMWE API
+    // 🚀 GESTIONE BATCH OPERATIONS (Mark as Read con array di message_ids)
+    if (data.handler === 'mark_as_read' && Array.isArray(data.message_ids)) {
+      const messageIds = data.message_ids;
+      
+      if (enableLogging) {
+        console.log(`📧 Batch Mark as Read: ${messageIds.length} messaggi`);
+        console.log(`⚡ Modalità: ${useSequentialExecution ? 'SEQUENTIAL' : 'PARALLEL'}`);
+      }
+      
+      let batchResults: any[];
+      const batchStartTime = Date.now();
+      
+      if (useSequentialExecution) {
+        // SEQUENZIALE (lento)
+        batchResults = [];
+        for (const msgId of messageIds) {
+          const singleResponse = await fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'mark_as_read', message_id: msgId }),
+          });
+          const singleData = await singleResponse.json();
+          batchResults.push(singleData);
+        }
+      } else {
+        // PARALLELO (veloce) 🚀
+        const promises = messageIds.map(msgId => 
+          fetch(`https://findair.it/erp/tmwe_json${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tmweAccessToken}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ handler: 'mark_as_read', message_id: msgId }),
+          }).then(r => r.json())
+        );
+        batchResults = await Promise.all(promises);
+      }
+      
+      const batchEndTime = Date.now();
+      
+      if (enableLogging) {
+        console.log(`✅ Batch completato in ${batchEndTime - batchStartTime}ms`);
+      }
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        results: batchResults,
+        executionTime: batchEndTime - batchStartTime
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // NORMALE SINGLE REQUEST
     const tmweUrl = `https://findair.it/erp/tmwe_json${endpoint}`;
     
     if (enableLogging) {

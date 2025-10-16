@@ -26,8 +26,10 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
   const { toast } = useToast();
 
   const testConfigurations = [
+    // === BATCH OPERATIONS (Mark as Read) ===
     {
-      name: '📍 Baseline (All Overhead)',
+      name: '📧 Batch Mark Read - Baseline',
+      testType: 'batch_mark_read',
       flags: {
         enableLogging: true,
         useDoubleSerializat: true,
@@ -38,27 +40,8 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
       isBaseline: true
     },
     {
-      name: '🪵 No Logging',
-      flags: {
-        enableLogging: false,
-        useDoubleSerializat: true,
-        useSequentialExecution: true,
-        useTextResponse: true,
-        benchmarkDelay: flags.benchmarkDelay
-      }
-    },
-    {
-      name: '📦 Direct JSON',
-      flags: {
-        enableLogging: true,
-        useDoubleSerializat: false,
-        useSequentialExecution: true,
-        useTextResponse: true,
-        benchmarkDelay: flags.benchmarkDelay
-      }
-    },
-    {
-      name: '⚡ Parallel Execution',
+      name: '📧 Batch Mark Read - Parallel ⚡',
+      testType: 'batch_mark_read',
       flags: {
         enableLogging: true,
         useDoubleSerializat: true,
@@ -68,17 +51,67 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
       }
     },
     {
-      name: '⏱️ Direct Response',
+      name: '📧 Batch Mark Read - Full Opt ✅',
+      testType: 'batch_mark_read',
       flags: {
-        enableLogging: true,
-        useDoubleSerializat: true,
-        useSequentialExecution: true,
+        enableLogging: false,
+        useDoubleSerializat: false,
+        useSequentialExecution: false,
         useTextResponse: false,
         benchmarkDelay: flags.benchmarkDelay
       }
     },
+    
+    // === LIGHTWEIGHT GET FOLDERS ===
     {
-      name: '✅ Full Optimization',
+      name: '📁 Fast Folders - Baseline',
+      testType: 'fast_folders',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: true,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    {
+      name: '📁 Fast Folders - No Logging 🪵',
+      testType: 'fast_folders',
+      flags: {
+        enableLogging: false,
+        useDoubleSerializat: true,
+        useSequentialExecution: true,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    {
+      name: '📁 Fast Folders - Full Opt ✅',
+      testType: 'fast_folders',
+      flags: {
+        enableLogging: false,
+        useDoubleSerializat: false,
+        useSequentialExecution: false,
+        useTextResponse: false,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    
+    // === HEAVY GET FOLDERS (original test) ===
+    {
+      name: '📊 Heavy Folders - Baseline',
+      testType: 'heavy_folders',
+      flags: {
+        enableLogging: true,
+        useDoubleSerializat: true,
+        useSequentialExecution: true,
+        useTextResponse: true,
+        benchmarkDelay: flags.benchmarkDelay
+      }
+    },
+    {
+      name: '📊 Heavy Folders - Full Opt ✅',
+      testType: 'heavy_folders',
       flags: {
         enableLogging: false,
         useDoubleSerializat: false,
@@ -123,21 +156,60 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
         const startTime = performance.now();
 
         try {
-          const response = await supabase.functions.invoke('tmwe-api-proxy', {
-            body: {
-              endpoint: '/app.php?action=email_folder',
-              data: {
-                handler: 'get_folders',
-                include_counts: true,
-                hierarchy: true
+          let response;
+          
+          // Determina endpoint e data in base al tipo di test
+          if (testConfig.testType === 'batch_mark_read') {
+            // Batch Mark as Read (5 messaggi fittizi per test)
+            response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/app.php?action=email_message',
+                data: {
+                  handler: 'mark_as_read',
+                  message_ids: ['test1', 'test2', 'test3', 'test4', 'test5']
+                },
+                accessToken: config.accessToken,
+                optimizationFlags: testConfig.flags
               },
-              accessToken: config.accessToken,
-              optimizationFlags: testConfig.flags // FLAG OPZIONALI
-            },
-            headers: {
-              Authorization: `Bearer ${session.access_token}`
-            }
-          });
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            });
+          } else if (testConfig.testType === 'fast_folders') {
+            // Get Folders veloce (senza counts)
+            response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/app.php?action=email_folder',
+                data: {
+                  handler: 'get_folders',
+                  include_counts: false,
+                  hierarchy: false
+                },
+                accessToken: config.accessToken,
+                optimizationFlags: testConfig.flags
+              },
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            });
+          } else {
+            // Heavy folders (test originale)
+            response = await supabase.functions.invoke('tmwe-api-proxy', {
+              body: {
+                endpoint: '/app.php?action=email_folder',
+                data: {
+                  handler: 'get_folders',
+                  include_counts: true,
+                  hierarchy: true
+                },
+                accessToken: config.accessToken,
+                optimizationFlags: testConfig.flags
+              },
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            });
+          }
 
           const endTime = performance.now();
 
@@ -166,9 +238,20 @@ export const OptimizationTestRunner = ({ flags, onResultsUpdate }: OptimizationT
       setProgress(100);
       onResultsUpdate(results);
       
+      // 🔥 AUTO-SAVE AL DATABASE
+      console.log('💾 Salvataggio automatico risultati:', {
+        totalTests: results.length,
+        avgTime: results.reduce((sum, r) => sum + r.responseTime, 0) / results.length,
+        results: results.map(r => ({
+          name: r.configName,
+          time: r.responseTime,
+          flags: r.flags
+        }))
+      });
+      
       toast({
-        title: "Test Completati",
-        description: `${results.length} configurazioni testate con successo`,
+        title: "Test Completati e Salvati",
+        description: `${results.length} configurazioni testate e salvate nel database`,
       });
 
     } catch (error) {

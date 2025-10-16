@@ -227,8 +227,8 @@ serve(async (req) => {
           rubrica: profileData.rubrica,
         },
         supabaseUserId: supabaseUser.id,
-        access_token: signInData.session.access_token,
-        refresh_token: signInData.session.refresh_token,
+        access_token: access_token,
+        refresh_token: refresh_token,
       }),
       {
         status: 200,

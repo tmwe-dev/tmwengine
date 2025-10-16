@@ -373,65 +373,39 @@ const ensureValidToken = async (): Promise<string | null> => {
   return config.accessToken;
 };
 
-// API request wrapper - DIRECT API CALL (NO EDGE FUNCTION)
+// API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  const accessToken = await ensureValidToken();
-  
-  if (!accessToken) {
-    throw new Error('No valid token. Please login to TMWE first.');
-  }
-
-  const url = `https://findair.it/erp/tmwe_json${endpoint}`;
+  await ensureValidToken(); // Assicura che il token sia valido prima di chiamare
 
   console.log('═══════════════════════════════════════════════════════');
-  console.log('📤 CHIAMATA DIRETTA API TMWE');
+  console.log('📤 CHIAMATA API TMWE (via Edge Function Proxy)');
   console.log('═══════════════════════════════════════════════════════');
   console.log('⏰ Timestamp:', new Date().toISOString());
-  console.log('🔗 URL:', url);
   console.log('📍 Endpoint:', endpoint);
   console.log('🎯 Handler:', data.handler);
-  console.log('🔑 Token (primi 20 chars):', accessToken.substring(0, 20) + '...');
   console.log('═══════════════════════════════════════════════════════');
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(data),
+    const { data: responseData, error } = await supabase.functions.invoke('tmwe-api-proxy', {
+      body: { endpoint, data },
     });
 
-    const responseText = await response.text();
-
     console.log('═══════════════════════════════════════════════════════');
-    console.log('📥 RISPOSTA API TMWE');
+    console.log('📥 RISPOSTA EDGE FUNCTION');
     console.log('═══════════════════════════════════════════════════════');
     console.log('⏰ Timestamp:', new Date().toISOString());
     console.log('📍 Endpoint:', endpoint);
     console.log('🎯 Handler:', data.handler);
-    console.log('📊 Status:', response.status, response.statusText);
-    console.log('📦 Response (primi 500 chars):', responseText.substring(0, 500));
 
-    if (!response.ok) {
-      console.error('❌ ERRORE HTTP');
-      console.error('📊 Status:', response.status);
-      console.error('📄 Response:', responseText);
+    if (error) {
+      console.error('❌ ERRORE dalla Edge Function');
+      console.error('⚠️ Error:', error);
       console.log('═══════════════════════════════════════════════════════');
-      throw new Error(`API Error: ${response.status} - ${responseText}`);
+      throw error;
     }
 
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = { raw: responseText };
-    }
-
-    console.log('✅ RISPOSTA EXITOSA');
-    console.log('📦 Parsed Data:', JSON.stringify(responseData, null, 2));
+    console.log('✅ RISPOSTA RIUSCITA');
+    console.log('📦 Response Data:', JSON.stringify(responseData, null, 2));
     console.log('═══════════════════════════════════════════════════════');
 
     return responseData;

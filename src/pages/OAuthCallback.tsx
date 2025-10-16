@@ -61,24 +61,26 @@ const OAuthCallback = () => {
 
         console.log('🔗 Magic link received:', magicLink);
 
-        // Extraer token_hash del magic link
+        // ✅ CORRECCIÓN: El magic link tiene formato query params, no hash
+        // Formato: https://.../auth/v1/verify?token=XXX&type=magiclink&redirect_to=...
         const magicLinkUrl = new URL(magicLink);
-        const token_hash = magicLinkUrl.hash.split('token_hash=')[1]?.split('&')[0];
-        const type = magicLinkUrl.hash.split('type=')[1]?.split('&')[0] || 'magiclink';
+        const token = magicLinkUrl.searchParams.get('token');
+        const type = magicLinkUrl.searchParams.get('type') || 'magiclink';
 
-        if (!token_hash) {
-          console.error('❌ Failed to extract token_hash from magic link');
+        if (!token) {
+          console.error('❌ Failed to extract token from magic link');
           console.error('   Magic link:', magicLink);
-          throw new Error('Failed to extract token_hash from magic link');
+          console.error('   URL params:', Array.from(magicLinkUrl.searchParams.entries()));
+          throw new Error('Failed to extract token from magic link');
         }
 
-        console.log('🔑 Extracted token_hash:', token_hash.substring(0, 20) + '...');
+        console.log('🔑 Extracted token:', token.substring(0, 20) + '...');
         console.log('🔑 Type:', type);
         console.log('🔑 Verifying OTP with Supabase...');
 
-        // ✅ Verificar el OTP con Supabase (como en el proyecto de Luca)
+        // ✅ Verificar el OTP con Supabase usando el token
         const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
-          token_hash,
+          token_hash: token,
           type: type as any,
         });
 

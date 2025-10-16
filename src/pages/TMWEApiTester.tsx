@@ -109,8 +109,8 @@ interface AllBenchmarkResults {
   successRate: number;
 }
 
-// Suite di benchmark predefinite (ESPANSE - FASE 1)
-const BENCHMARK_SUITES: BenchmarkConfig[] = [
+// Suite di benchmark predefinite - Factory function per UIDs dinamici
+const createBenchmarkSuites = (realUIDs: string[]): BenchmarkConfig[] => [
   // ========== SYNC OPERATIONS (3 suite) ==========
   {
     name: "🔄 Sync - Full vs Incremental",
@@ -132,10 +132,10 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
     handler: "get_messages",
     description: "Test performance con diversi limiti di email recuperate",
     variations: [
+      { handler: "get_messages", folder: "INBOX", limit: 5, offset: 0 },  // RIDOTTO PER TEST VELOCI
       { handler: "get_messages", folder: "INBOX", limit: 10, offset: 0 },
       { handler: "get_messages", folder: "INBOX", limit: 25, offset: 0 },
       { handler: "get_messages", folder: "INBOX", limit: 50, offset: 0 },
-      { handler: "get_messages", folder: "INBOX", limit: 100, offset: 0 },
     ]
   },
   {
@@ -193,10 +193,10 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
     handler: "get_folders",
     description: "Impatto di counts e hierarchy sulla performance",
     variations: [
-      { handler: "get_folders", include_counts: false, hierarchy: false },
+      { handler: "get_folders", include_counts: false, hierarchy: false }, // OTTIMIZZATO - PIÙ VELOCE
       { handler: "get_folders", include_counts: true, hierarchy: false },
       { handler: "get_folders", include_counts: false, hierarchy: true },
-      { handler: "get_folders", include_counts: true, hierarchy: true },
+      { handler: "get_folders", include_counts: true, hierarchy: true },  // PIÙ LENTO
     ]
   },
   // ========== SINGLE MESSAGE OPERATIONS (4 nuove suite) ==========
@@ -207,9 +207,9 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
     handler: "get_message",
     description: "Impatto formato su singolo messaggio",
     variations: [
-      { handler: "get_message", uid: 1, format: "text" },
-      { handler: "get_message", uid: 1, format: "html" },
-      { handler: "get_message", uid: 1, format: "both" },
+      { handler: "get_message", uid: realUIDs[0] || "1", format: "text" },
+      { handler: "get_message", uid: realUIDs[0] || "1", format: "html" },
+      { handler: "get_message", uid: realUIDs[0] || "1", format: "both" },
     ]
   },
   {
@@ -219,9 +219,9 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
     handler: "mark_as_read",
     description: "Performance batch vs singolo",
     variations: [
-      { handler: "mark_as_read", message_ids: ["1"] },
-      { handler: "mark_as_read", message_ids: ["1", "2", "3", "4", "5"] },
-      { handler: "mark_as_read", message_ids: Array.from({length: 20}, (_, i) => String(i + 1)) },
+      { handler: "mark_as_read", message_ids: [realUIDs[0] || "1"] },
+      { handler: "mark_as_read", message_ids: realUIDs.slice(0, 5).length ? realUIDs.slice(0, 5) : ["1", "2", "3", "4", "5"] },
+      { handler: "mark_as_read", message_ids: realUIDs.slice(0, 20).length ? realUIDs.slice(0, 20) : Array.from({length: 20}, (_, i) => String(i + 1)) },
     ]
   },
   {
@@ -231,20 +231,20 @@ const BENCHMARK_SUITES: BenchmarkConfig[] = [
     handler: "delete_messages",
     description: "Performance cancellazione messaggi",
     variations: [
-      { handler: "delete_messages", message_ids: ["1"], permanent: false },
-      { handler: "delete_messages", message_ids: ["1"], permanent: true },
-      { handler: "delete_messages", message_ids: ["1", "2", "3"], permanent: false },
+      { handler: "delete_messages", message_ids: [realUIDs[0] || "1"], permanent: false },
+      { handler: "delete_messages", message_ids: [realUIDs[0] || "1"], permanent: true },
+      { handler: "delete_messages", message_ids: realUIDs.slice(0, 3).length ? realUIDs.slice(0, 3) : ["1", "2", "3"], permanent: false },
     ]
   },
   {
     name: "📁 Move Messages - Folder Operations",
     category: "Performance",
     endpoint: "/app.php?action=email_message",
-    handler: "move_messages",
+    handler: "move_to_folder",
     description: "Performance spostamento tra cartelle",
     variations: [
-      { handler: "move_messages", message_ids: ["1"], target_folder: "Archive" },
-      { handler: "move_messages", message_ids: ["1", "2", "3"], target_folder: "Archive" },
+      { handler: "move_to_folder", message_ids: [realUIDs[0] || "1"], folder: "Archive" },
+      { handler: "move_to_folder", message_ids: realUIDs.slice(0, 3).length ? realUIDs.slice(0, 3) : ["1", "2", "3"], folder: "Archive" },
     ]
   },
   
@@ -312,7 +312,9 @@ const TMWEApiTester = () => {
   const [history, setHistory] = useState<TestResult[]>([]);
   
   // Benchmark state
-  const [selectedSuite, setSelectedSuite] = useState<string>(BENCHMARK_SUITES[0].name);
+  const [realUIDs, setRealUIDs] = useState<string[]>([]);
+  const BENCHMARK_SUITES = createBenchmarkSuites(realUIDs);
+  const [selectedSuite, setSelectedSuite] = useState<string>(BENCHMARK_SUITES[0]?.name || "");
   const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
   const [isBenchmarking, setIsBenchmarking] = useState(false);
   const [benchmarkProgress, setBenchmarkProgress] = useState(0);
@@ -443,6 +445,70 @@ const TMWEApiTester = () => {
     return config?.accessToken || '';
   };
 
+  // FASE 2: Recupera UIDs reali da INBOX
+  const fetchRealUIDs = async (count: number = 20): Promise<string[]> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const accessToken = await getAccessToken();
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke('tmwe-api-proxy', {
+        body: {
+          endpoint: '/app.php?action=email_message',
+          data: {
+            handler: 'get_messages',
+            folder: 'INBOX',
+            limit: count
+          },
+          bearerToken: accessToken
+        }
+      });
+
+      if (invokeError) throw invokeError;
+      
+      if (responseData?.messages && Array.isArray(responseData.messages)) {
+        const uids = responseData.messages.map((msg: any) => String(msg.uid)).slice(0, count);
+        console.log('🔑 UIDs reali recuperati:', uids);
+        return uids;
+      }
+      
+      console.warn('⚠️ Nessun messaggio trovato, uso UIDs di fallback');
+      return Array.from({length: count}, (_, i) => String(i + 1));
+      
+    } catch (error) {
+      console.error('❌ Errore recupero UIDs reali:', error);
+      toast({
+        title: "⚠️ Usando UIDs di fallback",
+        description: "Impossibile recuperare UIDs reali da INBOX",
+        variant: "destructive"
+      });
+      return Array.from({length: count}, (_, i) => String(i + 1));
+    }
+  };
+
+  // FASE 5: Retry logic per test falliti
+  const executeTestWithRetry = async (
+    testFn: () => Promise<BenchmarkResult>,
+    maxRetries: number = 2
+  ): Promise<BenchmarkResult> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await testFn();
+        if (result.responseTime > 0 && result.status === 200) return result;
+        
+        if (attempt < maxRetries) {
+          console.warn(`⚠️ Tentativo ${attempt} fallito, riprovo...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      } catch (error) {
+        if (attempt === maxRetries) throw error;
+        console.warn(`⚠️ Errore tentativo ${attempt}, riprovo...`, error);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    throw new Error('Max retries exceeded');
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -459,7 +525,13 @@ const TMWEApiTester = () => {
   };
 
   const runBenchmarkSuite = async () => {
-    const suite = BENCHMARK_SUITES.find(s => s.name === selectedSuite);
+    // FASE 2: Recupera UIDs reali prima di eseguire i test
+    const fetchedUIDs = await fetchRealUIDs(20);
+    setRealUIDs(fetchedUIDs);
+    
+    // Ricrea le suite con i nuovi UIDs
+    const updatedSuites = createBenchmarkSuites(fetchedUIDs);
+    const suite = updatedSuites.find(s => s.name === selectedSuite);
     if (!suite) return;
 
     setIsBenchmarking(true);
@@ -535,7 +607,16 @@ const TMWEApiTester = () => {
   };
 
   const runAllBenchmarks = async () => {
-    const suitesToRun = filteredSuites;
+    // FASE 2: Recupera UIDs reali prima di eseguire tutti i benchmark
+    const fetchedUIDs = await fetchRealUIDs(20);
+    setRealUIDs(fetchedUIDs);
+    
+    // Ricrea le suite con i nuovi UIDs
+    const updatedSuites = createBenchmarkSuites(fetchedUIDs);
+    const suitesToRun = selectedCategory === "all" 
+      ? updatedSuites 
+      : updatedSuites.filter(s => s.category === selectedCategory);
+    
     const executionStartTime = performance.now();
     setIsRunningAll(true);
     setShouldStopAllBenchmarks(false);

@@ -385,11 +385,8 @@ const OPTIMAL_CONFIG = {
 
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  await ensureValidToken();
-  
-  // 🔐 RECUPERA IL TOKEN OAuth2 dal database
-  const config = await getApiConfigFromDB();
-  const bearerToken = config?.accessToken;
+  // 🔐 RECUPERA IL TOKEN OAuth2 FRESCO (con auto-refresh se scaduto)
+  const bearerToken = await ensureValidToken();
   
   if (!bearerToken) {
     console.error('❌ Token OAuth2 non disponibile');

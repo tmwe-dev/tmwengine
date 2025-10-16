@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { emailMessageApi, emailSyncApi, emailFolderApi } from '@/lib/tmwe-api-integrated';
+import { emailMessageApi, emailSyncApi, emailFolderApi, getApiConfigFromDB } from '@/lib/tmwe-api-integrated';
 import { EmailHeader } from '@/components/tmwe/EmailHeader';
 import { EmailSidebar } from '@/components/tmwe/EmailSidebar';
 import { EmailList } from '@/components/tmwe/EmailList';
@@ -49,6 +49,37 @@ const EmailDashboard = () => {
   const openAIChat = () => {
     navigate('/chat?page=/email-manager');
   };
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const config = await getApiConfigFromDB();
+        if (!config?.accessToken) {
+          toast.error('❌ Token non disponibile. Effettua il login.');
+          navigate('/tmwe-api-tester');
+          return;
+        }
+        
+        console.log('✅ Token presente, verifico validità...');
+        // Test API call to verify token is valid
+        try {
+          await emailFolderApi.getFolders();
+          console.log('✅ Token valido, API funzionante');
+        } catch (error) {
+          console.warn('⚠️ Token potrebbe essere scaduto o invalido:', error);
+          toast.error('Token scaduto. Rieffettua il login.');
+          navigate('/tmwe-api-tester');
+        }
+      } catch (error) {
+        console.error('❌ Errore autenticazione:', error);
+        toast.error('Errore di autenticazione. Rieffettua il login.');
+        navigate('/tmwe-api-tester');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   // Reset selected email when folder changes
   useEffect(() => {

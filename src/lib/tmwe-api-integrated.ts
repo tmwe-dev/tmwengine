@@ -383,16 +383,20 @@ const OPTIMAL_CONFIG = {
   batchChunkSize: 10,
 };
 
+// Helper function to get access token - SAME AS API TESTER
+export const getAccessToken = async (): Promise<string> => {
+  const config = await getApiConfigFromDB();
+  if (!config?.accessToken) {
+    throw new Error('❌ Token non disponibile. Effettua il login.');
+  }
+  return config.accessToken;
+};
+
 // API request wrapper - USA EDGE FUNCTION COME PROXY CORS
 const fetchApi = async (endpoint: string, data: any) => {
-  // 🔐 RECUPERA IL TOKEN OAuth2 FRESCO (con auto-refresh se scaduto)
-  const bearerToken = await ensureValidToken();
+  // 🔐 USA LA STESSA LOGICA DEL TESTER CHE FUNZIONA
+  const bearerToken = await getAccessToken();
   
-  if (!bearerToken) {
-    console.error('❌ Token OAuth2 non disponibile');
-    throw new Error('Token OAuth2 non disponibile. Effettua il login.');
-  }
-
   console.log('═══════════════════════════════════════════════════════');
   console.log('📤 CHIAMATA API TMWE (via Edge Function Proxy)');
   console.log('═══════════════════════════════════════════════════════');
@@ -400,6 +404,7 @@ const fetchApi = async (endpoint: string, data: any) => {
   console.log('📍 Endpoint:', endpoint);
   console.log('🎯 Handler:', data.handler);
   console.log('🔐 Token presente:', !!bearerToken);
+  console.log('🔑 Token (primi 20 char):', bearerToken.substring(0, 20) + '...');
   console.log('═══════════════════════════════════════════════════════');
 
   try {

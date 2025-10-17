@@ -1,114 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings2, Save, Play } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Clock, Zap, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { CalibrationTestZone } from '@/components/chat-laboratory/calibration/CalibrationTestZone';
-import { CalibrationParamsPanel } from '@/components/chat-laboratory/calibration/CalibrationParamsPanel';
-import { CalibrationMetricsCard } from '@/components/chat-laboratory/calibration/CalibrationMetricsCard';
 import { PromptViewer } from '@/components/chat-laboratory/calibration/PromptViewer';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-export interface CalibrationConfig {
-  timeout_ms: number;
-  max_retries: number;
-  base_delay_ms: number;
-  context_limit: number;
-  economy_mode: boolean;
-  kb_match_threshold: number;
-  kb_match_count: number;
-  temperature: number;
-  max_tokens: number;
-  top_p: number;
-  turn_strategy: string;
-  smart_weights: {
-    expertise: number;
-    balance: number;
-    freshness: number;
-  };
-  vad_silence_duration: number;
-  conversation_style: string;
-}
-
-export interface TestResult {
-  provider: string;
-  latency: number;
-  tokens_in: number;
-  tokens_out: number;
-  success: boolean;
-  error_message?: string;
-  response_preview?: string;
-  cost_estimate?: number;
-  structured_prompt?: any;
+interface Message {
+  id: string;
+  sender_name: string;
+  content: string;
+  tempo_risposta_ms: number | null;
+  token_input: number | null;
+  token_output: number | null;
+  created_at: string;
+  attachments?: any;
 }
 
 const ChatLaboratoryCalibration = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [config, setConfig] = useState<CalibrationConfig>({
-    timeout_ms: 8000,
-    max_retries: 2,
-    base_delay_ms: 300,
-    context_limit: 20,
-    economy_mode: true,
-    kb_match_threshold: 0.7,
-    kb_match_count: 3,
-    temperature: 0.8,
-    max_tokens: 1500,
-    top_p: 0.9,
-    turn_strategy: 'RANDOM_30',
-    smart_weights: {
-      expertise: 50,
-      balance: 30,
-      freshness: 20
-    },
-    vad_silence_duration: 3000,
-    conversation_style: 'colleagues'
-  });
-
-  const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const [isTestRunning, setIsTestRunning] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const handleSaveConfig = async (configName: string) => {
-    try {
-      // First, deactivate all existing configs
-      await supabase
-        .from('chat_laboratory_calibration_configs')
-        .update({ is_active: false })
-        .eq('is_active', true);
-
-      // Insert new config
-      const { error } = await supabase
-        .from('chat_laboratory_calibration_configs')
-        .insert({
-          config_name: configName,
-          ...config,
-          is_active: true
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "✅ Configurazione salvata",
-        description: `"${configName}" è ora la configurazione attiva`,
-      });
-    } catch (error) {
-      console.error('Error saving config:', error);
-      toast({
-        title: "❌ Errore",
-        description: "Impossibile salvare la configurazione",
-        variant: "destructive",
-      });
+  useEffect(() => {
+    // Carica l'ultima conversazione dal localStorage
+    const lastConvId = localStorage.getItem('last_lab_conversation_id');
+    if (lastConvId) {
+      setConversationId(lastConvId);
+      loadMessages(lastConvId);
     }
+  }, []);
+
+  const loadMessages = async (convId: string) => {
+    const { data, error } = await supabase
+      .from('chat_laboratory_messages')
+      .select('*')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error('Error loading messages:', error);
+      return;
+    }
+
+    setMessages(data || []);
   };
 
-  const handleTestComplete = (results: TestResult[]) => {
-    setTestResults(results);
-    if (results[0]?.structured_prompt) {
-      setSelectedPrompt(results[0].structured_prompt);
+  const handleMessageClick = (message: Message) => {
+    // Estrai il prompt strutturato dagli attachments se disponibile
+    if (message.attachments && typeof message.attachments === 'object') {
+      const attachmentsObj = message.attachments as any;
+      if (attachmentsObj.structured_prompt) {
+        setSelectedPrompt(attachmentsObj.structured_prompt);
+      }
     }
   };
 
@@ -126,68 +73,94 @@ const ChatLaboratoryCalibration = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
-                <Settings2 className="h-6 w-6 text-indigo-600" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
                 AI Calibration Center
               </h1>
               <p className="text-sm text-muted-foreground">
-                Test, optimize, and fine-tune AI parameters
+                Monitor real-time AI performance metrics
               </p>
             </div>
           </div>
-          
-          <Button
-            onClick={() => {
-              const name = prompt('Nome configurazione:');
-              if (name) handleSaveConfig(name);
-            }}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            Salva Config
-          </Button>
         </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-12 gap-4">
-          {/* Left Sidebar - Parameters */}
-          <div className="col-span-3">
-            <CalibrationParamsPanel
-              config={config}
-              onChange={setConfig}
-            />
+          {/* Messages List */}
+          <div className="col-span-5 space-y-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Messaggi Recenti
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {messages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nessun messaggio disponibile
+                  </p>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      onClick={() => handleMessageClick(message)}
+                      className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-semibold text-sm">
+                          {message.sender_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(message.created_at).toLocaleTimeString('it-IT')}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {message.content}
+                      </p>
+
+                      {/* Metrics */}
+                      <div className="flex flex-wrap gap-2">
+                        {message.tempo_risposta_ms !== null && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Clock className="h-3 w-3" />
+                            {message.tempo_risposta_ms}ms
+                          </Badge>
+                        )}
+                        {message.token_input !== null && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            ↓ {message.token_input} tok
+                          </Badge>
+                        )}
+                        {message.token_output !== null && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            ↑ {message.token_output} tok
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Center - Test Zone & Prompt Viewer */}
-          <div className="col-span-6 space-y-4">
-            <CalibrationTestZone
-              config={config}
-              onTestComplete={handleTestComplete}
-              isRunning={isTestRunning}
-              setIsRunning={setIsTestRunning}
-            />
-
-            {selectedPrompt && (
+          {/* Prompt Viewer */}
+          <div className="col-span-7">
+            {selectedPrompt ? (
               <PromptViewer
                 structuredPrompt={selectedPrompt}
-                onSectionEdit={(sectionKey, newContent) => {
-                  setSelectedPrompt({
-                    ...selectedPrompt,
-                    [sectionKey]: newContent
-                  });
-                }}
               />
+            ) : (
+              <Card className="h-full flex items-center justify-center">
+                <CardContent className="text-center py-12">
+                  <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Seleziona un messaggio per visualizzare il prompt strutturato
+                  </p>
+                </CardContent>
+              </Card>
             )}
-          </div>
-
-          {/* Right Sidebar - Metrics */}
-          <div className="col-span-3 space-y-4">
-            {testResults.map((result, idx) => (
-              <CalibrationMetricsCard
-                key={idx}
-                result={result}
-              />
-            ))}
           </div>
         </div>
       </div>

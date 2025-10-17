@@ -260,9 +260,6 @@ export const BarModeTabsControls = ({
 
           {/* Dropdown Modalità Audio */}
           <div className="flex items-center gap-3 p-3 bg-muted/10 rounded-lg border border-border/20">
-            <label className="text-sm font-medium whitespace-nowrap">
-              Modalità Attiva:
-            </label>
             <select
               value={audioMode}
               onChange={(e) => {
